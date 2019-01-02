@@ -1,0 +1,67 @@
+// Copyright 2018 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package ink.proto;
+
+option javascript_package = "ink.proto";
+option java_package = "com.google.ink.proto";
+option java_outer_classname = "AnimationsProto";
+
+enum CurveType {
+  UNSPECIFIED_CURVE_TYPE = 0;
+  EASE_IN_OUT = 1;
+  EASE_IN = 2;
+  EASE_OUT = 3;
+  CUSTOM_CUBIC_BEZIER = 4;
+}
+
+message AnimationCurve {
+  optional CurveType type = 1 [default = EASE_IN_OUT];
+
+  // When type is CUSTOM_CUBIC_BEZIER, these params are used to control the
+  // curve. The params are the typical cubic animation curve formulation where
+  // exactly four floats are passed, matching the CSS property cubic-bezier or
+  // [CAMediaTimingFunction initWithControlPoints:] on iOS.
+  repeated float params = 2;
+}
+
+message ColorAnimation {
+  // Duration in seconds.
+  optional double duration = 1 [default = 0.5];
+  optional AnimationCurve curve = 2;
+
+  // The target color (the Element will be assigned this color at the end of the
+  // animation). Note: non-premultiplied.
+  optional uint32 rgba = 3;
+}
+
+message ScaleAnimation {
+  // Duration in seconds.
+  optional double duration = 1 [default = 0.5];
+  optional AnimationCurve curve = 2;
+
+  optional float scale_x = 3;
+  optional float scale_y = 4;
+}
+
+message ElementAnimation {
+  optional string uuid = 1;
+  optional ColorAnimation color_animation = 2;
+  optional ScaleAnimation scale_animation = 3;
+
+  // Element Animations can be sequentially chained through this field.
+  optional ElementAnimation next = 4;
+}

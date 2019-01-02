@@ -1,0 +1,346 @@
+// Copyright 2018 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+import "ink/proto/geometry.proto";
+import "ink/proto/text.proto";
+package ink.proto;
+
+option javascript_package = "ink.proto";
+option java_package = "com.google.ink.proto";
+option java_outer_classname = "ElementProto";
+
+// Flags to control how callbacks are performed, and what data is attached
+message CallbackFlags {
+  // If ctm compressed mesh data is attached
+  // into the engine, supporting undo/redo, etc.
+  // ElementBundle.Element.Stroke.lod
+  optional bool compressed_mesh_data = 1;
+
+  // If outline points are attached.
+  // Required for annotating PDFs and anywhere else we need a polygon outline.
+  // ElementBundle.UncompressedElement.outline
+  optional bool uncompressed_outline = 2;
+
+  // If the (x,y,t) input points are attached.
+  // For handwriting reco and other applications of gestural input data.
+  // ElementBundle.Element.Stroke (into x, y, t parallel arrays)
+  optional bool compressed_input_points = 3;
+
+  // next id: 4
+}
+
+// The source of a state change
+message SourceDetails {
+  enum Origin {
+    UNKNOWN = 0;
+
+    // State change was generated internally through a tool (e.g. the line tool
+    // added a stroke to the scene in response to user input)
+    ENGINE = 1;
+
+    // State change was generated externally by the host (e.g. the host added a
+    // stroke to the scene via SEngine::addElement)
+    HOST = 2;
+  }
+
+  optional Origin origin = 1;
+
+  // A number the host can use to tag their mutations.
+  //
+  // Two general use cases:
+  //   1. Switch engine callback behavior based on tag.
+  //   2. Tag is propagated back to host through callbacks, host logic can
+  //      inspect it.
+  optional uint32 host_source_details = 2;
+
+  // When needed, PathToolParams can be added here.
+}
+
+message BackgroundImageInfo {
+  reserved 2, 4, 5;
+
+  // A unique identifier for the image to draw.  Image will not be drawn until
+  // SEngine::addImageData(uri, clientBitmap) has been called.
+  optional string uri = 1;
+
+  // The image will be drawn at this rectangle. If unset, it will instead be
+  // drawn to the page bounds. If the page bounds extend beyond this box, the
+  // area outside this box will draw according to the wrap parameters for the
+  // image.
+  optional ink.proto.Rect bounds = 3;
+
+  // next id: 6
+}
+
+message Border {
+  // A unique identifier for a 9-patch image to draw.  Image will not be drawn
+  // until SEngine::addImageData(uri, clientBitmap) has been called.
+  optional string uri = 1;
+
+  // Border sizing is calculated at page bounds == viewport bounds, then scaled
+  // on zoom in/out. Setting a value for this is the same as resizing the
+  // image at "uri" by "scale"
+  optional float scale = 2 [default = 1.0];
+}
+
+message GridInfo {
+  // The image to use for the grid. If unset or an empty string, the grid will
+  // instead be cleared.
+  optional string uri = 1;
+  // This multiplier will be applied component-wise to the colors in the image.
+  // In the typical case, the grid image will be a mask, consisting of just
+  // white and transparent pixels, which will result in a grid the color of the
+  // multiplier. The default value will result in the grid appearing as-is. This
+  // value should not be pre-multiplied.
+  optional uint32 rgba_multiplier = 2 [default = 0xffffffff];
+  // The size of each instance of the texture, in world coordinates. This is
+  // used for both the x- and y-dimensions, resulting in a square grid.
+  optional float size_world = 3 [default = 50];
+  // The position of the bottom-left corner of the first instance of the
+  // texture, in world coordinates. If unset, it defaults to (0, 0).
+  optional Point origin = 4;
+}
+
+enum ShaderType {
+  // Do not use NONE. Its presence here prevents a bug in the
+  // Python proto serializer from triggering.
+  NONE = 0;
+  VERTEX_COLORED = 1;
+  SOLID_COLORED = 2;
+  ERASE = 3;
+  VERTEX_TEXTURED = 4;
+}
+
+// Level of Detail
+message LOD {
+  // The maximum that the ratio (draw area) / (mesh area) can be to
+  // maintain visual accuracy. Eg. 0.5 would mean this LOD is only
+  // accurate if being drawn at up to 50% actual size.
+  optional float max_coverage = 1;
+
+  // Output of OpenCTM encoder
+  optional bytes ctm_blob = 2;
+
+  // Output of Draco encoder
+  optional bytes draco_blob = 3;
+  // next id: 3
+}
+
+message Stroke {
+  // These three fields capture information about the ctm encoded mesh.
+  optional ShaderType shader_type = 1;
+  repeated LOD lod = 3;  // One per Level of Detail
+  // Color, used for SOLID_COLORED_ADDITIVE. msb -> abgr <- lsb
+  optional uint32 abgr = 4;
+
+  // The first x, y, t_ms is in absolute device coords. Each following value
+  // is relative to the last.
+  repeated sint32 point_x = 5 [packed = true];
+  repeated sint32 point_y = 6 [packed = true];
+  repeated uint32 point_t_ms = 7 [packed = true];
+
+  // Unused in document model V3.
+  optional AffineTransform deprecated_transform = 8 [deprecated = true];
+  optional uint64 start_time_ms = 9;
+
+  // next id: 10
+}
+
+message UncompressedStroke {
+  // Stroke outline in object coordinates.
+  repeated Point outline = 1;
+
+  // Color, non-premultiplied, used for solid color strokes.
+  optional uint32 rgba = 2;
+
+  // next id: 3
+}
+
+// We cannot use oneof, because nanoproto doesn't support it. However, with
+// respect to stroke, path, and text, you should consider this proto to behave
+// something like
+//
+// message StrokeBundle {
+//     optional Stroke stroke = 1;
+//     optional ink.proto.Path path = 2;
+//     optional ElementAttributes attributes = 3;
+// }
+// message Element {
+//     oneof ElementData {
+//         StrokeBundle stroke = 1;
+//         Text text = 2;
+//     }
+// }
+// In other words, either text or some combination of the other three should
+// ever have a value.
+message Element {
+  optional string deprecated_uuid = 4 [deprecated = true];
+
+  // Minimum version of the serializer required to handle this
+  // message. If the version check fails, the user should get a
+  // "please upgrade your client" message.
+  optional uint32 minimum_serializer_version = 5;
+
+  optional Stroke stroke = 6;
+
+  // Slots 7 and 8 probably don't exist in any serialized documents, but we
+  // still reserved them for safety.
+
+  optional ink.proto.Path path = 9;
+
+  // Metadata attributes of this element.
+  optional ElementAttributes attributes = 10;
+
+  optional text.Text text = 11;
+
+  // next id: 12
+}
+
+// Attributes of an element, set when they're added to the scene.
+// Useful to add elements (e.g. image tiles) that should be immutable in the
+// scene.
+message ElementAttributes {
+  optional bool selectable = 1 [default = true];
+  optional bool magic_erasable = 2 [default = true];
+
+  // These booleans control whether the pusher tool will manipulate this
+  // element (see also PusherToolParams).
+  optional bool is_sticker = 3 [default = false];
+  optional bool is_text = 4 [default = false];
+
+  // A group can have a transform associated. It should not have any strokes,
+  // paths, or text associated.
+  optional bool is_group = 5 [default = false];
+
+  // A zoomable element should be rendered by ZoomableRectRenderer.
+  optional bool is_zoomable = 6 [default = false];
+
+  enum GroupType {
+    UNKNOWN = 0;
+    LAYER = 1;
+  }
+
+  optional GroupType group_type = 7 [default = UNKNOWN];
+}
+
+message UncompressedElement {
+  optional UncompressedStroke uncompressed_stroke = 1;
+
+  // next id: 2
+}
+
+message ElementTransformMutations {
+  message Mutation {
+    // All mutation messages must have a "uuid" field.
+    // See Document::ApplyMutationCallback() or AppendElementMutation().
+    optional string uuid = 1;
+    optional AffineTransform transform = 2;
+  }
+  repeated Mutation mutation = 1;
+}
+
+message ElementVisibilityMutations {
+  message Mutation {
+    // All mutation messages must have a "uuid" field.
+    // See Document::ApplyMutationCallback() or AppendElementMutation().
+    optional string uuid = 1;
+    optional bool visibility = 2;
+  }
+  repeated Mutation mutation = 1;
+}
+
+message ElementOpacityMutations {
+  message Mutation {
+    // All mutation messages must have a "uuid" field.
+    // See Document::ApplyMutationCallback() or AppendElementMutation().
+    optional string uuid = 1;
+    optional int32 opacity = 2;  // clamp to 0-255.
+  }
+  repeated Mutation mutation = 1;
+}
+
+message ElementZOrderMutations {
+  message Mutation {
+    // All mutation messages must have a "uuid" field.
+    // See Document::ApplyMutationCallback() or AppendElementMutation().
+    optional string uuid = 1;
+    optional string below_uuid = 2;
+  }
+  repeated Mutation mutation = 1;
+}
+
+message ElementIdList {
+  repeated string uuid = 1;
+}
+
+message ElementBundle {
+  optional string uuid = 1;
+  optional Element element = 2;
+  optional AffineTransform transform = 3;
+  optional UncompressedElement uncompressed_element = 4;
+  // The uuid of the parent group for this element. If empty,
+  // it is assumed that this parent is a child of the root.
+  optional string group_uuid = 5;
+
+  // If false, this element (and all of its descendants) will not be rendered.
+  optional bool visibility = 6 [default = true];
+
+  // Value in [0-255] are valid with 0 == transparent, 255 = opaque.
+  optional int32 opacity = 7 [default = 255];
+}
+
+// This represents the addition of the given element beneath the element with
+// the given uuid. Beneath means earlier in the zorder.
+// A below_uuid of kInvalidUUID means put it on top.
+message ElementBundleAdd {
+  optional ElementBundle element_bundle = 1;
+  optional string below_uuid = 2;
+}
+
+message ElementBundleAdds {
+  repeated ElementBundleAdd element_bundle_add = 1;
+}
+
+message ElementBundleReplace {
+  optional ElementBundleAdds elements_to_add = 1;
+  optional ElementIdList elements_to_remove = 2;
+}
+
+message Path {
+  enum SegmentType {
+    UNKNOWN = 0;
+    MOVE_TO = 1;
+    LINE_TO = 2;
+    CURVE_TO = 3;  // cubic spline
+    QUAD_TO = 4;   // quad spline
+    CLOSE = 5;
+  }
+
+  repeated SegmentType segment_types = 1;
+  repeated uint32 segment_counts = 2;
+  repeated double segment_args = 3;
+  optional double radius = 4 [default = 1.0];
+  optional uint32 rgba = 5;
+
+  enum EndCapType {
+    BUTT = 1;
+    ROUND = 2;
+    SQUARE = 3;
+  }
+  optional EndCapType end_cap = 6 [default = ROUND];
+
+  optional uint32 fill_rgba = 7;
+}

@@ -1,0 +1,57 @@
+// Copyright 2018 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package ink.proto;
+
+option javascript_package = "ink.proto";
+option java_package = "com.google.ink.proto";
+option java_outer_classname = "GeometryProto";
+
+message Point {
+  optional float x = 1;
+  optional float y = 2;
+}
+
+// next id: 5
+message Rect {
+  optional float xlow = 1;
+  optional float xhigh = 2;
+  optional float ylow = 3;
+  optional float yhigh = 4;
+}
+
+message Rects {
+  repeated Rect rect = 1;
+}
+
+// Defines a two-dimensional affine transformation, constructed by first
+// scaling, then rotating, then translating.
+// This is most often used to describe the transformation from an object's
+// intrinsic coordinate space into world coordinates.
+// WARNING: This cannot actually represent a general affine transform, as it
+// does not allow for a shear transformation.
+message AffineTransform {
+  // Translation of the origin.
+  optional float tx = 1;
+  optional float ty = 2;
+
+  // Scale with respect to the origin.
+  optional float scale_x = 3 [default = 1.0];
+  optional float scale_y = 4 [default = 1.0];
+
+  // Counter-clockwise rotation about the origin.
+  optional float rotation_radians = 5;
+}

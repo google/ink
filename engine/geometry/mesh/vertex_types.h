@@ -1,0 +1,121 @@
+/*
+ * Copyright 2018 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef INK_ENGINE_GEOMETRY_MESH_VERTEX_TYPES_H_
+#define INK_ENGINE_GEOMETRY_MESH_VERTEX_TYPES_H_
+
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "third_party/glm/glm/glm.hpp"
+#include "ink/engine/geometry/mesh/vertex.h"
+#include "ink/engine/geometry/primitives/rect.h"
+
+namespace ink {
+
+enum class VertFormat {
+  x32y32,
+  x12y12,
+  x11a7r6y11g7b6,
+  // For a vertex with a texture, the coordinates in world space, color with
+  // opacity, and coordinates in texture space
+  uncompressed,
+};
+
+inline std::string VertFormatName(VertFormat f) {
+  switch (f) {
+    case VertFormat::x32y32:
+      return "x32y32";
+    case VertFormat::x12y12:
+      return "x12y12";
+    case VertFormat::x11a7r6y11g7b6:
+      return "x11a7r6y11g7b6";
+    case VertFormat::uncompressed:
+      return "uncompressed";
+    default:
+      return ("UNKNOWN_FORMAT");
+  }
+}
+
+// A list of vertices stored in a compressed format, as specified by "format".
+class PackedVertList {
+ public:
+
+  // Uses the x32y32 format
+  PackedVertList();
+
+  explicit PackedVertList(VertFormat format);
+
+  // Removes all elements from the list, leaves the format unchanged.
+  void Clear();
+
+  VertFormat GetFormat() const;
+
+  // The number of vertices in the list
+  uint32_t size() const;
+
+  // Be like a vector.
+  bool empty() const;
+
+  // The number of bytes used to store each vertex in the list
+  uint32_t VertexSizeBytes() const;
+
+  // A raw ptr to the first element of list being used to hold data (either
+  // floats, vecs, or uncompressedVerts).  Assumes size of the list > 0.
+  const void* Ptr() const;
+
+  // Unpacks vertex at given index into provided vertex struct.
+  void UnpackVertex(uint32_t idx, Vertex* vertex) const;
+
+  // transform is expected to be the result of CalcTransformForFormat(), called
+  // with the same vertices and format. The MBR of the packed vertices will be
+  // the rectangle from (0, 0) to (m, m), where m is the maximum coordinate for
+  // the format.
+  static PackedVertList PackVerts(const std::vector<Vertex>& verts,
+                                  const glm::mat4& transform,
+                                  VertFormat to_format);
+
+  static uint32_t CalcRequiredPrecision(VertFormat fmt);
+  static glm::mat4 CalcTransformForFormat(Rect mesh_envelope,
+                                          VertFormat to_format);
+  static Rect CalcTargetEnvelopeForFormat(VertFormat format);
+  static float GetMaxCoordinateForFormat(VertFormat format);
+
+ private:
+  // checks that at most one of floats, vec2s, or verts has positive size
+  void CheckOnlyOneVectorHasData() const;
+
+  VertFormat format;
+
+  // The actual vertex data is stored in exactly one of "floats", "vec2s", or
+  // "uncompressedVerts", as prescribed by "format," and the other lists are
+  // empty.
+  std::vector<float> floats;
+  std::vector<glm::vec2> vec2s;
+  // This format is supported (despite not using any compression) for meshes
+  // that can be represented with only a small number of vertices (e.g. a photo
+  // is a Rect that needs 4 vertices), where the complexity of compression is
+  // not worth it.
+  std::vector<Vertex> uncompressed_verts;
+
+  friend class MeshVBOProvider;
+  friend class PackedVertListTestHelper;
+};
+
+}  // namespace ink
+#endif  // INK_ENGINE_GEOMETRY_MESH_VERTEX_TYPES_H_

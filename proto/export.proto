@@ -1,0 +1,96 @@
+// Copyright 2018 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+import "ink/proto/geometry.proto";
+import "ink/proto/text.proto";
+
+package ink.proto;
+
+option javascript_package = "ink.proto";
+option java_package = "com.google.ink.proto";
+option java_outer_classname = "VectorProto";
+
+// This is the canonical representation of an Ink scene for translation to and
+// from non-engine representations. In particular, this supports export and
+// import to and from PDF.
+message ExportedDocument {
+  repeated PageDefinition page = 1;
+
+  // While each element has its own page_index, and while there's no requirement
+  // that their pages be monotonically increasing, their z-index is inferred
+  // from their order; an element that comes later in this list will be rendered
+  // on top of one that was specified earlier.
+  repeated VectorElement element = 2;
+}
+
+// This contains everything known about an individual page. You'll need this to
+// scale between world coordinates in the source and destination.
+message PageDefinition {
+  // Scene bounds in world coordinates. Remember that, on the way out, the Ink
+  // scene's scale (and, perhaps, even aspect ratio) may not match the
+  // destination's. On the way in, it's probably best to set the destination Ink
+  // PageBounds to match these, so that the imported scene world coordinates
+  // match Ink's, but it's arbitrary.
+  optional Rect bounds = 1;
+
+  // Flag to hint a page background texture provider about what sort of bitmaps
+  // to create.
+  optional bool background_has_transparency = 2 [default = false];
+}
+
+// Z-ordered stroke and text elements in world coordinates, with 0,0 as
+// bottom-left.
+// DEPRECATED in favor of PageDefinition.
+message VectorElements {
+  repeated VectorElement elements = 1;
+
+  // Scene bounds in world coordinates.
+  optional Rect bounds = 2;
+}
+
+// Each element will be either an outline or text.
+// We don't use one-of message here because it's not supported by nanoproto.
+message VectorElement {
+  // This represents a "stroke" in the Ink engine, or what the user will think
+  // of as a line drawn with a pen.
+  optional StrokeOutline outline = 1;
+  // This is a block of text.
+  optional TextBox text = 2;
+
+  // Index of the PageDefinition in ExportedDocument's repeated field "page".
+  optional uint64 page_index = 3;
+}
+
+// A solid-colored self-intersecting outline. An outline with non-255 alpha is
+// unlikely to be rendered as it appears in the Ink editor, where such a shape
+// darkens at self-crossings.
+// Note: Uses repeated primitives for serialization efficiency.
+message StrokeOutline {
+  repeated float x = 1 [packed = true];
+  repeated float y = 2 [packed = true];
+  optional uint32 rgba = 3;
+}
+
+message TextBox {
+  optional Rect bounds = 1;
+  // This URI encodes the text attributes.  May be parsed into a Java or Obj-C
+  // data structure with:
+  // java.com.google.research.ink.libs.text.TextAttributes
+  // googlemac/iPhone/Ink/Library/Engine/INKElement.h:INKTextAttributes
+  optional string uri = 2;
+  // Ink text V2 proto. If this is populated, it supercedes the URI information.
+  optional text.Text text = 3;
+}

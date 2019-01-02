@@ -1,0 +1,144 @@
+// Copyright 2018 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+
+import "ink/proto/geometry.proto";
+
+package ink.proto.text;
+
+option javascript_package = "ink.proto.text";
+option java_package = "com.google.ink.proto.text";
+option java_outer_classname = "TextProto";
+
+// The "PostScript 13".
+enum PostscriptFont {
+  DEFAULT_POSTSCRIPT_FONT = 0;  // Will be interpreted as HELVETICA_REGULAR.
+  HELVETICA_REGULAR = 1;
+  HELVETICA_OBLIQUE = 2;
+  HELVETICA_BOLD = 3;
+  HELVETICA_BOLD_OBLIQUE = 4;
+  COURIER_REGULAR = 5;
+  COURIER_OBLIQUE = 6;
+  COURIER_BOLD = 7;
+  COURIER_BOLD_OBLIQUE = 8;
+  TIMES_REGULAR = 9;
+  TIMES_OBLIQUE = 10;
+  TIMES_BOLD = 11;
+  TIMES_BOLD_OBLIQUE = 12;
+  SYMBOL = 13;
+}
+
+message Font {
+  // Consider these to be a oneof; we can't use real oneofs because nano.
+  optional PostscriptFont postscript_font = 1;
+  optional string name = 2;
+  optional string asset_id = 3;
+  optional uint32 resource_id = 4;
+}
+
+// A Line is a sequence of characters not having internal linebreaks.
+message Line {
+  optional string text = 1;
+  // Origin location of the first word on this line, expressed as a fraction
+  // of the width and height, with (0, 0) in the lower left of this text box.
+  // For example, a position of (0.2, 0.4) would be 20% of the way from the
+  // left to right edge and 40% of the way from the bottom to top edge.
+  // See https://www.freetype.org/freetype2/docs/glyphs/metrics.png for a
+  // diagram showing the meaning of "origin" in this context.
+  optional Point origin_fraction = 2;
+}
+
+// A Layout represents a fully-laid-out sequence of attributed strings; in
+// particular, it permits the placement of chunks of text into a PDF, or any
+// other system that knows how to render sequences of styled glyphs but not how
+// to lay out text.
+message Layout {
+  repeated Line line = 1;
+}
+
+enum Alignment {
+  DEFAULT_ALIGNMENT = 0;  // Will be interpreted as LEFT.
+  LEFT = 1;
+  CENTERED = 2;
+  RIGHT = 3;
+}
+
+message DropShadow {
+  optional uint32 rgba = 1;
+  // Blur radius as a fraction of the text box's width.
+  optional float radius_fraction = 2;
+  // X and Y offset of the shadow from the text itself as a fraction of the text
+  // box's width.
+  optional float dx_fraction = 3;
+  optional float dy_fraction = 4;
+}
+
+// A Text represents the Ink engine's understanding of a blob of text. The
+// position and size of this text box is maintained outside this structure.
+message Text {
+  // The text to be laid out.
+  optional string text = 1;
+
+  optional Font font = 3;
+  // Font size as a fraction of the text box's width.
+  optional float font_size_fraction = 4;
+  optional uint32 rgba = 5 [default = 0x000000FF];
+  optional Alignment alignment = 6;
+  optional DropShadow shadow = 7;
+
+  // Layout information must be provided if the text may be exported to another
+  // format (e.g. PDF).
+  optional Layout layout = 8;
+}
+
+// Messages for text commands
+
+message AddText {
+  optional text.Text text = 1;
+  // The parent to use for this image rect. If unset, will attach
+  // this rect to the root of the canvas.
+  optional string group_uuid = 2;
+  // The rectangle in which to lay out the given text.
+  optional Rect bounds_world = 3;
+}
+
+// Indicate to the engine that the given text element is being edited and
+// should not be rendered by the engine until the text element is updated.
+message BeginTextEditing {
+  optional string uuid = 1;
+}
+
+message RelativeSize {
+  // Coefficient for an element's width. Must be > 0.
+  optional float width_multiplier = 1;
+  // Coefficient for an element's height. Must be > 0.
+  optional float height_multiplier = 2;
+}
+
+// Update the contents of an existing text element.
+message UpdateText {
+  // UUID of the element to be updated.
+  optional string uuid = 1;
+  // Updated text information.
+  optional text.Text text = 2;
+  // Updated world coordinates.
+  optional Rect bounds_world = 3;
+  // If bounds_world is omitted, relative_size must be provided to set the text
+  // box's size without changing its position and orientation. The engine will
+  // keep the bottom center coordinate of the text box constant, maintain its
+  // orientation and update the size.
+  optional RelativeSize relative_size = 4;
+}
