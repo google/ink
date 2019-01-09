@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INK_ENGINE_GEOMETRY_SPATIAL_SPATIAL_INDEX_FACTORY_INTERFACE_H_
-#define INK_ENGINE_GEOMETRY_SPATIAL_SPATIAL_INDEX_FACTORY_INTERFACE_H_
+#ifndef INK_ENGINE_GEOMETRY_SPATIAL_STICKER_SPATIAL_INDEX_FACTORY_INTERFACE_H_
+#define INK_ENGINE_GEOMETRY_SPATIAL_STICKER_SPATIAL_INDEX_FACTORY_INTERFACE_H_
 
 #include <memory>
 
@@ -28,9 +28,12 @@ struct ProcessedElement;
 
 namespace spatial {
 
-class SpatialIndexFactoryInterface {
+// This interface is meant to be used for generating spatial indexes for meshes
+// that represent stickers. For selectable stickers, the spatial index created
+// should respect transparencies in the sticker texture.
+class StickerSpatialIndexFactoryInterface {
  public:
-  virtual ~SpatialIndexFactoryInterface() {}
+  virtual ~StickerSpatialIndexFactoryInterface() {}
 
   // The scene graph, which holds a strong reference to this, is responsible for
   // setting this to itself upon construction, and then setting it to nullptr
@@ -44,4 +47,4 @@ class SpatialIndexFactoryInterface {
 }  // namespace spatial
 }  // namespace ink
 
-#endif  // INK_ENGINE_GEOMETRY_SPATIAL_SPATIAL_INDEX_FACTORY_INTERFACE_H_
+#endif  // INK_ENGINE_GEOMETRY_SPATIAL_STICKER_SPATIAL_INDEX_FACTORY_INTERFACE_H_

@@ -185,7 +185,7 @@ bool Tessellator::Tessellate(const std::vector<Vertex>& pts) {
   return !did_error_;
 }
 
-void Tessellator::Clear() {
+void Tessellator::ClearGeometry() {
   mesh_.Clear();
   temp_verts_.clear();
   pt_to_idx_.clear();

@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef INK_ENGINE_GEOMETRY_SPATIAL_SPATIAL_INDEX_FACTORY_H_
-#define INK_ENGINE_GEOMETRY_SPATIAL_SPATIAL_INDEX_FACTORY_H_
+#ifndef INK_ENGINE_GEOMETRY_SPATIAL_STICKER_SPATIAL_INDEX_FACTORY_H_
+#define INK_ENGINE_GEOMETRY_SPATIAL_STICKER_SPATIAL_INDEX_FACTORY_H_
 
 #include <memory>
 #include <string>
 #include <unordered_map>
 
 #include "ink/engine/geometry/spatial/spatial_index.h"
-#include "ink/engine/geometry/spatial/spatial_index_factory_interface.h"
+#include "ink/engine/geometry/spatial/sticker_spatial_index_factory_interface.h"
 #include "ink/engine/processing/runner/task_runner.h"
 #include "ink/engine/rendering/gl_managers/gl_resource_manager.h"
 #include "ink/engine/scene/data/common/processed_element.h"
@@ -33,18 +33,18 @@
 namespace ink {
 namespace spatial {
 
-class SpatialIndexFactory
-    : public SpatialIndexFactoryInterface,
+class StickerSpatialIndexFactory
+    : public StickerSpatialIndexFactoryInterface,
       public TextureListener,
-      public std::enable_shared_from_this<SpatialIndexFactory> {
+      public std::enable_shared_from_this<StickerSpatialIndexFactory> {
  public:
   using SharedDeps =
       service::Dependencies<settings::Flags, ITaskRunner, GLResourceManager>;
 
-  SpatialIndexFactory(std::shared_ptr<settings::Flags> flags,
-                      std::shared_ptr<ITaskRunner> task_runner,
-                      std::shared_ptr<GLResourceManager> gl_resources);
-  ~SpatialIndexFactory() override;
+  StickerSpatialIndexFactory(std::shared_ptr<settings::Flags> flags,
+                             std::shared_ptr<ITaskRunner> task_runner,
+                             std::shared_ptr<GLResourceManager> gl_resources);
+  ~StickerSpatialIndexFactory() override;
 
   void SetSceneGraph(SceneGraph* scene_graph) override {
     scene_graph_ = scene_graph;
@@ -56,8 +56,6 @@ class SpatialIndexFactory
   void OnTextureLoaded(const TextureInfo& info) override;
   void OnTextureEvicted(const TextureInfo& info) override;
 
-  void RegisterElementSpatialIndex(ElementId id,
-                                   std::shared_ptr<SpatialIndex> index);
   void RegisterTextureSpatialIndex(const std::string& texture_uri,
                                    std::shared_ptr<SpatialIndex> index);
 
@@ -76,4 +74,4 @@ class SpatialIndexFactory
 }  // namespace spatial
 }  // namespace ink
 
-#endif  // INK_ENGINE_GEOMETRY_SPATIAL_SPATIAL_INDEX_FACTORY_H_
+#endif  // INK_ENGINE_GEOMETRY_SPATIAL_STICKER_SPATIAL_INDEX_FACTORY_H_

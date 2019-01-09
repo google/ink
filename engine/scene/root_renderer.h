@@ -36,6 +36,10 @@ namespace ink {
 
 class RootRenderer {
  public:
+  // This RenderOrder enum is used in the RootRenderer and in the
+  // ImageExporter. If the meaning of RenderOrder ever changes, then both
+  // classes should be updated.
+  //
   enum class RenderOrder {
     Start,
     PreBackground,
@@ -76,6 +80,7 @@ class RootRenderer {
 
   virtual void AddDrawable(DrawListener* drawable) = 0;
   virtual void RemoveDrawable(DrawListener* drawable) = 0;
+  virtual void DrawDrawables(FrameTimeS draw_time, RenderOrder which) const = 0;
 
   virtual void Resize(glm::ivec2 new_size, int rotation_deg) = 0;
 };
@@ -109,10 +114,10 @@ class RootRendererImpl : public RootRenderer {
   void RemoveDrawable(DrawListener* drawable) override;
 
   void Resize(glm::ivec2 new_size, int rotation_deg) override;
+  void DrawDrawables(FrameTimeS draw_time, RenderOrder which) const override;
 
  private:
   void DrawPageContents(FrameTimeS draw_time);
-  void DrawDrawables(FrameTimeS draw_time, RenderOrder which) const;
   std::shared_ptr<GLResourceManager> gl_resources_;
   ion::gfx::GraphicsManagerPtr gl_;
   std::shared_ptr<Camera> camera_;

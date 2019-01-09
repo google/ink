@@ -94,6 +94,8 @@ class TripleBufferedRenderer : public SceneGraphRenderer,
 
   void Synchronize(FrameTimeS draw_time) override;
 
+  bool IsBackBufferComplete() const;
+
  private:
   // Texture updates will immediately Invalidate the scene.
   void OnTextureLoaded(const TextureInfo& info) override;
@@ -112,7 +114,6 @@ class TripleBufferedRenderer : public SceneGraphRenderer,
                                            FrameTimeS draw_time);
   bool RenderNewElementsToBackBuffer(const Camera& cam);
 
-  bool BackIsComplete() const;
   bool AllElementsInBackBufferDrawn() const;
 
   // If we're partially through updating the backbuffer we may not need to
@@ -149,7 +150,8 @@ class TripleBufferedRenderer : public SceneGraphRenderer,
   SceneGraph::IdToZIndexPerGroup backbuffer_id_to_zindex_;
   std::unordered_map<ElementId, ElementId, ElementIdHasher> top_id_per_group_;
 
-  std::unique_ptr<Camera> back_camera_;
+  absl::optional<RotRect> front_buffer_bounds_;
+  absl::optional<Camera> back_camera_;
   RegionQuery back_region_query_;
   FrameTimeS back_time_;
 

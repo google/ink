@@ -23,6 +23,7 @@
 
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/geometry/mesh/mesh.h"
+#include "ink/engine/geometry/spatial/spatial_index.h"
 #include "ink/engine/public/types/status.h"
 #include "ink/engine/scene/data/common/input_points.h"
 #include "ink/engine/scene/data/common/stroke.h"
@@ -43,6 +44,10 @@ struct ProcessedElement {
   glm::mat4 obj_to_group{1};            // Relative transform to the group.
   ElementAttributes attributes;
   std::unique_ptr<text::TextSpec> text;
+  // This is set based on the optimized mesh when not in low memory mode.
+  // Otherwise, this will be based on the rect that describes the MBR of the
+  // expected optimized mesh.
+  std::shared_ptr<spatial::SpatialIndex> spatial_index;
 
   // This factory function creates a ProcessedElement, populating the mesh,
   // obj_to_group matrix, and input points (if present) from the given stroke.
@@ -50,13 +55,13 @@ struct ProcessedElement {
   // level-of-detail logic), the mesh with the best coverage will be chosen.
   static S_WARN_UNUSED_RESULT Status
   Create(ElementId id, const Stroke& stroke, ElementAttributes attributes,
-         std::unique_ptr<ProcessedElement>* out);
+         bool low_memory_mode, std::unique_ptr<ProcessedElement>* out);
 
   // Constructs a ProcessedElement with a mesh. The mesh field will be
   // constructed from mesh_in and shader_type_in, and the obj_to_group matrix
   // will be populated from the mesh field's object matrix.
   ProcessedElement(ElementId id_in, const Mesh& mesh_in,
-                   ShaderType shader_type_in,
+                   ShaderType shader_type_in, bool low_memory_mode,
                    ElementAttributes attributes_in = ElementAttributes());
 };
 

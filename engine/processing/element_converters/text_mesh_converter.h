@@ -32,7 +32,7 @@ class TextMeshConverter : public IElementConverter {
   TextMeshConverter(const Mesh& mesh, const text::TextSpec text);
 
   std::unique_ptr<ProcessedElement> CreateProcessedElement(
-      ElementId id) override;
+      ElementId id, const ElementConverterOptions& options) override;
 
   // Disallow copy and assign.
   TextMeshConverter(const TextMeshConverter&) = delete;

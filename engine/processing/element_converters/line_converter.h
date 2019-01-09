@@ -70,7 +70,7 @@ class LineConverter : public IElementConverter {
   // Create a new ProcessedElement with the stored line information and
   // associate it with the given element id.
   std::unique_ptr<ProcessedElement> CreateProcessedElement(
-      ElementId id) override;
+      ElementId id, const ElementConverterOptions& options) override;
 
  private:
   std::vector<FatLine> lines_;

@@ -22,7 +22,6 @@
 
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/camera/camera.h"
-#include "ink/engine/geometry/mesh/shader_type.h"
 #include "ink/engine/geometry/tess/cdrefinement.h"
 #include "ink/engine/geometry/tess/color_linearizer.h"
 #include "ink/engine/geometry/tess/tessellator.h"
@@ -45,7 +44,7 @@ LineConverter::LineConverter(const std::vector<FatLine>& lines,
       tessellation_params_(tessellation_params) {}
 
 std::unique_ptr<ProcessedElement> LineConverter::CreateProcessedElement(
-    ElementId id) {
+    ElementId id, const ElementConverterOptions& options) {
   SLOG(SLOG_DATA_FLOW, "line processor async task");
 
   Tessellator tess;
@@ -97,7 +96,7 @@ std::unique_ptr<ProcessedElement> LineConverter::CreateProcessedElement(
     }
 
     mesh.Append(tess.mesh_);
-    tess.Clear();
+    tess.ClearGeometry();
   }
 
   // Set the mesh's transform. Note that the mesh is in L-Space. The L-to-P
@@ -108,8 +107,8 @@ std::unique_ptr<ProcessedElement> LineConverter::CreateProcessedElement(
   // mesh transform and the points in the mesh. We are temporarily lying about
   // what the obj to group transform is in the processed element, as what
   // is being stored is obj to p space.
-  auto processed_element =
-      absl::make_unique<ProcessedElement>(id, mesh, mesh_shader_type_);
+  auto processed_element = absl::make_unique<ProcessedElement>(
+      id, mesh, mesh_shader_type_, options.low_memory_mode);
 
   // Transform all the input points into object local coordinates.
   glm::mat4 p_space_to_obj = glm::inverse(processed_element->obj_to_group);

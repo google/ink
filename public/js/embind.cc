@@ -268,6 +268,13 @@ val GetAnnotatedPdf(SEngine* engine) {
 
   return CopyFromHeap(output_pdf_bytes);
 }
+
+val GetAnnotatedPdfDestructive(SEngine* engine) {
+  std::string output_pdf_bytes;
+  EXPECT(ink::contrib::pdf::GetAnnotatedPdfDestructive(*engine,
+                                                       &output_pdf_bytes));
+  return CopyFromHeap(output_pdf_bytes);
+}
 #endif  // PDF_SUPPORT
 
 void UseDirectRenderer(SEngine* engine) {
@@ -298,6 +305,8 @@ EMSCRIPTEN_BINDINGS(SEngine) {
            allow_raw_pointers());
   function("getAnnotatedPdf", &embind_sengine::GetAnnotatedPdf,
            allow_raw_pointers());
+  function("getAnnotatedPdfDestructive",
+           &embind_sengine::GetAnnotatedPdfDestructive, allow_raw_pointers());
 #endif
 
   class_<Status>("Status")
@@ -344,6 +353,8 @@ EMSCRIPTEN_BINDINGS(SEngine) {
       .function("addSequencePoint", &SEngine::addSequencePoint)
       .function("setCallbackFlags", &SEngine::setCallbackFlags)
       .function("setOutlineExportEnabled", &SEngine::setOutlineExportEnabled)
+      .function("setHandwritingDataEnabled",
+                &SEngine::setHandwritingDataEnabled)
       .function("assignFlag", &SEngine::assignFlag)
       .function("startImageExport", &SEngine::startImageExport)
       .function("setCameraBoundsConfig", &SEngine::setCameraBoundsConfig)

@@ -80,12 +80,12 @@ class LayerManager : public SceneGraphListener, public IActiveLayerListener {
   //
   // NOTE: this creates a new UUID and Group element and inserts it
   // into the SceneGraph.
-  Status AddLayer(GroupId *group_id);
+  Status AddLayer(const SourceDetails &source_details, GroupId *group_id);
 
   // Removes the layer at the specified index.
   // If index >= NumLayers(), do nothing.
   // Removing the active layer will reset the active layer to 0.
-  Status RemoveLayer(size_t index);
+  Status RemoveLayer(size_t index, const SourceDetails &source_details);
 
   // Move the layer at from_index to to_index. The active layer will not change,
   // although its index might.
@@ -93,7 +93,7 @@ class LayerManager : public SceneGraphListener, public IActiveLayerListener {
 
   // Sets the active layer to the specified index.
   // Does nothing and returns a failure status if index >= NumLayers().
-  Status SetActiveLayer(size_t index, const SourceDetails &sourceDetails =
+  Status SetActiveLayer(size_t index, const SourceDetails &source_details =
                                           SourceDetails::FromEngine());
 
   // Returns the index of the active layer.
@@ -183,7 +183,7 @@ class LayerManager : public SceneGraphListener, public IActiveLayerListener {
   LayerList::const_iterator FindGroupWithId(const LayerList &layer_ids,
                                             const GroupId &group_id) const;
 
-  void InformActiveLayerListener();
+  void InformActiveLayerListener(const SourceDetails &source_details);
   std::shared_ptr<EventDispatch<IActiveLayerListener>> active_layer_dispatch_;
 
   // The last uuid for which we sent an ActiveLayerChanged event.

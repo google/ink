@@ -50,7 +50,6 @@
 #include "ink/engine/realtime/text_highlighter_tool.h"
 #include "ink/engine/realtime/tool.h"
 #include "ink/engine/rendering/compositing/live_renderer.h"
-#include "ink/engine/rendering/export/image_exporter.h"
 #include "ink/engine/rendering/gl_managers/text_texture_provider.h"
 #include "ink/engine/scene/data/common/serialized_element.h"
 #include "ink/engine/scene/graph/element_notifier.h"
@@ -86,10 +85,12 @@ class ReplaceTask : public Task {
  public:
   ReplaceTask(std::weak_ptr<SceneGraph> weak_scene_graph,
               const proto::ElementBundleReplace& replace_proto,
-              const SourceDetails& source_details)
+              const SourceDetails& source_details, const settings::Flags& flags)
       : weak_scene_graph_(weak_scene_graph),
         replace_proto_(replace_proto),
         source_details_(source_details) {
+    element_converter_options_.low_memory_mode =
+        flags.GetFlag(settings::Flag::LowMemoryMode);
     if (auto scene_graph = weak_scene_graph_.lock()) {
       callback_flags_ =
           scene_graph->GetElementNotifier()->GetCallbackFlags(source_details);
@@ -134,8 +135,8 @@ class ReplaceTask : public Task {
                                .element_bundle_add(i)
                                .element_bundle();
       BundleProtoConverter converter(bundle);
-      auto processed_element =
-          converter.CreateProcessedElement(scene_ids_[i].id);
+      auto processed_element = converter.CreateProcessedElement(
+          scene_ids_[i].id, element_converter_options_);
       if (processed_element == nullptr) continue;
       processed_element->group = scene_ids_[i].group_id;
 
@@ -166,6 +167,7 @@ class ReplaceTask : public Task {
   std::vector<SceneIds> scene_ids_;
   std::vector<SceneGraph::ElementAdd> elements_to_add_;
   std::vector<ElementId> elements_to_remove_;
+  IElementConverter::ElementConverterOptions element_converter_options_;
 };
 
 }  // namespace
@@ -204,6 +206,7 @@ RootController::RootController(
   grid_manager_ = registry_->GetShared<GridManager>();
   page_border_ = registry_->GetShared<PageBorder>();
   crop_mode_ = registry_->GetShared<CropMode>();
+  image_exporter_ = registry_->GetShared<ImageExporter>();
   flags_ = registry_->GetShared<settings::Flags>();
   flags_->AddListener(this);
 
@@ -497,8 +500,9 @@ void RootController::AddElementBelow(
     // a point -> group transform is not needed.
     unique_ptr<BundleProtoConverter> converter(
         new BundleProtoConverter(unsafe_bundle));
-    unique_ptr<SceneElementAdder> adder_task(new SceneElementAdder(
-        move(converter), scene_graph_, source_details, uuid, below_id, group));
+    unique_ptr<SceneElementAdder> adder_task(
+        new SceneElementAdder(move(converter), scene_graph_, *flags_,
+                              source_details, uuid, below_id, group));
     task_runner_->PushTask(move(adder_task));
   }
 }
@@ -515,7 +519,7 @@ void RootController::AddStrokeOutline(
   unique_ptr<StrokeOutlineConverter> converter(
       new StrokeOutlineConverter(unsafe_stroke_outline));
   unique_ptr<SceneElementAdder> adder_task(new SceneElementAdder(
-      move(converter), scene_graph_, source_details, uuid,
+      move(converter), scene_graph_, *flags_, source_details, uuid,
       /* below_element_with_id= */ kInvalidElementId, group));
   task_runner_->PushTask(move(adder_task));
 }
@@ -528,8 +532,8 @@ void RootController::RemoveElement(const UUID& uuid,
 
 void RootController::ReplaceElements(const proto::ElementBundleReplace& replace,
                                      const SourceDetails& source_details) {
-  task_runner_->PushTask(
-      absl::make_unique<ReplaceTask>(scene_graph_, replace, source_details));
+  task_runner_->PushTask(absl::make_unique<ReplaceTask>(
+      scene_graph_, replace, source_details, *flags_));
 }
 
 UUID RootController::AddPath(const ink::proto::Path& unsafe_path,
@@ -539,7 +543,7 @@ UUID RootController::AddPath(const ink::proto::Path& unsafe_path,
       new BezierPathConverter(unsafe_path));
   UUID id = scene_graph_->GenerateUUID();
   unique_ptr<SceneElementAdder> adder_task(new SceneElementAdder(
-      move(converter), scene_graph_, source_details, id,
+      move(converter), scene_graph_, *flags_, source_details, id,
       /* below_element_with_id= */ kInvalidElementId, group));
   task_runner_->PushTask(move(adder_task));
   return id;
@@ -553,7 +557,7 @@ UUID RootController::AddMeshFromEngine(const Mesh& mesh,
   SourceDetails source_details = SourceDetails::FromEngine();
 
   unique_ptr<SceneElementAdder> adder_task(new SceneElementAdder(
-      std::move(converter), scene_graph_, source_details, uuid,
+      std::move(converter), scene_graph_, *flags_, source_details, uuid,
       /* below_element_with_id= */ kInvalidElementId, group));
   task_runner_->PushTask(move(adder_task));
   return uuid;
@@ -588,9 +592,9 @@ UUID RootController::AddTextRect(const text::TextSpec& text, const Rect& rect,
   auto converter = absl::make_unique<TextMeshConverter>(mesh, text);
   SourceDetails source_details = SourceDetails::FromEngine();
 
-  unique_ptr<SceneElementAdder> adder_task(
-      new SceneElementAdder(std::move(converter), scene_graph_, source_details,
-                            uuid, below_element_with_id, group));
+  unique_ptr<SceneElementAdder> adder_task(new SceneElementAdder(
+      std::move(converter), scene_graph_, *flags_, source_details, uuid,
+      below_element_with_id, group));
   task_runner_->PushTask(move(adder_task));
   return uuid;
 }
@@ -741,10 +745,11 @@ void RootController::Render(uint32_t max_dimension_px,
     }
   }
 
-  ImageExporter::Render(max_dimension_px, image_export_bounds,
-                        frame_state_->GetFrameTime(), gl_resources_,
-                        page_bounds_, wall_clock_, *scene_graph_,
-                        should_draw_background, render_only_group, out);
+  image_exporter_->Render(max_dimension_px, image_export_bounds,
+                          ImageExporter::BackgroundOptions::kDraw,
+                          ImageExporter::CurrentToolOptions::kDraw,
+                          ImageExporter::DrawablesOptions::kDraw,
+                          render_only_group, out);
 }
 
 void RootController::AddSequencePoint(int32_t id) {

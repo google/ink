@@ -81,6 +81,10 @@ class RTree {
   // NOTE: Because of the peculiarities of ordering in 2D, and the
   // self-balancing nature of the R-Tree, the traversal order may not be readily
   // apparent, and may change after insertion or deletion.
+  // Note that callers can use this API to touch all elements that are in a
+  // particular region by providing a predicate that will always return false.
+  // This works because the predicate is only called for elements that are in
+  // the provided region.
   absl::optional<DataType> FindAny(
       const Rect &region, const SearchPredicate &predicate = nullptr) const;
 

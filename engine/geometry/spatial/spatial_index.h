@@ -17,6 +17,7 @@
 #ifndef INK_ENGINE_GEOMETRY_SPATIAL_SPATIAL_INDEX_H_
 #define INK_ENGINE_GEOMETRY_SPATIAL_SPATIAL_INDEX_H_
 
+#include "third_party/absl/types/optional.h"
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/geometry/mesh/mesh.h"
 #include "ink/engine/geometry/primitives/rect.h"
@@ -37,6 +38,17 @@ class SpatialIndex {
   // of world-coordinates, it is not safe to ignore the transform.
   virtual bool Intersects(const Rect& region,
                           const glm::mat4& region_to_object) const = 0;
+
+  // Returns the intersection rect between the elements in this spatial index
+  // and the region provided. Note that if Intersection() would return
+  // absl::nullopt, then Intersects() should return false.
+  // The rect returned here may be smaller than the rect returned by
+  // intersection this region with the Mbr() of the spatial index.
+  // The returned rect is in object space.
+  // Warning: This does not preserve area if the incoming
+  // region * region_to_object is not axis aligned.
+  virtual absl::optional<ink::Rect> Intersection(
+      const Rect& region, const glm::mat4& region_to_object) const = 0;
 
   // The bounding Rect of the entire indexed object.
   virtual Rect Mbr(const glm::mat4& object_to_world) const = 0;

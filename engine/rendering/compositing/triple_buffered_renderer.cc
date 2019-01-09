@@ -80,10 +80,13 @@ void TripleBufferedRenderer::Draw(const Camera& cam,
   SLOG(SLOG_DRAWING, "triple buffer draw request blitting to window: $0",
        cam.WorldWindow());
 
+  // If the front buffer doesn't have anything in it, we don't need to blit it.
+  if (front_buffer_bounds_) {
 #ifdef INK_HAS_BLUR_EFFECT
   if (page_manager_->MultiPageEnabled()) {
     // Never blur on multi-page documents, which have a lot of scrolling.
-    tile_->DrawFront(cam, blit_attrs::Blit());
+    tile_->DrawFront(cam, blit_attrs::Blit(), RotRect(tile_->Bounds()),
+                     *front_buffer_bounds_);
   } else {
     if (last_frame_camera_ != cam) {
       // If we are blurring, acquire a framerate lock since to guarantee that we
@@ -91,16 +94,20 @@ void TripleBufferedRenderer::Draw(const Camera& cam,
       blur_lock_ = frame_state_->AcquireFramerateLock(30, "blurring");
       blit_attrs::BlitMotionBlur attrs(
           cam.WorldWindow().CalcTransformTo(last_frame_camera_.WorldWindow()));
-      tile_->DrawFront(cam, attrs);
+      tile_->DrawFront(cam, attrs, RotRect(tile_->Bounds()),
+                       *front_buffer_bounds_);
     } else {
       if (blur_lock_) blur_lock_.reset();
-      tile_->DrawFront(cam, blit_attrs::Blit());
+      tile_->DrawFront(cam, blit_attrs::Blit(), RotRect(tile_->Bounds()),
+                       *front_buffer_bounds_);
     }
   }
 #else
   // No blur effect on web platform.
-  tile_->DrawFront(cam, blit_attrs::Blit());
+  tile_->DrawFront(cam, blit_attrs::Blit(), RotRect(tile_->Bounds()),
+                   *front_buffer_bounds_);
 #endif  // INK_HAS_BLUR_EFFECT
+  }
 
   auto sorted_new_elements = scene_graph_->GroupifyElements(new_elements_);
   for (const auto& group : sorted_new_elements) {
@@ -123,8 +130,10 @@ void TripleBufferedRenderer::Draw(const Camera& cam,
 
 void TripleBufferedRenderer::DrawAfterTool(const Camera& cam,
                                            FrameTimeS draw_time) const {
-  if (!layer_manager_->IsActiveLayerTopmost()) {
-    above_tile_->DrawFront(cam, blit_attrs::Blit());
+  if (front_buffer_bounds_ && !layer_manager_->IsActiveLayerTopmost()) {
+    above_tile_->DrawFront(cam, blit_attrs::Blit(),
+                           RotRect(above_tile_->Bounds()),
+                           *front_buffer_bounds_);
   }
 }
 
@@ -182,7 +191,7 @@ void TripleBufferedRenderer::UpdateBuffers(const Timer& timer,
                                &intersection))
       coverage = intersection.Area() / back_camera_->WorldWindow().Area();
     auto tp = util::Lerp(0.2f, 0.6f, util::Normalize(0.8f, 0.1f, coverage));
-    if (BackIsComplete() ||
+    if (IsBackBufferComplete() ||
         current_back_draw_timer_.Elapsed() < tp * avg_back_draw_time_.Value()) {
       valid_ = false;
       frame_lock_ =
@@ -193,11 +202,12 @@ void TripleBufferedRenderer::UpdateBuffers(const Timer& timer,
   current_back_draw_timer_.Resume();
   bool changed = DrawToBack(timer, cam, draw_time);
   current_back_draw_timer_.Pause();
-  ASSERT(back_camera_ != nullptr);
+  ASSERT(back_camera_.has_value());
 
-  if ((changed || !front_is_valid_) && BackIsComplete()) {
+  if ((changed || !front_is_valid_) && IsBackBufferComplete()) {
     SLOG(SLOG_DRAWING, "tiled renderer completed back, resolving...");
     tile_->BlitBackToFront();
+    front_buffer_bounds_ = back_camera_->WorldRotRect();
     if (!layer_manager_->IsActiveLayerTopmost()) {
       above_tile_->BlitBackToFront();
     }
@@ -234,7 +244,7 @@ bool TripleBufferedRenderer::DrawToBack(const Timer& timer, const Camera& cam,
 void TripleBufferedRenderer::InitBackBuffer(const Camera& cam,
                                             FrameTimeS draw_time) {
   SLOG(SLOG_DRAWING, "tiled renderer clearing back buffer");
-  back_camera_ = absl::make_unique<Camera>(cam);
+  back_camera_ = cam;
   back_region_query_ = RegionQuery::MakeCameraQuery(*back_camera_);
   back_time_ = draw_time;
   tile_->ClearBack();
@@ -374,7 +384,7 @@ bool TripleBufferedRenderer::RenderNewElementsToBackBuffer(const Camera& cam) {
   return drew_anything;
 }
 
-bool TripleBufferedRenderer::BackIsComplete() const {
+bool TripleBufferedRenderer::IsBackBufferComplete() const {
   return new_elements_.empty() && AllElementsInBackBufferDrawn();
 }
 
@@ -586,7 +596,7 @@ void TripleBufferedRenderer::Synchronize(FrameTimeS draw_time) {
     cam.UnFlipWorldToDevice();  // UpdateBuffers expects an unflipped camera.
     Timer t(wall_clock_, 2);
     UpdateBuffers(t, cam, draw_time);
-    if (!BackIsComplete()) {
+    if (!IsBackBufferComplete()) {
       ASSERT(t.Expired());
       SLOG(SLOG_WARNING, "giving up on tbr sync point after $0 seconds",
            static_cast<double>(t.TargetInterval()));

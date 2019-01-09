@@ -21,7 +21,8 @@
 
 namespace ink {
 
-Status LayerManager::AddLayer(GroupId *group_id) {
+Status LayerManager::AddLayer(const SourceDetails &source_details,
+                              GroupId *group_id) {
   UUID uuid = scene_graph_->GenerateUUID();
   GroupId local_group_id;
   if (!scene_graph_->GetNextGroupId(uuid, &local_group_id)) {
@@ -39,8 +40,7 @@ Status LayerManager::AddLayer(GroupId *group_id) {
   // will always be rendered (subject to Visibility).
   //
   scene_graph_->AddOrUpdateGroup(local_group_id, glm::mat4{1}, Rect(0, 0, 0, 0),
-                                 false, kLayerGroupType,
-                                 SourceDetails::FromEngine());
+                                 false, kLayerGroupType, source_details);
 
   if (group_id) *group_id = local_group_id;
 
@@ -93,7 +93,8 @@ Status LayerManager::MoveLayer(size_t from_index, size_t to_index) {
   return OkStatus();
 }
 
-Status LayerManager::RemoveLayer(size_t index) {
+Status LayerManager::RemoveLayer(size_t index,
+                                 const SourceDetails &source_details) {
   const auto &layer_ids = CachedLayerList();
 
   if (layer_ids.size() == 1) {
@@ -110,14 +111,14 @@ Status LayerManager::RemoveLayer(size_t index) {
     active_layer_index_--;
   }
 
-  scene_graph_->RemoveElement(layer_ids[index], SourceDetails::FromEngine());
+  scene_graph_->RemoveElement(layer_ids[index], source_details);
   InvalidateLayerListCache();
-  InformActiveLayerListener();
+  InformActiveLayerListener(source_details);
   return OkStatus();
 }
 
 Status LayerManager::SetActiveLayer(size_t index,
-                                    const SourceDetails &sourceDetails) {
+                                    const SourceDetails &source_details) {
   const auto &layer_ids = CachedLayerList();
 
   if (index >= layer_ids.size()) {
@@ -127,9 +128,7 @@ Status LayerManager::SetActiveLayer(size_t index,
 
   active_layer_index_ = index;
   // Only notify if this came from the engine.
-  if (sourceDetails.origin != SourceDetails::Origin::Host) {
-    InformActiveLayerListener();
-  }
+  InformActiveLayerListener(source_details);
 
   return OkStatus();
 }
@@ -263,7 +262,8 @@ void LayerManager::RemoveActiveLayerListener(IActiveLayerListener *listener) {
   listener->Unregister(active_layer_dispatch_);
 }
 
-void LayerManager::InformActiveLayerListener() {
+void LayerManager::InformActiveLayerListener(
+    const SourceDetails &source_details) {
   GroupId group_id;
   Status status = GroupIdForLayerAtIndex(active_layer_index_, &group_id);
   if (!status.ok()) {
@@ -276,7 +276,7 @@ void LayerManager::InformActiveLayerListener() {
 
   if (uuid != last_active_uuid_sent_) {
     proto::SourceDetails source;
-    source.set_origin(proto::SourceDetails::ENGINE);
+    util::WriteToProto(&source, source_details);
 
     active_layer_dispatch_->Send(&IActiveLayerListener::ActiveLayerChanged,
                                  uuid, source);

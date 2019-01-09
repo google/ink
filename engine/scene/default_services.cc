@@ -18,7 +18,7 @@
 #include "ink/engine/camera/camera.h"
 #include "ink/engine/camera_controller/camera_controller.h"
 #include "ink/engine/debug_view/debug_view.h"
-#include "ink/engine/geometry/spatial/spatial_index_factory.h"
+#include "ink/engine/geometry/spatial/sticker_spatial_index_factory.h"
 #include "ink/engine/input/input_dispatch.h"
 #include "ink/engine/input/input_modeler.h"
 #include "ink/engine/input/input_receiver.h"
@@ -39,6 +39,7 @@
 #include "ink/engine/realtime/tool_controller.h"
 #include "ink/engine/rendering/compositing/live_renderer.h"
 #include "ink/engine/rendering/compositing/scene_graph_renderer.h"
+#include "ink/engine/rendering/export/image_exporter.h"
 #include "ink/engine/rendering/gl_managers/gl_resource_manager.h"
 #include "ink/engine/rendering/gl_managers/ion_graphics_manager_provider.h"
 #include "ink/engine/rendering/gl_managers/text_texture_provider.h"
@@ -98,8 +99,8 @@ std::unique_ptr<service::DefinitionList> DefaultServiceDefinitions() {
   definitions->DefineService<LineModifierFactory>();
   definitions->DefineService<RootRenderer, RootRendererImpl>();
   definitions->DefineService<WallClockInterface, WallClock>();
-  definitions->DefineService<spatial::SpatialIndexFactoryInterface,
-                             spatial::SpatialIndexFactory>();
+  definitions->DefineService<spatial::StickerSpatialIndexFactoryInterface,
+                             spatial::StickerSpatialIndexFactory>();
 
   definitions->DefineService<ElementAnimationController>();
   definitions->DefineService<UpdateLoop, DefaultUpdateLoop>();
@@ -114,6 +115,7 @@ std::unique_ptr<service::DefinitionList> DefaultServiceDefinitions() {
   definitions->DefineService<input::keyboard::Dispatch>();
   definitions->DefineService<input::InputReceiver>();
   definitions->DefineService<PolyStore>();
+  definitions->DefineService<ImageExporter, DefaultImageExporter>();
 
   definitions->DefineService<LiveRenderer>();
 

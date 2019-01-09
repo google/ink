@@ -27,14 +27,12 @@ Rect GetEnvelopeOfPoints(const std::vector<T>& points) {
     return Rect(0, 0, 0, 0);
   }
 
-  Rect envelope = Rect::CreateAtPoint(GetPosition(points[0]), 0, 0);
+  Rect envelope =
+      Rect::CreateAtPoint(GetPosition(points[0]), /*width=*/0, /*height=*/0);
   for (int i = 1; i < points.size(); ++i) {
     // We don't use Rect::Join() here for efficiency reasons: the cost of
     // copying the returned Rect for each point proved surprisingly high.
-    envelope.from.x = std::min(envelope.from.x, GetPosition(points[i]).x);
-    envelope.to.x = std::max(envelope.to.x, GetPosition(points[i]).x);
-    envelope.from.y = std::min(envelope.from.y, GetPosition(points[i]).y);
-    envelope.to.y = std::max(envelope.to.y, GetPosition(points[i]).y);
+    envelope.InplaceJoin(GetPosition(points[i]));
   }
   return envelope;
 }

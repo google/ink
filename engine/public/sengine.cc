@@ -884,6 +884,18 @@ void SEngine::setOutlineExportEnabled(bool enabled) {
       ->SetCallbackFlags(SourceDetails::FromEngine(), flags);
 }
 
+void SEngine::setHandwritingDataEnabled(bool enabled) {
+  auto flags = root_controller_->service<SceneGraph>()
+                   ->GetElementNotifier()
+                   ->GetCallbackFlags(SourceDetails::FromEngine());
+
+  flags.attach_compressed_input_points = enabled;
+
+  root_controller_->service<SceneGraph>()
+      ->GetElementNotifier()
+      ->SetCallbackFlags(SourceDetails::FromEngine(), flags);
+}
+
 void SEngine::setCameraBoundsConfig(
     const proto::CameraBoundsConfig& camera_bounds_config) {
   if (!BoundsCheckIncInc(camera_bounds_config.fraction_padding(), 0,
@@ -1007,7 +1019,7 @@ void SEngine::SetActiveLayer(int index) {
 
 bool SEngine::AddLayer() {
   auto layer_manager = registry()->GetShared<LayerManager>();
-  auto status = layer_manager->AddLayer(nullptr);
+  auto status = layer_manager->AddLayer(SourceDetails::FromEngine(), nullptr);
   if (!status.ok()) {
     SLOG(SLOG_ERROR, "Failed to create layer: $0", status);
   }
@@ -1039,7 +1051,7 @@ bool SEngine::MoveLayer(int from_index, int to_index) {
 
 bool SEngine::RemoveLayer(int index) {
   auto layer_manager = registry()->GetShared<LayerManager>();
-  auto status = layer_manager->RemoveLayer(index);
+  auto status = layer_manager->RemoveLayer(index, SourceDetails::FromEngine());
   if (!status.ok()) {
     SLOG(SLOG_ERROR, "Failed to remove layer: $0", status);
   }

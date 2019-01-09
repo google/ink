@@ -60,6 +60,9 @@ void RootRendererImpl::BindScreen() {
   GLASSERT_NO_ERROR(gl_);
 }
 
+// The specific order of draw operations in the following draw methods should be
+// kept in sync with ImageExporter::Render.
+//
 void RootRendererImpl::Draw(FrameTimeS draw_time) {
   SLOG(SLOG_DRAWING, "draw to screen started");
 

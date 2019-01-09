@@ -29,8 +29,9 @@
 #include "ink/engine/geometry/mesh/shape_helpers.h"
 #include "ink/engine/geometry/primitives/matrix_utils.h"
 #include "ink/engine/geometry/primitives/rect.h"
+#include "ink/engine/geometry/spatial/mesh_rtree.h"
 #include "ink/engine/geometry/spatial/spatial_index.h"
-#include "ink/engine/geometry/spatial/spatial_index_factory_interface.h"
+#include "ink/engine/geometry/spatial/sticker_spatial_index_factory_interface.h"
 #include "ink/engine/public/types/status.h"
 #include "ink/engine/public/types/uuid.h"
 #include "ink/engine/scene/data/common/serialized_element.h"
@@ -46,11 +47,12 @@ namespace ink {
 
 using glm::vec4;
 
-SceneGraph::SceneGraph(std::shared_ptr<PolyStore> poly_store,
-                       std::shared_ptr<IElementListener> element_listener,
-                       std::shared_ptr<spatial::SpatialIndexFactoryInterface>
-                           spatial_index_factory)
-    : spatial_index_factory_(std::move(spatial_index_factory)),
+SceneGraph::SceneGraph(
+    std::shared_ptr<PolyStore> poly_store,
+    std::shared_ptr<IElementListener> element_listener,
+    std::shared_ptr<spatial::StickerSpatialIndexFactoryInterface>
+        sticker_spatial_index_factory)
+    : sticker_spatial_index_factory_(std::move(sticker_spatial_index_factory)),
       element_id_source_(new ElementIdSource(1)),
       poly_store_(std::move(poly_store)),
       element_notifier_(element_listener),
@@ -59,13 +61,13 @@ SceneGraph::SceneGraph(std::shared_ptr<PolyStore> poly_store,
       update_dispatch_(new EventDispatch<UpdateListener>()) {
   // Instantiate the root.
   per_group_id_index_[kInvalidElementId] = std::make_shared<ElementIdIndex>();
-  spatial_index_factory_->SetSceneGraph(this);
+  sticker_spatial_index_factory_->SetSceneGraph(this);
   mbr_listener_ = absl::make_unique<MbrListener>();
   mbr_listener_->RegisterOnDispatch(sgl_dispatch_);
 }
 
 SceneGraph::~SceneGraph() {
-  spatial_index_factory_->SetSceneGraph(nullptr);
+  sticker_spatial_index_factory_->SetSceneGraph(nullptr);
   SLOG(SLOG_OBJ_LIFETIME, "sceneGraph dtor");
 }
 
@@ -174,9 +176,13 @@ Status SceneGraph::AddSingleStrokeBelow(ElementAdd* element_to_add) {
 
   sgl_dispatch_->Send(&SceneGraphListener::PreElementAdded,
                       processed_element.get(), transforms_.ObjToWorld(id));
+  if (processed_element->attributes.is_sticker) {
+    element_id_to_bounds_[id] =
+        sticker_spatial_index_factory_->CreateSpatialIndex(*processed_element);
+  } else {
+    element_id_to_bounds_[id] = std::move(processed_element->spatial_index);
+  }
 
-  element_id_to_bounds_[id] =
-      spatial_index_factory_->CreateSpatialIndex(*processed_element);
   ASSERT(element_id_to_bounds_[id]->Mbr(glm::mat4(1)).Area() > 0);
   id_bimap_.Insert(uuid, id);
   attributes_[id] = processed_element->attributes;
@@ -228,37 +234,6 @@ void SceneGraph::AddStrokes(std::vector<ElementAdd> elements_to_add) {
 }
 
 namespace {
-// Spatial index that wraps a given bounds Rect to support querying for
-// groups.
-class GroupSpatialIndex : public spatial::SpatialIndex {
- public:
-  explicit GroupSpatialIndex(Rect bounds) : bounds_(bounds) {}
-
-  bool Intersects(const Rect& region,
-                  const glm::mat4& region_to_object) const override {
-    Rect transformed_region = geometry::Transform(region, region_to_object);
-    Rect intersection;
-    return (
-        (geometry::Intersection(bounds_, transformed_region, &intersection) &&
-         intersection.Area() > 0) ||
-        bounds_.Contains(transformed_region));
-  }
-
-  // The bounding Rect of the entire indexed object.
-  Rect Mbr(const glm::mat4& object_to_world) const override {
-    return geometry::Transform(bounds_, object_to_world);
-  }
-
-  Mesh DebugMesh() const override {
-    Mesh mesh;
-    MakeRectangleMesh(&mesh, Rect(glm::vec2(0, 0), bounds_.Dim()));
-    return mesh;
-  }
-
- private:
-  Rect bounds_;
-};
-
 SerializedElement SerializeGroupElement(
     SceneGraph* graph, GroupId group_id,
     const glm::mat4 group_to_world_transform, SourceDetails source_details) {
@@ -290,9 +265,11 @@ void SceneGraph::AddOrUpdateGroup(GroupId group_id,
     per_group_id_index_[kInvalidElementId]->AddToTop(group_id);
     per_group_id_index_[group_id] = std::make_shared<ElementIdIndex>();
     ++num_elements_;
-    transforms_.Set(group_id, kInvalidElementId, group_to_world_transform);
+    Mesh group_mesh;
+    MakeRectangleMesh(&group_mesh, bounds);
     element_id_to_bounds_[group_id] =
-        std::make_shared<GroupSpatialIndex>(bounds);
+        absl::make_unique<spatial::MeshRTree>(group_mesh);
+    transforms_.Set(group_id, kInvalidElementId, group_to_world_transform);
   } else {
     if (!transforms_.Contains(group_id) ||
         transforms_.ObjToWorld(group_id) != group_to_world_transform) {
@@ -302,7 +279,10 @@ void SceneGraph::AddOrUpdateGroup(GroupId group_id,
     auto bounds_it = element_id_to_bounds_.find(group_id);
     if (bounds_it == element_id_to_bounds_.end() ||
         bounds_it->second->Mbr(group_to_world_transform) != bounds) {
-      SetSpatialIndex(group_id, std::make_shared<GroupSpatialIndex>(bounds));
+      Mesh group_mesh;
+      MakeRectangleMesh(&group_mesh, bounds);
+      element_id_to_bounds_[group_id] =
+          absl::make_unique<spatial::MeshRTree>(group_mesh);
     }
   }
 
@@ -661,7 +641,6 @@ bool SceneGraph::TopElementInRegion(const RegionQuery& query,
 bool SceneGraph::IsElementInRegion(const ElementId& id,
                                    const RegionQuery& query) const {
   ASSERT(IsKnownId(id, true));
-
   if (!RenderedByMain(id) || !Visible(id)) {
     return false;
   }
@@ -786,13 +765,14 @@ Rect SceneGraph::ElementMbr(ElementId id, const glm::mat4& obj_to_world) const {
   return br->second->Mbr(obj_to_world);
 }
 
-void SceneGraph::RecomputeMbr() {
-  std::vector<ElementId> all_ids;
-  ElementsInScene(std::back_inserter(all_ids));
-  cached_mbr_ = Mbr(all_ids);
+Rect SceneGraph::Mbr() const {
+  if (!cached_mbr_) {
+    std::vector<ElementId> all_ids;
+    ElementsInScene(std::back_inserter(all_ids));
+    cached_mbr_ = Mbr(all_ids);
+  }
+  return *cached_mbr_;
 }
-
-Rect SceneGraph::Mbr() const { return cached_mbr_; }
 
 float SceneGraph::Coverage(const Camera& cam, ElementId line_id) const {
   return cam.Coverage(element_id_to_bounds_.at(line_id)

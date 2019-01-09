@@ -36,6 +36,7 @@
 #include "ink/engine/realtime/crop_mode.h"
 #include "ink/engine/realtime/tool_controller.h"
 #include "ink/engine/rendering/compositing/scene_graph_renderer.h"
+#include "ink/engine/rendering/export/image_exporter.h"
 #include "ink/engine/rendering/gl_managers/gl_resource_manager.h"
 #include "ink/engine/rendering/renderers/element_renderer.h"
 #include "ink/engine/scene/frame_state/frame_state.h"
@@ -199,6 +200,7 @@ class RootController : public settings::FlagListener {
   std::shared_ptr<PageBorder> page_border_;
   std::shared_ptr<settings::Flags> flags_;
   std::shared_ptr<CropMode> crop_mode_;
+  std::shared_ptr<ImageExporter> image_exporter_;
 
   friend class SEngineTestHelper;
 };

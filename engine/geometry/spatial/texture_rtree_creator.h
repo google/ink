@@ -21,7 +21,7 @@
 #include <string>
 
 #include "ink/engine/geometry/spatial/spatial_index.h"
-#include "ink/engine/geometry/spatial/spatial_index_factory.h"
+#include "ink/engine/geometry/spatial/sticker_spatial_index_factory.h"
 #include "ink/engine/processing/runner/task_runner.h"
 #include "ink/engine/rendering/baseGL/gpupixels.h"
 #include "ink/engine/rendering/gl_managers/texture.h"
@@ -31,7 +31,7 @@ namespace spatial {
 
 class TextureRTreeCreator : public Task {
  public:
-  TextureRTreeCreator(std::weak_ptr<SpatialIndexFactory> weak_factory,
+  TextureRTreeCreator(std::weak_ptr<StickerSpatialIndexFactory> weak_factory,
                       std::string texture_uri, const Texture& texture);
 
   bool RequiresPreExecute() const override { return false; }
@@ -42,7 +42,7 @@ class TextureRTreeCreator : public Task {
  private:
   GPUPixels PreprocessTexture() const;
 
-  std::weak_ptr<SpatialIndexFactory> weak_factory_;
+  std::weak_ptr<StickerSpatialIndexFactory> weak_factory_;
   std::string texture_uri_;
   GPUPixels pixels_;
   std::shared_ptr<SpatialIndex> index_;

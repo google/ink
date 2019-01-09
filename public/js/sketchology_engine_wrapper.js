@@ -168,6 +168,16 @@ ink.SketchologyEngineWrapper = function(
   this.uriCounter_ = 0;
 
   /**
+   * True if single-buffered rendering is enabled during GL initialization.
+   *
+   * This determines whether we need to handle rotation in the app or can allow
+   * the compositor to handle it for us.
+   *
+   * @private {boolean}
+   * */
+  this.isSingleBuffered_ = false;
+
+  /**
    * WebGL fence for querying command queue status.
    * @type {?WebGLSync}
    * @private
@@ -334,10 +344,11 @@ ink.SketchologyEngineWrapper.prototype.initGl = function() {
 
   // lowLatency: true implies WebGL2 as the lowLatency attribute is only
   // supported in Chrome 70 and newer, which also all support WebGL2.
-  const isSingleBuffered = !!gl.getContextAttributes()['lowLatency'];
+  this.isSingleBuffered_ = !!gl.getContextAttributes()['lowLatency'];
   this.drawTimer_.listen(
       ink.DrawTimer.EventType.DRAW,
-      goog.bind(isSingleBuffered ? this.checkFenceAndDraw_ : this.draw_, this));
+      goog.bind(
+          this.isSingleBuffered_ ? this.checkFenceAndDraw_ : this.draw_, this));
 
   gl.clearColor(1.0, 1.0, 1.0, 1.0);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
@@ -383,15 +394,17 @@ ink.SketchologyEngineWrapper.prototype.initGl = function() {
   ink.ElementSizeWatcher.getInstance().watchElement(
       this.getElementStrict(), goog.bind(this.handleResize_, this));
 
-  const rotationHandler = () => {
-    const reverse = 360 - screen.orientation.angle;
-    canvas.style.transform = `rotateZ(${reverse}deg)`;
-    this.handleResize_(
-        this.getElementStrict(), goog.style.getSize(this.getElementStrict()),
-        goog.dom.getPixelRatio());
-  };
-  screen.orientation.addEventListener('change', rotationHandler);
-  rotationHandler();
+  if (this.isSingleBuffered_) {
+    const rotationHandler = () => {
+      const reverse = 360 - screen.orientation.angle;
+      canvas.style.transform = `rotateZ(${reverse}deg)`;
+      this.handleResize_(
+          this.getElementStrict(), goog.style.getSize(this.getElementStrict()),
+          goog.dom.getPixelRatio());
+    };
+    screen.orientation.addEventListener('change', rotationHandler);
+    rotationHandler();
+  }
 
   var inputEvents;
   if (goog.global['PointerEvent']) {
@@ -445,15 +458,17 @@ ink.SketchologyEngineWrapper.prototype.initGl = function() {
  * @private
  */
 ink.SketchologyEngineWrapper.prototype.makeViewport_ = function() {
-  /** @type {!Object} */
   const viewport =
       new (ink.AsmJsWrapper.getInstance().cFactory('ViewportProto'))();
   const canvas = this.getCanvas_();
-  const rotated = screen.orientation.angle % 180 == 90;
-  const size = {
-    width: rotated ? canvas.height : canvas.width,
-    height: rotated ? canvas.width : canvas.height,
-  };
+  let size = {width: canvas.width, height: canvas.height};
+
+  if (this.isSingleBuffered_ && screen.orientation.angle % 180 == 90) {
+    // Width and height are swapped when we are handling rotation, in order to
+    // make a rotated canvas fit into the DOM element.
+    size.width = canvas.height;
+    size.height = canvas.width;
+  }
   // Never use a 0x0 viewport, always have at least some default size.
   viewport['width'] = size.width ||
       (ink.SketchologyEngineWrapper.DEFAULT_DOCUMENT_WIDTH * this.pixelRatio_);
@@ -461,9 +476,11 @@ ink.SketchologyEngineWrapper.prototype.makeViewport_ = function() {
       (ink.SketchologyEngineWrapper.DEFAULT_DOCUMENT_HEIGHT * this.pixelRatio_);
   // CSS pixels are always 96 per inch.
   viewport['ppi'] = 96 * this.pixelRatio_;
-  // Reverse the rotation applied in the rotation handler.
-  viewport['screen_rotation'] = 360 - screen.orientation.angle;
-  return viewport;
+  // Reverse the rotation applied in the rotation handler, if the handler is
+  // active.
+  viewport['screen_rotation'] =
+      this.isSingleBuffered_ ? 360 - screen.orientation.angle : 0;
+  return /** @type {!Object} */ (viewport);
 };
 
 
@@ -477,7 +494,9 @@ ink.SketchologyEngineWrapper.prototype.handleResize_ = function(
     element, size, devicePixelRatio) {
   this.pixelRatio_ = devicePixelRatio;
   const canvas = this.getCanvas_();
-  if (screen.orientation.angle % 180 == 90) {
+  if (this.isSingleBuffered_ && screen.orientation.angle % 180 == 90) {
+    // Width and height are swapped when we are handling rotation, in order to
+    // make a rotated canvas fit into the DOM element.
     canvas.style.width = size.height + 'px';
     canvas.style.height = size.width + 'px';
     const offset = Math.round((size.height - size.width) / 2);
@@ -561,26 +580,17 @@ ink.SketchologyEngineWrapper.prototype.addImageData = function(
  * @param {!goog.math.Size} size
  * @param {string} uri
  * @param {!ink.proto.Border} borderImageProto
- * @param {number} outOfBoundsColor The out of bounds color in rgba 8888.
  */
 ink.SketchologyEngineWrapper.prototype.setBorderImage = function(
-    data, size, uri, borderImageProto, outOfBoundsColor) {
+    data, size, uri, borderImageProto) {
   var borderImageCProto;
   try {
-    var outOfBoundsColorCProto =
-        new (this.asmJs_.cFactory('OutOfBoundsColorProto'))();
-    outOfBoundsColorCProto['rgba'] = outOfBoundsColor;
-    this.engine_['setOutOfBoundsColor'](outOfBoundsColorCProto);
-
     this.addImageData(data, size, uri, ink.proto.ImageInfo.AssetType.BORDER);
 
     borderImageCProto = new (this.asmJs_.cFactory('BorderProto'))();
     borderImageCProto['initFromJs'](borderImageProto, this.wireSerializer_);
     this.engine_['document']()['SetPageBorder'](borderImageCProto);
   } finally {
-    if (outOfBoundsColorCProto) {
-      outOfBoundsColorCProto['delete']();
-    }
     if (borderImageCProto) {
       borderImageCProto['delete']();
     }
@@ -718,7 +728,8 @@ ink.SketchologyEngineWrapper.prototype.draw_ = function() {
 
 
 /**
- * Rotate inputs to account for screen rotation.
+ * Rotate inputs to account for screen rotation if single-buffered rendering is
+ * in use.
  *
  * See rotationHandler in the constructor.
  *
@@ -731,16 +742,18 @@ ink.SketchologyEngineWrapper.prototype.draw_ = function() {
 ink.SketchologyEngineWrapper.prototype.fixPoint_ = function(x, y) {
   const pos =
       new goog.math.Coordinate(x * this.pixelRatio_, y * this.pixelRatio_);
-  const angle = screen.orientation.angle;
-  const canvas = this.getCanvas_();
-  if (angle == 90 || angle == 180) {
-    pos.x = canvas.width - pos.x;
-  }
-  if (angle == 180 || angle == 270) {
-    pos.y = canvas.height - pos.y;
-  }
-  if (angle % 180 == 90) {
-    [pos.x, pos.y] = [pos.y, pos.x];
+  if (this.isSingleBuffered_) {
+    const angle = screen.orientation.angle;
+    const canvas = this.getCanvas_();
+    if (angle == 90 || angle == 180) {
+      pos.x = canvas.width - pos.x;
+    }
+    if (angle == 180 || angle == 270) {
+      pos.y = canvas.height - pos.y;
+    }
+    if (angle % 180 == 90) {
+      [pos.x, pos.y] = [pos.y, pos.x];
+    }
   }
   return pos;
 };
@@ -1724,6 +1737,18 @@ ink.SketchologyEngineWrapper.prototype.getPDF = function(callback) {
   setTimeout(() => callback(pdfBytes), 0);
 };
 
+/**
+ * Returns pdf bytes, overwriting currently edited PDF in the process. Only use
+ * this function if you're closing or reloading the Ink editor.
+ * @return {!Uint8Array} bytes of annotated PDF
+ */
+ink.SketchologyEngineWrapper.prototype.getPDFDestructive = function() {
+  if (!this.isPDFSupported()) {
+    throw Error('pdf support disabled.');
+  }
+  return Module['getAnnotatedPdfDestructive'](this.engine_);
+};
+
 
 /**
  * Adds a new layer to the engine.
@@ -1973,4 +1998,24 @@ ink.SketchologyEngineWrapper.prototype.useDirectRenderer = function() {
  */
 ink.SketchologyEngineWrapper.prototype.useBufferedRenderer = function() {
   Module['useBufferedRenderer'](this.engine_);
+};
+
+/**
+ * Turns the persistence of element outlines on or off.
+ * @param {boolean} enabled True to include element outlines in Snapshots; false
+ *     to not include them.
+ */
+ink.SketchologyEngineWrapper.prototype.setOutlineExportEnabled = function(
+    enabled) {
+  this.engine_['setOutlineExportEnabled'](enabled);
+};
+
+/**
+ * Turns the persistence of handwriting-relevant stroke data on or off.
+ * @param {boolean} enabled True to include x,y,t data in Snapshots; false to
+ *     not include it.
+ */
+ink.SketchologyEngineWrapper.prototype.setHandwritingDataEnabled = function(
+    enabled) {
+  this.engine_['setHandwritingDataEnabled'](enabled);
 };

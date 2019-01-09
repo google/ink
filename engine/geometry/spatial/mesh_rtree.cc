@@ -38,8 +38,9 @@ using glm::vec2;
 using geometry::Transform;
 using geometry::Triangle;
 
-MeshRTree::MeshRTree(const OptimizedMesh& mesh) {
-  Mesh unpacked_mesh = mesh.ToMesh();
+MeshRTree::MeshRTree(const OptimizedMesh& mesh) : MeshRTree(mesh.ToMesh()) {}
+
+MeshRTree::MeshRTree(const Mesh& unpacked_mesh) {
   rtree_ = MakeRTreeFromMeshTriangles(unpacked_mesh);
 
   std::vector<vec2> vertices;
@@ -97,6 +98,50 @@ bool MeshRTree::Intersects(const Rect& region,
                          geometry::Intersects(upper_tri, t);
                 })
       .has_value();
+}
+
+absl::optional<Rect> MeshRTree::Intersection(
+    const Rect& region, const glm::mat4& region_to_object) const {
+  // The code below looks similar but is subtly different from the
+  // the code in Intersects(). Once we have the tris-to-test set up,
+  // we want to always return false from the FindAny predicate, to
+  // ensure we see all tris that are in the rect. Intersects(...)
+  // returns early.
+  const Rect& local_region_mbr = Transform(region, region_to_object);
+  if (!geometry::Intersects(rtree_->Bounds(), local_region_mbr)) {
+    return absl::nullopt;
+  }
+  vec2 point0 = Transform(region.Leftbottom(), region_to_object);
+  vec2 point1 = Transform(region.Rightbottom(), region_to_object);
+  vec2 point2 = Transform(region.Righttop(), region_to_object);
+  vec2 point3 = Transform(region.Lefttop(), region_to_object);
+  Triangle lower_tri(point0, point1, point3);
+  Triangle upper_tri(point1, point2, point3);
+  absl::optional<Rect> intersected_tri_mbr;
+  rtree_->FindAny(local_region_mbr, [&lower_tri, &upper_tri,
+                                     &intersected_tri_mbr](const Triangle& t) {
+    if (geometry::Intersects(lower_tri, t) ||
+        geometry::Intersects(upper_tri, t)) {
+      if (!intersected_tri_mbr) {
+        intersected_tri_mbr = Rect::CreateAtPoint(t[0],
+                                                  /* width= */ 0,
+                                                  /* height=0*/ 0);
+      }
+      for (int i = 0; i < 3; ++i) {
+        intersected_tri_mbr->InplaceJoin(t[i]);
+      }
+    }
+    return false;
+  });
+  if (!intersected_tri_mbr) {
+    return absl::nullopt;
+  }
+  Rect intersection;
+  if (!geometry::Intersection(local_region_mbr, *intersected_tri_mbr,
+                              &intersection)) {
+    return absl::nullopt;
+  }
+  return intersection;
 }
 
 Mesh MeshRTree::DebugMesh() const {

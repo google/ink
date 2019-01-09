@@ -26,7 +26,7 @@ void TessellatedLine::SetupNewLine(const Camera& camera,
                                    FatLine::VertAddFn vertex_callback,
                                    const LineModParams& line_mod_params) {
   ClearVertices();
-  object_matrix_ = camera.ScreenToWorld();
+  tessellator_.mesh_.object_matrix = camera.ScreenToWorld();
   params_ = line_mod_params;
   line_.SetDownCamera(camera);
   line_.SetMinScreenTravelThreshold(min_screen_travel_threshold);
@@ -47,11 +47,12 @@ bool TessellatedLine::Extrude(glm::vec2 new_pt, InputTimeS time,
                               TipSizeScreen tip_size,
                               input::StylusState stylus_state, int n_turn_verts,
                               bool force) {
-  mesh_dirty_ = true;
   line_.SetTipSize(tip_size);
   line_.SetStylusState(stylus_state);
   line_.SetTurnVerts(n_turn_verts);
-  return line_.Extrude(new_pt, time, force);
+  bool added_vertices = line_.Extrude(new_pt, time, force);
+  mesh_dirty_ = mesh_dirty_ || added_vertices;
+  return added_vertices;
 }
 
 void TessellatedLine::BuildEndCap() {
@@ -61,7 +62,7 @@ void TessellatedLine::BuildEndCap() {
 }
 
 void TessellatedLine::ClearVertices() {
-  tessellator_.Clear();
+  tessellator_.ClearGeometry();
   mesh_dirty_ = false;
   has_end_cap_ = false;
   line_.ClearVertices();
@@ -72,7 +73,7 @@ const Mesh& TessellatedLine::GetMesh() const {
     return tessellator_.mesh_;
   }
 
-  tessellator_.Clear();
+  tessellator_.ClearGeometry();
   if (tessellator_.Tessellate(line_, has_end_cap_) && tessellator_.HasMesh()) {
     if (params_.refine_mesh) {
       auto cdr = CDR(&tessellator_.mesh_);
@@ -91,8 +92,6 @@ const Mesh& TessellatedLine::GetMesh() const {
     tessellator_.mesh_.Clear();
   }
   mesh_dirty_ = false;
-  tessellator_.mesh_.shader_metadata = shader_metadata_;
-  tessellator_.mesh_.object_matrix = object_matrix_;
   if (params_.texture_uri.empty()) {
     tessellator_.mesh_.texture = nullptr;
   } else {

@@ -30,7 +30,7 @@ namespace ink {
 
 SceneElementAdder::SceneElementAdder(
     std::unique_ptr<IElementConverter> processor,
-    std::shared_ptr<SceneGraph> scene_graph,
+    std::shared_ptr<SceneGraph> scene_graph, const settings::Flags& flags,
     const SourceDetails& source_details, const UUID& uuid,
     const ElementId& below_element_with_id, const GroupId& group)
     : Task(),
@@ -40,6 +40,8 @@ SceneElementAdder::SceneElementAdder(
       group_(group),
       was_cancelled_(false) {
   SLOG(SLOG_OBJ_LIFETIME, "polyprocessor ctor");
+  element_converter_options_.low_memory_mode =
+      flags.GetFlag(settings::Flag::LowMemoryMode);
 
   UUID group_uuid = kInvalidUUID;
   if (group_ != kInvalidElementId) {
@@ -68,7 +70,8 @@ SceneElementAdder::SceneElementAdder(
 void SceneElementAdder::Execute() {
   if (!element_to_add_.serialized_element) return;
 
-  element_to_add_.processed_element = processor_->CreateProcessedElement(id_);
+  element_to_add_.processed_element =
+      processor_->CreateProcessedElement(id_, element_converter_options_);
 
   // The brix processor may return null from CreateProcessedElement if
   // deserialization fails.

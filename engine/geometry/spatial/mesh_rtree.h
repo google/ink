@@ -33,6 +33,7 @@ namespace spatial {
 class MeshRTree : public SpatialIndex {
  public:
   explicit MeshRTree(const OptimizedMesh& mesh);
+  explicit MeshRTree(const Mesh& mesh);
 
   // Disallow copy and assign.
   MeshRTree(const MeshRTree&) = delete;
@@ -42,6 +43,8 @@ class MeshRTree : public SpatialIndex {
 
   bool Intersects(const Rect& region,
                   const glm::mat4& region_to_object) const override;
+  absl::optional<Rect> Intersection(
+      const Rect& region, const glm::mat4& region_to_object) const override;
 
   Mesh DebugMesh() const override;
 

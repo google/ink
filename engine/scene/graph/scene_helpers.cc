@@ -55,8 +55,10 @@ void AddRectsToSceneGraph(const std::vector<Rect>& rects, glm::vec4 color,
     Mesh m;
     MakeRectangleMesh(&m, group_relative_rect, color);
 
+    // We don't have access to the flags here, but it is
+    // safe to ignore low memory mode for rectangle meshes.
     auto pe = absl::make_unique<ProcessedElement>(
-        id, m, ShaderType::SingleColorShader);
+        id, m, ShaderType::SingleColorShader, /*low_memory_mode=*/false);
     pe->group = group_id;
 
     // Invert that matrix to get object-local outline coordinates.

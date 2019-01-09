@@ -114,13 +114,15 @@ void StrokeEditingEraser::CuttingEraserTask::OnPostExecute() {
 
 StrokeEditingEraser::SerializeEraserTask::SerializeEraserTask(
     std::weak_ptr<SceneGraph> weak_scene_graph,
-    std::shared_ptr<ElementDataMap> data_map, GroupId active_group,
-    const CallbackFlags& callback_flags, IDrawable* drawable_ptr)
+    std::shared_ptr<ElementDataMap> data_map, const settings::Flags& flags,
+    GroupId active_group, const CallbackFlags& callback_flags,
+    IDrawable* drawable_ptr)
     : weak_scene_graph_(weak_scene_graph),
       data_map_(data_map),
       active_group_(active_group),
       active_group_uuid_(kInvalidUUID),
       callback_flags_(callback_flags),
+      low_memory_mode_(flags.GetFlag(settings::Flag::LowMemoryMode)),
       drawable_ptr_(drawable_ptr) {
   if (auto scene_graph = weak_scene_graph_.lock()) {
     active_group_uuid_ = scene_graph->UUIDFromElementId(active_group_);
@@ -178,7 +180,8 @@ void StrokeEditingEraser::SerializeEraserTask::Execute() {
     EXPECT(data->splitter->GetResult(&result_mesh));
     ASSERT(!result_mesh.verts.empty());
     data->processed_element = absl::make_unique<ProcessedElement>(
-        data->new_id, result_mesh, data->shader_type, data->attributes);
+        data->new_id, result_mesh, data->shader_type, low_memory_mode_,
+        data->attributes);
     data->processed_element->group = active_group_;
     data->serialized_element = absl::make_unique<SerializedElement>(
         data->new_uuid, active_group_uuid_, SourceDetails::FromEngine(),
@@ -247,6 +250,7 @@ StrokeEditingEraser::StrokeEditingEraser(
       line_modifier_factory_(registry.GetShared<LineModifierFactory>()),
       layer_manager_(registry.GetShared<LayerManager>()),
       task_runner_(registry.GetShared<ITaskRunner>()),
+      flags_(registry.GetShared<settings::Flags>()),
       renderer_(registry),
       line_builder_(registry.GetShared<settings::Flags>(), gl_resources_) {
   RegisterForInput(registry.GetShared<input::InputDispatch>());
@@ -363,7 +367,7 @@ void StrokeEditingEraser::StartSerializationTask(GroupId active_group) {
   auto drawable = std::make_shared<EraserStrokeDrawable>(
       gl_resources_, line_builder_.StableMesh());
   task_runner_->PushTask(absl::make_unique<SerializeEraserTask>(
-      scene_graph_, std::move(element_data_map_), active_group,
+      scene_graph_, std::move(element_data_map_), *flags_, active_group,
       scene_graph_->GetElementNotifier()->GetCallbackFlags(
           SourceDetails::FromEngine()),
       drawable.get()));

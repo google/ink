@@ -35,6 +35,13 @@ Status LoadPdfForAnnotation(absl::string_view pdf_bytes, SEngine* engine);
 // the newly annotated PDF in its serialized form.
 Status GetAnnotatedPdf(const SEngine& engine, std::string* out);
 
+// Renders the current scene into the currently loaded PDF, returning
+// the annotated PDF in its serialized form.
+// Once you have called this function, you are expected to exit the Ink editing
+// session, as the loaded PDF is no longer valid for editing. You must call
+// LoadPdfForAnnotation again in order to edit the current (or any) PDF.
+Status GetAnnotatedPdfDestructive(const SEngine& engine, std::string* out);
+
 // Renders the current scene into a copy of the currently loaded PDF, and sends
 // the result to the host via IEngineListener.
 void SendAnnotatedPdfToHost(const SEngine& engine);

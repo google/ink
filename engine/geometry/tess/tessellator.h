@@ -83,9 +83,12 @@ class Tessellator {
   // the forward_line, the backward_line, and (if end_cap == true) the end_cap.
   S_WARN_UNUSED_RESULT bool Tessellate(const FatLine& line, bool end_cap);
 
-  // Clears out the result mesh and any working data structures.
-  // Clear() should be called in between calls to Tessellate.
-  void Clear();
+  // Clears out the vertex data of the result mesh and any working data
+  // structures. Clear() should be called in between calls to Tessellate.
+  //
+  // Note in particular that this does not reset the mesh transformation matrix
+  // or shader metadata.
+  void ClearGeometry();
 
   // Returns true iff the result mesh contains a non-empty mesh.
   //

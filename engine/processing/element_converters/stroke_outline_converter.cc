@@ -42,7 +42,8 @@ StrokeOutlineConverter::StrokeOutlineConverter(
     : unsafe_stroke_outline_(unsafe_stroke_outline) {}
 
 std::unique_ptr<ProcessedElement>
-StrokeOutlineConverter::CreateProcessedElement(ElementId id) {
+StrokeOutlineConverter::CreateProcessedElement(
+    ElementId id, const ElementConverterOptions& options) {
   SLOG(SLOG_DATA_FLOW, "line processor async task");
 
   const proto::StrokeOutline& stroke = unsafe_stroke_outline_;
@@ -159,7 +160,7 @@ StrokeOutlineConverter::CreateProcessedElement(ElementId id) {
       RGBtoRGBPremultiplied(UintToVec4RGBA(stroke.rgba()));
 
   auto processed_element = absl::make_unique<ProcessedElement>(
-      id, tess.mesh_, ShaderType::SingleColorShader);
+      id, tess.mesh_, ShaderType::SingleColorShader, options.low_memory_mode);
   // Preserve outlines on generated elements.
   for (const auto Vertex : vertices) {
     processed_element->outline.emplace_back(Vertex.position);

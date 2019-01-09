@@ -35,7 +35,7 @@ class BundleProtoConverter : public IElementConverter {
   BundleProtoConverter& operator=(const BundleProtoConverter&) = delete;
 
   std::unique_ptr<ProcessedElement> CreateProcessedElement(
-      ElementId id) override;
+      ElementId id, const ElementConverterOptions& options) override;
 
  private:
   const proto::ElementBundle unsafe_proto_bundle_;

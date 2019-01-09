@@ -20,15 +20,30 @@
 namespace ink {
 namespace geometry {
 
+bool Triangle::IsDegenerate() const {
+  // Due to the precision allowance in Orientation(), the triangle's vertices
+  // may be considered collinear w.r.t. to one side of the triangle, but not
+  // w.r.t. to another side. So, we must check the orientation w.r.t. all sides.
+  for (int i = 0; i < 3; ++i) {
+    auto orientation =
+        Orientation(points_[i], points_[(i + 1) % 3], points_[(i + 2) % 3]);
+    if (orientation == RelativePos::kCollinear ||
+        orientation == RelativePos::kIndeterminate)
+      return true;
+  }
+
+  return false;
+}
+
 bool Triangle::Contains(glm::vec2 test_point) const {
+  if (test_point == points_[0] || test_point == points_[1] ||
+      test_point == points_[2])
+    return true;
+
   auto orientation1 = Orientation(points_[0], points_[1], test_point);
   auto orientation2 = Orientation(points_[1], points_[2], test_point);
-  if (orientation1 == RelativePos::kCollinear &&
-      orientation2 == RelativePos::kCollinear) {
-    return true;
-  } else if (orientation1 == ReverseOrientation(orientation2)) {
-    return false;
-  }
+  if (orientation1 == ReverseOrientation(orientation2)) return false;
+
   auto orientation3 = Orientation(points_[2], points_[0], test_point);
   return orientation1 != ReverseOrientation(orientation3) &&
          orientation2 != ReverseOrientation(orientation3);

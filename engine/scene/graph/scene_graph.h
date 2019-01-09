@@ -29,7 +29,7 @@
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/camera/camera.h"
 #include "ink/engine/geometry/spatial/spatial_index.h"
-#include "ink/engine/geometry/spatial/spatial_index_factory_interface.h"
+#include "ink/engine/geometry/spatial/sticker_spatial_index_factory_interface.h"
 #include "ink/engine/public/host/ielement_listener.h"
 #include "ink/engine/public/types/status.h"
 #include "ink/engine/public/types/uuid.h"
@@ -103,7 +103,7 @@ class SceneGraph {
  public:
   using SharedDeps =
       service::Dependencies<PolyStore, IElementListener,
-                            spatial::SpatialIndexFactoryInterface>;
+                            spatial::StickerSpatialIndexFactoryInterface>;
 
   // This struct contains the data necessary to add an element to the scene.
   struct ElementAdd {
@@ -127,8 +127,8 @@ class SceneGraph {
 
   SceneGraph(std::shared_ptr<PolyStore> poly_store,
              std::shared_ptr<IElementListener> element_listener,
-             std::shared_ptr<spatial::SpatialIndexFactoryInterface>
-                 spatial_index_factory);
+             std::shared_ptr<spatial::StickerSpatialIndexFactoryInterface>
+                 sticker_spatial_index_factory);
   ~SceneGraph();
 
   bool GetNextPolyId(const UUID& uuid, ElementId* result);
@@ -306,18 +306,18 @@ class SceneGraph {
                          SpatialIndexIter index_begin,
                          SpatialIndexIter index_end);
 
-  // returns the minimum bounding Rect of "elements"
+  // Returns the minimum bounding Rect of "elements"
   Rect Mbr(const std::vector<ElementId>& elements) const;
 
-  // returns the minimum bounding Rect of all elements in the scenegraph,
-  // regardless of visibility.
+  // Returns the minimum bounding Rect of all elements in the scenegraph,
+  // regardless of visibility. This may update the cached mbr.
   Rect Mbr() const;
 
   // returns the minimum bounding Rect of all elements that are children of the
   // group.
   Rect MbrForGroup(GroupId group_id) const;
 
-  // returns the minimum bounding Rect of element
+  // Returns the minimum bounding Rect of element
   //
   // result is in object coords. That is, the result is unaffected by
   // any transform set on the object
@@ -484,10 +484,8 @@ class SceneGraph {
   GroupedElementsList GroupElementsInSceneByWalk(
       GroupFilter expand_filter, ElementFilter accept_element) const;
 
-  // Update the cached_mbr_
-  void RecomputeMbr();
-
-  std::shared_ptr<spatial::SpatialIndexFactoryInterface> spatial_index_factory_;
+  std::shared_ptr<spatial::StickerSpatialIndexFactoryInterface>
+      sticker_spatial_index_factory_;
   std::unique_ptr<ElementIdSource> element_id_source_;
   std::shared_ptr<PolyStore> poly_store_;
   ElementNotifier element_notifier_;
@@ -518,7 +516,9 @@ class SceneGraph {
   std::shared_ptr<EventDispatch<SceneGraphListener>> sgl_dispatch_;
   std::shared_ptr<EventDispatch<UpdateListener>> update_dispatch_;
 
-  Rect cached_mbr_;
+  // The cached_mbr is only set when the MBR is valid (no updates since
+  // the last call).
+  mutable absl::optional<Rect> cached_mbr_;
 
   bool is_bulk_loading_{false};
 
@@ -529,23 +529,24 @@ class SceneGraph {
    public:
     MbrListener() {}
     void OnElementAdded(SceneGraph* graph, ElementId id) override {
+      // Greedily update the cached mbr if one exists.
       // MBR can only expand, no need to recompute the whole thing.
-      Rect element_mbr = graph->Mbr({id});
-      if (graph->cached_mbr_.Empty()) {
-        graph->cached_mbr_ = element_mbr;
-      } else {
-        graph->cached_mbr_ = graph->cached_mbr_.Join(element_mbr);
+      if (graph->cached_mbr_) {
+        Rect element_mbr = graph->Mbr({id});
+        graph->cached_mbr_ = graph->cached_mbr_->Join(element_mbr);
       }
     }
     void OnElementsRemoved(
         SceneGraph* graph,
         const std::vector<SceneGraphRemoval>& removed_elements) override {
-      graph->RecomputeMbr();
+      // Invalidate the cached mbr.
+      graph->cached_mbr_ = absl::nullopt;
     }
     void OnElementsMutated(
         SceneGraph* graph,
         const std::vector<ElementMutationData>& mutation_data) override {
-      graph->RecomputeMbr();
+      // Invalidate the cached mbr.
+      graph->cached_mbr_ = absl::nullopt;
     }
 
    private:
@@ -692,6 +693,8 @@ void SceneGraph::SetSpatialIndices(ElementIter element_begin,
                                    SpatialIndexIter index_end) {
   ASSERT(std::distance(element_begin, element_end) ==
          std::distance(index_begin, index_end));
+  // We likely about to invalidate the cached mbr.
+  cached_mbr_ = absl::nullopt;
   MutateElements(
       element_begin, element_end,
       [this, &index_begin](ElementId id, size_t i) {

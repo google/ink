@@ -251,8 +251,9 @@ bool IsClosedPath(const Path& path) {
          path.segment_types(seg_types_size - 1) == Path::CLOSE;
 }
 
-unique_ptr<ProcessedElement> BuildLine(ElementId el_id, const Bezier& bezier,
-                                       const Path& path) {
+unique_ptr<ProcessedElement> BuildLine(
+    ElementId el_id, const Bezier& bezier, const Path& path,
+    const BezierPathConverter::ElementConverterOptions& options) {
   // The line converter expects everything in screen space and, in fact, assumes
   // that the transform passed in is equal to the DownCamera for the first line.
   // Create a camera to get a screen transform, as the contract with
@@ -362,7 +363,7 @@ unique_ptr<ProcessedElement> BuildLine(ElementId el_id, const Bezier& bezier,
   LineConverter line_converter(paths, group_to_world_transform,
                                std::unique_ptr<InputPoints>(new InputPoints()),
                                SingleColorShader, tessellation_params);
-  return line_converter.CreateProcessedElement(el_id);
+  return line_converter.CreateProcessedElement(el_id, options);
 }
 
 std::vector<std::vector<Vertex>> CreateVertexPolyline(const Bezier& bezier) {
@@ -377,8 +378,9 @@ std::vector<std::vector<Vertex>> CreateVertexPolyline(const Bezier& bezier) {
   return ret;
 }
 
-unique_ptr<ProcessedElement> BuildFill(ElementId id, const Bezier& bezier,
-                                       const Path& path) {
+unique_ptr<ProcessedElement> BuildFill(
+    ElementId id, const Bezier& bezier, const Path& path,
+    const BezierPathConverter::ElementConverterOptions& options) {
   Tessellator tess;
   if (!tess.Tessellate(CreateVertexPolyline(bezier))) {
     SLOG(SLOG_ERROR, "could not tessellate, skipping");
@@ -396,7 +398,7 @@ unique_ptr<ProcessedElement> BuildFill(ElementId id, const Bezier& bezier,
     SLOG(SLOG_DATA_FLOW, "drawing fill with: $0 vertices, first at ($1, $2)",
          mesh.verts.size(), mesh.verts[0].position.x, mesh.verts[0].position.y);
     MeshConverter mesh_converter(SingleColorShader, mesh);
-    return mesh_converter.CreateProcessedElement(id);
+    return mesh_converter.CreateProcessedElement(id, options);
   } else {
     SLOG(SLOG_ERROR, "attempted to build a fill with no vertices, skipping.");
     return nullptr;
@@ -405,7 +407,7 @@ unique_ptr<ProcessedElement> BuildFill(ElementId id, const Bezier& bezier,
 }  // namespace
 
 unique_ptr<ProcessedElement> BezierPathConverter::CreateProcessedElement(
-    ElementId id) {
+    ElementId id, const ElementConverterOptions& options) {
   if (unsafe_path_.segment_args_size() != 0) {
     Bezier bezier;
     bezier.SetNumEvalPoints(num_eval_points_);
@@ -413,10 +415,10 @@ unique_ptr<ProcessedElement> BezierPathConverter::CreateProcessedElement(
       return nullptr;
     }
     if (unsafe_path_.has_fill_rgba()) {
-      return BuildFill(id, bezier, unsafe_path_);
+      return BuildFill(id, bezier, unsafe_path_, options);
     }
     if (unsafe_path_.has_rgba()) {
-      return BuildLine(id, bezier, unsafe_path_);
+      return BuildLine(id, bezier, unsafe_path_, options);
     }
   }
   SLOG(SLOG_ERROR, "Path proto did not specify anything to add.");

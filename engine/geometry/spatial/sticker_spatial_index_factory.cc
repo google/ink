@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/engine/geometry/spatial/spatial_index_factory.h"
+#include "ink/engine/geometry/spatial/sticker_spatial_index_factory.h"
 
 #include <memory>
 
@@ -20,7 +20,6 @@
 #include "ink/engine/geometry/mesh/mesh.h"
 #include "ink/engine/geometry/mesh/shape_helpers.h"
 #include "ink/engine/geometry/spatial/mesh_rtree.h"
-#include "ink/engine/geometry/spatial/rtree_creator.h"
 #include "ink/engine/geometry/spatial/spatial_index.h"
 #include "ink/engine/geometry/spatial/texture_rtree_creator.h"
 #include "ink/engine/processing/runner/task_runner.h"
@@ -44,7 +43,7 @@ std::shared_ptr<SpatialIndex> MakeRectIndex(ShaderType type) {
 }
 }  // namespace
 
-SpatialIndexFactory::SpatialIndexFactory(
+StickerSpatialIndexFactory::StickerSpatialIndexFactory(
     std::shared_ptr<settings::Flags> flags,
     std::shared_ptr<ITaskRunner> task_runner,
     std::shared_ptr<GLResourceManager> gl_resources)
@@ -55,38 +54,33 @@ SpatialIndexFactory::SpatialIndexFactory(
   gl_resources_->texture_manager->AddListener(this);
 }
 
-SpatialIndexFactory::~SpatialIndexFactory() {
+StickerSpatialIndexFactory::~StickerSpatialIndexFactory() {
   gl_resources_->texture_manager->RemoveListener(this);
 }
 
-std::shared_ptr<SpatialIndex> SpatialIndexFactory::CreateSpatialIndex(
+std::shared_ptr<SpatialIndex> StickerSpatialIndexFactory::CreateSpatialIndex(
     const ProcessedElement& element) {
   ASSERT(scene_graph_ != nullptr);
+  // This better be a sticker and have texture information.
   const OptimizedMesh& mesh = *element.mesh;
+  ASSERT(element.attributes.is_sticker);
+  ASSERT(mesh.texture != nullptr);
+  ASSERT(element.spatial_index != nullptr);
 
-  if (mesh.texture) {
-    Texture* texture = nullptr;
-    if (element.attributes.is_sticker &&
-        gl_resources_->texture_manager->GetTexture(*mesh.texture, &texture) &&
-        texture->UseForHitTesting()) {
-      auto iter = texture_uri_to_spatial_index_.find(mesh.texture->uri);
-      if (iter != texture_uri_to_spatial_index_.end()) return iter->second;
+  Texture* texture = nullptr;
+  if (gl_resources_->texture_manager->GetTexture(*mesh.texture, &texture) &&
+      texture->UseForHitTesting()) {
+    auto iter = texture_uri_to_spatial_index_.find(mesh.texture->uri);
+    if (iter != texture_uri_to_spatial_index_.end()) {
+      return iter->second;
     }
   }
 
-  if (flags_->GetFlag(settings::Flag::LowMemoryMode)) {
-    return MakeRectIndex(mesh.type);
-  } else if (mesh.idx.size() <= 6) {
-    // The mesh has only a couple of triangles, just create it now.
-    return std::make_shared<MeshRTree>(mesh);
-  } else {
-    task_runner_->PushTask(
-        absl::make_unique<RTreeCreator>(shared_from_this(), element.id, mesh));
-    return MakeRectIndex(mesh.type);
-  }
+  // Return the original spatial index.
+  return element.spatial_index;
 }
 
-void SpatialIndexFactory::OnTextureLoaded(const TextureInfo& info) {
+void StickerSpatialIndexFactory::OnTextureLoaded(const TextureInfo& info) {
   if (flags_->GetFlag(settings::Flag::LowMemoryMode)) {
     return;
   }
@@ -97,7 +91,7 @@ void SpatialIndexFactory::OnTextureLoaded(const TextureInfo& info) {
         shared_from_this(), info.uri, *texture));
 }
 
-void SpatialIndexFactory::OnTextureEvicted(const TextureInfo& info) {
+void StickerSpatialIndexFactory::OnTextureEvicted(const TextureInfo& info) {
   if (flags_->GetFlag(settings::Flag::LowMemoryMode)) {
     return;
   }
@@ -106,13 +100,7 @@ void SpatialIndexFactory::OnTextureEvicted(const TextureInfo& info) {
                              MakeRectIndex(ShaderType::TexturedVertShader));
 }
 
-void SpatialIndexFactory::RegisterElementSpatialIndex(
-    ElementId id, std::shared_ptr<SpatialIndex> index) {
-  ASSERT(scene_graph_ != nullptr);
-  scene_graph_->SetSpatialIndex(id, std::move(index));
-}
-
-void SpatialIndexFactory::RegisterTextureSpatialIndex(
+void StickerSpatialIndexFactory::RegisterTextureSpatialIndex(
     const std::string& texture_uri, std::shared_ptr<SpatialIndex> index) {
   if (flags_->GetFlag(settings::Flag::LowMemoryMode)) {
     return;
@@ -121,7 +109,7 @@ void SpatialIndexFactory::RegisterTextureSpatialIndex(
   ReplaceTextureSpatialIndex(texture_uri, index);
 }
 
-void SpatialIndexFactory::ReplaceTextureSpatialIndex(
+void StickerSpatialIndexFactory::ReplaceTextureSpatialIndex(
     const std::string& texture_uri, std::shared_ptr<SpatialIndex> index) {
   ASSERT(scene_graph_ != nullptr);
   std::vector<ElementId> elements;

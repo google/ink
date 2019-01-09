@@ -24,11 +24,13 @@ namespace ink {
 LineToolDataSink::LineToolDataSink(std::shared_ptr<SceneGraph> graph,
                                    std::shared_ptr<GLResourceManager> glr,
                                    std::shared_ptr<FrameState> fs,
-                                   std::shared_ptr<ITaskRunner> task_runner)
+                                   std::shared_ptr<ITaskRunner> task_runner,
+                                   std::shared_ptr<settings::Flags> flags)
     : scene_graph_(graph),
       gl_resources_(glr),
       frame_state_(fs),
-      task_runner_(task_runner) {}
+      task_runner_(task_runner),
+      flags_(flags) {}
 
 void LineToolDataSink::Accept(const std::vector<FatLine>& lines,
                               std::unique_ptr<InputPoints> input_points,
@@ -55,7 +57,7 @@ void LineToolDataSink::Accept(const std::vector<FatLine>& lines,
       tessellation_params));
 
   std::unique_ptr<SceneElementAdder> adder_task(new SceneElementAdder(
-      move(converter), scene_graph_, SourceDetails::FromEngine(), uuid,
+      move(converter), scene_graph_, *flags_, SourceDetails::FromEngine(), uuid,
       kInvalidElementId, group));
   MeshSceneDrawable::AddToScene(scene_graph_->ElementIdFromUUID(uuid), group,
                                 *rendering_mesh, scene_graph_, gl_resources_,

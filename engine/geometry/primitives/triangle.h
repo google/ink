@@ -46,12 +46,8 @@ class Triangle {
   }
 
   // Returns true if all three points of the triangle line on a single line,
-  // allowing for floating-point error (see AreVectorsParallel).
-  float IsDegenerate() const {
-    auto orientation = Orientation(points_[0], points_[1], points_[2]);
-    return orientation == RelativePos::kCollinear ||
-           orientation == RelativePos::kIndeterminate;
-  }
+  // allowing for floating-point error (see Orientation() in vector_utils.h).
+  bool IsDegenerate() const;
 
   // Returns true if the point is inside the triangle. Note that points along
   // the edge are considered inside.

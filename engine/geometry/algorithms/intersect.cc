@@ -99,12 +99,16 @@ int FindSafeExponentForSegmentIntersection(const Segment &segment1,
   // The maximum exponent of a multiplication operation can only be as large as
   // the exponents of its operands added together.
   int expectedDetExponent = std::max(s2xExp + s1yExp, s1xExp + s2yExp) + 1;
+  int expectedLenSquaredExponent =
+      2 * std::max(std::max(s1xExp, s1yExp), std::max(s2xExp, s2yExp)) + 1;
+  int expectedMaxExponent =
+      std::max(expectedDetExponent, expectedLenSquaredExponent);
 
   int shiftExponent = 0;
-  if (expectedDetExponent > maxPrecisionExponent) {
-    shiftExponent -= expectedDetExponent - maxPrecisionExponent;
-  } else if (expectedDetExponent <= minPrecisionExponent) {
-    shiftExponent -= expectedDetExponent - minPrecisionExponent;
+  if (expectedMaxExponent > maxPrecisionExponent) {
+    shiftExponent -= expectedMaxExponent - maxPrecisionExponent;
+  } else if (expectedMaxExponent <= minPrecisionExponent) {
+    shiftExponent -= expectedMaxExponent - minPrecisionExponent;
   }
 
   return shiftExponent;

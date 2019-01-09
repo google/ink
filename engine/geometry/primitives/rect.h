@@ -26,6 +26,7 @@
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/geometry/primitives/segment.h"
 #include "ink/engine/public/types/status.h"
+#include "ink/engine/util/dbg/errors.h"
 #include "ink/engine/util/funcs/step_utils.h"
 #include "ink/engine/util/funcs/utils.h"
 
@@ -154,6 +155,13 @@ struct Rect {
   // Returns the smallest rectangle containing this and pt
   Rect Join(glm::vec2 pt) const;
 
+  // Updates this rectangle to be the smallest rectangle containing this and
+  // other.
+  void InplaceJoin(const Rect& other);
+
+  // Updates this rectangle to be the smallest rectangle containing this and pt.
+  void InplaceJoin(const glm::vec2& pt);
+
   // Returns the smallest rectangle such that:
   //   1. width/height = "targetAspectRatio"
   //   2. center of return equals center of this
@@ -200,6 +208,25 @@ struct Rect {
  private:
   void CheckValid() const;
 };
+
+// Force Inplace* and CheckValid to be inlined.
+inline void Rect::InplaceJoin(const Rect& other) {
+  from.x = std::min(from.x, other.from.x);
+  from.y = std::min(from.y, other.from.y);
+  to.x = std::max(to.x, other.to.x);
+  to.y = std::max(to.y, other.to.y);
+  CheckValid();
+}
+
+inline void Rect::InplaceJoin(const glm::vec2& pt) {
+  from.x = std::min(from.x, pt.x);
+  from.y = std::min(from.y, pt.y);
+  to.x = std::max(to.x, pt.x);
+  to.y = std::max(to.y, pt.y);
+  CheckValid();
+}
+
+inline void Rect::CheckValid() const { ASSERT(IsValid()); }
 
 std::ostream& operator<<(std::ostream& oss, const Rect& Rect);
 

@@ -146,3 +146,6 @@ ink.Color.WHITE = new ink.Color(0xFFFFFFFF);
 
 /** @type {!ink.Color} */
 ink.Color.DEFAULT_BACKGROUND_COLOR = new ink.Color(0xFFFAFAFA);
+
+/** @type {!ink.Color} */
+ink.Color.DEFAULT_OUT_OF_BOUNDS_COLOR = new ink.Color(0xFFE6E6E6);

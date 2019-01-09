@@ -22,9 +22,9 @@ TextMeshConverter::TextMeshConverter(const Mesh& mesh,
     : mesh_(mesh), text_(text) {}
 
 std::unique_ptr<ProcessedElement> TextMeshConverter::CreateProcessedElement(
-    ElementId id) {
+    ElementId id, const ElementConverterOptions& options) {
   auto element = absl::make_unique<ProcessedElement>(
-      id, mesh_, ShaderType::TexturedVertShader);
+      id, mesh_, ShaderType::TexturedVertShader, options.low_memory_mode);
   element->attributes.is_text = true;
   element->text = absl::make_unique<text::TextSpec>(text_);
   return element;

@@ -65,7 +65,6 @@ class TessellatedLine {
   // Sets the shader metadata which will be passed on to the generated mesh.
   void SetShaderMetadata(ShaderMetadata metadata) {
     tessellator_.mesh_.shader_metadata = metadata;
-    shader_metadata_ = metadata;
   }
 
   // Returns the tessellation of the line.
@@ -86,8 +85,6 @@ class TessellatedLine {
   bool has_end_cap_ = false;
   FatLine line_;
   LineModParams params_;
-  glm::mat4 object_matrix_{1};
-  ShaderMetadata shader_metadata_ = ShaderMetadata::Default();
 };
 
 }  // namespace ink

@@ -26,7 +26,7 @@
 #include "ink/engine/geometry/primitives/rect.h"
 #include "ink/engine/geometry/spatial/mesh_rtree.h"
 #include "ink/engine/geometry/spatial/spatial_index.h"
-#include "ink/engine/geometry/spatial/spatial_index_factory.h"
+#include "ink/engine/geometry/spatial/sticker_spatial_index_factory.h"
 #include "ink/engine/geometry/tess/tessellator.h"
 #include "ink/engine/processing/marching_squares.h"
 #include "ink/engine/processing/runner/task_runner.h"
@@ -47,8 +47,8 @@ static const std::array<ivec2, 9> kPixelOffsets = {
      ivec2{0, 1}, ivec2{1, -1}, ivec2{1, 0}, ivec2{1, 1}}};
 
 TextureRTreeCreator::TextureRTreeCreator(
-    std::weak_ptr<SpatialIndexFactory> weak_factory, std::string texture_uri,
-    const Texture& texture)
+    std::weak_ptr<StickerSpatialIndexFactory> weak_factory,
+    std::string texture_uri, const Texture& texture)
     : weak_factory_(std::move(weak_factory)), texture_uri_(texture_uri) {
   // Fetching the pixels has to occur on the main thread.
   texture.GetPixels(&pixels_);
@@ -94,7 +94,7 @@ void TextureRTreeCreator::Execute() {
 }
 
 void TextureRTreeCreator::OnPostExecute() {
-  std::shared_ptr<SpatialIndexFactory> factory = weak_factory_.lock();
+  std::shared_ptr<StickerSpatialIndexFactory> factory = weak_factory_.lock();
   if (factory) factory->RegisterTextureSpatialIndex(texture_uri_, index_);
 }
 

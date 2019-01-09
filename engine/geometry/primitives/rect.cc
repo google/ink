@@ -53,8 +53,6 @@ Rect Rect::CreateAtPoint(glm::vec2 center, glm::vec2 dim) {
   return Rect::CreateAtPoint(center, dim.x, dim.y);
 }
 
-void Rect::CheckValid() const { ASSERT(IsValid()); }
-
 bool Rect::IsValid() const {
   return (from.y == std::min(from.y, to.y)) &&
          (from.x == std::min(from.x, to.x)) &&

@@ -40,6 +40,7 @@ class SceneElementAdder : public SceneGraphListener, public Task {
  public:
   SceneElementAdder(std::unique_ptr<IElementConverter> processor,
                     std::shared_ptr<SceneGraph> scene_graph,
+                    const settings::Flags& flags,
                     const SourceDetails& source_details, const UUID& uuid,
                     const ElementId& below_element_with_id,
                     const GroupId& group);
@@ -58,6 +59,7 @@ class SceneElementAdder : public SceneGraphListener, public Task {
       const std::vector<ElementMutationData>& mutation_data) override {}
 
  private:
+  IElementConverter::ElementConverterOptions element_converter_options_;
   std::unique_ptr<IElementConverter> processor_;
   std::weak_ptr<SceneGraph> weak_scene_graph_;
   ElementId id_;

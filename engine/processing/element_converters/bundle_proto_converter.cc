@@ -32,7 +32,7 @@ BundleProtoConverter::BundleProtoConverter(
     : unsafe_proto_bundle_(unsafe_bundle) {}
 
 unique_ptr<ProcessedElement> BundleProtoConverter::CreateProcessedElement(
-    ElementId id) {
+    ElementId id, const ElementConverterOptions& options) {
   ink::ElementBundle bundle;
   if (ink::util::ReadFromProto(unsafe_proto_bundle_, &bundle)) {
     ink::proto::Element element = bundle.unsafe_element();
@@ -48,6 +48,7 @@ unique_ptr<ProcessedElement> BundleProtoConverter::CreateProcessedElement(
         }
         std::unique_ptr<ProcessedElement> processed_element;
         if (ProcessedElement::Create(id, stroke, attributes,
+                                     options.low_memory_mode,
                                      &processed_element)) {
           return processed_element;
         }
@@ -58,7 +59,8 @@ unique_ptr<ProcessedElement> BundleProtoConverter::CreateProcessedElement(
     if (element.has_path()) {
       const auto& path = element.path();
       BezierPathConverter converter(path);
-      unique_ptr<ProcessedElement> line = converter.CreateProcessedElement(id);
+      unique_ptr<ProcessedElement> line =
+          converter.CreateProcessedElement(id, options);
       if (!line) {
         SLOG(SLOG_ERROR, "Failed to create processed line from path");
         return nullptr;

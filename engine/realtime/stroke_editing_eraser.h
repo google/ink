@@ -114,7 +114,7 @@ class StrokeEditingEraser : public Tool {
     // references exist.
     SerializeEraserTask(std::weak_ptr<SceneGraph> weak_scene_graph,
                         std::shared_ptr<ElementDataMap> data_map,
-                        GroupId active_group,
+                        const settings::Flags& flags, GroupId active_group,
                         const CallbackFlags& callback_flags,
                         IDrawable* drawable_ptr);
 
@@ -141,6 +141,7 @@ class StrokeEditingEraser : public Tool {
     CallbackFlags callback_flags_;
     std::vector<SceneGraph::ElementAdd> elements_to_add_;
     std::vector<ElementId> elements_to_remove_;
+    bool low_memory_mode_;
 
     // Used only to delete the drawable from the scene graph once the task is
     // complete -- DO NOT DEREFERENCE THIS.
@@ -158,6 +159,7 @@ class StrokeEditingEraser : public Tool {
   std::shared_ptr<LineModifierFactory> line_modifier_factory_;
   std::shared_ptr<LayerManager> layer_manager_;
   std::shared_ptr<ITaskRunner> task_runner_;
+  std::shared_ptr<settings::Flags> flags_;
 
   absl::optional<uint32_t> touch_id_;
   MeshRenderer renderer_;

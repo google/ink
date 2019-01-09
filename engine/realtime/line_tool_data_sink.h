@@ -39,13 +39,15 @@ namespace ink {
 // scene.
 class LineToolDataSink {
  public:
-  using SharedDeps = service::Dependencies<SceneGraph, GLResourceManager,
-                                           FrameState, ITaskRunner>;
+  using SharedDeps =
+      service::Dependencies<SceneGraph, GLResourceManager, FrameState,
+                            ITaskRunner, settings::Flags>;
 
   LineToolDataSink(std::shared_ptr<SceneGraph> graph,
                    std::shared_ptr<GLResourceManager> glr,
                    std::shared_ptr<FrameState> fs,
-                   std::shared_ptr<ITaskRunner> task_runner);
+                   std::shared_ptr<ITaskRunner> task_runner,
+                   std::shared_ptr<settings::Flags> flags);
   virtual ~LineToolDataSink() {}
 
   virtual void Accept(const std::vector<FatLine>& lines,
@@ -59,6 +61,7 @@ class LineToolDataSink {
   std::shared_ptr<GLResourceManager> gl_resources_;
   std::shared_ptr<FrameState> frame_state_;
   std::shared_ptr<ITaskRunner> task_runner_;
+  std::shared_ptr<settings::Flags> flags_;
 };
 
 }  // namespace ink

@@ -213,6 +213,7 @@ class SEngine : public IDocumentListener {
 
   void setCallbackFlags(const proto::SetCallbackFlags& callbackFlags);
   void setOutlineExportEnabled(bool enabled);
+  void setHandwritingDataEnabled(bool enabled);
 
   void setCameraBoundsConfig(
       const proto::CameraBoundsConfig& cameraBoundsConfig);

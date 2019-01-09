@@ -29,6 +29,9 @@ class MockSpatialIndex : public SpatialIndex {
  public:
   MOCK_CONST_METHOD2(Intersects, bool(const Rect& region,
                                       const glm::mat4& region_to_object));
+  MOCK_CONST_METHOD2(Intersection,
+                     absl::optional<Rect>(const Rect& region,
+                                          const glm::mat4& object_to_world));
   MOCK_CONST_METHOD1(Mbr, Rect(const glm::mat4& object_to_world));
   MOCK_CONST_METHOD0(DebugMesh, Mesh());
 };

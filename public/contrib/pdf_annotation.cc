@@ -15,6 +15,7 @@
 #include "ink/public/contrib/pdf_annotation.h"
 
 #include "ink/engine/public/host/public_events.h"
+#include "ink/engine/public/types/status_or.h"
 #include "ink/pdf/io.h"
 #include "ink/pdf/pdf.h"
 #include "ink/pdf/pdf_engine_wrapper.h"
@@ -97,14 +98,22 @@ Status LoadPdfForAnnotation(absl::string_view pdf_bytes, SEngine* engine) {
   return OkStatus();
 }
 
-Status GetAnnotatedPdf(const SEngine& engine, std::string* out) {
+namespace {
+StatusOr<ink::pdf::PdfEngineWrapper*> GetPdfEngineWrapper(
+    const SEngine& engine) {
   ink::pdf::PdfEngineWrapper* wrapper;
   if (!(wrapper = dynamic_cast<ink::pdf::PdfEngineWrapper*>(
             engine.GetTextureRequestHandler("pdf")))) {
-    return ErrorStatus(
+    return ErrorStatusOr<ink::pdf::PdfEngineWrapper*>(
         StatusCode::INTERNAL,
         "expected pdf texture provider to be a PdfEngineWrapper");
   }
+  return StatusOr<ink::pdf::PdfEngineWrapper*>(wrapper);
+}
+}  // namespace
+
+Status GetAnnotatedPdf(const SEngine& engine, std::string* out) {
+  INK_ASSIGN_OR_RETURN(auto* wrapper, GetPdfEngineWrapper(engine));
 
   proto::ExportedDocument exported_doc;
   if (!ToExportedDocument(engine.document()->GetSnapshot(), &exported_doc)) {
@@ -115,6 +124,17 @@ Status GetAnnotatedPdf(const SEngine& engine, std::string* out) {
 
   INK_RETURN_UNLESS(::ink::pdf::Render(exported_doc, copy.get()));
   INK_RETURN_UNLESS(copy->Write(out));
+  return OkStatus();
+}
+
+Status GetAnnotatedPdfDestructive(const SEngine& engine, std::string* out) {
+  INK_ASSIGN_OR_RETURN(auto* wrapper, GetPdfEngineWrapper(engine));
+  proto::ExportedDocument exported_doc;
+  if (!ToExportedDocument(engine.document()->GetSnapshot(), &exported_doc)) {
+    return ErrorStatus("could not export current scene state to external form");
+  }
+  INK_RETURN_UNLESS(::ink::pdf::Render(exported_doc, wrapper->PdfDocument()));
+  INK_RETURN_UNLESS(wrapper->PdfDocument()->Write(out));
   return OkStatus();
 }
 

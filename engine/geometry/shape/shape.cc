@@ -75,7 +75,7 @@ bool Shape::GetBorderMesh(const GLResourceManager& resource_manager,
   if (border_size_world_.x <= 0 || border_size_world_.y <= 0) return false;
   if (fill_size_world_.x <= 0 || fill_size_world_.y <= 0) return false;
 
-  tess_.Clear();
+  tess_.ClearGeometry();
   auto outerpts = shape_geometry_.GenVerts(
       glm::vec2(0), fill_size_world_ + border_size_world_ * 2.0f,
       outer_border_rgba_);
@@ -112,7 +112,7 @@ bool Shape::GetFillMesh(const GLResourceManager& resource_manager,
   }
   if (fill_size_world_.x <= 0 || fill_size_world_.y <= 0) return false;
 
-  tess_.Clear();
+  tess_.ClearGeometry();
   auto pts =
       shape_geometry_.GenVerts(glm::vec2(0), fill_size_world_, fill_rgba_);
   if (!tess_.Tessellate(pts)) {

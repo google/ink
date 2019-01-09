@@ -35,7 +35,7 @@ class StrokeOutlineConverter : public IElementConverter {
   StrokeOutlineConverter& operator=(const StrokeOutlineConverter&) = delete;
 
   std::unique_ptr<ProcessedElement> CreateProcessedElement(
-      ElementId id) override;
+      ElementId id, const ElementConverterOptions& options) override;
 
  private:
   const proto::StrokeOutline unsafe_stroke_outline_;

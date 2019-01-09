@@ -26,9 +26,12 @@ namespace ink {
 
 class IElementConverter {
  public:
+  struct ElementConverterOptions {
+    bool low_memory_mode = false;
+  };
   virtual ~IElementConverter() {}
   virtual std::unique_ptr<ProcessedElement> CreateProcessedElement(
-      ElementId id) = 0;
+      ElementId id, const ElementConverterOptions& options) = 0;
 };
 
 }  // namespace ink

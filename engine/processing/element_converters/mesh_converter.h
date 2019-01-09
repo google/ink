@@ -45,9 +45,9 @@ class MeshConverter : public IElementConverter {
   MeshConverter& operator=(const MeshConverter&) = delete;
 
   std::unique_ptr<ProcessedElement> CreateProcessedElement(
-      ElementId id) override {
-    return absl::make_unique<ProcessedElement>(id, mesh_, shader_type_,
-                                               attributes_);
+      ElementId id, const ElementConverterOptions& options) override {
+    return absl::make_unique<ProcessedElement>(
+        id, mesh_, shader_type_, options.low_memory_mode, attributes_);
   }
 
  private:

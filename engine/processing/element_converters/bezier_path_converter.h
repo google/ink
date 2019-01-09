@@ -36,7 +36,7 @@ class BezierPathConverter : public IElementConverter {
   BezierPathConverter& operator=(const BezierPathConverter&) = delete;
 
   std::unique_ptr<ProcessedElement> CreateProcessedElement(
-      ElementId id) override;
+      ElementId id, const ElementConverterOptions& options) override;
 
   void SetNumEvalPoints(int num_eval_points);
 
