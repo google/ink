@@ -78,21 +78,27 @@ Status ExtractMutationPacket(const Snapshot& snapshot,
         INK_RETURN_UNLESS(AddElementToMutationPacket(
             element_table, mutation_packet, add.uuid(i)));
       }
+    } else if (action.has_replace_action()) {
+      const auto& replace = action.replace_action();
+      for (int i = 0; i < replace.added_uuid_size(); ++i) {
+        INK_RETURN_UNLESS(AddElementToMutationPacket(
+            element_table, mutation_packet, replace.added_uuid(i)));
+      }
     }
   }
   return OkStatus();
 }
 
-Status ClearPendingMutationPacket(const Snapshot& source, Snapshot* target) {
-  *target = source;
-  target->clear_dead_element();
-  target->clear_undo_action();
-  target->clear_redo_action();
-  target->clear_element_state_index();
-  for (int i = 0; i < target->element_size(); i++) {
-    target->add_element_state_index(proto::ElementState::ALIVE);
-  }
-  return OkStatus();
+void ClearPendingMutationPacket(Snapshot* const snapshot) {
+  // Clear dead elements and undo/redo stack.
+  snapshot->clear_dead_element();
+  snapshot->clear_undo_action();
+  snapshot->clear_redo_action();
+
+  auto* const indices = snapshot->mutable_element_state_index();
+  indices->Clear();
+  indices->Resize(snapshot->element_size(), proto::ElementState::ALIVE);
 }
+
 }  // namespace ink
 

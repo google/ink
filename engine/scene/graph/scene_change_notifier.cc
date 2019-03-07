@@ -114,15 +114,14 @@ void SceneChangeNotifier::ActiveLayerChanged(
 }
 
 UUID SceneChangeNotifier::LayerAbove(ink::GroupId id, SceneGraph* graph) {
-  size_t index;
-  if (layer_manager_->IndexForLayerWithGroupId(id, &index)) {
-    if (index < layer_manager_->NumLayers() - 1) {
-      GroupId below_group;
-      layer_manager_->GroupIdForLayerAtIndex(index + 1, &below_group);
-      return graph->UUIDFromElementId(below_group);
-    }
-  }
-  return kInvalidUUID;
+  auto index_or = layer_manager_->IndexForLayerWithGroupId(id);
+  if (!index_or.ok()) return kInvalidUUID;
+
+  auto below_group_or =
+      layer_manager_->GroupIdForLayerAtIndex(index_or.ValueOrDie() + 1);
+  if (!below_group_or.ok()) return kInvalidUUID;
+
+  return graph->UUIDFromElementId(below_group_or.ValueOrDie());
 }
 
 }  // namespace ink

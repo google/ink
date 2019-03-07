@@ -87,6 +87,10 @@ T BarycentricInterpolate(glm::vec3 barycentric, const T &t0, const T &t1,
   return barycentric.x * t0 + barycentric.y * t1 + barycentric.z * t2;
 }
 
+inline bool operator==(const Triangle &lhs, const Triangle &rhs) {
+  return lhs[0] == rhs[0] && lhs[1] == rhs[1] && lhs[2] == rhs[2];
+}
+
 }  // namespace geometry
 }  // namespace ink
 

@@ -41,8 +41,8 @@ void PolyStore::Add(ElementId id, std::unique_ptr<OptimizedMesh> mesh) {
       flags_->GetFlag(settings::Flag::LowMemoryMode)) {
     gl_resources_->mesh_vbo_provider->EnsureOnlyInVBO(mesh.get(),
                                                       GL_STATIC_DRAW);
-  } else if (!gl_resources_->mesh_vbo_provider->HasVBO(*mesh)) {
-    gl_resources_->mesh_vbo_provider->GenVBO(mesh.get(), GL_STATIC_DRAW);
+  } else if (!gl_resources_->mesh_vbo_provider->HasVBOs(*mesh)) {
+    gl_resources_->mesh_vbo_provider->GenVBOs(mesh.get(), GL_STATIC_DRAW);
   }
   id_to_mesh_[id] = std::move(mesh);
 

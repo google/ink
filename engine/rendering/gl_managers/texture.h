@@ -58,6 +58,9 @@ class Texture {
 
   bool IsValid() const;
 
+  // Returns true if this is a stand-in texture for a rejected texture URI.
+  bool IsRejection() const;
+
   bool GetPixels(GPUPixels* pixels) const;
 
   Texture& operator=(Texture&& move_from);

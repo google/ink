@@ -41,14 +41,7 @@ inline T Mod(T i, S m) {
   return std::fmod(i, m);
 }
 
-inline bool IsPowerOf2(uint32_t x) {
-  if (x == 0) return false;
-  while (x != 1) {
-    if (x & 0x1) return false;
-    x >>= 1;
-  }
-  return true;
-}
+inline bool IsPowerOf2(uint32_t x) { return x != 0 && ((x - 1) & x) == 0; }
 
 namespace little_endian {
 #if ABSL_IS_BIG_ENDIAN

@@ -47,7 +47,7 @@ std::unique_ptr<PageObjectMark> PageObject::AddMark(absl::string_view name) {
 
 int PageObject::MarkCount() const { return FPDFPageObj_CountMarks(obj_); }
 
-Status PageObject::GetMark(int i, std::unique_ptr<PageObjectMark>* out) const {
+StatusOr<std::unique_ptr<PageObjectMark>> PageObject::GetMark(int i) const {
   auto mark = FPDFPageObj_GetMark(obj_, i);
   if (!mark) {
     return ErrorStatus(
@@ -55,8 +55,7 @@ Status PageObject::GetMark(int i, std::unique_ptr<PageObjectMark>* out) const {
         "No such mark (given index $0 in object with $1 marks(s))", i,
         MarkCount());
   }
-  *out = absl::make_unique<PageObjectMark>(owning_document_, obj_, mark);
-  return OkStatus();
+  return absl::make_unique<PageObjectMark>(owning_document_, obj_, mark);
 }
 
 }  // namespace pdf

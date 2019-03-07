@@ -45,7 +45,7 @@ extern "C" void TessAddVert(void* vert_data, void* poly_data) {
   Tessellator* tess = static_cast<Tessellator*>(poly_data);
   auto vert = reinterpret_cast<Vertex const*>(vert_data);
 
-  uint16_t idx;
+  Mesh::IndexType idx;
   auto ptidx = tess->pt_to_idx_.find(vert->position);
   if (ptidx != tess->pt_to_idx_.end()) {
     idx = ptidx->second;
@@ -53,7 +53,7 @@ extern "C" void TessAddVert(void* vert_data, void* poly_data) {
     idx = tess->mesh_.verts.size();
     tess->mesh_.verts.push_back(*vert);
     tess->pt_to_idx_.insert(
-        std::pair<glm::vec2, uint32_t>(vert->position, idx));
+        std::pair<glm::vec2, Mesh::IndexType>(vert->position, idx));
 
     if (tess->combined_verts_.find(vert->position) !=
         tess->combined_verts_.end()) {
@@ -99,10 +99,7 @@ extern "C" void TessError(GLenum err, void* poly_data) {
   (static_cast<Tessellator*>(poly_data))->SetErrorFlag();
 }
 
-Tessellator::Tessellator()
-    : tess_mid_pts_(false), glu_tess_(nullptr), did_error_(false) {
-  Setup();
-}
+Tessellator::Tessellator() : glu_tess_(nullptr), did_error_(false) { Setup(); }
 
 void Tessellator::Setup() {
   glu_tess_ = gluNewTess();
@@ -156,16 +153,6 @@ bool Tessellator::Tessellate(const FatLine& line, bool end_cap) {
   Inject(line.StartCap().begin(), line.StartCap().end());
   Inject(line.ForwardLine().begin(), line.ForwardLine().end());
   if (end_cap) Inject(line.EndCap().begin(), line.EndCap().end());
-  if (tess_mid_pts_) {
-    // The midpoints contain only the screen coordinates, but we need vertices.
-    std::vector<Vertex> midpoints;
-    midpoints.reserve(line.MidPoints().size());
-    for (const auto& m : line.MidPoints())
-      midpoints.push_back(Vertex(m.screen_position));
-
-    Inject(midpoints.rbegin(), midpoints.rend());
-    Inject(midpoints.begin(), midpoints.end());
-  }
   Inject(line.BackwardLine().rbegin(), line.BackwardLine().rend());
 
   gluTessEndContour(glu_tess_);

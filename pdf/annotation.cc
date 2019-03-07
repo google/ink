@@ -18,8 +18,6 @@
 #include "third_party/absl/strings/substitute.h"
 #include "ink/pdf/internal.h"
 
-static constexpr char kContentsKey[] = "Contents";
-
 namespace ink {
 namespace pdf {
 
@@ -45,22 +43,6 @@ bool Annotation::HasKey(absl::string_view key) const {
                           reinterpret_cast<FPDF_BYTESTRING>(skey.data()));
 }
 
-Status Annotation::GetStringValue(absl::string_view key,
-                                  std::string* out) const {
-  std::string skey(key);
-  auto bkey = reinterpret_cast<FPDF_BYTESTRING>(skey.data());
-  return internal::FetchUtf16StringAsUtf8(
-      [this, &bkey](void* buf, size_t len) {
-        return FPDFAnnot_GetStringValue(annotation_.get(), bkey, buf, len);
-      },
-      out);
-}
-
-Status Annotation::AppendObject(const PageObject& obj) {
-  RETURN_PDFIUM_STATUS(
-      FPDFAnnot_AppendObject(annotation_.get(), obj.WrappedObject()));
-}
-
 int StampAnnotation::GetPathCount() {
   return FPDFAnnot_GetObjectCount(annotation_.get());
 }
@@ -76,13 +58,6 @@ Status StampAnnotation::GetPath(int index, std::unique_ptr<Path>* out) {
   }
   *out = absl::make_unique<Path>(owning_document_, page_object);
   return OkStatus();
-}
-
-TextAnnotation::TextAnnotation(FPDF_DOCUMENT owning_document, FPDF_PAGE page,
-                               const Rect& bounds, absl::string_view utf8_text)
-    : Annotation(owning_document, FPDFPage_CreateAnnot(page, FPDF_ANNOT_TEXT)) {
-  SetRect(bounds);
-  SetStringValue(kContentsKey, utf8_text);
 }
 
 }  // namespace pdf

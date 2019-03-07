@@ -17,39 +17,23 @@
 #ifndef INK_ENGINE_GEOMETRY_MESH_MESH_TRIANGLE_H_
 #define INK_ENGINE_GEOMETRY_MESH_MESH_TRIANGLE_H_
 
-#include <algorithm>
 #include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <memory>
 #include <string>
-#include <vector>
 
-#include "third_party/glm/glm/gtx/norm.hpp"
 #include "ink/engine/geometry/mesh/mesh.h"
 #include "ink/engine/geometry/mesh/vertex.h"
-#include "ink/engine/geometry/primitives/segment.h"
 #include "ink/engine/util/dbg/errors.h"
 
 namespace ink {
 
 struct MeshTriSegment {
-  uint16_t idx[2];
+  Mesh::IndexType idx[2];
 
   MeshTriSegment();
-  MeshTriSegment(uint16_t f, uint16_t t);
+  MeshTriSegment(Mesh::IndexType f, Mesh::IndexType t);
 
-  uint16_t LowIdx() const;
-  uint16_t HighIdx() const;
-  float Length2(const Mesh& mesh) const;
-
-  // Used by longform
-  bool HasIdx(uint16_t test_idx) const;
-  bool SharedIdx(const MeshTriSegment& other, uint16_t* shared) const;
-  uint16_t OtherIdx(uint16_t shared_idx) const;
-  Segment PtSegment(const Mesh& mesh) const;
-  float Length(const Mesh& mesh) const;
-  Vertex Midpt(const Mesh& mesh) const;
+  Mesh::IndexType LowIdx() const;
+  Mesh::IndexType HighIdx() const;
 
   bool operator==(const MeshTriSegment& other) const;
   bool operator<(const MeshTriSegment& other) const;
@@ -59,31 +43,24 @@ struct MeshTriSegment {
 
 struct MeshTriSegmentHasher {
   size_t operator()(const ink::MeshTriSegment& s) const {
-    return std::hash<uint16_t>()(s.idx[0] + s.idx[1]);
+    return std::hash<Mesh::IndexType>()(s.idx[0] + s.idx[1]);
   }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
 struct MeshTriangle {
-  uint16_t idx[3];
+  Mesh::IndexType idx[3];
 
   bool Valid() const;
-  bool HasIdx(uint16_t target, uint32_t* interior_idx) const;
+  bool HasIdx(Mesh::IndexType target, Mesh::IndexType* interior_idx) const;
   MeshTriSegment Segment(int n) const;
-
-  // Used by longform
-  float Area(const Mesh& mesh) const;
-  Vertex Centroid(const Mesh& mesh) const;
-  void AppendToMesh(Mesh* mesh) const;
-  bool OtherIdx(const MeshTriSegment& segment, uint16_t* other) const;
-  bool ContainsPt(const Mesh& mesh, glm::vec2 point) const;
 
   std::string ToString() const;
 
   bool operator==(const MeshTriangle& other) const;
 
-  // returns if this has the same verticies as other
+  // returns true if this has the same vertices as other
   // (winding order doesn't matter)
   bool RoughEquals(const MeshTriangle& other) const;
 
@@ -96,10 +73,10 @@ struct MeshTriangle {
 
 struct MeshTriVert {
   MeshTriangle* tri;
-  uint16_t interior_idx;
+  Mesh::IndexType interior_idx;
 
-  MeshTriVert(MeshTriangle* t, uint16_t idx);
-  uint16_t Idx() const;
+  MeshTriVert(MeshTriangle* t, Mesh::IndexType idx);
+  Mesh::IndexType Idx() const;
   MeshTriVert Advance() const;
 };
 

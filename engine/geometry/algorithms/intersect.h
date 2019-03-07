@@ -106,6 +106,11 @@ bool Intersects(const RotRect &rect1, const RotRect &rect2);
 // reutrn true if the segment is fully contained in the rectangle.
 bool Intersects(const Segment &segment, const Rect &rect);
 
+// The above "Intersects" definition between rectangles returns true for cases
+// where the resulting intersection is a line segment or a point, having 0 area.
+// This function returns true only for intersections with non-0 area.
+bool IntersectsWithNonZeroOverlap(const Rect &rect1, const Rect &rect2);
+
 }  // namespace geometry
 }  // namespace ink
 

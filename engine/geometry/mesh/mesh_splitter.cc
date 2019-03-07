@@ -52,17 +52,12 @@ Mesh TransformCuttingMesh(const Mesh &cutting_mesh,
 
 }  // namespace
 
-MeshSplitter::MeshSplitter(const Mesh &base_mesh)
-    : base_mesh_(base_mesh), is_base_mesh_changed_(false) {
-  rtree_ = spatial::MakeRTreeFromMeshTriangles<IndexedTriangle>(
-      base_mesh_,
-      [](const Mesh &m, int i) {
-        return IndexedTriangle{m.GetTriangle(i), i};
-      },
-      [](const IndexedTriangle &t) { return geometry::Envelope(t.triangle); });
-}
+MeshSplitter::MeshSplitter(const OptimizedMesh &base_mesh)
+    : base_mesh_(base_mesh), is_base_mesh_changed_(false) {}
 
 void MeshSplitter::Split(const Mesh &cutting_mesh) {
+  if (!rtree_) InitializeRTree();
+
   auto transformed_mesh =
       TransformCuttingMesh(cutting_mesh, base_mesh_.object_matrix);
 
@@ -139,15 +134,18 @@ bool MeshSplitter::GetResult(Mesh *result_mesh) const {
         : index(index_in), position(position_in) {}
   };
   spatial::RTree<IndexedVertex> vertex_rtree([](const IndexedVertex &v) {
-    return Rect::CreateAtPoint(v.position, {0, 0});
+    return Rect::CreateAtPoint(v.position, 0, 0);
   });
 
+  Mesh unpacked_mesh = base_mesh_.ToMesh();
   for (const auto &t : result_triangles) {
-    auto original_triangle = base_mesh_.GetTriangle(t.original_index);
-    if (t.triangle.IsDegenerate() || original_triangle.IsDegenerate()) continue;
-    const auto &vertex0 = base_mesh_.GetVertex(t.original_index, 0);
-    const auto &vertex1 = base_mesh_.GetVertex(t.original_index, 1);
-    const auto &vertex2 = base_mesh_.GetVertex(t.original_index, 2);
+    if (t.triangle.IsDegenerate()) continue;
+
+    auto original_triangle = unpacked_mesh.GetTriangle(t.original_index);
+    ASSERT(!original_triangle.IsDegenerate());
+    const auto &vertex0 = unpacked_mesh.GetVertex(t.original_index, 0);
+    const auto &vertex1 = unpacked_mesh.GetVertex(t.original_index, 1);
+    const auto &vertex2 = unpacked_mesh.GetVertex(t.original_index, 2);
     for (int i = 0; i < 3; ++i) {
       // Construct the new vertex by interpolating over the original triangle.
       Vertex v(t.triangle[i]);
@@ -160,7 +158,7 @@ bool MeshSplitter::GetResult(Mesh *result_mesh) const {
 
       // Search to see if we have already created this exact vertex.
       auto existing_vertex =
-          vertex_rtree.FindAny(Rect::CreateAtPoint(v.position, {0, 0}),
+          vertex_rtree.FindAny(Rect::CreateAtPoint(v.position, 0, 0),
                                [&result_mesh, &v](const IndexedVertex &iv) {
                                  return result_mesh->verts[iv.index] == v;
                                });
@@ -181,6 +179,17 @@ bool MeshSplitter::GetResult(Mesh *result_mesh) const {
   if (base_mesh_.texture != nullptr)
     result_mesh->texture = absl::make_unique<TextureInfo>(*base_mesh_.texture);
   return true;
+}
+
+void MeshSplitter::InitializeRTree() {
+  Mesh unpacked_mesh = base_mesh_.ToMesh();
+  rtree_ = spatial::MakeRTreeFromMeshTriangles<IndexedTriangle>(
+      unpacked_mesh,
+      [](const Mesh &m, int i) {
+        return IndexedTriangle{m.GetTriangle(i), i};
+      },
+      [](const IndexedTriangle &t) { return geometry::Envelope(t.triangle); },
+      [](const Mesh &m, int i) { return !m.GetTriangle(i).IsDegenerate(); });
 }
 
 }  // namespace ink

@@ -14,6 +14,7 @@
 
 #include "ink/engine/realtime/element_manipulation_tool_renderer.h"
 
+#include "third_party/absl/types/span.h"
 #include "ink/engine/colors/colors.h"
 #include "ink/engine/geometry/algorithms/intersect.h"
 #include "ink/engine/geometry/algorithms/transform.h"
@@ -26,6 +27,105 @@
 namespace ink {
 namespace tools {
 
+static const ElementManipulationToolHandle kAllHandles[] = {
+    ElementManipulationToolHandle::NONE,
+    ElementManipulationToolHandle::RIGHT,
+    ElementManipulationToolHandle::TOP,
+    ElementManipulationToolHandle::LEFT,
+    ElementManipulationToolHandle::BOTTOM,
+    ElementManipulationToolHandle::RIGHTTOP,
+    ElementManipulationToolHandle::LEFTTOP,
+    ElementManipulationToolHandle::LEFTBOTTOM,
+    ElementManipulationToolHandle::RIGHTBOTTOM,
+    ElementManipulationToolHandle::ROTATION,
+};
+const absl::Span<const ElementManipulationToolHandle>
+    kAllElementManipulationToolHandles(kAllHandles, sizeof(kAllHandles) /
+                                                        sizeof(kAllHandles[0]));
+
+static glm::vec2 HandlePositionInternal(ElementManipulationToolHandle handle,
+                                        const Camera* camera,
+                                        RotRect world_rect) {
+  const float angle_cos = std::cos(world_rect.Rotation());
+  const float angle_sin = std::sin(world_rect.Rotation());
+  glm::vec2 horz{0.5 * world_rect.Width() * angle_cos,
+                 0.5 * world_rect.Width() * angle_sin};
+  glm::vec2 vert{-0.5 * world_rect.Height() * angle_sin,
+                 0.5 * world_rect.Height() * angle_cos};
+  switch (handle) {
+    case ElementManipulationToolHandle::NONE:
+      return world_rect.Center();
+    case ElementManipulationToolHandle::RIGHT:
+      return world_rect.Center() + horz;
+    case ElementManipulationToolHandle::RIGHTTOP:
+      return world_rect.Center() + horz + vert;
+    case ElementManipulationToolHandle::TOP:
+      return world_rect.Center() + vert;
+    case ElementManipulationToolHandle::LEFTTOP:
+      return world_rect.Center() - horz + vert;
+    case ElementManipulationToolHandle::LEFT:
+      return world_rect.Center() - horz;
+    case ElementManipulationToolHandle::LEFTBOTTOM:
+      return world_rect.Center() - horz - vert;
+    case ElementManipulationToolHandle::BOTTOM:
+      return world_rect.Center() - vert;
+    case ElementManipulationToolHandle::RIGHTBOTTOM:
+      return world_rect.Center() + horz - vert;
+    case ElementManipulationToolHandle::ROTATION: {
+      ASSERT(camera);
+      float dist = camera->ConvertDistance(0.5f, DistanceType::kCm,
+                                           DistanceType::kWorld);
+      return world_rect.Center() + vert +
+             glm::vec2{-dist * angle_sin, dist * angle_cos};
+    }
+  }
+  SLOG(SLOG_WARNING, "invalid ElementManipulationToolHandle value: $0",
+       static_cast<int>(handle));
+  return world_rect.Center();
+}
+
+static ElementManipulationToolHandle OppositeHandle(
+    ElementManipulationToolHandle handle) {
+  switch (handle) {
+    case ElementManipulationToolHandle::NONE:
+      return ElementManipulationToolHandle::NONE;
+    case ElementManipulationToolHandle::RIGHT:
+      return ElementManipulationToolHandle::LEFT;
+    case ElementManipulationToolHandle::RIGHTTOP:
+      return ElementManipulationToolHandle::LEFTBOTTOM;
+    case ElementManipulationToolHandle::TOP:
+      return ElementManipulationToolHandle::BOTTOM;
+    case ElementManipulationToolHandle::LEFTTOP:
+      return ElementManipulationToolHandle::RIGHTBOTTOM;
+    case ElementManipulationToolHandle::LEFT:
+      return ElementManipulationToolHandle::RIGHT;
+    case ElementManipulationToolHandle::LEFTBOTTOM:
+      return ElementManipulationToolHandle::RIGHTTOP;
+    case ElementManipulationToolHandle::BOTTOM:
+      return ElementManipulationToolHandle::TOP;
+    case ElementManipulationToolHandle::RIGHTBOTTOM:
+      return ElementManipulationToolHandle::LEFTTOP;
+    case ElementManipulationToolHandle::ROTATION:
+      return ElementManipulationToolHandle::NONE;
+  }
+  SLOG(SLOG_WARNING, "invalid ElementManipulationToolHandle value: $0",
+       static_cast<int>(handle));
+  return ElementManipulationToolHandle::NONE;
+}
+
+glm::vec2 ElementManipulationToolHandlePosition(
+    ElementManipulationToolHandle handle, const Camera& camera,
+    RotRect world_rect) {
+  return HandlePositionInternal(handle, &camera, world_rect);
+}
+
+glm::vec2 ElementManipulationToolHandleAnchor(
+    ElementManipulationToolHandle handle, RotRect world_rect) {
+  // Only the ROTATION handle needs a non-null camera, and OppositeHandle never
+  // returns ROTATION, so we can pass nullptr for camera here.
+  return HandlePositionInternal(OppositeHandle(handle), nullptr, world_rect);
+}
+
 ElementManipulationToolRenderer::ElementManipulationToolRenderer(
     const service::UncheckedRegistry& registry)
     : scene_graph_(registry.GetShared<SceneGraph>()),
@@ -35,55 +135,121 @@ ElementManipulationToolRenderer::ElementManipulationToolRenderer(
       gl_resources_(registry.GetShared<GLResourceManager>()),
       outline_(ShapeGeometry::Type::Rectangle),
       outline_glow_(ShapeGeometry::Type::Rectangle),
+      rotation_bar_(ShapeGeometry::Type::Rectangle),
       shape_renderer_(registry),
       partition_renderer_(registry),
-      mesh_renderer_(registry) {
+      mesh_renderer_(registry),
+      flags_(registry.GetShared<settings::Flags>()) {
   outline_.SetFillVisible(false);
-  outline_.SetBorderColor(
-      glm::vec4(kGoogleBlue500.r, kGoogleBlue500.g, kGoogleBlue500.b, 0.3f));
+  outline_.SetBorderColor(kGoogleBlue500);
   outline_glow_.SetFillVisible(false);
-  outline_glow_.SetBorderColor(kGoogleBlue200);
+  outline_glow_.SetBorderColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  rotation_bar_.SetFillColor(kGoogleBlue500);
+  rotation_bar_.SetBorderColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  for (auto handle : kAllElementManipulationToolHandles) {
+    if (handle == ElementManipulationToolHandle::NONE) continue;
+    auto shape = absl::make_unique<Shape>(
+        handle == ElementManipulationToolHandle::ROTATION
+            ? ShapeGeometry::Type::Circle
+            : ShapeGeometry::Type::Rectangle);
+    shape->SetFillColor(kGoogleBlue500);
+    shape->SetBorderColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    handle_shapes_[handle] = std::move(shape);
+  }
 }
 
 void ElementManipulationToolRenderer::Draw(const Camera& cam,
                                            FrameTimeS draw_time,
                                            glm::mat4 transform) const {
   mesh_renderer_.Draw(cam, draw_time, bg_overlay_);
-  shape_renderer_.Draw(cam, draw_time, outline_glow_);
-  shape_renderer_.Draw(cam, draw_time, outline_);
 
   // Draw the selected elements, with the transform applied
   partition_renderer_.Draw(cam, draw_time, *scene_graph_, blit_attrs::Blit(),
                            transform);
+
+  shape_renderer_.Draw(cam, draw_time, rotation_bar_);
+  for (const auto& handle_shape : handle_shapes_) {
+    shape_renderer_.Draw(cam, draw_time, *handle_shape.second);
+  }
+
+  shape_renderer_.Draw(cam, draw_time, outline_glow_);
+  shape_renderer_.Draw(cam, draw_time, outline_);
+  if (flags_->GetFlag(settings::Flag::EnableSelectionBoxHandles)) {
+    for (const auto& handle_shape : handle_shapes_) {
+      shape_renderer_.Draw(cam, draw_time, *handle_shape.second);
+    }
+  }
 }
 
 void ElementManipulationToolRenderer::SetOutlinePosition(const Camera& cam,
-                                                         Rect region) {
+                                                         RotRect region) {
   glm::vec2 inner_size{
-      cam.ConvertDistance(1, DistanceType::kDp, DistanceType::kWorld)};
+      cam.ConvertDistance(2, DistanceType::kDp, DistanceType::kWorld)};
   glm::vec2 outer_size{
       cam.ConvertDistance(4, DistanceType::kDp, DistanceType::kWorld)};
-  outline_.SetSizeAndPosition(region, inner_size, true);
+  outline_.SetSizeAndPosition(region.Inset(inner_size * 0.5f), inner_size,
+                              false);
+  outline_glow_.SetSizeAndPosition(region.Inset(outer_size * 0.5f), outer_size,
+                                   false);
 
-  // set the outer position as centered on the inner position
-  outline_glow_.SetSizeAndPosition(
-      region.Inset(-(outer_size - inner_size) * 0.5f), outer_size, true);
+  if (flags_->GetFlag(settings::Flag::EnableSelectionBoxHandles)) {
+    glm::vec2 handle_border_size = (outer_size - inner_size) * 0.5f;
+    glm::vec2 handle_rect_size{
+        cam.ConvertDistance(10, DistanceType::kDp, DistanceType::kWorld)};
+    for (const auto& handle_shape : handle_shapes_) {
+      ElementManipulationToolHandle handle = handle_shape.first;
+      glm::vec2 position =
+          ElementManipulationToolHandlePosition(handle, cam, region);
+      float size_mult =
+          handle == ElementManipulationToolHandle::ROTATION ? 1.3f : 1.0f;
+      handle_shape.second->SetSizeAndPosition(
+          RotRect(position, handle_rect_size * size_mult, region.Rotation()),
+          handle_border_size, false);
+    }
+
+    if (flags_->GetFlag(settings::Flag::EnableRotation)) {
+      glm::vec2 pt1 = ElementManipulationToolHandlePosition(
+          ElementManipulationToolHandle::ROTATION, cam, region);
+      glm::vec2 pt2 = ElementManipulationToolHandlePosition(
+          ElementManipulationToolHandle::TOP, cam, region);
+      glm::vec2 center = (pt1 + pt2) / 2.0f;
+      float width = inner_size.x;
+      float height = glm::distance(pt1, pt2);
+      rotation_bar_.SetSizeAndPosition(
+          RotRect(center, {width, height}, region.Rotation()),
+          (outer_size - inner_size) / 2.0f, false);
+    }
+  }
+}
+
+void ElementManipulationToolRenderer::SetOutlineVisible(bool visible) {
+  outline_.SetVisible(visible);
+  outline_glow_.SetVisible(visible);
+  const bool handles_visible =
+      visible && flags_->GetFlag(settings::Flag::EnableSelectionBoxHandles);
+  const bool rotation_visible =
+      handles_visible && flags_->GetFlag(settings::Flag::EnableRotation);
+  rotation_bar_.SetVisible(rotation_visible);
+  for (const auto& handle_shape : handle_shapes_) {
+    handle_shape.second->SetVisible(
+        handle_shape.first == ElementManipulationToolHandle::ROTATION
+            ? rotation_visible
+            : handles_visible);
+  }
 }
 
 void ElementManipulationToolRenderer::Update(const Camera& cam,
                                              FrameTimeS draw_time,
-                                             Rect element_mbr,
+                                             Rect element_mbr, RotRect region,
                                              glm::mat4 transform) {
-  UpdateWithTimer(cam, draw_time, element_mbr, transform,
+  UpdateWithTimer(cam, draw_time, element_mbr, region, transform,
                   Timer(wall_clock_, 0.004));
 }
 
-void ElementManipulationToolRenderer::UpdateWithTimer(const Camera& cam,
-                                                      FrameTimeS draw_time,
-                                                      Rect element_mbr,
-                                                      glm::mat4 transform,
-                                                      Timer timer) {
-  SetOutlinePosition(cam, geometry::Transform(element_mbr, transform));
+void ElementManipulationToolRenderer::UpdateWithTimer(
+    const Camera& cam, FrameTimeS draw_time, Rect element_mbr, RotRect region,
+    glm::mat4 transform, Timer timer) {
+  SetOutlinePosition(cam, geometry::Transform(region, transform));
 
   // Apply the inverse transformation to the camera to find the visible portion
   // of the elements, relative to the elements' original position.
@@ -128,12 +294,11 @@ void ElementManipulationToolRenderer::UpdateWithTimer(const Camera& cam,
   glm::vec4 bg_color(0.9, 0.9, 0.9, 0.5);
   bg_color = RGBtoRGBPremultiplied(bg_color);
   MakeRectangleMesh(&bg_overlay_, cam.WorldWindow(), bg_color);
-  gl_resources_->mesh_vbo_provider->ReplaceVBO(&bg_overlay_, GL_DYNAMIC_DRAW);
+  gl_resources_->mesh_vbo_provider->ReplaceVBOs(&bg_overlay_, GL_DYNAMIC_DRAW);
 }
 
 void ElementManipulationToolRenderer::Enable(bool enabled) {
-  outline_.SetVisible(enabled);
-  outline_glow_.SetVisible(enabled);
+  SetOutlineVisible(enabled);
   if (enabled) {
     partition_renderer_.EnableFramerateLocks(frame_state_);
   } else {
@@ -141,13 +306,13 @@ void ElementManipulationToolRenderer::Enable(bool enabled) {
   }
 }
 
-void ElementManipulationToolRenderer::Synchronize(void) {
+void ElementManipulationToolRenderer::Synchronize() {
   renderer_->Synchronize(frame_state_->GetLastFrameTime());
 }
 
 void ElementManipulationToolRenderer::SetElements(
-    const Camera& cam, const std::vector<ElementId>& elements,
-    Rect element_mbr) {
+    const Camera& cam, const std::vector<ElementId>& elements, Rect element_mbr,
+    RotRect region) {
   if (partition_renderer_.RenderingSize() != cam.ScreenDim()) {
     partition_renderer_.Resize(cam.ScreenDim());
   }
@@ -156,13 +321,12 @@ void ElementManipulationToolRenderer::SetElements(
                     scene_graph_->GroupifyElements(elements)));
 
   Timer timer(wall_clock_, 2);
-  UpdateWithTimer(cam, frame_state_->GetFrameTime(), element_mbr, glm::mat4{1},
-                  timer);
+  UpdateWithTimer(cam, frame_state_->GetFrameTime(), element_mbr, region,
+                  glm::mat4{1}, timer);
   if (timer.Expired()) {
     SLOG(SLOG_WARNING, "time expired while attempting to select elements");
   }
-  outline_glow_.SetVisible(true);
-  outline_.SetVisible(true);
+  SetOutlineVisible(true);
 
   if (!elements.empty()) {
     renderer_->Synchronize(frame_state_->GetFrameTime());

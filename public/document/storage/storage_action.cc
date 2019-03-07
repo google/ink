@@ -517,7 +517,11 @@ void ReplaceAction::NotifyHost(
                            LivenessFilter::kOnlyAlive, &bundles)) {
     proto::ElementBundleReplace replace;
     proto::mutations::Mutation mutation;
-    for (auto& bundle : bundles) {
+    // GetBundles returns elements in z-order, but we must add higher elements
+    // first so that they'll be there when lower elements get added beneath
+    // them.
+    for (auto it = bundles.rbegin(); it != bundles.rend(); ++it) {
+      const auto& bundle = *it;
       ASSERT(added_uuid_to_below_uuid.count(bundle.uuid()) > 0);
       UUID add_below_uuid = added_uuid_to_below_uuid[bundle.uuid()];
       ProtoHelpers::AddElementBundleAdd(bundle, add_below_uuid,

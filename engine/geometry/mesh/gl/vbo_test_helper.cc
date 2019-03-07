@@ -18,12 +18,12 @@ namespace ink {
 VBOTestHelper::VBOTestHelper(ion::gfx::GraphicsManagerPtr gl)
     : gl_(gl),
       wrapper_(swiftshader_wrapper::LibWrapper::Open("libGLESv2.so.2")),
-      glMapBufferRange_(reinterpret_cast<GlMapBufferRangeFn>(
+      glm_map_buffer_range_(reinterpret_cast<GlMapBufferRangeFn>(
           wrapper_->Get("glMapBufferRange"))),
-      glUnmapBuffer_(
+      gl_unmap_buffer_(
           reinterpret_cast<GlUnmapBufferFn>(wrapper_->Get("glUnmapBuffer"))) {
-  CHECK(glMapBufferRange_);
-  CHECK(glUnmapBuffer_);
+  CHECK(glm_map_buffer_range_);
+  CHECK(gl_unmap_buffer_);
 }
 
 std::vector<float> VBOTestHelper::ReadBufferAsFloats(VBO* vbo) {

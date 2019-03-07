@@ -19,16 +19,16 @@
 #include "ink/engine/util/dbg/errors.h"
 namespace ink {
 
-void IndexedVBO::Bind() {
+void IndexedVBO::Bind() const {
   index_vbo_.Bind();
   vertex_vbo_.Bind();
 }
 
-void IndexedVBO::Unbind() {
+void IndexedVBO::Unbind() const {
   index_vbo_.Unbind();
   vertex_vbo_.Unbind();
 }
 
-VBO* IndexedVBO::GetIndices() { return &index_vbo_; }
-VBO* IndexedVBO::GetVertices() { return &vertex_vbo_; }
+const VBO* IndexedVBO::GetIndices() const { return &index_vbo_; }
+const VBO* IndexedVBO::GetVertices() const { return &vertex_vbo_; }
 }  // namespace ink

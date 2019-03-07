@@ -80,22 +80,4 @@ Mesh FlattenObjectMatrix(const Mesh& mesh) {
   return ans;
 }
 
-Mesh OptMeshToMesh(const OptimizedMesh& opt_mesh) {
-  Mesh mesh;
-  mesh.verts.resize(opt_mesh.verts.size());
-  mesh.idx = opt_mesh.idx;
-  for (size_t i = 0; i < opt_mesh.verts.size(); i++) {
-    opt_mesh.verts.UnpackVertex(i, &mesh.verts[i]);
-  }
-  mesh.object_matrix = opt_mesh.object_matrix;
-  if (opt_mesh.type == SingleColorShader) {
-    for (size_t i = 0; i < opt_mesh.verts.size(); i++) {
-      mesh.verts[i].color = opt_mesh.color;
-    }
-  }
-  if (opt_mesh.texture) {
-    mesh.texture.reset(new TextureInfo(*opt_mesh.texture));
-  }
-  return mesh;
-}
 }  // namespace ink

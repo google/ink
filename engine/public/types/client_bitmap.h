@@ -53,6 +53,7 @@ enum class ImageFormat {
 
   BITMAP_FORMAT_RGB_888 = 9,
   BITMAP_FORMAT_BGRA_8888 = 10,
+  BITMAP_FORMAT_LA_88 = 11,
 };
 
 size_t bytesPerTexelForFormat(const ImageFormat& format);
@@ -77,10 +78,10 @@ inline std::string Str(const ImageFormat& format) {
       return "BITMAP_FORMAT_A_8";
     case ImageFormat::BITMAP_FORMAT_RGB_888:
       return "BITMAP_FORMAT_RGB_888";
-
-    default:
-      return "(unknown image format!)";
+    case ImageFormat::BITMAP_FORMAT_LA_88:
+      return "BITMAP_FORMAT_LA_88";
   }
+  return "(unknown image format!)";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,6 +101,11 @@ class ClientBitmap {
   const ImageSize sizeInPx() const;
   ImageFormat format() const;
   size_t bytesPerTexel() const;
+
+  // Converts from this bitmap's image format to RGBA 8888.  Note that this
+  // makes a copy of the data even if the bitmap is already formatted as RGBA
+  // 8888.
+  std::vector<uint8_t> Rgba8888ByteData() const;
 
   std::string toString() const;
   std::string ToString() const { return toString(); }

@@ -21,6 +21,8 @@
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/geometry/mesh/mesh.h"
 #include "ink/engine/geometry/primitives/rect.h"
+#include "ink/engine/geometry/primitives/triangle.h"
+#include "ink/engine/geometry/spatial/rtree.h"
 #include "ink/engine/util/funcs/utils.h"
 
 namespace ink {
@@ -39,6 +41,15 @@ class SpatialIndex {
   virtual bool Intersects(const Rect& region,
                           const glm::mat4& region_to_object) const = 0;
 
+  // Returns true if this spatial index intersects other's spatial index. The
+  // this_to_other matrix contains the transformation from *this object
+  // coordinates to other's object coordinates.
+  // Implementation note: This will be using the private function:
+  //   GetTriRTree()
+  // If an RTree is not present, this will return false.
+  bool IntersectsSpatialIndex(const SpatialIndex& other,
+                              const glm::mat4& this_to_other) const;
+
   // Returns the intersection rect between the elements in this spatial index
   // and the region provided. Note that if Intersection() would return
   // absl::nullopt, then Intersects() should return false.
@@ -50,10 +61,22 @@ class SpatialIndex {
   virtual absl::optional<ink::Rect> Intersection(
       const Rect& region, const glm::mat4& region_to_object) const = 0;
 
-  // The bounding Rect of the entire indexed object.
+  // The bounding Rect of the entire indexed object after the given
+  // object-to-world transform has been applied.
   virtual Rect Mbr(const glm::mat4& object_to_world) const = 0;
 
+  // Return the axis aligned bounding Rect in object coordinates. This is
+  // equivalent to calling Mbr(glm::mat4{1}), but may be faster.
+  virtual Rect ObjectMbr() const = 0;
+
   virtual Mesh DebugMesh() const = 0;
+
+ private:
+  // For now, we expect all subclasses to work against an RTree of
+  // triangles. In the future, a subclass may have a different type. We
+  // should add an accessor for the raw RTree here and use it in the
+  // IntersectsSpatialIndex implementation.
+  virtual const RTree<geometry::Triangle>* const GetTriRTree() const = 0;
 };
 
 }  // namespace spatial

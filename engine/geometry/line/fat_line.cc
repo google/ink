@@ -24,7 +24,6 @@
 
 #include "third_party/absl/strings/str_format.h"
 #include "third_party/glm/glm/glm.hpp"
-#include "ink/engine/camera/camera.h"
 #include "ink/engine/geometry/algorithms/distance.h"
 #include "ink/engine/geometry/algorithms/intersect.h"
 #include "ink/engine/geometry/algorithms/simplify.h"
@@ -33,10 +32,7 @@
 #include "ink/engine/geometry/line/tip/round_tip_model.h"
 #include "ink/engine/geometry/line/tip_type.h"
 #include "ink/engine/geometry/primitives/circle_utils.h"
-#include "ink/engine/util/dbg/errors.h"
-#include "ink/engine/util/dbg/log.h"
-#include "ink/engine/util/funcs/utils.h"
-#include "ink/engine/util/time/time_types.h"
+#include "ink/engine/geometry/primitives/rect.h"
 
 namespace ink {
 
@@ -55,10 +51,7 @@ FatLine::FatLine(TipSizeScreen tip_size, uint32_t turn_verts, TipType tip_type)
 FatLine& FatLine::operator=(const FatLine& other) {
   on_add_vert_ = other.on_add_vert_;
   min_screen_travel_threshold_ = other.min_screen_travel_threshold_;
-  down_cam_ = other.down_cam_;
   tip_size_ = other.tip_size_;
-  min_radius_seen_ = other.min_radius_seen_;
-  max_radius_seen_ = other.max_radius_seen_;
   stylus_state_ = other.stylus_state_;
 
   turn_verts_ = other.turn_verts_;
@@ -81,21 +74,19 @@ void FatLine::ClearVertices() {
   start_cap_.clear();
   end_cap_.clear();
   join_to_line_end_ = false;
-  min_radius_seen_ = std::numeric_limits<float>::infinity();
-  max_radius_seen_ = 0;
   stylus_state_ = input::kStylusStateUnknown;
   tip_model_->Clear();
 }
 
-bool FatLine::Extrude(glm::vec2 new_pt, InputTimeS time, bool force,
-                      bool simplify) {
+OptRect FatLine::Extrude(glm::vec2 new_pt, InputTimeS time, bool force,
+                         bool simplify) {
   last_center_ = new_pt;
 
   if (!pts_.empty() &&
       geometry::Distance(pts_[pts_.size() - 1].screen_position, new_pt) <
           min_screen_travel_threshold_) {
     if (!force) {
-      return false;
+      return absl::nullopt;
     }
 
     // Force the extrusion. Modify new_pt so it's a stable numerical distance
@@ -125,7 +116,7 @@ bool FatLine::Extrude(glm::vec2 new_pt, InputTimeS time, bool force,
     // be, for example, within the previous point, and we don't want to allow
     // force to create a broken line.
     if (tip_model_->ShouldDropNewPoint(pts_.back(), midpt)) {
-      return false;
+      return absl::nullopt;
     }
 
     if (tip_model_->ShouldPruneBeforeNewPoint(pts_, midpt)) {
@@ -136,25 +127,31 @@ bool FatLine::Extrude(glm::vec2 new_pt, InputTimeS time, bool force,
     }
   }
 
-  Append(&pts_, midpt);
+  pts_.push_back(midpt);
 
+  OptRect r;
   if (pts_.size() == 2) {
     if (join_to_line_end_) {
-      tip_model_->AddTurnPoints(join_midpoint_, pts_[0], pts_[1], turn_verts_,
-                                [this](glm::vec2 v) { AppendFwd(v); },
-                                [this](glm::vec2 v) { AppendBack(v); });
+      // Include the starting point to capture the first new segment.
+      r = Rect(fwd_.back().position, back_.back().position);
+      tip_model_->AddTurnPoints(
+          join_midpoint_, pts_[0], pts_[1], turn_verts_,
+          [this, &r](glm::vec2 v) { AppendVertex(&fwd_, v, &r); },
+          [this, &r](glm::vec2 v) { AppendVertex(&back_, v, &r); });
     } else {
-      BuildStartCap();
+      r = BuildStartCap();
     }
   } else if (pts_.size() >= 3) {
-    ExtendLine();
+    r = ExtendLine();
+  } else {
+    r = Rect::CreateAtPoint(pts_[0].screen_position);
   }
 
   if (simplify) Simplify();
-  return true;
+  return r;
 }
 
-void FatLine::BuildEndCap() {
+OptRect FatLine::BuildEndCap() {
   EXPECT(!pts_.empty());
 
   std::vector<glm::vec2> cap;
@@ -167,12 +164,19 @@ void FatLine::BuildEndCap() {
   }
 
   end_cap_.clear();
-  Append(&end_cap_, cap);
+  OptRect r;
+  if (!fwd_.empty()) {
+    // fwd_ can be empty if we only have one point and are drawing a dot or if
+    // we are using a tip model with no start caps e.g. chisel tip.
+    r = Rect(fwd_.back().position, back_.back().position);
+  }
+  for (glm::vec2 v : cap) AppendVertex(&end_cap_, v, &r);
+  return r;
 }
 
-bool FatLine::SetStartCapToLineBack(const FatLine& other) {
+OptRect FatLine::SetStartCapToLineBack(const FatLine& other) {
   if (other.fwd_.empty() || other.back_.empty() || other.pts_.empty()) {
-    return false;
+    return absl::nullopt;
   }
   EXPECT(fwd_.empty());
   EXPECT(back_.empty());
@@ -186,11 +190,15 @@ bool FatLine::SetStartCapToLineBack(const FatLine& other) {
   // points without any modifiers so that the join is clean.
   fwd_.push_back(other.fwd_.back());
   back_.push_back(other.back_.back());
+  Rect r(other.fwd_.back().position, other.back_.back().position);
 
   SetTipSize(line_end.tip_size);
   SetStylusState(other.stylus_state_);
-  Extrude(line_end.screen_position, line_end.time_sec, true);
-  return true;
+  OptRect newpts = Extrude(line_end.screen_position, line_end.time_sec, true);
+  if (newpts.has_value()) {
+    r.InplaceJoin(newpts.value());
+  }
+  return r;
 }
 
 void FatLine::Simplify(uint32_t n_verts, float simplification_threshold) {
@@ -248,67 +256,72 @@ std::string FatLine::ToString() const {
   return result;
 }
 
-void FatLine::BuildStartCap() {
+OptRect FatLine::BuildStartCap() {
   EXPECT(pts_.size() >= 2);
 
   fwd_.clear();
   back_.clear();
 
+  OptRect r;
   std::vector<glm::vec2> cap =
       tip_model_->CreateStartcap(pts_[0], pts_[1], turn_verts_);
   if (!cap.empty()) {
     // Add the first and last points of the startcap to back_ and fwd_,
     // respectively, and everything else to startCap_.
-    auto ai = cap.begin();
-    Append(&back_, *ai);
-
-    while (++ai != cap.end()) Append(&start_cap_, *ai);
-
-    Append(&fwd_, *cap.rbegin());
+    AppendVertex(&back_, cap.front(), &r);
+    for (size_t i = 1; i + 1 < cap.size(); ++i) {
+      AppendVertex(&start_cap_, cap[i], &r);
+    }
+    AppendVertex(&fwd_, cap.back(), &r);
   }
+  return r;
 }
 
-void FatLine::ExtendLine() {
+OptRect FatLine::ExtendLine() {
   size_t n_points = pts_.size();
   EXPECT(n_points >= 3);
 
-  tip_model_->AddTurnPoints(pts_[n_points - 3], pts_[n_points - 2],
-                            pts_[n_points - 1], turn_verts_,
-                            [this](glm::vec2 v) { AppendFwd(v); },
-                            [this](glm::vec2 v) { AppendBack(v); });
+  OptRect r;
+  // Include the starting point to capture the first new segment.
+  //
+  // If there's no start cap, then it might take some number of points to cause
+  // anything to get extruded.
+  if (!fwd_.empty()) {
+    r = Rect(fwd_.back().position, back_.back().position);
+  }
+  tip_model_->AddTurnPoints(
+      pts_[n_points - 3], pts_[n_points - 2], pts_[n_points - 1], turn_verts_,
+      [this, &r](glm::vec2 v) { AppendVertex(&fwd_, v, &r); },
+      [this, &r](glm::vec2 v) { AppendVertex(&back_, v, &r); });
+  return r;
 }
 
 // static
 std::vector<glm::vec2> FatLine::OutlineAsArray(
-    const std::vector<FatLine>& lines, const glm::mat4& world_to_object) {
+    const std::vector<FatLine>& lines, const glm::mat4& screen_to_object) {
   std::vector<glm::vec2> vec;
   // Particle-only lines (pencil etc) have no outline.
   if (lines.empty()) {
     return vec;
   }
-  auto& cam = lines[0].DownCamera();
-  auto AddPt = [&vec, &world_to_object, &cam](const glm::vec2& pt) -> void {
-    // Use the down camera recorded line tool to transform screen to world.
-    auto worldPt =
-        cam.ConvertPosition(pt, CoordType::kScreen, CoordType::kWorld);
-    // Use the object matrix inverse to transform world to object.
-    vec.push_back(geometry::Transform(worldPt, world_to_object));
+  auto add_point = [&vec, &screen_to_object](const glm::vec2& pt) {
+    vec.push_back(geometry::Transform(pt, screen_to_object));
   };
   for (auto& pt : lines.begin()->StartCap()) {
-    AddPt(pt.position);
+    add_point(pt.position);
   }
   for (auto& l : lines) {
     for (auto& pt : l.ForwardLine()) {
-      AddPt(pt.position);
+      add_point(pt.position);
     }
   }
   for (auto& pt : lines.rbegin()->EndCap()) {
-    AddPt(pt.position);
+    add_point(pt.position);
   }
   for (auto l = lines.rbegin(); l != lines.rend(); l++) {
     auto& back_line = l->BackwardLine();
     for (auto pt = back_line.rbegin(); pt != back_line.rend(); pt++) {
-      AddPt(pt->position);
+      add_point(pt->position);
     }
   }
   return vec;

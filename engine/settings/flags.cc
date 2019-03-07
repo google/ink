@@ -19,40 +19,41 @@ namespace ink {
 namespace settings {
 
 Flags::Flags(std::shared_ptr<IEngineListener> engine_listener)
-    : dispatch_(new EventDispatch<FlagListener>),
-      engine_listener_(engine_listener) {}
+    : dispatch_(std::make_shared<EventDispatch<FlagListener>>()),
+      engine_listener_(std::move(engine_listener)) {
+  SetFlag(Flag::EnablePanZoom, true);
+  SetFlag(Flag::EnableMotionBlur, true);
+}
 
 void Flags::SetFlag(Flag which, bool value) {
-  values_[which] = value;
+  values_[static_cast<uint32_t>(which)] = value;
 
   dispatch_->Send(&FlagListener::OnFlagChanged, which, value);
   engine_listener_->FlagChanged(GetProtoFlag(which), value);
 }
 
 bool Flags::GetFlag(Flag which) const {
-  if (values_.find(which) == values_.end()) {
-    return false;
-  }
-  return values_.at(which);
+  auto it = values_.find(static_cast<uint32_t>(which));
+  return it == values_.end() ? false : it->second;
 }
 
-void Flags::SetFlag(const proto::Flag& proto_flag, bool value) {
+void Flags::SetFlag(proto::Flag proto_flag, bool value) {
   settings::Flag flag;
   switch (proto_flag) {
     case proto::Flag::READ_ONLY_MODE:
       flag = settings::Flag::ReadOnlyMode;
       break;
     case proto::Flag::ENABLE_PAN_ZOOM:
-      flag = settings::Flag::PanZoomEnabled;
+      flag = settings::Flag::EnablePanZoom;
       break;
     case proto::Flag::ENABLE_ROTATION:
-      flag = settings::Flag::RotationEnabled;
+      flag = settings::Flag::EnableRotation;
       break;
     case proto::Flag::ENABLE_AUTO_PEN_MODE:
-      flag = settings::Flag::AutoPenModeEnabled;
+      flag = settings::Flag::EnableAutoPenMode;
       break;
     case proto::Flag::ENABLE_PEN_MODE:
-      flag = settings::Flag::PenModeEnabled;
+      flag = settings::Flag::EnablePenMode;
       break;
     case proto::Flag::LOW_MEMORY_MODE:
       flag = settings::Flag::LowMemoryMode;
@@ -81,8 +82,17 @@ void Flags::SetFlag(const proto::Flag& proto_flag, bool value) {
     case proto::Flag::ENABLE_HOST_CAMERA_CONTROL:
       flag = settings::Flag::EnableHostCameraControl;
       break;
-    default:
-      SLOG(SLOG_ERROR, "Unknown flag sent to assignFlag");
+    case proto::Flag::ENABLE_MOTION_BLUR:
+      flag = settings::Flag::EnableMotionBlur;
+      break;
+    case proto::Flag::ENABLE_SELECTION_BOX_HANDLES:
+      flag = settings::Flag::EnableSelectionBoxHandles;
+      break;
+    case proto::Flag::ENABLE_PARTIAL_DRAW:
+      flag = settings::Flag::EnablePartialDraw;
+      break;
+    case proto::Flag::UNKNOWN:
+      SLOG(SLOG_ERROR, "Unknown flag.");
       return;
   }
   SetFlag(flag, value);
@@ -94,16 +104,16 @@ proto::Flag Flags::GetProtoFlag(settings::Flag which) {
     case settings::Flag::ReadOnlyMode:
       flag = proto::Flag::READ_ONLY_MODE;
       break;
-    case settings::Flag::PanZoomEnabled:
+    case settings::Flag::EnablePanZoom:
       flag = proto::Flag::ENABLE_PAN_ZOOM;
       break;
-    case settings::Flag::RotationEnabled:
+    case settings::Flag::EnableRotation:
       flag = proto::Flag::ENABLE_ROTATION;
       break;
-    case settings::Flag::AutoPenModeEnabled:
+    case settings::Flag::EnableAutoPenMode:
       flag = proto::Flag::ENABLE_AUTO_PEN_MODE;
       break;
-    case settings::Flag::PenModeEnabled:
+    case settings::Flag::EnablePenMode:
       flag = proto::Flag::ENABLE_PEN_MODE;
       break;
     case settings::Flag::LowMemoryMode:
@@ -133,9 +143,15 @@ proto::Flag Flags::GetProtoFlag(settings::Flag which) {
     case settings::Flag::EnableHostCameraControl:
       flag = proto::Flag::ENABLE_HOST_CAMERA_CONTROL;
       break;
-    default:
-      SLOG(SLOG_ERROR, "Unknown flag in Flags::GetFlag");
-      flag = proto::Flag::UNKNOWN;
+    case settings::Flag::EnableMotionBlur:
+      flag = proto::Flag::ENABLE_MOTION_BLUR;
+      break;
+    case settings::Flag::EnableSelectionBoxHandles:
+      flag = proto::Flag::ENABLE_SELECTION_BOX_HANDLES;
+      break;
+    case settings::Flag::EnablePartialDraw:
+      flag = proto::Flag::ENABLE_PARTIAL_DRAW;
+      break;
   }
   return flag;
 }

@@ -19,6 +19,7 @@
 #include "third_party/absl/strings/substitute.h"
 #include "ink/engine/geometry/algorithms/transform.h"
 #include "ink/engine/geometry/primitives/matrix_utils.h"
+#include "ink/engine/rendering/page_tile_spec.h"
 #include "ink/engine/rendering/zoom_spec.h"
 #include "ink/engine/util/dbg/log.h"
 #include "ink/engine/util/dbg/log_levels.h"
@@ -26,7 +27,6 @@
 namespace ink {
 namespace pdf {
 
-static constexpr size_t kMaxPageCacheSize = 3;
 static constexpr char kUriPrefix[] = "pdf_page://";
 
 /* static */ std::string PdfEngineWrapper::CreateUriFormatString(
@@ -35,56 +35,24 @@ static constexpr char kUriPrefix[] = "pdf_page://";
 }
 
 namespace {
-bool IsPdfPageSpec(absl::string_view uri) { return uri.find(kUriPrefix) == 0; }
+bool IsPdfPageSpec(absl::string_view uri) {
+  return absl::StartsWith(uri, kUriPrefix);
+}
 }  // namespace
 
 PdfEngineWrapper::PdfEngineWrapper(std::unique_ptr<Document> doc)
     : doc_(std::move(doc)) {}
-
-Status PdfEngineWrapper::FindOrOpenPage(int n, Page** page) const {
-  for (const auto& p : page_cache_) {
-    if (p.first == n) {
-      SLOG(SLOG_PDF, "cache hit for page $0", n);
-      *page = p.second.get();
-      return OkStatus();
-    }
-  }
-  SLOG(SLOG_PDF, "cache miss for page $0", n);
-  if (page_cache_.size() > kMaxPageCacheSize - 1) {
-    SLOG(SLOG_PDF, "evicting page $0", page_cache_.back().first);
-    page_cache_.pop_back();
-  }
-  std::unique_ptr<Page> new_page;
-  INK_RETURN_UNLESS(doc_->GetPage(n, &new_page));
-  *page = new_page.get();
-  page_cache_.emplace_front(std::make_pair(n, std::move(new_page)));
-  return OkStatus();
-}
 
 Status PdfEngineWrapper::HandleTileRequest(absl::string_view uri,
                                            ClientBitmap* out) const {
   if (!IsPdfPageSpec(uri)) {
     return ErrorStatus("$0 is not a page spec", uri);
   }
-  // skip the uri prefix
-  uri = uri.substr(strlen(kUriPrefix));
-  size_t ques = uri.find("?");
-  if (ques == absl::string_view::npos) {
-    return ErrorStatus("expected a ? to mark an uri param in <$0>", uri);
-  }
-  int32_t n;
-  if (!absl::SimpleAtoi(uri.substr(0, ques), &n)) {
-    return ErrorStatus("expected an integer page number at <$0>",
-                       uri.substr(0, ques));
-  }
-  uri = uri.substr(ques + 1);
-  ZoomSpec zoom_spec;
-  INK_RETURN_UNLESS(ZoomSpec::FromUri(uri, &zoom_spec));
+  INK_ASSIGN_OR_RETURN(PageTileSpec tile_spec, PageTileSpec::Parse(uri));
 
-  Page* page;
-  INK_RETURN_UNLESS(FindOrOpenPage(n, &page));
+  INK_ASSIGN_OR_RETURN(auto page, doc_->GetPage(tile_spec.Page()));
 
-  const auto& target = zoom_spec.Apply(geometry::Transform(
+  const auto& target = tile_spec.Zoom().Apply(geometry::Transform(
       page->Bounds(), matrix_utils::RotateAboutPoint(page->RotationRadians(),
                                                      page->Bounds().Center())));
   return page->RenderTile(target, out);
@@ -122,14 +90,11 @@ Status PdfEngineWrapper::GetSelection(glm::vec2 start_world,
     std::swap(start_world, end_world);
   }
 
-  Page* page;
-  TextPage* text_page;
-
   // Start point and end point are on the same page.
   if (start_page == end_page) {
     // Transform from world coordinates to page coordinates.
-    INK_RETURN_UNLESS(FindOrOpenPage(start_page, &page));
-    INK_RETURN_UNLESS(page->GetTextPage(&text_page));
+    INK_ASSIGN_OR_RETURN(auto page, doc_->GetPage(start_page));
+    INK_ASSIGN_OR_RETURN(auto* text_page, page->GetTextPage());
     auto page_to_world =
         glm::translate(page_manager.GetPageInfo(start_page).transform,
                        -glm::vec3(page->CropBox().Leftbottom(), 0));
@@ -142,8 +107,8 @@ Status PdfEngineWrapper::GetSelection(glm::vec2 start_world,
 
   // Start point and end point are on different pages.
   for (int i = start_page; i <= end_page; ++i) {
-    INK_RETURN_UNLESS(FindOrOpenPage(i, &page));
-    INK_RETURN_UNLESS(page->GetTextPage(&text_page));
+    INK_ASSIGN_OR_RETURN(auto page, doc_->GetPage(i));
+    INK_ASSIGN_OR_RETURN(auto* text_page, page->GetTextPage());
     auto page_to_world =
         glm::translate(page_manager.GetPageInfo(i).transform,
                        -glm::vec3(page->CropBox().Leftbottom(), 0));
@@ -168,16 +133,21 @@ bool PdfEngineWrapper::IsInText(glm::vec2 world,
     return false;
   }
   int start_page = page_manager.GetPageInfo(group_id).page_index;
-  Page* page;
-  if (!FindOrOpenPage(start_page, &page)) return false;
 
-  TextPage* text_page;
-  if (!page->GetTextPage(&text_page)) return false;
+  auto maybe_page = doc_->GetPage(start_page);
+  if (!maybe_page.ok()) return false;
+  auto page = maybe_page.ValueOrDie();
+
+  auto maybe_text_page = page->GetTextPage();
+  if (!maybe_text_page.ok()) {
+    SLOG(SLOG_WARNING, "$0", maybe_text_page.status());
+    return false;
+  }
 
   auto page_to_world =
       glm::translate(page_manager.GetPageInfo(start_page).transform,
                      -glm::vec3(page->CropBox().Leftbottom(), 0));
-  return text_page->IsInText(
+  return maybe_text_page.ValueOrDie()->IsInText(
       geometry::Transform(world, glm::inverse(page_to_world)));
 }
 
@@ -188,12 +158,18 @@ std::vector<Rect> PdfEngineWrapper::GetCandidateRects(
     return {};
   }
   int start_page = page_manager.GetPageInfo(group_id).page_index;
-  Page* page;
-  if (!FindOrOpenPage(start_page, &page)) return {};
+  auto maybe_page = doc_->GetPage(start_page);
+  if (!maybe_page.ok()) {
+    return {};
+  }
+  auto page = maybe_page.ValueOrDie();
 
-  TextPage* text_page;
-  if (!page->GetTextPage(&text_page)) return {};
-
+  auto maybe_text_page = page->GetTextPage();
+  if (!maybe_text_page.ok()) {
+    SLOG(SLOG_WARNING, "$0", maybe_text_page.status());
+    return {};
+  }
+  auto* text_page = maybe_text_page.ValueOrDie();
   auto page_to_world =
       glm::translate(page_manager.GetPageInfo(start_page).transform,
                      -glm::vec3(page->CropBox().Leftbottom(), 0));

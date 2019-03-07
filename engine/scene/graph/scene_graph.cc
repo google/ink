@@ -706,7 +706,7 @@ bool SceneGraph::GetMesh(ElementId id, OptimizedMesh** mesh) const {
   return false;
 }
 
-std::shared_ptr<spatial::SpatialIndex> SceneGraph::GetSpatialIndex(
+std::shared_ptr<const spatial::SpatialIndex> SceneGraph::GetSpatialIndex(
     ElementId id) const {
   auto iter = element_id_to_bounds_.find(id);
   if (iter == element_id_to_bounds_.end()) {
@@ -861,6 +861,9 @@ ElementId SceneGraph::GroupIdFromUUID(const UUID& id) const {
 }
 
 UUID SceneGraph::UUIDFromElementId(const ElementId& id) const {
+  if (id == kInvalidElementId) {
+    return kInvalidUUID;
+  }
   if (!id_bimap_.Contains(id)) {
     SLOG(SLOG_WARNING,
          "Attempting to find the uuid corresponding to ElementId $0, but no "

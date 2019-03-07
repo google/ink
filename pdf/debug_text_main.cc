@@ -63,38 +63,30 @@ int main(int argc, char** argv) {
 
   string pdf_data;
   QCHECK_OK(file::GetContents(inpdf_path, &pdf_data, file::Defaults()));
-  std::unique_ptr<ink::pdf::Document> pdf_document;
-  QCHECK(ink::pdf::Document::CreateDocument(pdf_data, &pdf_document));
+  auto pdf_document = ink::pdf::Document::CreateDocument(pdf_data).ValueOrDie();
   LOG(INFO) << inpdf_path << " has " << pdf_document->PageCount() << " pages";
 
   Color const start_color = Color::kRed.WithAlpha(.2);
   Color const end_color = Color::kBlue.WithAlpha(.2);
 
   for (int i = 0; i < pdf_document->PageCount(); i++) {
-    std::unique_ptr<ink::pdf::Page> p;
-    QCHECK_OK(pdf_document->GetPage(i, &p));
-    ink::pdf::TextPage* tp;
-    QCHECK_OK(p->GetTextPage(&tp));
+    auto p = pdf_document->GetPage(i).ValueOrDie();
+    auto* tp = p->GetTextPage().ValueOrDie();
     auto const char_count = tp->CharCount();
     for (int i = 0; i < char_count; i++) {
-      ink::pdf::UnicodeCharacter uc;
-      QCHECK_OK(tp->UnicodeCharacterAt(i, &uc));
       Color color = Color::Lerp(start_color, end_color,
                                 static_cast<float>(i) / char_count);
-      QCHECK_OK(p->AddDebugRectangle(uc.GetRect(), color, color,
-                                     ink::pdf::StrokeMode::kNoStroke,
-                                     ink::pdf::FillMode::kWinding));
+      QCHECK_OK(p->AddDebugRectangle(
+          tp->UnicodeCharacterAt(i).ValueOrDie().GetRect(), color, color,
+          ink::pdf::StrokeMode::kNoStroke, ink::pdf::FillMode::kWinding));
     }
     auto const line_count = tp->LineCount();
     for (int i = 0; i < line_count; i++) {
-      ink::pdf::Line line;
-      QCHECK_OK(tp->LineAt(i, &line));
       QCHECK_OK(p->AddDebugRectangle(
-          line.GetRect(), Color::kBlack, Color::kBlack,
+          tp->LineAt(i).ValueOrDie().GetRect(), Color::kBlack, Color::kBlack,
           ink::pdf::StrokeMode::kStroke, ink::pdf::FillMode::kNoFill));
     }
-    std::unique_ptr<ink::ClientBitmap> dest;
-    QCHECK_OK(p->Render(1, &dest));
+    auto dest = p->Render(1).ValueOrDie();
     std::unique_ptr<Pix> pix;
     QCHECK_OK(
         Pix::fromRgba(reinterpret_cast<unsigned char*>(dest->imageByteData()),
@@ -104,8 +96,7 @@ int main(int argc, char** argv) {
     LOG(INFO) << "Writing " << path;
     QCHECK_OK(file::SetContents(path, pix->asPng(), file::Overwrite()));
   }
-  string out;
-  QCHECK_OK(pdf_document->Write(&out));
+  string out = pdf_document->Write<string>().ValueOrDie();
   LOG(INFO) << "Writing " << outpath;
   QCHECK_OK(file::SetContents(outpath, out, file::Overwrite()));
 }

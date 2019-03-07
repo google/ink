@@ -21,8 +21,12 @@
 #include <memory>
 #include <vector>
 
+#include "third_party/absl/types/optional.h"
 #include "ink/engine/camera/camera.h"
+#include "ink/engine/geometry/primitives/rect.h"
+#include "ink/engine/geometry/primitives/rot_rect.h"
 #include "ink/engine/geometry/shape/shape.h"
+#include "ink/engine/input/cursor.h"
 #include "ink/engine/input/drag_reco.h"
 #include "ink/engine/input/input_handler.h"
 #include "ink/engine/input/tap_reco.h"
@@ -65,6 +69,8 @@ class ElementManipulationTool : public Tool, public SceneGraphListener {
   // IInputHandler
   input::CaptureResult OnInput(const input::InputData& data,
                                const Camera& camera) override;
+  absl::optional<input::Cursor> CurrentCursor(
+      const Camera& camera) const override;
 
   // SceneGraphListener
   void OnElementAdded(SceneGraph* graph, ElementId id) override;
@@ -78,20 +84,33 @@ class ElementManipulationTool : public Tool, public SceneGraphListener {
   glm::mat4 GetTransform() const { return current_transform_; }
   bool IsManipulating() const { return is_manipulating_; }
 
+  void SetHandlesEnabled(bool enabled) { allow_handles_ = enabled; }
   void SetDeselectWhenOutside(bool deselect) { allow_deselect_ = deselect; }
 
-  //
   // Calculates a transform matrix for input::DragData that preserves floating
   // point precision when applied to the ranges specified by smallest and
-  // largest regions.
+  // largest regions.  This is public for the sake of unit tests.
   //
   // In some cases:
   //   - Only a partial transform will be returned
   //   - A transform that loses precision will be returned. (As minimal as
   //     possible)
-  static glm::mat4 BestTransformForRegions(input::DragData drag, Rect smallest,
-                                           Rect largest, bool allow_rotation);
-  static bool IsTransformSafeForRegion(glm::mat4 transform, Rect region);
+  //
+  // Parameters:
+  //   drag: the input drag data for which to compute a transform
+  //   handle: which resize handle is being dragged, if any
+  //   to: the input position, i.e. where we're dragging to (world coordinates)
+  //   smallest: the MBR of the smallest selected element (world coordinates)
+  //   largest: the MBR for all selected elements (world coordinates)
+  //   region: the selection box (world coordinates)
+  //   allow_rotation: if false, only allow scale/translate
+  //   maintain_aspect_ratio: if true, prevents non-uniform scaling
+  static glm::mat4 BestTransformForRegions(input::DragData drag,
+                                           ElementManipulationToolHandle handle,
+                                           glm::vec2 to, Rect smallest,
+                                           Rect largest, RotRect region,
+                                           bool allow_rotation,
+                                           bool maintain_aspect_ratio);
 
   inline std::string ToString() const override {
     return "<ElementManipulationTool>";
@@ -100,21 +119,42 @@ class ElementManipulationTool : public Tool, public SceneGraphListener {
  private:
   // attempts to modify currentRegion_ to move along with drag, checking for
   // precision loss
-  void AttemptToTransformRegion(input::DragData drag);
+  void AttemptToTransformRegion(input::DragData drag, glm::vec2 to,
+                                bool maintain_aspect_ratio, bool multitouch);
   void Commit();
   void Cancel();
   void Reset();
 
-  bool is_manipulating_;
-  bool allow_deselect_;
+  // Which resize handle the user is currently grabbing, or NONE if no handle is
+  // being grabbed.
+  ElementManipulationToolHandle manipulating_handle_ =
+      ElementManipulationToolHandle::NONE;
 
-  // the bounding rectangle of the selected elements.
-  // In world coords, fixed at selection time
+  // True if the selection box or a resize handle is currently being dragged.
+  bool is_manipulating_ = false;
+
+  // If false, resize handles will be disabled for this tool, even if
+  // Flag::EnableSelectionBoxHandles is set to true.  This exists so that the
+  // pusher tool (which does not render the selection box) can disable the
+  // resize handles.
+  bool allow_handles_ = true;
+
+  // If true, tapping outside the selection box will deselect the element(s).
+  bool allow_deselect_ = true;
+
+  // The bounding rectangle of the selected elements, in world coords, fixed at
+  // selection/commit time (i.e. not taking current_transform_ into account).
   Rect element_mbr_;
 
   // The mbr of the smallest selected element. Used to prevent accumulation
   // of fp precision errors while manipulating groups of elements.
   Rect smallest_element_mbr_;
+
+  // A possibly-rotated rectangle that bounds the selected elements, in world
+  // coords, fixed at selection/commit time (i.e. not taking current_transform_
+  // into account).  When the elements are first selected, this is just
+  // element_mbr_, but can become rotated if a rotation transform is committed.
+  RotRect selected_region_;
 
   glm::mat4 current_transform_{1};
   std::vector<ElementId> elements_;

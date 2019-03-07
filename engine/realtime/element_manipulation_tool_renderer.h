@@ -20,7 +20,11 @@
 #include <memory>
 #include <vector>
 
+#include "third_party/absl/container/flat_hash_map.h"
+#include "third_party/absl/types/span.h"
 #include "ink/engine/camera/camera.h"
+#include "ink/engine/geometry/primitives/rect.h"
+#include "ink/engine/geometry/primitives/rot_rect.h"
 #include "ink/engine/geometry/shape/shape.h"
 #include "ink/engine/rendering/compositing/live_renderer.h"
 #include "ink/engine/rendering/compositing/single_partition_renderer.h"
@@ -38,18 +42,48 @@
 namespace ink {
 namespace tools {
 
+enum class ElementManipulationToolHandle {
+  NONE,
+  RIGHT,
+  TOP,
+  LEFT,
+  BOTTOM,
+  RIGHTTOP,
+  LEFTTOP,
+  LEFTBOTTOM,
+  RIGHTBOTTOM,
+  ROTATION,
+};
+
+// A list of all values in the ElementManipulationToolHandle enum, suitable for
+// iterating over.
+extern const absl::Span<const ElementManipulationToolHandle>
+    kAllElementManipulationToolHandles;
+
+// Returns the world position of the given selection box handle.  For NONE, this
+// returns the center of the rect.
+glm::vec2 ElementManipulationToolHandlePosition(
+    ElementManipulationToolHandle handle, const Camera& camera,
+    RotRect world_rect);
+
+// Returns the world position of the anchor point for the given selection box
+// handle, i.e. the position of the handle on the opposite corner/side.  For
+// NONE and ROTATION, this returns the center of the rect.
+glm::vec2 ElementManipulationToolHandleAnchor(
+    ElementManipulationToolHandle handle, RotRect world_rect);
+
 class ElementManipulationToolRendererInterface {
  public:
   virtual ~ElementManipulationToolRendererInterface(void) {}
   virtual void Draw(const Camera& cam, FrameTimeS draw_time,
                     glm::mat4 transform) const = 0;
   virtual void Update(const Camera& cam, FrameTimeS draw_time, Rect element_mbr,
-                      glm::mat4 transform) = 0;
+                      RotRect region, glm::mat4 transform) = 0;
   virtual void Enable(bool enabled) = 0;
   virtual void Synchronize(void) = 0;
   virtual void SetElements(const Camera& cam,
                            const std::vector<ElementId>& elements,
-                           Rect current_region) = 0;
+                           Rect element_mbr, RotRect region) = 0;
 };
 
 class ElementManipulationToolRenderer
@@ -60,16 +94,18 @@ class ElementManipulationToolRenderer
   void Draw(const Camera& cam, FrameTimeS draw_time,
             glm::mat4 transform) const override;
   void Update(const Camera& cam, FrameTimeS draw_time, Rect element_mbr,
-              glm::mat4 transform) override;
+              RotRect region, glm::mat4 transform) override;
   void Enable(bool enabled) override;
-  void Synchronize(void) override;
+  void Synchronize() override;
   void SetElements(const Camera& cam, const std::vector<ElementId>& elements,
-                   Rect current_region) override;
+                   Rect element_mbr, RotRect region) override;
 
  private:
-  void SetOutlinePosition(const Camera& cam, Rect region);
+  void SetOutlinePosition(const Camera& cam, RotRect region);
+  void SetOutlineVisible(bool visible);
   void UpdateWithTimer(const Camera& cam, FrameTimeS draw_time,
-                       Rect element_mbr, glm::mat4 transform, Timer timer);
+                       Rect element_mbr, RotRect region, glm::mat4 transform,
+                       Timer timer);
 
   std::shared_ptr<SceneGraph> scene_graph_;
   std::shared_ptr<FrameState> frame_state_;
@@ -78,10 +114,14 @@ class ElementManipulationToolRenderer
   std::shared_ptr<GLResourceManager> gl_resources_;
   Shape outline_;
   Shape outline_glow_;
+  Shape rotation_bar_;
+  absl::flat_hash_map<ElementManipulationToolHandle, std::unique_ptr<Shape>>
+      handle_shapes_;
   ShapeRenderer shape_renderer_;
   SinglePartitionRenderer partition_renderer_;
   MeshRenderer mesh_renderer_;
   Mesh bg_overlay_;
+  std::shared_ptr<settings::Flags> flags_;
 };
 
 class SingleElementManipulationToolRenderer
@@ -97,11 +137,11 @@ class SingleElementManipulationToolRenderer
     if (has_id_) renderer_.Draw(id_, *scene_graph_, cam, draw_time, transform);
   }
   void Update(const Camera& cam, FrameTimeS draw_time, Rect element_mbr,
-              glm::mat4 transform) override {}
+              RotRect region, glm::mat4 transform) override {}
   void Enable(bool enabled) override {}
   void Synchronize(void) override {}
   void SetElements(const Camera& cam, const std::vector<ElementId>& elements,
-                   Rect current_region) override {
+                   Rect element_mbr, RotRect region) override {
     has_id_ = !elements.empty();
     if (has_id_) {
       ASSERT(elements.size() == 1);

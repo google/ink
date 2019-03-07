@@ -89,7 +89,7 @@ void ParticleBuilder::ExtrudeModeledInput(
         earliest_release_time_, frame_state_->GetFrameTime() + end_time));
   }
 
-  resource_manager_->mesh_vbo_provider->ExtendVBO(mesh_, GL_DYNAMIC_DRAW);
+  resource_manager_->mesh_vbo_provider->ExtendVBOs(mesh_, GL_DYNAMIC_DRAW);
 }
 
 void ParticleBuilder::Clear() {

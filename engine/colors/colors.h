@@ -20,7 +20,15 @@
 #include <cstdint>
 
 #include "third_party/glm/glm/glm.hpp"
+#include "ink/engine/util/funcs/step_utils.h"
+
 namespace ink {
+
+// Expects an sRGB color component in (0, 1).
+// Returns an unsigned 32-bit quantity in (0, 255).
+inline uint32_t SRgbFloatToByte(float component) {
+  return static_cast<uint32_t>(0.5f + util::Lerp(0, 255, component)) & 0xff;
+}
 
 glm::vec4 RGBtoHSV(glm::vec4 rgb);
 glm::vec4 HSVtoRGB(glm::vec4 hsv);

@@ -103,6 +103,10 @@ class ITaskRunner {
   // and PreExecute() for the next blocked task if necessary.
   virtual void ServiceMainThreadTasks() = 0;
 
+  // The number of tasks that have been added via PushTask(), but not yet
+  // resolved by ServiceMainThreadTasks().
+  virtual int NumPendingTasks() const = 0;
+
  protected:
   // This convenience class is provided for subclasses. It wraps around a Task
   // to provide the ability to track whether it has completed its PreExecute()

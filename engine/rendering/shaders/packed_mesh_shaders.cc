@@ -39,10 +39,11 @@ using glm::vec4;
 
 using ink::DrawMesh;
 
-const char* const kSourceColorUniformName = "sourcecolor";
-const char* const kViewUniformName = "view";
-const char* const kObjectUniformName = "object";
-const char* const kObjToUVUniformName = "objToUV";
+constexpr char kSourceColorUniformName[] = "sourcecolor";
+constexpr char kViewUniformName[] = "view";
+constexpr char kObjectUniformName[] = "object";
+constexpr char kObjToUVUniformName[] = "objToUV";
+constexpr char kPackedUvToUvUniformName[] = "packed_uv_to_uv";
 
 /////////////////////////////
 
@@ -64,7 +65,7 @@ PackedVertShader::PackedVertShader(
       shader_x12y12textured_(gl, mesh_vbo_provider),
       shader_x32y32_(gl, mesh_vbo_provider),
       shader_x11a7r6y11g7b6_(gl, mesh_vbo_provider),
-      shader_uncompressed_(gl, mesh_vbo_provider) {}
+      shader_x11a7r6y11g7b6u12v12_(gl, mesh_vbo_provider) {}
 
 bool PackedVertShader::ShouldDrawAsEraserTexture(
     const OptimizedMesh& mesh) const {
@@ -86,10 +87,9 @@ const Shader* PackedVertShader::GetShader(const OptimizedMesh& mesh) const {
       } else {
         return &shader_x12y12_;
       }
-    case VertFormat::uncompressed:
-      return &shader_uncompressed_;
+    case VertFormat::x11a7r6y11g7b6u12v12:
+      return &shader_x11a7r6y11g7b6u12v12_;
   }
-  RUNTIME_ERROR("Unknown format $0", static_cast<int>(format));
 }
 
 void PackedVertShader::Use(const Camera& cam, const OptimizedMesh& mesh) const {
@@ -118,7 +118,7 @@ void PackedVertShader::Load() {
   shader_x12y12textured_.Load();
   shader_x32y32_.Load();
   shader_x11a7r6y11g7b6_.Load();
-  shader_uncompressed_.Load();
+  shader_x11a7r6y11g7b6u12v12_.Load();
 }
 
 void PackedVertShader::Draw(const OptimizedMesh& mesh) const {
@@ -138,8 +138,16 @@ void PackedVertShader::Draw(const OptimizedMesh& mesh) const {
                           value_ptr(mesh.object_matrix));
   }
   if (mesh.texture) {
-    EXPECT(VertFormat::uncompressed == mesh.verts.GetFormat());
+    ASSERT(mesh.type == ShaderType::TexturedVertShader);
+    ASSERT(mesh.verts.GetFormat() == VertFormat::x11a7r6y11g7b6u12v12);
     if (!texture_manager_->Bind(*mesh.texture)) {
+      return;
+    }
+    if (shdr->HasUniform(kPackedUvToUvUniformName)) {
+      gl_->UniformMatrix4fv(shdr->GetUniform(kPackedUvToUvUniformName), 1, 0,
+                            value_ptr(mesh.verts.PackedUvToUvTransform()));
+    } else {
+      ASSERT(false);
       return;
     }
   }
@@ -206,30 +214,21 @@ void PackedShaderX32Y32::Load() {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-static InterleavedAttributeSet Uncompressedattrs(
-    ion::gfx::GraphicsManagerPtr gl) {
-  InterleavedAttributeSet ans(gl, sizeof(Vertex));
-  ans.AddAttribute("position", sizeof(Vertex().position),
-                   offsetof(Vertex, position));
-  ans.AddAttribute("sourcecolor", sizeof(Vertex().color),
-                   offsetof(Vertex, color));
-  ans.AddAttribute("textureCoord", sizeof(Vertex().texture_coords),
-                   offsetof(Vertex, texture_coords));
-  return ans;
-}
-
-PackedShaderUncompressed::PackedShaderUncompressed(
+PackedShaderX11A7R6Y11G7B6U12V12::PackedShaderX11A7R6Y11G7B6U12V12(
     ion::gfx::GraphicsManagerPtr gl,
     std::shared_ptr<MeshVBOProvider> mesh_vbo_provider)
-    : Shader(gl, mesh_vbo_provider, "MeshShaders/Packedxyrgbauv32.vert",
-             "MeshShaders/Packedxyrgbauv32.frag", Uncompressedattrs(gl)) {}
+    : Shader(gl, mesh_vbo_provider,
+             "MeshShaders/packed_x11a7r6y11g7b6u12v12.vert",
+             "MeshShaders/TintedTexture.frag",
+             CreatePkShaderAttribute(gl, sizeof(float) * 3)) {}
 
-void PackedShaderUncompressed::Load() {
+void PackedShaderX11A7R6Y11G7B6U12V12::Load() {
   Shader::Load();
 
   // uniforms
   LoadUniform(kViewUniformName);
   LoadUniform(kObjectUniformName);
+  LoadUniform(kPackedUvToUvUniformName);
 }
 
 ///////////////////////////////////////////////////////////////

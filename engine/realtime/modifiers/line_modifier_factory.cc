@@ -20,9 +20,18 @@
 #include "ink/engine/realtime/modifiers/highlighter.h"
 #include "ink/engine/realtime/modifiers/line_animation.h"
 #include "ink/engine/realtime/modifiers/tiled_texture.h"
+#include "ink/engine/util/funcs/rand_funcs.h"
 #include "ink/engine/util/time/time_types.h"
 
 namespace ink {
+
+glm::mat4 RandomTextureCoordinateTransform(float scale) {
+  double tx = Drand(0.0, 1.0);
+  double ty = Drand(0.0, 1.0);
+  glm::mat4 result = glm::translate(glm::mat4{1}, glm::vec3(tx, ty, 0.0)) *
+                     glm::scale(glm::mat4{1}, glm::vec3{scale, scale, 1});
+  return result;
+}
 
 std::unique_ptr<LineModifier> LineModifierFactory::Make(
     const BrushParams& brush_params, glm::vec4 rgba) {
@@ -39,14 +48,14 @@ std::unique_ptr<LineModifier> LineModifierFactory::Make(
       break;
     case BrushParams::LineModifier::PENCIL: {
       float scale = 1.0 / 125;
-      glm::mat4 trans = glm::scale(glm::mat4{1}, glm::vec3{scale, scale, 1});
+      glm::mat4 trans = RandomTextureCoordinateTransform(scale);
       res = absl::make_unique<TiledTextureModifier>(rgba, trans,
                                                     "inkbrush:pencil_000.png");
       break;
     }
     case BrushParams::LineModifier::CHARCOAL: {
       float scale = 1.0 / 100;
-      glm::mat4 trans = glm::scale(glm::mat4{1}, glm::vec3{scale, scale, 1});
+      glm::mat4 trans = RandomTextureCoordinateTransform(scale);
       res = absl::make_unique<TiledTextureModifier>(
           rgba, trans, "inkbrush:charcoal_000.png");
       break;

@@ -26,25 +26,24 @@ constexpr size_t kMaxStringParamSize = 10000000;
 namespace ink {
 namespace pdf {
 
-Status PageObjectMark::GetName(std::string* out) const {
-  return internal::FetchUtf16StringAsUtf8(
-      [this](void* buf, size_t len) {
-        unsigned long out_buflen;
-        FPDFPageObjMark_GetName(mark_, buf, len, &out_buflen);
-        return static_cast<size_t>(out_buflen);
-      },
-      out);
+StatusOr<std::string> PageObjectMark::GetName() const {
+  return internal::FetchUtf16StringAsUtf8([this](void* buf, size_t len) {
+    unsigned long out_buflen;
+    FPDFPageObjMark_GetName(mark_, buf, len, &out_buflen);
+    return static_cast<size_t>(out_buflen);
+  });
 }
 
-Status PageObjectMark::GetIntParam(absl::string_view key, int* value) const {
+StatusOr<int> PageObjectMark::GetIntParam(absl::string_view key) const {
   INK_RETURN_UNLESS(ExpectParamType(key, FPDF_OBJECT_NUMBER));
 
   std::string skey = static_cast<std::string>(key);
-  if (!FPDFPageObjMark_GetParamIntValue(mark_, skey.c_str(), value)) {
+  int value;
+  if (!FPDFPageObjMark_GetParamIntValue(mark_, skey.c_str(), &value)) {
     return ErrorStatus(StatusCode::INTERNAL, "Could not fetch int param $0",
                        key);
   }
-  return OkStatus();
+  return value;
 }
 
 Status PageObjectMark::SetIntParam(absl::string_view key, int value) {
@@ -56,8 +55,8 @@ Status PageObjectMark::SetIntParam(absl::string_view key, int value) {
   return OkStatus();
 }
 
-Status PageObjectMark::GetStringParam(absl::string_view key,
-                                      std::string* value) const {
+StatusOr<std::string> PageObjectMark::GetStringParam(
+    absl::string_view key) const {
   INK_RETURN_UNLESS(ExpectParamType(key, FPDF_OBJECT_STRING));
 
   std::string skey = static_cast<std::string>(key);
@@ -74,9 +73,10 @@ Status PageObjectMark::GetStringParam(absl::string_view key,
                        kMaxStringParamSize, key, expected_size);
   }
   // 0-fill result
-  value->resize(expected_size, 0);
+  std::string value;
+  value.resize(expected_size, 0);
   unsigned long outlen;
-  if (!FPDFPageObjMark_GetParamBlobValue(mark_, skey.c_str(), &((*value)[0]),
+  if (!FPDFPageObjMark_GetParamBlobValue(mark_, skey.c_str(), &(value[0]),
                                          expected_size, &outlen)) {
     return ErrorStatus(StatusCode::INTERNAL, "Could not fetch string param $0",
                        key);
@@ -87,7 +87,7 @@ Status PageObjectMark::GetStringParam(absl::string_view key,
         "Expected length for param $0 was $1 bytes, got $2 bytes.", key,
         expected_size, outlen);
   }
-  return OkStatus();
+  return value;
 }
 
 Status PageObjectMark::SetStringParam(absl::string_view key,

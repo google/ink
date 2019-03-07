@@ -33,7 +33,14 @@ class MockSpatialIndex : public SpatialIndex {
                      absl::optional<Rect>(const Rect& region,
                                           const glm::mat4& object_to_world));
   MOCK_CONST_METHOD1(Mbr, Rect(const glm::mat4& object_to_world));
+  MOCK_CONST_METHOD0(ObjectMbr, Rect());
   MOCK_CONST_METHOD0(DebugMesh, Mesh());
+
+ private:
+  const RTree<geometry::Triangle>* const GetTriRTree() const override {
+    // Mocks don't have an rtree.
+    return nullptr;
+  }
 };
 
 }  // namespace spatial

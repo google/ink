@@ -20,45 +20,47 @@
 
 namespace ink {
 
-void TessellatedLine::SetupNewLine(const Camera& camera,
-                                   float min_screen_travel_threshold,
+void TessellatedLine::SetupNewLine(float min_screen_travel_threshold,
                                    TipType tip_type,
                                    FatLine::VertAddFn vertex_callback,
                                    const LineModParams& line_mod_params) {
   ClearVertices();
-  tessellator_.mesh_.object_matrix = camera.ScreenToWorld();
   params_ = line_mod_params;
-  line_.SetDownCamera(camera);
+  if (params_.texture_uri.empty()) {
+    tessellator_.mesh_.texture = nullptr;
+  } else {
+    tessellator_.mesh_.texture =
+        absl::make_unique<TextureInfo>(params_.texture_uri);
+  }
   line_.SetMinScreenTravelThreshold(min_screen_travel_threshold);
   line_.SetTipType(tip_type);
   line_.SetVertCallback(vertex_callback);
 }
 
-bool TessellatedLine::RestartFromBackOfLine(
+OptRect TessellatedLine::RestartFromBackOfLine(
     const FatLine& other, const LineModParams& line_mod_params,
     absl::optional<FatLine::VertAddFn> vertex_callback) {
-  SetupNewLine(other.DownCamera(), other.MinScreenTravelThreshold(),
-               other.GetTipType(),
+  SetupNewLine(other.MinScreenTravelThreshold(), other.GetTipType(),
                vertex_callback.value_or(other.VertCallback()), line_mod_params);
   return line_.SetStartCapToLineBack(other);
 }
 
-bool TessellatedLine::Extrude(glm::vec2 new_pt, InputTimeS time,
-                              TipSizeScreen tip_size,
-                              input::StylusState stylus_state, int n_turn_verts,
-                              bool force) {
+OptRect TessellatedLine::Extrude(glm::vec2 new_pt, InputTimeS time,
+                                 TipSizeScreen tip_size,
+                                 input::StylusState stylus_state,
+                                 int n_turn_verts, bool force) {
   line_.SetTipSize(tip_size);
   line_.SetStylusState(stylus_state);
   line_.SetTurnVerts(n_turn_verts);
-  bool added_vertices = line_.Extrude(new_pt, time, force);
-  mesh_dirty_ = mesh_dirty_ || added_vertices;
-  return added_vertices;
+  OptRect new_region = line_.Extrude(new_pt, time, force);
+  mesh_dirty_ = mesh_dirty_ || new_region.has_value();
+  return new_region;
 }
 
-void TessellatedLine::BuildEndCap() {
+OptRect TessellatedLine::BuildEndCap() {
   mesh_dirty_ = true;
   has_end_cap_ = true;
-  line_.BuildEndCap();
+  return line_.BuildEndCap();
 }
 
 void TessellatedLine::ClearVertices() {
@@ -86,18 +88,12 @@ const Mesh& TessellatedLine::GetMesh() const {
         clr.LinearizeAllVerts();
       }
     }
-    gl_resources_->mesh_vbo_provider->ReplaceVBO(&tessellator_.mesh_,
-                                                 GL_DYNAMIC_DRAW);
+    gl_resources_->mesh_vbo_provider->ReplaceVBOs(&tessellator_.mesh_,
+                                                  GL_DYNAMIC_DRAW);
   } else {
     tessellator_.mesh_.Clear();
   }
   mesh_dirty_ = false;
-  if (params_.texture_uri.empty()) {
-    tessellator_.mesh_.texture = nullptr;
-  } else {
-    tessellator_.mesh_.texture =
-        absl::make_unique<TextureInfo>(params_.texture_uri);
-  }
   return tessellator_.mesh_;
 }
 

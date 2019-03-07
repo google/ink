@@ -19,6 +19,7 @@
 #include "ink/engine/colors/colors.h"
 #include "ink/engine/geometry/primitives/matrix_utils.h"
 #include "ink/engine/public/types/uuid.h"
+#include "ink/engine/scene/data/common/mesh_serializer.h"
 #include "ink/engine/util/dbg/log.h"
 #include "ink/engine/util/dbg/log_levels.h"
 #include "ink/engine/util/proto/serialize.h"
@@ -117,6 +118,13 @@ Status Stroke::GetMesh(const IMeshReader& mesh_reader, size_t lod_index,
     return ErrorStatus(StatusCode::INVALID_ARGUMENT, "bad index to GetMesh");
   }
   mesh->object_matrix = obj_to_world_;
+
+  // Only meshes with a ShaderType of ColoredVertShader or TexturedVertShader
+  // should be missing an ABGR mesh color.
+  // ColoredVertShader and TexturedVertShader meshes don't need the ABGR mesh
+  // color, as they use the colors on the individual vertices.
+  ASSERT(mesh_serialization::IsVertexColored(shader_type_) ||
+         stroke_.has_abgr());
   return mesh_reader.LodToMesh(stroke_.lod(lod_index), shader_type_,
                                stroke_.abgr(), mesh);
 }

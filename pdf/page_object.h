@@ -51,7 +51,7 @@ class PageObject {
 
   std::unique_ptr<PageObjectMark> AddMark(absl::string_view name);
   int MarkCount() const;
-  Status GetMark(int i, std::unique_ptr<PageObjectMark>* out) const;
+  StatusOr<std::unique_ptr<PageObjectMark>> GetMark(int i) const;
 
   void Transform(double a, double b, double c, double d, double e, double f);
   void Translate(double dx, double dy);

@@ -82,7 +82,7 @@ StrokeOutlineConverter::CreateProcessedElement(
   // Normalize coordinates.
   Rect raw_envelope = geometry::Envelope(vertices);
   glm::mat4 m_norm = ink::PackedVertList::CalcTransformForFormat(
-      raw_envelope, ink::VertFormat::uncompressed);
+      raw_envelope, ink::VertFormat::x32y32);
   // Reject if the matrix isn't invertible.
   float det = glm::determinant(m_norm);
   if (det == 0 || std::isnan(det)) {

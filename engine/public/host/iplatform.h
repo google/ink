@@ -25,6 +25,7 @@
 #include <string>
 
 #include "ink/engine/public/types/client_bitmap.h"
+#include "ink/proto/sengine_portable_proto.pb.h"
 #include "ink/proto/text_portable_proto.pb.h"
 
 namespace ink {
@@ -42,10 +43,14 @@ class IPlatform {
   virtual void BindScreen() = 0;
   virtual void RequestImage(const std::string& uri) = 0;
   // Render the given text proto at the given bitmap dimensions.
+  // This function is called from the Ink engine's task thread; it is not called
+  // on the GL thread (nor, where it's different, on the embedding host's main
+  // thread).
   virtual std::unique_ptr<ClientBitmap> RenderText(
       const proto::text::Text& text, int width_px, int height_px) = 0;
   virtual std::string GetPlatformId() const = 0;
   virtual bool ShouldPreloadShaders() const = 0;
+  virtual void SetCursor(const ink::proto::Cursor& cursor) = 0;
 };
 
 }  // namespace ink

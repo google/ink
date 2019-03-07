@@ -100,8 +100,6 @@ class Tessellator {
   void Inject(T from, T to);
 
  public:
-  bool tess_mid_pts_;
-
   // The result mesh from a call to Tessellate().
   // Always check HasMesh() before using this value.
   Mesh mesh_;
@@ -114,7 +112,7 @@ class Tessellator {
   // DO NOT USE any of these outside of tessellator.cc
   void SetErrorFlag() { did_error_ = true; }
   std::vector<std::unique_ptr<Vertex>> temp_verts_;
-  absl::flat_hash_map<glm::vec2, uint32_t, Vec2Hasher> pt_to_idx_;
+  absl::flat_hash_map<glm::vec2, Mesh::IndexType, Vec2Hasher> pt_to_idx_;
   absl::flat_hash_set<glm::vec2, Vec2Hasher> combined_verts_;
 
  private:

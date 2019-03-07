@@ -61,7 +61,7 @@ void TexturedShader::Load() {
 }
 
 void TexturedShader::Draw(const Mesh& mesh) const {
-  EXPECT(mesh_vbo_provider_->HasVBO(mesh));
+  EXPECT(mesh_vbo_provider_->HasVBOs(mesh));
   DrawMesh(gl_, mesh_vbo_provider_, mesh, GetAttrs());
 }
 
@@ -103,7 +103,7 @@ void TexturedColorTintShader::Load() {
 }
 
 void TexturedColorTintShader::Draw(const Mesh& mesh) const {
-  EXPECT(mesh_vbo_provider_->HasVBO(mesh));
+  EXPECT(mesh_vbo_provider_->HasVBOs(mesh));
   DrawMesh(gl_, mesh_vbo_provider_, mesh, GetAttrs());
 }
 
@@ -145,7 +145,7 @@ void TexturedMaskToBgShader::Load() {
 }
 
 void TexturedMaskToBgShader::Draw(const Mesh& mesh) const {
-  EXPECT(mesh_vbo_provider_->HasVBO(mesh));
+  EXPECT(mesh_vbo_provider_->HasVBOs(mesh));
   DrawMesh(gl_, mesh_vbo_provider_, mesh, GetAttrs());
 }
 

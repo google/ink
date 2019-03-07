@@ -81,9 +81,17 @@ void Texture::Load(const ClientBitmap& client_bitmap, TextureParams params) {
 
   auto gl_tex_format = GlTextureFormat(client_bitmap.format());
   gl_->PixelStorei(GL_UNPACK_ALIGNMENT, gl_tex_format.unpack_alignment);
+  std::vector<uint8_t> converted;
+  const void* image_bytes;
+  if (gl_tex_format.should_convert_to_rgba_8888) {
+    converted = client_bitmap.Rgba8888ByteData();
+    image_bytes = converted.data();
+  } else {
+    image_bytes = client_bitmap.imageByteData();
+  }
   gl_->TexImage2D(GL_TEXTURE_2D, 0, gl_tex_format.internal_format, size_.x,
                   size_.y, 0, gl_tex_format.format, gl_tex_format.type,
-                  client_bitmap.imageByteData());
+                  image_bytes);
 
   if (texture_params_.use_mipmap) {
     EXPECT(size_.x == size_.y && util::IsPowerOf2(size_.x));
@@ -121,6 +129,8 @@ bool Texture::getNinePatchInfo(NinePatchInfo* nine_patch_info) const {
 bool Texture::IsValid() const {
   return size_.x > 0 && size_.y > 0 && gl_id_ != kBadGLHandle;
 }
+
+bool Texture::IsRejection() const { return texture_params_.is_rejection; }
 
 bool Texture::GetPixels(GPUPixels* pixels) const {
   ASSERT(pixels != nullptr);

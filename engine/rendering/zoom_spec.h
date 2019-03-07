@@ -95,6 +95,10 @@ class ZoomSpec {
   // Returns this zoom spec as an uri param/value string, e.g., zoom=12345
   std::string ToUriParam() const;
 
+  // Returns the zoom depth, i.e., how many zoom operations have been applied
+  // from the fully zoomed-out state.
+  int Depth() const { return ops_.size(); }
+
   // Find a zoom param key/value in the give uri, and populates the given
   // ZoomSpec pointer with the resulting spec. If a valid spec is found and
   // parsed, returns ok, otherwise returns an error.

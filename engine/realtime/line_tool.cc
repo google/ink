@@ -128,6 +128,13 @@ void LineTool::Update(const Camera& camera, FrameTimeS draw_time) {
   }
 }
 
+absl::optional<input::Cursor> LineTool::CurrentCursor(
+    const Camera& camera) const {
+  return input::Cursor(input::CursorType::BRUSH,
+                       ink::Color::FromNonPremultipliedRGBA(rgba_),
+                       brush_params_.size.ScreenSize(camera));
+}
+
 void LineTool::Draw(const Camera& live_camera, FrameTimeS draw_time) const {
   std::unique_ptr<Scissor> scissor;
   // Capture the previous scissor and use the scissor of the currect page if one
@@ -161,8 +168,8 @@ void LineTool::UpdateShapeFeedback(const input::InputData& data,
   shape_feedback_.SetVisible(true);
   glm::vec2 border_size_world{
       live_camera.ConvertDistance(1, DistanceType::kDp, DistanceType::kWorld)};
-  auto location =
-      Rect::CreateAtPoint(data.world_pos, 2.0f * glm::vec2(world_radius));
+  auto location = Rect::CreateAtPoint(data.world_pos, 2.0f * world_radius,
+                                      2.0f * world_radius);
   shape_feedback_.SetSizeAndPosition(location, border_size_world, true);
 }
 
@@ -184,6 +191,8 @@ void LineTool::Clear() {
   input_points_ = absl::make_unique<InputPoints>();
   should_init_shader_metadata_ = false;
   input_region_ = Rect();
+  predicted_region_ = absl::nullopt;
+  updated_region_ = absl::nullopt;
   current_group_ = kInvalidElementId;
 }
 
@@ -193,6 +202,13 @@ void LineTool::EnableDebugMesh(bool enabled) {
     dbg_helper_->Remove(kDbgTriangulationId);
     dbg_helper_->Remove(kDbgPredictionId);
   }
+}
+
+glm::vec4 LineTool::PredictedLinePremultipliedVec() const {
+  if (predicted_line_color_) {
+    return predicted_line_color_.value().AsPremultipliedVec();
+  }
+  return rgba_;
 }
 
 void LineTool::SetupNewLine(const input::InputData& data,
@@ -208,7 +224,8 @@ void LineTool::SetupNewLine(const input::InputData& data,
   auto line_modifier = line_modifier_factory_->Make(brush_params_, rgba_);
   line_modifier->SetupNewLine(data, live_camera);
 
-  auto predicted_modifier = line_modifier_factory_->Make(brush_params_, rgba_);
+  auto predicted_modifier = line_modifier_factory_->Make(
+      brush_params_, PredictedLinePremultipliedVec());
   predicted_modifier->SetupNewLine(data, live_camera);
 
   has_touch_id_ = true;
@@ -225,17 +242,16 @@ void LineTool::SetupNewLine(const input::InputData& data,
   line_builder_.SetupNewLine(live_camera, brush_params_.tip_type, data.time,
                              data.type, std::move(line_modifier),
                              std::move(predicted_modifier));
-  input_region_ = Rect(data.world_pos, data.world_pos);
+  input_region_ = Rect::CreateAtPoint(data.world_pos);
+  updated_region_ = Rect::CreateAtPoint(data.screen_pos);
 
   // If both page manager and layers are enabled, page manager wins.
   if (page_manager_->MultiPageEnabled()) {
     current_group_ = page_manager_->GetPageGroupForRect(input_region_);
   } else {
-    size_t index;
-    GroupId group_id;
-    if (layer_manager_->IndexOfActiveLayer(&index) &&
-        layer_manager_->GroupIdForLayerAtIndex(index, &group_id)) {
-      current_group_ = group_id;
+    auto group_id_or = layer_manager_->GroupIdOfActiveLayer();
+    if (group_id_or.ok()) {
+      current_group_ = group_id_or.ValueOrDie();
     }
   }
 
@@ -296,6 +312,8 @@ void LineTool::ChangeToTUp(input::InputData* data) {
 bool LineTool::IsDrawing() const { return has_touch_id_; }
 
 Rect LineTool::InputRegion() const { return input_region_; }
+
+void LineTool::ResetUpdatedRegion() { updated_region_ = predicted_region_; }
 
 input::CaptureResult LineTool::OnInput(const input::InputData& in_data,
                                        const Camera& live_camera) {
@@ -360,8 +378,10 @@ void LineTool::ExtrudeLine(const input::InputData& data, bool is_line_end) {
     model_results.emplace_back(mi);
   }
   if (!model_results.empty()) {
-    line_builder_.ExtrudeModeledInput(input_modeler_->camera(), model_results,
-                                      is_line_end);
+    util::AssignOrJoinTo(
+        line_builder_.ExtrudeModeledInput(input_modeler_->camera(),
+                                          model_results, is_line_end),
+        &updated_region_);
     if (brush_params_.particles) {
       particles_.ExtrudeModeledInput(model_results);
     }
@@ -373,7 +393,8 @@ void LineTool::RegeneratePredictedLine() {
 
   auto points = input_modeler_->PredictModelResults();
   auto& cam = input_modeler_->camera();
-  line_builder_.ConstructPrediction(cam, points);
+  predicted_region_ = line_builder_.ConstructPrediction(cam, points);
+  util::AssignOrJoinTo(predicted_region_, &updated_region_);
 }
 
 void LineTool::SendCompleteLineToSink() {
@@ -393,11 +414,11 @@ void LineTool::SendCompleteLineToSink() {
   SLOG(SLOG_DATA_FLOW, "New line tests: in_bounds=$0 in_page=$1", in_bounds,
        in_page);
   if (in_bounds && in_page) {
-    result_sink_->Accept(line_builder_.CompletedLines(),
-                         std::move(input_points_), std::move(rendering_mesh),
-                         current_group_,
-                         line_builder_.GetLineModifier()->GetShaderType(),
-                         final_tessellation_params_);
+    result_sink_->Accept(
+        line_builder_.DownCamera(), line_builder_.CompletedLines(),
+        std::move(input_points_), std::move(rendering_mesh), current_group_,
+        line_builder_.GetLineModifier()->GetShaderType(),
+        final_tessellation_params_);
   }
 }
 

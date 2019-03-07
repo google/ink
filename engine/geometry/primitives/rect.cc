@@ -48,11 +48,6 @@ Rect Rect::CreateAtPoint(vec2 center, float width, float height) {
   return ans;
 }
 
-// static
-Rect Rect::CreateAtPoint(glm::vec2 center, glm::vec2 dim) {
-  return Rect::CreateAtPoint(center, dim.x, dim.y);
-}
-
 bool Rect::IsValid() const {
   return (from.y == std::min(from.y, to.y)) &&
          (from.x == std::min(from.x, to.x)) &&
@@ -340,6 +335,14 @@ Rect Lerpnc(Rect from, Rect to, float amount) {
 template <>
 Rect Smoothstep(Rect from, Rect to, float amount) {
   return Rect::Smoothstep(from, to, amount);
+}
+
+void AssignOrJoinTo(const OptRect& other, OptRect* rect) {
+  if (rect->has_value() && other.has_value()) {
+    rect->value().InplaceJoin(other.value());
+  } else if (!rect->has_value()) {
+    *rect = other;
+  }
 }
 
 }  // namespace util

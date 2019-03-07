@@ -20,6 +20,7 @@
 #include "file/base/options.h"
 #include "file/base/path.h"
 #include "image/base/rawimage.h"
+#include "testing/base/public/gmock.h"
 #include "testing/lib/sponge/undeclared_outputs.h"
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -66,10 +67,16 @@ void StripTrailerIds(::string* pdf_bytes) {
 
 std::unique_ptr<Pix> PixFromClientBitmap(const ClientBitmap& bitmap) {
   std::unique_ptr<Pix> pix;
-  QCHECK_OK(Pix::fromRgba(
-      reinterpret_cast<unsigned const char*>(bitmap.imageByteData()),
-      bitmap.sizeInPx().width, bitmap.sizeInPx().height, Pix::NON_PREMULTIPLIED,
-      &pix));
+  if (bitmap.bytesPerTexel() == 4) {
+    QCHECK_OK(Pix::fromRgba(
+        reinterpret_cast<unsigned const char*>(bitmap.imageByteData()),
+        bitmap.sizeInPx().width, bitmap.sizeInPx().height,
+        Pix::NON_PREMULTIPLIED, &pix));
+  } else {
+    QCHECK_OK(Pix::fromRgb(
+        reinterpret_cast<unsigned const char*>(bitmap.imageByteData()),
+        bitmap.sizeInPx().width, bitmap.sizeInPx().height, &pix));
+  }
   return pix;
 }
 
@@ -83,8 +90,7 @@ void PdfTestEnvironment::SanitizeSnapshotPages(Document* doc,
                                                ink::proto::Snapshot* snapshot) {
   for (int i = 0; i < doc->PageCount(); ++i) {
     auto* page = snapshot->add_per_page_properties();
-    Rect dim;
-    QCHECK_OK(doc->GetPageBounds(i, &dim));
+    Rect dim = doc->GetPageBounds(i).ValueOrDie();
     page->set_uuid(StrCat("page", i));
     page->set_width(dim.Dim()[0]);
     page->set_height(dim.Dim()[1]);
@@ -96,8 +102,7 @@ void PdfTestEnvironment::SanitizeSnapshotPages(Document* doc,
 }
 
 ::string PdfTestEnvironment::Serialize(const pdf::Document& doc) {
-  ::string s;
-  QCHECK_OK(doc.Write(&s));
+  auto s = doc.Write<::string>().ValueOrDie();
   StripTrailerIds(&s);
   return s;
 }
@@ -110,9 +115,7 @@ void PdfTestEnvironment::SanitizeSnapshotPages(Document* doc,
 std::unique_ptr<Document> PdfTestEnvironment::LoadPDF(absl::string_view path) {
   string pdf_data;
   QCHECK_OK(file::GetContents(path, &pdf_data, file::Defaults()));
-  std::unique_ptr<Document> doc;
-  QCHECK_OK(Document::CreateDocument(pdf_data, &doc));
-  return doc;
+  return Document::CreateDocument(pdf_data).ValueOrDie();
 }
 
 ink::proto::Snapshot PdfTestEnvironment::LoadSnapshot(absl::string_view path) {
@@ -132,10 +135,8 @@ std::unique_ptr<Pix> PdfTestEnvironment::RenderPage(const Page& page,
   QCHECK_GT(bounds.Area(), 0) << "0 page size";
   const float scale = static_cast<float>(kMaxDimension) /
                       std::max(bounds.Width(), bounds.Height());
-
-  std::unique_ptr<ClientBitmap> dest;
-  QCHECK_OK(page.Render(scale, &dest));
-  std::unique_ptr<Pix> pix = PixFromClientBitmap(*dest);
+  std::unique_ptr<Pix> pix =
+      PixFromClientBitmap(*page.Render(scale).ValueOrDie());
   if (!crop.Empty()) {
     QCHECK_OK(pix->Crop(crop.Left(), crop.Bottom(), crop.Right(), crop.Top()));
   }
@@ -150,8 +151,7 @@ void PdfTestEnvironment::CompareWithPdfGoldens(
 void PdfTestEnvironment::CompareWithPdfGoldens(
     absl::string_view prefix, absl::string_view actual_pdf_contents,
     absl::string_view golden_pdf_path) {
-  std::unique_ptr<Document> doc;
-  QCHECK(Document::CreateDocument(actual_pdf_contents, &doc));
+  auto doc = Document::CreateDocument(actual_pdf_contents).ValueOrDie();
   int page_count = doc->PageCount();
 
   string generate_golden_to = absl::GetFlag(FLAGS_generate_golden_to);
@@ -177,8 +177,7 @@ void PdfTestEnvironment::CompareWithPdfGoldens(
       "application/pdf", actual_pdf_contents);
 
   for (int i = 0; i < page_count; i++) {
-    std::unique_ptr<Page> actual_page;
-    QCHECK(doc->GetPage(i, &actual_page));
+    auto actual_page = doc->GetPage(i).ValueOrDie();
     auto pix = RenderPage(*actual_page);
     CompareWithGolden(StrCat(prefix, "-p", i), pix->asPng());
   }

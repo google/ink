@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "ink/engine/camera/camera.h"
+#include "ink/engine/input/cursor.h"
 #include "ink/engine/input/input_data.h"
 #include "ink/engine/service/dependencies.h"
 #include "ink/engine/settings/flags.h"
@@ -46,6 +47,12 @@ class InputDispatch {
 
   void Dispatch(const Camera& cam, InputData data);
   void ForceAllUp(const Camera& cam);
+
+  // Determines what the current mouse cursor should be, by dispatching to input
+  // handlers (that haven't refused input) and returning the first non-null
+  // cursor specified.  If no input handler wants to specify a cursor, returns
+  // the default cursor.
+  Cursor GetCurrentCursor(const Camera& cam) const;
 
   size_t GetNContacts() const { return input_id_to_last_input_.size(); }
 

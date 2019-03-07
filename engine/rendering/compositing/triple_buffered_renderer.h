@@ -39,6 +39,7 @@
 #include "ink/engine/scene/page/page_manager.h"
 #include "ink/engine/scene/types/element_id.h"
 #include "ink/engine/service/dependencies.h"
+#include "ink/engine/settings/flags.h"
 #include "ink/engine/util/funcs/cached_set_difference.h"
 #include "ink/engine/util/signal_filters/exp_moving_avg.h"
 #include "ink/engine/util/time/stopwatch.h"
@@ -57,12 +58,13 @@ namespace ink {
 
 class TripleBufferedRenderer : public SceneGraphRenderer,
                                public SceneGraphListener,
-                               public TextureListener {
+                               public TextureListener,
+                               public settings::FlagListener {
  public:
   using SharedDeps =
       service::Dependencies<FrameState, GLResourceManager, input::InputDispatch,
                             SceneGraph, WallClockInterface, PageManager,
-                            LayerManager>;
+                            LayerManager, settings::Flags>;
 
   TripleBufferedRenderer(std::shared_ptr<FrameState> frame_state,
                          std::shared_ptr<GLResourceManager> gl_resources,
@@ -70,7 +72,8 @@ class TripleBufferedRenderer : public SceneGraphRenderer,
                          std::shared_ptr<SceneGraph> scene_graph,
                          std::shared_ptr<WallClockInterface> wall_clock,
                          std::shared_ptr<PageManager> page_manager,
-                         std::shared_ptr<LayerManager> layer_manager);
+                         std::shared_ptr<LayerManager> layer_manager,
+                         std::shared_ptr<settings::Flags> flags);
   ~TripleBufferedRenderer() override;
 
   void Draw(const Camera& cam, FrameTimeS draw_time) const override;
@@ -95,6 +98,9 @@ class TripleBufferedRenderer : public SceneGraphRenderer,
   void Synchronize(FrameTimeS draw_time) override;
 
   bool IsBackBufferComplete() const;
+
+  // FlagListener
+  void OnFlagChanged(settings::Flag which, bool new_value) override;
 
  private:
   // Texture updates will immediately Invalidate the scene.
@@ -171,6 +177,7 @@ class TripleBufferedRenderer : public SceneGraphRenderer,
   // Do not apply prediction to multi-page documents.
   std::shared_ptr<PageManager> page_manager_;
   std::shared_ptr<LayerManager> layer_manager_;
+  std::shared_ptr<settings::Flags> flags_;
   std::unique_ptr<FramerateLock> frame_lock_;
   std::unique_ptr<DBRenderTarget> tile_;
   std::unique_ptr<DBRenderTarget> above_tile_;
@@ -179,6 +186,7 @@ class TripleBufferedRenderer : public SceneGraphRenderer,
   // Maintain a separate framelock for blur effects.
   mutable std::unique_ptr<FramerateLock> blur_lock_;
 #endif
+  bool cached_enable_motion_blur_flag_;
 
   CameraPredictor cam_predictor_;
 

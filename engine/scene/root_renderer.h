@@ -23,12 +23,14 @@
 #include "ink/engine/realtime/tool_controller.h"
 #include "ink/engine/rendering/compositing/live_renderer.h"
 #include "ink/engine/rendering/renderers/background_renderer.h"
+#include "ink/engine/scene/frame_state/frame_state.h"
 #include "ink/engine/scene/grid_manager.h"
 #include "ink/engine/scene/page/page_border.h"
 #include "ink/engine/scene/page/page_bounds.h"
 #include "ink/engine/scene/particle_manager.h"
 #include "ink/engine/scene/types/event_dispatch.h"
 #include "ink/engine/service/dependencies.h"
+#include "ink/engine/settings/flags.h"
 #include "ink/engine/util/dbg_helper.h"
 #include "ink/engine/util/time/time_types.h"
 
@@ -85,12 +87,13 @@ class RootRenderer {
   virtual void Resize(glm::ivec2 new_size, int rotation_deg) = 0;
 };
 
-class RootRendererImpl : public RootRenderer {
+class RootRendererImpl : public RootRenderer, public settings::FlagListener {
  public:
   using SharedDeps =
       service::Dependencies<GLResourceManager, Camera, IPlatform, PageBounds,
                             ToolController, LiveRenderer, GridManager,
-                            ParticleManager, PageBorder, IDbgHelper>;
+                            ParticleManager, PageBorder, IDbgHelper, FrameState,
+                            settings::Flags>;
 
   RootRendererImpl(std::shared_ptr<GLResourceManager> gl_resources,
                    std::shared_ptr<Camera> camera,
@@ -101,7 +104,9 @@ class RootRendererImpl : public RootRenderer {
                    std::shared_ptr<GridManager> grid_manager,
                    std::shared_ptr<ParticleManager> particle_manager,
                    std::shared_ptr<PageBorder> page_border,
-                   std::shared_ptr<IDbgHelper> dbg_helper);
+                   std::shared_ptr<IDbgHelper> dbg_helper,
+                   std::shared_ptr<FrameState> frame_state,
+                   std::shared_ptr<settings::Flags> flags);
 
   // Disallow copy and assign.
   RootRendererImpl(const RootRendererImpl&) = delete;
@@ -116,8 +121,25 @@ class RootRendererImpl : public RootRenderer {
   void Resize(glm::ivec2 new_size, int rotation_deg) override;
   void DrawDrawables(FrameTimeS draw_time, RenderOrder which) const override;
 
+  void OnFlagChanged(settings::Flag which, bool new_value) override;
+
  private:
   void DrawPageContents(FrameTimeS draw_time);
+
+  // Return the screen bounding box of the page content area to be drawn, or
+  // absl::nullopt if there no bounding box, if e.g. the canvas is infinite.
+  //
+  // If the partial draw flag is enabled, returns the intersection of the
+  // updated region of the line tool and the page bounds, if set.  The updated
+  // region may be empty, indicating there is nothing to draw.
+  OptRect GetDrawingBounds() const;
+
+  // Returns true if only the changed region of the line tool should be drawn.
+  //
+  // Because the line tool generates ephemeral artifacts, this also entails
+  // clearing and re-drawing anything within the page content area.
+  bool OnlyDrawingLineTool() const;
+
   std::shared_ptr<GLResourceManager> gl_resources_;
   ion::gfx::GraphicsManagerPtr gl_;
   std::shared_ptr<Camera> camera_;
@@ -129,11 +151,15 @@ class RootRendererImpl : public RootRenderer {
   std::shared_ptr<ParticleManager> particle_manager_;
   std::shared_ptr<PageBorder> page_border_;
   std::shared_ptr<IDbgHelper> dbg_helper_;
+  std::shared_ptr<FrameState> frame_state_;
+  std::shared_ptr<settings::Flags> flags_;
 
   std::shared_ptr<EventDispatch<DrawListener>> drawable_dispatch_;
   BackgroundRenderer background_renderer_;
 
   std::unique_ptr<DBRenderTarget> back_buffer_;
+
+  bool partial_draw_enabled_ = false;
 };
 
 }  // namespace ink

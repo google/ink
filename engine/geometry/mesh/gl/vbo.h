@@ -54,32 +54,35 @@ class VBO {
   // Disallow copy and assign.
   VBO(const VBO&) = delete;
   VBO& operator=(const VBO&) = delete;
+  // But allow move.
+  VBO(VBO&& other) noexcept;
+  VBO& operator=(VBO&& other);
 
   ~VBO();
 
-  void Bind();
-  void Unbind();
+  void Bind() const;
+  void Unbind() const;
 
-  size_t GetSizeInBytes();
-  size_t GetCapacityInBytes();
+  size_t GetSizeInBytes() const;
+  size_t GetCapacityInBytes() const;
 
   template <typename T>
-  size_t GetTypedSize() {
+  size_t GetTypedSize() const {
     return NumBytesToNumType<T>(size_in_bytes_);
   }
 
   template <typename T>
-  size_t GetTypedCapacity() {
+  size_t GetTypedCapacity() const {
     return NumBytesToNumType<T>(capacity_in_bytes_);
   }
 
   template <typename T>
-  size_t GetTypedSizeExact() {
+  size_t GetTypedSizeExact() const {
     return NumBytesToNumTypeExact<T>(size_in_bytes_);
   }
 
   template <typename T>
-  size_t GetTypedCapacityExact() {
+  size_t GetTypedCapacityExact() const {
     return NumBytesToNumTypeExact<T>(capacity_in_bytes_);
   }
 
@@ -158,7 +161,7 @@ class VBO {
     size_in_bytes_ += new_bytes_size;
   }
 
-  bool HasCapacity(size_t target_size) {
+  bool HasCapacity(size_t target_size) const {
     return target_size <= capacity_in_bytes_;
   }
 

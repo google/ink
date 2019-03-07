@@ -21,6 +21,9 @@
 
 #include "third_party/glm/glm/glm.hpp"
 #include "third_party/glm/glm/gtc/matrix_transform.hpp"
+#include "third_party/glm/glm/gtx/projection.hpp"
+#include "third_party/glm/glm/gtx/rotate_vector.hpp"
+#include "third_party/glm/glm/gtx/vector_angle.hpp"
 #include "ink/engine/brushes/tool_type.h"
 #include "ink/engine/colors/colors.h"
 #include "ink/engine/geometry/algorithms/intersect.h"
@@ -45,16 +48,22 @@
 
 namespace ink {
 namespace tools {
+namespace {
 
 using RendererInterface = ElementManipulationToolRendererInterface;
+
+// You must click/touch within RegionQuery::MinSelectionSizeCm(type) times this
+// to be grabbing a resize handle.  (No that there's no principle to this exact
+// value; I tried a few different values and this one felt about right.)
+const float kMaxHandleDistFactor = 1.3;
+
+}  // namespace
 
 ElementManipulationTool::ElementManipulationTool(
     const service::UncheckedRegistry& registry, bool register_for_input,
     std::function<void(void)> cancel_callback,
     std::unique_ptr<RendererInterface> render_helper)
     : Tool(input::Priority::ManipulateSelection),
-      is_manipulating_(false),
-      allow_deselect_(true),
       cancel_callback_(cancel_callback),
       scene_graph_(registry.GetShared<SceneGraph>()),
       flags_(registry.GetShared<settings::Flags>()),
@@ -85,7 +94,37 @@ input::CaptureResult ElementManipulationTool::OnInput(
   }
 
   if (!is_manipulating_ && data.Get(input::Flag::InContact)) {
-    if (allow_deselect_) {
+    // Find the nearest handle to the input position; if none of them are within
+    // max_handle_dist, we'll default to NONE (meaning we're translating the
+    // selection rather than resizing).  For this calculation, we pretend that
+    // NONE is a real handle at the center of the rect; this ensures that it's
+    // still possible to translate a very small selection, as long as the input
+    // is closer to the center than to the edges.
+    auto nearest_handle = ElementManipulationToolHandle::NONE;
+    if (allow_handles_ &&
+        flags_->GetFlag(settings::Flag::EnableSelectionBoxHandles)) {
+      const float max_handle_dist = camera.ConvertDistance(
+          kMaxHandleDistFactor * RegionQuery::MinSelectionSizeCm(data.type),
+          DistanceType::kCm, DistanceType::kWorld);
+      float nearest_world_dist = max_handle_dist;
+      for (auto handle : kAllElementManipulationToolHandles) {
+        if (handle == ElementManipulationToolHandle::ROTATION &&
+            !flags_->GetFlag(settings::Flag::EnableRotation)) {
+          continue;
+        }
+        glm::vec2 handle_world_pos = ElementManipulationToolHandlePosition(
+            handle, camera, selected_region_);
+        float world_dist = glm::distance(handle_world_pos, data.world_pos);
+        if (world_dist < nearest_world_dist) {
+          nearest_world_dist = world_dist;
+          nearest_handle = handle;
+        }
+      }
+    }
+    // If deselection is allowed, and we're not grabbing any handle, and we're
+    // well outside the selection region, we should deselect.
+    if (allow_deselect_ &&
+        nearest_handle == ElementManipulationToolHandle::NONE) {
       // If the contact is not near the selected region, deselect
       float mbr_buffer_cm = 1.5 * RegionQuery::MinSelectionSizeCm(data.type);
       float within_limit_world = camera.ConvertDistance(
@@ -97,7 +136,9 @@ input::CaptureResult ElementManipulationTool::OnInput(
         return input::CapResRefuse;
       }
     }
+    // Otherwise, we are now manipulating.
     is_manipulating_ = true;
+    manipulating_handle_ = nearest_handle;
     drag_reco_.Reset();
   }
 
@@ -106,22 +147,73 @@ input::CaptureResult ElementManipulationTool::OnInput(
       Commit();
     }
     is_manipulating_ = false;
+    manipulating_handle_ = ElementManipulationToolHandle::NONE;
   }
 
   if (is_manipulating_) {
     drag_reco_.OnInput(data, camera);
     input::DragData drag;
     if (drag_reco_.GetDrag(&drag)) {
-      AttemptToTransformRegion(drag);
+      AttemptToTransformRegion(drag, data.world_pos,
+                               /*maintain_aspect_ratio=*/true,
+                               /*multitouch=*/data.n_down > 1);
     }
   }
 
   return input::CapResCapture;
 }
 
-// static
-bool ElementManipulationTool::IsTransformSafeForRegion(glm::mat4 transform,
-                                                       Rect region) {
+absl::optional<input::Cursor> ElementManipulationTool::CurrentCursor(
+    const Camera& camera) const {
+  if (!is_manipulating_) {
+    return input::Cursor(input::CursorType::GRAB);
+  }
+  float direction_radians = 0.0;
+  switch (manipulating_handle_) {
+    case ElementManipulationToolHandle::NONE:
+      return input::Cursor(input::CursorType::GRABBING);
+    case ElementManipulationToolHandle::RIGHT:
+    case ElementManipulationToolHandle::LEFT:
+      direction_radians = 0.0;
+      break;
+    case ElementManipulationToolHandle::RIGHTTOP:
+    case ElementManipulationToolHandle::LEFTBOTTOM:
+      direction_radians = M_TAU / 8.0;
+      break;
+    case ElementManipulationToolHandle::TOP:
+    case ElementManipulationToolHandle::BOTTOM:
+      direction_radians = M_TAU / 4.0;
+      break;
+    case ElementManipulationToolHandle::LEFTTOP:
+    case ElementManipulationToolHandle::RIGHTBOTTOM:
+      direction_radians = M_TAU * 3.0 / 8.0;
+      break;
+    case ElementManipulationToolHandle::ROTATION:
+      return input::Cursor(input::CursorType::GRABBING);
+  }
+  // For resize handles, we want to take into account the rotation of the
+  // selection rect; for example, the TOP handle would normally use a RESIZE_NS
+  // cursor, but if the selection box is rotated by 90 degrees, then a RESIZE_EW
+  // cursor is better.  So, we add the direction_radians of the handle to the
+  // rotation of the selected_region_, and then round to the closest compass
+  // direction.
+  direction_radians += selected_region_.Rotation();
+  int direction_integer = std::lroundf(direction_radians / (M_TAU / 8.0));
+  switch (ink::util::Mod(direction_integer, 4)) {
+    case 0:
+      return input::Cursor(input::CursorType::RESIZE_EW);
+    case 1:
+      return input::Cursor(input::CursorType::RESIZE_NESW);
+    case 2:
+      return input::Cursor(input::CursorType::RESIZE_NS);
+    case 3:
+    default:
+      return input::Cursor(input::CursorType::RESIZE_NWSE);
+  }
+}
+
+namespace {
+bool IsTransformSafeForRegion(glm::mat4 transform, Rect region) {
   auto proposed_region = geometry::Transform(region, transform);
   bool res = proposed_region.Width() > 0 && proposed_region.Height() > 0;
   if (res) {
@@ -131,27 +223,80 @@ bool ElementManipulationTool::IsTransformSafeForRegion(glm::mat4 transform,
   }
   return res;
 }
+}  // namespace
 
 // static
 glm::mat4 ElementManipulationTool::BestTransformForRegions(
-    input::DragData drag, Rect smallest, Rect largest, bool allow_rotation) {
+    input::DragData drag, ElementManipulationToolHandle handle, glm::vec2 to,
+    Rect smallest, Rect largest, RotRect region, bool allow_rotation,
+    bool maintain_aspect_ratio) {
   ASSERT(smallest.Area() <= largest.Area());
   ASSERT(smallest.IsValid() && largest.IsValid());
 
-  auto scale_center_translation = glm::vec3(drag.world_scale_center, 1);
-  glm::mat4 scale_and_rotate =
-      glm::translate(glm::mat4(1), scale_center_translation);
-  if (allow_rotation) {
-    scale_and_rotate = glm::rotate(scale_and_rotate, drag.rotation_radians,
-                                   glm::vec3(0, 0, 1));
+  glm::mat4 translation = glm::mat4(1);
+  glm::mat4 scale_and_rotate = glm::mat4(1);
+  if (handle == ElementManipulationToolHandle::NONE) {
+    translation = glm::translate(
+        glm::mat4(1), glm::vec3(drag.world_drag.x, drag.world_drag.y, 0.0f));
+    const auto scale_center_translation = glm::vec3(drag.world_scale_center, 1);
+    scale_and_rotate = glm::translate(glm::mat4(1), scale_center_translation);
+    if (allow_rotation) {
+      scale_and_rotate = glm::rotate(scale_and_rotate, drag.rotation_radians,
+                                     glm::vec3(0, 0, 1));
+    }
+    scale_and_rotate =
+        glm::scale(scale_and_rotate, glm::vec3(drag.scale, drag.scale, 1.0f));
+    scale_and_rotate =
+        glm::translate(scale_and_rotate, -scale_center_translation);
+  } else if (handle == ElementManipulationToolHandle::ROTATION) {
+    if (allow_rotation) {
+      RotRect new_region = region;
+      new_region.SetRotation(glm::orientedAngle(
+          glm::vec2{0, 1}, glm::normalize(to - region.Center())));
+      scale_and_rotate = region.CalcTransformTo(new_region);
+    }
+  } else {
+    glm::vec2 opposite_point =
+        ElementManipulationToolHandleAnchor(handle, region);
+    RotRect new_region = region;
+    switch (handle) {
+      case ElementManipulationToolHandle::RIGHTTOP:
+      case ElementManipulationToolHandle::LEFTTOP:
+      case ElementManipulationToolHandle::LEFTBOTTOM:
+      case ElementManipulationToolHandle::RIGHTBOTTOM: {
+        new_region =
+            RotRect::WithCorners(opposite_point, to, region.Rotation());
+        if (maintain_aspect_ratio) {
+          new_region =
+              new_region.InteriorRotRectWithAspectRatio(region.AspectRatio());
+        }
+      } break;
+      case ElementManipulationToolHandle::TOP:
+      case ElementManipulationToolHandle::BOTTOM: {
+        new_region.SetHeight(std::abs(
+            glm::dot(to - opposite_point,
+                     glm::rotate(glm::vec2{0, 1}, region.Rotation()))));
+        if (maintain_aspect_ratio) {
+          new_region.SetWidth(new_region.Height() * region.AspectRatio());
+        }
+      } break;
+      case ElementManipulationToolHandle::RIGHT:
+      case ElementManipulationToolHandle::LEFT: {
+        new_region.SetWidth(std::abs(
+            glm::dot(to - opposite_point,
+                     glm::rotate(glm::vec2{1, 0}, region.Rotation()))));
+        if (maintain_aspect_ratio) {
+          new_region.SetHeight(new_region.Width() / region.AspectRatio());
+        }
+      } break;
+      default:
+        break;
+    }
+    glm::vec2 new_opposite_point =
+        ElementManipulationToolHandleAnchor(handle, new_region);
+    new_region.Translate(opposite_point - new_opposite_point);
+    scale_and_rotate = region.CalcTransformTo(new_region);
   }
-  scale_and_rotate =
-      glm::scale(scale_and_rotate, glm::vec3(drag.scale, drag.scale, 1));
-  scale_and_rotate =
-      glm::translate(scale_and_rotate, -scale_center_translation);
-
-  glm::mat4 translation = glm::translate(
-      glm::mat4(1), glm::vec3(drag.world_drag.x, drag.world_drag.y, 0.0f));
 
   // always apply the translation, otherwise we feel unresponsive
   glm::mat4 result = translation;
@@ -202,11 +347,17 @@ glm::mat4 ElementManipulationTool::BestTransformForRegions(
   return result;
 }
 
-void ElementManipulationTool::AttemptToTransformRegion(input::DragData drag) {
+void ElementManipulationTool::AttemptToTransformRegion(
+    input::DragData drag, glm::vec2 to, bool maintain_aspect_ratio,
+    bool multitouch) {
+  auto handle =
+      multitouch ? ElementManipulationToolHandle::NONE : manipulating_handle_;
   auto transform = BestTransformForRegions(
-      drag, geometry::Transform(smallest_element_mbr_, GetTransform()),
+      drag, handle, to,
+      geometry::Transform(smallest_element_mbr_, GetTransform()),
       geometry::Transform(element_mbr_, GetTransform()),
-      flags_->GetFlag(settings::Flag::RotationEnabled));
+      geometry::Transform(selected_region_, GetTransform()),
+      flags_->GetFlag(settings::Flag::EnableRotation), maintain_aspect_ratio);
   current_transform_ = transform * current_transform_;
 }
 
@@ -216,8 +367,10 @@ void ElementManipulationTool::Draw(const Camera& cam,
 }
 
 void ElementManipulationTool::Update(const Camera& cam, FrameTimeS draw_time) {
-  if (Enabled())
-    renderer_->Update(cam, draw_time, element_mbr_, GetTransform());
+  if (Enabled()) {
+    renderer_->Update(cam, draw_time, element_mbr_, selected_region_,
+                      GetTransform());
+  }
 }
 
 void ElementManipulationTool::Commit() {
@@ -230,7 +383,10 @@ void ElementManipulationTool::Commit() {
       elements_.begin(), elements_.end(), element_transforms_.begin(),
       element_transforms_.end(), SourceDetails::FromEngine());
   if (Enabled()) {
+    RotRect new_selected_region =
+        geometry::Transform(selected_region_, transform_to_apply);
     SetElements(start_camera_, elements_);
+    selected_region_ = new_selected_region;
   }
 }
 
@@ -244,6 +400,7 @@ void ElementManipulationTool::Reset() {
   tap_reco_.Reset();
   drag_reco_.Reset();
   is_manipulating_ = false;
+  manipulating_handle_ = ElementManipulationToolHandle::NONE;
   scene_graph_->SetElementRenderedByMain(elements_.begin(), elements_.end(),
                                          true);
   if (Enabled() && !elements_.empty()) renderer_->Synchronize();
@@ -275,6 +432,7 @@ void ElementManipulationTool::SetElements(
   }
 
   element_mbr_ = scene_graph_->Mbr(elements);
+  selected_region_ = RotRect(element_mbr_);
 
   // calculate the smallest rectangle we are trying to manipulate. Knowing it
   // along with the largest Rect (elementMbr_) will let us prevent transforms
@@ -308,7 +466,7 @@ void ElementManipulationTool::SetElements(
                                            false);
   }
 
-  renderer_->SetElements(cam, elements_, visible_mbr);
+  renderer_->SetElements(cam, elements_, visible_mbr, selected_region_);
 }
 
 const std::vector<ElementId>& ElementManipulationTool::GetElements() const {

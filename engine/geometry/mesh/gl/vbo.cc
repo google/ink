@@ -26,12 +26,29 @@ VBO::~VBO() {
   }
 }
 
-void VBO::Bind() { gl_->BindBuffer(target_, handle_); }
+VBO::VBO(VBO&& other) noexcept { *this = std::move(other); }
 
-void VBO::Unbind() { gl_->BindBuffer(target_, 0); }
+VBO& VBO::operator=(VBO&& other) {
+  // Steal other
+  gl_ = std::move(other.gl_);
+  handle_ = other.handle_;
+  usage_ = other.usage_;
+  target_ = other.target_;
+  size_in_bytes_ = other.size_in_bytes_;
+  capacity_in_bytes_ = other.capacity_in_bytes_;
 
-size_t VBO::GetSizeInBytes() { return size_in_bytes_; }
-size_t VBO::GetCapacityInBytes() { return capacity_in_bytes_; }
+  // Prevent GPU resource deletion in other destructor.
+  other.handle_ = 0;
+
+  return *this;
+}
+
+void VBO::Bind() const { gl_->BindBuffer(target_, handle_); }
+
+void VBO::Unbind() const { gl_->BindBuffer(target_, 0); }
+
+size_t VBO::GetSizeInBytes() const { return size_in_bytes_; }
+size_t VBO::GetCapacityInBytes() const { return capacity_in_bytes_; }
 
 VBO::VBO(ion::gfx::GraphicsManagerPtr gl, size_t capacity_in_bytes,
          GLenum usage, GLenum target)

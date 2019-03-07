@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "google/protobuf/message_lite.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/strings/substitute.h"
@@ -40,7 +41,6 @@
 #include "ink/public/contrib/export.h"
 #include "ink/public/contrib/extensions/extension_points.h"
 #include "ink/public/document/document.h"
-#include "ink/public/document/passthrough_document.h"
 #include "ink/public/document/single_user_document.h"
 #include "ink/public/document/storage/in_memory_storage.h"
 #include "ink/public/fingerprint/fingerprint.h"
@@ -95,7 +95,6 @@ using ink::proto::OutOfBoundsColor;
 using ink::proto::PageProperties;
 using ink::proto::Path;
 using ink::proto::Point;
-using ink::proto::SetCallbackFlags;
 using ink::proto::Snapshot;
 using ink::proto::ToolParams;
 using ink::proto::VectorElements;
@@ -147,6 +146,20 @@ val CopyFromHeap(const T& bytes) {
   js_array.call<void>("set",
                       val(typed_memory_view(bytes.size(), bytes.data())));
   return js_array;
+}
+
+// Serializes the proto message into the given byte vector, and then returns a
+// typed_memory_view over the bytes.
+template <typename T>
+val SerializeToTypedMemoryView(std::vector<uint8_t>* bytes,
+                               const T& proto_message) {
+  auto len = proto_message.ByteSize();
+  bytes->resize(len);
+  proto_message.SerializeToArray(bytes->data(), len);
+  // Using a typed_memory_view to avoid making an extra buffer copy.  We
+  // expect the JS callback to parse this protobuf but not attempt to use the
+  // memory view after that.
+  return val(typed_memory_view(len, bytes->data()));
 }
 }  // namespace
 
@@ -315,6 +328,8 @@ EMSCRIPTEN_BINDINGS(SEngine) {
 
   class_<SEngine>("SEngine")
       .function("draw", select_overload<void(void)>(&SEngine::draw))
+      .function("undo", &SEngine::Undo)
+      .function("redo", &SEngine::Redo)
       .function("clear", &SEngine::clear)
       .function(
           "dispatchInput",
@@ -332,6 +347,7 @@ EMSCRIPTEN_BINDINGS(SEngine) {
               &SEngine::dispatchInput))
       .function("handleCommand", &SEngine::handleCommand)
       .function("addImageData", &SEngine::addImageData)
+      .function("rejectTextureUri", &SEngine::RejectTextureUri)
       .function("addPath", &SEngine::addPath)
       .function("addImageRect", &SEngine::addImageRect)
       .function("setToolParams", &SEngine::setToolParams)
@@ -351,7 +367,6 @@ EMSCRIPTEN_BINDINGS(SEngine) {
       .function("setGrid", &SEngine::setGrid)
       .function("clearGrid", &SEngine::clearGrid)
       .function("addSequencePoint", &SEngine::addSequencePoint)
-      .function("setCallbackFlags", &SEngine::setCallbackFlags)
       .function("setOutlineExportEnabled", &SEngine::setOutlineExportEnabled)
       .function("setHandwritingDataEnabled",
                 &SEngine::setHandwritingDataEnabled)
@@ -359,6 +374,7 @@ EMSCRIPTEN_BINDINGS(SEngine) {
       .function("startImageExport", &SEngine::startImageExport)
       .function("setCameraBoundsConfig", &SEngine::setCameraBoundsConfig)
       .function("document", &SEngine::document)
+      .function("selectElement", &SEngine::SelectElement)
       .function("deselectAll", &SEngine::deselectAll)
       .function("setCrop", &SEngine::SetCrop)
       .function("commitCrop", &SEngine::CommitCrop)
@@ -377,6 +393,8 @@ EMSCRIPTEN_BINDINGS(SEngine) {
       .function("beginTextEditing", &SEngine::beginTextEditing)
       .function("setMouseWheelBehavior", &SEngine::SetMouseWheelBehavior)
       .function("removeAllElements", &SEngine::RemoveAllElements)
+      .function("removeSelectedElements", &SEngine::RemoveSelectedElements)
+      .function("removeElement", &SEngine::RemoveElement)
       .function("focusOnPage", &SEngine::FocusOnPage)
       .function("setPageLayout", select_overload<void(ink::proto::LayoutSpec)>(
                                      &SEngine::SetPageLayout))
@@ -391,7 +409,6 @@ EMSCRIPTEN_BINDINGS(Document) {
       .function("AddBelow", &Document::AddBelow)
       .function("GetPageProperties", &Document::GetPageProperties)
       .function("GetSnapshot", &Document::GetSnapshot)
-      .function("Redo", &Document::Redo)
       .function("Remove", &Document::Remove)
       .function("RemoveAll", &Document::RemoveAll)
       .function("SetPageBounds", &Document::SetPageBounds)
@@ -399,7 +416,6 @@ EMSCRIPTEN_BINDINGS(Document) {
       .function("SetBackgroundColor", &Document::SetBackgroundColor)
       .function("SetPageBorder", &Document::SetPageBorder)
       .function("SetElementTransforms", &Document::SetElementTransforms)
-      .function("Undo", &Document::Undo)
       .function("SetUndoEnabled", &Document::SetUndoEnabled);
 }
 
@@ -462,6 +478,11 @@ class HostWrapper : public wrapper<Host> {
     call<void>("requestImage", uri);
   }
 
+  void SetCursor(const ink::proto::Cursor& cursor) override {
+    std::vector<uint8_t> bytes;
+    call<void>("setCursor", SerializeToTypedMemoryView(&bytes, cursor));
+  }
+
   void OnMutation(const proto::mutations::Mutation& mutation) override {
     auto buf = ToArrayBuffer(mutation);
     call<void>("handleMutation", buf);
@@ -470,14 +491,8 @@ class HostWrapper : public wrapper<Host> {
   void SceneChanged(
       const ink::proto::scene_change::SceneChangeEvent& scene_change) override {
     std::vector<uint8_t> bytes;
-    auto len = scene_change.ByteSize();
-    bytes.resize(len);
-    scene_change.SerializeToArray(bytes.data(), len);
-    // Using a typed_memory_view to avoid making an extra buffer copy.  We
-    // expect onSceneChanged to parse this protobuf but not attempt to use
-    // the memory view after that.
-    val view = val(typed_memory_view(len, bytes.data()));
-    call<void>("onSceneChanged", view);
+    call<void>("onSceneChanged",
+               SerializeToTypedMemoryView(&bytes, scene_change));
   }
 
   // Use c-strings for base64 encoded protos and UUIDs for simpler wire
@@ -518,6 +533,10 @@ class HostWrapper : public wrapper<Host> {
   std::string GetPlatformId() const override {
     return call<std::string>("getPlatformId");
   }
+  void ToolEvent(const ink::proto::ToolEvent& tool_event) override {
+    std::vector<uint8_t> bytes;
+    call<void>("onToolEvent", SerializeToTypedMemoryView(&bytes, tool_event));
+  }
   void SequencePointReached(int32_t id) override {
     call<void>("onSequencePointReached", id);
   }
@@ -526,6 +545,12 @@ class HostWrapper : public wrapper<Host> {
   }
   void UndoRedoStateChanged(bool canUndo, bool canRedo) override {
     call<void>("onUndoRedoStateChanged", canUndo, canRedo);
+  }
+  void CameraMovementStateChanged(bool is_moving) override {
+    call<void>("onCameraMovementStateChanged", is_moving);
+  }
+  void BlockingStateChanged(bool is_blocked) override {
+    call<void>("onBlockingStateChanged", is_blocked);
   }
 };
 
@@ -557,6 +582,7 @@ EMSCRIPTEN_BINDINGS(classes_implemented_in_js) {
       .function("getTargetFPS", &Host::GetTargetFPS, pure_virtual())
       .function("bindScreen", &Host::BindScreen, pure_virtual())
       .function("requestImage", &Host::RequestImage, pure_virtual())
+      .function("setCursor", &Host::SetCursor, pure_virtual())
       .function("handleMutation", &Host::OnMutation, pure_virtual())
       .function("handleElementCreated", &Host::ElementsAdded, pure_virtual())
       .function("handleElementsRemoved", &Host::ElementsRemoved, pure_virtual())
@@ -564,6 +590,9 @@ EMSCRIPTEN_BINDINGS(classes_implemented_in_js) {
       .function("onSequencePointReached", &Host::SequencePointReached,
                 pure_virtual())
       .function("onSceneChanged", &Host::SceneChanged, pure_virtual())
+      .function("onToolEvent", &Host::ToolEvent, pure_virtual())
+      .function("onBlockingStateChanged", &Host::BlockingStateChanged,
+                pure_virtual())
       .allow_subclass<HostWrapper>("HostWrapper");
 }
 
@@ -698,10 +727,6 @@ EMSCRIPTEN_BINDINGS(protos) {
       "source_detailsProto")
       .constructor();
 
-  class_<ink::proto::CallbackFlags, emscripten::base<MessageLite>>(
-      "CallbackFlagsProto")
-      .constructor();
-
   class_<ink::proto::MutationPacket, emscripten::base<MessageLite>>(
       "MutationPacketProto")
       .constructor();
@@ -818,12 +843,6 @@ EMSCRIPTEN_BINDINGS(protos_with_js_init) {
       .constructor()
       .function("initFromJs", &InitFromJs<Border>, allow_raw_pointers());
 
-  class_<SetCallbackFlags, emscripten::base<MessageLite>>(
-      "SetCallbackFlagsProto")
-      .constructor()
-      .function("initFromJs", &InitFromJs<SetCallbackFlags>,
-                allow_raw_pointers());
-
   class_<Snapshot, emscripten::base<MessageLite>>("SnapshotProto")
       .constructor()
       .property("fingerprint", &Snapshot::fingerprint,
@@ -908,14 +927,22 @@ EMSCRIPTEN_BINDINGS(enums) {
       .value("ENABLE_ROTATION", ink::proto::Flag::ENABLE_ROTATION)
       .value("ENABLE_AUTO_PEN_MODE", ink::proto::Flag::ENABLE_AUTO_PEN_MODE)
       .value("ENABLE_PEN_MODE", ink::proto::Flag::ENABLE_PEN_MODE)
+      .value("LOW_MEMORY_MODE", ink::proto::Flag::LOW_MEMORY_MODE)
+      .value("OPAQUE_PREDICTED_SEGMENT",
+             ink::proto::Flag::OPAQUE_PREDICTED_SEGMENT)
+      .value("CROP_MODE_ENABLED", ink::proto::Flag::CROP_MODE_ENABLED)
+      .value("DEBUG_TILES", ink::proto::Flag::DEBUG_TILES)
+      .value("DEBUG_LINE_TOOL_MESH", ink::proto::Flag::DEBUG_LINE_TOOL_MESH)
+      .value("STRICT_NO_MARGINS", ink::proto::Flag::STRICT_NO_MARGINS)
+      .value("KEEP_MESHES_IN_CPU_MEMORY",
+             ink::proto::Flag::KEEP_MESHES_IN_CPU_MEMORY)
       .value("ENABLE_FLING", ink::proto::Flag::ENABLE_FLING)
       .value("ENABLE_HOST_CAMERA_CONTROL",
              ink::proto::Flag::ENABLE_HOST_CAMERA_CONTROL)
-      .value("OPAQUE_PREDICTED_SEGMENT",
-             ink::proto::Flag::OPAQUE_PREDICTED_SEGMENT)
-      .value("STRICT_NO_MARGINS", ink::proto::Flag::STRICT_NO_MARGINS)
-      .value("KEEP_MESHES_IN_CPU_MEMORY",
-             ink::proto::Flag::KEEP_MESHES_IN_CPU_MEMORY);
+      .value("ENABLE_MOTION_BLUR", ink::proto::Flag::ENABLE_MOTION_BLUR)
+      .value("ENABLE_SELECTION_BOX_HANDLES",
+             ink::proto::Flag::ENABLE_SELECTION_BOX_HANDLES)
+      .value("ENABLE_PARTIAL_DRAW", ink::proto::Flag::ENABLE_PARTIAL_DRAW);
 
   enum_<ink::Document::SnapshotQuery>("SnapshotQuery")
       .value("INCLUDE_UNDO_STACK",

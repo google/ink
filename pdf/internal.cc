@@ -55,7 +55,7 @@ std::string Utf32ToUtf8(const std::vector<uint32_t>& utf32) {
   return result;
 }
 
-Status FetchUtf16StringAsUtf8(BlobFetcher fetcher, std::string* out) {
+StatusOr<std::string> FetchUtf16StringAsUtf8(BlobFetcher fetcher) {
   size_t expected_length = fetcher(nullptr, 0);
   if (expected_length % 2 != 0) {
     return ErrorStatus(
@@ -67,10 +67,10 @@ Status FetchUtf16StringAsUtf8(BlobFetcher fetcher, std::string* out) {
   if (expected_length != fetcher(&utf16LE[0], expected_length)) {
     return ErrorStatus("could not read expected number of bytes");
   }
-  *out = internal::Utf16LEToUtf8(utf16LE);
+  auto result = internal::Utf16LEToUtf8(utf16LE);
   // remove terminating 0
-  out->pop_back();
-  return OkStatus();
+  result.pop_back();
+  return result;
 }
 
 }  // namespace internal

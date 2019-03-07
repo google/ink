@@ -22,6 +22,7 @@
 #include "ink/engine/public/host/ielement_listener.h"
 #include "ink/engine/public/host/ipage_properties_listener.h"
 #include "ink/engine/public/proto_traits.h"
+#include "ink/engine/public/types/status.h"
 #include "ink/engine/scene/types/source_details.h"
 #include "ink/proto/document_portable_proto.pb.h"
 #include "ink/proto/elements_portable_proto.pb.h"
@@ -37,9 +38,9 @@ class RootController;
 class UnsafeSceneHelper : public IElementListener,
                           public IPagePropertiesListener {
  public:
-  void AddElement(const proto::ElementBundle& unsafe_bundle,
-                  const UUID& belowUUID,
-                  const proto::SourceDetails& sourceDetails);
+  Status AddElement(const proto::ElementBundle& unsafe_bundle,
+                    const UUID& below_uuid,
+                    const proto::SourceDetails& source_details_proto);
 
   // IElementListener
   void ElementsAdded(const proto::ElementBundleAdds& unsafe_bundle_adds,

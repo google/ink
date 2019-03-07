@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "ink/engine/rendering/gl_managers/texture_manager.h"
-#include "third_party/absl/synchronization/mutex.h"
 
 // NaCL is missing htonl
 #ifdef __native_client__
@@ -30,9 +29,11 @@ uint32_t htonl(uint32_t hostlong) { return __builtin_bswap32(hostlong); }
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/substitute.h"
+#include "third_party/absl/synchronization/mutex.h"
 #include "ink/engine/rendering/gl_managers/bad_gl_handle.h"
 #include "ink/engine/rendering/gl_managers/nine_patch_info.h"
 #include "ink/engine/rendering/gl_managers/texture_params.h"
+#include "ink/engine/rendering/page_tile_spec.h"
 #include "ink/engine/rendering/zoom_spec.h"
 #include "ink/engine/scene/types/event_dispatch.h"
 #include "ink/engine/util/dbg/errors.h"
@@ -48,13 +49,6 @@ bool IsEvictableUri(absl::string_view uri) {
   // It's evictable if it is a tile, i.e., if it has a zoom parameter.
   return ZoomSpec::HasZoomSpecParam(uri);
 }
-
-// Tiles are zoomed views of some base URI; this fetches the base.
-std::string TileBase(absl::string_view uri) {
-  auto ques_pos = uri.find("?");
-  return std::string(
-      ques_pos == absl::string_view::npos ? uri : uri.substr(0, ques_pos));
-}
 }  // namespace
 
 TextureManager::TextureManager(ion::gfx::GraphicsManagerPtr gl,
@@ -67,7 +61,6 @@ TextureManager::TextureManager(ion::gfx::GraphicsManagerPtr gl,
       frame_state_(std::move(frame_state)),
       task_runner_(std::move(task_runner)),
       dispatch_(new EventDispatch<TextureListener>()) {
-  AdvanceTileFreshnessFrame();
   frame_state_->AddListener(this);
   auto clock = std::make_shared<WallClock>();
   fetch_timer_ = absl::make_unique<LoggingPerfTimer>(clock, "Fetch Texture");
@@ -98,9 +91,19 @@ TextureInfo TextureManager::GenerateTexture(const std::string& uri,
     tile_texture_uris_.insert(uri);
   }
 
+  // A texture has arrived; let's make sure it gets drawn.
+  frame_state_->RequestFrame();
+
   TextureInfo info(uri, id);
   dispatch_->Send(&TextureListener::OnTextureLoaded, info);
   return info;
+}
+
+TextureInfo TextureManager::GenerateRejectedTexture(const std::string& uri) {
+  RawClientBitmap bitmap({0}, ImageSize(1, 1), ImageFormat::BITMAP_FORMAT_A_8);
+  TextureParams params;
+  params.is_rejection = true;
+  return GenerateTexture(uri, bitmap, params);
 }
 
 unique_ptr<Texture> TextureManager::CreateTexture() {
@@ -120,7 +123,7 @@ bool TextureManager::GetTextureImpl(const TextureInfo& texture_info,
 
 void TextureManager::MarkAsFresh(absl::string_view uri) {
   if (IsEvictableUri(uri)) {
-    fresh_tiles_.back().insert(static_cast<std::string>(uri));
+    frame_tile_requests_.insert(static_cast<std::string>(uri));
   }
 }
 
@@ -338,7 +341,7 @@ void TextureManager::OnFrameEnd() {
       const size_t max_tiles = tile_policy_.max_tiles_fetched_per_frame;
       if (max_tiles != 0 && uris.size() > max_tiles) {
         // We're dropping some texture requests, so request another frame to
-        // give the renderer another changce to request a needed texture.
+        // give the renderer another chance to request a needed texture.
         frame_state_->RequestFrame();
         SLOG(SLOG_TEXTURES, "dropping $0 texture requests",
              uris.size() - max_tiles);
@@ -358,15 +361,15 @@ void TextureManager::OnFrameEnd() {
     }
   }
   EvictStaleTiles();
-  AdvanceTileFreshnessFrame();
+  frame_tile_requests_.clear();
 }
 
 bool TextureManager::MaybeStartClientImageRequest(absl::string_view uri_view) {
   const auto& uri = static_cast<std::string>(uri_view);
-  SLOG(SLOG_TEXTURES, "uris_to_request_ <- $0", uri);
   MarkAsFresh(uri);
   absl::MutexLock lock(&requested_uris_mutex_);
   if (uri_to_id_.find(uri) == uri_to_id_.end() && !IsLoadingInternal(uri)) {
+    SLOG(SLOG_TEXTURES, "uris_to_request_ <- $0", uri);
     uris_to_request_.insert(uri);
     return true;
   }
@@ -420,12 +423,21 @@ size_t TextureManager::CurrentTileRamUsage() const {
   return tile_texture_uris_.size() * tile_policy_.BytesPerTile();
 }
 
+namespace {
+struct SortableTileUri {
+  SortableTileUri(absl::string_view uri, int distance_from_recent_tile)
+      : uri(uri), distance_from_recent_tile(distance_from_recent_tile) {}
+  std::string ToString() const {
+    return Substitute("$0@$1", uri, distance_from_recent_tile);
+  }
+  absl::string_view uri;
+  uint32_t distance_from_recent_tile;
+};
+}  // namespace
+
 void TextureManager::EvictStaleTiles() {
-  // Union of all tiles requested in last
-  // tile_cache_policy_.frame_freshness_window frames.
-  std::set<std::string> fresh;
-  for (const auto& frame : fresh_tiles_) {
-    absl::c_copy(frame, std::inserter(fresh, fresh.end()));
+  if (frame_tile_requests_.empty()) {
+    return;
   }
 
   {
@@ -433,83 +445,98 @@ void TextureManager::EvictStaleTiles() {
     std::set<std::string> cancellable;
     absl::c_copy(requested_uris_,
                  std::inserter(cancellable, cancellable.end()));
-    absl::c_copy(uris_to_request_,
-                 std::inserter(cancellable, cancellable.end()));
     if (!cancellable.empty()) {
       // The difference between cancellable - fresh = stale.
       std::vector<std::string> stale;
-      absl::c_set_difference(cancellable, fresh,
+      absl::c_set_difference(cancellable, frame_tile_requests_,
                              std::inserter(stale, stale.begin()));
       if (!stale.empty())
         SLOG(SLOG_TEXTURES, "\nCancellable: $0\nfresh: $1\nstale: $2",
-             cancellable, fresh, stale);
+             cancellable, frame_tile_requests_, stale);
       // Cancel in-flight requests for stale tiles.
       for (const auto& uri : stale) {
         if (!IsEvictableUri(uri)) continue;
-        uris_to_request_.erase(uri);
         requested_uris_.erase(uri);
         SLOG(SLOG_TEXTURES, "cancelled $0", uri);
       }
     }
   }
 
-  if (CurrentTileRamUsage() <= tile_policy_.max_tile_ram) {
-    // nothing to do
-    return;
-  }
-
-  // We don't want to evict any tiles from currently visible pages.
-  std::set<std::string> fresh_pages;
-  for (const auto& uri : fresh) {
-    const std::string& base_uri = TileBase(uri);
-    if (!base_uri.empty()) {
-      fresh_pages.insert(base_uri);
+  // When figuring out what to evict or cancel, we want those tiles "farthest"
+  // from tiles requested this frame.
+  // We use the most-zoomed tile requested during this frame as our reference.
+  absl::optional<PageTileSpec> reference_tile;
+  for (const std::string& uri : frame_tile_requests_) {
+    auto maybe_frag = PageTileSpec::Parse(uri);
+    if (!maybe_frag) {
+      SLOG(SLOG_ERROR, "Cannot parse $0 as tile distance basis: $1", uri,
+           maybe_frag.error_message());
+      // Crash in debug.
+      ASSERT(maybe_frag);
+      return;
+    }
+    PageTileSpec frag = maybe_frag.ValueOrDie();
+    if (!reference_tile ||
+        frag.Zoom().Depth() > reference_tile->Zoom().Depth()) {
+      reference_tile = frag;
     }
   }
 
-  // The difference between tile_texture_uris_ and all_fresh_tiles_ is
-  // stale_tiles.
-  std::vector<std::string> stale_tiles;
-  absl::c_set_difference(tile_texture_uris_, fresh,
-                         std::inserter(stale_tiles, stale_tiles.begin()));
+  const size_t tile_size = tile_policy_.BytesPerTile();
+  if (CurrentTileRamUsage() <= tile_policy_.max_tile_ram) {
+    return;
+  }
+  const size_t bytes_over_budget =
+      CurrentTileRamUsage() - tile_policy_.max_tile_ram;
+  const size_t tiles_to_remove =
+      std::max<size_t>(1, bytes_over_budget / tile_size);
+  SLOG(SLOG_TEXTURES, "$0 over budget, plan to remove $1 $2-byte $3^2 tiles",
+       bytes_over_budget, tiles_to_remove, tile_size,
+       tile_policy_.tile_side_length);
 
-  size_t tiles_to_remove = (CurrentTileRamUsage() - tile_policy_.max_tile_ram) /
-                           tile_policy_.BytesPerTile();
+  SLOG(SLOG_TEXTURES, "requested this frame: $0", frame_tile_requests_);
 
-  // Rob suggests shuffling potential evictions.
-  absl::c_shuffle(stale_tiles, std::random_device());
+  std::vector<SortableTileUri> eviction_candidates;
+  for (const auto& uri : tile_texture_uris_) {
+    if (frame_tile_requests_.find(uri) != frame_tile_requests_.end()) {
+      // It can happen that simply being zoomed out a particular amount can put
+      // us over budget for tiles. But we can't evict anything currently
+      // on-screen.
+      continue;
+    }
+    auto frag = PageTileSpec::Parse(uri);
+    if (!frag) {
+      SLOG(SLOG_ERROR, "Cannot parse $0 as eviction candidate: $1", uri,
+           frag.error_message());
+      // Crash in debug.
+      ASSERT(frag);
+      return;
+    }
+    eviction_candidates.emplace_back(
+        uri, reference_tile->DistanceFrom(frag.ValueOrDie()));
+  }
+  // Sort by distance descending.
+  absl::c_sort(eviction_candidates, [](const SortableTileUri& a,
+                                       const SortableTileUri& b) {
+    return b.distance_from_recent_tile < a.distance_from_recent_tile;
+  });
+  SLOG(SLOG_TEXTURES, "eviction candidates: $0", eviction_candidates);
 
   // Evict!
   int removed = 0;
-  for (size_t i = 0; i < stale_tiles.size() && removed < tiles_to_remove; i++) {
-    const auto& uri = stale_tiles.at(i);
-    const std::string& base_uri = TileBase(uri);
-    // We don't want to evict any tiles from currently visible pages.
-    if (fresh_pages.find(base_uri) == fresh_pages.end()) {
-      Evict(TextureInfo(uri));
-      removed++;
-    }
+  for (size_t i = 0;
+       i < eviction_candidates.size() && removed < tiles_to_remove; i++) {
+    const auto& uri = eviction_candidates.at(i).uri;
+    Evict(TextureInfo(uri));
+    removed++;
   }
 }  // namespace ink
-
-void TextureManager::AdvanceTileFreshnessFrame() {
-  if (!fresh_tiles_.empty() && fresh_tiles_.back().empty()) {
-    // No tiles requested last frame; no-op.
-    return;
-  }
-  fresh_tiles_.emplace_back();
-  if (fresh_tiles_.size() > tile_policy_.frame_freshness_window) {
-    fresh_tiles_.pop_front();
-  }
-}
 
 void TextureManager::SetTilePolicy(const TilePolicy& new_policy) {
   tile_policy_ = new_policy;
   SLOG(SLOG_TEXTURES, "new tile policy $0", tile_policy_);
   EvictAll();
   bitmap_pool_.reset();
-  fresh_tiles_.clear();
-  AdvanceTileFreshnessFrame();
 }
 
 std::unique_ptr<ClientBitmap> TextureManager::GetTileBitmap() const {

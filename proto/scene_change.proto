@@ -16,11 +16,11 @@ syntax = "proto2";
 
 package ink.proto.scene_change;
 
+import "ink/proto/geometry.proto";
+
 option javascript_package = "ink.proto.scene_change";
 option java_package = "com.google.ink.proto.scenechange";
 option java_outer_classname = "SceneChangeProto";
-
-import "ink/proto/geometry.proto";
 
 message LayerOrderUpdated {
   // The layer with this uuid is now below the layer with the uuid below_uuid.

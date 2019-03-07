@@ -30,7 +30,7 @@ class TiledTextureModifier : public LineModifier {
                                 const glm::mat4& texture_transform,
                                 const string texture_uri);
   void OnAddVert(Vertex* vert, glm::vec2 center_pt, float radius,
-                 const std::vector<Vertex>& line, float pressure) override;
+                 float pressure) override;
   ShaderType GetShaderType() override { return ShaderType::TexturedVertShader; }
 
  private:

@@ -18,7 +18,6 @@
 
 #include "third_party/absl/base/macros.h"  // arraysize
 #include "third_party/absl/strings/str_cat.h"
-#include "ink/engine/colors/colors.h"
 #include "ink/engine/util/dbg/str.h"
 #include "ink/engine/util/funcs/step_utils.h"
 
@@ -36,21 +35,19 @@ const size_t kColorsSize = arraysize(kColors);
 }  // namespace
 
 glm::vec4 Color::AsNonPremultipliedVec() const {
-  return UintToVec4RGBA(rgba_non_premultiplied_);
-}
-
-uint32_t Color::AsNonPremultipliedUintRGBA() const {
   return rgba_non_premultiplied_;
 }
 
+uint32_t Color::AsNonPremultipliedUintRGBA() const {
+  return Vec4ToUintRGBA(rgba_non_premultiplied_);
+}
+
 uint32_t Color::AsNonPremultipliedUintABGR() const {
-  const auto& c = rgba_non_premultiplied_;
-  return ((c & 0xFF) << 24) | (((c >> 8) & 0xFF) << 16) |
-         (((c >> 16) & 0xFF) << 8) | ((c >> 24) & 0xFF);
+  return Vec4ToUintABGR(rgba_non_premultiplied_);
 }
 
 glm::vec4 Color::AsPremultipliedVec() const {
-  return RGBtoRGBPremultiplied(UintToVec4RGBA(rgba_non_premultiplied_));
+  return RGBtoRGBPremultiplied(rgba_non_premultiplied_);
 }
 
 /* static */
@@ -67,28 +64,35 @@ Color Color::WithAlpha(float new_alpha) const {
   return Color::FromNonPremultipliedRGBA(upm);
 }
 
-Color::Color() : Color(0x000000FF) {}
-Color::Color(uint32_t rgba_non_premultiplied)
-    : rgba_non_premultiplied_(rgba_non_premultiplied) {}
+Color::Color() : Color({0, 0, 0, 1}) {}
+Color::Color(glm::vec4 rgba_non_premultiplied)
+    : rgba_non_premultiplied_(rgba_non_premultiplied) {
+#ifndef NDEBUG
+  const auto& c = rgba_non_premultiplied_;
+  assert(!(c.r < 0 || c.r > 1 || c.g < 0 || c.g > 1 || c.b < 0 || c.b > 1 ||
+           c.a < 0 || c.a > 1));
+#endif
+}
 
 /* static */
 Color Color::FromNonPremultipliedRGBA(glm::vec4 rgba_non_premultiplied) {
-  return Color(Vec4ToUintRGBA(rgba_non_premultiplied));
+  return Color(rgba_non_premultiplied);
 }
 /* static */
 Color Color::FromNonPremultipliedRGBA(uint32_t rgba_non_premultiplied) {
-  return Color(rgba_non_premultiplied);
+  return Color(UintToVec4RGBA(rgba_non_premultiplied));
 }
 /*static*/
 Color Color::FromNonPremultiplied(uint8_t red, uint8_t green, uint8_t blue,
                                   uint8_t alpha) {
-  return Color(((red & 0xFF) << 24) | ((green & 0xFF) << 16) |
-               ((blue & 0xFF) << 8) | (alpha & 0xFF));
+  return FromNonPremultipliedRGBA(((red & 0xFF) << 24) |
+                                  ((green & 0xFF) << 16) |
+                                  ((blue & 0xFF) << 8) | (alpha & 0xFF));
 }
 
 /* static */
 Color Color::FromPremultipliedRGBA(glm::vec4 rgba_premultiplied) {
-  return FromNonPremultipliedRGBA(RGBPremultipliedtoRGB(rgba_premultiplied));
+  return Color(RGBPremultipliedtoRGB(rgba_premultiplied));
 }
 /* static */
 Color Color::FromPremultipliedRGBA(uint32_t rgba_premultiplied) {
@@ -115,6 +119,10 @@ const Color Color::kRed = Color::FromNonPremultipliedRGBA(0xff0000ff);
 const Color Color::kBlue = Color::FromNonPremultipliedRGBA(0x0000ffff);
 const Color Color::kGreen = Color::FromNonPremultipliedRGBA(0x00ff00ff);
 const Color Color::kTransparent = Color::FromNonPremultipliedRGBA(0x0);
+const Color Color::kGoogleBlue = Color::FromNonPremultipliedRGBA(0x4285f4ff);
+const Color Color::kGoogleRed = Color::FromNonPremultipliedRGBA(0xea4335ff);
+const Color Color::kGoogleYellow = Color::FromNonPremultipliedRGBA(0xfbbc04ff);
+const Color Color::kGoogleGreen = Color::FromNonPremultipliedRGBA(0x34a853ff);
 
 std::string Color::ToString() const {
   return absl::StrCat("Color:\n  RGBA-nonpre(",

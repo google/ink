@@ -56,7 +56,7 @@ MeshSceneDrawable::MeshSceneDrawable(
       renderer_(gl_resources),
       earliest_remove_time_(0) {
   SLOG(SLOG_DATA_FLOW, "creating scene drawable $0, setting to invisible", id_);
-  gl_resources->mesh_vbo_provider->GenVBO(&mesh_, GL_STATIC_DRAW);
+  gl_resources->mesh_vbo_provider->GenVBOs(&mesh_, GL_STATIC_DRAW);
   if (mesh_.shader_metadata.IsAnimated()) {
     frame_lock_ =
         frame_state->AcquireFramerateLock(60, "SceneDrawable animation");

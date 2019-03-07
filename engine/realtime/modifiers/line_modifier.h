@@ -76,7 +76,7 @@ class LineModifier {
 
   virtual void SetupNewLine(const input::InputData& data, const Camera& camera);
   virtual void OnAddVert(Vertex* vert, glm::vec2 center_pt, float radius,
-                         const std::vector<Vertex>& line, float pressure);
+                         float pressure);
   virtual void Tick(float screen_radius, glm::vec2 new_position_screen,
                     InputTimeS time, const Camera& cam);
 
@@ -87,8 +87,7 @@ class LineModifier {
   virtual bool ModifyFinalLine(std::vector<FatLine>* line_segments);
 
   virtual void ApplyAnimationToVert(Vertex* vert, glm::vec2 center_pt,
-                                    float radius, DurationS time_since_tdown,
-                                    const std::vector<Vertex>& line);
+                                    float radius, DurationS time_since_tdown);
   virtual ShaderType GetShaderType();
 
   virtual float GetMinScreenTravelThreshold(const Camera& cam);

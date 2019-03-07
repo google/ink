@@ -38,6 +38,9 @@ class DeferredTaskRunner : public ITaskRunner {
 
   void PushTask(std::unique_ptr<Task> task) override;
   void ServiceMainThreadTasks() override;
+  int NumPendingTasks() const override {
+    return deferred_tasks_.size() + post_execute_tasks_.size();
+  }
 
   // Runs the Execute() method on tasks that have been queued up, in the order
   // that they were received.

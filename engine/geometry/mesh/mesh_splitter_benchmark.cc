@@ -24,7 +24,8 @@ namespace {
 
 static void BM_DisjointMeshes(benchmark::State &state) {
   int n_subdivisions = state.range(0);
-  auto base_mesh = MakeRingMesh({0, 0}, 10, 20, n_subdivisions);
+  auto base_mesh = OptimizedMesh(ShaderType::SingleColorShader,
+                                 MakeRingMesh({0, 0}, 10, 20, n_subdivisions));
   auto cutting_mesh = MakeRingMesh({0, 0}, 30, 40, n_subdivisions);
   while (state.KeepRunning()) {
     Mesh result_mesh;
@@ -37,7 +38,8 @@ BENCHMARK(BM_DisjointMeshes)->Range(8, 1024);
 
 static void BM_SplitRingWithRing(benchmark::State &state) {
   int n_subdivisions = state.range(0);
-  auto base_mesh = MakeRingMesh({0, 0}, 15, 20, n_subdivisions);
+  auto base_mesh = OptimizedMesh(ShaderType::SingleColorShader,
+                                 MakeRingMesh({0, 0}, 15, 20, n_subdivisions));
   auto cutting_mesh = MakeRingMesh({12.5, 0}, 15, 20, n_subdivisions);
   while (state.KeepRunning()) {
     Mesh result_mesh;
@@ -50,7 +52,9 @@ BENCHMARK(BM_SplitRingWithRing)->Range(8, 1024);
 
 static void BM_SplitWaveWithWave(benchmark::State &state) {
   int n_subdivisions = state.range(0);
-  auto base_mesh = MakeSineWaveMesh({0, 0}, 100, .02, 100, 20, n_subdivisions);
+  auto base_mesh = OptimizedMesh(
+      ShaderType::SingleColorShader,
+      MakeSineWaveMesh({0, 0}, 100, .02, 100, 20, n_subdivisions));
   auto cutting_mesh =
       MakeSineWaveMesh({1, 0}, 100, .02, 100, 20, n_subdivisions);
   while (state.KeepRunning()) {

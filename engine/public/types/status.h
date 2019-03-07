@@ -125,6 +125,22 @@ Status InvalidArgument(absl::string_view format, const T&... args) {
   return Status(StatusCode::INVALID_ARGUMENT,
                 absl::Substitute(format, Str(args)...));
 }
+
+template <typename... T>
+Status NotFound(absl::string_view format, const T&... args) {
+  return Status(StatusCode::NOT_FOUND, absl::Substitute(format, Str(args)...));
+}
+
+template <typename... T>
+Status InternalError(absl::string_view format, const T&... args) {
+  return Status(StatusCode::INTERNAL, absl::Substitute(format, Str(args)...));
+}
+
+template <typename... T>
+Status AlreadyExists(absl::string_view format, const T&... args) {
+  return Status(StatusCode::ALREADY_EXISTS,
+                absl::Substitute(format, Str(args)...));
+}
 }  // namespace status
 
 inline std::ostream& operator<<(std::ostream& os, const Status& x) {

@@ -35,6 +35,39 @@ size_t ClientBitmap::bytesPerTexel() const {
   return bytesPerTexelForFormat(format_);
 }
 
+std::vector<uint8_t> ClientBitmap::Rgba8888ByteData() const {
+  std::vector<uint8_t> converted;
+  size_t num_pixels = size_px_.width * size_px_.height;
+  size_t bytes_per_pixel = bytesPerTexelForFormat(format_);
+  size_t num_image_bytes = bytes_per_pixel * num_pixels;
+  size_t num_converted_bytes = 4 * num_pixels;
+  if (format_ == ImageFormat::BITMAP_FORMAT_RGBA_8888) {
+    auto image_bytes = static_cast<const uint8_t*>(imageByteData());
+    converted =
+        std::vector<uint8_t>(image_bytes, image_bytes + num_image_bytes);
+  } else {
+    converted.reserve(num_converted_bytes);
+    auto image_bytes = static_cast<const unsigned char*>(imageByteData());
+    for (size_t start = 0; start < num_image_bytes; start += bytes_per_pixel) {
+      uint32_t rgba;
+      if (!expandTexelToRGBA8888(format_, &image_bytes[start],
+                                 &image_bytes[start + bytes_per_pixel],
+                                 &rgba)) {
+        SLOG(SLOG_ERROR, "RgbaByteData failed for $0x$1 image with format $2",
+             size_px_.width, size_px_.height, format_);
+        converted.resize(num_converted_bytes);
+        break;
+      }
+      converted.push_back(rgba >> 24);
+      converted.push_back((rgba >> 16) & 0xff);
+      converted.push_back((rgba >> 8) & 0xff);
+      converted.push_back(rgba & 0xff);
+    }
+  }
+  ASSERT(converted.size() == num_converted_bytes);
+  return converted;
+}
+
 std::string ClientBitmap::toString() const {
   return Substitute("size: $0, format $1, address $2", size_px_, format_,
                     AddressStr(imageByteData()));
@@ -48,8 +81,8 @@ size_t bytesPerTexelForFormat(const ImageFormat& format) {
     case ImageFormat::BITMAP_FORMAT_BGRA_8888:
       return 4;
     case ImageFormat::BITMAP_FORMAT_RGB_565:
-      return 2;
     case ImageFormat::BITMAP_FORMAT_RGBA_4444:
+    case ImageFormat::BITMAP_FORMAT_LA_88:
       return 2;
     case ImageFormat::BITMAP_FORMAT_A_8:
       return 1;
@@ -57,11 +90,10 @@ size_t bytesPerTexelForFormat(const ImageFormat& format) {
       return 3;
 
     case ImageFormat::BITMAP_FORMAT_NONE:
-    default:
-      RUNTIME_ERROR(
-          "attempt to calculate bytes per texel on unsupported format $0",
-          format);
+      break;
   }
+  RUNTIME_ERROR("attempt to calculate bytes per texel on unsupported format $0",
+                format);
 }
 
 bool expandTexelToRGBA8888(const ImageFormat& format,
@@ -122,6 +154,12 @@ bool expandTexelToRGBA8888(const ImageFormat& format,
     case ImageFormat::BITMAP_FORMAT_RGB_888:
       memcpy(res, buffer, nbytes);
       res[3] = 1;
+      break;
+    case ImageFormat::BITMAP_FORMAT_LA_88:
+      res[0] = buffer[0];
+      res[1] = buffer[0];
+      res[2] = buffer[0];
+      res[3] = buffer[1];
       break;
 
     case ImageFormat::BITMAP_FORMAT_NONE:

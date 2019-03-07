@@ -27,6 +27,7 @@
 #include "third_party/pdfium/public/fpdfview.h"
 #include "ink/engine/geometry/primitives/rect.h"
 #include "ink/engine/public/types/status.h"
+#include "ink/engine/public/types/status_or.h"
 
 namespace ink {
 namespace pdf {
@@ -114,9 +115,8 @@ class TextPage {
   explicit TextPage(FPDF_TEXTPAGE text_page);
 
   int CharCount() const;
-  ABSL_MUST_USE_RESULT Status UnicodeCharacterAt(int index,
-                                                 UnicodeCharacter* uchar) const;
-  ABSL_MUST_USE_RESULT Status LineAt(int index, Line* line) const;
+  StatusOr<UnicodeCharacter> UnicodeCharacterAt(int index) const;
+  StatusOr<Line> LineAt(int index) const;
   int LineCount() const;
 
   // Given the start and end points of a gesture, infers a selection of lines
@@ -181,7 +181,7 @@ class TextPage {
   // Adjusts height and width of character to be uniform within the line.
   void ExpandCharactersToFillLine(Line* line);
 
-  ABSL_MUST_USE_RESULT Status CharRectAt(int index, Rect* out) const;
+  StatusOr<Rect> CharRectAt(int index) const;
   int CodePointAt(int index) const;
 
   // Chooses a start and end candidate to define the bounding points of a

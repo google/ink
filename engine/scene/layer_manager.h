@@ -22,6 +22,7 @@
 
 #include "ink/engine/public/host/iactive_layer_listener.h"
 #include "ink/engine/public/types/status.h"
+#include "ink/engine/public/types/status_or.h"
 #include "ink/engine/scene/graph/scene_graph.h"
 #include "ink/engine/scene/types/element_id.h"
 #include "ink/engine/scene/types/event_dispatch.h"
@@ -62,6 +63,10 @@ class LayerManager : public SceneGraphListener, public IActiveLayerListener {
   // Returns true of there is more than one layer in the LayerManager.
   bool IsActive() const { return active_; }
 
+  // Returns true if any of the layers is transparent.
+  // Returns false if the LayerManager is not active.
+  bool HasTransparency() const;
+
   // Make LayerManager inactive and clear out all layer data.
   //
   // NOTE: Only to this if you are also clearing the scene graph; otherwise,
@@ -76,11 +81,9 @@ class LayerManager : public SceneGraphListener, public IActiveLayerListener {
   //
   // Adding a new layer will not affect the active layer.
   //
-  // If group_id is null, no GroupId will be returned.
-  //
   // NOTE: this creates a new UUID and Group element and inserts it
   // into the SceneGraph.
-  Status AddLayer(const SourceDetails &source_details, GroupId *group_id);
+  StatusOr<GroupId> AddLayer(const SourceDetails &source_details);
 
   // Removes the layer at the specified index.
   // If index >= NumLayers(), do nothing.
@@ -99,9 +102,11 @@ class LayerManager : public SceneGraphListener, public IActiveLayerListener {
   // Returns the index of the active layer.
   // If there are no layers (!layerManager.IsActive()), returns an error
   // status.
-  //
-  // index must not be null.
-  Status IndexOfActiveLayer(size_t *index) const;
+  StatusOr<size_t> IndexOfActiveLayer() const;
+
+  // Returns the GroupId of the active alyer.
+  // If there are no layers (!layerManager.IsActive()), returns an error status.
+  StatusOr<GroupId> GroupIdOfActiveLayer() const;
 
   // Marks a layer as visible (or invisible).
   // If index is out of range, returns an error status.
@@ -110,18 +115,14 @@ class LayerManager : public SceneGraphListener, public IActiveLayerListener {
   // Finds the GroupId for the layer at a particular index. If index is
   // out of range, returns an error status.
   //
-  // group_id must not be null.
-  //
   // NOTE: IndexForLayerWithGroupId runs in O(n) time, so the
   // LayerManager is currently only suitable for small numbers of
   // layers.
-  Status GroupIdForLayerAtIndex(size_t index, GroupId *group_id) const;
+  StatusOr<GroupId> GroupIdForLayerAtIndex(size_t index) const;
 
   // Returns the index for the layer with the requested GroupId. If it
   // is not found, returns an error status.
-  //
-  // group_id must not be null.
-  Status IndexForLayerWithGroupId(GroupId group_id, size_t *index) const;
+  StatusOr<size_t> IndexForLayerWithGroupId(GroupId group_id) const;
 
   // Convenience methods.
 
@@ -160,6 +161,9 @@ class LayerManager : public SceneGraphListener, public IActiveLayerListener {
   // result from abuse of this method.
   void InvalidateLayerListCache();
 
+  // Invalidates the cached result for HasTransparency().
+  void InvalidateHasTransparencyCache() { cached_has_transparency_.reset(); }
+
   using LayerList = std::vector<GroupId>;
 
   const LayerList &CachedLayerList() const;
@@ -179,6 +183,11 @@ class LayerManager : public SceneGraphListener, public IActiveLayerListener {
   // Marked "mutable" since const operations that use the layer list may need
   // to re-read it from the SceneGraph.
   mutable LayerList cached_layer_list_;
+
+  // Cached value for the 'has transparency' result.
+  // DO NOT refer to this directly. Use HasTransparency() to ensure cache
+  // consistency.
+  mutable absl::optional<bool> cached_has_transparency_;
 
   LayerList::const_iterator FindGroupWithId(const LayerList &layer_ids,
                                             const GroupId &group_id) const;

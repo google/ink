@@ -31,17 +31,19 @@ template <typename M>
 void DrawMesh(const ion::gfx::GraphicsManagerPtr& gl,
               const std::shared_ptr<MeshVBOProvider>& mesh_vbo_provider,
               const M& mesh, const InterleavedAttributeSet& attrs) {
-  EXPECT(mesh_vbo_provider->HasVBO(mesh) || mesh.verts.empty());
-  if (!mesh_vbo_provider->HasVBO(mesh)) {
+  EXPECT(mesh_vbo_provider->HasVBOs(mesh) || mesh.verts.empty());
+  if (!mesh_vbo_provider->HasVBOs(mesh)) {
     return;
   }
-  IndexedVBO* vbo = mesh_vbo_provider->GetVBO(mesh);
-  uint32_t index_count = vbo->GetNumIndices();
-  if (index_count > 0) {
-    vbo->Bind();
-    attrs.BindVBO();
-    gl->DrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_SHORT, nullptr);
-    vbo->Unbind();
+  auto* vbos = mesh_vbo_provider->GetVBOs(mesh);
+  for (const auto& vbo : *vbos) {
+    auto index_count = vbo.GetNumIndices();
+    if (index_count > 0) {
+      vbo.Bind();
+      attrs.BindVBO();
+      gl->DrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_SHORT, nullptr);
+      vbo.Unbind();
+    }
   }
 }
 

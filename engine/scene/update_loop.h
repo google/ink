@@ -20,6 +20,7 @@
 #include "ink/engine/util/time/time_types.h"
 
 #include "ink/engine/debug_view/debug_view.h"
+#include "ink/engine/input/cursor_manager.h"
 #include "ink/engine/processing/runner/task_runner.h"
 #include "ink/engine/realtime/crop_mode.h"
 #include "ink/engine/realtime/tool_controller.h"
@@ -46,7 +47,7 @@ class DefaultUpdateLoop : public UpdateLoop {
       service::Dependencies<AnimationController, ITaskRunner, SceneGraph,
                             ToolController, LiveRenderer, Camera,
                             WallClockInterface, ParticleManager, CropMode,
-                            DebugView>;
+                            input::CursorManager, DebugView>;
 
   explicit DefaultUpdateLoop(
       const service::Registry<DefaultUpdateLoop>& registry);
@@ -63,6 +64,7 @@ class DefaultUpdateLoop : public UpdateLoop {
   std::shared_ptr<WallClockInterface> clock_;
   std::shared_ptr<ParticleManager> particle_manager_;
   std::shared_ptr<CropMode> crop_mode_;
+  std::shared_ptr<input::CursorManager> cursor_manager_;
   std::shared_ptr<DebugView> debug_view_;
 
   std::unique_ptr<LoggingPerfTimer> logging_timer_;

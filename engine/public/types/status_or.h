@@ -39,10 +39,10 @@ namespace ink {
 //     StatusOr<int> status_or = RequestIntThatMayFail(param0, param1);
 //
 //     // NOTE: a StatusOr will contextually convert to bool.
-//     if (!status_or) return status_or.asStatus();
+//     if (!status_or) return status_or.status();
 //
-//     DoSomethingWithTheValue(status_or.value());
-//     return status_or.asStatus();
+//     DoSomethingWithTheValue(status_or.ValueOrDie());
+//     return status_or.status();
 //   }
 //
 //   StatusOr<int> AnotherFuncThatMayFail(int positive_integer) {
@@ -73,6 +73,7 @@ class StatusOr {
   // This is an implicit conversion to allow direct return of an error
   // status to be converted to a StatusOr.
   StatusOr(const Status &st);
+  StatusOr(Status &&st);
 
   StatusOr() = delete;
   ~StatusOr() = default;
@@ -92,14 +93,35 @@ class StatusOr {
   explicit operator bool() const { return ok(); }
 
   // Safely convert from a StatusOr to a Status.
-  Status asStatus() const {
+  Status status() const {
     return ok() ? OkStatus() : absl::get<Status>(values_);
   }
 
-  // iff ok() == true, returns the value. (expect-fail otherwise.)
-  const T &value() const &;
-  T &value() &;
-  T &&value() &&;
+  // Returns a reference to our current value, or CHECK-fails if !this->ok(). If
+  // you have already checked the status using this->ok() or operator bool(),
+  // then you probably want to use operator*() or operator->() to access the
+  // current value instead of ValueOrDie().
+  //
+  // Note: for value types that are cheap to copy, prefer simple code:
+  //
+  //   T value = statusor.ValueOrDie();
+  //
+  // Otherwise, if the value type is expensive to copy, but can be left
+  // in the StatusOr, simply assign to a reference:
+  //
+  //   T& value = statusor.ValueOrDie();  // or `const T&`
+  //
+  // Otherwise, if the value type supports an efficient move, it can be
+  // used as follows:
+  //
+  //   T value = std::move(statusor).ValueOrDie();
+  //
+  // The std::move on statusor instead of on the whole expression enables
+  // warnings about possible uses of the statusor object after the move.
+  const T &ValueOrDie() const &;
+  T &ValueOrDie() &;
+  const T &&ValueOrDie() const &&;
+  T &&ValueOrDie() &&;
 
   // iff ok() != true, returns the error message. (expect-fail otherwise.)
   std::string error_message() const;
@@ -107,6 +129,10 @@ class StatusOr {
   StatusCode code() const;
 
  private:
+  void EnsureOk() const {
+    if (!ok()) RUNTIME_ERROR("$0", status());
+  }
+
   // The value or error.
   absl::variant<T, Status> values_;
 };
@@ -122,26 +148,36 @@ StatusOr<T> ErrorStatusOr(Us... params) {
 }
 
 template <typename T>
-StatusOr<T>::StatusOr(const Status &st) {
+StatusOr<T>::StatusOr(const Status &st) : values_(st) {
   EXPECT(!st.ok());
-  values_ = st;
 }
 
 template <typename T>
-const T &StatusOr<T>::value() const & {
-  EXPECT(ok());
-  return absl::get<T>(values_);
+StatusOr<T>::StatusOr(Status &&st) : values_(std::move(st)) {
+  EXPECT(!st.ok());
 }
 
 template <typename T>
-T &StatusOr<T>::value() & {
-  EXPECT(ok());
-  return absl::get<T>(values_);
+const T &StatusOr<T>::ValueOrDie() const & {
+  this->EnsureOk();
+  return absl::get<T>(this->values_);
 }
 
 template <typename T>
-T &&StatusOr<T>::value() && {
-  EXPECT(ok());
+T &StatusOr<T>::ValueOrDie() & {
+  this->EnsureOk();
+  return absl::get<T>(this->values_);
+}
+
+template <typename T>
+const T &&StatusOr<T>::ValueOrDie() const && {
+  this->EnsureOk();
+  return absl::get<T>(std::move(values_));
+}
+
+template <typename T>
+T &&StatusOr<T>::ValueOrDie() && {
+  this->EnsureOk();
   return absl::get<T>(std::move(values_));
 }
 
@@ -185,12 +221,21 @@ StatusCode StatusOr<T>::code() const {
 //
 // Example: Assigning to a std::unique_ptr.
 //   INK_ASSIGN_OR_RETURN(std::unique_ptr<T> ptr, MaybeGetPtr(arg));
-#define INK_ASSIGN_OR_RETURN(LHS, STATUS_OR_EXPRESSION) \
-  auto _status_or_ = (STATUS_OR_EXPRESSION);            \
-  if (ABSL_PREDICT_FALSE(!_status_or_.ok())) {          \
-    return _status_or_.asStatus();                      \
-  }                                                     \
-  LHS = std::move(_status_or_).value();
+#define INK_ASSIGN_OR_RETURN(LHS, STATUS_OR_EXPRESSION)                      \
+  INK_ASSIGN_OR_RETURN_IMPL_(INK_MACROS_IMPL_CONCAT_(_status_or_, __LINE__), \
+                             LHS, STATUS_OR_EXPRESSION)
+
+#define INK_ASSIGN_OR_RETURN_IMPL_(statusor_variable, LHS, \
+                                   STATUS_OR_EXPRESSION)   \
+  auto statusor_variable = (STATUS_OR_EXPRESSION);         \
+  if (ABSL_PREDICT_FALSE(!statusor_variable.ok())) {       \
+    return statusor_variable.status();                     \
+  }                                                        \
+  LHS = std::move(statusor_variable).ValueOrDie();
+
+// Internal helper for concatenating macro values.
+#define INK_MACROS_IMPL_CONCAT_INNER_(x, y) x##y
+#define INK_MACROS_IMPL_CONCAT_(x, y) INK_MACROS_IMPL_CONCAT_INNER_(x, y)
 
 }  // namespace ink
 

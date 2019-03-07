@@ -22,8 +22,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <unordered_map>
 
+#include "third_party/absl/container/flat_hash_map.h"
 #include "ink/engine/public/host/iengine_listener.h"
 #include "ink/engine/scene/types/event_dispatch.h"
 #include "ink/engine/service/dependencies.h"
@@ -36,10 +36,10 @@ namespace settings {
 // See sengine.proto's Flag enum for explanations of these flags.
 enum class Flag : uint32_t {
   ReadOnlyMode,
-  PanZoomEnabled,
-  RotationEnabled,
-  AutoPenModeEnabled,
-  PenModeEnabled,
+  EnablePanZoom,
+  EnableRotation,
+  EnableAutoPenMode,
+  EnablePenMode,
   LowMemoryMode,
   OpaquePredictedSegment,
   CropModeEnabled,
@@ -49,13 +49,12 @@ enum class Flag : uint32_t {
   KeepMeshesInCpuMemory,
   EnableFling,
   EnableHostCameraControl,
+  EnableMotionBlur,
+  EnableSelectionBoxHandles,
+  EnablePartialDraw,
 };
-
-struct FlagHash {
-  size_t operator()(const settings::Flag& v) const {
-    return std::hash<uint32_t>()(static_cast<uint32_t>(v));
-  }
-};
+//     ../../proto/sengine.proto,
+//     flags.cc)
 
 class FlagListener : public EventListener<FlagListener> {
  public:
@@ -75,7 +74,7 @@ class Flags {
 
   explicit Flags(std::shared_ptr<IEngineListener> engine_listener);
   void SetFlag(Flag which, bool value);
-  void SetFlag(const proto::Flag& proto_flag, bool value);
+  void SetFlag(proto::Flag proto_flag, bool value);
   bool GetFlag(Flag which) const;
   void AddListener(FlagListener* listener);
   void RemoveListener(FlagListener* listener);
@@ -83,23 +82,10 @@ class Flags {
  private:
   proto::Flag GetProtoFlag(settings::Flag which);
 
-  std::unordered_map<Flag, bool, FlagHash> values_ = {
-      // Blank comments are to make clang-format vertically-align this list.
-      {Flag::ReadOnlyMode, false},             //
-      {Flag::PanZoomEnabled, true},            //
-      {Flag::RotationEnabled, false},          //
-      {Flag::AutoPenModeEnabled, false},       //
-      {Flag::PenModeEnabled, false},           //
-      {Flag::LowMemoryMode, false},            //
-      {Flag::OpaquePredictedSegment, false},   //
-      {Flag::CropModeEnabled, false},          //
-      {Flag::DebugTiles, false},               //
-      {Flag::DebugLineToolMesh, false},        //
-      {Flag::StrictNoMargins, false},          //
-      {Flag::KeepMeshesInCpuMemory, false},    //
-      {Flag::EnableFling, false},              //
-      {Flag::EnableHostCameraControl, false},  //
-  };
+  // Maps the underlying value of a settings::Flag enum to the flag's boolean
+  // value. If a flag is not found in the map, its value is considered false.
+  // Default true values are set in the Flags constructor.
+  absl::flat_hash_map<uint32_t, bool> values_;
 
   std::shared_ptr<EventDispatch<FlagListener>> dispatch_;
   std::shared_ptr<IEngineListener> engine_listener_;

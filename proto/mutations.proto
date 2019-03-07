@@ -15,11 +15,11 @@
 // Messages to represent an Ink scene as a sequence of mutations.
 syntax = "proto2";
 
+package ink.proto.mutations;
+
 import "ink/proto/document.proto";
 import "ink/proto/elements.proto";
 import "ink/proto/geometry.proto";
-
-package ink.proto.mutations;
 
 option javascript_package = "ink.proto.mutations";
 option java_package = "com.google.ink.proto";

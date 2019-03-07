@@ -31,19 +31,11 @@ namespace contrib {
 namespace pdf {
 
 Status LoadPdfForAnnotation(absl::string_view pdf_bytes, SEngine* engine) {
-  std::unique_ptr<::ink::pdf::Document> pdf_document;
-  INK_RETURN_UNLESS(
-      ::ink::pdf::Document::CreateDocument(pdf_bytes, &pdf_document));
+  INK_ASSIGN_OR_RETURN(auto pdf_document,
+                       ::ink::pdf::Document::CreateDocument(pdf_bytes));
   proto::ExportedDocument exported_doc;
   INK_RETURN_UNLESS(ReadAndStrip(pdf_document.get(), &exported_doc));
 
-  bool has_transparency = false;
-  for (int i = 0; i < exported_doc.page_size(); i++) {
-    if (exported_doc.page(i).background_has_transparency()) {
-      has_transparency = true;
-      break;
-    }
-  }
   engine->evictAllTextures();
 
   auto doc =
@@ -89,11 +81,14 @@ Status LoadPdfForAnnotation(absl::string_view pdf_bytes, SEngine* engine) {
       kMaxTileSize, 1 << static_cast<int>(std::ceil(std::log2(screen_max))));
   SLOG(SLOG_INFO, "tile size $0", tile_size);
   auto tile_policy = texture_manager->GetTilePolicy();
+  // The PDF renderer always fills to opaque white before drawing a tile, so we
+  // never need transparency.
+  tile_policy.image_format = ImageFormat::BITMAP_FORMAT_RGB_888;
   tile_policy.tile_side_length = tile_size;
-  tile_policy.image_format = has_transparency
-                                 ? ImageFormat::BITMAP_FORMAT_RGBA_8888
-                                 : ImageFormat::BITMAP_FORMAT_RGB_888;
   texture_manager->SetTilePolicy(tile_policy);
+
+  engine->registry()->Get<settings::Flags>()->SetFlag(
+      settings::Flag::EnableMotionBlur, false);
 
   return OkStatus();
 }
@@ -119,11 +114,9 @@ Status GetAnnotatedPdf(const SEngine& engine, std::string* out) {
   if (!ToExportedDocument(engine.document()->GetSnapshot(), &exported_doc)) {
     return ErrorStatus("could not export current scene state to external form");
   }
-  std::unique_ptr<ink::pdf::Document> copy;
-  INK_RETURN_UNLESS(wrapper->PdfDocument()->CopyInto(&copy));
-
+  INK_ASSIGN_OR_RETURN(auto copy, wrapper->PdfDocument()->CreateCopy());
   INK_RETURN_UNLESS(::ink::pdf::Render(exported_doc, copy.get()));
-  INK_RETURN_UNLESS(copy->Write(out));
+  INK_ASSIGN_OR_RETURN(*out, copy->Write<std::string>());
   return OkStatus();
 }
 
@@ -134,7 +127,7 @@ Status GetAnnotatedPdfDestructive(const SEngine& engine, std::string* out) {
     return ErrorStatus("could not export current scene state to external form");
   }
   INK_RETURN_UNLESS(::ink::pdf::Render(exported_doc, wrapper->PdfDocument()));
-  INK_RETURN_UNLESS(wrapper->PdfDocument()->Write(out));
+  INK_ASSIGN_OR_RETURN(*out, wrapper->PdfDocument()->Write<std::string>());
   return OkStatus();
 }
 

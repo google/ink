@@ -52,6 +52,11 @@ class RotRect {
   // Construct from an axis-aligned rectangle.
   explicit RotRect(const Rect &r) : RotRect(r.Center(), r.Dim(), 0) {}
 
+  // Returns the smallest rectangle that contains the two given points and has
+  // the given rotation.
+  static RotRect WithCorners(glm::vec2 corner1, glm::vec2 corner2,
+                             float rotation_radians);
+
   glm::vec2 Center() const { return center_; }
   glm::vec2 Dim() const { return dim_; }
   float Rotation() const { return rotation_radians_; }
@@ -66,8 +71,16 @@ class RotRect {
     Normalize();
   }
 
+  void Translate(glm::vec2 delta) { center_ += delta; }
+
   float Width() const { return dim_.x; }
   float Height() const { return dim_.y; }
+
+  void SetWidth(float width) {
+    dim_.x = width;
+    Normalize();
+  }
+  void SetHeight(float height) { dim_.y = height; }
 
   // Returns the signed area of the rotated rectangle -- it will be negative if
   // the height is negative.
@@ -77,6 +90,13 @@ class RotRect {
   // the center, x-axis, and rotation.
   RotRect InvertYAxis() const {
     return RotRect(Center(), {Width(), -Height()}, Rotation());
+  }
+
+  // Returns a copy with amount.x/amount.y taken off each side.
+  RotRect Inset(glm::vec2 amount) const {
+    return RotRect(Center(),
+                   {Width() - 2.0f * amount.x, Height() - 2.0f * amount.y},
+                   Rotation());
   }
 
   // Returns the four corners of the rotated rectangle. If the height is
@@ -108,6 +128,15 @@ class RotRect {
            glm::rotate(glm::mat4{1}, -Rotation(), glm::vec3(0, 0, 1)) *
            glm::translate(glm::mat4{1}, glm::vec3(-Center(), 0));
   }
+
+  // Returns the smallest rotated rectangle such that:
+  //   1. width/height = "target_aspect_ratio"
+  //   2. center of return equals center of this
+  //   3. rotation of return equals rotation of this
+  //   4. returned RotRect is contained by this.
+  RotRect InteriorRotRectWithAspectRatio(float target_aspect_ratio) const;
+
+  float AspectRatio() const { return Width() / Height(); }
 
   std::string ToString() const {
     return Substitute("RotRect center $0, dimensions $1x$2, angle $3 ($4°)",

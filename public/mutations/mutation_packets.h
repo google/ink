@@ -39,11 +39,8 @@ S_WARN_UNUSED_RESULT Status
 ExtractMutationPacket(const ink::proto::Snapshot& snapshot,
                       ink::proto::MutationPacket* mutation_packet);
 
-// Given a source Snapshot, clears the target and populates it with the source
-// Snapshot, minus any pending mutations. The target Snapshot will have no
-// undo/redo stack.
-S_WARN_UNUSED_RESULT Status ClearPendingMutationPacket(
-    const ink::proto::Snapshot& source, ink::proto::Snapshot* target);
+// Clears the undo/redo stack of the passed Snapshot.
+void ClearPendingMutationPacket(ink::proto::Snapshot* snapshot);
 
 }  // namespace ink
 

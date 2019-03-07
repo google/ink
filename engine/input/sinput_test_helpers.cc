@@ -55,6 +55,26 @@ std::vector<SInput> CreateSampledLine(glm::vec2 from_screen_pos,
                          start_time_seconds + duration_seconds);
 }
 
+std::vector<SInput> CreateSampledMouseLeftDragLine(
+    glm::vec2 from_screen_pos, glm::vec2 to_screen_pos,
+    InputTimeS start_time_seconds, DurationS duration_seconds) {
+  return CreateExactLine(from_screen_pos, to_screen_pos,
+                         GetNumberOfInterpolationPoints(duration_seconds),
+                         start_time_seconds,
+                         start_time_seconds + duration_seconds,
+                         input::MouseIds::MouseLeft, FlagBitfield(Flag::Left));
+}
+
+std::vector<SInput> CreateSampledMouseRightDragLine(
+    glm::vec2 from_screen_pos, glm::vec2 to_screen_pos,
+    InputTimeS start_time_seconds, DurationS duration_seconds) {
+  return CreateExactLine(
+      from_screen_pos, to_screen_pos,
+      GetNumberOfInterpolationPoints(duration_seconds), start_time_seconds,
+      start_time_seconds + duration_seconds, input::MouseIds::MouseRight,
+      FlagBitfield(Flag::Right));
+}
+
 std::vector<SInput> CreateSampledMultiTouchLines(glm::vec2 first_start_pos,
                                                  glm::vec2 first_end_pos,
                                                  glm::vec2 second_start_pos,
@@ -83,13 +103,26 @@ std::vector<SInput> CreateExactLine(glm::vec2 from_screen_pos,
                                     int num_interp_points,
                                     InputTimeS start_time, InputTimeS end_time,
                                     uint32_t id, bool set_primary_flag) {
+  return CreateExactLine(from_screen_pos, to_screen_pos, num_interp_points,
+                         start_time, end_time, id,
+                         set_primary_flag ? FlagBitfield(Flag::Primary) : 0);
+}
+
+std::vector<SInput> CreateExactLine(glm::vec2 from_screen_pos,
+                                    glm::vec2 to_screen_pos,
+                                    int num_interp_points,
+                                    InputTimeS start_time, InputTimeS end_time,
+                                    uint32_t id, uint32_t additional_flags) {
   EXPECT(num_interp_points >= 0);
   int total_points = num_interp_points + 2;
   std::vector<SInput> ans(total_points);
-  uint32_t flags = FlagBitfield(Flag::InContact);
-  if (set_primary_flag) flags |= FlagBitfield(Flag::Primary);
+  uint32_t flags = FlagBitfield(Flag::InContact) | additional_flags;
+  InputType input_type = InputType::Touch;
+  if (flags & FlagBitfield(Flag::Left, Flag::Right)) {
+    input_type = InputType::Mouse;
+  }
 
-  ans[0].type = InputType::Touch;
+  ans[0].type = input_type;
   ans[0].id = id;
   ans[0].flags = flags;
   ans[0].time_s = start_time;
@@ -97,7 +130,7 @@ std::vector<SInput> CreateExactLine(glm::vec2 from_screen_pos,
   ans[0].pressure = 1;
 
   SInput& last = ans[total_points - 1];
-  last.type = InputType::Touch;
+  last.type = input_type;
   last.id = id;
   last.flags = flags;
   last.time_s = end_time;
@@ -133,6 +166,19 @@ std::vector<SInput> CreateExactMultiTouchLines(
 std::vector<SInput> CreateTap(glm::vec2 screen_pos, InputTimeS start_time) {
   return CreateExactLine(screen_pos, screen_pos, 0, start_time,
                          start_time + .1);
+}
+
+std::vector<SInput> CreateMouseLeftClick(glm::vec2 screen_pos,
+                                         InputTimeS start_time) {
+  return CreateExactLine(screen_pos, screen_pos, 0, start_time, start_time + .1,
+                         input::MouseIds::MouseLeft, FlagBitfield(Flag::Left));
+}
+
+std::vector<SInput> CreateMouseRightClick(glm::vec2 screen_pos,
+                                          InputTimeS start_time) {
+  return CreateExactLine(screen_pos, screen_pos, 0, start_time, start_time + .1,
+                         input::MouseIds::MouseRight,
+                         FlagBitfield(Flag::Right));
 }
 
 std::vector<SInput> CreateArc(const glm::vec2& center, float radius,

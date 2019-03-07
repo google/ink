@@ -47,42 +47,30 @@ MeshRTree::MeshRTree(const Mesh& unpacked_mesh) {
   vertices.reserve(unpacked_mesh.verts.size());
   for (const auto& v : unpacked_mesh.verts) vertices.push_back(v.position);
   convex_hull_ = geometry::ConvexHull(vertices);
-  Rect mbr = geometry::Envelope(convex_hull_);
-  mbr_offset_dist_ = .01 * std::max(mbr.Width(), mbr.Height());
-  std::vector<glm::vec2> simplified;
-  simplified.reserve(convex_hull_.size());
-  geometry::Simplify(convex_hull_.begin(), convex_hull_.end(), mbr_offset_dist_,
-                     std::back_inserter(simplified));
-  if (convex_hull_.size() != simplified.size()) {
-    convex_hull_ = simplified;
-  } else {
-    mbr_offset_dist_ = 0;
-  }
 }
 
 Rect MeshRTree::Mbr(const glm::mat4& object_to_world) const {
   if (cached_mbr_ && cached_mbr_->first == object_to_world) {
     return cached_mbr_->second;
   }
-  vec2 origin = Transform(vec2(0, 0), object_to_world);
-  vec2 x_axis = Transform(vec2(mbr_offset_dist_, 0.0f), object_to_world);
-  vec2 y_axis = Transform(vec2(0.0f, mbr_offset_dist_), object_to_world);
-  vec2 offset = glm::max(glm::abs(x_axis - origin), glm::abs(y_axis - origin));
   std::vector<glm::vec2> transformed_convex_hull;
   transformed_convex_hull.reserve(convex_hull_.size());
   Transform(convex_hull_.begin(), convex_hull_.end(), object_to_world,
             std::back_inserter(transformed_convex_hull));
-  Rect mbr = geometry::Envelope(transformed_convex_hull).Inset(-offset);
+  Rect mbr = geometry::Envelope(transformed_convex_hull);
 
   cached_mbr_ =
       absl::make_unique<std::pair<glm::mat4, Rect>>(object_to_world, mbr);
   return mbr;
 }
 
+Rect MeshRTree::ObjectMbr() const { return rtree_->Bounds(); }
+
 bool MeshRTree::Intersects(const Rect& region,
                            const glm::mat4& region_to_object) const {
   const Rect& local_region_mbr = Transform(region, region_to_object);
-  if (!geometry::Intersects(rtree_->Bounds(), local_region_mbr)) {
+  if (!geometry::IntersectsWithNonZeroOverlap(rtree_->Bounds(),
+                                              local_region_mbr)) {
     return false;
   }
   vec2 point0 = Transform(region.Leftbottom(), region_to_object);

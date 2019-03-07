@@ -30,9 +30,14 @@ namespace geometry {
 
 // Finds the smallest axis-aligned rectangle containing the given geometry.
 Rect Envelope(const std::vector<glm::vec2>& points);
-Rect Envelope(const std::vector<Vertex>& points);
 Rect Envelope(const Triangle& triangle);
 Rect Envelope(const RotRect& rot_rect);
+
+// Finds the envelope of the vertices' positions.
+Rect Envelope(const std::vector<Vertex>& vertices);
+
+// Finds the envelope of the vertices' texture-coordinates.
+Rect TextureEnvelope(const std::vector<Vertex>& vertices);
 
 }  // namespace geometry
 }  // namespace ink

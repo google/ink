@@ -37,6 +37,7 @@ class UndoManager {
       std::shared_ptr<EventDispatch<IElementListener>> element_dispatch,
       std::shared_ptr<EventDispatch<IMutationListener>> mutation_dispatch,
       std::shared_ptr<EventDispatch<IPagePropertiesListener>> page_dispatch,
+      std::shared_ptr<EventDispatch<IActiveLayerListener>> layer_dispatch,
       std::shared_ptr<DocumentStorage> storage);
   void Push(std::unique_ptr<StorageAction> action);
   bool Undo();
@@ -66,11 +67,14 @@ class UndoManager {
   std::shared_ptr<EventDispatch<IElementListener>> element_dispatch_;
   std::shared_ptr<EventDispatch<IMutationListener>> mutation_dispatch_;
   std::shared_ptr<EventDispatch<IPagePropertiesListener>> page_dispatch_;
+  std::shared_ptr<EventDispatch<IActiveLayerListener>> layer_dispatch_;
   std::shared_ptr<DocumentStorage> storage_;
 
   bool last_undo_state_;
   bool last_redo_state_;
   bool enabled_;
+
+  friend class UndoManagerTest;
 };
 
 }  // namespace ink

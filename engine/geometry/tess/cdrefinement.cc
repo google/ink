@@ -178,9 +178,9 @@ bool CDR::Flip(MeshTetrahedron trh) {
   uint32_t inshared = 0;
 
   // For debugging:
-  // uint16_t nshared[2];
-  // uint16_t shared[2];
-  // uint16_t lookedat[4];
+  // Mesh::IndexType nshared[2];
+  // Mesh::IndexType shared[2];
+  // Mesh::IndexType lookedat[4];
 
   for (int i = 0; i < 4; i++) {
     // lookedat[i] = current.idx();
@@ -188,7 +188,7 @@ bool CDR::Flip(MeshTetrahedron trh) {
     auto other = trh.t1;
     if (current.tri == other) other = trh.t2;
 
-    uint32_t other_interior_idx;
+    Mesh::IndexType other_interior_idx;
     if (other->HasIdx(current.Idx(), &other_interior_idx)) {
       // we should not be able to have anything other than 2 shared, 2
       // non-shared verts. The tris may have different winding orders, confusing

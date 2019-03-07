@@ -27,6 +27,7 @@ DefaultUpdateLoop::DefaultUpdateLoop(
       clock_(registry.GetShared<WallClockInterface>()),
       particle_manager_(registry.GetShared<ParticleManager>()),
       crop_mode_(registry.GetShared<CropMode>()),
+      cursor_manager_(registry.GetShared<input::CursorManager>()),
       debug_view_(registry.GetShared<DebugView>()),
       logging_timer_(new LoggingPerfTimer(clock_, "update time")) {}
 
@@ -44,6 +45,7 @@ void DefaultUpdateLoop::Update(float target_fps, FrameTimeS t) {
   particle_manager_->Update(t);
   graph_renderer_->Update(update_timer, *cam_, t);
   crop_mode_->Update(*cam_);
+  cursor_manager_->Update(*cam_);
   debug_view_->Update(t);
   logging_timer_->End();
 }

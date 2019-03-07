@@ -28,6 +28,8 @@ class MockInputHandler : public IInputHandler {
   MOCK_METHOD2(OnInput,
                CaptureResult(const InputData& data, const Camera& camera));
   MOCK_METHOD0(RefuseAllNewInput, bool());
+  MOCK_CONST_METHOD1(CurrentCursor,
+                     absl::optional<Cursor>(const Camera& camera));
   MOCK_CONST_METHOD0(InputPriority, Priority());
   inline std::string ToString() const override { return "<MockInputHandler>"; }
 };

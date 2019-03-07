@@ -72,7 +72,7 @@ float LineModifier::GetMinScreenTravelThreshold(const Camera& cam) {
 }
 
 void LineModifier::OnAddVert(Vertex* vert, glm::vec2 center_pt, float radius,
-                             const std::vector<Vertex>& line, float pressure) {
+                             float pressure) {
   auto prgb = RGBtoRGBPremultiplied(rgba_);
   vert->color = prgb;
 }
@@ -122,11 +122,9 @@ void LineModifier::Tick(float screen_radius, glm::vec2 new_position_screen,
 
 void LineModifier::ApplyAnimationToVert(Vertex* vert, glm::vec2 center_pt,
                                         float radius,
-                                        DurationS time_since_tdown,
-                                        const std::vector<Vertex>& line) {
+                                        DurationS time_since_tdown) {
   if (animation_) {
-    animation_->ApplyToVert(vert, center_pt, radius, time_since_tdown, line,
-                            params_);
+    animation_->ApplyToVert(vert, center_pt, radius, time_since_tdown, params_);
   }
 }
 

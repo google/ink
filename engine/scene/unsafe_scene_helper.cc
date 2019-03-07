@@ -30,23 +30,14 @@ namespace ink {
 static constexpr float kMinBorderTextureScale = 0.00001;
 static constexpr float kMaxBorderTextureScale = 10000;
 
-void UnsafeSceneHelper::AddElement(const proto::ElementBundle& unsafe_bundle,
-                                   const UUID& belowUUID,
-                                   const proto::SourceDetails& sourceDetails) {
-  if (sourceDetails.origin() == proto::SourceDetails::ENGINE) {
-    // Ignore anything with origin ENGINE since it was already processed.
-    return;
-  }
-
-  if (!ValidateProto(unsafe_bundle)) {
-    SLOG(SLOG_ERROR, "Unable to validate proto.");
-    return;
-  }
-
-  SourceDetails sceneSourceDetails;
-  EXPECT(util::ReadFromProto(sourceDetails, &sceneSourceDetails));
-  root_controller_->AddElementBelow(unsafe_bundle, sceneSourceDetails,
-                                    belowUUID);
+Status UnsafeSceneHelper::AddElement(
+    const proto::ElementBundle& unsafe_bundle, const UUID& below_uuid,
+    const proto::SourceDetails& source_details_proto) {
+  INK_RETURN_UNLESS(ValidateProtoForAdd(unsafe_bundle));
+  SourceDetails source_details;
+  EXPECT(util::ReadFromProto(source_details_proto, &source_details));
+  return root_controller_->AddElementBelow(unsafe_bundle, source_details,
+                                           below_uuid);
 }
 
 void UnsafeSceneHelper::ElementsAdded(
@@ -58,7 +49,8 @@ void UnsafeSceneHelper::ElementsAdded(
   }
 
   for (const auto& add : unsafe_bundle_adds.element_bundle_add()) {
-    AddElement(add.element_bundle(), add.below_uuid(), sourceDetails);
+    AddElement(add.element_bundle(), add.below_uuid(), sourceDetails)
+        .IgnoreError();
   }
 }
 

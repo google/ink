@@ -48,6 +48,12 @@ bool ExtractStrokeOutline(const ink::proto::ElementBundle& bundle,
                           const glm::mat4& transform,
                           ink::proto::StrokeOutline* outline_proto);
 
+// Populates the RotatedImage proto with the image from the bundle, if any.
+// Returns true if the bundle contained a valid image to put in the proto.
+bool ExtractImage(const ink::proto::ElementBundle& bundle,
+                  const glm::mat4& transform,
+                  ink::proto::RotatedImage* image_proto);
+
 // Flattens the given scene into a representation suitable for use in a
 // 2D drawing context or vector graphics format.
 //

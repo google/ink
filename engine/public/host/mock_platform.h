@@ -39,6 +39,7 @@ class MockPlatform : public IPlatform {
   MOCK_METHOD3(GetTextLayout,
                std::unique_ptr<proto::text::Layout>(const proto::text::Text&,
                                                     int, int));
+  MOCK_METHOD1(SetCursor, void(const ink::proto::Cursor& cursor));
   bool ShouldPreloadShaders() const override { return false; }
 };
 }  // namespace ink

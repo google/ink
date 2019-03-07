@@ -20,6 +20,8 @@ goog.provide('ink.HostController');
 
 goog.require('ink.AsmJsWrapper');
 goog.require('ink.ElementListener');
+goog.require('ink.proto.Cursor');
+goog.require('ink.proto.ToolEvent');
 goog.require('ink.proto.scene_change.SceneChangeEvent');
 goog.require('net.proto2.contrib.WireSerializer');
 
@@ -39,15 +41,20 @@ goog.require('net.proto2.contrib.WireSerializer');
  * @param {function(boolean, boolean)} onUndoRedoStateChanged
  * @param {function(number)} onSequencePointReached
  * @param {function(string)} requestImage
+ * @param {function(!ink.proto.Cursor)} onSetCursor
  * @param {function(!Uint8Array)} onMutation
  * @param {function(!ink.proto.scene_change.SceneChangeEvent)} onSceneChanged
+ * @param {function(!ink.proto.ToolEvent)} onToolEvent
+ * @param {function(boolean)} onCameraMovementStateChanged
+ * @param {function(boolean)} onBlockingStateChanged
  *
  * @return {!ink.HostController}
  */
 ink.HostController = function(
     elementListener, setFps, getFps, imageExportComplete, onFlagChanged,
-    onUndoRedoStateChanged, onSequencePointReached, requestImage, onMutation,
-    onSceneChanged) {
+    onUndoRedoStateChanged, onSequencePointReached, requestImage, onSetCursor,
+    onMutation, onSceneChanged, onToolEvent, onCameraMovementStateChanged,
+    onBlockingStateChanged) {
   /** @private {!ink.ElementListener} */
   this.elementListener_;
 
@@ -72,11 +79,23 @@ ink.HostController = function(
   /** @private {function(string)} */
   this.requestImage_;
 
+  /** @private {function(!ink.proto.Cursor)} */
+  this.onSetCursor_;
+
   /** @private {function(!Uint8Array)} */
   this.onMutation_;
 
   /** @private {function(!ink.proto.scene_change.SceneChangeEvent)} */
   this.onSceneChanged_;
+
+  /** @private {function(!ink.proto.ToolEvent)} */
+  this.onToolEvent_;
+
+  /** @private {function(boolean)} */
+  this.onCameraMovementStateChanged_;
+
+  /** @private {function(boolean)} */
+  this.onBlockingStateChanged_;
 
   /**
    * Protocol Buffer wire format serializer.
@@ -95,7 +114,8 @@ ink.HostController = function(
     return /** @type {!ink.HostController} */ (new ink.HostController(
         elementListener, setFps, getFps, imageExportComplete, onFlagChanged,
         onUndoRedoStateChanged, onSequencePointReached, requestImage,
-        onMutation, onSceneChanged));
+        onSetCursor, onMutation, onSceneChanged, onToolEvent,
+        onCameraMovementStateChanged, onBlockingStateChanged));
   } else {
     // Emscripten bindings not initialized.
     throw new Error('Bindings are uninitialized.');
@@ -114,13 +134,18 @@ ink.HostController = function(
  * @param {function(boolean, boolean)} onUndoRedoStateChanged
  * @param {function(number)} onSequencePointReached
  * @param {function(string)} requestImage
+ * @param {function(!ink.proto.Cursor)} onSetCursor
  * @param {function(!Uint8Array)} onMutation
  * @param {function(!ink.proto.scene_change.SceneChangeEvent)} onSceneChanged
+ * @param {function(!ink.proto.ToolEvent)} onToolEvent
+ * @param {function(boolean)} onCameraMovementStateChanged
+ * @param {function(boolean)} onBlockingStateChanged
  */
 ink.HostController.prototype.__construct = function(
     elementListener, setFps, getFps, imageExportComplete, onFlagChanged,
-    onUndoRedoStateChanged, onSequencePointReached, requestImage, onMutation,
-    onSceneChanged) {
+    onUndoRedoStateChanged, onSequencePointReached, requestImage, onSetCursor,
+    onMutation, onSceneChanged, onToolEvent, onCameraMovementStateChanged,
+    onBlockingStateChanged) {
   this['__parent']['__construct'].call(this);
   this.elementListener_ = elementListener;
   this.setFps_ = setFps;
@@ -130,8 +155,12 @@ ink.HostController.prototype.__construct = function(
   this.onUndoRedoStateChanged_ = onUndoRedoStateChanged;
   this.onSequencePointReached_ = onSequencePointReached;
   this.requestImage_ = requestImage;
+  this.onSetCursor_ = onSetCursor;
   this.onMutation_ = onMutation;
   this.onSceneChanged_ = onSceneChanged;
+  this.onToolEvent_ = onToolEvent;
+  this.onCameraMovementStateChanged_ = onCameraMovementStateChanged;
+  this.onBlockingStateChanged_ = onBlockingStateChanged;
   this.wireSerializer_ = new net.proto2.contrib.WireSerializer();
 };
 
@@ -168,6 +197,18 @@ ink.HostController.prototype.bindScreen = function() {
 ink.HostController.prototype.requestImage = function(uri) {
   var self = /** @type {!ink.HostController}*/ (this);
   self.requestImage_(uri);
+};
+
+
+/**
+ * @export
+ * @param {!Uint8Array} serializedCursor
+ */
+ink.HostController.prototype.setCursor = function(serializedCursor) {
+  var self = /** @type {!ink.HostController} */ (this);
+  const cursorProto = new ink.proto.Cursor();
+  self.wireSerializer_.deserializeTo(cursorProto, serializedCursor);
+  self.onSetCursor_(cursorProto);
 };
 
 
@@ -272,6 +313,7 @@ ink.HostController.prototype.onUndoRedoStateChanged = function(
   self.onUndoRedoStateChanged_(canUndo, canRedo);
 };
 
+
 /**
  * @export
  * @param {!Uint8Array} sceneChangedEvent
@@ -283,6 +325,36 @@ ink.HostController.prototype.onSceneChanged = function(sceneChangedEvent) {
   self.onSceneChanged_(sceneChangedProto);
 };
 
+
+/**
+ * @export
+ * @param {!Uint8Array} toolEvent
+ */
+ink.HostController.prototype.onToolEvent = function(toolEvent) {
+  var self = /** @type {!ink.HostController} */ (this);
+  const toolProto = new ink.proto.ToolEvent();
+  self.wireSerializer_.deserializeTo(toolProto, toolEvent);
+  self.onToolEvent_(toolProto);
+};
+
+
+/**
+ * @export
+ * @param {boolean} isMoving
+ */
+ink.HostController.prototype.onCameraMovementStateChanged = function(isMoving) {
+  var self = /** @type {!ink.HostController} */ (this);
+  self.onCameraMovementStateChanged_(isMoving);
+};
+
+/**
+ * @export
+ * @param {boolean} isBlocked
+ */
+ink.HostController.prototype.onBlockingStateChanged = function(isBlocked) {
+  var self = /** @type {!ink.HostController} */ (this);
+  self.onBlockingStateChanged_(isBlocked);
+};
 
 goog.exportSymbol('ink.HostController', ink.HostController);
 goog.exportProperty(
@@ -300,6 +372,9 @@ goog.exportProperty(
 goog.exportProperty(
     ink.HostController.prototype, 'requestImage',
     ink.HostController.prototype.requestImage);
+goog.exportProperty(
+    ink.HostController.prototype, 'setCursor',
+    ink.HostController.prototype.setCursor);
 goog.exportProperty(
     ink.HostController.prototype, 'handleElementCreated',
     ink.HostController.prototype.handleElementCreated);
@@ -330,3 +405,12 @@ goog.exportProperty(
 goog.exportProperty(
     ink.HostController.prototype, 'onSceneChanged',
     ink.HostController.prototype.onSceneChanged);
+goog.exportProperty(
+    ink.HostController.prototype, 'onToolEvent',
+    ink.HostController.prototype.onToolEvent);
+goog.exportProperty(
+    ink.HostController.prototype, 'onCameraMovementStateChanged',
+    ink.HostController.prototype.onCameraMovementStateChanged);
+goog.exportProperty(
+    ink.HostController.prototype, 'onBlockingStateChanged',
+    ink.HostController.prototype.onBlockingStateChanged);

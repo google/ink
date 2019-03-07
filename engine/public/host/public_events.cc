@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "ink/engine/public/host/public_events.h"
+#include "ink/engine/public/host/iengine_listener.h"
 
 namespace ink {
 
@@ -146,6 +147,15 @@ void PublicEvents::SequencePointReached(int32_t id) {
 void PublicEvents::LoggingEventFired(
     const ::logs::proto::research::ink::InkEvent& event) {
   engine_dispatch_->Send(&IEngineListener::LoggingEventFired, event);
+}
+
+void PublicEvents::CameraMovementStateChanged(bool is_moving) {
+  engine_dispatch_->Send(&IEngineListener::CameraMovementStateChanged,
+                         is_moving);
+}
+
+void PublicEvents::BlockingStateChanged(bool is_blocked) {
+  engine_dispatch_->Send(&IEngineListener::BlockingStateChanged, is_blocked);
 }
 
 // IPagePropertiesListener

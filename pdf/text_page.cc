@@ -104,7 +104,7 @@ int TextPage::CodePointAt(int index) const {
   return FPDFText_GetUnicode(text_page_.get(), index);
 }
 
-Status TextPage::CharRectAt(int index, Rect* out) const {
+StatusOr<Rect> TextPage::CharRectAt(int index) const {
   double left = 0;
   double right = 0;
   double top = 0;
@@ -112,33 +112,28 @@ Status TextPage::CharRectAt(int index, Rect* out) const {
 
   if (FPDFText_GetCharBox(text_page_.get(), index, &left, &right, &bottom,
                           &top)) {
-    *out = Rect(left, bottom, right, top);
-    return OkStatus();
-  } else {
-    return ErrorStatus(StatusCode::OUT_OF_RANGE,
-                       "text_page is invalid or index is out of bounds");
+    return Rect(left, bottom, right, top);
   }
+  return ErrorStatus(StatusCode::OUT_OF_RANGE,
+                     "text_page is invalid or index is out of bounds");
 }
 
-Status TextPage::UnicodeCharacterAt(int index, UnicodeCharacter* uchar) const {
+StatusOr<UnicodeCharacter> TextPage::UnicodeCharacterAt(int index) const {
   if (index < 0 || index >= CharCount()) {
     return ErrorStatus(StatusCode::OUT_OF_RANGE, "$0 is out of range [0, $1]",
                        index, CharCount() - 1);
   }
   int code_point = CodePointAt(index);
-  Rect r;
-  INK_RETURN_UNLESS(CharRectAt(index, &r));
-  *uchar = UnicodeCharacter(code_point, r);
-  return OkStatus();
+  INK_ASSIGN_OR_RETURN(Rect r, CharRectAt(index));
+  return UnicodeCharacter(code_point, r);
 }
 
-Status TextPage::LineAt(int index, Line* line) const {
+StatusOr<Line> TextPage::LineAt(int index) const {
   if (index < 0 || index >= lines_.size()) {
     return ErrorStatus(StatusCode::OUT_OF_RANGE, "$0 is out of range [0, $1]",
                        index, lines_.size() - 1);
   }
-  *line = lines_[index];
-  return OkStatus();
+  return lines_[index];
 }
 
 int TextPage::LineCount() const { return lines_.size(); }
@@ -148,15 +143,13 @@ Status TextPage::GenerateIndex() {
   Line curr_line;
   for (int i = 0; i < num_chars; ++i) {
     bool last_char = i == num_chars - 1;
-    UnicodeCharacter uc;
-    INK_RETURN_UNLESS(UnicodeCharacterAt(i, &uc));
+    INK_ASSIGN_OR_RETURN(UnicodeCharacter uc, UnicodeCharacterAt(i));
     if (!uc.IsEOL()) {
       curr_line.AddChar(uc);
     }
     bool is_eol = uc.IsEOL() || last_char;
     if (!is_eol && uc.GetCodePoint() == kLineSplittingHyphen) {
-      Rect next_char_rect;
-      INK_RETURN_UNLESS(CharRectAt(i + 1, &next_char_rect));
+      INK_ASSIGN_OR_RETURN(Rect next_char_rect, CharRectAt(i + 1));
       is_eol = !OverlapsOnYAxis(uc.GetRect(), next_char_rect);
     }
     if (is_eol) {

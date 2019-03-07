@@ -35,7 +35,6 @@ class ILineAnimation {
                             const Camera& camera) = 0;
   virtual void ApplyToVert(Vertex* vert, glm::vec2 center_pt, float radius,
                            DurationS time_since_tdown,
-                           const std::vector<Vertex>& line,
                            const LineModParams& line_mod_params) = 0;
 };
 
@@ -49,7 +48,7 @@ class LinearPathAnimation : public ILineAnimation {
   void SetupNewLine(const input::InputData& data,
                     const Camera& camera) override {}
   void ApplyToVert(Vertex* vert, glm::vec2 center_pt, float radius,
-                   DurationS time_since_tdown, const std::vector<Vertex>& line,
+                   DurationS time_since_tdown,
                    const LineModParams& line_mod_params) override;
 
  protected:

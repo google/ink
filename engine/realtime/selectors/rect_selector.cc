@@ -82,12 +82,9 @@ void RectSelector::Select(input::InputType input_type, Rect region,
                           const Camera& cam, bool only_one_element) {
   Reset();
 
-  size_t index;
-  GroupId group_id;
-  if (!layer_manager_->IndexOfActiveLayer(&index) ||
-      !layer_manager_->GroupIdForLayerAtIndex(index, &group_id)) {
-    group_id = kInvalidElementId;
-  }
+  auto group_id_or = layer_manager_->GroupIdOfActiveLayer();
+  GroupId group_id =
+      group_id_or.ok() ? group_id_or.ValueOrDie() : kInvalidElementId;
 
   // Ensure a minimum search area.
   float world_selection_size =

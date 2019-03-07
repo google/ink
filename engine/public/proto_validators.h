@@ -17,16 +17,17 @@
 #ifndef INK_ENGINE_PUBLIC_PROTO_VALIDATORS_H_
 #define INK_ENGINE_PUBLIC_PROTO_VALIDATORS_H_
 
+#include "ink/engine/public/types/status.h"
 #include "ink/engine/util/security.h"
 #include "ink/proto/elements_portable_proto.pb.h"
 
 namespace ink {
 
 S_WARN_UNUSED_RESULT
-bool ValidateProto(const proto::ElementBundle& unsafe_bundle);
+Status ValidateProto(const proto::ElementBundle& unsafe_bundle);
 
 S_WARN_UNUSED_RESULT
-bool ValidateProtoForAdd(const proto::ElementBundle& unsafe_bundle);
+Status ValidateProtoForAdd(const proto::ElementBundle& unsafe_bundle);
 
 S_WARN_UNUSED_RESULT
 bool ValidateProto(const proto::ElementTransformMutations& unsafe_mutations);

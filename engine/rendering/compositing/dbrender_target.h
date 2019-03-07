@@ -52,7 +52,7 @@ class DBRenderTarget {
   void DrawFront(const Camera& cam, const blit_attrs::BlitAttrs& attrs) const;
 
   // Copies the contents of the back buffer into the front buffer.
-  void BlitBackToFront();
+  void BlitBackToFront(absl::optional<Rect> area = absl::nullopt);
 
   // Binds the back buffer as the current drawing surface.
   void BindBack() { back_.Bind(); }

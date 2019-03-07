@@ -34,7 +34,9 @@ void DeferredTaskRunner::RunDeferredTasks() {
 void DeferredTaskRunner::PushTask(std::unique_ptr<Task> task) {
   TaskWrapper wrapper(std::move(task));
   if (deferred_tasks_.empty()) {
-    if (!wrapper.IsReadyForExecutePhase()) wrapper.PreExecute();
+    if (post_execute_tasks_.empty() && !wrapper.IsReadyForExecutePhase()) {
+      wrapper.PreExecute();
+    }
 
     // If no tasks are queued, request a callback to RunDeferredTasks(), and
     // acquire a framelock. All tasks accumulated before the callback will be

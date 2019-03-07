@@ -43,6 +43,12 @@ class Polygon {
     return {points_[idx], points_[(idx + 1) % Size()]};
   }
 
+  // Removes sequential points that at the same location, returning the number
+  // of points removed.
+  // E.g.: (4, 4), (4, 4), (3, 5), (4, 4), (6, 10), (6, 10), (6, 10), (7, 6)
+  // becomes (4, 4), (3, 5), (4, 4), (6, 10), (7, 6), and returns 3.
+  int RemoveDuplicatePoints();
+
   // Find the winding number of the polygon around the given point. Positive
   // indicates a counter-clockwise wind, negative indicates clockwise. Note that
   // the polygon may contain self-intersections, which may result in it winding

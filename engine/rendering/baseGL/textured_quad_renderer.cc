@@ -58,8 +58,8 @@ class TexturedQuadRenderWorker {
   void operator()(const blit_attrs::Blit& params) const {
     MakeRectangleMesh(&renderer_->mesh_, quad_world_, glm::vec4{1},
                       world_to_uv_);
-    renderer_->gl_resources_->mesh_vbo_provider->ReplaceVBO(&renderer_->mesh_,
-                                                            GL_DYNAMIC_DRAW);
+    renderer_->gl_resources_->mesh_vbo_provider->ReplaceVBOs(&renderer_->mesh_,
+                                                             GL_DYNAMIC_DRAW);
 
     renderer_->gl_resources_->gl->BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     texture_->Bind(GL_TEXTURE0);
@@ -77,8 +77,8 @@ class TexturedQuadRenderWorker {
                      ? renderer_->gl_resources_->background_state->GetColor()
                      : params.mask_to_color;
     MakeRectangleMesh(&renderer_->mesh_, quad_world_, color, world_to_uv_);
-    renderer_->gl_resources_->mesh_vbo_provider->ReplaceVBO(&renderer_->mesh_,
-                                                            GL_DYNAMIC_DRAW);
+    renderer_->gl_resources_->mesh_vbo_provider->ReplaceVBOs(&renderer_->mesh_,
+                                                             GL_DYNAMIC_DRAW);
 
     renderer_->gl_resources_->gl->BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     texture_->Bind(GL_TEXTURE0);
@@ -92,8 +92,8 @@ class TexturedQuadRenderWorker {
   void operator()(const blit_attrs::BlitColorOverride& params) const {
     MakeRectangleMesh(&renderer_->mesh_, quad_world_, params.color_multiplier,
                       world_to_uv_);
-    renderer_->gl_resources_->mesh_vbo_provider->ReplaceVBO(&renderer_->mesh_,
-                                                            GL_DYNAMIC_DRAW);
+    renderer_->gl_resources_->mesh_vbo_provider->ReplaceVBOs(&renderer_->mesh_,
+                                                             GL_DYNAMIC_DRAW);
 
     renderer_->gl_resources_->gl->BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     texture_->Bind(GL_TEXTURE0);
@@ -112,8 +112,8 @@ class TexturedQuadRenderWorker {
     for (auto& vertex : renderer_->mesh_.verts)
       vertex.texture_coords_from =
           geometry::Transform(vertex.position, world_to_prev_uv);
-    renderer_->gl_resources_->mesh_vbo_provider->ReplaceVBO(&renderer_->mesh_,
-                                                            GL_DYNAMIC_DRAW);
+    renderer_->gl_resources_->mesh_vbo_provider->ReplaceVBOs(&renderer_->mesh_,
+                                                             GL_DYNAMIC_DRAW);
 
     GLASSERT_NO_ERROR(renderer_->gl_resources_->gl);
     renderer_->gl_resources_->gl->BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);

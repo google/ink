@@ -295,10 +295,10 @@ class SceneGraph {
 
   bool GetMesh(ElementId id, OptimizedMesh** mesh) const;
 
-  // The spatial index can change over the lifetime of an element -- if you
-  // fetch it, you'll very likely want to listen for the notification from
-  // SceneGraphListener::OnElementsMutated()
-  std::shared_ptr<spatial::SpatialIndex> GetSpatialIndex(ElementId id) const;
+  // Note that a sticker element's spatial index may change once the texture
+  // has loaded.
+  std::shared_ptr<const spatial::SpatialIndex> GetSpatialIndex(
+      ElementId id) const;
   void SetSpatialIndex(ElementId id,
                        std::shared_ptr<spatial::SpatialIndex> index);
   template <typename ElementIter, typename SpatialIndexIter>
@@ -491,7 +491,8 @@ class SceneGraph {
   ElementNotifier element_notifier_;
   std::vector<std::shared_ptr<IDrawable>> drawables_;
   TransformMap transforms_;
-  ElementIdHashMap<std::shared_ptr<spatial::SpatialIndex>>
+  // LF depends on this const to maintain thread-correctness.
+  ElementIdHashMap<std::shared_ptr<const spatial::SpatialIndex>>
       element_id_to_bounds_;
   ElementIdHashMap<bool> rendered_by_main_map_;
   ElementIdHashMap<ElementAttributes> attributes_;

@@ -20,6 +20,7 @@
 #include "third_party/glm/glm/glm.hpp"
 #include "third_party/glm/glm/gtx/matrix_decompose.hpp"
 #include "third_party/pdfium/public/fpdf_edit.h"
+#include "third_party/pdfium/public/fpdf_formfill.h"
 #include "third_party/pdfium/public/fpdf_transformpage.h"
 #include "ink/engine/geometry/algorithms/intersect.h"
 #include "ink/engine/geometry/algorithms/transform.h"
@@ -28,20 +29,18 @@
 #include "ink/pdf/path_object.h"
 #include "ink/pdf/text_object.h"
 
-// Bigger than this many pixels? No.
-static constexpr int kMaxRenderBitmapPixels = 5000 * 5000;
-
 static constexpr int kRenderFlags = FPDF_ANNOT;
 
 namespace ink {
 namespace pdf {
 
-Page::Page(FPDF_PAGE page, FPDF_DOCUMENT owner)
+Page::Page(FPDF_PAGE page, FPDF_DOCUMENT owner,
+           std::shared_ptr<FormRenderer> form_renderer)
     : page_(page),
       owning_document_(owner),
       text_page_(nullptr),
-      cached_bounds_(0, 0, 0, 0),
-      cached_rotation_(-1) {
+      form_renderer_(std::move(form_renderer)),
+      cached_bounds_(0, 0, 0, 0) {
   CHECK(page_ != nullptr);
   CHECK(owning_document_ != nullptr);
 }
@@ -56,29 +55,46 @@ void Page::MaybeGenerateContent() const {
   }
 }
 
-int Page::Rotation() const {
-  if (cached_rotation_ < 0) {
-    switch (FPDFPage_GetRotation(page_.get())) {
-      case 1:
-        cached_rotation_ = 90;
-        break;
-      case 2:
-        cached_rotation_ = 180;
-        break;
-      case 3:
-        cached_rotation_ = 270;
-        break;
-      default:
-        cached_rotation_ = 0;
-    }
+int Page::RotationDegrees() const {
+  int pdfium_rotation = FPDFPage_GetRotation(page_.get());
+  switch (pdfium_rotation) {
+    case 1:
+      return 90;
+    case 2:
+      return 180;
+    case 3:
+      return 270;
+    default:
+      return 0;
   }
-  return cached_rotation_;
+}
+
+void Page::SetRotationDegrees(int degrees_clockwise) {
+  dirty_ = true;
+  switch (degrees_clockwise) {
+    case 0:
+      FPDFPage_SetRotation(page_.get(), 0);
+      break;
+    case 90:
+      FPDFPage_SetRotation(page_.get(), 1);
+      break;
+    case 180:
+      FPDFPage_SetRotation(page_.get(), 2);
+      break;
+    case 270:
+      FPDFPage_SetRotation(page_.get(), 3);
+      break;
+    default:
+      SLOG(SLOG_ERROR, "rotation must be in {0, 90, 180, 270}; got $0",
+           degrees_clockwise);
+  }
+  MaybeGenerateContent();
 }
 
 float Page::RotationRadians() const {
   // PDF display rotations are multiples of 90 degrees, and clockwise, which is
-  // why 90 gets 3*half_pi in standard counterclockwise math.
-  switch (Rotation()) {
+  // why 90 gets -half_pi in standard counterclockwise math.
+  switch (RotationDegrees()) {
     case 90:
       return -glm::half_pi<float>();
     case 180:
@@ -118,18 +134,6 @@ Rect Page::Bounds() const {
   return cached_bounds_;
 }
 
-std::unique_ptr<StampAnnotation> Page::CreateStampAnnotation() {
-  dirty_ = true;
-  return absl::make_unique<StampAnnotation>(owning_document_, page_.get());
-}
-
-std::unique_ptr<TextAnnotation> Page::CreateTextAnnotation(
-    const Rect& bounds, absl::string_view utf8_text) {
-  dirty_ = true;
-  return absl::make_unique<TextAnnotation>(owning_document_, page_.get(),
-                                           bounds, utf8_text);
-}
-
 void Page::AppendObject(const PageObject& obj) {
   dirty_ = true;
   FPDFPage_InsertObject(page_.get(), obj.WrappedObject());
@@ -137,7 +141,7 @@ void Page::AppendObject(const PageObject& obj) {
 
 int Page::PageObjectCount() const { return FPDFPage_CountObjects(page_.get()); }
 
-Status Page::GetPageObject(int i, std::unique_ptr<PageObject>* out) const {
+StatusOr<std::unique_ptr<PageObject>> Page::GetPageObject(int i) const {
   auto obj = FPDFPage_GetObject(page_.get(), i);
   if (!obj) {
     return ErrorStatus(
@@ -146,16 +150,14 @@ Status Page::GetPageObject(int i, std::unique_ptr<PageObject>* out) const {
         PageObjectCount());
   }
   auto const type = FPDFPageObj_GetType(obj);
+  std::unique_ptr<PageObject> out;
   if (type == FPDF_PAGEOBJ_TEXT) {
-    *out = absl::make_unique<Text>(owning_document_, obj);
-    return OkStatus();
+    return {absl::make_unique<Text>(owning_document_, obj)};
   }
   if (type == FPDF_PAGEOBJ_PATH) {
-    *out = absl::make_unique<Path>(owning_document_, obj);
-    return OkStatus();
+    return {absl::make_unique<Path>(owning_document_, obj)};
   }
-  *out = absl::make_unique<PageObject>(owning_document_, obj);
-  return OkStatus();
+  return {absl::make_unique<PageObject>(owning_document_, obj)};
 }
 
 Status Page::RemovePageObject(std::unique_ptr<PageObject> object) {
@@ -168,7 +170,7 @@ Status Page::RemovePageObject(std::unique_ptr<PageObject> object) {
   return OkStatus();
 }
 
-Status Page::GetAnnotation(int index, std::unique_ptr<Annotation>* out) const {
+StatusOr<std::unique_ptr<Annotation>> Page::GetAnnotation(int index) const {
   if (index >= GetAnnotationCount()) {
     return ErrorStatus("given index $0 >= total number of annotations $1",
                        index, GetAnnotationCount());
@@ -177,8 +179,7 @@ Status Page::GetAnnotation(int index, std::unique_ptr<Annotation>* out) const {
   if (!annot) {
     return ErrorStatus("cannot retrieve annotation $0", index);
   }
-  *out = absl::make_unique<Annotation>(owning_document_, annot);
-  return OkStatus();
+  return absl::make_unique<Annotation>(owning_document_, annot);
 }
 
 Status Page::RemoveAnnotation(int index) {
@@ -198,11 +199,7 @@ int Page::GetAnnotationCount() const {
   return FPDFPage_GetAnnotCount(page_.get());
 }
 
-bool Page::HasTransparency() const {
-  return FPDFPage_HasTransparency(page_.get());
-}
-
-Status Page::Render(float scale, std::unique_ptr<ClientBitmap>* out) const {
+StatusOr<std::unique_ptr<ClientBitmap>> Page::Render(float scale) const {
   MaybeGenerateContent();
   int w = static_cast<int>(std::round(scale * Bounds().Width()));
   int h = static_cast<int>(std::round(scale * Bounds().Height()));
@@ -211,80 +208,71 @@ Status Page::Render(float scale, std::unique_ptr<ClientBitmap>* out) const {
     return ErrorStatus("invalid image size requested with area of $0", w * h);
   }
   // Correct aspect ratio for rotated pages.
-  if (Rotation() == 90 || Rotation() == 270) {
+  const int degrees = RotationDegrees();
+  if (degrees == 90 || degrees == 270) {
     std::swap(w, h);
   }
-  *out = absl::make_unique<RawClientBitmap>(
+  std::unique_ptr<ClientBitmap> out = absl::make_unique<RawClientBitmap>(
       ImageSize(w, h), ImageFormat::BITMAP_FORMAT_RGBA_8888);
   // Does not take ownership of buffer.
-  FPDF_BITMAP bitmap = FPDFBitmap_CreateEx(w, h, FPDFBitmap_BGRA,
-                                           (*out)->imageByteData(), w * 4);
+  FPDF_BITMAP bitmap =
+      FPDFBitmap_CreateEx(w, h, FPDFBitmap_BGRA, out->imageByteData(), w * 4);
   FPDFBitmap_FillRect(bitmap, 0, 0, w, h, 0xFFFFFFFF);
   FPDF_RenderPageBitmap(bitmap, page_.get(), 0, 0, w, h, 0, kRenderFlags);
+  form_renderer_->RenderTile(bitmap, page_.get(), w, h, 0, 0);
   FPDFBitmap_Destroy(bitmap);
-  client_bitmap::ConvertBGRAToRGBA(out->get());
-  return OkStatus();
+  client_bitmap::ConvertBGRAToRGBA(out.get());
+  return out;
 }
 
 Status Page::RenderTile(const Rect& source_region, ClientBitmap* out) const {
   assert(out);
-  MaybeGenerateContent();
   const ImageSize& bitmap_size = out->sizeInPx();
   if (bitmap_size.width != bitmap_size.height) {
-    return ErrorStatus(
-        Substitute("require square region, got $0", bitmap_size));
+    return ErrorStatus(StatusCode::INVALID_ARGUMENT,
+                       "require square bitmap, got $0", bitmap_size);
   }
+  if (out->bytesPerTexel() != 3) {
+    return ErrorStatus(StatusCode::INVALID_ARGUMENT,
+                       "require bitmap without alpha channel");
+  }
+  MaybeGenerateContent();
   int size = bitmap_size.width;
 
   // Does not take ownership of buffer.
-  const int pdfium_format =
-      out->bytesPerTexel() == 3 ? FPDFBitmap_BGR : FPDFBitmap_BGRA;
   FPDF_BITMAP bitmap =
-      FPDFBitmap_CreateEx(size, size, pdfium_format, out->imageByteData(),
+      FPDFBitmap_CreateEx(size, size, FPDFBitmap_BGR, out->imageByteData(),
                           size * out->bytesPerTexel());
-
-  const auto& bounds = Bounds();
 
   float scale = size / source_region.Width();
 
-  // Translate the desired region into pixel space.
-  float tx = -source_region.Left();
-  // Flip Y axis, because the pdfium render API is positive Y goes down.
-  float ty = -(bounds.Height() - source_region.Top());
-
   // Our actual bounds when rendered depends on our display rotation.
-  const Rect& rotated_bounds = geometry::Transform(
-      bounds,
-      matrix_utils::RotateAboutPoint(RotationRadians(), bounds.Center()));
+  const Rect& bounds = geometry::Transform(
+      Bounds(),
+      matrix_utils::RotateAboutPoint(RotationRadians(), Bounds().Center()));
+
+  // Scale the dimensions of the page, and determine the pixel offset of the
+  // scaled page relative to the destination bitmap. In other words, we imagine
+  // placing the dest bitmap at the upper left corner of the scaled page, then
+  // moving the scaled page (tx, ty) pixels while keeping the dest stationary!
+  int tx = std::round(scale * (bounds.Left() - source_region.Left()));
+  int ty = std::round(scale * -(bounds.Top() - source_region.Top()));
 
   // Fill the tile with white.
   FPDFBitmap_FillRect(bitmap, 0, 0, size, size, 0xFFFFFFFF);
-
-  FS_RECTF clip{0, 0, static_cast<float>(size), static_cast<float>(size)};
-  // The pdf renderer requires these offsets.
-  tx += rotated_bounds.Left();
-  if (Rotation() % 180 == 90) {
-    ty += rotated_bounds.Bottom();
-  } else {
-    ty -= rotated_bounds.Bottom();
-  }
-  // The pdfium API doesn't specify how your matrix is supposed to have been
-  // composed. Trial and error reveals that your translation needs to be scaled
-  // by the scale factor.
-  const FS_MATRIX matrix{scale, 0, 0, scale, scale * tx, scale * ty};
-  FPDF_RenderPageBitmapWithMatrix(bitmap, page_.get(), &matrix, &clip,
-                                  kRenderFlags);
+  const float page_width = std::round(scale * bounds.Width());
+  float page_height = std::round(scale * bounds.Height());
+  FPDF_RenderPageBitmap(bitmap, page_.get(), tx, ty, page_width, page_height, 0,
+                        kRenderFlags);
+  form_renderer_->RenderTile(bitmap, page_.get(), page_width, page_height, tx,
+                             ty);
   FPDFBitmap_Destroy(bitmap);
-  if (out->bytesPerTexel() == 4) {
-    client_bitmap::ConvertBGRAToRGBA(out);
-  } else {
-    client_bitmap::ConvertBGRToRGB(out);
-  }
+  client_bitmap::ConvertBGRToRGB(out);
 
   return OkStatus();
 }
 
-Status Page::GetTextPage(TextPage** out) {
+StatusOr<TextPage*> Page::GetTextPage() {
   if (!text_page_) {
     FPDF_TEXTPAGE text_page = FPDFText_LoadPage(page_.get());
     if (!text_page) {
@@ -293,17 +281,16 @@ Status Page::GetTextPage(TextPage** out) {
     text_page_ = absl::make_unique<TextPage>(text_page);
     INK_RETURN_UNLESS((text_page_)->GenerateIndex());
   }
-  *out = text_page_.get();
-  return OkStatus();
+  return text_page_.get();
 }
 
 Status Page::AddDebugRectangle(const Rect& r, Color stroke, Color fill,
                                const StrokeMode& s, const FillMode& f) {
   Path path(owning_document_, r.Leftbottom());
-  path.LineTo(r.Lefttop());
-  path.LineTo(r.Righttop());
-  path.LineTo(r.Rightbottom());
-  path.Close();
+  INK_RETURN_UNLESS(path.LineTo(r.Lefttop()));
+  INK_RETURN_UNLESS(path.LineTo(r.Righttop()));
+  INK_RETURN_UNLESS(path.LineTo(r.Rightbottom()));
+  INK_RETURN_UNLESS(path.Close());
 
   INK_RETURN_UNLESS(path.SetStrokeMode(s));
   INK_RETURN_UNLESS(path.SetFillMode(f));

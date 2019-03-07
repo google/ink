@@ -29,13 +29,14 @@ class MockElementManipulationToolRenderer
  public:
   MOCK_CONST_METHOD3(Draw, void(const Camera &cam, FrameTimeS draw_time,
                                 glm::mat4 transform));
-  MOCK_METHOD4(Update, void(const Camera &cam, FrameTimeS draw_time,
-                            Rect element_mbr, glm::mat4 transform));
+  MOCK_METHOD5(Update,
+               void(const Camera &cam, FrameTimeS draw_time, Rect element_mbr,
+                    RotRect region, glm::mat4 transform));
   MOCK_METHOD1(Enable, void(bool enabled));
   MOCK_METHOD0(Synchronize, void(void));
-  MOCK_METHOD3(SetElements,
+  MOCK_METHOD4(SetElements,
                void(const Camera &cam, const std::vector<ElementId> &elements,
-                    Rect current_region));
+                    Rect element_mbr, RotRect region));
 };
 
 }  // namespace tools

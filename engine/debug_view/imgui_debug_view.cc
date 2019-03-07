@@ -57,15 +57,15 @@ ImGuiDebugView::ImGuiDebugView(
     std::shared_ptr<input::InputDispatch> pointer_dispatch,
     std::shared_ptr<input::keyboard::Dispatch> keyboard_dispatch)
     : imgui_(absl::make_unique<imgui::ImGuiBridge>(
-          frame, cam, gl, pointer_dispatch, keyboard_dispatch)) {}
+          frame, cam, gl, pointer_dispatch, keyboard_dispatch)) {
+  ImGui::GetStyle().WindowBorderSize = 1;
+}
 
 void ImGuiDebugView::Update(ink::FrameTimeS t) {
   // imgui bridge needs to update before the commands begin so that it starts
   // a new frame.
   imgui_->Update(t);
-  ImGui::Begin(
-      "Ink Debug", nullptr,
-      ImGuiWindowFlags_ShowBorders | ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::Begin("Ink Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
   ImGui::Text("Hello world!");
   ImGui::End();
 }

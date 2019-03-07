@@ -40,6 +40,7 @@ class MeshRTree : public SpatialIndex {
   MeshRTree& operator=(const MeshRTree&) = delete;
 
   Rect Mbr(const glm::mat4& object_to_world) const override;
+  Rect ObjectMbr() const override;
 
   bool Intersects(const Rect& region,
                   const glm::mat4& region_to_object) const override;
@@ -49,9 +50,12 @@ class MeshRTree : public SpatialIndex {
   Mesh DebugMesh() const override;
 
  private:
+  const RTree<geometry::Triangle>* const GetTriRTree() const override {
+    return rtree_.get();
+  }
+
   std::unique_ptr<RTree<geometry::Triangle>> rtree_;
   std::vector<glm::vec2> convex_hull_;
-  float mbr_offset_dist_;
 
   // Cache the result of the last call to Mbr().
   mutable std::unique_ptr<std::pair<glm::mat4, Rect>> cached_mbr_;

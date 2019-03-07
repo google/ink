@@ -14,10 +14,9 @@
 
 syntax = "proto2";
 
+package ink.proto.text;
 
 import "ink/proto/geometry.proto";
-
-package ink.proto.text;
 
 option javascript_package = "ink.proto.text";
 option java_package = "com.google.ink.proto.text";

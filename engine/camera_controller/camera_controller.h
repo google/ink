@@ -77,7 +77,7 @@ class CameraController : public input::InputHandler,
 
   virtual void LookAt(const Rect& world_window);
   void LookAt(glm::vec2 world_center, glm::vec2 world_dim) {
-    LookAt(Rect::CreateAtPoint(world_center, world_dim));
+    LookAt(Rect::CreateAtPoint(world_center, world_dim.x, world_dim.y));
   }
 
   virtual void SetInputProcessingEnabled(bool enabled);

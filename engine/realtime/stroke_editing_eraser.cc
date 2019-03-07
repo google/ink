@@ -34,7 +34,7 @@ class EraserStrokeDrawable : public IDrawable {
   EraserStrokeDrawable(std::shared_ptr<GLResourceManager> gl_resources,
                        const Mesh& eraser_stroke)
       : renderer_(gl_resources), eraser_stroke_(eraser_stroke) {
-    gl_resources->mesh_vbo_provider->GenVBO(&eraser_stroke_, GL_STATIC_DRAW);
+    gl_resources->mesh_vbo_provider->GenVBOs(&eraser_stroke_, GL_STATIC_DRAW);
   }
 
   void Draw(const Camera& cam, FrameTimeS draw_time) const override {
@@ -75,7 +75,7 @@ void StrokeEditingEraser::CuttingEraserTask::PreExecute() {
     auto data = absl::make_unique<ElementData>();
     OptimizedMesh* opt_mesh;
     if (scene_graph->GetMesh(old_id, &opt_mesh)) {
-      data->mesh = opt_mesh->ToMesh();
+      data->splitter = absl::make_unique<MeshSplitter>(*opt_mesh);
       data->shader_type = opt_mesh->type;
       data->attributes = scene_graph->GetElementMetadata(old_id).attributes;
       local_data_map_.emplace(old_id, std::move(data));
@@ -83,6 +83,7 @@ void StrokeEditingEraser::CuttingEraserTask::PreExecute() {
       SLOG(SLOG_WARNING,
            "Cannot perform partial erase on element $0: unable to get mesh",
            old_id);
+      ASSERT(false);
     }
   }
 }
@@ -95,12 +96,7 @@ void StrokeEditingEraser::CuttingEraserTask::Execute() {
     auto data_it = local_data_map_.find(id);
     if (data_it == local_data_map_.end()) continue;
 
-    auto& data = data_it->second;
-
-    if (!data->splitter)
-      data->splitter = absl::make_unique<MeshSplitter>(data->mesh);
-
-    data->splitter->Split(cutting_mesh_);
+    data_it->second->splitter->Split(cutting_mesh_);
   }
 }
 
@@ -124,8 +120,10 @@ StrokeEditingEraser::SerializeEraserTask::SerializeEraserTask(
       callback_flags_(callback_flags),
       low_memory_mode_(flags.GetFlag(settings::Flag::LowMemoryMode)),
       drawable_ptr_(drawable_ptr) {
-  if (auto scene_graph = weak_scene_graph_.lock()) {
-    active_group_uuid_ = scene_graph->UUIDFromElementId(active_group_);
+  if (active_group_ != kInvalidElementId) {
+    if (auto scene_graph = weak_scene_graph_.lock()) {
+      active_group_uuid_ = scene_graph->UUIDFromElementId(active_group_);
+    }
   }
 }
 
@@ -287,12 +285,9 @@ input::CaptureResult StrokeEditingEraser::OnInput(const input::InputData& data,
   if (!model_results.empty())
     line_builder_.ExtrudeModeledInput(camera, model_results, is_line_end);
 
-  GroupId active_group = kInvalidElementId;
-  std::size_t active_layer_index;
-  if (layer_manager_->IndexOfActiveLayer(&active_layer_index)) {
-    EXPECT(layer_manager_->GroupIdForLayerAtIndex(active_layer_index,
-                                                  &active_group));
-  }
+  auto active_group_or = layer_manager_->GroupIdOfActiveLayer();
+  auto active_group =
+      active_group_or.ok() ? active_group_or.ValueOrDie() : kInvalidElementId;
 
   if (line_builder_.StableMesh().NumberOfTriangles() >
           next_stable_triangle_ + kCuttingBatchSize ||
@@ -335,6 +330,12 @@ void StrokeEditingEraser::SetupNewLine(const input::InputData& data,
   line_builder_.SetShaderMetadata(ShaderMetadata::Eraser());
   next_stable_triangle_ = 0;
   element_data_map_ = std::make_shared<ElementDataMap>();
+}
+
+absl::optional<input::Cursor> StrokeEditingEraser::CurrentCursor(
+    const Camera& camera) const {
+  return input::Cursor(input::CursorType::BRUSH, ink::Color::kWhite,
+                       size_.ScreenSize(camera));
 }
 
 void StrokeEditingEraser::Clear() {

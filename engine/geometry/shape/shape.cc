@@ -31,6 +31,7 @@
 namespace ink {
 
 std::vector<Vertex> ShapeGeometry::GenVerts(glm::vec2 center, glm::vec2 size,
+                                            float rotation_radians,
                                             glm::vec4 color) const {
   std::vector<Vertex> res;
   switch (type) {
@@ -41,7 +42,7 @@ std::vector<Vertex> ShapeGeometry::GenVerts(glm::vec2 center, glm::vec2 size,
       break;
     case ShapeGeometry::Type::Rectangle:
       res.reserve(4);
-      for (auto corner : RotRect(center, size, 0).Corners())
+      for (auto corner : RotRect(center, size, rotation_radians).Corners())
         res.emplace_back(corner);
       break;
   }
@@ -78,9 +79,9 @@ bool Shape::GetBorderMesh(const GLResourceManager& resource_manager,
   tess_.ClearGeometry();
   auto outerpts = shape_geometry_.GenVerts(
       glm::vec2(0), fill_size_world_ + border_size_world_ * 2.0f,
-      outer_border_rgba_);
-  auto innerpts = shape_geometry_.GenVerts(glm::vec2(0), fill_size_world_,
-                                           inner_border_rgba_);
+      rotation_radians_, outer_border_rgba_);
+  auto innerpts = shape_geometry_.GenVerts(
+      glm::vec2(0), fill_size_world_, rotation_radians_, inner_border_rgba_);
 
   std::reverse(innerpts.begin(), innerpts.end());
   std::vector<std::vector<Vertex>> pts;
@@ -95,8 +96,8 @@ bool Shape::GetBorderMesh(const GLResourceManager& resource_manager,
     CDR cdr(&border_mesh_);
     cdr.RefineMesh();
   }
-  resource_manager.mesh_vbo_provider->ReplaceVBO(&border_mesh_,
-                                                 GL_DYNAMIC_DRAW);
+  resource_manager.mesh_vbo_provider->ReplaceVBOs(&border_mesh_,
+                                                  GL_DYNAMIC_DRAW);
   SetPositionMatrices();
   border_dirty_ = false;
   *mesh = &border_mesh_;
@@ -113,14 +114,14 @@ bool Shape::GetFillMesh(const GLResourceManager& resource_manager,
   if (fill_size_world_.x <= 0 || fill_size_world_.y <= 0) return false;
 
   tess_.ClearGeometry();
-  auto pts =
-      shape_geometry_.GenVerts(glm::vec2(0), fill_size_world_, fill_rgba_);
+  auto pts = shape_geometry_.GenVerts(glm::vec2(0), fill_size_world_,
+                                      rotation_radians_, fill_rgba_);
   if (!tess_.Tessellate(pts)) {
     return false;
   }
 
   fill_mesh_ = tess_.mesh_;
-  resource_manager.mesh_vbo_provider->ReplaceVBO(&fill_mesh_, GL_DYNAMIC_DRAW);
+  resource_manager.mesh_vbo_provider->ReplaceVBOs(&fill_mesh_, GL_DYNAMIC_DRAW);
   SetPositionMatrices();
   fill_dirty_ = false;
   *mesh = &fill_mesh_;
@@ -158,7 +159,16 @@ void Shape::SetBorderSize(glm::vec2 world_size) {
   border_size_world_ = world_size;
   border_dirty_ = true;
 }
+void Shape::SetRotation(float radians) {
+  rotation_radians_ = radians;
+  fill_dirty_ = true;
+  border_dirty_ = true;
+}
 void Shape::SetSizeAndPosition(Rect world_rect) {
+  static const glm::vec2 no_border(0);
+  SetSizeAndPosition(world_rect, no_border, false);
+}
+void Shape::SetSizeAndPosition(RotRect world_rect) {
   static const glm::vec2 no_border(0);
   SetSizeAndPosition(world_rect, no_border, false);
 }
@@ -170,6 +180,16 @@ void Shape::SetSizeAndPosition(Rect world_rect, glm::vec2 border_size,
   }
   SetPosition(world_rect.Center());
   SetFillSize(world_rect.Dim());
+}
+void Shape::SetSizeAndPosition(RotRect world_rect, glm::vec2 border_size,
+                               bool inset_border) {
+  SetBorderSize(border_size);
+  if (inset_border) {
+    world_rect = world_rect.Inset(border_size_world_);
+  }
+  SetPosition(world_rect.Center());
+  SetFillSize(world_rect.Dim());
+  SetRotation(world_rect.Rotation());
 }
 void Shape::SetPosition(glm::vec2 world_center) {
   center_world_ = world_center;
@@ -185,6 +205,8 @@ glm::vec2 Shape::OverallSize() const {
 }
 
 glm::vec2 Shape::WorldCenter() const { return center_world_; }
+
+float Shape::Rotation() const { return rotation_radians_; }
 
 void Shape::SetVisible(bool visible) { overall_visible_ = visible; }
 void Shape::SetBorderVisible(bool visible) { border_visible_ = visible; }

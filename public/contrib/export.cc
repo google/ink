@@ -14,6 +14,7 @@
 
 #include "ink/public/contrib/export.h"
 #include "ink/engine/geometry/algorithms/transform.h"
+#include "ink/engine/geometry/primitives/vector_utils.h"
 #include "ink/engine/scene/data/common/mesh_serializer_provider.h"
 #include "ink/engine/scene/data/common/stroke.h"
 #include "ink/engine/scene/types/element_bundle.h"
@@ -88,6 +89,62 @@ bool ink::contrib::ExtractStrokeOutline(
   return true;
 }
 
+bool contrib::ExtractImage(const ink::proto::ElementBundle& bundle,
+                           const glm::mat4& transform,
+                           ink::proto::RotatedImage* image_proto) {
+  if (!bundle.has_element() || !bundle.element().attributes().is_sticker()) {
+    return false;
+  }
+
+  ink::Stroke stroke;
+  if (!ink::Stroke::ReadFromProto(bundle, &stroke)) {
+    SLOG(SLOG_WARNING, "Export encountered image $0 with no stroke.", bundle);
+    return false;
+  }
+  auto mesh_reader = mesh::ReaderFor(stroke);
+  Mesh mesh;
+  if (stroke.MeshCount() == 0 || !stroke.GetMesh(*mesh_reader, 0, &mesh).ok()) {
+    SLOG(SLOG_WARNING, "Export encountered image $0 with no mesh.", bundle);
+    return false;
+  }
+  if (mesh.texture == nullptr) {
+    SLOG(SLOG_WARNING, "Export encountered image $0 with no texture uri.",
+         bundle);
+    return false;
+  }
+  image_proto->set_texture_uri(mesh.texture->uri);
+
+  // Transform and copy all the outline points
+  auto stroke_proto = bundle.uncompressed_element().uncompressed_stroke();
+  if (stroke_proto.outline_size() == 0) {
+    SLOG(SLOG_WARNING, "Export encountered image $0 with no outline.", bundle);
+    return false;
+  }
+  if (stroke_proto.outline_size() != 4) {
+    SLOG(SLOG_WARNING, "Export encountered image $0 with non-quad outline.",
+         bundle);
+    return false;
+  }
+  glm::vec2 centroid(0);
+  std::array<glm::vec2, 4> quad;
+  for (int i = 0; i < 4; i++) {
+    const auto& pt = stroke_proto.outline(i);
+    quad[i] = ink::geometry::Transform(glm::vec2(pt.x(), pt.y()), transform);
+    centroid += quad[i];
+  }
+  centroid /= 4;
+
+  // We now have a rotated rectangle in quad. Recover the rotation, then apply
+  // the inverse of that rotation to the rectangle.
+  const float rot = VectorAngle(quad[1] - quad[0]);
+  image_proto->set_rotation_ccw_radians(rot);
+
+  auto rect = Rect::CreateAtPoint(centroid, glm::length(quad[1] - quad[0]),
+                                  glm::length(quad[2] - quad[1]));
+  util::WriteToProto(image_proto->mutable_bounds(), rect);
+  return true;
+}
+
 namespace {
 enum class ExtractionResult { ADDED = 0, IGNORED = 1, FAILED = 2 };
 
@@ -102,7 +159,11 @@ ExtractionResult ExtractElement(const ink::proto::ElementBundle& bundle_proto,
 
   ink::proto::TextBox text_proto;
   ink::proto::StrokeOutline outline_proto;
-  if (contrib::ExtractTextBox(bundle_proto, transform, &text_proto)) {
+  ink::proto::RotatedImage image_proto;
+  if (contrib::ExtractImage(bundle_proto, transform, &image_proto)) {
+    *element->mutable_image() = std::move(image_proto);
+    return ExtractionResult::ADDED;
+  } else if (contrib::ExtractTextBox(bundle_proto, transform, &text_proto)) {
     *element->mutable_text() = std::move(text_proto);
     return ExtractionResult::ADDED;
   } else if (contrib::ExtractStrokeOutline(bundle_proto, transform,
@@ -116,6 +177,7 @@ ExtractionResult ExtractElement(const ink::proto::ElementBundle& bundle_proto,
 
 bool ink::contrib::ToVectorElements(const ink::proto::Snapshot& scene,
                                     ink::proto::VectorElements* result) {
+  result->Clear();
   if (scene.has_page_properties() && scene.page_properties().has_bounds()) {
     *(result->mutable_bounds()) = scene.page_properties().bounds();
   }

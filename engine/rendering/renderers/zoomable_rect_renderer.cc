@@ -161,7 +161,9 @@ void ZoomableRectRenderer::Draw(const Camera& cam, FrameTimeS draw_time,
   Rect visible_mesh_world;
   if (!geometry::Intersection(cam.WorldWindow(), object_worldspace_bounds,
                               &visible_mesh_world)) {
-    SLOG(SLOG_ERROR, "why am I rendering something not even on screen?");
+    ION_LOG_EVERY_N_SEC(WARNING, 1)
+        << "why am I rendering something not even on screen?\ncam:"
+        << Str(cam.WorldWindow()) << "\nobj:" << object_worldspace_bounds;
     return;
   }
 

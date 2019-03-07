@@ -42,6 +42,8 @@ class MockEngineListener : public IEngineListener {
   MOCK_METHOD1(LoggingEventFired,
                void(const ::logs::proto::research::ink::InkEvent&));
   MOCK_METHOD1(PdfSaveComplete, void(const std::string& bytes));
+  MOCK_METHOD1(CameraMovementStateChanged, void(bool is_moving));
+  MOCK_METHOD1(BlockingStateChanged, void(bool));
 };
 
 }  // namespace ink

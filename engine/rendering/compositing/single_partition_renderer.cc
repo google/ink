@@ -14,8 +14,8 @@
 
 #include "ink/engine/rendering/compositing/single_partition_renderer.h"
 
-#include <inttypes.h>
 #include <unistd.h>
+#include <cinttypes>
 #include <cstddef>
 #include <cstdint>
 #include <vector>

@@ -49,6 +49,11 @@ void PageBorder::Draw(const Camera& cam, FrameTimeS draw_time) const {
     return;
   }
 
+  // A rejected texture won't be a 9patch, so don't try to draw it.
+  if (tx->IsRejection()) {
+    return;
+  }
+
   NinePatchInfo np_info;
   if (!tx->getNinePatchInfo(&np_info)) {
     SLOG(SLOG_ERROR,
@@ -120,7 +125,8 @@ void PageBorder::Draw(const Camera& cam, FrameTimeS draw_time) const {
       }
     }
 
-    gl_resources_->mesh_vbo_provider->GenVBO(&nine_patch_mesh, GL_DYNAMIC_DRAW);
+    gl_resources_->mesh_vbo_provider->GenVBOs(&nine_patch_mesh,
+                                              GL_DYNAMIC_DRAW);
     renderer_.Draw(cam, draw_time, nine_patch_mesh);
   }
 }

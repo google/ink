@@ -19,7 +19,6 @@
 
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/util/dbg/errors.h"  // for EXPECT
-#include "ink/engine/util/funcs/step_utils.h"
 namespace ink {
 
 using util::Lerp;
@@ -125,10 +124,10 @@ glm::vec4 UintToVec4ABGR(uint32_t c) {
 
 uint32_t Vec4ToUintABGR(glm::vec4 c) {
   uint32_t res = 0;
-  res |= (static_cast<uint32_t>(0.5f + Lerp(0, 255, c.a)) & 0xff) << 24;
-  res |= (static_cast<uint32_t>(0.5f + Lerp(0, 255, c.b)) & 0xff) << 16;
-  res |= (static_cast<uint32_t>(0.5f + Lerp(0, 255, c.g)) & 0xff) << 8;
-  res |= static_cast<uint32_t>(0.5f + Lerp(0, 255, c.r)) & 0xff;
+  res |= SRgbFloatToByte(c.a) << 24;
+  res |= SRgbFloatToByte(c.b) << 16;
+  res |= SRgbFloatToByte(c.g) << 8;
+  res |= SRgbFloatToByte(c.r);
 
   return res;
 }
@@ -143,10 +142,10 @@ glm::vec4 UintToVec4ARGB(uint32_t c) {
 
 uint32_t Vec4ToUintARGB(glm::vec4 c) {
   uint32_t res = 0;
-  res |= (static_cast<uint32_t>(0.5f + Lerp(0, 255, c.a)) & 0xff) << 24;
-  res |= (static_cast<uint32_t>(0.5f + Lerp(0, 255, c.r)) & 0xff) << 16;
-  res |= (static_cast<uint32_t>(0.5f + Lerp(0, 255, c.g)) & 0xff) << 8;
-  res |= static_cast<uint32_t>(0.5f + Lerp(0, 255, c.b)) & 0xff;
+  res |= SRgbFloatToByte(c.a) << 24;
+  res |= SRgbFloatToByte(c.r) << 16;
+  res |= SRgbFloatToByte(c.g) << 8;
+  res |= SRgbFloatToByte(c.b);
 
   return res;
 }
@@ -161,10 +160,10 @@ glm::vec4 UintToVec4RGBA(uint32_t rgba) {
 
 uint32_t Vec4ToUintRGBA(glm::vec4 c) {
   uint32_t res = 0;
-  res |= (static_cast<uint32_t>(0.5f + Lerp(0, 255, c.r)) & 0xff) << 24;
-  res |= (static_cast<uint32_t>(0.5f + Lerp(0, 255, c.g)) & 0xff) << 16;
-  res |= (static_cast<uint32_t>(0.5f + Lerp(0, 255, c.b)) & 0xff) << 8;
-  res |= static_cast<uint32_t>(0.5f + Lerp(0, 255, c.a)) & 0xff;
+  res |= SRgbFloatToByte(c.r) << 24;
+  res |= SRgbFloatToByte(c.g) << 16;
+  res |= SRgbFloatToByte(c.b) << 8;
+  res |= SRgbFloatToByte(c.a);
 
   return res;
 }

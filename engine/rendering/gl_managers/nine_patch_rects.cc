@@ -91,8 +91,8 @@ Rect NinePatchRects::CreateCorner(glm::vec2 content_corner_location, size_t row,
   const auto& cbcoords = center_based_coords[row][col];
 
   // create a Rect of the correct size centered at the content corner
-  Rect world = Rect::CreateAtPoint(content_corner_location,
-                                   stretch.Dim() * uv_dist_to_world_dist);
+  glm::vec2 uv_dim = stretch.Dim() * uv_dist_to_world_dist;
+  Rect world = Rect::CreateAtPoint(content_corner_location, uv_dim.x, uv_dim.y);
 
   // move the Rect away from the content corner, in the direction of no longer
   // covering the content

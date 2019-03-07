@@ -34,7 +34,6 @@ LinearPathAnimation::LinearPathAnimation(const glm::vec4& rgba,
 
 void LinearPathAnimation::ApplyToVert(Vertex* vert, glm::vec2 center_pt,
                                       float radius, DurationS time_since_tdown,
-                                      const std::vector<Vertex>& line,
                                       const LineModParams& line_mod_params) {
   if (rgba_seconds_ != 0.0) {
     vert->color_from = rgba_from_;

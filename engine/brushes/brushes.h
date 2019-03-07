@@ -51,8 +51,11 @@ inline std::string Str(const BrushSizeType& t) {
 struct BrushParams {
   class BrushSize {
    public:
-    // Return the size of the brush in world units, may change with zoom level.
-    float WorldSize(const Camera& cam);
+    // Return the size of the brush in screen pixels; may change with zoom
+    // level.
+    float ScreenSize(const Camera& cam) const;
+    // Return the size of the brush in world units; may change with zoom level.
+    float WorldSize(const Camera& cam) const;
 
     void SetSize(float size, BrushSizeType size_type);
 

@@ -29,8 +29,7 @@ BallpointModifier::BallpointModifier(const vec4& rgba)
                              vec2(0.9, 0.9), vec2(1.0, 1.0)}) {}
 
 void BallpointModifier::OnAddVert(Vertex* vert, glm::vec2 center_pt,
-                                  float radius, const std::vector<Vertex>& line,
-                                  float pressure) {
+                                  float radius, float pressure) {
   if (pressure < 0) {
     vert->color = RGBtoRGBPremultiplied(rgba_);
   } else {

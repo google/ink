@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "third_party/absl/types/variant.h"
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/geometry/mesh/vertex.h"
 #include "ink/engine/geometry/primitives/rect.h"
@@ -29,12 +30,18 @@
 namespace ink {
 
 enum class VertFormat {
+  // The xy-coordinates are not packed, each component has its own float.
   x32y32,
+  // The xy-coordinates are packed into a single float.
   x12y12,
+  // The x-coordinate, alpha-component, and red-component are packed into one
+  // float, and the y-coordinate, green-component, and blue-component are packed
+  // into another.
   x11a7r6y11g7b6,
-  // For a vertex with a texture, the coordinates in world space, color with
-  // opacity, and coordinates in texture space
-  uncompressed,
+  // The x-coordinate, alpha-component, and red-component are packed into one
+  // float, the y-coordinate, green-component, and blue-component are packed
+  // into another, and the texture uv-coordinates are packed in a third.
+  x11a7r6y11g7b6u12v12,
 };
 
 inline std::string VertFormatName(VertFormat f) {
@@ -45,10 +52,8 @@ inline std::string VertFormatName(VertFormat f) {
       return "x12y12";
     case VertFormat::x11a7r6y11g7b6:
       return "x11a7r6y11g7b6";
-    case VertFormat::uncompressed:
-      return "uncompressed";
-    default:
-      return ("UNKNOWN_FORMAT");
+    case VertFormat::x11a7r6y11g7b6u12v12:
+      return "x11a7r6y11g7b6u12v12";
   }
 }
 
@@ -76,11 +81,15 @@ class PackedVertList {
   uint32_t VertexSizeBytes() const;
 
   // A raw ptr to the first element of list being used to hold data (either
-  // floats, vecs, or uncompressedVerts).  Assumes size of the list > 0.
+  // floats or vec2s). Assumes size of the list > 0.
   const void* Ptr() const;
 
   // Unpacks vertex at given index into provided vertex struct.
   void UnpackVertex(uint32_t idx, Vertex* vertex) const;
+
+  // This transform maps from the packed texture uv-coordinates to the unpacked
+  // texture uv-coordinates. It is only used for VertexType::x12y12u12v12.
+  const glm::mat4& PackedUvToUvTransform() const { return packed_uv_to_uv_; }
 
   // transform is expected to be the result of CalcTransformForFormat(), called
   // with the same vertices and format. The MBR of the packed vertices will be
@@ -97,21 +106,37 @@ class PackedVertList {
   static float GetMaxCoordinateForFormat(VertFormat format);
 
  private:
-  // checks that at most one of floats, vec2s, or verts has positive size
-  void CheckOnlyOneVectorHasData() const;
+  // These helpers are used by PackVerts to construct the data vectors for the
+  // various formats.
+  static std::vector<float> PackVertsX12Y12(const std::vector<Vertex>& verts,
+                                            const glm::mat4& transform,
+                                            float max_coord);
+  static std::vector<glm::vec2> PackVertsX32Y32(
+      const std::vector<Vertex>& verts, const glm::mat4& transform,
+      float max_coord);
+  static std::vector<glm::vec2> PackVertsX11A7R6Y11G7B6(
+      const std::vector<Vertex>& verts, const glm::mat4& transform,
+      float max_coord);
+  static std::vector<glm::vec3> PackVertsX11A7R6Y11G7B6U12V12(
+      const std::vector<Vertex>& verts, const glm::mat4& transform,
+      float max_coord, glm::mat4* packed_uv_to_uv);
 
-  VertFormat format;
+  static glm::mat4 CalculateUvToPackedUvTransform(Rect uv_bounds,
+                                                  float uv_max_coord);
 
-  // The actual vertex data is stored in exactly one of "floats", "vec2s", or
-  // "uncompressedVerts", as prescribed by "format," and the other lists are
-  // empty.
-  std::vector<float> floats;
-  std::vector<glm::vec2> vec2s;
-  // This format is supported (despite not using any compression) for meshes
-  // that can be represented with only a small number of vertices (e.g. a photo
-  // is a Rect that needs 4 vertices), where the complexity of compression is
-  // not worth it.
-  std::vector<Vertex> uncompressed_verts;
+  // These fetch the data as a vector of the given type. This will check-fail if
+  // the variant does not hold the correct type, so you must always check the
+  // format first to determine which type to fetch.
+  const std::vector<float>& FloatData() const;
+  const std::vector<glm::vec2>& Vec2Data() const;
+  const std::vector<glm::vec3>& Vec3Data() const;
+
+  VertFormat format_;
+  absl::variant<std::vector<float>, std::vector<glm::vec2>,
+                std::vector<glm::vec3>>
+      data_;
+
+  glm::mat4 packed_uv_to_uv_{1};
 
   friend class MeshVBOProvider;
   friend class PackedVertListTestHelper;

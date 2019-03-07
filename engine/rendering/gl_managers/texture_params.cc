@@ -54,26 +54,34 @@ GLint GlTextureWrap(TextureWrap texture_wrap) {
 
 GlTextureFormatInfo GlTextureFormat(ImageFormat format) {
   switch (format) {
+    case ImageFormat::BITMAP_FORMAT_NONE:
+      break;
     case ImageFormat::BITMAP_FORMAT_RGBA_8888:
-      return GlTextureFormatInfo{GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, 4};
+      return GlTextureFormatInfo{GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, 4, false};
     case ImageFormat::BITMAP_FORMAT_RGB_888:
-      return GlTextureFormatInfo{GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, 1};
+      return GlTextureFormatInfo{GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, 1, false};
     case ImageFormat::BITMAP_FORMAT_RGBA_4444:
-      return GlTextureFormatInfo{GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4,
-                                 2};
+      return GlTextureFormatInfo{GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, 2,
+                                 false};
     case ImageFormat::BITMAP_FORMAT_RGB_565:
-      return GlTextureFormatInfo{GL_RGB, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 2};
+      return GlTextureFormatInfo{GL_RGB, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 2,
+                                 false};
     case ImageFormat::BITMAP_FORMAT_A_8:
-      return GlTextureFormatInfo{GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, 1};
+      return GlTextureFormatInfo{GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, 1,
+                                 false};
+    case ImageFormat::BITMAP_FORMAT_LA_88:
+      return GlTextureFormatInfo{GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, 4, true};
     case ImageFormat::BITMAP_FORMAT_BGRA_8888:
 #ifdef __APPLE__
-      return GlTextureFormatInfo{GL_RGBA, GL_BGRA_EXT, GL_UNSIGNED_BYTE, 4};
+      return GlTextureFormatInfo{GL_RGBA, GL_BGRA_EXT, GL_UNSIGNED_BYTE, 4,
+                                 false};
+#else
+      return GlTextureFormatInfo{GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, 4, true};
 #endif
-    default:
-      RUNTIME_ERROR(
-          "unknown imageformat $0 while attempting to convert to gl values",
-          format);
   }
+  RUNTIME_ERROR(
+      "unknown imageformat $0 while attempting to convert to gl values",
+      format);
 }
 
 using proto::ImageInfo;

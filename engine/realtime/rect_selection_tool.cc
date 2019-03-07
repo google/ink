@@ -18,6 +18,7 @@
 #include <iterator>
 #include <vector>
 
+#include "third_party/absl/types/optional.h"
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/colors/colors.h"
 #include "ink/engine/realtime/edit_tool.h"
@@ -55,6 +56,11 @@ input::CaptureResult RectSelectionTool::OnInput(const input::InputData& data,
   }
 
   return result;
+}
+
+absl::optional<input::Cursor> RectSelectionTool::CurrentCursor(
+    const Camera& camera) const {
+  return input::Cursor(input::CursorType::CROSSHAIR);
 }
 
 void RectSelectionTool::Draw(const Camera& cam, FrameTimeS draw_time) const {

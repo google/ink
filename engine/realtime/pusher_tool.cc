@@ -51,6 +51,7 @@ PusherTool::PusherTool(const service::UncheckedRegistry& registry)
     return scene_graph_->GetElementMetadata(id).attributes.is_sticker;
   });
   manipulation_tool_.SetDeselectWhenOutside(false);
+  manipulation_tool_.SetHandlesEnabled(false);
   RegisterForInput(registry.GetShared<input::InputDispatch>());
   registry.Get<FrameState>()->AddListener(this);
 }

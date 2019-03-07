@@ -29,6 +29,7 @@
 #include "ink/engine/geometry/mesh/shape_helpers.h"
 #include "ink/engine/geometry/primitives/matrix_utils.h"
 #include "ink/engine/gl.h"
+#include "ink/engine/input/cursor_manager.h"
 #include "ink/engine/processing/element_converters/bezier_path_converter.h"
 #include "ink/engine/processing/element_converters/bundle_proto_converter.h"
 #include "ink/engine/processing/element_converters/element_converter.h"
@@ -207,6 +208,7 @@ RootController::RootController(
   page_border_ = registry_->GetShared<PageBorder>();
   crop_mode_ = registry_->GetShared<CropMode>();
   image_exporter_ = registry_->GetShared<ImageExporter>();
+  cursor_manager_ = registry_->GetShared<input::CursorManager>();
   flags_ = registry_->GetShared<settings::Flags>();
   flags_->AddListener(this);
 
@@ -281,7 +283,7 @@ Status RootController::SetToolParams(
   glm::vec4 rgba = UintToVec4RGBA(static_cast<uint32_t>(unsafe_proto.rgba()));
   tools_->ChosenTool()->SetColor(rgba);
 
-  bool pen_mode = flags_->GetFlag(settings::Flag::PenModeEnabled);
+  bool pen_mode = flags_->GetFlag(settings::Flag::EnablePenMode);
 
   float screen_width = camera_->ScreenDim().x;
 
@@ -352,11 +354,12 @@ Status RootController::SetToolParams(
     }
   }
   tool_params_ = unsafe_proto;
+  cursor_manager_->Update(*camera_);
   return OkStatus();
 }
 
 void RootController::OnFlagChanged(settings::Flag which, bool new_value) {
-  if (which == settings::Flag::PenModeEnabled) {
+  if (which == settings::Flag::EnablePenMode) {
     // Every time pen mode changes, reinterpret the most recent tool params.
     if (tool_params_.brush_type() ==
         ink::proto::BrushType::BALLPOINT_IN_PEN_MODE_ELSE_MARKER) {
@@ -421,12 +424,13 @@ void RootController::ClearGrid() {
   frame_state_->RequestFrame();
 }
 
-void RootController::AddElement(const ink::proto::ElementBundle& unsafe_bundle,
-                                const SourceDetails& source_details) {
-  AddElementBelow(unsafe_bundle, source_details, kInvalidUUID);
+Status RootController::AddElement(
+    const ink::proto::ElementBundle& unsafe_bundle,
+    const SourceDetails& source_details) {
+  return AddElementBelow(unsafe_bundle, source_details, kInvalidUUID);
 }
 
-void RootController::AddElementBelow(
+Status RootController::AddElementBelow(
     const ink::proto::ElementBundle& unsafe_bundle,
     const SourceDetails& source_details, const UUID& below_element_with_uuid) {
   EXPECT(unsafe_bundle.has_uuid());
@@ -458,10 +462,9 @@ void RootController::AddElementBelow(
     // to the group parent lookup.
     ElementId new_group_id;
     if (!scene_graph_->GetNextGroupId(uuid, &new_group_id)) {
-      SLOG(SLOG_ERROR, "Could not get new group id for: $0", uuid);
       // Bail early. This will cause any attached child polys to attach to the
       // root.
-      return;
+      return status::InternalError("Could not get new group id for: $0", uuid);
     }
     glm::mat4 transform(1.0f);
     if (!ElementBundle::ReadObjectMatrix(unsafe_bundle, &transform)) {
@@ -481,13 +484,12 @@ void RootController::AddElementBelow(
   } else if (unsafe_bundle.element().has_text()) {
     text::TextSpec text;
     if (!util::ReadFromProto(unsafe_bundle.element().text(), &text)) {
-      SLOG(SLOG_ERROR, "Failed to read text proto.");
-      return;
+      return status::InvalidArgument("Failed to read text proto.");
     }
     glm::mat4 transform(1.0f);
     if (!ElementBundle::ReadObjectMatrix(unsafe_bundle, &transform)) {
       SLOG(SLOG_ERROR, "Failed to read text transform");
-      return;
+      return status::InvalidArgument("Failed to read text transform");
     }
 
     // Text's object coordinates are always assumed to be kTextBoxSize x
@@ -505,6 +507,7 @@ void RootController::AddElementBelow(
                               source_details, uuid, below_id, group));
     task_runner_->PushTask(move(adder_task));
   }
+  return OkStatus();
 }
 
 void RootController::AddStrokeOutline(
@@ -549,30 +552,39 @@ UUID RootController::AddPath(const ink::proto::Path& unsafe_path,
   return id;
 }
 
-UUID RootController::AddMeshFromEngine(const Mesh& mesh,
-                                       const ElementAttributes& attributes,
-                                       GroupId group, UUID uuid) {
-  unique_ptr<MeshConverter> converter(
-      new MeshConverter(ShaderType::TexturedVertShader, mesh, attributes));
-  SourceDetails source_details = SourceDetails::FromEngine();
-
-  unique_ptr<SceneElementAdder> adder_task(new SceneElementAdder(
-      std::move(converter), scene_graph_, *flags_, source_details, uuid,
-      /* below_element_with_id= */ kInvalidElementId, group));
-  task_runner_->PushTask(move(adder_task));
-  return uuid;
-}
-
 UUID RootController::AddImageRect(const Rect& rectangle, float rotation,
                                   const std::string& uri,
                                   const ElementAttributes& attributes,
                                   GroupId group_id) {
+  UUID uuid = scene_graph_->GenerateUUID();
+  ElementId id;
+  scene_graph_->GetNextPolyId(uuid, &id);
+
   Mesh mesh;
   MakeImageRectMesh(&mesh, rectangle, rectangle, uri);
   mesh.object_matrix =
       matrix_utils::RotateAboutPoint(rotation, rectangle.Center());
-  UUID uuid = scene_graph_->GenerateUUID();
-  return AddMeshFromEngine(mesh, attributes, group_id, uuid);
+
+  auto pe = absl::make_unique<ProcessedElement>(
+      id, mesh, ShaderType::TexturedVertShader, /*low_memory_mode=*/false,
+      attributes);
+  pe->group = group_id;
+
+  // Invert that matrix to get object-local outline coordinates.
+  glm::mat4 page_to_object_transform = glm::inverse(pe->obj_to_group);
+  pe->outline.reserve(mesh.verts.size());
+  for (const auto& v : mesh.verts) {
+    pe->outline.emplace_back(
+        geometry::Transform(v.position, page_to_object_transform));
+  }
+
+  auto se = absl::make_unique<SerializedElement>(
+      uuid, scene_graph_->UUIDFromElementId(group_id),
+      SourceDetails::FromEngine(), CallbackFlags::All());
+  se->Serialize(*pe);
+
+  scene_graph_->AddStroke(SceneGraph::ElementAdd(std::move(pe), std::move(se)));
+  return uuid;
 }
 
 UUID RootController::AddTextRect(const text::TextSpec& text, const Rect& rect,
@@ -755,6 +767,17 @@ void RootController::Render(uint32_t max_dimension_px,
 void RootController::AddSequencePoint(int32_t id) {
   task_runner_->PushTask(
       absl::make_unique<SequencePointTask>(id, frame_state_));
+}
+
+void RootController::SelectElement(const UUID& uuid) {
+  ElementId id = scene_graph_->ElementIdFromUUID(uuid);
+  if (id != kInvalidElementId) {
+    tools::EditTool* edit_tool = nullptr;
+    if (tools_->GetTool(Tools::Edit, &edit_tool)) {
+      tools_->SetToolType(Tools::Edit);
+      edit_tool->ManipulateElements(*camera_, {id});
+    }
+  }
 }
 
 void RootController::DeselectAll() {

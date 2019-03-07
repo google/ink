@@ -19,9 +19,11 @@
 
 #include <memory>
 
+#include "third_party/absl/types/optional.h"
 #include "ink/engine/camera/camera.h"
 #include "ink/engine/camera_controller/camera_controller.h"
 #include "ink/engine/geometry/primitives/rect.h"
+#include "ink/engine/input/cursor.h"
 #include "ink/engine/input/drag_reco.h"
 #include "ink/engine/input/input_data.h"
 #include "ink/engine/input/input_dispatch.h"
@@ -67,7 +69,7 @@ class DefaultPanHandler : public PanHandler,
       service::Dependencies<input::InputDispatch, Camera, settings::Flags,
                             CameraController, PageBounds, CameraConstraints,
                             AnimationController, WallClockInterface,
-                            PageManager>;
+                            PageManager, IEngineListener>;
 
   DefaultPanHandler(std::shared_ptr<input::InputDispatch> input,
                     std::shared_ptr<Camera> camera,
@@ -77,9 +79,12 @@ class DefaultPanHandler : public PanHandler,
                     std::shared_ptr<CameraConstraints> constraints,
                     std::shared_ptr<AnimationController> animation_controller,
                     std::shared_ptr<WallClockInterface> wall_clock,
-                    std::shared_ptr<PageManager> page_manager);
+                    std::shared_ptr<PageManager> page_manager,
+                    std::shared_ptr<IEngineListener> engine_listener);
   input::CaptureResult OnInput(const input::InputData& data,
                                const Camera& camera) override;
+  absl::optional<input::Cursor> CurrentCursor(
+      const Camera& camera) const override;
 
   void SetAllowOneFingerPan(bool enable_one_finger_pan) override;
 
@@ -134,27 +139,35 @@ class DefaultPanHandler : public PanHandler,
   //  - It's between pages in a multi-page document.
   bool ShouldOneTouchPan(const input::InputData& data);
 
+  // Takes note of the current camera movement state. If the given state is a
+  // change from the known current state, fires an engine event to inform the
+  // host.
+  void MaybeNotifyCameraMovementStateChange(bool is_moving);
+
   bool allow_one_finger_pan_;
   std::shared_ptr<Camera> camera_;
   std::shared_ptr<CameraController> camera_controller_;
   input::DragReco drag_reco_;
   Rect saved_world_wnd_;
   std::shared_ptr<settings::Flags> flags_;
+  std::shared_ptr<PageBounds> page_bounds_;
   RequiredRectDragModifier rect_drag_modifier_;
   std::shared_ptr<CameraConstraints> constraints_;
   std::shared_ptr<AnimationController> animation_controller_;
-  std::shared_ptr<PageBounds> page_bounds_;
   std::shared_ptr<WallClockInterface> wall_clock_;
   std::shared_ptr<PageManager> page_manager_;
+  std::shared_ptr<IEngineListener> engine_listener_;
 
   MousewheelPolicy mousewheel_policy_ = MousewheelPolicy::ZOOMS;
   bool strict_camera_constraints_ = false;
 
   // These members are concerned with "fling" behavior.
-  InputTimeS last_drag_time_{0};
   WallTimeS last_anim_frame_time_{0};
   glm::vec2 drag_per_second_{0};
   AnimatedFn<glm::vec2> drag_anim_;
+
+  bool is_dragging_ = false;
+  bool camera_is_moving_ = false;
 };
 
 }  // namespace ink

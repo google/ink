@@ -31,7 +31,7 @@ class BallpointModifier : public LineModifier {
   explicit BallpointModifier(const glm::vec4& rgba);
 
   void OnAddVert(Vertex* vert, glm::vec2 center_pt, float radius,
-                 const std::vector<Vertex>& line, float pressure) override;
+                 float pressure) override;
 
   ShaderType GetShaderType() override { return ShaderType::ColoredVertShader; }
 

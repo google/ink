@@ -19,9 +19,11 @@ goog.require('goog.testing.proto2');
 goog.require('ink.proto.AffineTransform');
 goog.require('ink.proto.ElementBundle');
 goog.require('ink.proto.ElementState');
+goog.require('ink.proto.ImageInfo');
 goog.require('ink.proto.MutationPacket');
 goog.require('ink.proto.PageProperties');
 goog.require('ink.proto.Rect');
+goog.require('ink.proto.ReplaceAction');
 goog.require('ink.proto.Snapshot');
 goog.require('ink.proto.StorageAction');
 goog.require('ink.util');
@@ -54,6 +56,25 @@ function makeAction(type, uuid) {
   return storageAction;
 }
 
+/**
+ * Make a replace storage action
+ * @param {string} addedUuid
+ * @param {string} addedWasBelowUuid
+ * @param {string} removedUuid
+ * @param {string} removedWasBelowUuid
+ * @return {!ink.proto.StorageAction}
+ */
+function makeReplaceAction(
+    addedUuid, addedWasBelowUuid, removedUuid, removedWasBelowUuid) {
+  const replaceAction = new ink.proto.ReplaceAction();
+  replaceAction.addAddedUuid(addedUuid);
+  replaceAction.addAddedWasBelowUuid(addedWasBelowUuid);
+  replaceAction.addRemovedUuid(removedUuid);
+  replaceAction.addRemovedWasBelowUuid(removedWasBelowUuid);
+  const storageAction = new ink.proto.StorageAction();
+  storageAction.setReplaceAction(replaceAction);
+  return storageAction;
+}
 
 /**
  * Unit tests for mutation packet functions
@@ -132,6 +153,22 @@ addTest(MutationPacketsTest, function addsMultiple() {
   goog.testing.proto2.assertEquals(expected, packet);
 });
 
+addTest(MutationPacketsTest, function replace() {
+  const snapshot = new ink.proto.Snapshot();
+  snapshot.addElement(makeElement('a'));
+  snapshot.addDeadElement(makeElement('b'));
+  snapshot.addElement(makeElement('c'));
+  snapshot.addElement(makeElement('d'));
+  snapshot.addUndoAction(makeReplaceAction('c', 'd', 'b', 'd'));
+  const packet = ink.util.extractMutationPacket(snapshot);
+  expectThat(packet, not(isNull));
+
+  const expected = new ink.proto.MutationPacket();
+  expected.addElement(makeElement('c'));
+  expected.addMutation(makeReplaceAction('c', 'd', 'b', 'd'));
+  goog.testing.proto2.assertEquals(expected, packet);
+});
+
 addTest(MutationPacketsTest, function otherActions() {
   const snapshot = new ink.proto.Snapshot();
   snapshot.addElement(makeElement('a'));
@@ -199,3 +236,95 @@ addTest(MutationPacketsTest, function copiesPageProperties() {
   expectEq(13, packet.getPageProperties().getBounds().getXlow());
 });
 
+
+/** Unit tests for building/parsing "host:" URIs. */
+function HostUriTest() {}
+registerTestSuite(HostUriTest);
+
+addTest(HostUriTest, function buildHostUri() {
+  expectEq(
+      'host:STICKER:static/img/smile.png',
+      ink.util.buildHostUri(
+          ink.proto.ImageInfo.AssetType.STICKER, 'static/img/smile.png'));
+  expectEq(
+      'host:TILED_TEXTURE:glitter-pen',
+      ink.util.buildHostUri(
+          ink.proto.ImageInfo.AssetType.TILED_TEXTURE, 'glitter-pen'));
+  // Colons are allowed.
+  expectEq(
+      'host:DEFAULT:foo:bar:baz',
+      ink.util.buildHostUri(
+          ink.proto.ImageInfo.AssetType.DEFAULT, 'foo:bar:baz'));
+  // Empty asset ID is allowed.
+  expectEq(
+      'host:BORDER:',
+      ink.util.buildHostUri(ink.proto.ImageInfo.AssetType.BORDER, ''));
+});
+
+addTest(HostUriTest, function parseHostUri() {
+  let hostUri = ink.util.parseHostUri('host:STICKER:static/img/smile.png');
+  expectThat(hostUri, not(isNull));
+  expectEq(ink.proto.ImageInfo.AssetType.STICKER, hostUri.assetType);
+  expectEq('static/img/smile.png', hostUri.assetId);
+
+  hostUri = ink.util.parseHostUri('host:TILED_TEXTURE:glitter-pen');
+  expectThat(hostUri, not(isNull));
+  expectEq(ink.proto.ImageInfo.AssetType.TILED_TEXTURE, hostUri.assetType);
+  expectEq('glitter-pen', hostUri.assetId);
+
+  // Colons are allowed.
+  hostUri = ink.util.parseHostUri('host:DEFAULT:foo:bar:baz');
+  expectThat(hostUri, not(isNull));
+  expectEq(ink.proto.ImageInfo.AssetType.DEFAULT, hostUri.assetType);
+  expectEq('foo:bar:baz', hostUri.assetId);
+
+  // Empty asset ID is allowed.
+  hostUri = ink.util.parseHostUri('host:BORDER:');
+  expectThat(hostUri, not(isNull));
+  expectEq(ink.proto.ImageInfo.AssetType.BORDER, hostUri.assetType);
+  expectEq('', hostUri.assetId);
+
+  // Non-"host" scheme is not allowed.
+  expectThat(ink.util.parseHostUri('sketchology:STICKER:image'), isNull);
+  // Invalid asset type is not allowed.
+  expectThat(ink.util.parseHostUri('host:AWESOME:image'), isNull);
+  // Missing asset type is not allowed.
+  expectThat(ink.util.parseHostUri('host:image'), isNull);
+});
+
+/** Unit tests for converting AssetTypes to strings and back. */
+function AssetTypeNameTest() {}
+registerTestSuite(AssetTypeNameTest);
+
+addTest(AssetTypeNameTest, function assetTypeName() {
+  expectEq(
+      'DEFAULT', ink.util.assetTypeName(ink.proto.ImageInfo.AssetType.DEFAULT));
+  expectEq(
+      'BORDER', ink.util.assetTypeName(ink.proto.ImageInfo.AssetType.BORDER));
+  expectEq(
+      'STICKER', ink.util.assetTypeName(ink.proto.ImageInfo.AssetType.STICKER));
+  expectEq('GRID', ink.util.assetTypeName(ink.proto.ImageInfo.AssetType.GRID));
+  expectEq(
+      'TILED_TEXTURE',
+      ink.util.assetTypeName(ink.proto.ImageInfo.AssetType.TILED_TEXTURE));
+  expectEq(
+      'UNKNOWN(foo)',
+      ink.util.assetTypeName(
+          /** @type {!ink.proto.ImageInfo.AssetType} */ ('foo')));
+});
+
+addTest(AssetTypeNameTest, function parseAssetType() {
+  expectEq(
+      ink.proto.ImageInfo.AssetType.DEFAULT,
+      ink.util.parseAssetType('DEFAULT'));
+  expectEq(
+      ink.proto.ImageInfo.AssetType.BORDER, ink.util.parseAssetType('BORDER'));
+  expectEq(
+      ink.proto.ImageInfo.AssetType.STICKER,
+      ink.util.parseAssetType('STICKER'));
+  expectEq(ink.proto.ImageInfo.AssetType.GRID, ink.util.parseAssetType('GRID'));
+  expectEq(
+      ink.proto.ImageInfo.AssetType.TILED_TEXTURE,
+      ink.util.parseAssetType('TILED_TEXTURE'));
+  expectThat(ink.util.parseAssetType('AWESOME'), isNull);
+});

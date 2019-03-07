@@ -13,8 +13,10 @@
 // limitations under the License.
 
 #include "ink/engine/public/sengine.h"
+#include <memory>
 
 #include "third_party/absl/memory/memory.h"
+#include "third_party/absl/strings/match.h"
 #include "third_party/absl/strings/substitute.h"
 #include "ink/engine/colors/colors.h"
 #include "ink/engine/geometry/algorithms/transform.h"
@@ -22,7 +24,9 @@
 #include "ink/engine/geometry/primitives/matrix_utils.h"
 #include "ink/engine/input/sinput.h"
 #include "ink/engine/input/sinput_helpers.h"
+#include "ink/engine/processing/blocker_manager.h"
 #include "ink/engine/processing/runner/task_runner.h"
+#include "ink/engine/public/types/uuid.h"
 #include "ink/engine/realtime/edit_tool.h"
 #include "ink/engine/rendering/compositing/live_renderer.h"
 #include "ink/engine/rendering/gl_managers/text_texture_provider.h"
@@ -198,14 +202,19 @@ void SEngine::SetDocument(std::shared_ptr<Document> document) {
     // First add all groups, then all elements.
     for (const auto& b : snapshot.element()) {
       if (b.element().attributes().is_group()) {
-        root_controller_->unsafe_helper_->AddElement(b, kInvalidUUID,
-                                                     host_source);
+        SLOG(SLOG_DOCUMENT, "loading group $0", b.uuid());
+        root_controller_->unsafe_helper_
+            ->AddElement(b, kInvalidUUID, host_source)
+            .IgnoreError();
       }
     }
     for (const auto& b : snapshot.element()) {
       if (!b.element().attributes().is_group()) {
-        root_controller_->unsafe_helper_->AddElement(b, kInvalidUUID,
-                                                     host_source);
+        SLOG(SLOG_DOCUMENT, "loading element $0 as child of $1", b.uuid(),
+             b.group_uuid());
+        root_controller_->unsafe_helper_
+            ->AddElement(b, kInvalidUUID, host_source)
+            .IgnoreError();
       }
     }
 
@@ -217,12 +226,14 @@ void SEngine::SetDocument(std::shared_ptr<Document> document) {
       GroupId group_id =
           root_controller_->service<SceneGraph>()->GroupIdFromUUID(
               snapshot.active_layer_uuid());
-      size_t layer_id;
-      if (group_id != kInvalidElementId &&
-          layer_manager->IndexForLayerWithGroupId(group_id, &layer_id)) {
+      auto layer_index_or = layer_manager->IndexForLayerWithGroupId(group_id);
+      if (group_id != kInvalidElementId && layer_index_or.ok()) {
+        SLOG(SLOG_DOCUMENT, "setting active layer to $0 (layer index $1)",
+             group_id, layer_index_or.ValueOrDie());
         // This SetActiveLayer comes from the host; the user should not be
         // allowed to undo it.
-        layer_manager->SetActiveLayer(layer_id, SourceDetails::FromHost(0));
+        layer_manager->SetActiveLayer(layer_index_or.ValueOrDie(),
+                                      SourceDetails::FromHost(0));
       } else if (layer_manager->NumLayers() > 0) {
         SLOG(SLOG_WARNING, "layer UUID $0 not found; setting layer 0 active",
              snapshot.active_layer_uuid());
@@ -278,6 +289,8 @@ void SEngine::SetRenderingStrategy(RenderingStrategy rendering_strategy) {
 }
 
 void SEngine::SetPageLayout(SEngine::PageLayout strategy, float spacing_world) {
+  if (CheckBlockedState()) return;
+
   auto page_manager = root_controller_->service<PageManager>();
   std::unique_ptr<ink::PageLayoutStrategy> layout;
   switch (strategy) {
@@ -373,7 +386,72 @@ void SEngine::draw(double draw_time) {
   GLASSERT_NO_ERROR(root_controller_->service<GLResourceManager>()->gl);
 }
 
+class UndoRedoTask : public Task {
+ public:
+  enum class Operation { kUndo, kRedo };
+
+  UndoRedoTask(Operation operation, std::weak_ptr<Document> weak_document,
+               std::unique_ptr<BlockerLock> lock)
+      : operation_(operation),
+        weak_document_(std::move(weak_document)),
+        lock_(std::move(lock)) {}
+
+  bool RequiresPreExecute() const override { return false; }
+  void PreExecute() override {}
+  void Execute() override {}
+  void OnPostExecute() override {
+    if (auto document = weak_document_.lock()) {
+      switch (operation_) {
+        case Operation::kUndo:
+          if (document->CanUndo()) document->Undo();
+          break;
+        case Operation::kRedo:
+          if (document->CanRedo()) document->Redo();
+      }
+    }
+  }
+
+ private:
+  Operation operation_;
+  std::weak_ptr<Document> weak_document_;
+  std::unique_ptr<BlockerLock> lock_;
+};
+
+void SEngine::Undo() {
+  if (registry()->Get<input::InputDispatch>()->GetNContacts() > 0) {
+    SLOG(SLOG_WARNING, "Undo skipped due to active inputs.");
+    return;
+  }
+
+  auto* task_runner = registry()->Get<ITaskRunner>();
+  if (task_runner->NumPendingTasks() > 0) {
+    task_runner->PushTask(absl::make_unique<UndoRedoTask>(
+        UndoRedoTask::Operation::kUndo, document_,
+        registry()->Get<BlockerManager>()->AcquireLock()));
+  } else {
+    document()->Undo();
+  }
+}
+
+void SEngine::Redo() {
+  if (registry()->Get<input::InputDispatch>()->GetNContacts() > 0) {
+    SLOG(SLOG_WARNING, "Redo skipped due to active inputs.");
+    return;
+  }
+
+  auto* task_runner = registry()->Get<ITaskRunner>();
+  if (task_runner->NumPendingTasks() > 0) {
+    task_runner->PushTask(absl::make_unique<UndoRedoTask>(
+        UndoRedoTask::Operation::kRedo, document_,
+        registry()->Get<BlockerManager>()->AcquireLock()));
+  } else {
+    document()->Redo();
+  }
+}
+
 void SEngine::clear() {
+  if (CheckBlockedState()) return;
+
   root_controller_->service<LayerManager>()->Reset();
   root_controller_->service<IDbgHelper>()->Clear();
   root_controller_->service<PageManager>()->Clear();
@@ -385,12 +463,41 @@ void SEngine::clear() {
 }
 
 void SEngine::RemoveAllElements() {
+  if (CheckBlockedState()) return;
+
   root_controller_->service<SceneGraph>()->RemoveAllSelectableElements();
+}
+
+void SEngine::RemoveSelectedElements() {
+  if (CheckBlockedState()) return;
+
+  auto tools = root_controller_->service<ToolController>();
+  tools::EditTool* edit_tool = nullptr;
+  if (!tools->GetTool(Tools::Edit, &edit_tool) ||
+      !edit_tool->IsManipulating()) {
+    return;
+  }
+  std::vector<ElementId> elements = edit_tool->Manipulation().GetElements();
+  edit_tool->CancelManipulation();
+  root_controller_->service<SceneGraph>()->RemoveElements(
+      elements.begin(), elements.end(), SourceDetails::FromEngine());
+}
+
+void SEngine::RemoveElement(const UUID& uuid) {
+  if (CheckBlockedState()) return;
+
+  auto scene_graph = root_controller_->service<SceneGraph>();
+  ElementId element_id = scene_graph->ElementIdFromUUID(uuid);
+  if (element_id != kInvalidElementId) {
+    scene_graph->RemoveElement(element_id, SourceDetails::FromEngine());
+  }
 }
 
 void SEngine::dispatchInput(input::InputType type, uint32_t id, uint32_t flags,
                             double time, float screen_pos_x,
                             float screen_pos_y) {
+  if (CheckBlockedState()) return;
+
   input_receiver_->DispatchInput(type, id, flags, time, screen_pos_x,
                                  screen_pos_y);
 }
@@ -399,17 +506,23 @@ void SEngine::dispatchInput(input::InputType type, uint32_t id, uint32_t flags,
                             double time, float screen_pos_x, float screen_pos_y,
                             float wheel_delta_x, float wheel_delta_y,
                             float pressure, float tilt, float orientation) {
+  if (CheckBlockedState()) return;
+
   input_receiver_->DispatchInput(type, id, flags, time, screen_pos_x,
                                  screen_pos_y, wheel_delta_x, wheel_delta_y,
                                  pressure, tilt, orientation);
 }
 
 void SEngine::dispatchInput(proto::SInputStream inputStream) {
+  if (CheckBlockedState()) return;
+
   input_receiver_->DispatchInput(inputStream);
 }
 
 void SEngine::dispatchInput(const proto::PlaybackStream& unsafe_playback_stream,
                             bool force_camera) {
+  if (CheckBlockedState()) return;
+
   input_receiver_->DispatchInput(unsafe_playback_stream, force_camera);
 }
 
@@ -432,6 +545,8 @@ void SEngine::handleCommand(const proto::Command& command) {
     handled = true;
   }
   if (command.has_page_bounds()) {
+    if (CheckBlockedState()) return;
+
     document_->SetPageBounds(command.page_bounds()).IgnoreError();
     handled = true;
   }
@@ -445,10 +560,14 @@ void SEngine::handleCommand(const proto::Command& command) {
     handled = true;
   }
   if (command.has_set_element_transforms()) {
+    if (CheckBlockedState()) return;
+
     document_->ApplyMutations(command.set_element_transforms()).IgnoreError();
     handled = true;
   }
   if (command.has_add_element()) {
+    if (CheckBlockedState()) return;
+
     const auto& add_element_command = command.add_element();
     if (!add_element_command.has_bundle()) {
       SLOG(SLOG_ERROR, "cannot add element without bundle");
@@ -465,10 +584,14 @@ void SEngine::handleCommand(const proto::Command& command) {
     handled = true;
   }
   if (command.has_background_image()) {
+    if (CheckBlockedState()) return;
+
     document_->SetBackgroundImage(command.background_image()).IgnoreError();
     handled = true;
   }
   if (command.has_background_color()) {
+    if (CheckBlockedState()) return;
+
     document_->SetBackgroundColor(command.background_color()).IgnoreError();
     handled = true;
   }
@@ -509,15 +632,17 @@ void SEngine::handleCommand(const proto::Command& command) {
     handled = true;
   }
   if (command.has_remove_all_elements()) {
+    if (CheckBlockedState()) return;
+
     document_->RemoveAll().IgnoreError();
     handled = true;
   }
   if (command.has_undo()) {
-    document_->Undo();
+    Undo();
     handled = true;
   }
   if (command.has_redo()) {
-    document_->Redo();
+    Redo();
     handled = true;
   }
   if (command.has_evict_image_data()) {
@@ -588,6 +713,8 @@ proto::ElementBundle SEngine::convertPathToBundle(
 }
 
 UUID SEngine::addPath(const proto::AddPath& unsafe_add_path) {
+  if (CheckBlockedState()) return kInvalidUUID;
+
   auto bundle = convertPathToBundle(unsafe_add_path.path());
   if (unsafe_add_path.has_uuid()) {
     bundle.set_uuid(unsafe_add_path.uuid());
@@ -599,8 +726,18 @@ UUID SEngine::addPath(const proto::AddPath& unsafe_add_path) {
   return bundle.uuid();
 }
 
+Status SEngine::Add(proto::ElementBundle element,
+                    absl::string_view below_element_uuid) {
+  proto::SourceDetails sd;
+  sd.set_origin(proto::SourceDetails::ENGINE);
+  return root_controller_->unsafe_helper_->AddElement(
+      element, static_cast<UUID>(below_element_uuid), sd);
+}
+
 void SEngine::handleRemoveElementsCommand(
     const proto::RemoveElementsCommand& cmd) {
+  if (CheckBlockedState()) return;
+
   std::vector<UUID> uuids_to_remove;
   for (auto const& uuid : cmd.uuids_to_remove()) {
     uuids_to_remove.push_back(uuid);
@@ -692,11 +829,14 @@ void SEngine::startImageExport(const proto::ImageExport& image_export) {
   GroupId render_only_group = kInvalidElementId;
   if (image_export.has_layer_index()) {
     auto layer_manager = registry()->GetShared<LayerManager>();
-    if (!layer_manager->GroupIdForLayerAtIndex(image_export.layer_index(),
-                                               &render_only_group)) {
-      SLOG(SLOG_ERROR, "Failed to get group id.");
+    auto render_only_group_or =
+        layer_manager->GroupIdForLayerAtIndex(image_export.layer_index());
+    if (!render_only_group_or.ok()) {
+      SLOG(SLOG_ERROR, "Failed to get group id for index: $0",
+           image_export.layer_index());
       return;
     }
+    render_only_group = render_only_group_or.ValueOrDie();
   }
   ExportedImage img;
   root_controller_->Render(image_export.max_dimension_px(),
@@ -739,6 +879,17 @@ void SEngine::addImageData(const proto::ImageInfo& image_info,
   root_controller_->service<FrameState>()->RequestFrame();
 }
 
+void SEngine::RejectTextureUri(const std::string& uri) {
+  // Don't emit warnings for known-bad URIs that we generate.
+  if (!absl::StartsWith(uri, "sketchology://background_")) {
+    SLOG(SLOG_WARNING, "Host rejected texture URI: $0", uri);
+  }
+  root_controller_->service<GLResourceManager>()
+      ->texture_manager->GenerateRejectedTexture(uri);
+  root_controller_->service<LiveRenderer>()->Invalidate();
+  root_controller_->service<FrameState>()->RequestFrame();
+}
+
 void SEngine::evictImageData(const std::string& uri) {
   SLOG(SLOG_DATA_FLOW, "Evicting URI $0", uri.c_str());
   TextureInfo info(uri);
@@ -750,6 +901,8 @@ void SEngine::evictAllTextures() {
 }
 
 UUID SEngine::addImageRect(const proto::ImageRect& add_image_rect) {
+  if (CheckBlockedState()) return kInvalidUUID;
+
   Rect r;
   if (!ReadFromProto(add_image_rect.rect(), &r)) {
     SLOG(SLOG_ERROR, "Failed to read addImageRect bounds.");
@@ -776,6 +929,8 @@ UUID SEngine::addImageRect(const proto::ImageRect& add_image_rect) {
 }
 
 UUID SEngine::addText(const proto::text::AddText& unsafe_add_text) {
+  if (CheckBlockedState()) return kInvalidUUID;
+
   text::TextSpec text;
   if (!ReadFromProto(unsafe_add_text.text(), &text)) {
     SLOG(SLOG_ERROR, "Failed to read text proto");
@@ -802,6 +957,8 @@ void SEngine::beginTextEditing(const UUID& uuid) {
 }
 
 void SEngine::updateText(const proto::text::UpdateText& unsafe_update_text) {
+  if (CheckBlockedState()) return;
+
   text::TextSpec text;
   if (!ReadFromProto(unsafe_update_text.text(), &text)) {
     SLOG(SLOG_ERROR, "Failed to read text proto");
@@ -845,12 +1002,18 @@ void SEngine::setOutOfBoundsColor(
 }
 
 void SEngine::setGrid(const proto::GridInfo& grid_info) {
+  if (CheckBlockedState()) return;
+
   if (!document_->SetGrid(grid_info)) {
     SLOG(SLOG_ERROR, "could not set grid; see logs");
   }
 }
 
-void SEngine::clearGrid() { setGrid(proto::GridInfo()); }
+void SEngine::clearGrid() {
+  if (CheckBlockedState()) return;
+
+  setGrid(proto::GridInfo());
+}
 
 void SEngine::addSequencePoint(const proto::SequencePoint& sequence_point) {
   root_controller_->AddSequencePoint(sequence_point.id());
@@ -933,13 +1096,21 @@ void SEngine::setCameraBoundsConfig(
   root_controller_->service<CameraConstraints>()->SetZoomBoundsMarginPx(margin);
 }
 
+void SEngine::SelectElement(const std::string& uuid) {
+  root_controller_->SelectElement(uuid);
+}
+
 void SEngine::deselectAll() { root_controller_->DeselectAll(); }
 
 void SEngine::CommitCrop() {
+  if (CheckBlockedState()) return;
+
   root_controller_->service<tools::CropController>()->Commit();
 }
 
 void SEngine::SetCrop(const proto::Rect& crop_rect) {
+  if (CheckBlockedState()) return;
+
   Rect new_crop;
   if (!ReadFromProto(crop_rect, &new_crop)) {
     SLOG(SLOG_ERROR, "Could not set crop Rect, as it could not be read.");
@@ -953,6 +1124,8 @@ void SEngine::SetCrop(const proto::Rect& crop_rect) {
 }
 
 void SEngine::handleElementAnimation(const proto::ElementAnimation& animation) {
+  if (CheckBlockedState()) return;
+
   auto elem_anim_controller =
       registry()->GetShared<ElementAnimationController>();
   auto graph = registry()->GetShared<SceneGraph>();
@@ -979,34 +1152,46 @@ void SEngine::RemoveTextureRequestHandler(const std::string& handler_id) {
 }
 
 bool SEngine::SetLayerVisibility(int index, bool visible) {
+  if (CheckBlockedState()) return false;
+
   auto layer_manager = registry()->GetShared<LayerManager>();
   auto scene_graph = root_controller_->service<SceneGraph>();
 
-  GroupId group_id;
-  INK_RETURN_FALSE_UNLESS(
-      layer_manager->GroupIdForLayerAtIndex(index, &group_id));
+  auto group_id_or = layer_manager->GroupIdForLayerAtIndex(index);
+  if (!group_id_or.ok()) {
+    SLOG(SLOG_ERROR, "Invalid index, $0, passed to SetLayerVisibility.", index);
+    return false;
+  }
 
   proto::ElementVisibilityMutations mutations;
-  AppendElementMutation(scene_graph->UUIDFromElementId(group_id), visible,
-                        &mutations);
+  AppendElementMutation(
+      scene_graph->UUIDFromElementId(group_id_or.ValueOrDie()), visible,
+      &mutations);
   return document_->ApplyMutations(mutations).ok();
 }
 
 bool SEngine::SetLayerOpacity(int index, int opacity) {
+  if (CheckBlockedState()) return false;
+
   auto layer_manager = registry()->GetShared<LayerManager>();
   auto scene_graph = root_controller_->service<SceneGraph>();
 
-  GroupId group_id;
-  INK_RETURN_FALSE_UNLESS(
-      layer_manager->GroupIdForLayerAtIndex(index, &group_id));
+  auto group_id_or = layer_manager->GroupIdForLayerAtIndex(index);
+  if (!group_id_or.ok()) {
+    SLOG(SLOG_ERROR, "Invalid index, $0, passed to SetLayerOpacity.", index);
+    return false;
+  }
 
   proto::ElementOpacityMutations mutations;
-  AppendElementMutation(scene_graph->UUIDFromElementId(group_id), opacity,
-                        &mutations);
+  AppendElementMutation(
+      scene_graph->UUIDFromElementId(group_id_or.ValueOrDie()), opacity,
+      &mutations);
   return document_->ApplyMutations(mutations).ok();
 }
 
 void SEngine::SetActiveLayer(int index) {
+  if (CheckBlockedState()) return;
+
   auto layer_manager = registry()->GetShared<LayerManager>();
   auto status = layer_manager->SetActiveLayer(index);
 
@@ -1018,38 +1203,51 @@ void SEngine::SetActiveLayer(int index) {
 }
 
 bool SEngine::AddLayer() {
+  if (CheckBlockedState()) return false;
+
   auto layer_manager = registry()->GetShared<LayerManager>();
-  auto status = layer_manager->AddLayer(SourceDetails::FromEngine(), nullptr);
-  if (!status.ok()) {
-    SLOG(SLOG_ERROR, "Failed to create layer: $0", status);
+  auto status_or = layer_manager->AddLayer(SourceDetails::FromEngine());
+  if (!status_or.ok()) {
+    SLOG(SLOG_ERROR, "Failed to create layer: $0", status_or.status());
   }
-  return status.ok();
+  return status_or.ok();
 }
 
 bool SEngine::MoveLayer(int from_index, int to_index) {
+  if (CheckBlockedState()) return false;
+
   auto layer_manager = registry()->GetShared<LayerManager>();
   auto scene_graph = root_controller_->service<SceneGraph>();
 
-  GroupId group_id;
-  INK_RETURN_FALSE_UNLESS(
-      layer_manager->GroupIdForLayerAtIndex(from_index, &group_id));
+  auto group_id_or = layer_manager->GroupIdForLayerAtIndex(from_index);
+  if (!group_id_or.ok()) {
+    SLOG(SLOG_ERROR, "Invalid from_index, $0, passed to MoveLayer.",
+         from_index);
+    return false;
+  }
 
   GroupId below_group_id;
   if (to_index == layer_manager->NumLayers()) {
     below_group_id = kInvalidElementId;
   } else {
-    INK_RETURN_FALSE_UNLESS(
-        layer_manager->GroupIdForLayerAtIndex(to_index, &below_group_id));
+    auto below_group_id_or = layer_manager->GroupIdForLayerAtIndex(to_index);
+    if (!below_group_id_or.ok()) {
+      SLOG(SLOG_ERROR, "Invalid to_index, $0, passed to MoveLayer.", to_index);
+      return false;
+    }
+    below_group_id = below_group_id_or.ValueOrDie();
   }
 
   proto::ElementZOrderMutations mutations;
-  AppendElementMutation(scene_graph->UUIDFromElementId(group_id),
-                        scene_graph->UUIDFromElementId(below_group_id),
-                        &mutations);
+  AppendElementMutation(
+      scene_graph->UUIDFromElementId(group_id_or.ValueOrDie()),
+      scene_graph->UUIDFromElementId(below_group_id), &mutations);
   return document_->ApplyMutations(mutations).ok();
 }
 
 bool SEngine::RemoveLayer(int index) {
+  if (CheckBlockedState()) return false;
+
   auto layer_manager = registry()->GetShared<LayerManager>();
   auto status = layer_manager->RemoveLayer(index, SourceDetails::FromEngine());
   if (!status.ok()) {
@@ -1067,21 +1265,24 @@ proto::LayerState SEngine::GetLayerState() {
 
     for (int i = 0; i < layer_manager->NumLayers(); i++) {
       proto::LayerState_Layer* layer = layer_state.add_layers();
-      GroupId group_id;
-      layer_manager->GroupIdForLayerAtIndex(i, &group_id);
+      auto group_id_or = layer_manager->GroupIdForLayerAtIndex(i);
+      if (!group_id_or.ok()) {
+        SLOG(SLOG_ERROR, "Invalid layer index, $0, in GetLayerState.", i);
+        continue;
+      }
+      auto group_id = group_id_or.ValueOrDie();
       layer->set_uuid(scene_graph->UUIDFromElementId(group_id));
       layer->set_opacity(scene_graph->Opacity(group_id));
       layer->set_visibility(scene_graph->Visible(group_id));
     }
 
-    UUID active_layer = kInvalidUUID;
-
-    size_t active_index = 0;
-    layer_manager->IndexOfActiveLayer(&active_index);
-    GroupId active_group;
-    layer_manager->GroupIdForLayerAtIndex(active_index, &active_group);
-    layer_state.set_active_layer_uuid(
-        scene_graph->UUIDFromElementId(active_group));
+    auto active_group_or = layer_manager->GroupIdOfActiveLayer();
+    if (!active_group_or.ok()) {
+      SLOG(SLOG_ERROR, "Active layer not found in GetLayerState.");
+    }
+    layer_state.set_active_layer_uuid(scene_graph->UUIDFromElementId(
+        active_group_or.ok() ? active_group_or.ValueOrDie()
+                             : kInvalidElementId));
   }
 
   return layer_state;
@@ -1095,12 +1296,12 @@ Rect SEngine::GetMinimumBoundingRect() const {
 Rect SEngine::GetMinimumBoundingRectForLayer(int index) const {
   auto scene_graph = root_controller_->service<SceneGraph>();
   auto layer_manager = registry()->GetShared<LayerManager>();
-  GroupId group_id;
-  if (!layer_manager->GroupIdForLayerAtIndex(index, &group_id)) {
+  auto group_id_or = layer_manager->GroupIdForLayerAtIndex(index);
+  if (!group_id_or.ok()) {
     SLOG(SLOG_ERROR, "Group id not found for layer $0.", index);
     return Rect();
   }
-  return scene_graph->MbrForGroup(group_id);
+  return scene_graph->MbrForGroup(group_id_or.ValueOrDie());
 }
 
 void SEngine::SetSelectionProvider(
@@ -1114,6 +1315,14 @@ void SEngine::SetMouseWheelBehavior(const proto::MouseWheelBehavior& behavior) {
       (behavior == proto::MouseWheelBehavior::SCROLLS)
           ? MousewheelPolicy::SCROLLS
           : MousewheelPolicy::ZOOMS);
+}
+
+bool SEngine::CheckBlockedState() const {
+  if (registry()->Get<BlockerManager>()->IsBlocked()) {
+    SLOG(SLOG_ERROR, "Attempt to mutate scene while blocked");
+    return true;
+  }
+  return false;
 }
 
 }  // namespace ink

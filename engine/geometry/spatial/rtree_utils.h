@@ -29,9 +29,13 @@ namespace ink {
 namespace spatial {
 
 // Creates an R-Tree by constructing a DataType instance for each triangle in
-// the mesh, then bulk-loading them. The function data_factory is used the
-// construct the DataType instances. The bounds_function is expected to return
-// the envelope of a DataType instance.
+// the mesh, then bulk-loading them.
+// The function data_factory is used to construct the DataType instances.
+// The bounds_function is expected to return the envelope of a DataType
+// instance.
+// The optional function triangle_filter can be used to specify whether a
+// triangle should be included in the R-Tree; if not specified, all triangles
+// will be included.
 // WARNING: The BoundsFunction is saved in the R-Tree; be sure that any
 // references or pointers that it holds remain valid for the lifetime of the
 // R-Tree.
@@ -39,13 +43,16 @@ template <typename DataType>
 std::unique_ptr<RTree<DataType>> MakeRTreeFromMeshTriangles(
     const Mesh &mesh,
     std::function<DataType(const Mesh &mesh, int triangle_index)> data_factory,
-    typename RTree<DataType>::BoundsFunction bounds_function) {
+    typename RTree<DataType>::BoundsFunction bounds_function,
+    std::function<bool(const Mesh &mesh, int triangle_index)> triangle_filter =
+        nullptr) {
   std::vector<DataType> data;
   ASSERT(mesh.idx.size() % 3 == 0);
   int n_triangles = mesh.NumberOfTriangles();
   data.reserve(n_triangles);
   for (int i = 0; i < n_triangles; ++i) {
-    data.emplace_back(data_factory(mesh, i));
+    if (!triangle_filter || triangle_filter(mesh, i))
+      data.emplace_back(data_factory(mesh, i));
   }
 
   return absl::make_unique<RTree<DataType>>(data.begin(), data.end(),

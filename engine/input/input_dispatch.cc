@@ -99,9 +99,9 @@ void InputDispatch::Dispatch(const Camera& cam, InputData data) {
     return;
   }
 
-  if (flags_->GetFlag(settings::Flag::AutoPenModeEnabled) && !pen_used_ &&
+  if (flags_->GetFlag(settings::Flag::EnableAutoPenMode) && !pen_used_ &&
       data.type == input::InputType::Pen) {
-    flags_->SetFlag(settings::Flag::PenModeEnabled, true);
+    flags_->SetFlag(settings::Flag::EnablePenMode, true);
     pen_used_ = true;
   }
 
@@ -172,6 +172,23 @@ void InputDispatch::Dispatch(const Camera& cam, InputData data) {
     input_id_to_capturer_.erase(data.id);
     if (data.n_down == 0) refused_handlers_.clear();
   }
+}
+
+Cursor InputDispatch::GetCurrentCursor(const Camera& cam) const {
+  for (auto& h : sorted_handlers_) {
+    if (refused_handlers_.find(h) != refused_handlers_.end()) {
+      // The handler has already refused all inputs.
+      continue;
+    } else if (h->RefuseAllNewInput()) {
+      continue;
+    }
+    absl::optional<Cursor> cursor = h->CurrentCursor(cam);
+    if (cursor) {
+      return *cursor;
+    }
+  }
+  // If none of the handlers want to set the cursor, return the default cursor.
+  return Cursor();
 }
 
 void InputDispatch::ReleaseCapturedStreams(IInputHandler* handler) {

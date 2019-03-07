@@ -25,6 +25,7 @@
 #include "third_party/absl/types/optional.h"
 #include "ink/engine/camera/camera.h"
 #include "ink/engine/geometry/mesh/mesh_splitter.h"
+#include "ink/engine/input/cursor.h"
 #include "ink/engine/input/input_data.h"
 #include "ink/engine/input/input_handler.h"
 #include "ink/engine/input/input_modeler.h"
@@ -53,6 +54,8 @@ class StrokeEditingEraser : public Tool {
   void Draw(const Camera& camera, FrameTimeS draw_time) const override;
   input::CaptureResult OnInput(const input::InputData& data,
                                const Camera& camera) override;
+  absl::optional<input::Cursor> CurrentCursor(
+      const Camera& camera) const override;
   std::string ToString() const override { return "<StrokeEditingEraser>"; }
   void SetBrushSize(BrushParams::BrushSize size);
 
@@ -60,7 +63,6 @@ class StrokeEditingEraser : public Tool {
   struct ElementData {
     ShaderType shader_type = ShaderType::NoShader;
     ElementAttributes attributes;
-    Mesh mesh;
     std::unique_ptr<MeshSplitter> splitter;
     ElementId new_id = kInvalidElementId;
     UUID new_uuid = kInvalidUUID;

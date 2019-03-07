@@ -39,22 +39,24 @@ DefaultPanHandler::DefaultPanHandler(
     std::shared_ptr<CameraConstraints> constraints,
     std::shared_ptr<AnimationController> animation_controller,
     std::shared_ptr<WallClockInterface> wall_clock,
-    std::shared_ptr<PageManager> page_manager)
+    std::shared_ptr<PageManager> page_manager,
+    std::shared_ptr<IEngineListener> engine_listener)
     : input::InputHandler(input::Priority::Pan),
       allow_one_finger_pan_(false),
-      camera_(camera),
-      camera_controller_(camera_controller),
+      camera_(std::move(camera)),
+      camera_controller_(std::move(camera_controller)),
       flags_(std::move(flags)),
-      rect_drag_modifier_(camera, page_bounds),
-      constraints_(constraints),
-      animation_controller_(animation_controller),
-      page_bounds_(page_bounds),
-      wall_clock_(wall_clock),
-      page_manager_(page_manager),
+      page_bounds_(std::move(page_bounds)),
+      rect_drag_modifier_(camera_, page_bounds_),
+      constraints_(std::move(constraints)),
+      animation_controller_(std::move(animation_controller)),
+      wall_clock_(std::move(wall_clock)),
+      page_manager_(std::move(page_manager)),
+      engine_listener_(std::move(engine_listener)),
       strict_camera_constraints_(
           flags_->GetFlag(settings::Flag::StrictNoMargins)),
       drag_anim_(
-          animation_controller, [this]() { return drag_per_second_; },
+          animation_controller_, [this]() { return drag_per_second_; },
           [this](glm::vec2 drag) { SetDragPerSecond(drag); }) {
   flags_->AddListener(this);
   RegisterForInput(input);
@@ -62,9 +64,8 @@ DefaultPanHandler::DefaultPanHandler(
 
 void DefaultPanHandler::MaybeFling() {
   if (flags_->GetFlag(settings::Flag::EnableFling) &&
-      (std::abs(drag_per_second_.x) > 0 || std::abs(drag_per_second_.y) > 0)) {
+      glm::length(drag_per_second_) > 0) {
     last_anim_frame_time_ = wall_clock_->CurrentTime();
-    last_drag_time_ = kInvalidTime;
     // If our current viewport violates resting viewport constraints, don't
     // bother animating.
     const auto current_view = camera_->WorldWindow();
@@ -75,29 +76,37 @@ void DefaultPanHandler::MaybeFling() {
                            absl::make_unique<CubicBezierAnimationCurve>(
                                glm::vec2(0, 0), glm::vec2(.2, 1)),
                            DefaultInterpolator<glm::vec2>());
+      MaybeNotifyCameraMovementStateChange(true);
     }
+  } else {
+    MaybeNotifyCameraMovementStateChange(false);
   }
 }
 
 input::CaptureResult DefaultPanHandler::OnInput(const input::InputData& data,
                                                 const Camera& camera) {
   if (flags_->GetFlag(settings::Flag::EnableHostCameraControl) ||
-      !flags_->GetFlag(settings::Flag::PanZoomEnabled)) {
+      !flags_->GetFlag(settings::Flag::EnablePanZoom)) {
+    is_dragging_ = false;
     drag_anim_.StopAnimation();
     drag_reco_.Reset();
     return input::CapResRefuse;
   }
 
   if (data.Get(input::Flag::Cancel)) {
+    is_dragging_ = false;
     drag_anim_.StopAnimation();
     drag_reco_.Reset();
     camera_->SetWorldWindow(saved_world_wnd_);
+    MaybeNotifyCameraMovementStateChange(false);
     return input::CapResRefuse;
   }
 
   // On TUp, begin a "fling" animation.
   if (data.Get(input::Flag::TUp) && data.n_down == 0) {
+    is_dragging_ = false;
     MaybeFling();
+    return input::CapResRefuse;
   }
 
   auto res = input::CapResObserve;
@@ -118,7 +127,10 @@ input::CaptureResult DefaultPanHandler::OnInput(const input::InputData& data,
     drag_reco_.Reset();
     bool should_pan = ShouldOneTouchPan(data);
     drag_reco_.SetAllowOneFingerPan(should_pan);
-    if (should_pan) drag_anim_.StopAnimation();
+    if (should_pan) {
+      is_dragging_ = true;
+      drag_anim_.StopAnimation();
+    }
   }
 
   input::DragData drag;
@@ -137,6 +149,7 @@ input::CaptureResult DefaultPanHandler::OnInput(const input::InputData& data,
   } else {
     res = drag_reco_.OnInput(data, *camera_);
     has_drag = drag_reco_.GetDrag(&drag);
+    is_dragging_ |= has_drag;
   }
 
   if (has_drag) {
@@ -163,6 +176,7 @@ input::CaptureResult DefaultPanHandler::OnInput(const input::InputData& data,
 
     NoteDragEvent(data, -drag.world_drag);
   }
+  MaybeNotifyCameraMovementStateChange(has_drag);
 
   return res;
 }
@@ -178,7 +192,14 @@ void DefaultPanHandler::NoteDragEvent(const input::InputData& data,
       drag_per_second_ = world_drag / static_cast<float>(interval);
     }
   }
-  last_drag_time_ = data.time;
+}
+
+absl::optional<input::Cursor> DefaultPanHandler::CurrentCursor(
+    const Camera& camera) const {
+  if (is_dragging_) {
+    return input::Cursor(input::CursorType::MOVE);
+  }
+  return absl::nullopt;
 }
 
 void DefaultPanHandler::SetAllowOneFingerPan(bool enable_one_finger_pan) {
@@ -199,6 +220,7 @@ void DefaultPanHandler::SetDragPerSecond(glm::vec2 drag_per_second) {
 
   // LookAt() uses strict constraints, so we can't go off the rails.
   camera_controller_->LookAt(new_camera.WorldWindow());
+  MaybeNotifyCameraMovementStateChange(glm::length(drag_per_second_) > 0);
 }
 
 input::DragData DefaultPanHandler::DragDataFromWheelInput(
@@ -244,7 +266,7 @@ bool DefaultPanHandler::ShouldOneTouchPan(const input::InputData& data) {
     return true;
   }
   if (data.type == input::InputType::Touch &&
-      flags_->GetFlag(settings::Flag::PenModeEnabled)) {
+      flags_->GetFlag(settings::Flag::EnablePenMode)) {
     return true;
   }
   if (page_bounds_->HasBounds() &&
@@ -257,6 +279,13 @@ bool DefaultPanHandler::ShouldOneTouchPan(const input::InputData& data) {
     return true;
   }
   return false;
+}
+
+void DefaultPanHandler::MaybeNotifyCameraMovementStateChange(bool is_moving) {
+  if (is_moving != camera_is_moving_) {
+    camera_is_moving_ = is_moving;
+    engine_listener_->CameraMovementStateChanged(camera_is_moving_);
+  }
 }
 
 }  // namespace ink

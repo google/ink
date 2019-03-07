@@ -83,7 +83,7 @@ void DbgHelper::DrawLine(const Camera& cam, FrameTimeS draw_time,
                                          DistanceType::kWorld);
   Mesh mesh(MakeLine(start, end, color, width_world));
   mesh.GenIndex();
-  gl_resources_->mesh_vbo_provider->GenVBO(&mesh, GL_STREAM_DRAW);
+  gl_resources_->mesh_vbo_provider->GenVBOs(&mesh, GL_STREAM_DRAW);
   renderer_.Draw(cam, draw_time, mesh);
 }
 
@@ -135,8 +135,8 @@ void DbgHelper::DrawSkeleton(const Camera& cam, FrameTimeS draw_time,
 
 void DbgHelper::DrawMesh(const Camera& cam, FrameTimeS draw_time, Mesh* mesh) {
   // Ensure the mesh has a vbo for drawing.
-  if (!gl_resources_->mesh_vbo_provider->HasVBO(*mesh)) {
-    gl_resources_->mesh_vbo_provider->GenVBO(mesh, GL_STATIC_DRAW);
+  if (!gl_resources_->mesh_vbo_provider->HasVBOs(*mesh)) {
+    gl_resources_->mesh_vbo_provider->GenVBOs(mesh, GL_STATIC_DRAW);
   }
   renderer_.Draw(cam, draw_time, *mesh);
 }
@@ -205,6 +205,6 @@ void DbgHelper::AddMesh(const Mesh& m, glm::vec4 color, uint32_t id) {
   for (auto& v : pair->second.verts) {
     v.color = color;
   }
-  gl_resources_->mesh_vbo_provider->GenVBO(&pair->second, GL_DYNAMIC_DRAW);
+  gl_resources_->mesh_vbo_provider->GenVBOs(&pair->second, GL_DYNAMIC_DRAW);
 }
 }  // namespace ink

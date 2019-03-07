@@ -42,7 +42,7 @@ namespace sinput_test_helpers {
 //   * For single-touch: The default is id = 1, and the primary flag is set
 //   * For multi-touch: The default is for the first id = 1, second id = 2,
 //     and the primary flag is set on the first line
-//   * InputType is Touch
+//   * InputType is Touch, unless otherwise specified.
 //
 // The methods differ in how the number of touch points returned is
 // specified.
@@ -60,6 +60,15 @@ std::vector<SInput> CreateSampledLine(glm::vec2 from_screen_pos,
                                       glm::vec2 to_screen_pos,
                                       InputTimeS start_time_seconds,
                                       DurationS duration_seconds);
+
+// Like CreateSampledLine above, except that InputType is Mouse, with the Left
+// or Right flag set.
+std::vector<SInput> CreateSampledMouseLeftDragLine(
+    glm::vec2 from_screen_pos, glm::vec2 to_screen_pos,
+    InputTimeS start_time_seconds, DurationS duration_seconds);
+std::vector<SInput> CreateSampledMouseRightDragLine(
+    glm::vec2 from_screen_pos, glm::vec2 to_screen_pos,
+    InputTimeS start_time_seconds, DurationS duration_seconds);
 
 // Creates N >= 4 touch points, simulating two fingers moving indepentently.
 // The first finger moves in an interpolated line from first_start_pos to
@@ -88,6 +97,13 @@ std::vector<SInput> CreateExactLine(glm::vec2 from_screen_pos,
                                     int num_interp_points,
                                     InputTimeS start_time, InputTimeS end_time,
                                     uint32_t id, bool set_primary_flag);
+// As above, but InputType will be Mouse if additional_flags has either Left or
+// Right set.
+std::vector<SInput> CreateExactLine(glm::vec2 from_screen_pos,
+                                    glm::vec2 to_screen_pos,
+                                    int num_interp_points,
+                                    InputTimeS start_time, InputTimeS end_time,
+                                    uint32_t id, uint32_t additional_flags);
 
 // Creates first_num_points + second_num_points + 4 touch points
 std::vector<SInput> CreateExactMultiTouchLines(
@@ -99,6 +115,16 @@ std::vector<SInput> CreateExactMultiTouchLines(
 
 // Creates a .1 second tap (2 touch points) at the given time and position
 std::vector<SInput> CreateTap(glm::vec2 screen_pos, InputTimeS start_time);
+
+// Creates a .1 second left-click (with InputType::Mouse) at the given time and
+// position.
+std::vector<SInput> CreateMouseLeftClick(glm::vec2 screen_pos,
+                                         InputTimeS start_time);
+
+// Creates a .1 second right-click (with InputType::Mouse) at the given time and
+// position.
+std::vector<SInput> CreateMouseRightClick(glm::vec2 screen_pos,
+                                          InputTimeS start_time);
 
 // Creates num_interp_points+2 touch points.
 std::vector<SInput> CreateArc(const glm::vec2& center, float radius,

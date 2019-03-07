@@ -48,20 +48,27 @@ void DirectRenderer::Draw(const Camera& cam, FrameTimeS draw_time) const {
 
   // If the layer manager is active, then set the post tool iterator to the
   // first layer (group) after the active layer.
-  size_t active_layer;
-  if (layer_manager_->IsActive() &&
-      layer_manager_->IndexOfActiveLayer(&active_layer)) {
-    post_tool_iterator_ = std::stable_partition(
-        begin, end,
-        [this, active_layer](const SceneGraph::GroupedElements& item) {
-          size_t index;
-          if (!layer_manager_->IndexForLayerWithGroupId(item.group_id,
-                                                        &index)) {
+  if (layer_manager_->IsActive()) {
+    auto active_layer_or = layer_manager_->IndexOfActiveLayer();
+    if (active_layer_or.ok()) {
+      size_t active_layer = active_layer_or.ValueOrDie();
+      post_tool_iterator_ = std::stable_partition(
+          begin, end,
+          [this, active_layer](const SceneGraph::GroupedElements& item) {
+            auto index_or =
+                layer_manager_->IndexForLayerWithGroupId(item.group_id);
+            if (index_or.ok()) {
+              return index_or.ValueOrDie() <= active_layer;
+            } else {
+              SLOG(SLOG_ERROR,
+                   "SceneGraph rendering layer unknown to LayerManager, $0",
+                   item.group_id);
+            }
             return true;
-          }
-          return index <= active_layer;
-        });
+          });
+    }
   }
+
   DrawRange(cam, draw_time, begin, post_tool_iterator_);
 
   for (auto& d : scene_graph_->GetDrawables()) {
@@ -82,14 +89,19 @@ void DirectRenderer::DrawRange(
     SceneGraph::GroupedElementsList::const_iterator end) const {
   // Assume that the range is sorted such that elements are in the
   // appropriate z-order and any GROUPs found will force a scissor.
-  for (auto elements = begin; elements < end; elements++) {
+  for (auto element_group = begin; element_group < end; element_group++) {
+    SLOG(SLOG_DRAWING, "Drawing group $0", element_group->group_id);
     std::unique_ptr<Scissor> scissor;
-    if (elements->bounds.Area() != 0) {
+    if (element_group->bounds.Area() != 0) {
+      SLOG(SLOG_DRAWING, "  Scissoring to $0", element_group->bounds);
       scissor = absl::make_unique<Scissor>(gl_resources_->gl);
-      scissor->SetScissor(cam, elements->bounds, CoordType::kWorld);
+      scissor->SetScissor(cam, element_group->bounds, CoordType::kWorld);
     }
-    for (ElementId poly_id : elements->poly_ids) {
-      element_renderer_.Draw(poly_id, *scene_graph_, cam, draw_time);
+    for (ElementId poly_id : element_group->poly_ids) {
+      SLOG(SLOG_DRAWING, "    Drawing element $0", poly_id);
+      if (!element_renderer_.Draw(poly_id, *scene_graph_, cam, draw_time)) {
+        SLOG(SLOG_WARNING, "    FAILED to draw element $0", poly_id);
+      }
     }
   }
 }

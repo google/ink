@@ -48,6 +48,7 @@ class Host : public IHost {
   uint32_t GetTargetFPS() const override { return 60; }
   void RequestImage(const std::string& uri) override {}
   std::string GetPlatformId() const override { return ""; }
+  void SetCursor(const ink::proto::Cursor& cursor) override {}
 
   // The inherited Host behavior is to preload shaders during engine
   // construction. This is slow, but theoretically prevents jank when starting
@@ -75,6 +76,8 @@ class Host : public IHost {
   void FlagChanged(const proto::Flag& flag, bool enabled) override {}
   void LoggingEventFired(
       const ::logs::proto::research::ink::InkEvent& event) override {}
+  void CameraMovementStateChanged(bool is_moving) override {}
+  void BlockingStateChanged(bool is_blocked) override {}
 
   // IElementListener
   void ElementsAdded(const proto::ElementBundleAdds& element_bundle_adds,

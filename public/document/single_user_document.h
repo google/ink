@@ -22,6 +22,7 @@
 
 #include "third_party/absl/synchronization/mutex.h"
 #include "ink/engine/public/types/status.h"
+#include "ink/engine/public/types/status_or.h"
 #include "ink/engine/public/types/uuid.h"
 #include "ink/public/document/document.h"
 #include "ink/public/document/storage/document_storage.h"
@@ -34,6 +35,10 @@ namespace ink {
 class SingleUserDocument : public Document {
  public:
   explicit SingleUserDocument(std::shared_ptr<DocumentStorage> storage);
+
+  static StatusOr<std::unique_ptr<Document>> CreateWithPageProperties(
+      std::shared_ptr<DocumentStorage> storage,
+      const proto::PageProperties& page_properties);
 
   static S_WARN_UNUSED_RESULT Status CreateFromSnapshot(
       std::shared_ptr<DocumentStorage> storage,

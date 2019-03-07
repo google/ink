@@ -126,23 +126,21 @@ Status S_WARN_UNUSED_RESULT DeserializeVerticesToMesh(CTMcontext context,
   }
 
   // Check for vertex coloring.
-  const bool vertex_colored = mesh_serialization::IsVertexColored(shader_type);
-  const CTMfloat* rgba = nullptr;
-  if (vertex_colored) {
-    CTMenum colors_id = ctmGetNamedAttribMap(context, "Color");
-    if (colors_id == CTM_NONE) {
-      return ErrorStatus(StatusCode::INVALID_ARGUMENT,
-                         "Vertex colored but missing Color attribute map");
-    }
-    rgba = ctmGetFloatArray(context, colors_id);
-    if (rgba == nullptr) {
+  const CTMfloat* packed_rgba_array = nullptr;
+  CTMenum colors_id = ctmGetNamedAttribMap(context, "Color");
+  if (colors_id != CTM_NONE) {
+    packed_rgba_array = ctmGetFloatArray(context, colors_id);
+    if (packed_rgba_array == nullptr) {
       return ErrorStatus(StatusCode::INVALID_ARGUMENT,
                          "Invalid Color attribute map");
     }
+  } else if (mesh_serialization::IsVertexColored(shader_type)) {
+    return ErrorStatus(StatusCode::INVALID_ARGUMENT,
+                       "Vertex colored but missing Color attribute map");
   }
 
   Vertex v;
-  if (!vertex_colored) {
+  if (!packed_rgba_array) {
     // uintToVec4ABGR clamps, so v.color is safe
     v.color = UintToVec4ABGR(solid_agbr);
   }
@@ -182,11 +180,11 @@ Status S_WARN_UNUSED_RESULT DeserializeVerticesToMesh(CTMcontext context,
     v.position.y = vertices[j * 3 + 1] * vertex_scale;
     INK_RETURN_UNLESS(BoundsCheckIncEx(v.position, 0, kMaxDimension));
 
-    if (vertex_colored) {
-      v.color.r = rgba[j * 4];
-      v.color.g = rgba[j * 4 + 1];
-      v.color.b = rgba[j * 4 + 2];
-      v.color.a = rgba[j * 4 + 3];
+    if (packed_rgba_array) {
+      v.color.r = packed_rgba_array[j * 4];
+      v.color.g = packed_rgba_array[j * 4 + 1];
+      v.color.b = packed_rgba_array[j * 4 + 2];
+      v.color.a = packed_rgba_array[j * 4 + 3];
       INK_RETURN_UNLESS(BoundsCheckIncInc(v.color, 0, 1));
     }
 
@@ -259,7 +257,7 @@ S_WARN_UNUSED_RESULT Status OpenCtmWriter::MeshToLod(
   //
   const float vertex_max = GetScaleFactor(mesh);
   const size_t vertex_count = mesh.verts.size();
-  const size_t index_count = mesh.idx.size();
+  const size_t index_count = mesh.IndexSize();
   const bool vertex_colored = mesh_serialization::IsVertexColored(mesh.type);
 
   Vertex unpacked_vertex;
@@ -309,7 +307,7 @@ S_WARN_UNUSED_RESULT Status OpenCtmWriter::MeshToLod(
   }
 
   for (size_t j = 0; j < index_count; j++) {
-    indices[j] = mesh.idx[j];
+    indices[j] = mesh.IndexAt(j);
   }
 
   ctmDefineMesh(context.Get(), vertices.get(), vertex_count, indices.get(),

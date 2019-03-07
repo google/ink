@@ -37,29 +37,44 @@ class TessellatedLine {
       : gl_resources_(std::move(gl_resources)) {}
 
   // Clears the line and tessellation, and sets up a new line.
-  void SetupNewLine(const Camera& camera, float min_screen_travel_threshold,
-                    TipType tip_type, FatLine::VertAddFn vertex_callback,
+  void SetupNewLine(float min_screen_travel_threshold, TipType tip_type,
+                    FatLine::VertAddFn vertex_callback,
                     const LineModParams& line_mod_params);
 
   // Clears the line and tessellation, and restarts from the end of the given
-  // line, using the same camera, minimum travel threshold, tip type. If a
-  // vertex-added callback is given, it will use that, otherwise that will also
-  // be taken from the given line.
-  bool RestartFromBackOfLine(
+  // line, minimum travel threshold, tip type. If a vertex-added callback is
+  // given, it will use that, otherwise that will also be taken from the given
+  // line.
+  //
+  // Returns the bounding box of the joining segment between the lines.
+  OptRect RestartFromBackOfLine(
       const FatLine& other, const LineModParams& line_mod_params,
       absl::optional<FatLine::VertAddFn> vertex_callback = absl::nullopt);
 
+  // Sets the object matrix of the line's mesh.
+  void SetObjectMatrix(const glm::mat4& object_matrix) {
+    tessellator_.mesh_.object_matrix = object_matrix;
+  }
+
   // Sets the tip size, stylus state, and turn vertices, the extrudes a point
   // (see FatLine::Extrude()).
-  bool Extrude(glm::vec2 new_pt, InputTimeS time, TipSizeScreen tip_size,
-               input::StylusState stylus_state, int n_turn_verts, bool force);
+  //
+  // Returns the bounding box of any created segements, or absl::nullopt if no
+  // vertices are created.
+  OptRect Extrude(glm::vec2 new_pt, InputTimeS time, TipSizeScreen tip_size,
+                  input::StylusState stylus_state, int n_turn_verts,
+                  bool force);
 
   // Builds the end cap of the line (see Fatline::BuildEndCap()).
-  void BuildEndCap();
+  //
+  // Returns the bounding box of the created endcap, or absl::nullopt if no
+  // endcap is created.
+  OptRect BuildEndCap();
 
   // Clears the vertices on the line, and any cached tessellation.
-  // WARNING: This does not clear the camera, the minimum travel threshold, the
-  // tip type, the line modifier parameters, or the vertex-added callback.
+  // WARNING: This does not clear the object matrix, the minimum travel
+  // threshold, the tip type, the line modifier parameters, or the vertex-added
+  // callback.
   void ClearVertices();
 
   // Sets the shader metadata which will be passed on to the generated mesh.

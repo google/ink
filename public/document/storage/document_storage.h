@@ -58,7 +58,7 @@ enum class LivenessFilter { kOnlyAlive, kOnlyDead, kDeadOrAlive };
 // DocumentStorage's goal is to be a simple interface around differing Element
 // storage strategies. DocumentStorage assumes a dumb physical storage, that
 // cannot change except in response to an API call through that DocumentStorage.
-// (Simlar to a file API). This is in contrast to multiuser storage (ie brix)
+// (similar to a file API). This is in contrast to multiuser storage (ie brix)
 // where the data may change independently at any point. If you want multiuser
 // storage, look to subclass of Document instead of DocumentStorage.
 // (Document has an event-based API that explicitly supports this).

@@ -24,6 +24,7 @@
 
 #include "third_party/absl/strings/string_view.h"
 #include "ink/engine/public/types/status.h"
+#include "ink/engine/public/types/status_or.h"
 
 // Many pdfium routines return false on failure with no error message. This
 // macro creates a programmer-friendly error message for such conditions, which
@@ -71,7 +72,7 @@ using BlobFetcher = std::function<size_t(void*, size_t)>;
 
 // Interprets the fetched buffer as UTF16LE, end re-encodes it as UTF8, storing
 // the encoded result in *out.
-Status FetchUtf16StringAsUtf8(BlobFetcher fetcher, std::string* out);
+StatusOr<std::string> FetchUtf16StringAsUtf8(BlobFetcher fetcher);
 
 }  // namespace internal
 }  // namespace pdf

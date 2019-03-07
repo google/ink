@@ -32,7 +32,8 @@ LineToolDataSink::LineToolDataSink(std::shared_ptr<SceneGraph> graph,
       task_runner_(task_runner),
       flags_(flags) {}
 
-void LineToolDataSink::Accept(const std::vector<FatLine>& lines,
+void LineToolDataSink::Accept(const Camera& down_camera,
+                              const std::vector<FatLine>& lines,
                               std::unique_ptr<InputPoints> input_points,
                               std::unique_ptr<Mesh> rendering_mesh,
                               GroupId group, const ShaderType shader_type,
@@ -53,8 +54,8 @@ void LineToolDataSink::Accept(const std::vector<FatLine>& lines,
   }
 
   std::unique_ptr<LineConverter> converter(new LineConverter(
-      lines, group_to_world_transform, std::move(input_points), shader_type,
-      tessellation_params));
+      lines, group_to_world_transform, down_camera.ScreenToWorld(),
+      std::move(input_points), shader_type, tessellation_params));
 
   std::unique_ptr<SceneElementAdder> adder_task(new SceneElementAdder(
       move(converter), scene_graph_, *flags_, SourceDetails::FromEngine(), uuid,

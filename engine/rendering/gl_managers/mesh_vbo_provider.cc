@@ -13,50 +13,115 @@
 // limitations under the License.
 
 #include "ink/engine/rendering/gl_managers/mesh_vbo_provider.h"
+#include "geo/render/ion/gfx/graphicsmanager.h"
+#include "third_party/absl/base/optimization.h"
+#include "third_party/absl/container/flat_hash_map.h"
+#include "ink/engine/geometry/mesh/gl/indexed_vbo.h"
+#include "ink/engine/util/unique_void_ptr.h"
 
 namespace ink {
 
-void MeshVBOProvider::GenVBO(Mesh *m, GLenum usage) {
-  ASSERT(!HasVBO(*m));
-  if (!m->verts.empty()) {
+namespace {
+constexpr uint16_t kMaxVboIndex = std::numeric_limits<uint16_t>::max();
+
+// Using the given mesh's index, partition the given vertices, in triples, into
+// separate IndexedVBOs, such that no resulting VBO has more than
+// vbo_split_threshold verts.
+template <typename MeshType, typename VertexType>
+std::unique_ptr<MeshVBOProvider::VboVec> Partition(
+    uint32_t vbo_split_threshold, ion::gfx::GraphicsManagerPtr gl,
+    const MeshType &mesh, const std::vector<VertexType> &verts, GLenum usage) {
+  ASSERT(vbo_split_threshold <= kMaxVboIndex);
+  ASSERT(mesh.IndexSize() % 3 == 0);
+  auto vbo_vec = absl::make_unique<MeshVBOProvider::VboVec>();
+
+  // Trivial partition: everything goes into 1 IndexedVBO.
+  if (mesh.IndexSize() < vbo_split_threshold) {
+    vbo_vec->emplace_back(gl, mesh.Index16(), verts, usage);
+    return vbo_vec;
+  }
+
+  SLOG(SLOG_GPU_OBJ_CREATION, "partitioning a mesh");
+  size_t triangle_count = mesh.IndexSize() / 3;
+  std::vector<VertexType> sub_verts;
+  sub_verts.reserve(vbo_split_threshold);
+  std::vector<uint16_t> sub_index;
+  absl::flat_hash_map<uint32_t, uint16_t> global_to_local;
+  global_to_local.reserve(vbo_split_threshold);
+  auto map_vert = [&global_to_local, &verts, &sub_verts](uint32_t global) {
+    auto p = global_to_local.find(global);
+    if (p != global_to_local.end()) {
+      return p->second;
+    }
+    auto result = static_cast<uint16_t>(sub_verts.size());
+    global_to_local.insert({global, result});
+    sub_verts.emplace_back(verts[global]);
+    return result;
+  };
+  for (size_t t = 0; t < triangle_count; t++) {
+    sub_index.emplace_back(map_vert(mesh.IndexAt(t * 3)));
+    sub_index.emplace_back(map_vert(mesh.IndexAt(t * 3 + 1)));
+    sub_index.emplace_back(map_vert(mesh.IndexAt(t * 3 + 2)));
+    if (sub_verts.size() > vbo_split_threshold - 3) {
+      // No room for another triangle.
+      vbo_vec->emplace_back(gl, sub_index, sub_verts, usage);
+      sub_verts.clear();
+      sub_index.clear();
+      global_to_local.clear();
+    }
+  }
+  if (!sub_verts.empty()) {
+    vbo_vec->emplace_back(gl, sub_index, sub_verts, usage);
+  }
+  return vbo_vec;
+}
+}  // namespace
+
+MeshVBOProvider::MeshVBOProvider(const ion::gfx::GraphicsManagerPtr &gl)
+    : gl_(gl), vbo_split_threshold_(kMaxVboIndex) {}
+
+void MeshVBOProvider::GenVBOs(Mesh *m, GLenum usage) {
+  ASSERT(!HasVBOs(*m));
+  if (ABSL_PREDICT_TRUE(!m->verts.empty())) {
     ASSERT(!m->idx.empty());
-    SetVBO(m, new IndexedVBO(gl_, m->idx, m->verts, usage));
+    SetVBOs(m, Partition(vbo_split_threshold_, gl_, *m, m->verts, usage));
   }
 }
 
-void MeshVBOProvider::ExtendVBO(Mesh *m, GLenum usage) {
-  if (!HasVBO(*m)) {
-    GenVBO(m, usage);
+void MeshVBOProvider::ExtendVBOs(Mesh *m, GLenum usage) {
+  if (!HasVBOs(*m)) {
+    GenVBOs(m, usage);
     return;
   }
   // Update indices and vertices.
-  GetVBO(*m)->SetData(m->idx, m->verts);
+  VboVec *vbos = GetVBOs(*m);
+  ASSERT(vbos->size() == 1);
+  (*vbos)[0].SetData(m->Index16(), m->verts);
 }
 
-void MeshVBOProvider::ReplaceVBO(Mesh *m, GLenum usage) {
-  if (HasVBO(*m)) {
-    GetVBO(*m)->RemoveAll();
+void MeshVBOProvider::ReplaceVBOs(Mesh *m, GLenum usage) {
+  if (HasVBOs(*m)) {
+    GetVBOs(*m)->clear();
   }
-  ExtendVBO(m, usage);
+  GenVBOs(m, usage);
 }
 
-void MeshVBOProvider::GenVBO(OptimizedMesh *m, GLenum usage) {
-  SetVBO(m, GenVBO(&m->verts, m->idx, usage));
-}
-
-IndexedVBO *MeshVBOProvider::GenVBO(PackedVertList *verts,
-                                    const std::vector<uint16_t> &indices,
-                                    GLenum usage) {
-  switch (verts->GetFormat()) {
+void MeshVBOProvider::GenVBOs(OptimizedMesh *m, GLenum usage) {
+  switch (m->verts.GetFormat()) {
+    case VertFormat::x11a7r6y11g7b6u12v12:
+      SetVBOs(m, Partition(vbo_split_threshold_, gl_, *m, m->verts.Vec3Data(),
+                           usage));
+      break;
     case VertFormat::x11a7r6y11g7b6:
     case VertFormat::x32y32:
-      return new IndexedVBO(gl_, indices, verts->vec2s, usage);
+      SetVBOs(m, Partition(vbo_split_threshold_, gl_, *m, m->verts.Vec2Data(),
+                           usage));
+      break;
     case VertFormat::x12y12:
-      return new IndexedVBO(gl_, indices, verts->floats, usage);
-    case VertFormat::uncompressed:
-      return new IndexedVBO(gl_, indices, verts->uncompressed_verts, usage);
+      SetVBOs(m, Partition(vbo_split_threshold_, gl_, *m, m->verts.FloatData(),
+                           usage));
+      break;
   }
-  RUNTIME_ERROR("Unknown format $0", static_cast<int>(verts->GetFormat()));
 }
 
 }  // namespace ink

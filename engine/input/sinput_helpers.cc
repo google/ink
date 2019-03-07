@@ -14,6 +14,7 @@
 
 #include "ink/engine/input/sinput_helpers.h"
 
+#include "third_party/absl/types/optional.h"
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/input/input_handler.h"
 #include "ink/engine/public/host/iengine_listener.h"
@@ -35,6 +36,10 @@ class EventHandler : public IInputHandler {
   // Sets the index that will be associated with the next InputData
   // to be seen.
   void set_index(const size_t index) { index_ = index; }
+
+  absl::optional<Cursor> CurrentCursor(const Camera& camera) const override {
+    return absl::nullopt;
+  }
 
   Priority InputPriority() const override { return Priority::Default; }
 

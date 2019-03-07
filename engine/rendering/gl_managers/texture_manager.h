@@ -17,7 +17,6 @@
 #ifndef INK_ENGINE_RENDERING_GL_MANAGERS_TEXTURE_MANAGER_H_
 #define INK_ENGINE_RENDERING_GL_MANAGERS_TEXTURE_MANAGER_H_
 
-#include <deque>
 #include <memory>
 #include <set>
 #include <string>
@@ -58,16 +57,12 @@ struct TilePolicy {
   // This is a hint to the texture manager, a "best effort" target for maximum
   // GPU RAM allocated for tile textures. It's possible to go momentarily beyond
   // this target because (1) we load textures into GPU before we evict stale
-  // ones, and (2) we don't evict any "fresh" tiles--see freshness window,
-  // below.
+  // ones, and (2) we don't evict any tiles required to display what's currently
+  // visible.
   size_t max_tile_ram = 1 << 27;  // 128MB
 
-  // Number of frames permitted to elapse before a tile is no longer considered
-  // "fresh" since it was last requested.
-  size_t frame_freshness_window = 3;
-
   // Size, in tiles, of tile bitmap pool.
-  size_t bitmap_pool_size = 16;
+  size_t bitmap_pool_size = 3;
 
   // Maximum number of tiles to fetch per frame. 0 = unlimited.
   // This default value seems to give good performance on linux, web, and
@@ -86,10 +81,10 @@ struct TilePolicy {
   inline TilePolicy(const TilePolicy& s) = default;
   std::string ToString() const {
     return Substitute(
-        "tile_side_length:$0 max_tile_ram:$1 frame_freshness_window:$2 "
-        "bitmap_pool_size:$3 max_tiles_fetched_per_frame:$4 image_format: $5",
-        tile_side_length, max_tile_ram, frame_freshness_window,
-        bitmap_pool_size, max_tiles_fetched_per_frame, image_format);
+        "tile_side_length:$0 max_tile_ram:$1 bitmap_pool_size:$2 "
+        "max_tiles_fetched_per_frame:$3 image_format: $4",
+        tile_side_length, max_tile_ram, bitmap_pool_size,
+        max_tiles_fetched_per_frame, image_format);
   }
 };
 
@@ -121,6 +116,9 @@ class TextureManager : public FrameStateListener,
   TextureInfo GenerateTexture(const std::string& uri,
                               const ClientBitmap& client_bitmap,
                               TextureParams params = TextureParams());
+
+  // Generates a 1x1 transparent texture for the given rejected texture URI.
+  TextureInfo GenerateRejectedTexture(const std::string& uri);
 
   // Attempts to bind texture specified by "textureInfo" if in cache,
   // otherwise requests texture from host.  Return indicates if binding
@@ -235,12 +233,6 @@ class TextureManager : public FrameStateListener,
    */
   void EvictStaleTiles();
 
-  /**
-   * Prepares for the next frame by adding a new FrameTiles to fresh_tiles_, and
-   * removing the oldest FrameTiles if necessary.
-   */
-  void AdvanceTileFreshnessFrame();
-
   // Removes the given uri from uris_to_request_ and requested_uris_.
   void ClearInflightRequest(absl::string_view uri);
 
@@ -285,15 +277,13 @@ class TextureManager : public FrameStateListener,
       std::pair<std::string, std::shared_ptr<ITextureRequestHandler>>;
   std::vector<ProviderPacket> texture_handlers_;
 
-  // We keep track of all requested tiles per frame. Anything not requested
-  // "recently" (where recency is parameterized by
-  // tile_policy_.frame_freshness_window) is a candidate for auto-eviction.
-  using FrameTiles = std::set<std::string>;
-  std::deque<FrameTiles> fresh_tiles_;
-
-  // We keep track of all requested tile uris, in order to consider them for
+  // We keep track of all loaded tile uris, in order to consider them for
   // auto-eviction.
   std::set<std::string> tile_texture_uris_;
+
+  // We track all tiles requested during each frame so we can cancel stale
+  // in-flight requests and apply a distance metric to eviction candidates.
+  std::set<std::string> frame_tile_requests_;
 
   // Lazily constructed when a tile is first requested.
   mutable std::unique_ptr<ClientBitmapPool> bitmap_pool_;

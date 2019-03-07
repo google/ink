@@ -23,7 +23,6 @@ namespace ink {
 namespace pdf {
 
 using glm::vec2;
-using internal::Clamp;
 
 Path::Path(FPDF_DOCUMENT owning_document, vec2 start)
     : PageObject(owning_document, FPDFPageObj_CreateNewPath(start.x, start.y)) {
@@ -62,54 +61,47 @@ Status Path::SetFillColor(Color c) {
                             c.BlueByteNonPremultiplied(), c.AlphaByte()));
 }
 
-Status Path::GetFillColor(Color* out) const {
+StatusOr<Color> Path::GetFillColor() const {
   unsigned int r, g, b, a;
   RETURN_IF_PDFIUM_ERROR(
       FPDFPath_GetFillColor(WrappedObject(), &r, &g, &b, &a));
-  *out = Color::FromNonPremultiplied(
+  return Color::FromNonPremultiplied(
       static_cast<uint8_t>(r), static_cast<uint8_t>(g), static_cast<uint8_t>(b),
       static_cast<uint8_t>(a));
-  return OkStatus();
 }
 
-Status Path::GetCoordinates(std::vector<glm::vec2>* out) const {
-  assert(out);
+StatusOr<std::vector<glm::vec2>> Path::GetCoordinates() const {
   const auto& path = WrappedObject();
-  out->clear();
   int n = FPDFPath_CountSegments(path);
   if (n < 0) {
     return ErrorStatus("could not count segments");
   }
-  out->reserve(n);
+  std::vector<glm::vec2> result;
+  result.reserve(n);
   for (int i = 0; i < n; i++) {
     FPDF_PATHSEGMENT segment = FPDFPath_GetPathSegment(path, i);
     if (!segment) {
-      out->clear();
       return ErrorStatus("could not get path segment $0", i);
     }
     float x, y;
     if (!FPDFPathSegment_GetPoint(segment, &x, &y)) {
-      out->clear();
       return ErrorStatus("could not get coordinates of path segment $0", i);
     }
     int type = FPDFPathSegment_GetType(segment);
     if (type == FPDF_SEGMENT_UNKNOWN) {
-      out->clear();
       return ErrorStatus("could not get determine type of path segment $0", i);
     }
     if (i == 0 && type != FPDF_SEGMENT_MOVETO) {
-      out->clear();
       return ErrorStatus(
           "expected FPDF_SEGMENT_MOVETO for first segment, but got $0", type);
     }
     if (i > 0 && type != FPDF_SEGMENT_LINETO) {
-      out->clear();
       return ErrorStatus(
           "expected FPDF_SEGMENT_LINETO for segment $0, but got $1", i, type);
     }
-    out->emplace_back(x, y);
+    result.emplace_back(x, y);
   }
-  return OkStatus();
+  return result;
 }
 
 Status Path::SetStrokeColor(Color c) {

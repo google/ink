@@ -33,6 +33,7 @@
 #include "ink/engine/public/types/input.h"
 #include "ink/engine/public/types/iselection_provider.h"
 #include "ink/engine/public/types/itexture_request_handler.h"
+#include "ink/engine/public/types/status.h"
 #include "ink/engine/public/types/uuid.h"
 #include "ink/engine/rendering/gl_managers/text_texture_provider.h"
 #include "ink/engine/rendering/strategy/rendering_strategy.h"
@@ -64,6 +65,12 @@ class SEngine : public IDocumentListener {
 
 
   void SetDocument(std::shared_ptr<Document> document);
+
+  // Attempts to add the given element to the scene, placing it right below the
+  // already-existing element with given UUID.
+  ABSL_MUST_USE_RESULT Status
+  Add(proto::ElementBundle element,
+      absl::string_view below_element_uuid = kInvalidUUID);
 
   void SetRenderingStrategy(proto::RenderingStrategy rendering_strategy);
   void SetRenderingStrategy(RenderingStrategy rendering_strategy);
@@ -98,12 +105,21 @@ class SEngine : public IDocumentListener {
   // The time is expected to increase monotonically.
   void draw(double draw_time);
 
+  void Undo();
+  void Redo();
+
   void clear();
 
   // Remove all user-editable elements from the scene. Does not remove groups.
   // If you want to really "remove" everything, groups and all, then create a
   // new empty Document and SetDocument with it.
   void RemoveAllElements();
+
+  // Remove all elements currently selected by the edit tool, if any.
+  void RemoveSelectedElements();
+
+  // If an element with the given UUID exists, removes it.
+  void RemoveElement(const UUID& uuid);
 
   // The dispatchInput family of methods forward to
   // InputReceiver::DispatchInput. Please see those methods for documentation.
@@ -157,6 +173,9 @@ class SEngine : public IDocumentListener {
 
   void addImageData(const proto::ImageInfo& image_info,
                     const ClientBitmap& client_bitmap);
+  // Counterpart to addImageData that indicates that the host cannot provide
+  // image data for the given texture URI.
+  void RejectTextureUri(const std::string& uri);
   // Evict the texture with the given URI from cache. May be re-requested if
   // needed.
   void evictImageData(const std::string& uri);
@@ -218,6 +237,10 @@ class SEngine : public IDocumentListener {
   void setCameraBoundsConfig(
       const proto::CameraBoundsConfig& cameraBoundsConfig);
 
+  // If an element with the given UUID exists, switches to the
+  // ElementManipulationTool and selects that element.
+  void SelectElement(const UUID& uuid);
+
   void deselectAll();
 
   // If the crop tool or mode is active, commit its currently indicated crop
@@ -233,6 +256,8 @@ class SEngine : public IDocumentListener {
 
   void handleElementAnimation(const proto::ElementAnimation& animation);
 
+  // If possible, avoid using this -- we want to move towards
+  // a single API surface for Ink.
   std::shared_ptr<Document> document() const { return document_; }
 
   service::UncheckedRegistry* registry() const {
@@ -293,6 +318,8 @@ class SEngine : public IDocumentListener {
  private:
   void handleRemoveElementsCommand(const proto::RemoveElementsCommand& cmd);
   proto::ElementBundle convertPathToBundle(const proto::Path& unsafe_path);
+  bool CheckBlockedState() const;
+
   std::unique_ptr<RootController> root_controller_;
   std::shared_ptr<IHost> host_;
   std::shared_ptr<Document> document_;

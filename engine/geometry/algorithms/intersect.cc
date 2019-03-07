@@ -310,6 +310,14 @@ bool Intersects(const Rect &rect1, const Rect &rect2) {
              std::min(rect1.to.y, rect2.to.y);
 }
 
+bool IntersectsWithNonZeroOverlap(const Rect &rect1, const Rect &rect2) {
+  return std::max(rect1.from.x, rect2.from.x) <
+             std::min(rect1.to.x, rect2.to.x) &&
+         std::max(rect1.from.y, rect2.from.y) <
+             std::min(rect1.to.y, rect2.to.y) &&
+         !rect1.Empty() && !rect2.Empty();
+}
+
 bool Intersection(const Rect &rect1, const Rect &rect2, Rect *output) {
   output->from.x = std::max(rect1.from.x, rect2.from.x);
   output->from.y = std::max(rect1.from.y, rect2.from.y);

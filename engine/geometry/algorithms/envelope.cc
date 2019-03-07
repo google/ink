@@ -18,21 +18,19 @@ namespace ink {
 namespace geometry {
 namespace {
 
-const glm::vec2& GetPosition(const glm::vec2& point) { return point; }
-const glm::vec2& GetPosition(const Vertex& point) { return point.position; }
-
-template <typename T>
-Rect GetEnvelopeOfPoints(const std::vector<T>& points) {
+template <typename PointType, typename PositionGetter>
+Rect GetEnvelopeOfPoints(const std::vector<PointType>& points,
+                         const PositionGetter& position_getter) {
   if (points.empty()) {
     return Rect(0, 0, 0, 0);
   }
 
-  Rect envelope =
-      Rect::CreateAtPoint(GetPosition(points[0]), /*width=*/0, /*height=*/0);
+  Rect envelope = Rect::CreateAtPoint(position_getter(points[0]), /*width=*/0,
+                                      /*height=*/0);
   for (int i = 1; i < points.size(); ++i) {
     // We don't use Rect::Join() here for efficiency reasons: the cost of
     // copying the returned Rect for each point proved surprisingly high.
-    envelope.InplaceJoin(GetPosition(points[i]));
+    envelope.InplaceJoin(position_getter(points[i]));
   }
   return envelope;
 }
@@ -40,11 +38,17 @@ Rect GetEnvelopeOfPoints(const std::vector<T>& points) {
 }  // namespace
 
 Rect Envelope(const std::vector<glm::vec2>& points) {
-  return GetEnvelopeOfPoints(points);
+  return GetEnvelopeOfPoints(points, [](const glm::vec2& p) { return p; });
 }
 
-Rect Envelope(const std::vector<Vertex>& points) {
-  return GetEnvelopeOfPoints(points);
+Rect Envelope(const std::vector<Vertex>& vertices) {
+  return GetEnvelopeOfPoints(vertices,
+                             [](const Vertex& v) { return v.position; });
+}
+
+Rect TextureEnvelope(const std::vector<Vertex>& vertices) {
+  return GetEnvelopeOfPoints(vertices,
+                             [](const Vertex& v) { return v.texture_coords; });
 }
 
 Rect Envelope(const Triangle& triangle) {
@@ -52,7 +56,8 @@ Rect Envelope(const Triangle& triangle) {
 }
 
 Rect Envelope(const RotRect& rot_rect) {
-  return GetEnvelopeOfPoints(rot_rect.Corners());
+  return GetEnvelopeOfPoints(rot_rect.Corners(),
+                             [](const glm::vec2& p) { return p; });
 }
 
 }  // namespace geometry

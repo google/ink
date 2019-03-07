@@ -63,7 +63,7 @@ class AsyncTaskRunner : public ITaskRunner {
   // async_tasks_.size() + post_execute_tasks_.size(), as ThreadProc() and
   // ServiceMainThreadTasks() take ownership of a task before running Execute()
   // or PostExecute(), respectively.
-  int NumPendingTasks() const { return num_pending_tasks_; }
+  int NumPendingTasks() const override { return num_pending_tasks_; }
 
  private:
   // Pops the foremost task off of the post-execution queue, taking ownership of

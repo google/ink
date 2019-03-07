@@ -26,10 +26,11 @@
 
 namespace ink {
 namespace {
+constexpr uint16_t kMax16 = std::numeric_limits<uint16_t>::max();
 
-template <typename PositionGetter>
+template <typename PositionGetter, typename IndexType>
 void NormalizeTriangleHelper(PositionGetter position_getter,
-                             std::vector<uint16_t>* indices) {
+                             std::vector<IndexType>* indices) {
   ASSERT(indices->size() % 3 == 0);
   int n_triangles = indices->size() / 3;
   for (int i = 0; i < n_triangles; ++i) {
@@ -93,7 +94,7 @@ void Mesh::Clear() {
 }
 
 void Mesh::Append(const Mesh& other) {
-  ASSERT(other.verts.size() == 0 || verts.size() == 0 ||
+  ASSERT(other.verts.empty() || verts.empty() ||
          other.idx.empty() == idx.empty());
 
   auto startidx = verts.size();
@@ -103,13 +104,13 @@ void Mesh::Append(const Mesh& other) {
     verts.emplace_back(ov);
   }
 
-  for (uint16_t i : other.idx) {
+  for (auto i : other.idx) {
     idx.push_back(i + startidx);
   }
 }
 
 void Mesh::Deindex() {
-  if (idx.size() == 0) return;
+  if (idx.empty()) return;
   std::vector<Vertex> new_verts(idx.size());
   for (size_t i = 0; i < idx.size(); i++) {
     new_verts[i] = verts[idx[i]];
@@ -125,13 +126,26 @@ void Mesh::GenIndex() {
 
 void Mesh::NormalizeTriangleOrientation() {
   NormalizeTriangleHelper(
-      [this](uint16_t index) { return verts[index].position; }, &idx);
+      [this](IndexType index) { return verts[index].position; }, &idx);
 }
 
 glm::vec2 Mesh::ObjectPosToWorld(const glm::vec2& object_pos) const {
   return glm::vec2(object_matrix * glm::vec4(object_pos, 1, 1));
 }
 
+std::vector<uint16_t> Mesh::Index16() const {
+  ASSERT(Has16BitIndex());
+  if (!Has16BitIndex()) {
+    SLOG(SLOG_ERROR, "mesh overflowing vert index");
+  }
+  return std::vector<uint16_t>(idx.begin(), idx.end());
+}
+
+bool Mesh::Has16BitIndex() const { return verts.size() < kMax16; }
+
+size_t Mesh::IndexSize() const { return idx.size(); }
+
+uint32_t Mesh::IndexAt(size_t n) const { return idx[n]; }
 ////////////////////////////////////
 
 VertFormat OptimizedMesh::VertexFormat(ShaderType shader_type) {
@@ -145,7 +159,7 @@ VertFormat OptimizedMesh::VertexFormat(ShaderType shader_type) {
       fmt = VertFormat::x12y12;
       break;
     case TexturedVertShader:
-      fmt = VertFormat::uncompressed;
+      fmt = VertFormat::x11a7r6y11g7b6u12v12;
       break;
     default:
       ASSERT(false);
@@ -156,28 +170,25 @@ VertFormat OptimizedMesh::VertexFormat(ShaderType shader_type) {
 
 OptimizedMesh::OptimizedMesh(const OptimizedMesh& other)
     : type(other.type),
-      idx(other.idx),
       verts(other.verts),
       texture(other.texture ? new TextureInfo(*other.texture) : nullptr),
       object_matrix(other.object_matrix),
       color(other.color),
       mul_color_modifier(other.mul_color_modifier),
-      add_color_modifier(other.add_color_modifier) {
-  ASSERT(!other.backend_vert_data.get());
-}
+      add_color_modifier(other.add_color_modifier),
+      idx_(other.idx_) {}
 
 OptimizedMesh::OptimizedMesh(ShaderType type, const Mesh& mesh)
     : OptimizedMesh(type, mesh, geometry::Envelope(mesh.verts)) {}
 
 OptimizedMesh::OptimizedMesh(ShaderType type, const Mesh& mesh, Rect envelope)
     : type(type),
-      idx(mesh.idx),
       texture(mesh.texture ? new TextureInfo(*mesh.texture) : nullptr),
       color(mesh.verts.begin()->color),
       mul_color_modifier(glm::vec4(1, 1, 1, 1)),
       add_color_modifier(glm::vec4(0, 0, 0, 0)) {
-  EXPECT(idx.size() > 0 && idx.size() % 3 == 0);
-  EXPECT(mesh.verts.size() > 0);
+  EXPECT(!mesh.idx.empty() && mesh.idx.size() % 3 == 0);
+  EXPECT(!mesh.verts.empty());
   ASSERT(envelope.Contains(geometry::Envelope(mesh.verts)));
 
   VertFormat fmt = VertexFormat(type);
@@ -189,13 +200,25 @@ OptimizedMesh::OptimizedMesh(ShaderType type, const Mesh& mesh, Rect envelope)
   // We need to normalize the triangles using the packed vertices, because the
   // vertex positions are rounded when packed, which can cause a triangle to
   // flip orientation.
-  NormalizeTriangleHelper(
-      [this](uint16_t index) {
-        Vertex v;
-        verts.UnpackVertex(index, &v);
-        return v.position;
-      },
-      &idx);
+  if (mesh.verts.size() < kMax16) {
+    idx_ = std::vector<uint16_t>(mesh.idx.begin(), mesh.idx.end());
+    NormalizeTriangleHelper(
+        [this](uint16_t index) {
+          Vertex v;
+          verts.UnpackVertex(index, &v);
+          return v.position;
+        },
+        &absl::get<std::vector<uint16_t>>(idx_));
+  } else {
+    idx_ = mesh.idx;
+    NormalizeTriangleHelper(
+        [this](uint32_t index) {
+          Vertex v;
+          verts.UnpackVertex(index, &v);
+          return v.position;
+        },
+        &absl::get<std::vector<uint32_t>>(idx_));
+  }
 
   // m is meshcoords->objectcoords
   // inverse m is objectcoords->meshcoords
@@ -210,9 +233,7 @@ OptimizedMesh::~OptimizedMesh() {}
 
 void OptimizedMesh::ClearCpuMemoryVerts() {
   // keep type, vbo, and color
-
-  // swap to delete allocated capacity
-  std::vector<uint16_t>().swap(idx);
+  idx_ = std::vector<uint16_t>();
   verts.Clear();
 }
 
@@ -221,24 +242,53 @@ Mesh OptimizedMesh::ToMesh() const {
   m.verts.resize(verts.size());
   for (uint32_t i = 0; i < verts.size(); ++i) {
     verts.UnpackVertex(i, &m.verts[i]);
-    if (type == ShaderType::SingleColorShader) m.verts[i].color = color;
+    if (type == ShaderType::SingleColorShader) {
+      m.verts[i].color = color;
+    }
     m.verts[i].color =
         m.verts[i].color * mul_color_modifier + add_color_modifier;
   }
-  m.idx = idx;
+  if (absl::holds_alternative<std::vector<uint32_t>>(idx_)) {
+    const auto& v = absl::get<std::vector<uint32_t>>(idx_);
+    m.idx.assign(v.begin(), v.end());
+  } else {
+    const auto& v = absl::get<std::vector<uint16_t>>(idx_);
+    m.idx.assign(v.begin(), v.end());
+  }
   m.object_matrix = object_matrix;
-  if (texture) m.texture.reset(new TextureInfo(*texture));
+  if (texture) m.texture = absl::make_unique<TextureInfo>(*texture);
 
   return m;
 }
 
+size_t OptimizedMesh::IndexSize() const {
+  if (absl::holds_alternative<std::vector<uint32_t>>(idx_)) {
+    return absl::get<std::vector<uint32_t>>(idx_).size();
+  }
+  return absl::get<std::vector<uint16_t>>(idx_).size();
+}
+
+uint32_t OptimizedMesh::IndexAt(size_t n) const {
+  if (absl::holds_alternative<std::vector<uint32_t>>(idx_)) {
+    return absl::get<std::vector<uint32_t>>(idx_).at(n);
+  }
+  return absl::get<std::vector<uint16_t>>(idx_).at(n);
+}
+
 void OptimizedMesh::Validate() const {
-  if (idx.size() == 0) return;
-  ASSERT(idx.size() % 3 == 0);
+  if (IndexSize() == 0) return;
+  ASSERT(IndexSize() % 3 == 0);
 }
 
 Rect OptimizedMesh::WorldBounds() const {
   return geometry::Transform(mbr, object_matrix);
+}
+
+std::vector<uint16_t> OptimizedMesh::Index16() const {
+  if (absl::holds_alternative<std::vector<uint16_t>>(idx_)) {
+    return absl::get<std::vector<uint16_t>>(idx_);
+  }
+  RUNTIME_ERROR("Cannot represent this optimized mesh's index in 16 bits");
 }
 
 }  // namespace ink

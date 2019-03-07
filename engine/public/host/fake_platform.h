@@ -37,6 +37,7 @@ class FakePlatform : public IPlatform {
   }
   std::string GetPlatformId() const override { return ""; }
   bool ShouldPreloadShaders() const override { return false; }
+  void SetCursor(const ink::proto::Cursor& cursor) override {}
 };
 }  // namespace ink
 

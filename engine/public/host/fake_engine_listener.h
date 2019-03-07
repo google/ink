@@ -33,6 +33,15 @@ class FakeEngineListener : public IEngineListener {
   void LoggingEventFired(
       const ::logs::proto::research::ink::InkEvent& event) override {}
   void PdfSaveComplete(const std::string& pdf_bytes) override {}
+  void CameraMovementStateChanged(bool is_moving) override {
+    camera_is_moving_ = is_moving;
+  }
+  void BlockingStateChanged(bool is_blocked) override {}
+
+  bool CameraIsMoving() const { return camera_is_moving_; }
+
+ private:
+  bool camera_is_moving_{false};
 };
 
 }  // namespace ink

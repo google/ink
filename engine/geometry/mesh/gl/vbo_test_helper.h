@@ -42,7 +42,7 @@ class VBOTestHelper {
 
   // T must be copyable.
   template <typename T>
-  std::vector<T> ReadBufferAsType(VBO* vbo) {
+  std::vector<T> ReadBufferAsType(const VBO* vbo) {
     GLEXPECT_NO_ERROR(gl_);
     vbo->Bind();
     GLEXPECT_NO_ERROR(gl_);
@@ -50,14 +50,14 @@ class VBOTestHelper {
          "handle: $0 glMapBufferRange"  // GL_OK
          "(target:$1 offset:$2 capacity(byte): $3)",
          vbo->handle_, vbo->target_, 0, vbo->capacity_in_bytes_);
-    void* gpu_data = glMapBufferRange_(vbo->target_, 0, vbo->capacity_in_bytes_,
-                                       GL_MAP_READ_BIT);
+    void* gpu_data = glm_map_buffer_range_(
+        vbo->target_, 0, vbo->capacity_in_bytes_, GL_MAP_READ_BIT);
     T* gpu_data_typed = reinterpret_cast<T*>(gpu_data);
     std::vector<T> data;
     for (size_t i = 0; i < vbo->GetTypedSize<T>(); i++) {
       data.push_back(*(gpu_data_typed++));
     }
-    glUnmapBuffer_(vbo->target_);
+    gl_unmap_buffer_(vbo->target_);
     GLEXPECT_NO_ERROR(gl_);
     vbo->Unbind();
     GLEXPECT_NO_ERROR(gl_);
@@ -70,8 +70,8 @@ class VBOTestHelper {
   // from SwiftShader's GLES dynamic library. When VBOTestHelper is destroyed,
   // the LibWrapper's destructor releases those functions.
   std::unique_ptr<swiftshader_wrapper::LibWrapper> wrapper_;
-  GlMapBufferRangeFn glMapBufferRange_;
-  GlUnmapBufferFn glUnmapBuffer_;
+  GlMapBufferRangeFn glm_map_buffer_range_;
+  GlUnmapBufferFn gl_unmap_buffer_;
 };
 
 }  // namespace ink

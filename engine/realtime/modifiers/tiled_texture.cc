@@ -38,7 +38,6 @@ TiledTextureModifier::TiledTextureModifier(const vec4& rgba,
 }
 
 void TiledTextureModifier::OnAddVert(Vertex* vert, vec2 center_pt, float radius,
-                                     const std::vector<Vertex>& line,
                                      float pressure) {
   if (pressure < 0) {
     vert->color = RGBtoRGBPremultiplied(rgba_);
@@ -49,7 +48,7 @@ void TiledTextureModifier::OnAddVert(Vertex* vert, vec2 center_pt, float radius,
     vert->color = RGBtoRGBPremultiplied(modified_rgba);
   }
   vert->texture_coords = ink::geometry::Transform(
-      vert->position, cam_.ScreenToWorld() * texture_transform_);
+      vert->position, texture_transform_ * cam_.ScreenToWorld());
 }
 
 LineModParams TiledTextureModifier::MakeLineModParams(string texture_uri) {

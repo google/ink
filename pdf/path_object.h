@@ -27,6 +27,7 @@
 
 #include <memory>
 
+#include "third_party/absl/base/attributes.h"
 #include "third_party/glm/glm/glm.hpp"
 #include "third_party/pdfium/public/fpdf_edit.h"
 #include "third_party/pdfium/public/fpdfview.h"
@@ -49,24 +50,23 @@ class Path : public PageObject {
  public:
   Path(FPDF_DOCUMENT owning_document, glm::vec2 start);
   Path(FPDF_DOCUMENT owning_document, FPDF_PAGEOBJECT path);
-  Status SetFillMode(FillMode fill_mode);
+  ABSL_MUST_USE_RESULT Status SetFillMode(FillMode fill_mode);
   // The given components c are clamped 0 ≤ c ≤ 255.
-  Status SetFillColor(Color c);
-  Status SetStrokeMode(StrokeMode stroke_mode);
+  ABSL_MUST_USE_RESULT Status SetFillColor(Color c);
+  ABSL_MUST_USE_RESULT Status SetStrokeMode(StrokeMode stroke_mode);
   // The given components c are clamped 0 ≤ c ≤ 255.
-  Status SetStrokeColor(Color c);
-  Status LineTo(glm::vec2 p);
-  Status MoveTo(glm::vec2 p);
-  Status Close();
+  ABSL_MUST_USE_RESULT Status SetStrokeColor(Color c);
+  ABSL_MUST_USE_RESULT Status LineTo(glm::vec2 p);
+  ABSL_MUST_USE_RESULT Status MoveTo(glm::vec2 p);
+  ABSL_MUST_USE_RESULT Status Close();
 
-  // Returns integers [0, 255].
-  Status GetFillColor(Color* out) const;
+  StatusOr<Color> GetFillColor() const;
 
   // Ink only understands an outline path expressed as an initial MoveTo
   // followed by a sequence of LineTos. If this Path has only those operations,
   // then the given vector of coordinates will be populated by that sequence.
   // Otherwise, this function will return an error status.
-  Status GetCoordinates(std::vector<glm::vec2>* out) const;
+  StatusOr<std::vector<glm::vec2>> GetCoordinates() const;
 
  private:
   FillMode fill_mode_ = FillMode::kNoFill;

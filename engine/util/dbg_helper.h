@@ -18,8 +18,8 @@
 #define INK_ENGINE_UTIL_DBG_HELPER_H_
 
 #include <cstdint>
+#include <map>
 #include <memory>
-#include <unordered_map>
 
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/camera/camera.h"
@@ -81,8 +81,11 @@ class IDbgHelper {
   virtual void Clear() = 0;
 
   // Enable the various visualizations
-  virtual bool PredictedLineVisualizationEnabled() = 0;
+  virtual bool PredictedLineVisualizationEnabled() const = 0;
   virtual void EnablePredictedLineVisualization(bool enable) = 0;
+
+  virtual bool PartialDrawRectsEnabled() const = 0;
+  virtual void EnablePartialDrawRects(bool enable) = 0;
 };
 
 class NoopDbgHelper : public IDbgHelper {
@@ -107,8 +110,11 @@ class NoopDbgHelper : public IDbgHelper {
   void Remove(uint32_t id) override {}
   void Clear() override {}
 
-  bool PredictedLineVisualizationEnabled() override { return false; }
+  bool PredictedLineVisualizationEnabled() const override { return false; }
   void EnablePredictedLineVisualization(bool enable) override {}
+
+  bool PartialDrawRectsEnabled() const override { return false; }
+  void EnablePartialDrawRects(bool enable) override {}
 };
 
 class DbgHelper : public IDbgHelper {
@@ -136,11 +142,18 @@ class DbgHelper : public IDbgHelper {
   void Remove(uint32_t id) override;
   void Clear() override;
 
-  bool PredictedLineVisualizationEnabled() override {
+  bool PredictedLineVisualizationEnabled() const override {
     return predicted_line_visualization_enabled_;
   }
   void EnablePredictedLineVisualization(bool enable) override {
     predicted_line_visualization_enabled_ = enable;
+  }
+
+  bool PartialDrawRectsEnabled() const override {
+    return partial_draw_rects_enabled_;
+  }
+  void EnablePartialDrawRects(bool enable) override {
+    partial_draw_rects_enabled_ = enable;
   }
 
  private:
@@ -179,16 +192,17 @@ class DbgHelper : public IDbgHelper {
     glm::vec4 point_color{0, 0, 0, 0};
   };
 
-  std::unordered_multimap<uint32_t, DbgPoint> points_;
-  std::unordered_multimap<uint32_t, DbgLine> lines_;
-  std::unordered_multimap<uint32_t, DbgRect> rects_;
-  std::unordered_multimap<uint32_t, DbgMeshSkeleton> skeletons_;
-  std::unordered_multimap<uint32_t, Mesh> meshes_;
+  std::multimap<uint32_t, DbgPoint> points_;
+  std::multimap<uint32_t, DbgLine> lines_;
+  std::multimap<uint32_t, DbgRect> rects_;
+  std::multimap<uint32_t, DbgMeshSkeleton> skeletons_;
+  std::multimap<uint32_t, Mesh> meshes_;
 
   std::shared_ptr<GLResourceManager> gl_resources_;
   MeshRenderer renderer_;
 
   bool predicted_line_visualization_enabled_ = false;
+  bool partial_draw_rects_enabled_ = false;
 };
 
 }  // namespace ink

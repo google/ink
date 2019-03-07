@@ -22,6 +22,7 @@
 #include "ink/engine/geometry/mesh/mesh.h"
 #include "ink/engine/geometry/mesh/vertex.h"
 #include "ink/engine/geometry/primitives/rect.h"
+#include "ink/engine/geometry/primitives/rot_rect.h"
 #include "ink/engine/geometry/tess/tessellator.h"
 #include "ink/engine/rendering/gl_managers/gl_resource_manager.h"
 
@@ -37,7 +38,7 @@ class ShapeGeometry {
   ShapeGeometry(Type type) : type(type) {}
 
   std::vector<Vertex> GenVerts(glm::vec2 center, glm::vec2 size,
-                               glm::vec4 color) const;
+                               float rotation_radians, glm::vec4 color) const;
 };
 
 // A filled shape, outline, and associated mesh.
@@ -66,10 +67,13 @@ class Shape {
 
   // Set the size and position of this shape with no border.
   void SetSizeAndPosition(Rect world_rect);
+  void SetSizeAndPosition(RotRect world_rect);
 
   // If inset_border: The border is added to the inside of this shape
   // else:            The border is added to the outside of this shape
   void SetSizeAndPosition(Rect world_rect, glm::vec2 border_size,
+                          bool inset_border);
+  void SetSizeAndPosition(RotRect world_rect, glm::vec2 border_size,
                           bool inset_border);
 
   // Overall width = fillSize.x + 2*border_size.x;
@@ -77,11 +81,13 @@ class Shape {
   void SetFillSize(glm::vec2 world_size);
   void SetBorderSize(glm::vec2 world_size);
   void SetPosition(glm::vec2 world_center);
+  void SetRotation(float radians);
 
   glm::vec2 FillSize() const;
   glm::vec2 BorderSize() const;
   glm::vec2 OverallSize() const;
   glm::vec2 WorldCenter() const;
+  float Rotation() const;
 
   void SetVisible(bool visible);
   void SetBorderVisible(bool visible);
@@ -102,6 +108,7 @@ class Shape {
   glm::vec2 fill_size_world_{0, 0};
   glm::vec2 border_size_world_{0, 0};
   glm::vec2 center_world_{0, 0};
+  float rotation_radians_ = 0.0f;
 
   ShapeGeometry shape_geometry_;
 

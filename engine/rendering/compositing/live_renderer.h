@@ -51,7 +51,7 @@ class LiveRenderer : public SceneGraphRenderer {
   using SharedDeps =
       service::Dependencies<SceneGraph, FrameState, GLResourceManager,
                             LayerManager, input::InputDispatch,
-                            WallClockInterface, PageManager>;
+                            WallClockInterface, PageManager, settings::Flags>;
 
   LiveRenderer(std::shared_ptr<SceneGraph> scene_graph,
                std::shared_ptr<FrameState> frame_state,
@@ -59,7 +59,8 @@ class LiveRenderer : public SceneGraphRenderer {
                std::shared_ptr<LayerManager> layer_manager,
                std::shared_ptr<input::InputDispatch> input_dispatch,
                std::shared_ptr<WallClockInterface> wall_clock,
-               std::shared_ptr<PageManager> page_manager);
+               std::shared_ptr<PageManager> page_manager,
+               std::shared_ptr<settings::Flags> flags);
   ~LiveRenderer() override;
 
   void Use(RenderingStrategy rendering_strategy);
@@ -90,6 +91,7 @@ class LiveRenderer : public SceneGraphRenderer {
   std::shared_ptr<input::InputDispatch> input_dispatch_;
   std::shared_ptr<WallClockInterface> wall_clock_;
   std::shared_ptr<PageManager> page_manager_;
+  std::shared_ptr<settings::Flags> flags_;
 
   mutable std::unique_ptr<SceneGraphRenderer> delegate_;
   RenderingStrategy strategy_{RenderingStrategy::kBufferedRenderer};

@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "third_party/glm/glm/glm.hpp"
-#include "ink/engine/camera/camera.h"
 #include "ink/engine/geometry/tess/cdrefinement.h"
 #include "ink/engine/geometry/tess/color_linearizer.h"
 #include "ink/engine/geometry/tess/tessellator.h"
@@ -32,13 +31,15 @@
 
 namespace ink {
 
-LineConverter::LineConverter(const std::vector<FatLine>& lines,
+LineConverter::LineConverter(std::vector<FatLine> lines,
                              const glm::mat4& group_to_p_space,
+                             const glm::mat4& l_to_p_space,
                              std::unique_ptr<InputPoints> input_points,
                              const ShaderType shader_type,
                              TessellationParams tessellation_params)
-    : lines_(lines),
+    : lines_(std::move(lines)),
       group_to_p_space_(group_to_p_space),
+      l_to_p_space_(l_to_p_space),
       input_points_(std::move(input_points)),
       mesh_shader_type_(shader_type),
       tessellation_params_(tessellation_params) {}
@@ -99,9 +100,8 @@ std::unique_ptr<ProcessedElement> LineConverter::CreateProcessedElement(
     tess.ClearGeometry();
   }
 
-  // Set the mesh's transform. Note that the mesh is in L-Space. The L-to-P
-  // transform is given by the camera as seen by pendown.
-  mesh.object_matrix = lines_[0].DownCamera().ScreenToWorld();
+  // Set the mesh's transform. Note that the mesh is in L-Space.
+  mesh.object_matrix = l_to_p_space_;
 
   // This sets the processed element's obj to group, which is a function of the
   // mesh transform and the points in the mesh. We are temporarily lying about
@@ -115,7 +115,10 @@ std::unique_ptr<ProcessedElement> LineConverter::CreateProcessedElement(
   input_points_->TransformPoints(p_space_to_obj);
 
   processed_element->input_points = *input_points_;
-  processed_element->outline = FatLine::OutlineAsArray(lines_, p_space_to_obj);
+
+  glm::mat4 l_space_to_obj = p_space_to_obj * l_to_p_space_;
+  processed_element->outline = FatLine::OutlineAsArray(lines_, l_space_to_obj);
+
   // Re-transform the obj to group transform to be group local.
   // Keep in mind that the mesh's object matrix will continue to be the obj to
   // p space transform.

@@ -17,9 +17,11 @@
 #ifndef INK_PDF_PAGE_OBJECT_MARK_H_
 #define INK_PDF_PAGE_OBJECT_MARK_H_
 
+#include "third_party/absl/base/attributes.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/pdfium/public/fpdfview.h"
 #include "ink/engine/public/types/status.h"
+#include "ink/engine/public/types/status_or.h"
 
 namespace ink {
 namespace pdf {
@@ -40,19 +42,20 @@ class PageObjectMark {
   }
 
   // The name should be an ASCII-only character sequence.
-  Status GetName(std::string* out) const;
+  StatusOr<std::string> GetName() const;
 
-  Status GetIntParam(absl::string_view key, int* value) const;
-  Status SetIntParam(absl::string_view key, int value);
+  StatusOr<int> GetIntParam(absl::string_view key) const;
+  ABSL_MUST_USE_RESULT Status SetIntParam(absl::string_view key, int value);
 
   // You can store and retrieve arbitrary byte blobs here; these are not
   // constrained to unicode text.
-  Status GetStringParam(absl::string_view key, std::string* value) const;
-  Status SetStringParam(absl::string_view key, absl::string_view value);
+  StatusOr<std::string> GetStringParam(absl::string_view key) const;
+  ABSL_MUST_USE_RESULT Status SetStringParam(absl::string_view key,
+                                             absl::string_view value);
 
  private:
-  Status ExpectParamType(absl::string_view key,
-                         FPDF_OBJECT_TYPE expected_type) const;
+  ABSL_MUST_USE_RESULT Status
+  ExpectParamType(absl::string_view key, FPDF_OBJECT_TYPE expected_type) const;
 
   FPDF_DOCUMENT owning_document_;
   FPDF_PAGEOBJECT owning_pageobject_;

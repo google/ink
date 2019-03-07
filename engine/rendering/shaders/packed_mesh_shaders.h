@@ -59,19 +59,19 @@ class PackedShaderX32Y32 : public Shader {
   void Load() override;
 };
 
-// Shader for an optimized mesh with VertFormat:uncompressed
-class PackedShaderUncompressed : public Shader {
+// Shader for an optimized mesh with VertFormat::x11a7r6y11g7b6.
+class PackedShaderX11A7R6Y11G7B6 : public Shader {
  public:
-  explicit PackedShaderUncompressed(
+  explicit PackedShaderX11A7R6Y11G7B6(
       ion::gfx::GraphicsManagerPtr gl,
       std::shared_ptr<MeshVBOProvider> mesh_vbo_provider);
   void Load() override;
 };
 
-// Shader for an optimized mesh with VertFormat::x11a7r6y11g7b6.
-class PackedShaderX11A7R6Y11G7B6 : public Shader {
+// Shader for an optimized mesh with VertFormat::x11a7r6y11g7b6u12v12
+class PackedShaderX11A7R6Y11G7B6U12V12 : public Shader {
  public:
-  explicit PackedShaderX11A7R6Y11G7B6(
+  explicit PackedShaderX11A7R6Y11G7B6U12V12(
       ion::gfx::GraphicsManagerPtr gl,
       std::shared_ptr<MeshVBOProvider> mesh_vbo_provider);
   void Load() override;
@@ -103,7 +103,7 @@ class PackedVertShader {
   PackedShaderX12Y12Textured shader_x12y12textured_;
   PackedShaderX32Y32 shader_x32y32_;
   PackedShaderX11A7R6Y11G7B6 shader_x11a7r6y11g7b6_;
-  PackedShaderUncompressed shader_uncompressed_;
+  PackedShaderX11A7R6Y11G7B6U12V12 shader_x11a7r6y11g7b6u12v12_;
 };
 
 }  // namespace shaders

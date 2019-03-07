@@ -72,9 +72,11 @@ ImGuiBridge::ImGuiBridge(
       shader_(gl),
       show_demo_window_(show_demo_window),
       frame_input_(pointer_dispatch, frame),
-      fonts_to_load_(std::move(fonts_to_load)) {}
+      fonts_to_load_(std::move(fonts_to_load)) {
+  ImGui::CreateContext();
+}
 
-ImGuiBridge::~ImGuiBridge() { ImGui::Shutdown(); }
+ImGuiBridge::~ImGuiBridge() { ImGui::DestroyContext(); }
 
 void ImGuiBridge::Update(FrameTimeS t) {
   if (enabled_) {

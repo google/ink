@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "testing/production_stub/public/gunit_prod.h"  // Defines FRIEND_TEST
+#include "third_party/absl/types/optional.h"
 #include "ink/engine/brushes/brushes.h"
 #include "ink/engine/camera/camera.h"
 #include "ink/engine/geometry/line/fat_line.h"
@@ -30,8 +31,10 @@
 #include "ink/engine/geometry/shape/shape.h"
 #include "ink/engine/geometry/tess/tessellated_line.h"
 #include "ink/engine/geometry/tess/tessellator.h"
+#include "ink/engine/input/cursor.h"
 #include "ink/engine/input/input_handler.h"
 #include "ink/engine/input/input_modeler.h"
+#include "ink/engine/public/types/color.h"
 #include "ink/engine/realtime/line_builder.h"
 #include "ink/engine/realtime/line_tool_data_sink.h"
 #include "ink/engine/realtime/modifiers/line_modifier.h"
@@ -63,6 +66,8 @@ class LineTool : public Tool {
                         InputRegistrationPolicy::ACTIVE);
   input::CaptureResult OnInput(const input::InputData& data,
                                const Camera& live_camera) override;
+  absl::optional<input::Cursor> CurrentCursor(
+      const Camera& camera) const override;
   void Draw(const Camera& live_camera, FrameTimeS draw_time) const override;
   void Update(const Camera& camera, FrameTimeS draw_time) override;
   void Enable(bool enabled) override;
@@ -92,6 +97,22 @@ class LineTool : public Tool {
   // MBR of the input making up the current line. 0 if !IsDrawing()
   Rect InputRegion() const;
 
+  // Returns the MBR of any new geometry generated since the start of the line
+  // or the last call to ResetUpdatedRegion.  Includes both the current and
+  // previous predictions.
+  OptRect UpdatedRegion() const { return updated_region_; }
+
+  // Discard the stored MBR of any new geometry and only record the MBR of the
+  // last prediction.
+  void ResetUpdatedRegion();
+
+  // For debugging and testing, set the color of the predicted line.
+  void SetPredictedLineColor(const Color& color) {
+    predicted_line_color_ = color;
+  }
+  // Use the line color as the predicted line color.
+  void UnsetPredictedLineColor() { predicted_line_color_ = absl::nullopt; }
+
   inline std::string ToString() const override { return "<LineTool>"; }
 
  private:
@@ -120,6 +141,8 @@ class LineTool : public Tool {
   void DebugDrawTriangulation() const;
   void DebugDrawPrediction();
 
+  glm::vec4 PredictedLinePremultipliedVec() const;
+
   std::shared_ptr<GLResourceManager> gl_resources_;
   std::shared_ptr<LineToolDataSink> result_sink_;
   std::shared_ptr<input::InputModeler> input_modeler_;
@@ -133,9 +156,15 @@ class LineTool : public Tool {
   bool sent_up_;
   bool has_touch_id_;
   uint32_t touch_id_;
+
   glm::vec4 rgba_{0, 0, 0, 0};
+  // For testing. If unset, uses rgba_ to draw the predicted line.
+  absl::optional<Color> predicted_line_color_;
+
   MeshRenderer renderer_;
   Rect input_region_;
+  OptRect predicted_region_;
+  OptRect updated_region_;
 
   LineBuilder line_builder_;
   ParticleBuilder particles_;

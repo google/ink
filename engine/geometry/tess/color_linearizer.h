@@ -33,14 +33,14 @@ class ColorLinearizer {
 
  private:
   void Initdata();
-  void Pass(std::vector<uint16_t>::iterator from,
-            std::vector<uint16_t>::iterator to, float amt);
+  void Pass(std::vector<Mesh::IndexType>::iterator from,
+            std::vector<Mesh::IndexType>::iterator to, float amt);
 
  private:
   Mesh* mesh_;
   MeshTriangle* tris_;
   uint32_t ntris_;
-  std::unordered_multimap<uint16_t, uint16_t> pttoseg_;
+  std::unordered_multimap<Mesh::IndexType, Mesh::IndexType> pttoseg_;
 };
 
 }  // namespace ink

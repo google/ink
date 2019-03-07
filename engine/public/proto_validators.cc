@@ -20,32 +20,26 @@
 
 namespace ink {
 
-bool ValidateProto(const proto::ElementBundle& unsafe_bundle) {
+Status ValidateProto(const proto::ElementBundle& unsafe_bundle) {
   if (!unsafe_bundle.has_uuid()) {
-    SLOG(SLOG_ERROR, "missing uuid");
-    return false;
+    return status::InvalidArgument("missing uuid");
   }
   if (!is_valid_uuid(unsafe_bundle.uuid())) {
-    SLOG(SLOG_ERROR, "invalid uuid");
-    return false;
+    return status::InvalidArgument("invalid uuid");
   }
   if (!unsafe_bundle.has_transform()) {
-    SLOG(SLOG_ERROR, "missing transform");
-    return false;
+    return status::InvalidArgument("missing transform");
   }
 
-  return true;
+  return OkStatus();
 }
 
-bool ValidateProtoForAdd(const proto::ElementBundle& unsafe_bundle) {
-  if (!ValidateProto(unsafe_bundle)) {
-    return false;
-  }
+Status ValidateProtoForAdd(const proto::ElementBundle& unsafe_bundle) {
+  INK_RETURN_UNLESS(ValidateProto(unsafe_bundle));
   if (!unsafe_bundle.has_element()) {
-    SLOG(SLOG_ERROR, "missing element");
-    return false;
+    return status::InvalidArgument("missing element");
   }
-  return true;
+  return OkStatus();
 }
 
 template <typename MutationsType>

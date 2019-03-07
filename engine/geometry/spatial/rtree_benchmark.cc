@@ -23,13 +23,13 @@ namespace ink {
 namespace spatial {
 namespace {
 
-Rect Bounds(glm::vec2 v) { return Rect::CreateAtPoint(v, {0, 0}); }
+Rect Bounds(glm::vec2 v) { return Rect::CreateAtPoint(v, 0, 0); }
 const Rect &Bounds(const Rect &r) { return r; }
 
 void PopulateRandom(glm::vec2 *v) { *v = {Drand(-100, 100), Drand(-100, 100)}; }
 void PopulateRandom(Rect *r) {
-  *r = Rect::CreateAtPoint({Drand(-100, 100), Drand(-100, 100)},
-                           {Drand(.1, 10), Drand(.1, 10)});
+  *r = Rect::CreateAtPoint({Drand(-100, 100), Drand(-100, 100)}, Drand(.1, 10),
+                           Drand(.1, 10));
 }
 
 template <typename T>

@@ -148,7 +148,7 @@ bool PopulateBezierForPath(const Path& path, Bezier* bezier) {
                                      raw_envelope.Height() + 2 * radius);
   raw_envelope = raw_envelope.ContainingRectWithAspectRatio(1);
   glm::mat4 m_norm = ink::PackedVertList::CalcTransformForFormat(
-      raw_envelope, ink::VertFormat::uncompressed);
+      raw_envelope, ink::VertFormat::x32y32);
   // Reject if the matrix isn't invertible.
   float det = glm::determinant(m_norm);
   if (det == 0 || std::isnan(det)) {
@@ -254,8 +254,7 @@ bool IsClosedPath(const Path& path) {
 unique_ptr<ProcessedElement> BuildLine(
     ElementId el_id, const Bezier& bezier, const Path& path,
     const BezierPathConverter::ElementConverterOptions& options) {
-  // The line converter expects everything in screen space and, in fact, assumes
-  // that the transform passed in is equal to the DownCamera for the first line.
+  // The line converter expects everything in screen space.
   // Create a camera to get a screen transform, as the contract with
   // LineConverter expects a valid screen to world transform but doesn't care
   // what it is.
@@ -283,10 +282,11 @@ unique_ptr<ProcessedElement> BuildLine(
     color = UintToVec4RGBA(path.rgba());
   }
   glm::vec4 premultiplied = RGBtoRGBPremultiplied(color);
-  const auto vert_callback =
-      [premultiplied](glm::vec2 center, float radius, InputTimeS time,
-                      float pressure, Vertex* pt,
-                      std::vector<Vertex>* pts) { pt->color = premultiplied; };
+  const auto vert_callback = [premultiplied](glm::vec2 center, float radius,
+                                             InputTimeS time, float pressure,
+                                             Vertex* pt) {
+    pt->color = premultiplied;
+  };
 
   TipType endcap;
   switch (path.end_cap()) {
@@ -347,7 +347,6 @@ unique_ptr<ProcessedElement> BuildLine(
     SLOG(SLOG_ERROR, "Degenerate path");
     return nullptr;
   }
-  paths[0].SetDownCamera(cam);
 
   TessellationParams tessellation_params;
   tessellation_params.linearize_mesh_verts = false;
@@ -360,7 +359,8 @@ unique_ptr<ProcessedElement> BuildLine(
   // final transform that will be associated with the processed element will be
   // the current object to group transform.
   glm::mat4 group_to_world_transform(1.0f);
-  LineConverter line_converter(paths, group_to_world_transform,
+  LineConverter line_converter(std::move(paths), group_to_world_transform,
+                               cam.ScreenToWorld(),
                                std::unique_ptr<InputPoints>(new InputPoints()),
                                SingleColorShader, tessellation_params);
   return line_converter.CreateProcessedElement(el_id, options);

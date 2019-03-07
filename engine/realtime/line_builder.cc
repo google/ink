@@ -29,6 +29,9 @@ void LineBuilder::SetupNewLine(
     input::InputType input_type, std::unique_ptr<LineModifier> modifier,
     std::unique_ptr<LineModifier> prediction_modifier) {
   Clear();
+
+  down_camera_ = down_camera;
+
   modifier_ = std::move(modifier);
   prediction_modifier_ = std::move(prediction_modifier);
 
@@ -38,30 +41,31 @@ void LineBuilder::SetupNewLine(
 
   vertex_callback_ = [this, start_time](glm::vec2 center_pt, float vert_radius,
                                         InputTimeS time, float pressure,
-                                        Vertex* pt, std::vector<Vertex>* pts) {
-    modifier_->OnAddVert(pt, center_pt, vert_radius, *pts, pressure);
+                                        Vertex* pt) {
+    modifier_->OnAddVert(pt, center_pt, vert_radius, pressure);
     modifier_->ApplyAnimationToVert(pt, center_pt, vert_radius,
-                                    time - start_time, *pts);
+                                    time - start_time);
   };
   prediction_vertex_callback_ = [this, start_time, input_type](
                                     glm::vec2 center_pt, float vert_radius,
-                                    InputTimeS time, float pressure, Vertex* pt,
-                                    std::vector<Vertex>* pts) {
-    modifier_->OnAddVert(pt, center_pt, vert_radius, *pts, pressure);
-    modifier_->ApplyAnimationToVert(pt, center_pt, vert_radius,
-                                    time - start_time, *pts);
+                                    InputTimeS time, float pressure,
+                                    Vertex* pt) {
+    prediction_modifier_->OnAddVert(pt, center_pt, vert_radius, pressure);
+    prediction_modifier_->ApplyAnimationToVert(pt, center_pt, vert_radius,
+                                               time - start_time);
     pt->color *= ModifyVertexOpacity(input_type, pt->position);
   };
 
   unstable_line_.SetupNewLine(
-      down_camera, modifier_->GetMinScreenTravelThreshold(down_camera),
-      tip_type, vertex_callback_, modifier_->params());
+      modifier_->GetMinScreenTravelThreshold(down_camera_), tip_type,
+      vertex_callback_, modifier_->params());
+  unstable_line_.SetObjectMatrix(down_camera_.ScreenToWorld());
   predicted_line_.SetupNewLine(
-      down_camera,
       prediction_modifier_->GetMinScreenTravelThreshold(down_camera), tip_type,
       prediction_vertex_callback_, prediction_modifier_->params());
+  predicted_line_.SetObjectMatrix(down_camera_.ScreenToWorld());
 
-  stable_mesh_.object_matrix = down_camera.ScreenToWorld();
+  stable_mesh_.object_matrix = down_camera_.ScreenToWorld();
   if (modifier_->params().texture_uri.empty()) {
     stable_mesh_.texture = nullptr;
   } else {
@@ -81,14 +85,43 @@ void LineBuilder::Clear() {
   prediction_vertex_callback_ = nullptr;
 }
 
-void LineBuilder::ExtrudeModeledInput(
+namespace {
+
+OptRect Extrude(const Camera& cam,
+                const std::vector<input::ModeledInput>& modeled_input,
+                bool is_line_end, LineModifier* modifier,
+                TessellatedLine* tessellated_line) {
+  EXPECT(modifier != nullptr);
+  ASSERT(!modeled_input.empty());
+
+  OptRect r;
+  for (size_t i = 0; i < modeled_input.size(); i++) {
+    const input::ModeledInput& mi = modeled_input[i];
+    TipSizeScreen tip_size = mi.tip_size.ToScreen(cam);
+    glm::vec2 screen_pos = cam.ConvertPosition(mi.world_pos, CoordType::kWorld,
+                                               CoordType::kScreen);
+    modifier->Tick(tip_size.radius, screen_pos, mi.time, cam);
+
+    util::AssignOrJoinTo(tessellated_line->Extrude(
+                             screen_pos, mi.time, tip_size, mi.stylus_state,
+                             modifier->params().NVertsAtRadius(tip_size.radius),
+                             i == modeled_input.size() - 1 && is_line_end),
+                         &r);
+  }
+  return r;
+}
+
+}  // namespace
+
+OptRect LineBuilder::ExtrudeModeledInput(
     const Camera& cam, const std::vector<input::ModeledInput>& modeled,
     bool is_line_end) {
   predicted_line_.ClearVertices();
-  Extrude(cam, modeled, is_line_end, modifier_.get(), &unstable_line_);
+  OptRect new_region =
+      Extrude(cam, modeled, is_line_end, modifier_.get(), &unstable_line_);
 
   if (is_line_end) {
-    unstable_line_.BuildEndCap();
+    util::AssignOrJoinTo(unstable_line_.BuildEndCap(), &new_region);
     SplitLine();
 
     // Note: Since we don't synchronously regenerate back_mesh from scratch
@@ -103,45 +136,33 @@ void LineBuilder::ExtrudeModeledInput(
     // constantly.
     SplitLine();
   }
+
+  return new_region;
 }
 
-void LineBuilder::ConstructPrediction(
+OptRect LineBuilder::ConstructPrediction(
     const Camera& cam,
     const std::vector<input::ModeledInput>& prediction_points) {
   const FatLine* last_line = LastNonEmptyLine();
 
+  OptRect r;
   if (last_line != nullptr) {
-    predicted_line_.RestartFromBackOfLine(*last_line,
-                                          prediction_modifier_->params(),
-                                          prediction_vertex_callback_);
-    Extrude(cam, prediction_points, true, prediction_modifier_.get(),
-            &predicted_line_);
-    predicted_line_.BuildEndCap();
+    util::AssignOrJoinTo(predicted_line_.RestartFromBackOfLine(
+                             *last_line, prediction_modifier_->params(),
+                             prediction_vertex_callback_),
+                         &r);
+    util::AssignOrJoinTo(Extrude(cam, prediction_points, true,
+                                 prediction_modifier_.get(), &predicted_line_),
+                         &r);
+    util::AssignOrJoinTo(predicted_line_.BuildEndCap(), &r);
   } else {
     predicted_line_.ClearVertices();
-    Extrude(cam, prediction_points, true, prediction_modifier_.get(),
-            &predicted_line_);
-    predicted_line_.BuildEndCap();
+    util::AssignOrJoinTo(Extrude(cam, prediction_points, true,
+                                 prediction_modifier_.get(), &predicted_line_),
+                         &r);
+    util::AssignOrJoinTo(predicted_line_.BuildEndCap(), &r);
   }
-}
-
-void LineBuilder::Extrude(const Camera& cam,
-                          const std::vector<input::ModeledInput>& modeled_input,
-                          bool is_line_end, LineModifier* modifier,
-                          TessellatedLine* tessellated_line) {
-  EXPECT(modifier != nullptr);
-  ASSERT(!modeled_input.empty());
-
-  for (const input::ModeledInput& mi : modeled_input) {
-    TipSizeScreen tip_size = mi.tip_size.ToScreen(cam);
-    glm::vec2 screen_pos = cam.ConvertPosition(mi.world_pos, CoordType::kWorld,
-                                               CoordType::kScreen);
-    modifier->Tick(tip_size.radius, screen_pos, mi.time, cam);
-
-    tessellated_line->Extrude(
-        screen_pos, mi.time, tip_size, mi.stylus_state,
-        modifier->params().NVertsAtRadius(tip_size.radius), is_line_end);
-  }
+  return r;
 }
 
 int LineBuilder::MidPointCount() const {
@@ -168,8 +189,7 @@ float LineBuilder::ModifyVertexOpacity(input::InputType input_type,
     return 1.0;
   }
   float line_radius_screen = unstable_line_.Line().TipSize().radius;
-  Camera cam = unstable_line_.Line().DownCamera();
-  float line_radius_cm = cam.ConvertDistance(
+  float line_radius_cm = down_camera_.ConvertDistance(
       line_radius_screen, DistanceType::kScreen, DistanceType::kCm);
 
   float opacity_multiplier = 0;
@@ -208,8 +228,8 @@ float LineBuilder::ModifyVertexOpacity(input::InputType input_type,
       float projected_to_current_world_dist =
           glm::length(position - last_projected);
       float projected_to_current_cm_dist =
-          cam.ConvertDistance(projected_to_current_world_dist,
-                              DistanceType::kWorld, DistanceType::kCm);
+          down_camera_.ConvertDistance(projected_to_current_world_dist,
+                                       DistanceType::kWorld, DistanceType::kCm);
       opacity_multiplier =
           Smoothstep(1.0f, opacity_multiplier,
                      Normalize(0.0f, 0.2f, projected_to_current_cm_dist));
@@ -222,7 +242,7 @@ float LineBuilder::ModifyVertexOpacity(input::InputType input_type,
 void LineBuilder::SplitLine() {
   ASSERT(!unstable_line_.Line().MidPoints().empty());
   stable_mesh_.Append(UnstableMesh());
-  gl_resources_->mesh_vbo_provider->ExtendVBO(&stable_mesh_, GL_DYNAMIC_DRAW);
+  gl_resources_->mesh_vbo_provider->ExtendVBOs(&stable_mesh_, GL_DYNAMIC_DRAW);
 
   completed_lines_.push_back(unstable_line_.Line());
   unstable_line_.RestartFromBackOfLine(completed_lines_.back(),

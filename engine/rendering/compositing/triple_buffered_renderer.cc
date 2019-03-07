@@ -50,7 +50,8 @@ TripleBufferedRenderer::TripleBufferedRenderer(
     std::shared_ptr<SceneGraph> scene_graph,
     std::shared_ptr<WallClockInterface> wall_clock,
     std::shared_ptr<PageManager> page_manager,
-    std::shared_ptr<LayerManager> layer_manager)
+    std::shared_ptr<LayerManager> layer_manager,
+    std::shared_ptr<settings::Flags> flags)
     : back_region_query_(Rect(0, 0, 0, 0)),
       has_drawn_(false),
       valid_(false),
@@ -63,14 +64,19 @@ TripleBufferedRenderer::TripleBufferedRenderer(
       wall_clock_(std::move(wall_clock)),
       page_manager_(std::move(page_manager)),
       layer_manager_(std::move(layer_manager)),
+      flags_(std::move(flags)),
       tile_(absl::make_unique<DBRenderTarget>(wall_clock_, gl_resources)),
       above_tile_(absl::make_unique<DBRenderTarget>(wall_clock_, gl_resources)),
+      cached_enable_motion_blur_flag_(
+          flags_->GetFlag(settings::Flag::EnableMotionBlur)),
       current_back_draw_timer_(wall_clock_, false) {
   scene_graph_->AddListener(this);
   gl_resources_->texture_manager->AddListener(this);
+  flags_->AddListener(this);
 }
 
 TripleBufferedRenderer::~TripleBufferedRenderer() {
+  flags_->RemoveListener(this);
   scene_graph_->RemoveListener(this);
   gl_resources_->texture_manager->RemoveListener(this);
 }
@@ -83,29 +89,29 @@ void TripleBufferedRenderer::Draw(const Camera& cam,
   // If the front buffer doesn't have anything in it, we don't need to blit it.
   if (front_buffer_bounds_) {
 #ifdef INK_HAS_BLUR_EFFECT
-  if (page_manager_->MultiPageEnabled()) {
-    // Never blur on multi-page documents, which have a lot of scrolling.
-    tile_->DrawFront(cam, blit_attrs::Blit(), RotRect(tile_->Bounds()),
-                     *front_buffer_bounds_);
-  } else {
-    if (last_frame_camera_ != cam) {
-      // If we are blurring, acquire a framerate lock since to guarantee that we
-      // draw at least one more frame after this one before dropping to 0 fps.
-      blur_lock_ = frame_state_->AcquireFramerateLock(30, "blurring");
-      blit_attrs::BlitMotionBlur attrs(
-          cam.WorldWindow().CalcTransformTo(last_frame_camera_.WorldWindow()));
-      tile_->DrawFront(cam, attrs, RotRect(tile_->Bounds()),
-                       *front_buffer_bounds_);
+    if (cached_enable_motion_blur_flag_) {
+      if (last_frame_camera_ != cam) {
+        // If we are blurring, acquire a framerate lock since to guarantee that
+        // we draw at least one more frame after this one before dropping to 0
+        // fps.
+        blur_lock_ = frame_state_->AcquireFramerateLock(30, "blurring");
+        blit_attrs::BlitMotionBlur attrs(cam.WorldWindow().CalcTransformTo(
+            last_frame_camera_.WorldWindow()));
+        tile_->DrawFront(cam, attrs, RotRect(tile_->Bounds()),
+                         *front_buffer_bounds_);
+      } else {
+        if (blur_lock_) blur_lock_.reset();
+        tile_->DrawFront(cam, blit_attrs::Blit(), RotRect(tile_->Bounds()),
+                         *front_buffer_bounds_);
+      }
     } else {
-      if (blur_lock_) blur_lock_.reset();
       tile_->DrawFront(cam, blit_attrs::Blit(), RotRect(tile_->Bounds()),
                        *front_buffer_bounds_);
     }
-  }
 #else
-  // No blur effect on web platform.
-  tile_->DrawFront(cam, blit_attrs::Blit(), RotRect(tile_->Bounds()),
-                   *front_buffer_bounds_);
+    // No blur effect on web platform.
+    tile_->DrawFront(cam, blit_attrs::Blit(), RotRect(tile_->Bounds()),
+                     *front_buffer_bounds_);
 #endif  // INK_HAS_BLUR_EFFECT
   }
 
@@ -621,30 +627,34 @@ void TripleBufferedRenderer::BindTileForGroup(const GroupId& group_id) const {
   if (!layer_manager_->IsActive() || group_id == kInvalidElementId) {
     tile_->BindBack();  // Rendering elements attached to root.
   } else {              // Check if group is a layer above the active layer.
-    size_t layer_z_index;
-    Status status =
-        layer_manager_->IndexForLayerWithGroupId(group_id, &layer_z_index);
-    if (!status) {
+    auto layer_z_index_or = layer_manager_->IndexForLayerWithGroupId(group_id);
+    if (!layer_z_index_or.ok()) {
       SLOG(SLOG_ERROR, "No z-index for group $0, status $1, binding back tile.",
-           group_id, status);
+           group_id, layer_z_index_or.status());
       tile_->BindBack();
       return;
     }
-    size_t active_layer_z_index;
-    status = layer_manager_->IndexOfActiveLayer(&active_layer_z_index);
-    if (!status) {
+    auto active_layer_z_index_or = layer_manager_->IndexOfActiveLayer();
+    if (!active_layer_z_index_or.ok()) {
       SLOG(SLOG_ERROR,
            "No active layer index but layer manager was active, status $0, "
            "binding back tile.",
-           status);
+           active_layer_z_index_or.status());
       tile_->BindBack();
       return;
     }
-    if (layer_z_index > active_layer_z_index) {
+    if (layer_z_index_or.ValueOrDie() > active_layer_z_index_or.ValueOrDie()) {
       above_tile_->BindBack();
     } else {
       tile_->BindBack();
     }
+  }
+}
+
+void TripleBufferedRenderer::OnFlagChanged(settings::Flag which,
+                                           bool new_value) {
+  if (which == settings::Flag::EnableMotionBlur) {
+    cached_enable_motion_blur_flag_ = new_value;
   }
 }
 

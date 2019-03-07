@@ -160,6 +160,11 @@ void FrameState::RemoveListener(FrameStateListener* listener) {
   listener->Unregister(dispatch_);
 }
 
+uint32_t FrameState::FrameLockCount() const {
+  current_thread_validator_.CheckIfOnSameThread();
+  return min_framerate_locks_.size();
+}
+
 /////////////////////////////////////////
 
 FramerateLimiter::FramerateLimiter(const service::UncheckedRegistry& registry)

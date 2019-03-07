@@ -26,11 +26,13 @@
 #include <vector>
 
 #include "ink/engine/brushes/size/tip_size_screen.h"
-#include "ink/engine/camera/camera.h"
+#include "ink/engine/geometry/algorithms/envelope.h"
 #include "ink/engine/geometry/line/mid_point.h"
 #include "ink/engine/geometry/line/tip/tip_model_factory.h"
 #include "ink/engine/geometry/line/tip_type.h"
 #include "ink/engine/geometry/mesh/vertex.h"
+#include "ink/engine/geometry/primitives/rect.h"
+#include "ink/engine/util/dbg/errors.h"
 #include "ink/engine/util/dbg/log.h"
 #include "ink/engine/util/funcs/utils.h"
 #include "ink/engine/util/time/time_types.h"
@@ -47,7 +49,7 @@ class FatLine {
  public:
   typedef std::function<void(glm::vec2 /*centerPt*/, float /*radius*/,
                              InputTimeS /*time*/, float /* pressure */,
-                             Vertex* /*vert*/, std::vector<Vertex>* /*line*/)>
+                             Vertex* /*vert*/)>
       VertAddFn;
 
   FatLine() : FatLine(30, 20) {}
@@ -58,21 +60,28 @@ class FatLine {
   FatLine& operator=(const FatLine& other);
 
   // Clears the vertices, leaving an empty line.
-  // WARNING: This does not reset the camera, the minimum travel threshold, the
+  // WARNING: This does not reset the minimum travel threshold, the
   // tip type, the number of turn vertices, or the vertex-added callback.
   void ClearVertices();
 
-  // Extrude new modeled input point (in screen coordinates). Return true if
-  // vertices were added to the fat line as a result.
+  // Extrude new modeled input point (in screen coordinates).
+  //
+  // Returns the bounding box of any segments with vertices that were added to
+  // the fat line.  If no vertices are added, returns absl::nullopt.
+  //
   // If force is true, extrude point even if distance from the last vertex to
   // the new one doesn't meet min_world_travel_threshold_.
-  bool Extrude(glm::vec2 new_pt, InputTimeS time, bool force,
-               bool simplify = true);
-  void BuildEndCap();
+  OptRect Extrude(glm::vec2 new_pt, InputTimeS time, bool force,
+                  bool simplify = true);
+
+  // Returns the bounding box of the generated endcap.
+  OptRect BuildEndCap();
 
   // Attach this line's start cap to the end vertices of the given line. This
   // FatLine is expected to be empty.
-  bool SetStartCapToLineBack(const FatLine& other);
+  //
+  // Returns the bounding box of the joined segments.
+  OptRect SetStartCapToLineBack(const FatLine& other);
 
   void SetTurnVerts(uint32_t turn_verts) { turn_verts_ = turn_verts; }
 
@@ -99,18 +108,12 @@ class FatLine {
     min_screen_travel_threshold_ = distance;
   }
 
-  const Camera& DownCamera() const { return down_cam_; }
-  void SetDownCamera(const Camera& camera) { down_cam_ = camera; }
-
   TipSizeScreen TipSize() const { return tip_size_; }
   void SetTipSize(TipSizeScreen tip_size) { tip_size_ = tip_size; }
 
   void SetStylusState(input::StylusState stylus_state) {
     stylus_state_ = stylus_state;
   }
-
-  float MinRadiusSeen() const { return min_radius_seen_; }
-  float MaxRadiusSeen() const { return max_radius_seen_; }
 
   const std::vector<Vertex>& ForwardLine() const { return fwd_; }
   const std::vector<Vertex>& BackwardLine() const { return back_; }
@@ -126,56 +129,40 @@ class FatLine {
   // The lines are copied in the order:
   // lines[0]->start_cap_, lines->fwd_, lines[end]->end_cap_, lines->back_
   static std::vector<glm::vec2> OutlineAsArray(
-      const std::vector<FatLine>& lines, const glm::mat4& world_to_object);
+      const std::vector<FatLine>& lines, const glm::mat4& screen_to_object);
 
  private:
-  void BuildStartCap();
-  void ExtendLine();
+  // Returns the bounding box of the generated start cap, or absl::nullopt if no
+  // startcap is created.
+  OptRect BuildStartCap();
+
+  // Returns the bounding box of the new segments created, or absl::nullopt if
+  // no segments are created.
+  OptRect ExtendLine();
+
   // Simplify the last n_verts of fwd_ and back_ vertexes to reduce the vertex
   // count. Points are included if they cause the resulting line to shift by at
   // least simplification_threshold.
   // https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
   void Simplify(uint32_t n_verts = 15, float simplification_threshold = 0.1f);
 
-  inline void Append(std::vector<MidPoint>* to, MidPoint p) {
-    max_radius_seen_ = std::max(max_radius_seen_, tip_size_.radius);
-    min_radius_seen_ = std::min(min_radius_seen_, tip_size_.radius);
-
-    to->push_back(p);
-  }
-
-  inline void Append(std::vector<Vertex>* to, glm::vec2 p) {
-    max_radius_seen_ = std::max(max_radius_seen_, tip_size_.radius);
-    min_radius_seen_ = std::min(min_radius_seen_, tip_size_.radius);
-
+  inline void AppendVertex(std::vector<Vertex>* to, glm::vec2 p,
+                           OptRect* bounding_rect) {
     Vertex v(p);
     if (on_add_vert_)
       on_add_vert_(last_center_, tip_size_.radius, last_extrude_time_,
-                   stylus_state_.pressure, &v, to);
+                   stylus_state_.pressure, &v);
     to->push_back(v);
+    util::AssignOrJoinTo(Rect::CreateAtPoint(v.position), bounding_rect);
   }
-
-  inline void Append(std::vector<Vertex>* to,
-                     const std::vector<glm::vec2>& from) {
-    for (auto ai = from.begin(); ai != from.end(); ai++) {
-      Append(to, *ai);
-    }
-  }
-  inline void AppendFwd(const std::vector<glm::vec2>& v) { Append(&fwd_, v); }
-  inline void AppendBack(const std::vector<glm::vec2>& v) { Append(&back_, v); }
-  inline void AppendBack(glm::vec2 p) { Append(&back_, p); }
-  inline void AppendFwd(glm::vec2 p) { Append(&fwd_, p); }
 
   VertAddFn on_add_vert_;
 
   // extruded pts below this threshold screen distance will be rejected
   float min_screen_travel_threshold_;
 
-  Camera down_cam_;
   TipSizeScreen tip_size_;
   InputTimeS last_extrude_time_;
-  float min_radius_seen_;
-  float max_radius_seen_;
 
   input::StylusState stylus_state_;
   std::unique_ptr<TipModel> tip_model_;

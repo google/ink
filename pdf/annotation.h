@@ -52,8 +52,6 @@ class Annotation {
   // Set an arbitrary key/value pair in the Annot dictionary.
   virtual Status SetStringValue(absl::string_view key, absl::string_view value);
   virtual bool HasKey(absl::string_view key) const;
-  virtual Status GetStringValue(absl::string_view key, std::string* out) const;
-  virtual Status AppendObject(const PageObject& obj);
 
  protected:
   FPDF_DOCUMENT owning_document_;
@@ -67,12 +65,6 @@ class StampAnnotation : public Annotation {
                    FPDFPage_CreateAnnot(page, FPDF_ANNOT_STAMP)) {}
   int GetPathCount();
   Status GetPath(int index, std::unique_ptr<Path>* out);
-};
-
-class TextAnnotation : public Annotation {
- public:
-  TextAnnotation(FPDF_DOCUMENT owning_document, FPDF_PAGE page,
-                 const Rect& bounds, absl::string_view utf8_text);
 };
 
 }  // namespace pdf

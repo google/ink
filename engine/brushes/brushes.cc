@@ -53,7 +53,23 @@ void BrushParams::BrushSize::SetSize(float size, BrushSizeType size_type) {
   size_type_ = size_type;
 }
 
-float BrushParams::BrushSize::WorldSize(const Camera& cam) {
+float BrushParams::BrushSize::ScreenSize(const Camera& cam) const {
+  switch (size_type_) {
+    case BrushSizeType::DP_UNITS:
+      return cam.ConvertDistance(size_, DistanceType::kDp,
+                                 DistanceType::kScreen);
+    case BrushSizeType::SCREEN_UNITS:
+      return size_;
+    case BrushSizeType::WORLD_UNITS:
+      return cam.ConvertDistance(size_, DistanceType::kWorld,
+                                 DistanceType::kScreen);
+  }
+  SLOG(SLOG_ERROR, "Invalid size_type_ ($0); assuming SCREEN_UNITS",
+       static_cast<int>(size_type_));
+  return size_;
+}
+
+float BrushParams::BrushSize::WorldSize(const Camera& cam) const {
   switch (size_type_) {
     case BrushSizeType::SCREEN_UNITS:
       return cam.ConvertDistance(size_, DistanceType::kScreen,
@@ -62,9 +78,11 @@ float BrushParams::BrushSize::WorldSize(const Camera& cam) {
       return cam.ConvertDistance(size_, DistanceType::kDp,
                                  DistanceType::kWorld);
     case BrushSizeType::WORLD_UNITS:
-    default:
       return size_;
   }
+  SLOG(SLOG_ERROR, "Invalid size_type_ ($0); assuming WORLD_UNITS",
+       static_cast<int>(size_type_));
+  return size_;
 }
 
 Status BrushParams::PopulateAnimationFromProto(

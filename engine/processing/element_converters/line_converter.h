@@ -23,7 +23,6 @@
 
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/brushes/brushes.h"
-#include "ink/engine/camera/camera.h"
 #include "ink/engine/geometry/line/fat_line.h"
 #include "ink/engine/geometry/mesh/mesh.h"
 #include "ink/engine/processing/element_converters/element_converter.h"
@@ -53,12 +52,11 @@ struct TessellationParams {
 // Inputs:
 // The lines are in an aribitrary coordinate space, called (L)ine-Space
 // The points are in an arbitrary coordinate space, called (P)oint-Space
-// Note that we expect lines[0] to be defined and have a valid DownCamera
-// associated such that lines[0].DownCamera().Iview == L-to-P transform.
 class LineConverter : public IElementConverter {
  public:
-  LineConverter(const std::vector<FatLine>& lines,  // in L-space.
+  LineConverter(std::vector<FatLine> lines,  // in L-space.
                 const glm::mat4& group_to_p_space,
+                const glm::mat4& l_to_p_space,
                 std::unique_ptr<InputPoints> input_points,  // in P-space
                 const ShaderType shader_type,
                 TessellationParams tessellation_params);
@@ -75,6 +73,7 @@ class LineConverter : public IElementConverter {
  private:
   std::vector<FatLine> lines_;
   glm::mat4 group_to_p_space_{1};
+  glm::mat4 l_to_p_space_{1};
   std::unique_ptr<InputPoints> input_points_;
   ShaderType mesh_shader_type_;
   TessellationParams tessellation_params_;

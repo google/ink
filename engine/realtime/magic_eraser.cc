@@ -79,7 +79,7 @@ MagicEraser::MagicEraser(std::shared_ptr<input::InputDispatch> dispatch,
 
 input::CaptureResult MagicEraser::OnInput(const input::InputData& data,
                                           const Camera& camera) {
-  if (data.Get(input::Flag::Cancel)) {
+  if (data.Get(input::Flag::Cancel) || data.Get(input::Flag::Right)) {
     Cancel();
     return only_handle_eraser_ ? input::CapResObserve : input::CapResRefuse;
   } else if (only_handle_eraser_ && !data.Get(input::Flag::Eraser)) {
@@ -88,9 +88,13 @@ input::CaptureResult MagicEraser::OnInput(const input::InputData& data,
     return only_handle_eraser_ ? input::CapResObserve : input::CapResRefuse;
   }
 
+  if (data.Get(input::Flag::TDown)) {
+    first_world_pos_ = data.world_pos;
+  }
+
   const auto tap_data = tap_reco_.OnInput(data, camera);
 
-  // Don't erase anything while the tap status is ambiguous (eg we might still
+  // Don't erase anything while the tap status is ambiguous (e.g. we might still
   // realize this was a tap). Note that the tap data will always stop being
   // ambiguous once the pointer is released, at that point we definitively know
   // it was or wasn't a tap.
@@ -102,12 +106,9 @@ input::CaptureResult MagicEraser::OnInput(const input::InputData& data,
   std::unordered_set<ElementId, ElementIdHasher> new_ids;
 
   // If there is an active layer, then only finds elements in that layer.
-  size_t index;
-  GroupId group_id;
-  if (!layer_manager_->IndexOfActiveLayer(&index) ||
-      !layer_manager_->GroupIdForLayerAtIndex(index, &group_id)) {
-    group_id = kInvalidElementId;
-  }
+  auto group_id_or = layer_manager_->GroupIdOfActiveLayer();
+  GroupId group_id =
+      group_id_or.ok() ? group_id_or.ValueOrDie() : kInvalidElementId;
 
   if (delete_only_one) {
     float world_query_size =
@@ -128,9 +129,15 @@ input::CaptureResult MagicEraser::OnInput(const input::InputData& data,
         RegionQuery::MinSegmentSelectionSizeCm(data.type), DistanceType::kCm,
         DistanceType::kWorld);
 
-
     vec2 from_pt = data.last_world_pos;
     vec2 to_pt = data.world_pos;
+    // For the first step during a drag-erase, we erase from the original down
+    // to the current world_pos.  Otherwise, we might miss a small region close
+    // to the start before the tap_reco decides it isn't a tap.
+    if (first_world_pos_) {
+      from_pt = *first_world_pos_;
+      first_world_pos_ = absl::nullopt;
+    }
 
     if (from_pt != to_pt) {
       RegionQuery query = RegionQuery::MakeSegmentQuery(Segment(from_pt, to_pt),
@@ -165,9 +172,18 @@ input::CaptureResult MagicEraser::OnInput(const input::InputData& data,
   return input::CapResCapture;
 }
 
+absl::optional<input::Cursor> MagicEraser::CurrentCursor(
+    const Camera& camera) const {
+  if (only_handle_eraser_) {
+    return absl::nullopt;
+  }
+  return input::Cursor(input::CursorType::BRUSH, ink::Color::kWhite, 6.0);
+}
+
 void MagicEraser::Cancel() {
   scene_graph_->SetElementRenderedByMain(intersected_elements_.begin(),
                                          intersected_elements_.end(), true);
+  first_world_pos_ = absl::nullopt;
   intersected_elements_.clear();
 }
 
@@ -175,6 +191,7 @@ void MagicEraser::Commit() {
   scene_graph_->RemoveElements(intersected_elements_.begin(),
                                intersected_elements_.end(),
                                SourceDetails::FromEngine());
+  first_world_pos_ = absl::nullopt;
   intersected_elements_.clear();
 }
 

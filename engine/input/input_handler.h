@@ -20,6 +20,8 @@
 #include <cstdint>
 #include <memory>
 
+#include "third_party/absl/types/optional.h"
+#include "ink/engine/input/cursor.h"
 #include "ink/engine/input/input_data.h"
 #include "ink/engine/input/input_dispatch.h"
 
@@ -54,6 +56,7 @@ class IInputHandler {
   virtual CaptureResult OnInput(const InputData& data,
                                 const Camera& camera) = 0;
   virtual bool RefuseAllNewInput() = 0;
+  virtual absl::optional<Cursor> CurrentCursor(const Camera& camera) const = 0;
   virtual Priority InputPriority() const = 0;
   virtual std::string ToString() const = 0;
 };
@@ -73,6 +76,10 @@ class InputHandler : public IInputHandler {
 
   bool RefuseAllNewInput() final { return refuse_all_new_input_; }
   void SetRefuseAllNewInput(bool refuse) { refuse_all_new_input_ = refuse; }
+
+  absl::optional<Cursor> CurrentCursor(const Camera& camera) const override {
+    return absl::nullopt;
+  }
 
   Priority InputPriority() const final { return priority_; }
 

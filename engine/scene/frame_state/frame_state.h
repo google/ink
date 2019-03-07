@@ -72,6 +72,8 @@ class FrameState {
   void AddListener(FrameStateListener* listener);
   void RemoveListener(FrameStateListener* listener);
 
+  uint32_t FrameLockCount() const;
+
  private:
   void UpdateControllerFpsIfChanged();
   void UpdateControllerFps();

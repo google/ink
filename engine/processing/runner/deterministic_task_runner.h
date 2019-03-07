@@ -40,6 +40,8 @@ class DeterministicTaskRunner : public ITaskRunner {
   // pending tasks. Blocks until they are all completed.
   void ServiceMainThreadTasks() override;
 
+  int NumPendingTasks() const override { return pending_.size(); }
+
  private:
   // Returns the current items on the queue (and emptying it so that re-entrant
   // calls to PushTask can enqueue new items).

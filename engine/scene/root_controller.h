@@ -27,6 +27,7 @@
 #include "ink/engine/camera/camera.h"
 #include "ink/engine/camera_controller/camera_controller.h"
 #include "ink/engine/geometry/primitives/rect.h"
+#include "ink/engine/input/cursor_manager.h"
 #include "ink/engine/input/input_dispatch.h"
 #include "ink/engine/public/host/iplatform.h"
 #include "ink/engine/public/types/exported_image.h"
@@ -74,11 +75,12 @@ class RootController : public settings::FlagListener {
   ABSL_MUST_USE_RESULT Status
   SetToolParams(const proto::ToolParams& unsafe_proto);
 
-  void AddElement(const proto::ElementBundle& unsafe_bundle,
-                  const SourceDetails& source_details);
-  void AddElementBelow(const proto::ElementBundle& unsafe_bundle,
-                       const SourceDetails& source_details,
-                       const UUID& below_element_with_uuid);
+  ABSL_MUST_USE_RESULT Status
+  AddElement(const proto::ElementBundle& unsafe_bundle,
+             const SourceDetails& source_details);
+  ABSL_MUST_USE_RESULT Status AddElementBelow(
+      const proto::ElementBundle& unsafe_bundle,
+      const SourceDetails& source_details, const UUID& below_element_with_uuid);
   void AddStrokeOutline(const proto::StrokeOutline& unsafe_stroke_outline,
                         const GroupId& group,
                         const SourceDetails& source_details);
@@ -142,6 +144,10 @@ class RootController : public settings::FlagListener {
 
   void AddSequencePoint(int32_t id);
 
+  // If an element with the given UUID exists, switches to the
+  // ElementManipulationTool and selects that element.
+  void SelectElement(const UUID& uuid);
+
   void DeselectAll();
 
   void OnFlagChanged(settings::Flag which, bool new_value) override;
@@ -159,8 +165,6 @@ class RootController : public settings::FlagListener {
 
  private:
   void SetupTools();
-  UUID AddMeshFromEngine(const Mesh& mesh, const ElementAttributes& attributes,
-                         GroupId group, UUID uuid);
 
  public:
   std::unique_ptr<UnsafeSceneHelper> unsafe_helper_;
@@ -201,6 +205,7 @@ class RootController : public settings::FlagListener {
   std::shared_ptr<settings::Flags> flags_;
   std::shared_ptr<CropMode> crop_mode_;
   std::shared_ptr<ImageExporter> image_exporter_;
+  std::shared_ptr<input::CursorManager> cursor_manager_;
 
   friend class SEngineTestHelper;
 };

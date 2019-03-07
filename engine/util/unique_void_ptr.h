@@ -24,7 +24,7 @@
 namespace ink {
 namespace util {
 
-typedef std::unique_ptr<void, std::function<void(void const*)>> unique_void_ptr;
+using unique_void_ptr = std::unique_ptr<void, std::function<void(void const*)>>;
 
 template <typename T>
 unique_void_ptr make_unique_void(T* t) {

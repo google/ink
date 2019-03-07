@@ -29,7 +29,11 @@ class MeshSplitter {
   // Constructs from the mesh to be split. All triangles in the mesh are
   // expected to be oriented counter-clockwise (see
   // Mesh::NormalizeTriangleOrientation()).
-  explicit MeshSplitter(const Mesh &base_mesh);
+  // Note that base_mesh is an OptimizedMesh, instead of a Mesh. This is done
+  // because the stroke-editing eraser may have many instances of MeshSplitter
+  // at once -- enough that it can take up all of the available memory in a web
+  // client without memory growth.
+  explicit MeshSplitter(const OptimizedMesh &base_mesh);
 
   // Removes the areas of the base mesh that intersect the cutting mesh. All
   // triangles in the mesh are expected to be oriented counter-clockwise (see
@@ -58,7 +62,9 @@ class MeshSplitter {
     int original_index;
   };
 
-  Mesh base_mesh_;
+  void InitializeRTree();
+
+  OptimizedMesh base_mesh_;
   bool is_base_mesh_changed_;
   std::unique_ptr<spatial::RTree<IndexedTriangle>> rtree_;
 };

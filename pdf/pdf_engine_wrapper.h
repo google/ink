@@ -63,11 +63,6 @@ class PdfEngineWrapper : public ITileProvider, public ISelectionProvider {
 
  private:
   std::unique_ptr<Document> doc_;
-
-  Status FindOrOpenPage(int n, Page** page) const;
-
-  // A cache of recently needed pdf Pages, which are time-expensive to open.
-  mutable std::list<std::pair<int, std::unique_ptr<Page>>> page_cache_;
 };
 
 }  // namespace pdf

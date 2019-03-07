@@ -77,12 +77,18 @@ class LineBuilder {
   // If is_line_end is true, it will build an end cap, complete the unstable
   // segment, and call LineModifier::ModifyFinalLine().
   // Note that this also clears the prediction.
-  void ExtrudeModeledInput(const Camera& cam,
-                           const std::vector<input::ModeledInput>& modeled,
-                           bool is_line_end);
+  //
+  // Returns the screen bounding box of any created segments, or absl::nullopt
+  // if no vertices were created.
+  OptRect ExtrudeModeledInput(const Camera& cam,
+                              const std::vector<input::ModeledInput>& modeled,
+                              bool is_line_end);
 
   // Constructs the prediction, building from the last extruded point.
-  void ConstructPrediction(
+  //
+  // Returns the screen bounding box of the predicted segments, or absl::nullopt
+  // if no prediction was created.
+  OptRect ConstructPrediction(
       const Camera& cam,
       const std::vector<input::ModeledInput>& prediction_points);
 
@@ -106,19 +112,14 @@ class LineBuilder {
     return predicted_line_.Line().MidPoints();
   }
 
+  const Camera& DownCamera() const { return down_camera_; }
+
   const std::vector<FatLine>& CompletedLines() const {
     return completed_lines_;
   }
   LineModifier* GetLineModifier() const { return modifier_.get(); }
 
  private:
-  // This helper function performs most of the work for ExtrudeModeledInputs()
-  // and ConstructPrediction().
-  static void Extrude(const Camera& cam,
-                      const std::vector<input::ModeledInput>& modeled_input,
-                      bool is_line_end, LineModifier* modifier,
-                      TessellatedLine* tessellated_line);
-
   // Returns a pointer to the most recent non-empty line, which may be either
   // the unstable line or the last completed line. If the unstable line
   // is empty and there are no completed lines, it instead returns nullptr.
@@ -135,6 +136,8 @@ class LineBuilder {
 
   std::shared_ptr<settings::Flags> flags_;
   std::shared_ptr<GLResourceManager> gl_resources_;
+
+  Camera down_camera_;
 
   TessellatedLine unstable_line_;
   TessellatedLine predicted_line_;

@@ -44,7 +44,7 @@ Status DracoWriter::MeshToLod(const OptimizedMesh& ink_mesh,
                               ink::proto::LOD* lod) const {
   draco::Mesh draco_mesh;
 
-  const size_t index_count = ink_mesh.idx.size();
+  const size_t index_count = ink_mesh.IndexSize();
   if (index_count % 3 != 0) {
     return ErrorStatus(StatusCode::INVALID_ARGUMENT,
                        "can't encode mesh with index count $0", index_count);
@@ -121,7 +121,8 @@ Status DracoWriter::MeshToLod(const OptimizedMesh& ink_mesh,
   for (int i = 0; i < face_count; i++) {
     draco::Mesh::Face draco_face;
     for (int c = 0; c < 3; ++c) {
-      const auto entry_index = AttributeValueIndex(ink_mesh.idx[ink_index++]);
+      const auto entry_index =
+          AttributeValueIndex(ink_mesh.IndexAt(ink_index++));
       position_attribute->SetPointMapEntry(point_index, entry_index);
       if (texture_attribute)
         texture_attribute->SetPointMapEntry(point_index, entry_index);
@@ -229,7 +230,7 @@ Status DracoReader::LodToMesh(const ink::proto::LOD& lod,
     const auto face = draco_mesh.face(i);
     for (int j = 0; j < 3; j++) {
       auto vertex_index =
-          static_cast<uint16_t>(pos_att->mapped_index(face[j]).value());
+          static_cast<Mesh::IndexType>(pos_att->mapped_index(face[j]).value());
       if (vertex_index >= num_vertices) {
         return ErrorStatus(StatusCode::INVALID_ARGUMENT,
                            "vertex index $0 >= vertex count $1", vertex_index,

@@ -26,8 +26,17 @@ namespace ink {
 SingleUserDocument::SingleUserDocument(std::shared_ptr<DocumentStorage> storage)
     : storage_(storage),
       undo_(DocumentDispatch(), ElementDispatch(), MutationDispatch(),
-            PagePropertiesDispatch(), storage),
+            PagePropertiesDispatch(), ActiveLayerDispatch(), storage),
       last_reported_empty_state_(storage_->IsEmpty()) {}
+
+/* static */ StatusOr<std::unique_ptr<Document>>
+SingleUserDocument::CreateWithPageProperties(
+    std::shared_ptr<DocumentStorage> storage,
+    const proto::PageProperties& page_properties) {
+  INK_RETURN_UNLESS(storage->SetPageProperties(page_properties));
+  return StatusOr<std::unique_ptr<Document>>(
+      absl::make_unique<SingleUserDocument>(std::move(storage)));
+}
 
 /* static */ S_WARN_UNUSED_RESULT Status SingleUserDocument::CreateFromSnapshot(
     std::shared_ptr<DocumentStorage> storage,

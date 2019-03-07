@@ -61,6 +61,8 @@ class PublicEvents : public IElementListener,
   void FlagChanged(const proto::Flag& flag, bool enabled) override;
   void LoggingEventFired(
       const ::logs::proto::research::ink::InkEvent& event) override;
+  void CameraMovementStateChanged(bool is_moving) override;
+  void BlockingStateChanged(bool is_blocked) override;
 
   // IElementListener
   void ElementsAdded(const proto::ElementBundleAdds& element_bundle_adds,

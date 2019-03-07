@@ -61,6 +61,7 @@ struct GlTextureFormatInfo {
   GLenum format;
   GLenum type;
   int unpack_alignment;
+  bool should_convert_to_rgba_8888;
 };
 GlTextureFormatInfo GlTextureFormat(ImageFormat format);
 
@@ -88,6 +89,10 @@ struct TextureParams {
 
   // This specifies whether the texture is a scalable nine-patch image.
   bool is_nine_patch = false;
+
+  /// This specifies whether this is a stand-in texture for a rejected texture
+  /// URI.
+  bool is_rejection = false;
 
   TextureParams() : TextureParams(proto::ImageInfo::DEFAULT) {}
   explicit TextureParams(proto::ImageInfo::AssetType asset_type);

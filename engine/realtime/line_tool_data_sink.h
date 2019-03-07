@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "third_party/glm/glm/glm.hpp"
+#include "ink/engine/camera/camera.h"
 #include "ink/engine/geometry/line/fat_line.h"
 #include "ink/engine/geometry/mesh/mesh.h"
 #include "ink/engine/processing/element_converters/line_converter.h"
@@ -48,13 +49,12 @@ class LineToolDataSink {
                    std::shared_ptr<FrameState> fs,
                    std::shared_ptr<ITaskRunner> task_runner,
                    std::shared_ptr<settings::Flags> flags);
-  virtual ~LineToolDataSink() {}
 
-  virtual void Accept(const std::vector<FatLine>& lines,
-                      std::unique_ptr<InputPoints> input_points,
-                      std::unique_ptr<Mesh> rendering_mesh, GroupId group,
-                      const ShaderType shader_type,
-                      TessellationParams tessellation_params);
+  void Accept(const Camera& down_camera, const std::vector<FatLine>& lines,
+              std::unique_ptr<InputPoints> input_points,
+              std::unique_ptr<Mesh> rendering_mesh, GroupId group,
+              const ShaderType shader_type,
+              TessellationParams tessellation_params);
 
  private:
   std::shared_ptr<SceneGraph> scene_graph_;

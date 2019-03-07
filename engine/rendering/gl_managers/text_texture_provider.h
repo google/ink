@@ -30,7 +30,7 @@ namespace ink {
 // Text box meshes are expected to be squares of size kTextBoxSize x
 // kTextBoxSize. This is validated when rendering text and assumed
 // when reading text from a proto.
-static const int kTextBoxSize = 4095;
+static const int kTextBoxSize = 2047;
 
 // TextTextureProvider owns the URIs and text metadata objects for text
 // textures. It can request text rendering from the host when requested by

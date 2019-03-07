@@ -32,6 +32,16 @@ namespace ink {
 namespace geometry {
 namespace {
 
+// This tolerance was chosen experimentally.
+constexpr float kSnappingTol = 2 * std::numeric_limits<float>::epsilon();
+
+// Returns true if the relative difference of both the x- and y-components of
+// the given vectors are less than kSnappingTol.
+bool RelativeErrorWithinSnappingTol(glm::vec2 a, glm::vec2 b) {
+  return std::abs(a.x - b.x) <= std::abs(a.x) * kSnappingTol &&
+         std::abs(a.y - b.y) <= std::abs(a.y) * kSnappingTol;
+}
+
 // This indicates the type of the vertex w.r.t. the traversal of its polygon,
 // which may be either the left-hand-side or right-hand-side of the operation.
 enum class VertexType {
@@ -569,18 +579,35 @@ void PopulateIntersectionType(const TraversalVertex::Iterator &it) {
       it->intx_type = IntersectionType::kInsideToAlignedOverlap;
     }
   } else {
-    if (lhs_prev == lhs_next) {
-      lhs_prev = find_non_coincident_vertex(it, -1);
-      lhs_next = find_non_coincident_vertex(it, 1);
+    // Since this isn't an overlap, we're only concerned with the relative
+    // orientation of the intersecting segments. Moving the previous and next
+    // points to vertices of the input polygons doesn't change the orientation,
+    // but helps with precision issues that arise when intersecting a spike.
+    lhs_prev = find_non_coincident_vertex(it, -1);
+    lhs_next = find_non_coincident_vertex(it, 1);
+    rhs_prev = find_non_coincident_vertex(it->twin, -1);
+    rhs_next = find_non_coincident_vertex(it->twin, 1);
+
+    bool rhs_prev_inside = false;
+    bool rhs_next_inside = false;
+    if (it->type == VertexType::kIntersectionAtVertex) {
+      // The intersection is at a vertex on the original polygon, so we need to
+      // take the turn into account.
+      rhs_prev_inside = OrientationAboutTurn(lhs_prev, intx, lhs_next,
+                                             rhs_prev) == RelativePos::kLeft;
+      rhs_next_inside = OrientationAboutTurn(lhs_prev, intx, lhs_next,
+                                             rhs_next) == RelativePos::kLeft;
+    } else {
+      // The intersection is in the middle of a segment, so we only need the
+      // orientation w.r.t. that segment. In addition, by not using the
+      // intersection point, we aren't affected by any error in the intersection
+      // result.
+      rhs_prev_inside =
+          Orientation(lhs_prev, lhs_next, rhs_prev) == RelativePos::kLeft;
+      rhs_next_inside =
+          Orientation(lhs_prev, lhs_next, rhs_next) == RelativePos::kLeft;
     }
-    if (rhs_prev == rhs_next) {
-      rhs_prev = find_non_coincident_vertex(it->twin, -1);
-      rhs_next = find_non_coincident_vertex(it->twin, 1);
-    }
-    bool rhs_prev_inside = OrientationAboutTurn(lhs_prev, intx, lhs_next,
-                                                rhs_prev) == RelativePos::kLeft;
-    bool rhs_next_inside = OrientationAboutTurn(lhs_prev, intx, lhs_next,
-                                                rhs_next) == RelativePos::kLeft;
+
     if (rhs_prev_inside == rhs_next_inside) {
       bool rhs_is_ccw = OrientationAboutTurn(lhs_prev, intx, rhs_next,
                                              rhs_prev) == RelativePos::kLeft;
@@ -627,6 +654,20 @@ std::list<TraversalVertex> MergeVerticesAndIntersections(
                                                        other_polygon, lhs, rhs);
       });
 
+  // Given a segment/parameter pair and the number of points in the polygon,
+  // returns the index of the polygon vertex coincident to the given
+  // segment/parameter pair, or -1 if there is none.
+  auto coincident_vertex = [](int intx_segment, float intx_param,
+                              int polygon_size) {
+    if (intx_param == 0) {
+      return intx_segment;
+    } else if (intx_param == 1) {
+      return (intx_segment + 1) % polygon_size;
+    } else {
+      return -1;
+    }
+  };
+
   // Note that we can't use std::merge() to perform the merge, because it
   // wouldn't allow us to maintain the intersection traversal indices.
   std::list<TraversalVertex> vertices;
@@ -643,14 +684,26 @@ std::list<TraversalVertex> MergeVerticesAndIntersections(
 
     if (intx_idx >= intersections->size() || polygon_idx < intx_segment ||
         (polygon_idx == intx_segment && intx_param > 0)) {
-      if (intx_idx == 0 ||
-          (*intersections)[intx_idx - 1].segment_idx[sort_idx] != polygon_idx)
+      bool is_previous_intx_at_vertex = false;
+      if (!intersections->empty()) {
+        const auto &previous_intx = intx_idx == 0
+                                        ? intersections->back()
+                                        : (*intersections)[intx_idx - 1];
+        is_previous_intx_at_vertex =
+            polygon_idx ==
+            coincident_vertex(previous_intx.segment_idx[sort_idx],
+                              previous_intx.segment_params[sort_idx],
+                              sort_polygon.Size());
+      }
+      if (!is_previous_intx_at_vertex) {
         vertices.emplace_back(sort_polygon[polygon_idx],
                               VertexType::kNonIntersection);
+      }
       ++polygon_idx;
     } else {
-      bool is_at_vertex = (polygon_idx == intx_segment && intx_param == 0) ||
-                          (polygon_idx == intx_segment + 1 && intx_param == 1);
+      bool is_at_vertex =
+          coincident_vertex(intx_segment, intx_param, sort_polygon.Size()) ==
+          polygon_idx % sort_polygon.Size();
       vertices.emplace_back((*intersections)[intx_idx].position,
                             is_at_vertex ? VertexType::kIntersectionAtVertex
                                          : VertexType::kIntersection);
@@ -664,22 +717,44 @@ std::list<TraversalVertex> MergeVerticesAndIntersections(
 void SnapIntersectionsToVertices(
     int sort_idx, const Polygon &polygon,
     std::vector<IndexedIntersection> *intersections) {
-  constexpr float kEpsilon = std::numeric_limits<float>::epsilon();
-  auto within_epsilon = [](glm::vec2 a, glm::vec2 b) {
-    return std::abs(a.x - b.x) <= std::abs(a.x) * kEpsilon &&
-           std::abs(a.y - b.y) <= std::abs(a.y) * kEpsilon;
-  };
-
   for (auto &intx : *intersections) {
     auto segment = polygon.GetSegment(intx.segment_idx[sort_idx]);
-    if (intx.segment_params[sort_idx] >= 1 - kEpsilon ||
-        within_epsilon(intx.position, segment.to)) {
+    if (intx.segment_params[sort_idx] >= 1 - kSnappingTol ||
+        RelativeErrorWithinSnappingTol(intx.position, segment.to)) {
       intx.segment_params[sort_idx] = 1;
       intx.position = segment.to;
-    } else if (intx.segment_params[sort_idx] <= kEpsilon ||
-               within_epsilon(intx.position, segment.from)) {
+    } else if (intx.segment_params[sort_idx] <= kSnappingTol ||
+               RelativeErrorWithinSnappingTol(intx.position, segment.from)) {
       intx.segment_params[sort_idx] = 0;
       intx.position = segment.from;
+    }
+  }
+}
+
+void SnapMidSegmentIntersections(
+    int sort_index, std::vector<IndexedIntersection> *intersections) {
+  // We don't need the nuance of IndexedIntersection::LessThanWrtPolygon() here,
+  // so we use a simpler sorting method.
+  auto simple_less_than = [&sort_index](const IndexedIntersection &lhs,
+                                        const IndexedIntersection &rhs) {
+    return (lhs.segment_idx[sort_index] < rhs.segment_idx[sort_index]) ||
+           (lhs.segment_idx[sort_index] == rhs.segment_idx[sort_index] &&
+            lhs.segment_params[sort_index] < rhs.segment_params[sort_index]);
+  };
+  std::sort(intersections->begin(), intersections->end(), simple_less_than);
+
+  for (int i = 1; i < intersections->size(); ++i) {
+    const auto &previous_intx = (*intersections)[i - 1];
+    auto &current_intx = (*intersections)[i];
+    if (previous_intx.segment_idx[sort_index] ==
+            current_intx.segment_idx[sort_index] &&
+        previous_intx.segment_params[sort_index] + kSnappingTol >
+            current_intx.segment_params[sort_index] &&
+        RelativeErrorWithinSnappingTol(previous_intx.position,
+                                       current_intx.position)) {
+      current_intx.position = previous_intx.position;
+      current_intx.segment_params[sort_index] =
+          previous_intx.segment_params[sort_index];
     }
   }
 }
@@ -712,6 +787,9 @@ std::vector<IndexedIntersection> GetIntersections(const Polygon &lhs_polygon,
     }
   }
 
+  SnapMidSegmentIntersections(0, &intersections);
+  SnapMidSegmentIntersections(1, &intersections);
+
   SnapIntersectionsToVertices(0, lhs_polygon, &intersections);
   SnapIntersectionsToVertices(1, rhs_polygon, &intersections);
 
@@ -741,8 +819,12 @@ TraversalVertex::Iterator RemoveFromTraversals(
       vertices->erase(std::next(it).BaseCurrent());
       return it;
     } else {
-      return MakeCyclicIterator(vertices->begin(), vertices->end(),
-                                vertices->erase(it.BaseCurrent()));
+      auto after_it = vertices->erase(it.BaseCurrent());
+      if (after_it == vertices->end()) {
+        return MakeCyclicIterator(vertices->begin(), vertices->end());
+      } else {
+        return MakeCyclicIterator(vertices->begin(), vertices->end(), after_it);
+      }
     }
   };
 
@@ -778,8 +860,11 @@ void CorrectTopologyForSpikes(std::list<TraversalVertex> *vertices,
       // We have to erase the vertices individually, because, while they are
       // adjacent w.r.t. the cyclic traversal, they might not be adjacent in the
       // underlying list.
-      RemoveFromTraversals(it1, vertices, other_vertices);
-      RemoveFromTraversals(it2, vertices, other_vertices);
+      // Note that, because we avoid erasing the first element, it2 might be
+      // invalidated by removing it1 -- use the return value of
+      // RemoveFromTraversals instead.
+      auto after_it1 = RemoveFromTraversals(it1, vertices, other_vertices);
+      RemoveFromTraversals(after_it1, vertices, other_vertices);
     }
   }
 }
@@ -928,8 +1013,12 @@ bool FindNextTraversalStart(const TraversalVertex::Iterator &begin,
 }
 
 // Traverses the polygons from the start vertex, tracing the intersection
-// polygon.
-Polygon TraverseLinkedVertexLists(TraversalVertex::Iterator begin) {
+// polygon. max_traversal_size is used as a safety mechanism to prevent an
+// infinite loop in the case of an error, and should be the sum of the sizes of
+// the left- and right-hand vertex lists.
+// This returns absl::nullopt if an error occurs.
+absl::optional<Polygon> TraverseLinkedVertexLists(
+    TraversalVertex::Iterator begin, int max_traversal_size) {
   SLOG(SLOG_BOOLEAN_OPERATION, "Starting Traversal");
   std::vector<glm::vec2> traversal;
   auto append_to_traversal = [&traversal](glm::vec2 v) {
@@ -942,7 +1031,12 @@ Polygon TraverseLinkedVertexLists(TraversalVertex::Iterator begin) {
     if (it != begin && IsUnexpectedTraversalType(it->intx_type)) {
       SLOG(SLOG_BOOLEAN_OPERATION,
            "Encountered unexpected intersection type in traversal");
-      return Polygon();
+      return absl::nullopt;
+    } else if (traversal.size() > max_traversal_size) {
+      SLOG(SLOG_BOOLEAN_OPERATION,
+           "Traversal has exceeded maximum possible size for the given input "
+           "polygons.");
+      return absl::nullopt;
     }
 
     it->visited = true;
@@ -986,7 +1080,7 @@ Polygon TraverseLinkedVertexLists(TraversalVertex::Iterator begin) {
   if (traversal.size() < 3) {
     SLOG(SLOG_BOOLEAN_OPERATION, "Discarding degenerate traversal: $0",
          traversal);
-    return Polygon();
+    return absl::nullopt;
   }
 
   SLOG(SLOG_BOOLEAN_OPERATION, "Completed Traversal: $0", traversal);
@@ -1003,9 +1097,11 @@ absl::optional<glm::vec2> FindPointForContainmentCheck(
   do {
     if (it->type == VertexType::kNonIntersection) {
       return it->position;
-    } else if (IsOverlapToNonOverlapType(it->intx_type)) {
+    } else if (IsOverlapToNonOverlapType(it->intx_type) &&
+               it->position != std::next(it)->position) {
       return .5f * (it->position + std::next(it)->position);
-    } else if (IsNonOverlapToOverlapType(it->intx_type)) {
+    } else if (IsNonOverlapToOverlapType(it->intx_type) &&
+               it->position != std::prev(it)->position) {
       return .5f * (it->position + std::prev(it)->position);
     }
     ++it;
@@ -1022,9 +1118,10 @@ enum class IntersectionResult {
   kCompleteOverlap
 };
 
-IntersectionResult IntersectionHelper(const Polygon &lhs_polygon,
-                                      const Polygon &rhs_polygon,
+IntersectionResult IntersectionHelper(Polygon lhs_polygon, Polygon rhs_polygon,
                                       std::vector<Polygon> *result) {
+  lhs_polygon.RemoveDuplicatePoints();
+  rhs_polygon.RemoveDuplicatePoints();
   SLOG(SLOG_BOOLEAN_OPERATION, "LHS Polygon: $0", lhs_polygon);
   SLOG(SLOG_BOOLEAN_OPERATION, "RHS Polygon: $0", rhs_polygon);
   if (lhs_polygon.Size() < 3 || rhs_polygon.Size() < 3)
@@ -1042,16 +1139,18 @@ IntersectionResult IntersectionHelper(const Polygon &lhs_polygon,
   SLOG(SLOG_BOOLEAN_OPERATION, "RHS Traversal: $0",
        TraversalString(rhs_vertices, lhs_vertices));
 
+  int max_traversal_size = lhs_vertices.size() + rhs_vertices.size();
   bool found_degenerate_traversal = false;
   if (found_intersections) {
     auto begin = MakeCyclicIterator(lhs_vertices.begin(), lhs_vertices.end());
     auto it = begin;
     while (FindNextTraversalStart(begin, &it)) {
-      Polygon traversal = TraverseLinkedVertexLists(it);
-      if (traversal.Empty()) {
-        found_degenerate_traversal = true;
+      absl::optional<Polygon> traversal =
+          TraverseLinkedVertexLists(it, max_traversal_size);
+      if (traversal) {
+        result->emplace_back(std::move(traversal.value()));
       } else {
-        result->emplace_back(std::move(traversal));
+        found_degenerate_traversal = true;
       }
       ++it;
     }

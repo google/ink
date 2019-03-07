@@ -41,8 +41,8 @@ void ColorLinearizer::Initdata() {
 
     for (uint32_t j = 0; j < 3; j++) {
       auto s = tri.Segment(j);
-      pttoseg_.insert(std::pair<uint16_t, uint16_t>(s.idx[0], s.idx[1]));
-      pttoseg_.insert(std::pair<uint16_t, uint16_t>(s.idx[1], s.idx[0]));
+      pttoseg_.insert(std::make_pair(s.idx[0], s.idx[1]));
+      pttoseg_.insert(std::make_pair(s.idx[1], s.idx[0]));
     }
   }
 }
@@ -56,7 +56,7 @@ void ColorLinearizer::LinearizeCombinedVerts() {
 }
 
 void ColorLinearizer::LinearizeAllVerts() {
-  std::vector<uint16_t> ui(mesh_->verts.size());
+  std::vector<Mesh::IndexType> ui(mesh_->verts.size());
   for (size_t i = 0; i < ui.size(); i++) ui[i] = i;
 
   for (int j = 0; j < 2; j++) {
@@ -65,8 +65,9 @@ void ColorLinearizer::LinearizeAllVerts() {
   }
 }
 
-void ColorLinearizer::Pass(std::vector<uint16_t>::iterator from,
-                           std::vector<uint16_t>::iterator to, float amt) {
+void ColorLinearizer::Pass(std::vector<Mesh::IndexType>::iterator from,
+                           std::vector<Mesh::IndexType>::iterator to,
+                           float amt) {
   for (auto ai = from; ai != to; ai++) {
     ASSERT(*ai < mesh_->verts.size());
     auto& pt = mesh_->verts[*ai];

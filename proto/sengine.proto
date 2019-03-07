@@ -16,15 +16,15 @@ syntax = "proto2";
 
 package ink.proto;
 
-option javascript_package = "ink.proto";
-option java_package = "com.google.ink.proto";
-option java_outer_classname = "SEngineProto";
-
 import "ink/proto/animations.proto";
 import "ink/proto/document.proto";
 import "ink/proto/elements.proto";
 import "ink/proto/geometry.proto";
 import "ink/proto/text.proto";
+
+option javascript_package = "ink.proto";
+option java_package = "com.google.ink.proto";
+option java_outer_classname = "SEngineProto";
 
 // If you reorder or delete any fields in this proto, make sure to regenerate
 // prebuild sketchology shared libs.
@@ -171,7 +171,7 @@ message LineSize {
     // useful at default zoom.
     PERCENT_WORLD = 4;
     PERCENT_ZOOM_INDEPENDENT = 5;
-  };
+  }
 
   // When setting size with a SizeType PERCENT_*, the engine may want to choose
   // a size appropriate for web clients (generally desktops/laptops) instead of
@@ -201,7 +201,7 @@ enum BrushType {
   BALLPOINT_IN_PEN_MODE_ELSE_MARKER = 11;
   PENCIL = 12;
   CHARCOAL = 13;
-};
+}
 
 message ToolParams {
   optional ToolType tool = 1;
@@ -223,7 +223,7 @@ message ToolParams {
     // WARNING: This is still under development (b/77467755).
     STROKE_EDITING_ERASER = 10;
     SMART_HIGHLIGHTER_TOOL = 11;
-  };
+  }
 
   optional uint32 rgba = 2;  // not premultiplied
   // Stroke size for LINE, SMART_HIGHLIGHTER_TOOL and STROKE_EDITING_ERASER.
@@ -234,16 +234,15 @@ message ToolParams {
   optional LinearPathAnimation linear_path_animation = 6;
 }
 
-// See ink/engine/settings/flags.h for default values.
 enum Flag {
   UNKNOWN = 0;
   READ_ONLY_MODE = 1;
   ENABLE_PAN_ZOOM = 2;
   ENABLE_ROTATION = 3;
-  // Allows the engine to set ENABLE_PEN_MODE if pen input is detected.
+  // Allows the engine to set ENABLE_PEN_MODE to true if pen input is detected.
   ENABLE_AUTO_PEN_MODE = 4;
-  // Only allows drawing with pen/mouse.  Touch will pan with one finger.
-  // If this is enabled by the engine when ALLOW_PEN_MODE is set, subsequent
+  // Only allows drawing with pen/mouse.  Touch will pan with one finger.  If
+  // this is enabled by the engine when ENABLE_AUTO_PEN_MODE is set, subsequent
   // flag assignments are honored and the engine will never enable the flag for
   // that session.  Flag changes are also dispatched on Host to allow UI to
   // represent the state of this flag, even when the engine changes it.
@@ -278,10 +277,24 @@ enum Flag {
   // without any constraints applied. This flag overrides ENABLE_PAN_ZOOM, and
   // implies !ENABLE_PAN_ZOOM.
   ENABLE_HOST_CAMERA_CONTROL = 15;
-
+  // When this flag is true, the engine will apply a motion blur effect during
+  // panning and zooming, on platforms that support it. True by default.
+  ENABLE_MOTION_BLUR = 16;
+  // When enabled, the edit tool selection box will have handles that allow the
+  // user to resize the selected elements without needing multitouch input (for
+  // example, using a mouse).
+  ENABLE_SELECTION_BOX_HANDLES = 17;
+  // Allow the root renderer to only draw the changed area around the line tool.
+  // This should only be used with a single buffered drawing surface that
+  // preserves its contents between frames, e.g. WebGL with
+  // preserveDrawingBuffer: true;
+  ENABLE_PARTIAL_DRAW = 18;
   // This flag is no longer used.
   reserved 9;
 }
+//     ../engine/settings/flags.h,
+//     ../engine/settings/flags.cc,
+//     ../public/js/embind.cc)
 
 message FlagAssignment {
   optional Flag flag = 1;
@@ -319,7 +332,7 @@ message SInput {
     TOUCH = 2;
     PEN = 3;
     ERASER = 4;
-  };
+  }
   optional InputType type = 1;
   optional uint32 id = 2;
   optional uint32 flags = 3;
@@ -462,25 +475,6 @@ message ImageRect {
   optional string group_uuid = 5;
 }
 
-enum DocumentType {
-  UNKNOWN_DOCUMENT_TYPE = 0;
-  SINGLE_USER_DOCUMENT = 1;
-  PASSTHROUGH_DOCUMENT = 2;
-}
-
-enum StorageType {
-  UNKNOWN_STORAGE_TYPE = 0;
-  IN_MEMORY_STORAGE = 1;
-}
-
-message CreateDocument {
-  optional DocumentType document_type = 1 [default = SINGLE_USER_DOCUMENT];
-  optional StorageType storage_type = 2 [default = IN_MEMORY_STORAGE];
-  optional string storage_path = 3;
-  // If set, load this snapshot after creating the document.
-  optional ink.proto.Snapshot snapshot = 4;
-}
-
 message AddPath {
   optional ink.proto.Path path = 1;
 
@@ -570,3 +564,29 @@ message LayoutSpec {
   optional LayoutStrategy strategy = 1 [default = VERTICAL];
   optional float spacing_world = 2;
 }
+
+message Cursor {
+  enum CursorType {
+    DEFAULT = 0;
+    BRUSH = 1;
+    CROSSHAIR = 2;
+    GRAB = 3;
+    GRABBING = 4;
+    MOVE = 5;
+    RESIZE_EW = 6;
+    RESIZE_NS = 7;
+    RESIZE_NESW = 8;
+    RESIZE_NWSE = 9;
+    TEXT = 10;
+  }
+
+  optional CursorType type = 1;
+  // The color of the brush.  Ignored for non-brush cursor types.
+  optional fixed32 brush_rgba = 2;  // non-premultiplied
+  // The radius of the brush, in screen pixels.  Ignored for non-brush cursor
+  // types.
+  optional float brush_size = 3;
+}
+//     ../engine/input/cursor.h,
+//     ../engine/input/cursor.cc,
+//     ../../../research/ink/web/js/cursor_updater.js)

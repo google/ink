@@ -42,6 +42,19 @@ class IEngineListener : public EventListener<IEngineListener> {
   virtual void FlagChanged(const proto::Flag& which, bool enabled) = 0;
   virtual void LoggingEventFired(
       const ::logs::proto::research::ink::InkEvent& event) = 0;
+  // This event is fired when the engine is changing states between "the camera
+  // is sitting still" and "the camera is being panned or zoomed". The intent
+  // is, for example, to permit a host to turn off "low latency mode" during
+  // camera movement, to prevent tearing.
+  virtual void CameraMovementStateChanged(bool is_moving) = 0;
+
+  // This event indicates whether or not engine execution is currently blocked
+  // by the background thread. While blocked, all commands that change the scene
+  // and all inputs will be ignored, with the exception of undo and redo, which
+  // will instead be queued for execution as soon as possible.
+  // The client should listen for this, and display a "loading spinner" until
+  // the engine is no longer blocked.
+  virtual void BlockingStateChanged(bool is_blocked) = 0;
 };
 
 }  // namespace ink

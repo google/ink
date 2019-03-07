@@ -19,6 +19,7 @@
 #include "ink/engine/colors/colors.h"
 #include "ink/engine/geometry/primitives/matrix_utils.h"
 #include "ink/engine/public/types/uuid.h"
+#include "ink/engine/scene/data/common/mesh_serializer.h"
 #include "ink/engine/scene/data/common/mesh_serializer_provider.h"
 
 namespace ink {
@@ -83,7 +84,7 @@ void SerializedElement::Serialize(const ProcessedElement& processed_element) {
   // (3) Fill in the parts of Element
   const auto& processed_mesh = *processed_element.mesh;
   // Expect that we still have cpu-side data
-  ASSERT(!processed_mesh.idx.empty());
+  ASSERT(processed_mesh.IndexSize() != 0);
 
   Stroke stroke(uuid, processed_mesh.type, processed_mesh.object_matrix);
 
@@ -95,9 +96,7 @@ void SerializedElement::Serialize(const ProcessedElement& processed_element) {
   if (callback_flags.attach_compressed_mesh_data) {
     SerializeShaderTypeToStroke(processed_mesh.type, stroke.MutableProto());
 
-    const bool vertex_colored = (processed_mesh.type == TexturedVertShader ||
-                                 processed_mesh.type == ColoredVertShader);
-    if (!vertex_colored) {
+    if (!mesh_serialization::IsVertexColored(processed_mesh.type)) {
       stroke.MutableProto()->set_abgr(Vec4ToUintABGR(processed_mesh.color));
     }
 

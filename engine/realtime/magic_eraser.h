@@ -20,7 +20,9 @@
 #include <memory>
 #include <unordered_set>
 
+#include "third_party/absl/types/optional.h"
 #include "ink/engine/camera/camera.h"
+#include "ink/engine/input/cursor.h"
 #include "ink/engine/input/tap_reco.h"
 #include "ink/engine/realtime/tool.h"
 #include "ink/engine/scene/frame_state/frame_state.h"
@@ -58,19 +60,20 @@ class MagicEraser : public Tool {
               std::shared_ptr<LayerManager> layer_manager,
               bool only_handle_eraser);
 
+  // ITool
   input::CaptureResult OnInput(const input::InputData& data,
                                const Camera& live_camera) override;
-
-  // ITool
+  absl::optional<input::Cursor> CurrentCursor(
+      const Camera& camera) const override;
   void Draw(const Camera& cam, FrameTimeS draw_time) const override;
   void Enable(bool enabled) override;
-
   inline std::string ToString() const override { return "<MagicEraser>"; }
 
  private:
   void Cancel();
   void Commit();
 
+  absl::optional<glm::vec2> first_world_pos_;
   std::unordered_set<ElementId, ElementIdHasher> intersected_elements_;
   std::shared_ptr<SceneGraph> scene_graph_;
   std::shared_ptr<IDbgHelper> dbg_helper_;

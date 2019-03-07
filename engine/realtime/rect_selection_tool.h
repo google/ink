@@ -19,8 +19,10 @@
 
 #include <memory>
 
+#include "third_party/absl/types/optional.h"
 #include "ink/engine/camera/camera.h"
 #include "ink/engine/geometry/shape/shape.h"
+#include "ink/engine/input/cursor.h"
 #include "ink/engine/input/tap_reco.h"
 #include "ink/engine/realtime/selectors/rect_selector.h"
 #include "ink/engine/realtime/tool.h"
@@ -43,6 +45,8 @@ class RectSelectionTool : public Tool {
   void Draw(const Camera& cam, FrameTimeS draw_time) const override;
   input::CaptureResult OnInput(const input::InputData& data,
                                const Camera& camera) override;
+  absl::optional<input::Cursor> CurrentCursor(
+      const Camera& camera) const override;
   void Enable(bool enabled) override;
 
   inline std::string ToString() const override { return "<RectSelectionTool>"; }

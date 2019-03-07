@@ -23,14 +23,16 @@ LiveRenderer::LiveRenderer(std::shared_ptr<SceneGraph> scene_graph,
                            std::shared_ptr<LayerManager> layer_manager,
                            std::shared_ptr<input::InputDispatch> input_dispatch,
                            std::shared_ptr<WallClockInterface> wall_clock,
-                           std::shared_ptr<PageManager> page_manager)
+                           std::shared_ptr<PageManager> page_manager,
+                           std::shared_ptr<settings::Flags> flags)
     : scene_graph_(std::move(scene_graph)),
       frame_state_(std::move(frame_state)),
       gl_resources_(std::move(gl_resources)),
       layer_manager_(std::move(layer_manager)),
       input_dispatch_(std::move(input_dispatch)),
       wall_clock_(std::move(wall_clock)),
-      page_manager_(std::move(page_manager)) {}
+      page_manager_(std::move(page_manager)),
+      flags_(std::move(flags)) {}
 
 SceneGraphRenderer* LiveRenderer::delegate() const {
   if (!delegate_) {
@@ -39,7 +41,7 @@ SceneGraphRenderer* LiveRenderer::delegate() const {
         SLOG(SLOG_INFO, "Creating buffered renderer.");
         delegate_ = absl::make_unique<TripleBufferedRenderer>(
             frame_state_, gl_resources_, input_dispatch_, scene_graph_,
-            wall_clock_, page_manager_, layer_manager_);
+            wall_clock_, page_manager_, layer_manager_, flags_);
         break;
       case RenderingStrategy::kDirectRenderer:
         SLOG(SLOG_INFO, "Creating direct renderer.");

@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "third_party/absl/strings/substitute.h"
+#include "third_party/absl/types/optional.h"
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/geometry/primitives/segment.h"
 #include "ink/engine/public/types/status.h"
@@ -53,7 +54,9 @@ struct Rect {
   Rect(float x1, float y1, float x2, float y2);
 
   static Rect CreateAtPoint(glm::vec2 center, float width, float height);
-  static Rect CreateAtPoint(glm::vec2 center, glm::vec2 dim);
+  static Rect CreateAtPoint(glm::vec2 center) {
+    return Rect::CreateAtPoint(center, 0, 0);
+  }
 
   glm::vec2 Center() const;
   float Width() const;
@@ -128,6 +131,7 @@ struct Rect {
   // outer.inset(glm::vec2(3,2));
   //        ===> Rect(3,2,7,6)
   Rect Inset(glm::vec2 amount) const;
+  Rect Inset(int amount) const { return Inset({amount, amount}); }
 
   // Returns this, scaled around center() by "amount"
   // Ex: scale(1.0) -> this
@@ -230,11 +234,17 @@ inline void Rect::CheckValid() const { ASSERT(IsValid()); }
 
 std::ostream& operator<<(std::ostream& oss, const Rect& Rect);
 
+using OptRect = absl::optional<Rect>;
+
 namespace util {
 template <>
 Rect Lerpnc(Rect from, Rect to, float amount);
 template <>
 Rect Smoothstep(Rect from, Rect to, float amount);
+
+// If rect and other have values join other to rect, else assign other to rect.
+void AssignOrJoinTo(const OptRect& other, OptRect* rect);
+
 }  // namespace util
 
 }  // namespace ink

@@ -42,13 +42,10 @@ goog.require('ink.HostController');
 goog.require('ink.PressureCooker');
 goog.require('ink.UndoStateChangeEvent');
 goog.require('ink.proto.Border');
-goog.require('ink.proto.ElementBundle');
+goog.require('ink.proto.Cursor');
 goog.require('ink.proto.Flag');
 goog.require('ink.proto.ImageInfo');
 goog.require('ink.proto.LayerState');
-goog.require('ink.proto.PageProperties');
-goog.require('ink.proto.Rect');
-goog.require('ink.proto.SetCallbackFlags');
 goog.require('ink.proto.Snapshot');
 goog.require('ink.proto.ToolParams');
 goog.require('ink.soy.emscripten');
@@ -73,16 +70,21 @@ goog.exportProperty(
  * @param {!ink.ElementListener} elementListener
  * @param {function(number, number, !Uint8ClampedArray)} onImageExportComplete
  * @param {function(string)} requestImage
+ * @param {function(!ink.proto.Cursor)} onSetCursor
  * @param {function(!Uint8Array)} onMutation
  * @param {function(!ink.proto.scene_change.SceneChangeEvent)} onSceneChanged
+ * @param {function(!ink.proto.ToolEvent)} onToolEvent
+ * @param {function(boolean)} onBlockingStateChanged
  * @param {(function(!Event):number)=} eventTimeProvider
+ * @param {?number=} randomNumberSeed
  * @struct
  * @constructor
  * @extends {goog.ui.Component}
  */
 ink.SketchologyEngineWrapper = function(
     engineUrl, useAlpha, elementListener, onImageExportComplete, requestImage,
-    onMutation, onSceneChanged, eventTimeProvider) {
+    onSetCursor, onMutation, onSceneChanged, onToolEvent,
+    onBlockingStateChanged, eventTimeProvider, randomNumberSeed) {
   ink.SketchologyEngineWrapper.base(this, 'constructor');
 
   /** @private {?ink.AsmJsWrapper} */
@@ -104,14 +106,23 @@ ink.SketchologyEngineWrapper = function(
   /** @private {function(number, number, !Uint8ClampedArray)} */
   this.onImageExportComplete_ = onImageExportComplete;
 
+  /** @private {function(!ink.proto.Cursor)} */
+  this.onSetCursor_ = onSetCursor;
+
   /** @private {function(!Uint8Array)} */
   this.onMutation_ = onMutation;
 
   /** @private {function(!ink.proto.scene_change.SceneChangeEvent)} */
   this.onSceneChanged_ = onSceneChanged;
 
+  /** @private {function(!ink.proto.ToolEvent)} */
+  this.onToolEvent_ = onToolEvent;
+
   /** @private {function(string)} */
   this.requestImage_ = requestImage;
+
+  /** @private {function(boolean)} */
+  this.onBlockingStateChanged_ = onBlockingStateChanged;
 
   // default document bounds
   this.pageLeft_ = 0;
@@ -134,6 +145,14 @@ ink.SketchologyEngineWrapper = function(
 
   /** @private {function(!Event):number}  */
   this.eventTimeProvider_ = eventTimeProvider || ((ev) => ev.timeStamp / 1000);
+
+  // 52 bit random number to use as a seed. Note that only ~52 bit integers can
+  // be represented exactly in JS so we can't actually generate a random integer
+  // for all possible 64 bit numbers here, but 52 bits should be sufficient
+  // here.
+  /** @private @const {number} */
+  this.randomNumberSeed_ =
+      randomNumberSeed || Math.floor(Math.random() * Math.pow(2, 52));
 
   /** @private {?Module.MouseIds} */
   this.pressedMouseButton_ = null;
@@ -174,15 +193,17 @@ ink.SketchologyEngineWrapper = function(
    * the compositor to handle it for us.
    *
    * @private {boolean}
-   * */
+   */
   this.isSingleBuffered_ = false;
 
   /**
-   * WebGL fence for querying command queue status.
-   * @type {?WebGLSync}
-   * @private
+   * This variable allows the embedder to disable single-buffered rendering
+   * independent of the capabilities established during initialization. The
+   * motivating use case is the prevention of "tearing" artifacts in the GL
+   * surface during camera movement.
+   * @private {boolean}
    */
-  this.fence_ = null;
+  this.singleBufferedEnabled_ = true;
 };
 goog.inherits(ink.SketchologyEngineWrapper, goog.ui.Component);
 // BEGIN-GOOGLE-INTERNAL
@@ -313,6 +334,28 @@ ink.SketchologyEngineWrapper.prototype.handleGLContextLost_ = function() {
 
 
 /**
+ * Sets the Ink canvas to the appropriate orientation for the current screen
+ * orientation, taking into account the singleBufferedEnabled_ setting.
+ * @private
+ */
+ink.SketchologyEngineWrapper.prototype.setTransformForCurrentOrientation_ =
+    function() {
+  let rotation = screen.orientation.angle;
+  if (!this.singleBufferedEnabled_) {
+    // If single buffering is currently disabled, we add a non-user-visible
+    // rotation to the canvas, which is enough to demote the surface to a
+    // browser-composited one.
+    rotation += .001;
+  }
+  if (Math.abs(rotation % 360) == 0) {
+    this.getCanvas_().style.transform = '';
+  } else {
+    this.getCanvas_().style.transform = `rotateZ(${rotation}deg)`;
+  }
+};
+
+
+/**
  * Initializes WebGL in Emscripten and creates the SEngine object.
  */
 ink.SketchologyEngineWrapper.prototype.initGl = function() {
@@ -326,29 +369,46 @@ ink.SketchologyEngineWrapper.prototype.initGl = function() {
   this.resizeCanvasToMatchDisplaySize_();
 
   goog.global['Module']['canvas'] = canvas;
+
+  const attribs = {
+    'alpha': this.useAlpha_,
+    'antialias': true,
+  };
+  // Only enable lowLatency for ChromeOS 71+.  The origin trial
+  // activates on Chrome 70 but doesn't work: crbug/908664.  Low
+  // latency rendering isn't supported on non-ChromeOS platforms.
+  if (goog.labs.userAgent.platform.isChromeOS() &&
+      goog.labs.userAgent.browser.isVersionOrHigher('71') &&
+      ink.SketchologyEngineWrapper.supportsLowLatency_()) {
+    if (this.useAlpha_) {
+      console.log(`Low latency rendering not supported with useAlpha: true`);
+    } else {
+      attribs['lowLatency'] = true;
+      // If low latency is enabled, enable preserveDrawingBuffer so we can do
+      // partial updates, and disable antialiasing due to crbug/919909.
+      //
+      // We'll do antialiasing in an MSAA-enabled framebuffer instead.
+      attribs['preserveDrawingBuffer'] = true;
+      attribs['antialias'] = false;
+    }
+  }
   const gl = /** @type {?WebGLRenderingContext} */ (
       goog.global['Browser']['createContext'](
-          canvas, true /* useWebGL */, true /* setInModule */, {
-            'alpha': this.useAlpha_,
-            'antialias': true,
-            // Only enable lowLatency for ChromeOS 71+.  The origin trial
-            // activates on Chrome 70 but doesn't work: crbug/908664.  Low
-            // latency rendering isn't supported on non-ChromeOS platforms.
-            'lowLatency': goog.labs.userAgent.platform.isChromeOS() &&
-                goog.labs.userAgent.browser.isVersionOrHigher('71'),
-          }));
+          canvas, true /* useWebGL */, true /* setInModule */, attribs));
   if (!gl) {
     this.handleGLContextLost_();
     return;
   }
 
-  // lowLatency: true implies WebGL2 as the lowLatency attribute is only
-  // supported in Chrome 70 and newer, which also all support WebGL2.
+  this.drawTimer_.setDrawFunc(() => this.draw_());
+
   this.isSingleBuffered_ = !!gl.getContextAttributes()['lowLatency'];
-  this.drawTimer_.listen(
-      ink.DrawTimer.EventType.DRAW,
-      goog.bind(
-          this.isSingleBuffered_ ? this.checkFenceAndDraw_ : this.draw_, this));
+  if (this.isSingleBuffered_) {
+    // lowLatency: true implies WebGL2 as the lowLatency attribute is only
+    // supported in Chrome 70 and newer, which also all support WebGL2.
+    this.drawTimer_.enableFenceCheckBeforeDraw(
+        /** @type {!WebGL2RenderingContext} */ (gl));
+  }
 
   gl.clearColor(1.0, 1.0, 1.0, 1.0);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
@@ -366,16 +426,16 @@ ink.SketchologyEngineWrapper.prototype.initGl = function() {
       },  // We only support the pen mode enabled flag change handler.
       goog.bind(this.onUndoRedoStateChanged_, this),
       goog.bind(this.onSequencePointReached_, this),
-      this.requestImage_,   // Provided in constructor
-      this.onMutation_,     // Provided in constructor
-      this.onSceneChanged_  // Provided in constructor
+      this.requestImage_,    // Provided in constructor
+      this.onSetCursor_,     // Provided in constructor
+      this.onMutation_,      // Provided in constructor
+      this.onSceneChanged_,  // Provided in constructor
+      this.onToolEvent_,     // Provided in constructor
+      (isMoving) => {        // onCameraMovingStateChange
+        this.setSingleBufferedEnabled(!isMoving);
+      },
+      this.onBlockingStateChanged_  // Provided in constructor
   );
-
-  // 52 bit random number to use as a seed. Note that only ~52 bit integers can
-  // be represented exactly in JS so we can't actually generate a random integer
-  // for all possible 64 bit numbers here, but 52 bits should be sufficient
-  // here.
-  var randomSeed = Math.floor(Math.random() * Math.pow(2, 52));
 
   var viewport = this.makeViewport_();
   try {
@@ -383,7 +443,8 @@ ink.SketchologyEngineWrapper.prototype.initGl = function() {
      * @type {?Object}
      * @private
      */
-    this.engine_ = Module['makeSEngine'](hostController, viewport, randomSeed);
+    this.engine_ =
+        Module['makeSEngine'](hostController, viewport, this.randomNumberSeed_);
   } finally {
     viewport['delete']();
   }
@@ -395,9 +456,9 @@ ink.SketchologyEngineWrapper.prototype.initGl = function() {
       this.getElementStrict(), goog.bind(this.handleResize_, this));
 
   if (this.isSingleBuffered_) {
+    this.assignFlag(ink.proto.Flag.ENABLE_PARTIAL_DRAW, true);
     const rotationHandler = () => {
-      const reverse = 360 - screen.orientation.angle;
-      canvas.style.transform = `rotateZ(${reverse}deg)`;
+      this.setTransformForCurrentOrientation_();
       this.handleResize_(
           this.getElementStrict(), goog.style.getSize(this.getElementStrict()),
           goog.dom.getPixelRatio());
@@ -454,6 +515,40 @@ ink.SketchologyEngineWrapper.prototype.initGl = function() {
 
 
 /**
+ * @private
+ * @return {boolean} true if the device supports lowLatency canvas attribute
+ */
+ink.SketchologyEngineWrapper.supportsLowLatency_ = function() {
+  const canvas =
+      /** @type {!HTMLCanvasElement} */ (document.createElement('canvas'));
+  document.body.appendChild(canvas);
+  try {
+    const gl =
+        /** @type {!WebGLRenderingContext} */ (
+            canvas.getContext('webgl', {'lowLatency': true}));
+    return gl && !!gl.getContextAttributes()['lowLatency'];
+  } finally {
+    canvas.remove();
+  }
+};
+
+
+/**
+ * @param {boolean} enabled True to enable single-buffered rendering (if
+ *     supported by the current platform and rotation); false to disable
+ *     single-buffered rendering.
+ */
+ink.SketchologyEngineWrapper.prototype.setSingleBufferedEnabled = function(
+    enabled) {
+  this.singleBufferedEnabled_ = enabled;
+  if (this.isSingleBuffered_) {
+    // Only muck with transform when single-buffered.
+    this.setTransformForCurrentOrientation_();
+  }
+};
+
+
+/**
  * @return {!Object} C++ viewport proto object.
  * @private
  */
@@ -479,7 +574,7 @@ ink.SketchologyEngineWrapper.prototype.makeViewport_ = function() {
   // Reverse the rotation applied in the rotation handler, if the handler is
   // active.
   viewport['screen_rotation'] =
-      this.isSingleBuffered_ ? 360 - screen.orientation.angle : 0;
+      this.isSingleBuffered_ ? screen.orientation.angle % 360 : 0;
   return /** @type {!Object} */ (viewport);
 };
 
@@ -571,6 +666,14 @@ ink.SketchologyEngineWrapper.prototype.addImageData = function(
       imageInfoCProto['delete']();
     }
   }
+};
+
+
+/**
+ * @param {string} uri
+ */
+ink.SketchologyEngineWrapper.prototype.rejectTextureUri = function(uri) {
+  this.engine_['rejectTextureUri'](uri);
 };
 
 
@@ -694,31 +797,6 @@ ink.SketchologyEngineWrapper.prototype.clearGrid = function() {
 
 
 /**
- * Check if the WebGLSync fence has been signaled before drawing.
- *
- * Note this only works with a WebGL2 rendering context.  It's only useful if
- * rendering is single-buffered, and it's use with the draw timer is guarded by
- * a check for the lowLatency: true canvas attribute, see the initGl method.
- * That attribute is only supported in browsers that also support WebGL2.
- *
- * @private
- */
-ink.SketchologyEngineWrapper.prototype.checkFenceAndDraw_ = function() {
-  const gl = /** @type {!WebGL2RenderingContext} */ (Module['ctx']);
-  if (this.fence_ &&
-      gl.getSyncParameter(this.fence_, gl.SYNC_STATUS) == gl.UNSIGNALED) {
-    // WebGL command queue hasn't caught up with the last draw, skip a frame.
-    return;
-  } else {
-    this.fence_ = null;
-  }
-
-  this.draw_();
-  this.fence_ = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
-};
-
-
-/**
  * Triggers a render of the canvas.
  * @private
  */
@@ -746,10 +824,10 @@ ink.SketchologyEngineWrapper.prototype.fixPoint_ = function(x, y) {
     const angle = screen.orientation.angle;
     const canvas = this.getCanvas_();
     if (angle == 90 || angle == 180) {
-      pos.x = canvas.width - pos.x;
+      pos.y = canvas.height - pos.y;
     }
     if (angle == 180 || angle == 270) {
-      pos.y = canvas.height - pos.y;
+      pos.x = canvas.width - pos.x;
     }
     if (angle % 180 == 90) {
       [pos.x, pos.y] = [pos.y, pos.x];
@@ -800,10 +878,12 @@ ink.SketchologyEngineWrapper.prototype.dispatch = function(browserEvt) {
           this.performMouseDownDispatch_(flags, pointerEvt);
           break;
         case goog.events.EventType.POINTERUP:
+        case goog.events.EventType.POINTERCANCEL:
           this.performMouseUpDispatch_(flags, pointerEvt);
           break;
         case goog.events.EventType.POINTERMOVE:
           this.performMouseMoveDispatch_(flags, pointerEvt);
+          break;
       }
     }
   } else if (goog.global['TouchEvent'] && browserEvt instanceof TouchEvent) {
@@ -1309,6 +1389,21 @@ ink.SketchologyEngineWrapper.prototype.removeAll = function() {
 };
 
 
+/** Removes all currently-selected elements from the document (if any). */
+ink.SketchologyEngineWrapper.prototype.removeSelected = function() {
+  this.engine_['removeSelectedElements']();
+};
+
+
+/**
+ * Removes the specified element from the document.
+ * @param {string} elementUuid
+ */
+ink.SketchologyEngineWrapper.prototype.removeElement = function(elementUuid) {
+  this.engine_['removeElement'](elementUuid);
+};
+
+
 /**
  * Sets or unsets readOnly on the canvas.
  * @param {boolean} readOnly
@@ -1325,25 +1420,6 @@ ink.SketchologyEngineWrapper.prototype.setReadOnly = function(readOnly) {
  */
 ink.SketchologyEngineWrapper.prototype.assignFlag = function(flag, enable) {
   this.engine_['assignFlag'](Module.Flag['values'][flag], !!enable);
-};
-
-
-/**
- * Set callback flags for what data is attached to element callbacks.
- * @param {!ink.proto.SetCallbackFlags} setCallbackFlags
- */
-ink.SketchologyEngineWrapper.prototype.setCallbackFlags = function(
-    setCallbackFlags) {
-  var setCallbackFlagsCProto;
-  try {
-    setCallbackFlagsCProto =
-        new (this.asmJs_.cFactory('SetCallbackFlagsProto'))();
-    setCallbackFlagsCProto['initFromJs'](
-        setCallbackFlags, this.wireSerializer_);
-    this.engine_['setCallbackFlags'](setCallbackFlagsCProto);
-  } finally {
-    setCallbackFlagsCProto['delete']();
-  }
 };
 
 
@@ -1404,7 +1480,7 @@ ink.SketchologyEngineWrapper.prototype.exportPng = function(exportProto) {
  * Simple undo.
  */
 ink.SketchologyEngineWrapper.prototype.undo = function() {
-  this.engine_['document']()['Undo']();
+  this.engine_['undo']();
 };
 
 
@@ -1412,7 +1488,7 @@ ink.SketchologyEngineWrapper.prototype.undo = function() {
  * Simple redo.
  */
 ink.SketchologyEngineWrapper.prototype.redo = function() {
-  this.engine_['document']()['Redo']();
+  this.engine_['redo']();
 };
 
 
@@ -1589,64 +1665,6 @@ ink.SketchologyEngineWrapper.prototype.getRawEngineObject = function() {
 
 
 /**
- * Generates a snapshot based on a brix document.
- * @param {!ink.util.RealtimeDocument} brixDoc
- * @param {function(!ink.proto.Snapshot)} callback
- */
-ink.SketchologyEngineWrapper.prototype.convertBrixDocumentToSnapshot = function(
-    brixDoc, callback) {
-  var snapshot = new ink.proto.Snapshot();
-  var model = brixDoc.getModel();
-  var root = model.getRoot();
-  var pages = root.get('pages');
-  var page = pages.get(0);
-  if (!page) {
-    throw Error('unable to get page from brix document.');
-  }
-  var elements = page.get('elements').asArray();
-  for (var i = 0; i < elements.length; i++) {
-    try {
-      var cElementBundleProto =
-          new (this.asmJs_.cFactory('ElementBundleProto'));
-      var element = elements[i];
-      if (!Module['brixElementToElementBundle'](
-              element.get('id'), element.get('proto'), element.get('transform'),
-              cElementBundleProto)) {
-        throw Error('Unable to convert brix element to element bundle.');
-      }
-      var jsElementBundleProto = new ink.proto.ElementBundle();
-      cElementBundleProto['copyToJs'](
-          jsElementBundleProto, this.wireSerializer_);
-      snapshot.addElement(jsElementBundleProto);
-    } finally {
-      cElementBundleProto['delete']();
-    }
-  }
-  var pageProperties = new ink.proto.PageProperties();
-  var rect = new ink.proto.Rect();
-  var brixBounds = root.get('bounds');
-  rect.setXhigh(brixBounds.xhigh || 0);
-  rect.setXlow(brixBounds.xlow || 0);
-  rect.setYhigh(brixBounds.yhigh || 0);
-  rect.setYlow(brixBounds.ylow || 0);
-  pageProperties.setBounds(rect);
-  snapshot.setPageProperties(pageProperties);
-  try {
-    var cSnapshotProto = new (this.asmJs_.cFactory('SnapshotProto'))();
-    cSnapshotProto['initFromJs'](snapshot, this.wireSerializer_);
-    Module['SetFingerprint'](cSnapshotProto);
-    snapshot = new ink.proto.Snapshot();
-    cSnapshotProto['copyToJs'](snapshot, this.wireSerializer_);
-  } finally {
-    cSnapshotProto['delete']();
-  }
-  setTimeout(() => {
-    callback(snapshot);
-  });
-};
-
-
-/**
  * Calls the given callback once all previous asynchronous engine operations
  * have been applied.
  * @param {!Function} callback
@@ -1677,30 +1695,36 @@ ink.SketchologyEngineWrapper.prototype.onSequencePointReached_ = function(id) {
 
 /**
  * Adds a sticker.
- * @param {!Uint8ClampedArray} data
- * @param {!goog.math.Size} size
  * @param {!ink.Box} box
+ * @param {string} assetUri
+ * @return {string} The new element UUID.
  */
-ink.SketchologyEngineWrapper.prototype.addSticker = function(data, size, box) {
+ink.SketchologyEngineWrapper.prototype.addSticker = function(box, assetUri) {
+  let imageRectCProto;
   try {
-    var uri = 'sketchology://sticker_' + this.uriCounter_;
-    this.uriCounter_++;
-    this.addImageData(data, size, uri, ink.proto.ImageInfo.AssetType.STICKER);
-
-    var imageRectCProto = new (this.asmJs_.cFactory('ImageRectProto'))();
-    var rect = imageRectCProto['mutable_rect']();
+    imageRectCProto = new (this.asmJs_.cFactory('ImageRectProto'))();
+    const rect = imageRectCProto['mutable_rect']();
     rect['xlow'] = box.left;
     rect['xhigh'] = box.right;
     rect['ylow'] = box.bottom;
     rect['yhigh'] = box.top;
-    imageRectCProto['bitmap_uri'] = uri;
+    imageRectCProto['bitmap_uri'] = assetUri;
     imageRectCProto['mutable_attributes']()['is_sticker'] = true;
-    this.engine_['addImageRect'](imageRectCProto);
+    return this.engine_['addImageRect'](imageRectCProto);
   } finally {
     if (imageRectCProto) {
       imageRectCProto['delete']();
     }
   }
+};
+
+
+/**
+ * Switches to the edit tool and selects the specified element.
+ * @param {string} elementUuid
+ */
+ink.SketchologyEngineWrapper.prototype.selectElement = function(elementUuid) {
+  this.engine_['selectElement'](elementUuid);
 };
 
 

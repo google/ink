@@ -77,9 +77,9 @@ void DBRenderTarget::DrawFront(const Camera& cam,
   timer->End();
 }
 
-void DBRenderTarget::BlitBackToFront() {
+void DBRenderTarget::BlitBackToFront(absl::optional<Rect> area) {
   fb_blit_timer_.Begin();
-  back_.Blit(&front_);
+  back_.Blit(&front_, area);
   fb_blit_timer_.End();
 }
 

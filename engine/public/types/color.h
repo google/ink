@@ -21,6 +21,7 @@
 #include <string>
 
 #include "third_party/glm/glm/glm.hpp"
+#include "ink/engine/colors/colors.h"
 
 namespace ink {
 
@@ -38,10 +39,10 @@ class Color {
   // Returns a new color that is *this with new_alpha.
   Color WithAlpha(float new_alpha) const;
 
-  // Create a color from various formats.
   Color();  // Defaults to black.
   bool operator==(const Color& other) const;
 
+  // Create a color from various formats.
   static Color FromNonPremultipliedRGBA(glm::vec4 rgba_non_premultiplied);
   static Color FromNonPremultipliedRGBA(uint32_t rgba_non_premultiplied);
   static Color FromNonPremultiplied(uint8_t red, uint8_t green, uint8_t blue,
@@ -60,29 +61,33 @@ class Color {
   static const Color kBlue;
   static const Color kGreen;
   static const Color kTransparent;
+  static const Color kGoogleBlue;
+  static const Color kGoogleRed;
+  static const Color kGoogleYellow;
+  static const Color kGoogleGreen;
 
   // Given a number, choose an arbitrary color stable to that number.
   static Color SeededColor(uint32_t seed);
 
   inline uint8_t RedByteNonPremultiplied() const {
-    return static_cast<uint8_t>((rgba_non_premultiplied_ >> 24) & 0xFF);
+    return SRgbFloatToByte(rgba_non_premultiplied_.r);
   }
   inline uint8_t GreenByteNonPremultiplied() const {
-    return static_cast<uint8_t>((rgba_non_premultiplied_ >> 16) & 0xFF);
+    return SRgbFloatToByte(rgba_non_premultiplied_.g);
   }
   inline uint8_t BlueByteNonPremultiplied() const {
-    return static_cast<uint8_t>((rgba_non_premultiplied_ >> 8) & 0xFF);
+    return SRgbFloatToByte(rgba_non_premultiplied_.b);
   }
   inline uint8_t AlphaByte() const {
-    return static_cast<uint8_t>(rgba_non_premultiplied_ & 0xFF);
+    return SRgbFloatToByte(rgba_non_premultiplied_.a);
   }
 
   std::string ToString() const;
   friend std::ostream& operator<<(std::ostream& oss, const Color& color);
 
  private:
-  explicit Color(uint32_t rgba_non_premultiplied);
-  uint32_t rgba_non_premultiplied_;
+  explicit Color(glm::vec4 rgba_non_premultiplied);
+  glm::vec4 rgba_non_premultiplied_{0};
 };
 
 }  // namespace ink

@@ -33,9 +33,8 @@ namespace ink {
 
 namespace mesh_serialization {
 inline bool IsVertexColored(ShaderType shader_type) {
-  // Why do we save per-vertex colors for textured meshes?
-  // I'm just copying OpenCTMSerializer's historical behavior here.
-  return shader_type == TexturedVertShader || shader_type == ColoredVertShader;
+  return shader_type == ShaderType::ColoredVertShader ||
+         shader_type == ShaderType::TexturedVertShader;
 }
 }  // namespace mesh_serialization
 

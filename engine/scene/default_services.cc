@@ -19,12 +19,14 @@
 #include "ink/engine/camera_controller/camera_controller.h"
 #include "ink/engine/debug_view/debug_view.h"
 #include "ink/engine/geometry/spatial/sticker_spatial_index_factory.h"
+#include "ink/engine/input/cursor_manager.h"
 #include "ink/engine/input/input_dispatch.h"
 #include "ink/engine/input/input_modeler.h"
 #include "ink/engine/input/input_receiver.h"
 #include "ink/engine/input/physics_input_modeler.h"
 #include "ink/engine/input/prediction/input_predictor.h"
 #include "ink/engine/input/prediction/repeat_predictor.h"
+#include "ink/engine/processing/blocker_manager.h"
 #include "ink/engine/processing/runner/service_definition.h"
 #include "ink/engine/public/host/ielement_listener.h"
 #include "ink/engine/public/host/ipage_properties_listener.h"
@@ -84,6 +86,7 @@ std::unique_ptr<service::DefinitionList> DefaultServiceDefinitions() {
   definitions->DefineService<PageBounds>();
   definitions->DefineService<settings::Flags>();
   definitions->DefineService<input::InputDispatch>();
+  definitions->DefineService<input::CursorManager>();
   definitions->DefineService<Camera>();
   definitions->DefineService<CameraController>();
   definitions->DefineService<CameraConstraints>();
@@ -116,7 +119,7 @@ std::unique_ptr<service::DefinitionList> DefaultServiceDefinitions() {
   definitions->DefineService<input::InputReceiver>();
   definitions->DefineService<PolyStore>();
   definitions->DefineService<ImageExporter, DefaultImageExporter>();
-
+  definitions->DefineService<BlockerManager>();
   definitions->DefineService<LiveRenderer>();
 
   definitions->DefineService<IDbgHelper, NoopDbgHelper>();

@@ -21,6 +21,7 @@
 #include <memory>
 #include <vector>
 
+#include "third_party/absl/types/variant.h"
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/geometry/mesh/shader_type.h"
 #include "ink/engine/geometry/mesh/vertex.h"
@@ -107,13 +108,24 @@ struct Mesh {
   // An array of indices into the 'verts' vector. If idx.size() > 0, then it
   // defines the size of the mesh and the order of the vertices in the
   // mesh. Vertices may be reused (as in a rectangle or triangle strip).
-  std::vector<uint16_t> idx;
+  using IndexType = uint32_t;
+  std::vector<IndexType> idx;
+
+  // The number of elements in this Mesh's index.
+  size_t IndexSize() const;
+
+  // The index element at the given index position.
+  uint32_t IndexAt(size_t n) const;
+
+  // Copies this mesh's index into a new vector. Check fails if the index
+  // doesn't fit into uint16_t.
+  std::vector<uint16_t> Index16() const;
 
   // Index of vertices which are combined due to their spatial proximity.
   // Used primarily by the ColorLinearizer and is important mostly for the
   // watercolor brush.
   //
-  std::vector<uint16_t> combined_idx;
+  std::vector<IndexType> combined_idx;
 
   // The texture used to display all of the triangles in the mesh. The exact
   // texture coordinates are found in the verts.
@@ -155,7 +167,7 @@ struct Mesh {
   // Returns the number of triangles in the mesh.
   int NumberOfTriangles() const {
     ASSERT(idx.size() % 3 == 0);
-    return idx.size() / 3;
+    return static_cast<int>(idx.size() / 3);
   }
 
   // Returns a const reference to the vertex that corresponds to the
@@ -189,11 +201,13 @@ struct Mesh {
   // NOTE: This will create a new TextureInfo and backend_vert_data will be
   // reset and will not take ownership of other.backend_vert_data.
   Mesh& operator=(const Mesh& other);
+
+ private:
+  bool Has16BitIndex() const;
 };
 
 struct OptimizedMesh {
   const ShaderType type;
-  std::vector<uint16_t> idx;
   PackedVertList verts;
   std::unique_ptr<TextureInfo> texture;
 
@@ -231,7 +245,9 @@ struct OptimizedMesh {
   // too large or too small may result in data loss during vertex packing.
   OptimizedMesh(ShaderType type, const Mesh& mesh, Rect envelope);
 
+  // Note that the backend_vert_data is not copied.
   OptimizedMesh(const OptimizedMesh& other);
+
   ~OptimizedMesh();
 
   void Validate() const;
@@ -242,12 +258,28 @@ struct OptimizedMesh {
 
   Mesh ToMesh() const;
 
+  // The number of elements in this OptimizedMesh's index.
+  size_t IndexSize() const;
+
+  // The index element at the given index position.
+  uint32_t IndexAt(size_t n) const;
+
   static VertFormat VertexFormat(ShaderType shader_type);
 
   // Convenience method to retrieve this mesh's current world bounds.
   Rect WorldBounds() const;
 
+  // Copies this mesh's index into a new vector. Check fails if the index
+  // doesn't fit into uint16_t.
+  std::vector<uint16_t> Index16() const;
+
  private:
+  bool Has16BitIndex() const {
+    return absl::holds_alternative<std::vector<uint16_t>>(idx_);
+  }
+
+  absl::variant<std::vector<uint16_t>, std::vector<uint32_t>> idx_;
+
   OptimizedMesh& operator=(const OptimizedMesh& other) = delete;
 };
 

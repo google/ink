@@ -30,28 +30,24 @@ namespace ink {
 
 class IndexedVBO {
  public:
-  template <typename T>
+  template <typename VertexType>
   IndexedVBO(ion::gfx::GraphicsManagerPtr gl,
-             const std::vector<uint16_t>& indices, const std::vector<T>& verts,
-             GLenum usage)
+             const std::vector<uint16_t>& indices,
+             const std::vector<VertexType>& verts, GLenum usage)
       : index_vbo_(gl, indices, usage, GL_ELEMENT_ARRAY_BUFFER),
         vertex_vbo_(gl, verts, usage, GL_ARRAY_BUFFER) {
     ASSERT(*std::max_element(indices.begin(), indices.end()) < verts.size());
   }
 
-  IndexedVBO(const ion::gfx::GraphicsManagerPtr& gl,
-             size_t num_indices_capacity, size_t vertex_capacity_bytes,
-             GLenum usage)
-      : index_vbo_(gl, num_indices_capacity * sizeof(uint16_t), usage,
-                   GL_ELEMENT_ARRAY_BUFFER),
-        vertex_vbo_(gl, vertex_capacity_bytes, usage, GL_ARRAY_BUFFER) {}
-
   // Disallow copy and assign.
   IndexedVBO(const IndexedVBO&) = delete;
   IndexedVBO& operator=(const IndexedVBO&) = delete;
+  // But allow move and move assignment.
+  IndexedVBO(IndexedVBO&&) = default;
+  IndexedVBO& operator=(IndexedVBO&&) = default;
 
-  void Bind();
-  void Unbind();
+  void Bind() const;
+  void Unbind() const;
 
   // Sets indices in indexVBO_ and elements in vertexVBO_ by appending all
   // elements beyond current size of each VBO.  VBOs capacity will grow as
@@ -62,25 +58,25 @@ class IndexedVBO {
   // If there is insufficient capacity and indexedVBO_/elementsVBO_ must be
   // grown, the indices/elements that were already in the VBOs need to be
   // rebuffered.
-  template <typename T>
+  template <typename VertexType>
   void SetData(const std::vector<uint16_t>& indices,
-               const std::vector<T>& elements) {
+               const std::vector<VertexType>& elements) {
     index_vbo_.SetData(indices);
     vertex_vbo_.SetData(elements);
     ASSERT(*std::max_element(indices.begin(), indices.end()) <
-           vertex_vbo_.GetTypedSize<T>());
+           vertex_vbo_.GetTypedSize<VertexType>());
   }
 
-  VBO* GetIndices();
-  VBO* GetVertices();
+  const VBO* GetIndices() const;
+  const VBO* GetVertices() const;
 
-  // Returns the number of indices stored (in uint16_t, not bytes)
-  size_t GetNumIndices() { return index_vbo_.GetTypedSize<uint16_t>(); }
+  // Returns the number of indices if each index has size = sizeof(IndexType)
+  size_t GetNumIndices() const { return index_vbo_.GetTypedSize<uint16_t>(); }
 
-  // Returns the number of vertices if each vertex has size = sizeof(T)
-  template <typename T>
-  size_t GetNumVertices() {
-    return vertex_vbo_.GetTypedSize<T>();
+  // Returns the number of vertices if each vertex has size = sizeof(VertexType)
+  template <typename VertexType>
+  size_t GetNumVertices() const {
+    return vertex_vbo_.GetTypedSize<VertexType>();
   }
 
   void RemoveAll() {

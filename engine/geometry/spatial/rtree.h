@@ -23,7 +23,9 @@
 
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/types/optional.h"
+#include "third_party/absl/types/variant.h"
 #include "ink/engine/geometry/algorithms/intersect.h"
+#include "ink/engine/geometry/algorithms/transform.h"
 #include "ink/engine/geometry/primitives/rect.h"
 #include "ink/engine/util/dbg/errors.h"
 
@@ -119,7 +121,20 @@ class RTree {
   // empty, returns (0, 0)->(0, 0).
   Rect Bounds() const { return root_->Bounds(); }
 
+  // Returns true if this rtree intersects the passed in rtree holding elements
+  // of type U. Intersetion means that the elements in the rtrees would
+  // intersect.
+  // The following must be defined:
+  //   geometry::Intersects(const DataType&, const U&) -> bool
+  //   geometry::Transform(const DataType&, glm::mat4) -> DataType
+  //   geometry::Envelope(const DataType&) -> Rect
+  template <typename U>
+  bool Intersects(const RTree<U> &other, const glm::mat4 &this_to_other) const;
+
  private:
+  class Node;
+  using NodePtrList = std::vector<std::unique_ptr<Node>>;
+
   class Node {
    public:
     // Constructs an empty branch node at the given level.
@@ -148,9 +163,15 @@ class RTree {
 
     int Level() const { return level_; }
     const Rect &Bounds() const { return bounds_; }
-    const absl::optional<DataType> &Data() const { return data_; }
-    const std::vector<std::unique_ptr<Node>> &Children() const {
-      return children_;
+    const DataType &Data() const {
+      ASSERT(level_ == 0 &&
+             absl::holds_alternative<DataType>(data_or_children_));
+      return absl::get<DataType>(data_or_children_);
+    }
+    const NodePtrList &Children() const {
+      ASSERT(level_ != 0 &&
+             absl::holds_alternative<NodePtrList>(data_or_children_));
+      return absl::get<NodePtrList>(data_or_children_);
     }
     Node *Parent() const { return parent_; }
 
@@ -167,12 +188,12 @@ class RTree {
     // The MBR of the node. For leaf nodes, this is the MBR of its data. For
     // branch nodes, this is the MBR of its children.
     Rect bounds_;
-    // The data element of the node. Only leaf nodes will have a value.
-    absl::optional<DataType> data_;
     // The parent of this node. The root's parent will always be nullptr.
     Node *parent_;
-    // The children of this node. Only branch nodes will have children.
-    std::vector<std::unique_ptr<Node>> children_;
+
+    // The data element or children of this node. Leaf nodes will always have
+    // data and no children. Branch nodes will always have children and no data.
+    absl::variant<DataType, NodePtrList> data_or_children_;
   };
 
   enum class SearchBehavior { kFindOne, kFindAll };
@@ -197,7 +218,7 @@ class RTree {
   // (https://archive.org/details/nasa_techdoc_19970016975). Upon return, the
   // nodes vector will contain just a single node, which is the root of the
   // bulk-loaded tree.
-  void BulkLoad(std::vector<std::unique_ptr<Node>> *nodes);
+  void BulkLoad(NodePtrList *nodes);
 
   BoundsFunction bounds_func_;
   std::unique_ptr<Node> root_;
@@ -230,7 +251,7 @@ RTree<DataType>::RTree(InputIterator begin, InputIterator end,
   n_leaf_nodes_ = std::distance(begin, end);
   if (n_leaf_nodes_ == 0) return;
 
-  std::vector<std::unique_ptr<Node>> nodes;
+  NodePtrList nodes;
   nodes.reserve(n_leaf_nodes_);
   for (auto it = begin; it != end; ++it)
     nodes.emplace_back(absl::make_unique<Node>(bounds_func(*it), *it));
@@ -303,7 +324,7 @@ int RTree<DataType>::FindAll(const Rect &region, OutputIterator output,
   std::vector<Node *> found_nodes;
   FindLeafNodes(*root_, region, predicate, SearchBehavior::kFindAll,
                 &found_nodes);
-  for (const auto &node : found_nodes) *output++ = node->Data().value();
+  for (const auto &node : found_nodes) *output++ = node->Data();
   return found_nodes.size();
 }
 
@@ -317,7 +338,7 @@ void RTree<DataType>::FindLeafNodes(const Node &subtree, const Rect &region,
   if (subtree.Level() == 1) {
     for (const auto &child : subtree.Children()) {
       if (geometry::Intersects(region, child->Bounds()) &&
-          (predicate == nullptr || predicate(child->Data().value()))) {
+          (predicate == nullptr || predicate(child->Data()))) {
         nodes->push_back(child.get());
       }
       if (behavior == SearchBehavior::kFindOne && !nodes->empty()) return;
@@ -369,7 +390,7 @@ template <typename DataType>
 void RTree<DataType>::SplitNode(Node *node) {
   ASSERT(node->Children().size() == max_children_ + 1);
 
-  std::vector<std::unique_ptr<Node>> children;
+  NodePtrList children;
   node->TakeAllChildren(std::back_inserter(children));
 
   // Find the pair of children that would be least efficient in the same node
@@ -447,7 +468,7 @@ void RTree<DataType>::RemoveLeafNode(Node *node_to_remove) {
   // Remove the target node, and move upwards through the tree, removing any
   // nodes that no longer meet the minimum number of children. Note also that
   // the root does not need honor to this minimum.
-  std::vector<std::unique_ptr<Node>> nodes_to_reinsert;
+  NodePtrList nodes_to_reinsert;
   Node *node = node_to_remove;
   do {
     Node *parent = node->Parent();
@@ -466,7 +487,7 @@ void RTree<DataType>::RemoveLeafNode(Node *node_to_remove) {
 }
 
 template <typename DataType>
-void RTree<DataType>::BulkLoad(std::vector<std::unique_ptr<Node>> *nodes) {
+void RTree<DataType>::BulkLoad(NodePtrList *nodes) {
   ASSERT(!nodes->empty());
   if (nodes->size() == 1) return;
 
@@ -527,43 +548,51 @@ template <typename DataType>
 RTree<DataType>::Node::Node(int level)
     : level_(level),
       bounds_(0, 0, 0, 0),
-      data_(absl::nullopt),
-      parent_(nullptr) {
+      parent_(nullptr),
+      data_or_children_(absl::in_place_type_t<NodePtrList>()) {
   ASSERT(level > 0);
 }
 
 template <typename DataType>
 RTree<DataType>::Node::Node(const Rect &bounds, const DataType &data)
-    : level_(0), bounds_(bounds), data_(data), parent_(nullptr) {}
+    : level_(0), bounds_(bounds), parent_(nullptr), data_or_children_(data) {}
 
 template <typename DataType>
 template <typename InputIterator>
 RTree<DataType>::Node::Node(InputIterator begin, InputIterator end)
-    : level_((*begin)->Level() + 1), data_(absl::nullopt), parent_(nullptr) {
-  children_.reserve(std::distance(begin, end));
+    : level_((*begin)->Level() + 1),
+      parent_(nullptr),
+      data_or_children_(absl::in_place_type_t<NodePtrList>()) {
+  absl::get<NodePtrList>(data_or_children_).reserve(std::distance(begin, end));
   for (auto it = begin; it != end; ++it) AddChild(std::move(*it));
 }
 
 template <typename DataType>
 void RTree<DataType>::Node::AddChild(std::unique_ptr<Node> node) {
   ASSERT(node->Level() == Level() - 1);
+  ASSERT(Level() != 0 &&
+         absl::holds_alternative<NodePtrList>(data_or_children_));
   ExpandBounds(node->Bounds());
   node->parent_ = this;
-  children_.emplace_back(std::move(node));
+  absl::get<NodePtrList>(data_or_children_).emplace_back(std::move(node));
 }
 
 template <typename DataType>
 std::unique_ptr<typename RTree<DataType>::Node>
 RTree<DataType>::Node::TakeChild(Node *child) {
   ASSERT(child->parent_ == this);
+  ASSERT(Level() != 0 &&
+         absl::holds_alternative<NodePtrList>(data_or_children_));
+  auto &children = absl::get<NodePtrList>(data_or_children_);
+
   // We are doing a linear search through the children here, but we expect
   // max_children_ to be relatively small (say, less than 50), so it's
   // unlikely to affect performance.
-  for (auto it = children_.begin(); it != children_.end(); ++it) {
+  for (auto it = children.begin(); it != children.end(); ++it) {
     if (it->get() == child) {
       std::unique_ptr<Node> retval = std::move(*it);
       child->parent_ = nullptr;
-      children_.erase(it);
+      children.erase(it);
       RecalculateBounds();
       return retval;
     }
@@ -575,9 +604,12 @@ RTree<DataType>::Node::TakeChild(Node *child) {
 template <typename DataType>
 template <typename OutputIterator>
 void RTree<DataType>::Node::TakeAllChildren(OutputIterator output) {
-  for (const auto &child : children_) child->parent_ = nullptr;
-  std::move(children_.begin(), children_.end(), output);
-  children_.clear();
+  ASSERT(Level() != 0 &&
+         absl::holds_alternative<NodePtrList>(data_or_children_));
+  auto &children = absl::get<NodePtrList>(data_or_children_);
+  for (const auto &child : children) child->parent_ = nullptr;
+  std::move(children.begin(), children.end(), output);
+  children.clear();
   RecalculateBounds();
 }
 
@@ -588,8 +620,8 @@ void RTree<DataType>::Node::RecalculateBounds() {
   if (Children().empty()) {
     bounds_ = Rect(0, 0, 0, 0);
   } else {
-    bounds_ = children_.front()->Bounds();
-    for (auto it = ++children_.begin(); it != children_.end(); ++it)
+    bounds_ = Children().front()->Bounds();
+    for (auto it = ++Children().begin(); it != Children().end(); ++it)
       bounds_ = bounds_.Join((*it)->Bounds());
   }
   if (Parent() != nullptr && old_bounds != Bounds())
@@ -606,6 +638,38 @@ void RTree<DataType>::Node::ExpandBounds(const Rect &bounds) {
   }
   if (Parent() != nullptr && old_bounds != Bounds())
     Parent()->RecalculateBounds();
+}
+
+template <typename DataType>
+template <typename U>
+bool RTree<DataType>::Intersects(const RTree<U> &other,
+                                 const glm::mat4 &this_to_other) const {
+  // This can be optimized if we could walk the node subtrees of *this and
+  // *other at the same time; such that we do subtree - subtree comparisons
+  // instead of subtree- whole tree comparisons as we do now.
+  glm::mat4 other_to_this = glm::inverse(this_to_other);
+  Rect other_bounds_in_this =
+      geometry::Transform(other.Bounds(), other_to_this);
+  Rect intersection_in_this;
+  if (!geometry::Intersection(Bounds(), other_bounds_in_this,
+                              &intersection_in_this)) {
+    return false;
+  }
+
+  return FindAny(intersection_in_this,
+                 [&this_to_other, &other](const DataType &this_data_in_this) {
+                   auto this_data_in_other =
+                       geometry::Transform(this_data_in_this, this_to_other);
+                   return other
+                       .FindAny(
+                           geometry::Envelope(this_data_in_other),
+                           [&this_data_in_other](const U &other_data_in_other) {
+                             return geometry::Intersects(this_data_in_other,
+                                                         other_data_in_other);
+                           })
+                       .has_value();
+                 })
+      .has_value();
 }
 
 }  // namespace spatial

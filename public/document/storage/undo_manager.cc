@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "ink/public/document/storage/undo_manager.h"
+#include "ink/public/document/storage/storage_action.h"
 
 namespace ink {
 
@@ -21,12 +22,14 @@ UndoManager::UndoManager(
     std::shared_ptr<EventDispatch<IElementListener>> element_dispatch,
     std::shared_ptr<EventDispatch<IMutationListener>> mutation_dispatch,
     std::shared_ptr<EventDispatch<IPagePropertiesListener>> page_dispatch,
+    std::shared_ptr<EventDispatch<IActiveLayerListener>> layer_dispatch,
     std::shared_ptr<DocumentStorage> storage)
-    : document_dispatch_(document_dispatch),
-      element_dispatch_(element_dispatch),
-      mutation_dispatch_(mutation_dispatch),
-      page_dispatch_(page_dispatch),
-      storage_(storage),
+    : document_dispatch_(std::move(document_dispatch)),
+      element_dispatch_(std::move(element_dispatch)),
+      mutation_dispatch_(std::move(mutation_dispatch)),
+      page_dispatch_(std::move(page_dispatch)),
+      layer_dispatch_(std::move(layer_dispatch)),
+      storage_(std::move(storage)),
       last_undo_state_(false),
       last_redo_state_(false),
       enabled_(true) {}
@@ -128,6 +131,26 @@ std::unique_ptr<StorageAction> UndoManager::StorageActionFromProto(
   if (proto.has_set_page_bounds_action()) {
     return std::unique_ptr<StorageAction>(new SetPageBoundsAction(
         storage_, element_dispatch_, mutation_dispatch_, page_dispatch_));
+  }
+  if (proto.has_set_visibility_action()) {
+    return std::unique_ptr<StorageAction>(new SetVisibilityAction(
+        storage_, element_dispatch_, mutation_dispatch_));
+  }
+  if (proto.has_set_opacity_action()) {
+    return std::unique_ptr<StorageAction>(
+        new SetOpacityAction(storage_, element_dispatch_, mutation_dispatch_));
+  }
+  if (proto.has_change_z_order_action()) {
+    return std::unique_ptr<StorageAction>(new ChangeZOrderAction(
+        storage_, element_dispatch_, mutation_dispatch_));
+  }
+  if (proto.has_set_active_layer_action()) {
+    return std::unique_ptr<StorageAction>(new SetActiveLayerAction(
+        storage_, element_dispatch_, mutation_dispatch_, layer_dispatch_));
+  }
+  if (proto.has_replace_action()) {
+    return std::unique_ptr<StorageAction>(
+        new ReplaceAction(storage_, element_dispatch_, mutation_dispatch_));
   }
   SLOG(SLOG_ERROR, "No known action found in StorageAction proto.");
   return nullptr;

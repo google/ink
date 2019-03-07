@@ -19,6 +19,7 @@
 
 #include <memory>
 
+#include "third_party/absl/types/optional.h"
 #include "third_party/glm/glm/glm.hpp"
 #include "ink/engine/camera/camera.h"
 #include "ink/engine/camera_controller/camera_controller.h"
@@ -155,6 +156,10 @@ class CropController : public IDrawable, public input::IInputHandler {
   }
 
   bool RefuseAllNewInput() override { return false; }
+  absl::optional<input::Cursor> CurrentCursor(
+      const Camera& camera) const override {
+    return absl::nullopt;  // TODO(b/124297745): Provide a real implementation.
+  }
   input::Priority InputPriority() const override {
     return input::Priority::Crop;
   }

@@ -21,11 +21,10 @@
 
 namespace ink {
 
-Status LayerManager::AddLayer(const SourceDetails &source_details,
-                              GroupId *group_id) {
+StatusOr<GroupId> LayerManager::AddLayer(const SourceDetails &source_details) {
   UUID uuid = scene_graph_->GenerateUUID();
-  GroupId local_group_id;
-  if (!scene_graph_->GetNextGroupId(uuid, &local_group_id)) {
+  GroupId group_id;
+  if (!scene_graph_->GetNextGroupId(uuid, &group_id)) {
     return ErrorStatus(StatusCode::INTERNAL, "Cannot get next group id");
   }
 
@@ -39,10 +38,8 @@ Status LayerManager::AddLayer(const SourceDetails &source_details,
   // Pass an empty Rect when adding the group. This ensures that it
   // will always be rendered (subject to Visibility).
   //
-  scene_graph_->AddOrUpdateGroup(local_group_id, glm::mat4{1}, Rect(0, 0, 0, 0),
+  scene_graph_->AddOrUpdateGroup(group_id, glm::mat4{1}, Rect(0, 0, 0, 0),
                                  false, kLayerGroupType, source_details);
-
-  if (group_id) *group_id = local_group_id;
 
   InvalidateLayerListCache();
 
@@ -51,7 +48,7 @@ Status LayerManager::AddLayer(const SourceDetails &source_details,
     SetActiveLayer(0);
   }
 
-  return OkStatus();
+  return group_id;
 }
 
 Status LayerManager::MoveLayer(size_t from_index, size_t to_index) {
@@ -133,17 +130,34 @@ Status LayerManager::SetActiveLayer(size_t index,
   return OkStatus();
 }
 
-Status LayerManager::IndexOfActiveLayer(size_t *index) const {
+StatusOr<size_t> LayerManager::IndexOfActiveLayer() const {
   if (!IsActive()) {
     return ErrorStatus(StatusCode::FAILED_PRECONDITION,
                        "There is no active layer.");
   }
-  *index = active_layer_index_;
-  return OkStatus();
+  return active_layer_index_;
 }
 
-Status LayerManager::GroupIdForLayerAtIndex(size_t index,
-                                            GroupId *group_id) const {
+StatusOr<GroupId> LayerManager::GroupIdOfActiveLayer() const {
+  INK_ASSIGN_OR_RETURN(auto index, IndexOfActiveLayer());
+  return GroupIdForLayerAtIndex(index);
+}
+
+bool LayerManager::HasTransparency() const {
+  if (!IsActive()) return false;
+
+  if (!cached_has_transparency_.has_value()) {
+    auto layer_list = CachedLayerList();
+    cached_has_transparency_ = std::any_of(
+        layer_list.begin(), layer_list.end(), [this](GroupId group_id) {
+          return scene_graph_->Opacity(group_id) != 255;
+        });
+  }
+
+  return *cached_has_transparency_;
+}
+
+StatusOr<GroupId> LayerManager::GroupIdForLayerAtIndex(size_t index) const {
   const auto &layer_ids = CachedLayerList();
 
   if (index >= layer_ids.size()) {
@@ -151,8 +165,7 @@ Status LayerManager::GroupIdForLayerAtIndex(size_t index,
                        index);
   }
 
-  *group_id = layer_ids[index];
-  return OkStatus();
+  return layer_ids[index];
 }
 
 LayerManager::LayerList::const_iterator LayerManager::FindGroupWithId(
@@ -162,8 +175,8 @@ LayerManager::LayerList::const_iterator LayerManager::FindGroupWithId(
       [group_id](const GroupId &gid) { return gid == group_id; });
 }
 
-Status LayerManager::IndexForLayerWithGroupId(GroupId group_id,
-                                              size_t *index) const {
+StatusOr<size_t> LayerManager::IndexForLayerWithGroupId(
+    GroupId group_id) const {
   const auto &layer_ids = CachedLayerList();
 
   auto i = FindGroupWithId(layer_ids, group_id);
@@ -171,8 +184,7 @@ Status LayerManager::IndexForLayerWithGroupId(GroupId group_id,
     return ErrorStatus(StatusCode::NOT_FOUND,
                        "Index with group_id, $0, not found.", group_id);
   }
-  *index = i - layer_ids.begin();
-  return OkStatus();
+  return i - layer_ids.begin();
 }
 
 Status LayerManager::SetLayerVisibility(size_t index, bool visible) {
@@ -203,7 +215,12 @@ void LayerManager::Reset() {
   active_ = false;
 }
 
-void LayerManager::InvalidateLayerListCache() { cached_layer_list_.clear(); }
+void LayerManager::InvalidateLayerListCache() {
+  cached_layer_list_.clear();
+
+  // The has transparency cache deps directly on the layer list.
+  InvalidateHasTransparencyCache();
+}
 
 const LayerManager::LayerList &LayerManager::CachedLayerList() const {
   if (IsActive() && cached_layer_list_.empty()) {
@@ -245,12 +262,24 @@ void LayerManager::OnElementsRemoved(
 
 void LayerManager::OnElementsMutated(
     SceneGraph *graph, const std::vector<ElementMutationData> &mutation_data) {
-  if (IsActive() && std::any_of(mutation_data.begin(), mutation_data.end(),
-                                [](const ElementMutationData &md) {
-                                  return md.mutation_type ==
-                                         ElementMutationType::kZOrderMutation;
-                                })) {
-    InvalidateLayerListCache();
+  if (IsActive()) {
+    // Invalidate the layer list if the layer order has changed.
+    if (std::any_of(mutation_data.begin(), mutation_data.end(),
+                    [](const ElementMutationData &md) {
+                      return md.mutation_type ==
+                             ElementMutationType::kZOrderMutation;
+                    })) {
+      InvalidateLayerListCache();
+    }
+
+    // Invalidate the has transparency value of some opacity has changed.
+    if (std::any_of(mutation_data.begin(), mutation_data.end(),
+                    [](const ElementMutationData &md) {
+                      return md.mutation_type ==
+                             ElementMutationType::kOpacityMutation;
+                    })) {
+      InvalidateHasTransparencyCache();
+    }
   }
 }
 
@@ -264,15 +293,14 @@ void LayerManager::RemoveActiveLayerListener(IActiveLayerListener *listener) {
 
 void LayerManager::InformActiveLayerListener(
     const SourceDetails &source_details) {
-  GroupId group_id;
-  Status status = GroupIdForLayerAtIndex(active_layer_index_, &group_id);
-  if (!status.ok()) {
+  auto group_id_or = GroupIdForLayerAtIndex(active_layer_index_);
+  if (!group_id_or.ok()) {
     SLOG(SLOG_ERROR, "Failed to inform active layer listener: $0",
-         status.ToString());
+         group_id_or.status().ToString());
     return;
   }
 
-  UUID uuid = scene_graph_->UUIDFromElementId(group_id);
+  UUID uuid = scene_graph_->UUIDFromElementId(group_id_or.ValueOrDie());
 
   if (uuid != last_active_uuid_sent_) {
     proto::SourceDetails source;
