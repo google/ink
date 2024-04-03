@@ -230,6 +230,13 @@ struct BrushBehavior {
     // Y-axis (and a negative value indicates acceleration along the negative
     // Y-axis).
     kInputAccelerationLateralInCentimetersPerSecondSquared,
+    // The amount of time that has elapsed since all stroke inputs have
+    // finished, or null if the stroke inputs aren't finished yet. This can be
+    // used to drive a final animation on the stroke geometry. These enumerators
+    // are only compatible with a `source_out_of_range_behavior` of `kClamp`, to
+    // ensure that the animation will eventually end.
+    kTimeSinceInputsFinishedInSeconds,
+    kTimeSinceInputsFinishedInMillis,
     // TODO: b/336565152 - Add kInputDistanceRemainingInCentimeters (this will
     // require some refactoring for the code that calculates
     // BrushTipModeler::distance_remaining_behavior_upper_bound_).

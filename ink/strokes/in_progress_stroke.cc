@@ -129,6 +129,9 @@ absl::Status InProgressStroke::UpdateShape(Duration32 current_elapsed_time) {
   for (uint32_t i = 0; i < num_coats; ++i) {
     StrokeShapeUpdate update = shape_builders_[i].ExtendStroke(
         queued_real_inputs_, queued_predicted_inputs_, current_elapsed_time);
+    if (inputs_are_finished_) {
+      shape_builders_[i].FinishStrokeInputs();
+    }
 
     updated_region_.Add(update.region);
     // TODO: b/286547863 - Pass `update.first_vertex_offset` and

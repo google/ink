@@ -159,6 +159,8 @@ Domain<BrushBehavior::OutOfRange> ValidBrushBehaviorOutOfRangeForSource(
   switch (source) {
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
     case BrushBehavior::Source::kTimeSinceInputInMillis:
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInSeconds:
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInMillis:
       return Just(BrushBehavior::OutOfRange::kClamp);
     default:
       return ArbitraryBrushBehaviorOutOfRange();
@@ -213,6 +215,8 @@ Domain<BrushBehavior::Source> ArbitraryBrushBehaviorSource() {
           kInputAccelerationForwardInCentimetersPerSecondSquared,
       BrushBehavior::Source::
           kInputAccelerationLateralInCentimetersPerSecondSquared,
+      BrushBehavior::Source::kTimeSinceInputsFinishedInSeconds,
+      BrushBehavior::Source::kTimeSinceInputsFinishedInMillis,
   });
 }
 // LINT.ThenChange(brush_behavior.h:source)

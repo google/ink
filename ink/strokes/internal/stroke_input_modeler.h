@@ -122,6 +122,9 @@ class StrokeInputModeler {
     // of this member variable will be non-decreasing over the course of a
     // single stroke.
     size_t real_input_count = 0;
+    // True if inputs are finished for this stroke (in which case, no more real
+    // or predicted inputs will be added).
+    bool inputs_are_finished = false;
   };
 
   StrokeInputModeler() = default;
@@ -148,10 +151,16 @@ class StrokeInputModeler {
   //
   // This always clears any previously generated unstable modeled inputs. Either
   // or both of `real_inputs` and `predicted_inputs` may be empty. CHECK-fails
-  // if `StartStroke()` has not been called at least once.
+  // if `StartStroke()` has not been called at least once, or if
+  // `FinishStrokeInputs()` has been called for this stroke and `real_inputs`
+  // and `predicted_inputs` aren't both empty.
   void ExtendStroke(const StrokeInputBatch& real_inputs,
                     const StrokeInputBatch& predicted_inputs,
                     Duration32 current_elapsed_time);
+
+  // Indicates that the inputs for the current stroke are finished. This method
+  // is idempotent.
+  void FinishStrokeInputs();
 
   const State& GetState() const { return state_; }
   absl::Span<const ModeledStrokeInput> GetModeledInputs() const {
@@ -183,6 +192,10 @@ class StrokeInputModeler {
   bool stroke_modeler_has_input_ = false;
   State state_;
 };
+
+inline void StrokeInputModeler::FinishStrokeInputs() {
+  state_.inputs_are_finished = true;
+}
 
 }  // namespace ink::strokes_internal
 

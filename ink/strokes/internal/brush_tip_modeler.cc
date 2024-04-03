@@ -139,6 +139,8 @@ float DistanceRemainingUpperBound(const BrushBehavior::SourceNode& node,
         kInputAccelerationForwardInCentimetersPerSecondSquared:
     case BrushBehavior::Source::
         kInputAccelerationLateralInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInSeconds:
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInMillis:
       return 0;
   }
   ABSL_LOG(FATAL)
@@ -149,8 +151,10 @@ float DistanceRemainingUpperBound(const BrushBehavior::SourceNode& node,
 Duration32 TimeRemainingUpperBound(const BrushBehavior::SourceNode& node) {
   switch (node.source) {
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInSeconds:
       return Duration32::Seconds(SourceValueUpperBound(node));
     case BrushBehavior::Source::kTimeSinceInputInMillis:
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInMillis:
       return Duration32::Millis(SourceValueUpperBound(node));
     case BrushBehavior::Source::kNormalizedPressure:
     case BrushBehavior::Source::kTiltInRadians:

@@ -782,6 +782,48 @@ TEST_F(ProcessBehaviorNodeTest,
   EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
 }
 
+TEST_F(ProcessBehaviorNodeTest, SourceNodeTimeSinceInputsFinishedInSeconds) {
+  BrushBehavior::SourceNode source_node = {
+      .source = BrushBehavior::Source::kTimeSinceInputsFinishedInSeconds,
+      .source_value_range = {0, 10},
+  };
+
+  // If `inputs_are_finished` is still `false`, the source node emits a null
+  // value.
+  input_modeler_state_.total_real_elapsed_time = Duration32::Seconds(3);
+  input_modeler_state_.complete_elapsed_time = Duration32::Seconds(5);
+  input_modeler_state_.inputs_are_finished = false;
+  ProcessBehaviorNode(source_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+
+  // Once `inputs_are_finished` is `true`, the source node emits its value.
+  stack_.clear();
+  input_modeler_state_.inputs_are_finished = true;
+  ProcessBehaviorNode(source_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(0.2f));
+}
+
+TEST_F(ProcessBehaviorNodeTest, SourceNodeTimeSinceInputsFinishedInMillis) {
+  BrushBehavior::SourceNode source_node = {
+      .source = BrushBehavior::Source::kTimeSinceInputsFinishedInMillis,
+      .source_value_range = {0, 10000},
+  };
+
+  // If `inputs_are_finished` is still `false`, the source node emits a null
+  // value.
+  input_modeler_state_.total_real_elapsed_time = Duration32::Seconds(3);
+  input_modeler_state_.complete_elapsed_time = Duration32::Seconds(5);
+  input_modeler_state_.inputs_are_finished = false;
+  ProcessBehaviorNode(source_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+
+  // Once `inputs_are_finished` is `true`, the source node emits its value.
+  stack_.clear();
+  input_modeler_state_.inputs_are_finished = true;
+  ProcessBehaviorNode(source_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(0.2f));
+}
+
 TEST_F(ProcessBehaviorNodeTest, SourceNodeOutOfRangeClamp) {
   BrushBehavior::SourceNode source_node = {
       .source = BrushBehavior::Source::kNormalizedPressure,
