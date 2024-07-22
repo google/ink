@@ -50,6 +50,12 @@ bazel_dep(
     version = "20240116.1",
     repo_name = "com_google_absl",
 )
+# 20240722.rc1 freshly released.
+git_override(
+    module_name = "abseil-cpp",
+    remote = "https://github.com/abseil/abseil-cpp.git",
+    commit = "ebdba5af75fab91ebe9bc4daa0077f9c57c36692",
+)
 
 git_repository(
     name = "ink_stroke_modeler",
