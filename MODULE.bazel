@@ -16,9 +16,11 @@ bazel_dep(
 
 # Configure and register the toolchain.
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
+
 llvm.toolchain(
     llvm_version = "16.0.0",
 )
+
 use_repo(llvm, "llvm_toolchain")
 
 register_toolchains("@llvm_toolchain//:all")
@@ -35,7 +37,7 @@ bazel_dep(
 
 git_repository(
     name = "ink_stroke_modeler",
-    commit = "7439def4903bee6adb674283da205e7deaf88b42",
+    commit = "fa329844bb2a19a2f1c2f0a607daf84b8a87b738",
     remote = "https://github.com/google/ink-stroke-modeler.git",
 )
 
@@ -60,6 +62,7 @@ bazel_dep(
     dev_dependency = True,
     repo_name = "com_google_googletest",
 )
+
 bazel_dep(
     name = "google_benchmark",
     version = "1.8.3",
