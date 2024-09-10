@@ -15,10 +15,12 @@
 #include "ink/types/uri.h"
 
 #include <string>
+#include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/hash/hash_testing.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -32,6 +34,26 @@ using ::testing::HasSubstr;
 
 constexpr absl::StatusCode kInvalidArgument =
     absl::StatusCode::kInvalidArgument;
+
+TEST(UriTest, SupportsAbslHash) {
+  std::vector<std::string> uri_strings = {
+      "",
+      "ink://ink/texture:foo:1",
+      "ink://ink/texture:foo:2",
+      "ink://ink/texture:bar:1",
+      "ink://ink/brush-family:foo:1",
+      "ink://baz/texture:foo:1",
+  };
+
+  std::vector<Uri> uris;
+  for (const std::string& uri_string : uri_strings) {
+    absl::StatusOr<Uri> uri = Uri::Parse(uri_string);
+    ASSERT_EQ(uri.status(), absl::OkStatus());
+    uris.push_back(*uri);
+  }
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(uris));
+}
 
 TEST(UriTest, StringifyAssetType) {
   EXPECT_EQ(absl::StrCat(Uri::AssetType::kUninitialized), "uninitialized");

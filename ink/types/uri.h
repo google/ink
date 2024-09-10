@@ -119,6 +119,9 @@ class Uri {
     sink.Append(uri.ToNormalizedString());
   }
 
+  template <typename H>
+  friend H AbslHashValue(H h, const Uri& uri);
+
  private:
   // Struct for holding start, relative to the entire `uri` string and length of
   // individual `uri` parts.
@@ -154,6 +157,12 @@ std::string ToFormattedString(Uri::AssetType asset_type);
 template <typename Sink>
 void AbslStringify(Sink& sink, Uri::AssetType asset_type) {
   sink.Append(uri_internal::ToFormattedString(asset_type));
+}
+
+template <typename H>
+H AbslHashValue(H h, const Uri& uri) {
+  return H::combine(std::move(h), uri.reg_name_, uri.asset_name_,
+                    uri.revision_number_, uri.asset_type_);
 }
 
 inline bool Uri::operator==(const Uri& other) const {

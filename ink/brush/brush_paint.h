@@ -241,6 +241,19 @@ struct BrushPaint {
   std::vector<TextureLayer> texture_layers;
 };
 
+bool operator==(const BrushPaint::TextureKeyframe& lhs,
+                const BrushPaint::TextureKeyframe& rhs);
+bool operator!=(const BrushPaint::TextureKeyframe& lhs,
+                const BrushPaint::TextureKeyframe& rhs);
+
+bool operator==(const BrushPaint::TextureLayer& lhs,
+                const BrushPaint::TextureLayer& rhs);
+bool operator!=(const BrushPaint::TextureLayer& lhs,
+                const BrushPaint::TextureLayer& rhs);
+
+bool operator==(const BrushPaint& lhs, const BrushPaint& rhs);
+bool operator!=(const BrushPaint& lhs, const BrushPaint& rhs);
+
 namespace brush_internal {
 
 // Determines whether the given `BrushPaint` struct is valid to be used in a
@@ -294,6 +307,44 @@ void AbslStringify(Sink& sink, const BrushPaint::TextureLayer& texture_layer) {
 template <typename Sink>
 void AbslStringify(Sink& sink, const BrushPaint& paint) {
   sink.Append(brush_internal::ToFormattedString(paint));
+}
+
+template <typename H>
+H AbslHashValue(H h, const BrushPaint::TextureKeyframe& keyframe) {
+  return H::combine(std::move(h), keyframe.progress, keyframe.size,
+                    keyframe.offset, keyframe.rotation, keyframe.opacity);
+}
+
+template <typename H>
+H AbslHashValue(H h, const BrushPaint::TextureLayer& layer) {
+  return H::combine(std::move(h), layer.color_texture_uri, layer.mapping,
+                    layer.origin, layer.size_unit, layer.size, layer.offset,
+                    layer.rotation, layer.size_jitter, layer.offset_jitter,
+                    layer.rotation_jitter, layer.opacity, layer.keyframes,
+                    layer.blend_mode);
+}
+
+template <typename H>
+H AbslHashValue(H h, const BrushPaint& paint) {
+  return H::combine(std::move(h), paint.texture_layers);
+}
+
+inline bool operator!=(const BrushPaint::TextureKeyframe& lhs,
+                       const BrushPaint::TextureKeyframe& rhs) {
+  return !(lhs == rhs);
+}
+
+inline bool operator!=(const BrushPaint::TextureLayer& lhs,
+                       const BrushPaint::TextureLayer& rhs) {
+  return !(lhs == rhs);
+}
+
+inline bool operator==(const BrushPaint& lhs, const BrushPaint& rhs) {
+  return lhs.texture_layers == rhs.texture_layers;
+}
+
+inline bool operator!=(const BrushPaint& lhs, const BrushPaint& rhs) {
+  return !(lhs == rhs);
 }
 
 }  // namespace ink

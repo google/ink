@@ -121,6 +121,7 @@ absl::Status ValidateBrushPaintTextureKeyframe(
 }
 
 }  // namespace
+
 absl::Status ValidateBrushPaintTextureLayer(
     const BrushPaint::TextureLayer& layer) {
   if (layer.color_texture_uri.GetAssetType() != Uri::AssetType::kTexture) {
@@ -325,4 +326,25 @@ std::string ToFormattedString(const BrushPaint& paint) {
 }
 
 }  // namespace brush_internal
+
+bool operator==(const BrushPaint::TextureKeyframe& lhs,
+                const BrushPaint::TextureKeyframe& rhs) {
+  return lhs.progress == rhs.progress && lhs.size == rhs.size &&
+         lhs.offset == rhs.offset && lhs.rotation == rhs.rotation &&
+         lhs.opacity == rhs.opacity;
+}
+
+bool operator==(const BrushPaint::TextureLayer& lhs,
+                const BrushPaint::TextureLayer& rhs) {
+  return lhs.color_texture_uri == rhs.color_texture_uri &&
+         lhs.mapping == rhs.mapping && lhs.origin == rhs.origin &&
+         lhs.size_unit == rhs.size_unit && lhs.size == rhs.size &&
+         lhs.offset == rhs.offset && lhs.rotation == rhs.rotation &&
+         lhs.size_jitter == rhs.size_jitter &&
+         lhs.offset_jitter == rhs.offset_jitter &&
+         lhs.rotation_jitter == rhs.rotation_jitter &&
+         lhs.opacity == rhs.opacity && lhs.keyframes == rhs.keyframes &&
+         lhs.blend_mode == rhs.blend_mode;
+}
+
 }  // namespace ink

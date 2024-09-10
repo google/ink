@@ -19,6 +19,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/hash/hash_testing.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
@@ -39,6 +40,195 @@ Uri CreateTestTextureUri() {
   auto uri = Uri::Parse("ink://ink/texture:test-texture");
   CHECK_OK(uri);
   return *uri;
+}
+
+TEST(BrushPaintTest, TextureKeyframeSupportsAbslHash) {
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
+      BrushPaint::TextureKeyframe{.progress = 0},
+      BrushPaint::TextureKeyframe{.progress = 1},
+      BrushPaint::TextureKeyframe{.progress = 0, .size = Vec{1, 1}},
+      BrushPaint::TextureKeyframe{.progress = 0, .offset = Vec{1, 1}},
+      BrushPaint::TextureKeyframe{.progress = 0, .rotation = kPi},
+      BrushPaint::TextureKeyframe{.progress = 0, .opacity = 0.5},
+  }));
+}
+
+TEST(BrushPaintTest, TextureLayerSupportsAbslHash) {
+  absl::StatusOr<Uri> uri1 = Uri::Parse("/texture:foo");
+  ASSERT_EQ(uri1.status(), absl::OkStatus());
+  absl::StatusOr<Uri> uri2 = Uri::Parse("/texture:bar");
+  ASSERT_EQ(uri2.status(), absl::OkStatus());
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
+      BrushPaint::TextureLayer{.color_texture_uri = *uri1},
+      BrushPaint::TextureLayer{.color_texture_uri = *uri2},
+      BrushPaint::TextureLayer{.color_texture_uri = *uri1,
+                               .mapping = BrushPaint::TextureMapping::kWinding},
+      BrushPaint::TextureLayer{
+          .color_texture_uri = *uri1,
+          .origin = BrushPaint::TextureOrigin::kFirstStrokeInput},
+      BrushPaint::TextureLayer{
+          .color_texture_uri = *uri1,
+          .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize},
+      BrushPaint::TextureLayer{.color_texture_uri = *uri1, .size = {2, 2}},
+      BrushPaint::TextureLayer{.color_texture_uri = *uri1, .offset = {1, 1}},
+      BrushPaint::TextureLayer{.color_texture_uri = *uri1, .rotation = kPi},
+      BrushPaint::TextureLayer{.color_texture_uri = *uri1,
+                               .size_jitter = {2, 2}},
+      BrushPaint::TextureLayer{.color_texture_uri = *uri1,
+                               .offset_jitter = {1, 1}},
+      BrushPaint::TextureLayer{.color_texture_uri = *uri1,
+                               .rotation_jitter = kPi},
+      BrushPaint::TextureLayer{.color_texture_uri = *uri1, .opacity = 0.5},
+      BrushPaint::TextureLayer{.color_texture_uri = *uri1,
+                               .keyframes = {{.progress = 1}}},
+      BrushPaint::TextureLayer{.color_texture_uri = *uri1,
+                               .blend_mode = BrushPaint::BlendMode::kXor},
+  }));
+}
+
+TEST(BrushPaintTest, BrushPaintSupportsAbslHash) {
+  absl::StatusOr<Uri> uri1 = Uri::Parse("/texture:foo");
+  ASSERT_EQ(uri1.status(), absl::OkStatus());
+  absl::StatusOr<Uri> uri2 = Uri::Parse("/texture:bar");
+  ASSERT_EQ(uri2.status(), absl::OkStatus());
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
+      BrushPaint{},
+      BrushPaint{{{.color_texture_uri = *uri1}}},
+      BrushPaint{{{.color_texture_uri = *uri1}, {.color_texture_uri = *uri2}}},
+  }));
+}
+
+TEST(BrushPaintTest, TextureKeyframeEqualAndNotEqual) {
+  BrushPaint::TextureKeyframe keyframe = {
+      .progress = 1,
+      .size = Vec{2, 2},
+      .offset = Vec{1, 1},
+      .rotation = kPi,
+      .opacity = 0.5,
+  };
+
+  BrushPaint::TextureKeyframe other = keyframe;
+  EXPECT_EQ(keyframe, other);
+
+  other = keyframe;
+  other.progress = 0;
+  EXPECT_NE(keyframe, other);
+
+  other = keyframe;
+  other.size = Vec{7, 4};
+  EXPECT_NE(keyframe, other);
+
+  other = keyframe;
+  other.offset = Vec{1, -1};
+  EXPECT_NE(keyframe, other);
+
+  other = keyframe;
+  other.rotation = std::nullopt;
+  EXPECT_NE(keyframe, other);
+
+  other = keyframe;
+  other.opacity = 0.25;
+  EXPECT_NE(keyframe, other);
+}
+
+TEST(BrushPaintTest, TextureLayerEqualAndNotEqual) {
+  absl::StatusOr<Uri> uri1 = Uri::Parse("/texture:foo");
+  ASSERT_EQ(uri1.status(), absl::OkStatus());
+  absl::StatusOr<Uri> uri2 = Uri::Parse("/texture:bar");
+  ASSERT_EQ(uri2.status(), absl::OkStatus());
+  BrushPaint::TextureLayer layer = {
+      .color_texture_uri = *uri1,
+      .mapping = BrushPaint::TextureMapping::kTiling,
+      .origin = BrushPaint::TextureOrigin::kStrokeSpaceOrigin,
+      .size_unit = BrushPaint::TextureSizeUnit::kStrokeCoordinates,
+      .size = {1, 1},
+      .offset = {0, 0},
+      .rotation = Angle(),
+      .size_jitter = {0, 0},
+      .offset_jitter = {0, 0},
+      .rotation_jitter = Angle(),
+      .opacity = 1,
+      .keyframes = {},
+      .blend_mode = BrushPaint::BlendMode::kModulate,
+  };
+
+  BrushPaint::TextureLayer other = layer;
+  EXPECT_EQ(layer, other);
+
+  other = layer;
+  other.color_texture_uri = *uri2;
+  EXPECT_NE(layer, other);
+
+  other = layer;
+  other.mapping = BrushPaint::TextureMapping::kWinding;
+  EXPECT_NE(layer, other);
+
+  other = layer;
+  other.origin = BrushPaint::TextureOrigin::kFirstStrokeInput;
+  EXPECT_NE(layer, other);
+
+  other = layer;
+  other.size_unit = BrushPaint::TextureSizeUnit::kBrushSize;
+  EXPECT_NE(layer, other);
+
+  other = layer;
+  other.size = {4, 5};
+  EXPECT_NE(layer, other);
+
+  other = layer;
+  other.offset = {1, -1};
+  EXPECT_NE(layer, other);
+
+  other = layer;
+  other.rotation = kPi;
+  EXPECT_NE(layer, other);
+
+  other = layer;
+  other.size_jitter = {4, 5};
+  EXPECT_NE(layer, other);
+
+  other = layer;
+  other.offset_jitter = {1, -1};
+  EXPECT_NE(layer, other);
+
+  other = layer;
+  other.rotation_jitter = kPi;
+  EXPECT_NE(layer, other);
+
+  other = layer;
+  other.opacity = 0.5;
+  EXPECT_NE(layer, other);
+
+  other = layer;
+  other.keyframes.push_back({.progress = 0});
+  EXPECT_NE(layer, other);
+
+  other = layer;
+  other.blend_mode = BrushPaint::BlendMode::kXor;
+  EXPECT_NE(layer, other);
+}
+
+TEST(BrushPaintTest, BrushPaintEqualAndNotEqual) {
+  absl::StatusOr<Uri> uri1 = Uri::Parse("/texture:foo");
+  ASSERT_EQ(uri1.status(), absl::OkStatus());
+  absl::StatusOr<Uri> uri2 = Uri::Parse("/texture:bar");
+  ASSERT_EQ(uri2.status(), absl::OkStatus());
+  BrushPaint paint = {{{.color_texture_uri = *uri1}}};
+
+  BrushPaint other = paint;
+  EXPECT_EQ(paint, other);
+
+  other = paint;
+  other.texture_layers[0].color_texture_uri = *uri2;
+  EXPECT_NE(paint, other);
+
+  other = paint;
+  other.texture_layers.clear();
+  EXPECT_NE(paint, other);
+
+  other = paint;
+  other.texture_layers.push_back({.color_texture_uri = *uri2});
+  EXPECT_NE(paint, other);
 }
 
 TEST(BrushPaintTest, StringifyTextureMapping) {
