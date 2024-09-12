@@ -1,0 +1,27 @@
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions
+name: BazelTest
+
+on: [push, workflow_dispatch]
+
+jobs:
+  bazel_test:
+    strategy:
+      matrix:
+        # TODO: b/365609306 - Enable macos-latest and windows-latest runners.
+        os: [ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # gmock wants libtinfo5 which is not preinstalled on the Ubuntu GitHub
+    # runners.  Install it first, but also delete the needrestart service so we
+    # don't restart the GitHub runner service which cancels our job.
+    - if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get autopurge -y needrestart
+        sudo apt-get install -y libtinfo5
+
+    - name: Test
+      run: bazel test --test_output=errors --keep_going ink/...
