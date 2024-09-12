@@ -33,6 +33,9 @@ fuzztest::Domain<std::array<float, 4>> FourFloatsInZeroOne();
 // The domain of all valid ColorSpaces.
 fuzztest::Domain<ColorSpace> ArbitraryColorSpace();
 
+// The domain of all valid color formats.
+fuzztest::Domain<Color::Format> ArbitraryColorFormat();
+
 // The domain of all Colors, including those with infinite and/or out-of-gamut
 // components.
 fuzztest::Domain<Color> ArbitraryColor();

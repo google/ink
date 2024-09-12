@@ -70,6 +70,16 @@ Domain<Color> ArbitraryColor() {
       InRange(0.0f, 1.0f), ArbitraryColorSpace());
 }
 
+// LINT.IfChange(color_format)
+Domain<Color::Format> ArbitraryColorFormat() {
+  return ElementOf({
+      Color::Format::kLinear,
+      Color::Format::kGammaEncoded,
+      Color::Format::kPremultipliedAlpha,
+  });
+}
+// LINT.ThenChange(color.h:color_format)
+
 Domain<Color> InGamutSrgbColor() {
   return Map(
       [](float r, float g, float b, float a) {
