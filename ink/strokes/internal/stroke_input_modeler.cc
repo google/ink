@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <optional>
+#include <variant>
 #include <vector>
 
 #include "absl/cleanup/cleanup.h"
@@ -33,6 +34,16 @@
 #include "ink_stroke_modeler/types.h"
 
 namespace ink::strokes_internal {
+
+constexpr float kDefaultLoopMitigationSpeedLowerBoundInCmPerSec = 0.0f;
+constexpr float kDefaultLoopMitigationSpeedUpperBoundInCmPerSec = 25.0f;
+constexpr float kDefaultLoopMitigationInterpolationStrengthAtSpeedLowerBound =
+    1.0f;
+constexpr float kDefaultLoopMitigationInterpolationStrengthAtSpeedUpperBound =
+    0.5f;
+const stroke_model::Duration kDefaultLoopMitigationMinSpeedSamplingWindow =
+    stroke_model::Duration(0.04);
+constexpr int kDefaultLoopMitigationMinDiscreteSpeedSamples = 10;
 
 void StrokeInputModeler::StartStroke(const BrushFamily::InputModel& input_model,
                                      float brush_epsilon) {
@@ -56,29 +67,64 @@ void StrokeInputModeler::StartStroke(const BrushFamily::InputModel& input_model,
 
 namespace {
 
+stroke_model::PositionModelerParams::LoopContractionMitigationParameters
+GetLoopContractionMitigationParameters(
+    const BrushFamily::InputModel& input_model, float stroke_unit_length) {
+  stroke_model::PositionModelerParams::LoopContractionMitigationParameters
+      params;
+  if (std::holds_alternative<BrushFamily::SpringModelV2>(input_model)) {
+    params.is_enabled = true;
+    params.speed_lower_bound =
+        kDefaultLoopMitigationSpeedLowerBoundInCmPerSec / stroke_unit_length;
+    params.speed_upper_bound =
+        kDefaultLoopMitigationSpeedUpperBoundInCmPerSec / stroke_unit_length;
+    params.interpolation_strength_at_speed_lower_bound =
+        kDefaultLoopMitigationInterpolationStrengthAtSpeedLowerBound;
+    params.interpolation_strength_at_speed_upper_bound =
+        kDefaultLoopMitigationInterpolationStrengthAtSpeedUpperBound;
+    params.min_speed_sampling_window =
+        kDefaultLoopMitigationMinSpeedSamplingWindow;
+    params.min_discrete_speed_samples =
+        kDefaultLoopMitigationMinDiscreteSpeedSamples;
+  } else if (std::holds_alternative<BrushFamily::SpringModelV1>(input_model)) {
+    params.is_enabled = false;
+  }
+  return params;
+}
+
 void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
                         const BrushFamily::InputModel& input_model,
-                        float brush_epsilon) {
+                        float brush_epsilon, float stroke_unit_length) {
   // The minimum output rate was chosen to match legacy behavior, which was
   // in turn chosen to upsample enough to produce relatively smooth-looking
   // curves on 60 Hz touchscreens.
   constexpr double kMinOutputRateHz = 180;
+  stroke_model::PositionModelerParams::LoopContractionMitigationParameters
+      loop_params = GetLoopContractionMitigationParameters(input_model,
+                                                           stroke_unit_length);
   // We use the defaults for `PositionModelerParams` and
   // `StylusStateModelerParams`.
   CHECK_OK(stroke_modeler.Reset(
-      // TODO: b/364616255 - Change parameters depending on `input_model`.
       {// We turn off wobble smoothing because, in order to choose parameters
        // appropriately, we need to know the input rate and range of speeds that
        // we'll see for a stroke, which we don't have access to.
        .wobble_smoother_params = {.is_enabled = false},
+       // We turn off loop contraction mitigation if the input model is not
+       // spring model v2.
+       .position_modeler_params = {.loop_contraction_mitigation_params =
+                                       loop_params},
        // `brush_epsilon` is used for the stopping distance because once end of
        // the stroke is with `brush_epsilon` of the final input, further changes
        // are not considered visually distinct.
        .sampling_params = {.min_output_rate = kMinOutputRateHz,
                            .end_of_stroke_stopping_distance = brush_epsilon},
-       // We disable the internal predictor on the `StrokeModeler`, because it
-       // performs prediction after modeling. We wish to accept external
-       // un-modeled prediction, as in the case of platform provided prediction.
+       // If we use loop mitigation, we need to use the new projection method.
+       .stylus_state_modeler_params = {.use_stroke_normal_projection =
+                                           loop_params.is_enabled},
+       // We disable the internal predictor on the `StrokeModeler`,
+       // because it performs prediction after modeling. We wish to
+       // accept external un-modeled prediction, as in the case of
+       // platform provided prediction.
        .prediction_params = stroke_model::DisabledPredictorParams()}));
 }
 
@@ -107,7 +153,10 @@ void StrokeInputModeler::ExtendStroke(const StrokeInputBatch& real_inputs,
     state_.stroke_unit_length = real_inputs.IsEmpty()
                                     ? predicted_inputs.GetStrokeUnitLength()
                                     : real_inputs.GetStrokeUnitLength();
-    ResetStrokeModeler(stroke_modeler_, input_model_, brush_epsilon_);
+    ResetStrokeModeler(stroke_modeler_, input_model_, brush_epsilon_,
+                       real_inputs.HasStrokeUnitLength()
+                           ? real_inputs.GetStrokeUnitLength()->ToCentimeters()
+                           : 1.0f);
     stroke_modeler_has_input_ = false;
   }
 

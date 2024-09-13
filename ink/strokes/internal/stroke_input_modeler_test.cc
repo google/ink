@@ -465,6 +465,88 @@ TEST(StrokeInputModelerTest, LargeBrushEpsilonIsRespected) {
               PositionsAreSeparatedByAtLeast(brush_epsilon));
 }
 
+TEST(StrokeInputModelerTest, LargeBrushEpsilonIsRespectedWithSpringModelV2) {
+  std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
+
+  StrokeInputModeler modeler;
+  float brush_epsilon = 3;
+  modeler.StartStroke(BrushFamily::SpringModelV2{}, brush_epsilon);
+
+  modeler.ExtendStroke(input_batches[0], input_batches[1], Duration32::Zero());
+  modeler.ExtendStroke(input_batches[1], input_batches[2], Duration32::Zero());
+  modeler.ExtendStroke(input_batches[2], input_batches[3], Duration32::Zero());
+  modeler.ExtendStroke(input_batches[3], input_batches[4], Duration32::Zero());
+
+  EXPECT_THAT(
+      modeler.GetModeledInputs(),
+      ElementsAre(
+          ModeledStrokeInputNear({.position = {10, 20},
+                                  .velocity = {0, 0},
+                                  .acceleration = {0, 0},
+                                  .traveled_distance = 0,
+                                  .elapsed_time = Duration32::Seconds(0),
+                                  .pressure = 0.4,
+                                  .tilt = Angle::Radians(1),
+                                  .orientation = Angle::Radians(2)},
+                                 0.01),
+          ModeledStrokeInputNear({.position = {9.98, 16.99},
+                                  .velocity = {-1.67, -8.00},
+                                  .acceleration = {-120.38, -145.56},
+                                  .traveled_distance = 3.01,
+                                  .elapsed_time = Duration32::Seconds(2.02),
+                                  .pressure = 0.5,
+                                  .tilt = Angle::Radians(0.80),
+                                  .orientation = Angle::Radians(1.1)},
+                                 0.01),
+          ModeledStrokeInputNear({.position = {8.82, 14.16},
+                                  .velocity = {-4.11, -10.93},
+                                  .acceleration = {-0.27, -1.92},
+                                  .traveled_distance = 6.07,
+                                  .elapsed_time = Duration32::Seconds(2.26),
+                                  .pressure = 0.57,
+                                  .tilt = Angle::Radians(0.97),
+                                  .orientation = Angle::Radians(1.15)},
+                                 0.01),
+          ModeledStrokeInputNear({.position = {7.65, 11.36},
+                                  .velocity = {-4.36, -11.24},
+                                  .acceleration = {-0.57, -1.82},
+                                  .traveled_distance = 9.1,
+                                  .elapsed_time = Duration32::Seconds(2.49),
+                                  .pressure = 0.64,
+                                  .tilt = Angle::Radians(1.13),
+                                  .orientation = Angle::Radians(1.19)},
+                                 0.01),
+          ModeledStrokeInputNear({.position = {6.48, 8.56},
+                                  .velocity = {-4.63, -11.56},
+                                  .acceleration = {-0.87, -1.71},
+                                  .traveled_distance = 12.14,
+                                  .elapsed_time = Duration32::Seconds(2.72),
+                                  .pressure = 0.71,
+                                  .tilt = Angle::Radians(1.30),
+                                  .orientation = Angle::Radians(1.24)},
+                                 0.01),
+          ModeledStrokeInputNear({.position = {5.32, 5.76},
+                                  .velocity = {-4.92, -11.90},
+                                  .acceleration = {-1.20, -1.59},
+                                  .traveled_distance = 15.17,
+                                  .elapsed_time = Duration32::Seconds(2.96),
+                                  .pressure = 0.78,
+                                  .tilt = Angle::Radians(1.46),
+                                  .orientation = Angle::Radians(1.29)},
+                                 0.01),
+          ModeledStrokeInputNear({.position = {4.02, 3.05},
+                                  .velocity = {-0.50, -1.01},
+                                  .acceleration = {0.05, 0.12},
+                                  .traveled_distance = 18.18,
+                                  .elapsed_time = Duration32::Seconds(4.98),
+                                  .pressure = 1,
+                                  .tilt = Angle::Radians(1.3),
+                                  .orientation = Angle::Radians(1.5)},
+                                 0.01)));
+  EXPECT_THAT(modeler.GetModeledInputs(),
+              PositionsAreSeparatedByAtLeast(brush_epsilon));
+}
+
 TEST(StrokeInputModelerDeathTest, ExtendWithoutStart) {
   EXPECT_DEATH_IF_SUPPORTED(
       StrokeInputModeler().ExtendStroke({}, {}, Duration32::Zero()),
