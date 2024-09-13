@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
@@ -67,12 +67,12 @@ float CalculateCircleRadius(float percent_radius, float half_width,
 
 SmallArray<Circle, 4> MakeShapeControlCircles(
     const BrushTipState& tip_state, float min_nonzero_radius_and_separation) {
-  CHECK_GE(tip_state.width, 0);
-  CHECK_GE(tip_state.height, 0);
-  CHECK_GE(tip_state.percent_radius, 0);
-  CHECK_LE(tip_state.percent_radius, 1);
-  CHECK_GE(tip_state.pinch, 0);
-  CHECK_LE(tip_state.pinch, 1);
+  ABSL_CHECK_GE(tip_state.width, 0);
+  ABSL_CHECK_GE(tip_state.height, 0);
+  ABSL_CHECK_GE(tip_state.percent_radius, 0);
+  ABSL_CHECK_LE(tip_state.percent_radius, 1);
+  ABSL_CHECK_GE(tip_state.pinch, 0);
+  ABSL_CHECK_LE(tip_state.pinch, 1);
 
   float half_width = 0.5f * tip_state.width;
   float half_height = 0.5f * tip_state.height;
@@ -314,8 +314,8 @@ Vec GetForwardDirectionWithFallback(const BrushTipShape& first,
 
 BrushTipShape::TangentCircleIndices BrushTipShape::GetTangentCircleIndices(
     const BrushTipShape& first, const BrushTipShape& second) {
-  DCHECK(!first.Contains(second));
-  DCHECK(!second.Contains(first));
+  ABSL_DCHECK(!first.Contains(second));
+  ABSL_DCHECK(!second.Contains(first));
 
   // If we look at the convex hull of all of the perimeter circles, we are
   // trying to find two segments where one end is a point on `first` and the
@@ -335,8 +335,8 @@ BrushTipShape::TangentCircleIndices BrushTipShape::GetTangentCircleIndices(
     // It should be impossible for the second indices to not have a value with
     // the relaxed threshold and limit angles. At least one perimeter circle in
     // `second` should not be traveling backwards relative to `forward`.
-    DCHECK(second_left.has_value());
-    DCHECK(second_right.has_value());
+    ABSL_DCHECK(second_left.has_value());
+    ABSL_DCHECK(second_right.has_value());
 
     return TangentCircleIndices{std::make_pair(0, second_left.value_or(0)),
                                 std::make_pair(0, second_right.value_or(0))};
@@ -372,7 +372,7 @@ BrushTipShape::TangentCircleIndices BrushTipShape::GetTangentCircleIndices(
 
     // Circles in the same `BrushTipShape` should never contain one another, so
     // we should always be able to find tangents.
-    CHECK(tangent.has_value());
+    ABSL_CHECK(tangent.has_value());
 
     if (auto index_on_second =
             GetLeftmostTurningIndex(first.circles_[candidate_index_on_first],
@@ -391,7 +391,7 @@ BrushTipShape::TangentCircleIndices BrushTipShape::GetTangentCircleIndices(
     // It should be impossible for the second index to not have a value. At
     // least one control point in second should not be traveling backwards from
     // the rearmost control point in `first`.
-    DCHECK(index_on_second.has_value());
+    ABSL_DCHECK(index_on_second.has_value());
     indices.left.second = index_on_second.value_or(0);
   }
 
@@ -408,7 +408,7 @@ BrushTipShape::TangentCircleIndices BrushTipShape::GetTangentCircleIndices(
 
     // Circles in the same `BrushTipShape` should never contain one another, so
     // we should always be able to find tangents.
-    CHECK(tangent.has_value());
+    ABSL_CHECK(tangent.has_value());
 
     if (auto index_on_second =
             GetRightmostTurningIndex(first.circles_[candidate_index_on_first],
@@ -427,7 +427,7 @@ BrushTipShape::TangentCircleIndices BrushTipShape::GetTangentCircleIndices(
     // It should be impossible for the second index to not have a value. At
     // least one control point in second should not be traveling backwards from
     // the rearmost control point in `first`.
-    DCHECK(index_on_second.has_value());
+    ABSL_DCHECK(index_on_second.has_value());
     indices.right.second = index_on_second.value_or(0);
   }
 
@@ -439,7 +439,8 @@ namespace {
 // Returns the minimum bounding rectangle of the `BrushTipShape`.
 Rect Bounds(const BrushTipShape& shape) {
   absl::Span<const Circle> circles = shape.PerimeterCircles();
-  DCHECK(!circles.empty());  // There is no way to construct an "empty" shape.
+  ABSL_DCHECK(
+      !circles.empty());  // There is no way to construct an "empty" shape.
 
   float d = 2 * circles.front().Radius();
   Rect bounds = Rect::FromCenterAndDimensions(circles.front().Center(), d, d);
@@ -470,9 +471,9 @@ Rect Bounds(const BrushTipShape& shape) {
 static RoundedPolygon ConstructJoinedShape(
     const BrushTipShape& first, const BrushTipShape& second,
     const BrushTipShape::TangentCircleIndices& indices, float offset) {
-  DCHECK(!first.Contains(second));
-  DCHECK(!second.Contains(first));
-  CHECK_GE(offset, 0);
+  ABSL_DCHECK(!first.Contains(second));
+  ABSL_DCHECK(!second.Contains(first));
+  ABSL_CHECK_GE(offset, 0);
 
   // Each `BrushTipShape` has at most four circles, so we need at most eight
   // for the `RoundedPolygon`.
@@ -586,8 +587,8 @@ Circle::TangentAngles GetTangentAngles(
       first.PerimeterCircles()[tangent_indices.right.first].GetTangentAngles(
           second.PerimeterCircles()[tangent_indices.right.second]);
 
-  CHECK(left_tangents.has_value());
-  CHECK(right_tangents.has_value());
+  ABSL_CHECK(left_tangents.has_value());
+  ABSL_CHECK(right_tangents.has_value());
 
   return {.left = left_tangents->left, .right = right_tangents->right};
 }
@@ -1019,12 +1020,12 @@ bool BrushTipShape::Contains(const BrushTipShape& other_shape) const {
 }
 
 int BrushTipShape::GetNextPerimeterIndexCw(int index) const {
-  DCHECK_LT(index, circles_.Size());
+  ABSL_DCHECK_LT(index, circles_.Size());
   return index == 0 ? circles_.Size() - 1 : index - 1;
 }
 
 int BrushTipShape::GetNextPerimeterIndexCcw(int index) const {
-  DCHECK_LT(index, circles_.Size());
+  ABSL_DCHECK_LT(index, circles_.Size());
   return index + 1 >= circles_.Size() ? 0 : index + 1;
 }
 

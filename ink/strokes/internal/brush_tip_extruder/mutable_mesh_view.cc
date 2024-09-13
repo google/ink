@@ -21,7 +21,7 @@
 #include <variant>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
@@ -36,8 +36,8 @@ namespace ink::brush_tip_extruder_internal {
 using ::ink::strokes_internal::StrokeVertex;
 
 MutableMeshView::MutableMeshView(MutableMesh& mesh) : data_(&mesh) {
-  CHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(),
-                                         StrokeVertex::FullMeshFormat()));
+  ABSL_CHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(),
+                                              StrokeVertex::FullMeshFormat()));
   ResetMutationTracking();
 }
 
@@ -49,27 +49,28 @@ MutableMeshView::MutableMeshView(
 }
 
 uint32_t MutableMeshView::VertexCount() const {
-  CHECK(HasMeshData());
+  ABSL_CHECK(HasMeshData());
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
-    DCHECK_LE(legacy->vertices->size(), std::numeric_limits<uint32_t>::max());
+    ABSL_DCHECK_LE(legacy->vertices->size(),
+                   std::numeric_limits<uint32_t>::max());
     return legacy->vertices->size();
   }
   return std::get<MutableMesh*>(data_)->VertexCount();
 }
 
 uint32_t MutableMeshView::TriangleCount() const {
-  CHECK(HasMeshData());
+  ABSL_CHECK(HasMeshData());
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
-    DCHECK_EQ(legacy->indices->size() % 3, 0);
-    DCHECK_LE(legacy->indices->size() / 3,
-              std::numeric_limits<uint32_t>::max());
+    ABSL_DCHECK_EQ(legacy->indices->size() % 3, 0);
+    ABSL_DCHECK_LE(legacy->indices->size() / 3,
+                   std::numeric_limits<uint32_t>::max());
     return legacy->indices->size() / 3;
   }
   return std::get<MutableMesh*>(data_)->TriangleCount();
 }
 
 Point MutableMeshView::GetPosition(uint32_t index) const {
-  CHECK_LT(index, VertexCount());
+  ABSL_CHECK_LT(index, VertexCount());
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
     return (*legacy->vertices)[index].position;
   }
@@ -77,7 +78,7 @@ Point MutableMeshView::GetPosition(uint32_t index) const {
 }
 
 ExtrudedVertex MutableMeshView::GetVertex(uint32_t index) const {
-  CHECK_LT(index, VertexCount());
+  ABSL_CHECK_LT(index, VertexCount());
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
     return ExtrudedVertex::FromLegacy((*legacy->vertices)[index]);
   }
@@ -89,7 +90,7 @@ ExtrudedVertex MutableMeshView::GetVertex(uint32_t index) const {
 }
 
 Vec MutableMeshView::GetSideDerivative(uint32_t index) const {
-  CHECK_LT(index, VertexCount());
+  ABSL_CHECK_LT(index, VertexCount());
 
   if (const MutableMesh* const* mesh = std::get_if<MutableMesh*>(&data_)) {
     return StrokeVertex::GetSideDerivativeFromMesh(**mesh, index);
@@ -98,7 +99,7 @@ Vec MutableMeshView::GetSideDerivative(uint32_t index) const {
 }
 
 Vec MutableMeshView::GetForwardDerivative(uint32_t index) const {
-  CHECK_LT(index, VertexCount());
+  ABSL_CHECK_LT(index, VertexCount());
 
   if (const MutableMesh* const* mesh = std::get_if<MutableMesh*>(&data_)) {
     return StrokeVertex::GetForwardDerivativeFromMesh(**mesh, index);
@@ -107,7 +108,7 @@ Vec MutableMeshView::GetForwardDerivative(uint32_t index) const {
 }
 
 StrokeVertex::Label MutableMeshView::GetSideLabel(uint32_t index) const {
-  CHECK_LT(index, VertexCount());
+  ABSL_CHECK_LT(index, VertexCount());
 
   if (const MutableMesh* const* mesh = std::get_if<MutableMesh*>(&data_)) {
     return StrokeVertex::GetSideLabelFromMesh(**mesh, index);
@@ -116,7 +117,7 @@ StrokeVertex::Label MutableMeshView::GetSideLabel(uint32_t index) const {
 }
 
 StrokeVertex::Label MutableMeshView::GetForwardLabel(uint32_t index) const {
-  CHECK_LT(index, VertexCount());
+  ABSL_CHECK_LT(index, VertexCount());
 
   if (const MutableMesh* const* mesh = std::get_if<MutableMesh*>(&data_)) {
     return StrokeVertex::GetForwardLabelFromMesh(**mesh, index);
@@ -125,7 +126,7 @@ StrokeVertex::Label MutableMeshView::GetForwardLabel(uint32_t index) const {
 }
 
 Triangle MutableMeshView::GetTriangle(uint32_t triangle) const {
-  CHECK_LT(triangle, TriangleCount());
+  ABSL_CHECK_LT(triangle, TriangleCount());
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
     std::array<uint32_t, 3> indices = GetTriangleIndices(triangle);
     return {.p0 = GetPosition(indices[0]),
@@ -138,7 +139,7 @@ Triangle MutableMeshView::GetTriangle(uint32_t triangle) const {
 
 std::array<uint32_t, 3> MutableMeshView::GetTriangleIndices(
     uint32_t triangle) const {
-  CHECK_LT(triangle, TriangleCount());
+  ABSL_CHECK_LT(triangle, TriangleCount());
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
     uint32_t* index_data = legacy->indices->data() + 3 * triangle;
     return {index_data[0], index_data[1], index_data[2]};
@@ -149,8 +150,8 @@ std::array<uint32_t, 3> MutableMeshView::GetTriangleIndices(
 
 uint32_t MutableMeshView::GetVertexIndex(uint32_t triangle,
                                          uint32_t triangle_vertex) const {
-  CHECK_LT(triangle, TriangleCount());
-  CHECK_LT(triangle_vertex, 3u);
+  ABSL_CHECK_LT(triangle, TriangleCount());
+  ABSL_CHECK_LT(triangle_vertex, 3u);
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
     return (*legacy->indices)[3 * triangle + triangle_vertex];
   }
@@ -160,7 +161,7 @@ uint32_t MutableMeshView::GetVertexIndex(uint32_t triangle,
 }
 
 void MutableMeshView::AppendVertex(const ExtrudedVertex& vertex) {
-  CHECK(HasMeshData());
+  ABSL_CHECK(HasMeshData());
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
     legacy->vertices->push_back(vertex.ToLegacy());
   } else {
@@ -173,7 +174,7 @@ void MutableMeshView::AppendVertex(const ExtrudedVertex& vertex) {
 
 void MutableMeshView::AppendTriangleIndices(
     const std::array<uint32_t, 3>& indices) {
-  CHECK(HasMeshData());
+  ABSL_CHECK(HasMeshData());
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
     legacy->indices->insert(legacy->indices->end(),
                             {indices[0], indices[1], indices[2]});
@@ -183,7 +184,7 @@ void MutableMeshView::AppendTriangleIndices(
 }
 
 void MutableMeshView::SetVertex(uint32_t index, const ExtrudedVertex& vertex) {
-  CHECK_LT(index, VertexCount());
+  ABSL_CHECK_LT(index, VertexCount());
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
     (*legacy->vertices)[index] = vertex.ToLegacy();
   } else {
@@ -196,7 +197,7 @@ void MutableMeshView::SetVertex(uint32_t index, const ExtrudedVertex& vertex) {
 }
 
 void MutableMeshView::SetSideDerivative(uint32_t index, Vec derivative) {
-  CHECK_LT(index, VertexCount());
+  ABSL_CHECK_LT(index, VertexCount());
   if (std::holds_alternative<LegacyVectors>(data_)) return;
 
   StrokeVertex::SetSideDerivativeInMesh(*std::get<MutableMesh*>(data_), index,
@@ -205,7 +206,7 @@ void MutableMeshView::SetSideDerivative(uint32_t index, Vec derivative) {
 }
 
 void MutableMeshView::SetForwardDerivative(uint32_t index, Vec derivative) {
-  CHECK_LT(index, VertexCount());
+  ABSL_CHECK_LT(index, VertexCount());
   if (std::holds_alternative<LegacyVectors>(data_)) return;
 
   StrokeVertex::SetForwardDerivativeInMesh(*std::get<MutableMesh*>(data_),
@@ -215,7 +216,7 @@ void MutableMeshView::SetForwardDerivative(uint32_t index, Vec derivative) {
 
 void MutableMeshView::SetSideLabel(
     uint32_t index, strokes_internal::StrokeVertex::Label label) {
-  CHECK_LT(index, VertexCount());
+  ABSL_CHECK_LT(index, VertexCount());
   if (std::holds_alternative<LegacyVectors>(data_)) return;
 
   StrokeVertex::SetSideLabelInMesh(*std::get<MutableMesh*>(data_), index,
@@ -225,7 +226,7 @@ void MutableMeshView::SetSideLabel(
 
 void MutableMeshView::SetForwardLabel(
     uint32_t index, strokes_internal::StrokeVertex::Label label) {
-  CHECK_LT(index, VertexCount());
+  ABSL_CHECK_LT(index, VertexCount());
   if (std::holds_alternative<LegacyVectors>(data_)) return;
 
   StrokeVertex::SetForwardLabelInMesh(*std::get<MutableMesh*>(data_), index,
@@ -235,7 +236,7 @@ void MutableMeshView::SetForwardLabel(
 
 void MutableMeshView::SetTriangleIndices(
     uint32_t triangle, const std::array<uint32_t, 3>& indices) {
-  CHECK_LT(triangle, TriangleCount());
+  ABSL_CHECK_LT(triangle, TriangleCount());
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
     uint32_t* index_data = legacy->indices->data() + 3 * triangle;
     index_data[0] = indices[0];
@@ -249,7 +250,7 @@ void MutableMeshView::SetTriangleIndices(
 
 void MutableMeshView::InsertTriangleIndices(
     uint32_t triangle, const std::array<uint32_t, 3>& indices) {
-  CHECK_LE(triangle, TriangleCount());
+  ABSL_CHECK_LE(triangle, TriangleCount());
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
     auto iter = legacy->indices->begin() + 3 * triangle;
     legacy->indices->insert(iter, {indices[0], indices[1], indices[2]});

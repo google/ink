@@ -17,7 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_tip.h"
@@ -42,7 +42,7 @@ void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
   const size_t num_tips = brush_tips.size();
   // TODO: b/285594469 - For now, a BrushFamily always has exactly one tip, but
   // we'll want to relax this restriction.
-  CHECK_EQ(num_tips, 1u);
+  ABSL_CHECK_EQ(num_tips, 1u);
 
   // Initialize each brush tip's outline to empty.
   outline_indices_.clear();
@@ -76,8 +76,8 @@ StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
   // `tips_` may have additional elements (for allocation caching reasons),
   // which should be ignored for this brush.
   const uint32_t num_tips = BrushTipCount();
-  DCHECK_EQ(outline_indices_.size(), num_tips);
-  DCHECK_GE(tips_.size(), num_tips);
+  ABSL_DCHECK_EQ(outline_indices_.size(), num_tips);
+  ABSL_DCHECK_GE(tips_.size(), num_tips);
 
   for (uint32_t i = 0; i < num_tips; ++i) {
     BrushTipModeler& tip_modeler = tips_[i].modeler;
@@ -97,7 +97,7 @@ bool StrokeShapeBuilder::HasUnfinishedTimeBehaviors() const {
   // `tips_` may have additional elements (for allocation caching reasons),
   // which should be ignored for this brush.
   const uint32_t num_tips = BrushTipCount();
-  DCHECK_GE(tips_.size(), num_tips);
+  ABSL_DCHECK_GE(tips_.size(), num_tips);
   for (uint32_t i = 0; i < num_tips; ++i) {
     if (tips_[i].modeler.HasUnfinishedTimeBehaviors(
             input_modeler_.GetState())) {

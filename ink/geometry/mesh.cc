@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/strings/substitute.h"
 #include "absl/types/span.h"
@@ -43,7 +43,7 @@ std::optional<mesh_internal::AttributeBoundsArray> ComputeAttributeBounds(
   // Consistency check -- we've already validated that `vertex_attributes` has
   // the correct number of spans for `format`, and you can't create an empty
   // `MeshFormat`, so it should be impossible for this to fail.
-  CHECK(!vertex_attributes.empty());
+  ABSL_CHECK(!vertex_attributes.empty());
 
   if (vertex_attributes[0].empty()) return std::nullopt;
 
@@ -99,7 +99,7 @@ absl::StatusOr<Mesh> Mesh::Create(
                          total_attr_components, vertex_attributes.size()));
   }
   // The check above should ensure that `vertex_attributes` is not empty.
-  DCHECK_GT(vertex_attributes.size(), 0);
+  ABSL_DCHECK_GT(vertex_attributes.size(), 0);
 
   constexpr int kMaxVertices = 1 << (8 * kBytesPerIndex);
   size_t n_vertices = vertex_attributes[0].size();
@@ -167,8 +167,8 @@ absl::StatusOr<Mesh> Mesh::Create(
 
 SmallArray<float, 4> Mesh::FloatVertexAttribute(
     uint32_t vertex_index, uint32_t attribute_index) const {
-  DCHECK_LT(attribute_index, Format().Attributes().size());
-  DCHECK_LT(attribute_index, data_->unpacking_params.Size());
+  ABSL_DCHECK_LT(attribute_index, Format().Attributes().size());
+  ABSL_DCHECK_LT(attribute_index, data_->unpacking_params.Size());
   absl::Span<const std::byte> packed_value =
       PackedVertexAttribute(vertex_index, attribute_index);
   return mesh_internal::UnpackAttribute(
@@ -178,7 +178,7 @@ SmallArray<float, 4> Mesh::FloatVertexAttribute(
 
 SmallArray<uint32_t, 4> Mesh::PackedIntegersForFloatVertexAttribute(
     uint32_t vertex_index, uint32_t attribute_index) const {
-  DCHECK_LT(attribute_index, Format().Attributes().size());
+  ABSL_DCHECK_LT(attribute_index, Format().Attributes().size());
   absl::Span<const std::byte> packed_value =
       PackedVertexAttribute(vertex_index, attribute_index);
   return mesh_internal::UnpackIntegersFromPackedAttribute(
@@ -187,9 +187,9 @@ SmallArray<uint32_t, 4> Mesh::PackedIntegersForFloatVertexAttribute(
 
 absl::Span<const std::byte> Mesh::PackedVertexAttribute(
     uint32_t vertex_index, uint32_t attribute_index) const {
-  DCHECK_LT(vertex_index, VertexCount());
-  DCHECK_LT(attribute_index, Format().Attributes().size());
-  DCHECK_LT(attribute_index, data_->unpacking_params.Size());
+  ABSL_DCHECK_LT(vertex_index, VertexCount());
+  ABSL_DCHECK_LT(attribute_index, Format().Attributes().size());
+  ABSL_DCHECK_LT(attribute_index, data_->unpacking_params.Size());
   const MeshFormat::Attribute attr = Format().Attributes()[attribute_index];
   return absl::MakeSpan(
       &data_->vertex_data[vertex_index * VertexStride() + attr.packed_offset],

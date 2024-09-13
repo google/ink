@@ -21,7 +21,7 @@
 #include <initializer_list>
 
 #include "absl/algorithm/container.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 
 namespace ink {
@@ -47,18 +47,18 @@ class SmallArray {
   // Constructs a container with `count` elements, all initialized to `value`.
   // DCHECK-fails if `count` > `N`, which results in undefined behavior in prod.
   explicit SmallArray(uint8_t count, const T& value = T()) : size_(count) {
-    DCHECK_LE(count, N);
+    ABSL_DCHECK_LE(count, N);
     std::fill(data_.begin(), data_.begin() + size_, value);
   }
 
   // Constructs a container populated by `values`. DCHECK-fails if
   // `values.size()` > `N`, which results in undefined behavior in prod.
   SmallArray(std::initializer_list<T> values) : size_(values.size()) {
-    DCHECK_LE(values.size(), N);
+    ABSL_DCHECK_LE(values.size(), N);
     std::copy(values.begin(), values.end(), data_.begin());
   }
   explicit SmallArray(absl::Span<const T> values) : size_(values.size()) {
-    DCHECK_LE(values.size(), N);
+    ABSL_DCHECK_LE(values.size(), N);
     std::copy(values.begin(), values.end(), data_.begin());
   }
 
@@ -77,7 +77,7 @@ class SmallArray {
   // DCHECK-fails if `new_size` > N, which results in undefined behavior in
   // prod.
   void Resize(uint8_t new_size, const T& value = T()) {
-    DCHECK_LE(new_size, N);
+    ABSL_DCHECK_LE(new_size, N);
     if (new_size == size_) return;
     if (new_size > size_) {
       std::fill(data_.begin() + size_, data_.begin() + new_size, value);
@@ -96,11 +96,11 @@ class SmallArray {
   // Random access to the elements in the container. DCHECK-fails if `index` >=
   // `Size()`, which results in undefined behavior in prod.
   T& operator[](uint8_t index) {
-    DCHECK_LT(index, size_);
+    ABSL_DCHECK_LT(index, size_);
     return data_[index];
   }
   const T& operator[](uint8_t index) const {
-    DCHECK_LT(index, size_);
+    ABSL_DCHECK_LT(index, size_);
     return data_[index];
   }
 

@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "benchmark/benchmark.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
@@ -49,10 +49,10 @@ std::vector<StrokeInputBatch> MakeInputBatches() {
 Brush MakeBrush(BrushTip brush_tip, float brush_size) {
   absl::StatusOr<BrushFamily> family =
       BrushFamily::Create(brush_tip, BrushPaint{});
-  CHECK_OK(family);
+  ABSL_CHECK_OK(family);
   absl::StatusOr<Brush> brush = Brush::Create(
       *std::move(family), Color::Black(), brush_size, kBrushEpsilon);
-  CHECK_OK(brush);
+  ABSL_CHECK_OK(brush);
   return *std::move(brush);
 }
 

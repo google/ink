@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/point.h"
@@ -42,7 +42,7 @@ Rect GetBoundingBox(
       envelope.Add(predicted_input.position);
     }
   }
-  CHECK(!envelope.IsEmpty());
+  ABSL_CHECK(!envelope.IsEmpty());
 
   return *envelope.AsRect();
 }
@@ -53,7 +53,7 @@ Rect GetBoundingBox(const StrokeInputBatch& batch) {
   for (StrokeInput input : batch) {
     envelope.Add(input.position);
   }
-  CHECK(!envelope.IsEmpty());
+  ABSL_CHECK(!envelope.IsEmpty());
 
   return *envelope.AsRect();
 }
@@ -72,7 +72,7 @@ void BoundTestInputs(
     std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>>& batches) {
   Rect raw_bounds = GetBoundingBox(batches);
   auto transform = AffineTransform::Find(raw_bounds, bounds);
-  CHECK(transform.has_value());
+  ABSL_CHECK(transform.has_value());
 
   ApplyAffineTransform(*transform, batches);
 }
@@ -80,7 +80,7 @@ void BoundTestInputs(
 void BoundTestInputs(const Rect& bounds, StrokeInputBatch& batch) {
   Rect raw_bounds = GetBoundingBox(batch);
   auto transform = AffineTransform::Find(raw_bounds, bounds);
-  CHECK(transform.has_value());
+  ABSL_CHECK(transform.has_value());
 
   batch.Transform(*transform);
 }
@@ -89,7 +89,7 @@ StrokeInputBatch GetRealCombinedInputs(
     const std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>>& batches) {
   StrokeInputBatch real_inputs;
   for (const auto& inputs : batches) {
-    CHECK_OK(real_inputs.Append(inputs.first));
+    ABSL_CHECK_OK(real_inputs.Append(inputs.first));
   }
   return real_inputs;
 }

@@ -19,7 +19,7 @@
 #include <cmath>
 #include <string>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/angle.h"
 
 namespace ink {
@@ -153,7 +153,7 @@ inline Vec operator*(float scalar, Vec v) {
 }
 inline Vec operator*(Vec v, float scalar) { return scalar * v; }
 inline Vec operator/(Vec v, float scalar) {
-  CHECK_NE(scalar, 0);
+  ABSL_CHECK_NE(scalar, 0);
   return {.x = v.x / scalar, .y = v.y / scalar};
 }
 

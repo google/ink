@@ -67,7 +67,7 @@ cc_library(
         "//ink/geometry:segment",
         "//ink/geometry:triangle",
         "//ink/jni/internal:jni_defines",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ] + select({
         "@platforms//os:android": [],
@@ -93,7 +93,7 @@ cc_library(
         "//ink/geometry:segment",
         "//ink/geometry:triangle",
         "//ink/jni/internal:jni_defines",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ] + select({
         "@platforms//os:android": [],
@@ -116,7 +116,7 @@ cc_library(
         "//ink/geometry:mesh_packing_types",
         "//ink/geometry:point",
         "//ink/jni/internal:jni_defines",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ] + select({
         "@platforms//os:android": [],
@@ -174,7 +174,7 @@ cc_library(
         "//ink/geometry:envelope",
         "//ink/geometry:rect",
         "//ink/jni/internal:jni_defines",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -226,7 +226,7 @@ cc_library(
     deps = [
         "//ink/geometry:point",
         "//ink/geometry:quad",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -244,7 +244,7 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_defines",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -263,7 +263,7 @@ cc_library(
     deps = [
         "//ink/geometry:point",
         "//ink/geometry:vec",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [

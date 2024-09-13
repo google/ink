@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
@@ -35,7 +35,7 @@ JNI_METHOD(brush, BrushCoat, jlong, nativeCreateBrushCoat)
   tips.reserve(num_tips);
   jlong* tip_pointers =
       env->GetLongArrayElements(tip_native_pointer_array, nullptr);
-  CHECK(tip_pointers);
+  ABSL_CHECK(tip_pointers);
   for (jsize i = 0; i < num_tips; ++i) {
     tips.push_back(ink::CastToBrushTip(tip_pointers[i]));
   }

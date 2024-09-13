@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
@@ -46,7 +46,7 @@ void BuildStrokeShapeIncrementally(
     const Brush& brush,
     const std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>>& inputs,
     StrokeShapeBuilder& builder) {
-  CHECK_EQ(brush.CoatCount(), 1u);
+  ABSL_CHECK_EQ(brush.CoatCount(), 1u);
   builder.StartStroke(BrushFamily::DefaultInputModel(),
                       brush.GetCoats()[0].tips, brush.GetSize(),
                       brush.GetEpsilon());
@@ -79,7 +79,7 @@ void BuildStrokeShapeAllAtOnce(const Brush& brush,
                                const StrokeInputBatch& inputs,
                                StrokeShapeBuilder& builder) {
   benchmark::DoNotOptimize(builder);
-  CHECK_EQ(brush.CoatCount(), 1u);
+  ABSL_CHECK_EQ(brush.CoatCount(), 1u);
   builder.StartStroke(BrushFamily::DefaultInputModel(),
                       brush.GetCoats()[0].tips, brush.GetSize(),
                       brush.GetEpsilon());
@@ -104,7 +104,7 @@ Brush MakeDefaultBrush(float size, float epsilon) {
   BrushFamily family;
   Color color;
   absl::StatusOr<Brush> brush = Brush::Create(family, color, size, epsilon);
-  CHECK_OK(brush);
+  ABSL_CHECK_OK(brush);
   return *std::move(brush);
 }
 
@@ -133,10 +133,10 @@ Brush MakeSingleBehaviorBrush(float size, float epsilon) {
       }}}};
   absl::StatusOr<BrushFamily> family =
       BrushFamily::Create(tip, BrushPaint{}, "");
-  CHECK_OK(family);
+  ABSL_CHECK_OK(family);
   Color color;
   absl::StatusOr<Brush> brush = Brush::Create(*family, color, size, epsilon);
-  CHECK_OK(brush);
+  ABSL_CHECK_OK(brush);
   return *std::move(brush);
 }
 
@@ -200,10 +200,10 @@ Brush MakeMultiBehaviorBrush(float size, float epsilon) {
           }}}};
   absl::StatusOr<BrushFamily> family =
       BrushFamily::Create(tip, BrushPaint{}, "");
-  CHECK_OK(family);
+  ABSL_CHECK_OK(family);
   Color color;
   absl::StatusOr<Brush> brush = Brush::Create(*family, color, size, epsilon);
-  CHECK_OK(brush);
+  ABSL_CHECK_OK(brush);
   return *std::move(brush);
 }
 
@@ -235,7 +235,7 @@ void BM_Dot(benchmark::State& state) {
                                  .pressure = 0.657875,
                                  .tilt = 0.0833333 * kPi,
                                  .orientation = 1.5 * kPi}});
-  CHECK_OK(dot_input);
+  ABSL_CHECK_OK(dot_input);
   Brush brush = MakeDefaultBrush(20, 0.05);
   for (auto s : state) {
     BuildStrokeShapeAllAtOnce(brush, *dot_input);

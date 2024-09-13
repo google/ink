@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "fuzztest/fuzztest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -361,7 +361,7 @@ Domain<std::vector<BrushBehavior::Node>> ValidBrushBehaviorNodeLeaf() {
 // root) with the specified maximum depth (which must be strictly positive).
 Domain<std::vector<BrushBehavior::Node>>
 ValidBrushBehaviorNodeSubtreeWithMaxDepth(int max_depth) {
-  CHECK_GT(max_depth, 0);
+  ABSL_CHECK_GT(max_depth, 0);
   // If `max_depth` is 1, the subtree can only be a leaf node.
   if (max_depth == 1) return ValidBrushBehaviorNodeLeaf();
 
@@ -503,7 +503,7 @@ Domain<Uri> ValidBrushFamilyUri() {
   return Map(
       [](absl::string_view uri_string) {
         absl::StatusOr<Uri> uri = Uri::Parse(uri_string);
-        CHECK_OK(uri);
+        ABSL_CHECK_OK(uri);
         return *std::move(uri);
       },
       InRegexp(
@@ -514,7 +514,7 @@ Domain<Uri> ValidColorTextureUri() {
   return Map(
       [](absl::string_view uri_string) {
         absl::StatusOr<Uri> uri = Uri::Parse(uri_string);
-        CHECK_OK(uri);
+        ABSL_CHECK_OK(uri);
         return *std::move(uri);
       },
       InRegexp("^(ink:|INK:)?(//[a-z-]+)?/(texture):[a-z-]+(:[1-9]{1,9})?"));

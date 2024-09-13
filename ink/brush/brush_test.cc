@@ -20,7 +20,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -44,7 +44,7 @@ using ::testing::Pointwise;
 
 Uri CreateTestTextureUri() {
   auto uri = Uri::Parse("ink://ink/texture:test-texture");
-  CHECK_OK(uri);
+  ABSL_CHECK_OK(uri);
   return *uri;
 }
 
@@ -84,7 +84,7 @@ BrushFamily CreateTestFamily() {
                                           .rotation = kHalfPi / 2}},
                            .blend_mode = BrushPaint::BlendMode::kDstIn}}},
       "/brush-family:test-family");
-  CHECK_OK(family);
+  ABSL_CHECK_OK(family);
   return *family;
 }
 

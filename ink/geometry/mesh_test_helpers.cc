@@ -18,7 +18,7 @@
 #include <cstdint>
 #include <utility>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
@@ -35,7 +35,7 @@ MeshFormat MakeSinglePackedPositionFormat() {
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedIn1Float,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  CHECK_OK(format);
+  ABSL_CHECK_OK(format);
   return *format;
 }
 
@@ -63,7 +63,7 @@ ModeledShape MakeStraightLineModeledShape(
     const AffineTransform& vertex_transform) {
   absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
       MakeStraightLineMutableMesh(num_triangles, format, vertex_transform));
-  CHECK_OK(shape);
+  ABSL_CHECK_OK(shape);
   return *std::move(shape);
 }
 
@@ -95,7 +95,7 @@ ModeledShape MakeCoiledRingModeledShape(
   absl::StatusOr<ModeledShape> shape =
       ModeledShape::FromMutableMesh(MakeCoiledRingMutableMesh(
           n_triangles, n_subdivisions, format, vertex_transform));
-  CHECK_OK(shape);
+  ABSL_CHECK_OK(shape);
   return *std::move(shape);
 }
 
@@ -120,7 +120,7 @@ ModeledShape MakeStarModeledShape(uint32_t n_triangles,
                                   const AffineTransform& vertex_transform) {
   absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
       MakeStarMutableMesh(n_triangles, format, vertex_transform));
-  CHECK_OK(shape);
+  ABSL_CHECK_OK(shape);
   return *std::move(shape);
 }
 

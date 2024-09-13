@@ -27,7 +27,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/base/nullability.h"
 #include "absl/cleanup/cleanup.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/distance.h"
 #include "ink/geometry/envelope.h"
@@ -433,9 +433,10 @@ void CaptureGeometrySinceLastExtrusionBreak(
     absl::Span<const uint32_t> opposite_side_offsets, const Side& left_side,
     const Side& right_side, const GeometryExtrusionBreak& last_extrusion_break,
     GeometrySavePointState& save_point_state) {
-  CHECK_LE(last_extrusion_break.vertex_count, save_point_state.n_mesh_vertices);
-  CHECK_LE(last_extrusion_break.triangle_count,
-           save_point_state.n_mesh_triangles);
+  ABSL_CHECK_LE(last_extrusion_break.vertex_count,
+                save_point_state.n_mesh_vertices);
+  ABSL_CHECK_LE(last_extrusion_break.triangle_count,
+                save_point_state.n_mesh_triangles);
 
   std::copy(vertex_side_ids.begin() + last_extrusion_break.vertex_count,
             vertex_side_ids.begin() + save_point_state.n_mesh_vertices,
@@ -460,7 +461,8 @@ void CaptureGeometrySinceLastExtrusionBreak(
       [](const Side& side,
          const GeometryExtrusionBreak::SideInfo& side_extrusion_break,
          GeometrySavePointState::SideState& side_save_state) {
-        CHECK_LE(side_extrusion_break.index_count, side_save_state.n_indices);
+        ABSL_CHECK_LE(side_extrusion_break.index_count,
+                      side_save_state.n_indices);
 
         std::copy(side.indices.begin() + side_extrusion_break.index_count,
                   side.indices.begin() + side_save_state.n_indices,
@@ -760,7 +762,7 @@ Geometry::TriangleWinding Geometry::ProposedTriangleWinding(
 
 Geometry::TriangleWinding Geometry::ProposedIntersectionTriangleWinding(
     const Side& intersecting_side, Point proposed_position) const {
-  DCHECK(intersecting_side.intersection.has_value());
+  ABSL_DCHECK(intersecting_side.intersection.has_value());
   if (!intersecting_side.intersection.has_value()) {
     return TriangleWinding::kDegenerate;
   }
@@ -780,13 +782,13 @@ Geometry::TriangleWinding Geometry::ProposedIntersectionTriangleWinding(
 
 Side& Geometry::OpposingSide(Side& side) {
   if (side.self_id == SideId::kLeft) return right_side_;
-  DCHECK(side.self_id == SideId::kRight);
+  ABSL_DCHECK(side.self_id == SideId::kRight);
   return left_side_;
 }
 
 const Side& Geometry::OpposingSide(const Side& side) const {
   if (side.self_id == SideId::kLeft) return right_side_;
-  DCHECK(side.self_id == SideId::kRight);
+  ABSL_DCHECK(side.self_id == SideId::kRight);
   return left_side_;
 }
 
@@ -936,8 +938,8 @@ void Geometry::SimplifyBufferedVertices(float initial_outline_reposition_budget,
 
 bool Geometry::TriangleIndicesAreLeftRightConforming(
     absl::Span<const IndexType> indices) const {
-  DCHECK_EQ(left_side_.first_triangle_vertex, 0);
-  DCHECK_EQ(right_side_.first_triangle_vertex, 1);
+  ABSL_DCHECK_EQ(left_side_.first_triangle_vertex, 0);
+  ABSL_DCHECK_EQ(right_side_.first_triangle_vertex, 1);
   return vertex_side_ids_[indices[0]] == SideId::kLeft &&
          vertex_side_ids_[indices[1]] == SideId::kRight;
 }
@@ -1841,7 +1843,7 @@ void Geometry::UpdateIntersectionOuterVertices(Side& intersecting_side,
 
   IndexType first_outside_index = mesh_.GetVertexIndex(
       pivot_first_triangle, opposite_side.first_triangle_vertex);
-  DCHECK(vertex_side_ids_[first_outside_index] == opposite_side.self_id);
+  ABSL_DCHECK(vertex_side_ids_[first_outside_index] == opposite_side.self_id);
   if (vertex_side_ids_[first_outside_index] != opposite_side.self_id) {
     // This *should* be impossible, but protect against it anyway.
     return;
@@ -2147,7 +2149,7 @@ void Geometry::UndoNonCcwPartitionSeparationIfNeeded(
   // the same position and that position is not the same as the last position in
   // the previous partition.
   auto partition_was_collapsed_and_moved = [this](const Side& side) -> bool {
-    DCHECK_GT(side.partition_start.adjacent_first_index_offset, 0);
+    ABSL_DCHECK_GT(side.partition_start.adjacent_first_index_offset, 0);
 
     uint32_t first_offset = side.partition_start.adjacent_first_index_offset;
     Point last_position = LastVertex(side).position;
@@ -2164,7 +2166,7 @@ void Geometry::UndoNonCcwPartitionSeparationIfNeeded(
   auto proposed_winding_from_last_partition =
       [this](const Side& side,
              const ExtrudedVertex& proposed_vertex) -> TriangleWinding {
-    DCHECK_GT(side.partition_start.adjacent_first_index_offset, 0);
+    ABSL_DCHECK_GT(side.partition_start.adjacent_first_index_offset, 0);
 
     uint32_t first_offset = side.partition_start.adjacent_first_index_offset;
     Triangle triangle = {
@@ -2180,7 +2182,7 @@ void Geometry::UndoNonCcwPartitionSeparationIfNeeded(
   };
 
   auto move_vertices_to_end_of_last_partition = [this](Side& side) {
-    DCHECK_GT(side.partition_start.adjacent_first_index_offset, 0);
+    ABSL_DCHECK_GT(side.partition_start.adjacent_first_index_offset, 0);
 
     auto target_index = side.indices.begin() +
                         side.partition_start.adjacent_first_index_offset - 1;
@@ -2354,8 +2356,8 @@ void Geometry::TriangleBuilder::TryAppend(Side& new_vertex_side) {
 void Geometry::TriangleBuilder::TryAppendSlowPath(
     TriangleWinding proposed_winding, const SlowPathTriangleInfo& info) {
   if (proposed_winding == TriangleWinding::kCounterClockwise) {
-    DCHECK(info.adjacent_side->intersection.has_value() ||
-           info.opposite_side->intersection.has_value());
+    ABSL_DCHECK(info.adjacent_side->intersection.has_value() ||
+                info.opposite_side->intersection.has_value());
 
     if (!info.opposite_side->intersection.has_value()) {
       HandleCcwAdjacentIntersectingTriangle(info);

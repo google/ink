@@ -17,7 +17,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
@@ -37,7 +37,7 @@ using ::testing::Each;
 using ::testing::Not;
 
 Vec ToVec(const SmallArray<float, 4>& attribute) {
-  CHECK_EQ(attribute.Size(), 2);
+  ABSL_CHECK_EQ(attribute.Size(), 2);
   return {attribute[0], attribute[1]};
 }
 

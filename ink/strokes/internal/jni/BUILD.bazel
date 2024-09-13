@@ -43,7 +43,7 @@ cc_library(
         "//ink/jni/internal:jni_defines",
         "//ink/strokes:stroke",
         "//ink/strokes/input:stroke_input_batch",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
     ] + select({
         "@platforms//os:android": [],
@@ -73,7 +73,7 @@ cc_library(
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/types:span",
     ] + select({
@@ -96,7 +96,7 @@ cc_library(
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
         "//ink/types:physical_distance",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
     ] + select({
@@ -119,7 +119,7 @@ cc_library(
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
         "//ink/types:physical_distance",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [

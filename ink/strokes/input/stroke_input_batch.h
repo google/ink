@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
@@ -173,7 +173,8 @@ class StrokeInputBatch {
 
  private:
   void DebugCheckSizeAndFormatAreConsistent() const {
-    DCHECK_EQ(size_ * FloatsPerInput(), data_.HasValue() ? data_->size() : 0);
+    ABSL_DCHECK_EQ(size_ * FloatsPerInput(),
+                   data_.HasValue() ? data_->size() : 0);
   }
 
   // The following helpers return the number of floats needed to store the
@@ -328,7 +329,7 @@ inline bool StrokeInputBatch::HasOrientation() const {
 
 inline StrokeInputBatch::ConstIterator::pointer
 StrokeInputBatch::ConstIterator::operator->() const {
-  DCHECK(!batch_subdata_.empty())
+  ABSL_DCHECK(!batch_subdata_.empty())
       << "Attempted to dereference singular or past-the-end iterator";
   return &value_;
 }

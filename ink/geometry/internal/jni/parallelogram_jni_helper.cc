@@ -16,7 +16,7 @@
 
 #include <jni.h>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
 
@@ -29,7 +29,7 @@ void FillJMutableParallelogram(JNIEnv* env, const Quad& quad,
   jmethodID setter_method =
       env->GetMethodID(mutable_parallelogram_class,
                        "setCenterDimensionsRotationAndShear", "(FFFFFF)V");
-  CHECK(setter_method);
+  ABSL_CHECK(setter_method);
   env->CallVoidMethod(mutable_parallelogram, setter_method, quad.Center().x,
                       quad.Center().y, quad.Width(), quad.Height(),
                       quad.Rotation().ValueInRadians(), quad.ShearFactor());

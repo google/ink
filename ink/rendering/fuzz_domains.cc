@@ -4,7 +4,7 @@
 #include <cstdint>
 
 #include "fuzztest/fuzztest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/color/fuzz_domains.h"
 #include "ink/rendering/bitmap.h"
 
@@ -28,8 +28,8 @@ Domain<Bitmap::PixelFormat> ArbitraryBitmapPixelFormat() {
 // LINT.ThenChange(bitmap.h:pixel_format)
 
 Domain<Bitmap> ValidBitmapWithMaxSize(int max_width, int max_height) {
-  CHECK_GE(max_width, 1);
-  CHECK_GE(max_height, 1);
+  ABSL_CHECK_GE(max_width, 1);
+  ABSL_CHECK_GE(max_height, 1);
   return FlatMap(
       [](int width, int height, Bitmap::PixelFormat pixel_format) {
         return StructOf<Bitmap>(

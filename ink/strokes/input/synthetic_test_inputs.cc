@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/rect.h"
 #include "ink/strokes/input/stroke_input.h"
@@ -51,7 +51,7 @@ StrokeInputBatch MakeCompleteLissajousCurveInputs(
   }
 
   auto input_batch = StrokeInputBatch::Create(inputs);
-  CHECK_OK(input_batch);
+  ABSL_CHECK_OK(input_batch);
   return *std::move(input_batch);
 }
 

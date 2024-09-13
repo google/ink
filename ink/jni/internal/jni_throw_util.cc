@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 
 namespace ink {
@@ -55,7 +55,7 @@ bool CheckOkOrThrow(JNIEnv* env, const absl::Status& status) {
 }
 
 void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status) {
-  CHECK(!status.ok());
+  ABSL_CHECK(!status.ok());
   ThrowException(env, ExceptionClassForStatusCode(status.code()),
                  status.ToString());
 }
@@ -63,7 +63,7 @@ void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status) {
 void ThrowException(JNIEnv* env, const char* java_exception_path,
                     const std::string& message) {
   jclass exception_class = env->FindClass(java_exception_path);
-  CHECK(exception_class);
+  ABSL_CHECK(exception_class);
   env->ThrowNew(exception_class, message.c_str());
 }
 

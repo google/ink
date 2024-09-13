@@ -17,7 +17,7 @@
 #include <cstddef>
 #include <memory>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/internal/jni/envelope_jni_helper.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
@@ -91,7 +91,7 @@ JNI_METHOD(geometry, MeshNative, jobject, createRawTriangleIndexBuffer)
 (JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh) {
   const Mesh* mesh = GetMesh(raw_ptr_to_mesh);
   // `Mesh`'s indices should always be two bytes each.
-  CHECK_EQ(mesh->IndexStride(), 2);
+  ABSL_CHECK_EQ(mesh->IndexStride(), 2);
   const absl::Span<const std::byte> raw_triangle_index_data =
       mesh->RawIndexData();
   if (raw_triangle_index_data.data() == nullptr) return nullptr;
@@ -127,7 +127,7 @@ JNI_METHOD(geometry, MeshNative, jint, fillAttributeUnpackingParams)
   absl::Span<const ink::MeshAttributeCodingParams::ComponentCodingParams>
       coding_params = mesh->VertexAttributeUnpackingParams(attribute_index)
                           .components.Values();
-  CHECK_LE(coding_params.size(), kMaxAttributeUnpackingParamComponents);
+  ABSL_CHECK_LE(coding_params.size(), kMaxAttributeUnpackingParamComponents);
   jfloat offset_values[kMaxAttributeUnpackingParamComponents];
   jfloat scale_values[kMaxAttributeUnpackingParamComponents];
   for (int i = 0; i < coding_params.size(); ++i) {

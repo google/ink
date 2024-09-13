@@ -20,7 +20,7 @@
 #include <cstdint>
 #include <string>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "ink/color/color_space.h"
@@ -196,8 +196,8 @@ Color::RgbaFloat Color::AsFloat(Format format) const {
     rgba.g = GammaEncode(rgba.g, color_space_);
     rgba.b = GammaEncode(rgba.b, color_space_);
   } else if (format == Format::kPremultipliedAlpha) {
-    DCHECK_GE(rgba.a, 0.0f);
-    DCHECK_LE(rgba.a, 1.0f);
+    ABSL_DCHECK_GE(rgba.a, 0.0f);
+    ABSL_DCHECK_LE(rgba.a, 1.0f);
     if (rgba.a == 0.0f) {
       // This branch needs special handling because infinite channel values are
       // permitted, and zero times infinity is NaN. We want it to be zero.

@@ -24,7 +24,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/base/nullability.h"
 #include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_behavior.h"
@@ -215,9 +215,9 @@ Duration32 TimeSinceLastInput(
 
 void BrushTipModeler::StartStroke(absl::Nonnull<const BrushTip*> brush_tip,
                                   float brush_size) {
-  CHECK_NE(brush_tip, nullptr);
-  CHECK(std::isfinite(brush_size));
-  CHECK_GT(brush_size, 0);
+  ABSL_CHECK_NE(brush_tip, nullptr);
+  ABSL_CHECK(std::isfinite(brush_size));
+  ABSL_CHECK_GT(brush_size, 0);
 
   brush_tip_ = brush_tip;
   brush_size_ = brush_size;
@@ -316,16 +316,17 @@ void BrushTipModeler::AppendBehaviorNode(
 void BrushTipModeler::UpdateStroke(
     const StrokeInputModeler::State& input_modeler_state,
     absl::Span<const ModeledStrokeInput> inputs) {
-  CHECK_NE(brush_tip_, nullptr);
+  ABSL_CHECK_NE(brush_tip_, nullptr);
 
   saved_tip_states_.clear();
   if (inputs.empty()) return;
 
   InputMetrics max_fixed_metrics =
       CalculateMaxFixedInputMetrics(input_modeler_state, inputs);
-  DCHECK_EQ(fixed_damped_values_.size(), current_damped_values_.size());
+  ABSL_DCHECK_EQ(fixed_damped_values_.size(), current_damped_values_.size());
   absl::c_copy(fixed_damped_values_, current_damped_values_.begin());
-  DCHECK_EQ(fixed_target_modifiers_.size(), current_target_modifiers_.size());
+  ABSL_DCHECK_EQ(fixed_target_modifiers_.size(),
+                 current_target_modifiers_.size());
   absl::c_copy(fixed_target_modifiers_, current_target_modifiers_.begin());
 
   absl::Nullable<const ModeledStrokeInput*> previous_input =
@@ -359,9 +360,10 @@ void BrushTipModeler::UpdateStroke(
   // Save the necessary fixed properties:
   last_fixed_modeled_tip_state_metrics_ = last_modeled_tip_state_metrics;
   new_fixed_tip_state_count_ = saved_tip_states_.size();
-  DCHECK_EQ(current_damped_values_.size(), fixed_damped_values_.size());
+  ABSL_DCHECK_EQ(current_damped_values_.size(), fixed_damped_values_.size());
   absl::c_copy(current_damped_values_, fixed_damped_values_.begin());
-  DCHECK_EQ(current_target_modifiers_.size(), fixed_target_modifiers_.size());
+  ABSL_DCHECK_EQ(current_target_modifiers_.size(),
+                 fixed_target_modifiers_.size());
   absl::c_copy(current_target_modifiers_, fixed_target_modifiers_.begin());
 
   // Generate the remaining tip states, which are volatile:
@@ -434,7 +436,7 @@ void BrushTipModeler::ProcessSingleInput(
   // between the previous and current inputs.
 
   // If we have already modeled a tip state, we must have already had an input.
-  DCHECK(previous_input != nullptr);
+  ABSL_DCHECK(previous_input != nullptr);
 
   // Emit as many particles as can fit according to `particle_gap_metrics_`,
   // taking into account that there will usually be some budget left over from
@@ -487,7 +489,7 @@ void BrushTipModeler::AddNewTipState(
     const ModeledStrokeInput& input,
     std::optional<InputMetrics> previous_input_metrics,
     std::optional<InputMetrics>& last_modeled_tip_state_metrics) {
-  CHECK_NE(brush_tip_, nullptr);
+  ABSL_CHECK_NE(brush_tip_, nullptr);
   BehaviorNodeContext context = {
       .input_modeler_state = input_modeler_state,
       .current_input = input,
@@ -497,11 +499,11 @@ void BrushTipModeler::AddNewTipState(
       .damped_values = absl::MakeSpan(current_damped_values_),
       .target_modifiers = absl::MakeSpan(current_target_modifiers_),
   };
-  DCHECK(behavior_stack_.empty());
+  ABSL_DCHECK(behavior_stack_.empty());
   for (const BehaviorNodeImplementation& node : behavior_nodes_) {
     ProcessBehaviorNode(node, context);
   }
-  DCHECK(behavior_stack_.empty());
+  ABSL_DCHECK(behavior_stack_.empty());
 
   saved_tip_states_.push_back(CreateTipState(
       input.position, input.velocity.Direction(), *brush_tip_, brush_size_,

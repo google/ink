@@ -17,7 +17,7 @@
 
 #include <jni.h>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 
@@ -27,7 +27,7 @@ namespace ink {
 // immutable.
 inline const ink::StrokeInputBatch& CastToStrokeInputBatch(
     jlong batch_native_pointer) {
-  CHECK_NE(batch_native_pointer, 0)
+  ABSL_CHECK_NE(batch_native_pointer, 0)
       << "Invalid native pointer for StrokeInputBatch.";
   return *reinterpret_cast<ink::StrokeInputBatch*>(batch_native_pointer);
 }
@@ -36,7 +36,7 @@ inline const ink::StrokeInputBatch& CastToStrokeInputBatch(
 // StrokeInputBatch.
 inline ink::StrokeInputBatch* CastToMutableStrokeInputBatch(
     jlong mutable_batch_native_pointer) {
-  CHECK_NE(mutable_batch_native_pointer, 0)
+  ABSL_CHECK_NE(mutable_batch_native_pointer, 0)
       << "Invalid native pointer for MutableStrokeInputBatch.";
   return reinterpret_cast<ink::StrokeInputBatch*>(mutable_batch_native_pointer);
 }

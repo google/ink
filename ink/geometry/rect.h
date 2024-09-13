@@ -19,7 +19,7 @@
 #include <array>
 #include <string>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/segment.h"
 #include "ink/geometry/vec.h"
@@ -42,7 +42,7 @@ class Rect {
   // Constructs a Rect centered on the given point, with the given width and
   // height. This CHECK-fails if either width or height is less than zero.
   static Rect FromCenterAndDimensions(Point center, float width, float height) {
-    CHECK(width >= 0 && height >= 0)
+    ABSL_CHECK(width >= 0 && height >= 0)
         << "Cannot construct a rectangle with negative width or height";
     return Rect(center.x - width / 2, center.y - height / 2,
                 center.x + width / 2, center.y + height / 2);
@@ -95,7 +95,7 @@ class Rect {
   // Returns the aspect ration of the Rect, i.e. the width divided by the
   // height. This CHECK-fails if the height is zero.
   float AspectRatio() const {
-    CHECK(Height() != 0)
+    ABSL_CHECK(Height() != 0)
         << "Cannot determine the Aspect Ratio when the height is 0";
     return Width() / Height();
   }
@@ -154,7 +154,7 @@ class Rect {
   // Scales the Rect's width and height by the given pair of values, preserving
   // its center. This CHECK-fails if either scale factor is less than zero.
   void Scale(float x_scale, float y_scale) {
-    CHECK(x_scale >= 0 && y_scale >= 0)
+    ABSL_CHECK(x_scale >= 0 && y_scale >= 0)
         << "Cannot scale a rectangle by a value less than 0";
     Offset((-0.5f * (1 - x_scale) * Width()),
            (-0.5f * (1 - y_scale) * Height()));
@@ -248,7 +248,7 @@ inline void Rect::SetCenter(Point center) {
 inline float Rect::Width() const { return x_max_ - x_min_; }
 
 inline void Rect::SetWidth(float width) {
-  CHECK(width >= 0) << "Cannot set a width less than 0";
+  ABSL_CHECK(width >= 0) << "Cannot set a width less than 0";
   float x_center = (x_min_ + x_max_) / 2;
   x_min_ = x_center - width / 2;
   x_max_ = x_center + width / 2;
@@ -257,7 +257,7 @@ inline void Rect::SetWidth(float width) {
 inline float Rect::Height() const { return y_max_ - y_min_; }
 
 inline void Rect::SetHeight(float height) {
-  CHECK(height >= 0) << "Cannot set a height less than 0";
+  ABSL_CHECK(height >= 0) << "Cannot set a height less than 0";
   float y_center = (y_min_ + y_max_) / 2;
   y_min_ = y_center - height / 2;
   y_max_ = y_center + height / 2;

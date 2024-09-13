@@ -20,7 +20,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
@@ -56,7 +56,7 @@ using ::testing::SizeIs;
 
 Uri CreateTestTextureUri() {
   auto uri = Uri::Parse("ink://ink/texture:test-texture");
-  CHECK_OK(uri);
+  ABSL_CHECK_OK(uri);
   return *uri;
 }
 
@@ -76,12 +76,12 @@ Brush CreateBrush() {
                                           .rotation = kHalfPi / 2}},
                            .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
       "//test/brush-family:awesome-rectangular-brush");
-  CHECK_OK(family);
+  ABSL_CHECK_OK(family);
   Color color;
   float brush_size = 10;
   float brush_epsilon = 0.01;
   auto brush = Brush::Create(*family, color, brush_size, brush_epsilon);
-  CHECK_OK(brush);
+  ABSL_CHECK_OK(brush);
   return *brush;
 }
 
@@ -105,7 +105,7 @@ StrokeInputBatch CreateFilledInputs() {
                                  .pressure = StrokeInput::kNoPressure,
                                  .tilt = StrokeInput::kNoTilt,
                                  .orientation = StrokeInput::kNoOrientation}});
-  CHECK_OK(inputs);
+  ABSL_CHECK_OK(inputs);
   return *inputs;
 }
 
@@ -115,7 +115,7 @@ ModeledShape CreateFilledShape() {
   auto shape = ModeledShape::FromMutableMesh(
       MakeStraightLineMutableMesh(18, MakeSinglePackedPositionFormat()),
       {{1, 5, 4, 0}, {5, 9, 4}});
-  CHECK_OK(shape);
+  ABSL_CHECK_OK(shape);
   return *shape;
 }
 

@@ -21,7 +21,7 @@
 
 #include "absl/base/nullability.h"
 #include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
@@ -292,19 +292,19 @@ inline const StrokeInputBatch& InProgressStroke::GetInputs() const {
 }
 
 inline const MutableMesh& InProgressStroke::GetMesh(uint32_t coat_index) const {
-  CHECK_LT(coat_index, BrushCoatCount());
+  ABSL_CHECK_LT(coat_index, BrushCoatCount());
   return shape_builders_[coat_index].GetMesh();
 }
 
 inline const Envelope& InProgressStroke::GetMeshBounds(
     uint32_t coat_index) const {
-  CHECK_LT(coat_index, BrushCoatCount());
+  ABSL_CHECK_LT(coat_index, BrushCoatCount());
   return shape_builders_[coat_index].GetMeshBounds();
 }
 
 inline absl::Span<const absl::Span<const uint32_t>>
 InProgressStroke::GetIndexOutlines(uint32_t coat_index) const {
-  CHECK_LT(coat_index, BrushCoatCount());
+  ABSL_CHECK_LT(coat_index, BrushCoatCount());
   return shape_builders_[coat_index].GetIndexOutlines();
 }
 

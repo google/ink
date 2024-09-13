@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "absl/base/nullability.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/geometry/envelope.h"
@@ -112,8 +112,9 @@ class Mesh {
 
   // Returns the number of vertices in the mesh.
   uint32_t VertexCount() const {
-    DCHECK_EQ(data_->vertex_data.size() % VertexStride(), 0u);
-    DCHECK_EQ(data_->vertex_data.size() / VertexStride(), data_->vertex_count);
+    ABSL_DCHECK_EQ(data_->vertex_data.size() % VertexStride(), 0u);
+    ABSL_DCHECK_EQ(data_->vertex_data.size() / VertexStride(),
+                   data_->vertex_count);
     return data_->vertex_count;
   }
 
@@ -149,9 +150,9 @@ class Mesh {
 
   // Returns the number of triangles in the mesh.
   uint32_t TriangleCount() const {
-    DCHECK_EQ(data_->index_data.size() % (3 * kBytesPerIndex), 0u);
-    DCHECK_EQ(data_->index_data.size() / (3 * kBytesPerIndex),
-              data_->triangle_count);
+    ABSL_DCHECK_EQ(data_->index_data.size() % (3 * kBytesPerIndex), 0u);
+    ABSL_DCHECK_EQ(data_->index_data.size() / (3 * kBytesPerIndex),
+                   data_->triangle_count);
     return data_->triangle_count;
   }
 
@@ -185,7 +186,7 @@ class Mesh {
   // CHECK-fails if `attribute_index` >= `Format().Attributes().size()`.
   std::optional<MeshAttributeBounds> AttributeBounds(
       uint32_t attribute_index) const {
-    CHECK_LT(attribute_index, Format().Attributes().size());
+    ABSL_CHECK_LT(attribute_index, Format().Attributes().size());
     if (!data_->attribute_bounds.has_value()) return std::nullopt;
     return (*data_->attribute_bounds)[attribute_index];
   }
@@ -195,7 +196,7 @@ class Mesh {
   // CHECK-fails if `attribute_index` >= `Format().Attributes().size()`.
   const MeshAttributeCodingParams& VertexAttributeUnpackingParams(
       uint32_t attribute_index) const {
-    CHECK_LT(attribute_index, Format().Attributes().size());
+    ABSL_CHECK_LT(attribute_index, Format().Attributes().size());
     return data_->unpacking_params[attribute_index];
   }
 

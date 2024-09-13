@@ -14,7 +14,7 @@
 
 #include "ink/color/internal/jni/color_jni_helper.h"
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/color/color_space.h"
 
 namespace ink {
@@ -26,7 +26,7 @@ ColorSpace JIntToColorSpace(jint color_space_id) {
     case kJniColorSpaceIdDisplayP3:
       return ColorSpace::kDisplayP3;
     default:
-      CHECK(false) << "Unknown color space id: " << color_space_id;
+      ABSL_CHECK(false) << "Unknown color space id: " << color_space_id;
       break;
   }
 }

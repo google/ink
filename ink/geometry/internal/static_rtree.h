@@ -24,7 +24,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/functional/function_ref.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/strings/substitute.h"
 #include "absl/types/span.h"
 #include "ink/geometry/envelope.h"
@@ -219,9 +219,9 @@ void BulkLoadOneLevelOfNodes(uint32_t index_of_first_parent_node,
                              ParentAssigner assign_children_to_parent,
                              int branching_factor) {
   // These should be guaranteed by the logic in the ctor.
-  DCHECK_GT(n_child_nodes, 0u);
-  DCHECK_EQ(n_parent_nodes,
-            std::ceil(static_cast<double>(n_child_nodes) / branching_factor));
+  ABSL_DCHECK_GT(n_child_nodes, 0u);
+  ABSL_DCHECK_EQ(n_parent_nodes, std::ceil(static_cast<double>(n_child_nodes) /
+                                           branching_factor));
 
   // We bulk-load each level using the Sort-Tile-Recursive algorithm
   // (www.cs.odu.edu/~mln/ltrs-pdfs/icase-1997-14.pdf),
@@ -287,7 +287,7 @@ void BulkLoadOneLevelOfNodes(uint32_t index_of_first_parent_node,
       }
 
       // This should be guaranteed by the logic in the ctor.
-      DCHECK_LT(parent_idx, index_of_first_parent_node + n_parent_nodes);
+      ABSL_DCHECK_LT(parent_idx, index_of_first_parent_node + n_parent_nodes);
       assign_children_to_parent(parent_idx, *envelope.AsRect(),
                                 tile_child_indices);
       ++parent_idx;
@@ -300,7 +300,7 @@ StaticRTree<T, kBranchingFactor>::StaticRTree(
     absl::Span<const T> elements, std::function<Rect(const T&)> bounds_func)
     : elements_(elements.begin(), elements.end()),
       bounds_func_(std::move(bounds_func)) {
-  CHECK_LE(elements.size(), uint64_t{1} << 32) << absl::Substitute(
+  ABSL_CHECK_LE(elements.size(), uint64_t{1} << 32) << absl::Substitute(
       "StaticRTree supports a maximum of 2^32 (4294967296) elements; $0 were "
       "given",
       elements.size());
@@ -325,7 +325,7 @@ void StaticRTree<T, kBranchingFactor>::InitializeTree() {
     return;
   }
 
-  CHECK(bounds_func_ != nullptr) << "bounds_func must be non-null";
+  ABSL_CHECK(bounds_func_ != nullptr) << "bounds_func must be non-null";
 
   absl::InlinedVector<uint32_t, kMaxExpectedRTreeBranchDepth>
       n_branch_nodes_at_depth = ComputeNumberOfRTreeBranchNodesAtDepth(

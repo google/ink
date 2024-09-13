@@ -31,7 +31,7 @@ cc_library(
     hdrs = ["color_jni_helper.h"],
     deps = [
         "//ink/color:color_space",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [

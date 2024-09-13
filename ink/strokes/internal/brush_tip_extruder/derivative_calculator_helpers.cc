@@ -16,7 +16,7 @@
 
 #include <cstdint>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/point.h"
 #include "ink/strokes/internal/brush_tip_extruder/mutable_mesh_view.h"
@@ -60,7 +60,7 @@ OptionalSideIndexPair FindFirstExteriorVertices(
 uint32_t StartingOffsetForCoincidentConnectedVertices(
     const MutableMeshView& mesh, absl::Span<const IndexType> side_indices,
     uint32_t included_offset) {
-  CHECK_LT(included_offset, side_indices.size());
+  ABSL_CHECK_LT(included_offset, side_indices.size());
 
   IndexType index = side_indices[included_offset];
   Point position = mesh.GetPosition(index);

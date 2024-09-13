@@ -21,7 +21,7 @@
 #include <memory>
 
 #include "absl/base/nullability.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 
 namespace ink::strokes_internal {
@@ -125,28 +125,28 @@ inline StrokeOutline::IndexCounts StrokeOutline::GetIndexCounts() const {
 }
 
 inline size_t StrokeOutline::IndexStorage::UnusedLeftCapacity() const {
-  DCHECK_EQ(capacity % 2, 0u);
-  DCHECK_LE(used_counts.left, capacity / 2);
+  ABSL_DCHECK_EQ(capacity % 2, 0u);
+  ABSL_DCHECK_LE(used_counts.left, capacity / 2);
   return capacity / 2 - used_counts.left;
 }
 
 inline size_t StrokeOutline::IndexStorage::UnusedRightCapacity() const {
-  DCHECK_EQ(capacity % 2, 0u);
-  DCHECK_LE(used_counts.right, capacity / 2);
+  ABSL_DCHECK_EQ(capacity % 2, 0u);
+  ABSL_DCHECK_LE(used_counts.right, capacity / 2);
   return capacity / 2 - used_counts.right;
 }
 
 inline absl::Span<uint32_t> StrokeOutline::IndexStorage::UsedSpan() {
-  DCHECK_LE(UnusedRightCapacity() + used_counts.left + used_counts.right,
-            capacity);
+  ABSL_DCHECK_LE(UnusedRightCapacity() + used_counts.left + used_counts.right,
+                 capacity);
   return absl::MakeSpan(data.get() + UnusedRightCapacity(),
                         used_counts.left + used_counts.right);
 }
 
 inline absl::Span<const uint32_t> StrokeOutline::IndexStorage::UsedSpan()
     const {
-  DCHECK_LE(UnusedRightCapacity() + used_counts.left + used_counts.right,
-            capacity);
+  ABSL_DCHECK_LE(UnusedRightCapacity() + used_counts.left + used_counts.right,
+                 capacity);
   return absl::MakeSpan(data.get() + UnusedRightCapacity(),
                         used_counts.left + used_counts.right);
 }

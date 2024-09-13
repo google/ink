@@ -14,7 +14,7 @@
 
 #include <jni.h>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/geometry/modeled_shape.h"
@@ -35,7 +35,7 @@ using ::ink::StrokeInputBatch;
 // object, and the raw pointer to that copied object should be returned to the
 // Kotlin/Java layer to be wrapped in a new Kotlin `StrokeV2`.
 const Stroke* GetStroke(jlong raw_ptr_to_stroke) {
-  CHECK_NE(raw_ptr_to_stroke, 0);
+  ABSL_CHECK_NE(raw_ptr_to_stroke, 0);
   return reinterpret_cast<Stroke*>(raw_ptr_to_stroke);
 }
 

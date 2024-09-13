@@ -16,7 +16,7 @@
 
 #include <optional>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/angle.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/strokes/input/stroke_input.h"
@@ -42,7 +42,8 @@ STROKE_INPUT_BATCH_JNI_METHOD(jlong, createNativePeer)
 
 STROKE_INPUT_BATCH_JNI_METHOD(void, freeNativePeer)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  CHECK_NE(native_pointer, 0) << "Invalid native pointer for StrokeInputBatch.";
+  ABSL_CHECK_NE(native_pointer, 0)
+      << "Invalid native pointer for StrokeInputBatch.";
   delete reinterpret_cast<ink::StrokeInputBatch*>(native_pointer);
 }
 
@@ -88,7 +89,8 @@ STROKE_INPUT_BATCH_JNI_METHOD(jfloat, getStrokeUnitLengthCm)
 
 STROKE_INPUT_BATCH_JNI_METHOD(jboolean, hasStrokeUnitLength)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  CHECK_NE(native_pointer, 0) << "Invalid native pointer for StrokeInputBatch.";
+  ABSL_CHECK_NE(native_pointer, 0)
+      << "Invalid native pointer for StrokeInputBatch.";
   const ink::StrokeInputBatch& batch =
       ink::CastToStrokeInputBatch(native_pointer);
   return batch.HasStrokeUnitLength();

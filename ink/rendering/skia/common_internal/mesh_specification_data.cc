@@ -17,7 +17,7 @@
 #include <optional>
 
 #include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -255,7 +255,7 @@ GetValidatedStrokeAttributeTypesAndOffsets(
     const MeshFormat& mesh_format,
     const StrokeVertex::FormatAttributeIndices& attribute_indices) {
   // `MeshFormat` creation requires a position attribute:
-  DCHECK_NE(attribute_indices.position, -1);
+  ABSL_DCHECK_NE(attribute_indices.position, -1);
 
   // Opacity-shift and anti-aliasing attributes are currently always required.
   if (attribute_indices.opacity_shift == -1 ||

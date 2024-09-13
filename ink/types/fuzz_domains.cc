@@ -18,7 +18,7 @@
 #include <utility>
 
 #include "fuzztest/fuzztest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "ink/types/duration.h"
@@ -58,7 +58,7 @@ fuzztest::Domain<Uri> ArbitraryUri() {
   return fuzztest::Map(
       [](absl::string_view uri_string) {
         absl::StatusOr<Uri> uri = Uri::Parse(uri_string);
-        CHECK_OK(uri);
+        ABSL_CHECK_OK(uri);
         return *std::move(uri);
       },
       ValidUriString());

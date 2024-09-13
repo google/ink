@@ -18,7 +18,7 @@
 #include <optional>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
@@ -120,7 +120,7 @@ class Circle {
 
 inline Circle::Circle(Point center, float radius)
     : center_(center), radius_(radius) {
-  CHECK_GE(radius, 0);
+  ABSL_CHECK_GE(radius, 0);
 }
 
 inline Point Circle::Center() const { return center_; }
@@ -132,8 +132,8 @@ inline Point Circle::GetPoint(Angle angle) const {
 }
 
 inline Angle Circle::GuaranteedRightTangentAngle(const Circle& other) const {
-  DCHECK(!Contains(other));
-  DCHECK(!other.Contains(*this));
+  ABSL_DCHECK(!Contains(other));
+  ABSL_DCHECK(!other.Contains(*this));
   Vec center_offset = other.center_ - center_;
   return (center_offset.Direction() -
           Acos((radius_ - other.radius_) / center_offset.Magnitude()))

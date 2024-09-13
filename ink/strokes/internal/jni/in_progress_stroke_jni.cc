@@ -21,7 +21,7 @@
 #include <memory>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
@@ -74,7 +74,7 @@ struct InProgressStrokeWrapper {
 
 InProgressStrokeWrapper* GetInProgressStrokeWrapper(
     jlong raw_ptr_to_in_progress_stroke_wrapper) {
-  CHECK_NE(raw_ptr_to_in_progress_stroke_wrapper, 0);
+  ABSL_CHECK_NE(raw_ptr_to_in_progress_stroke_wrapper, 0);
   return reinterpret_cast<InProgressStrokeWrapper*>(
       raw_ptr_to_in_progress_stroke_wrapper);
 }
@@ -115,10 +115,10 @@ JNI_METHOD(strokes, InProgressStroke, jstring, nativeEnqueueInputs)
  jlong predicted_inputs_pointer) {
   InProgressStroke& in_progress_stroke =
       GetInProgressStrokeWrapper(native_pointer)->in_progress_stroke;
-  CHECK_NE(real_inputs_pointer, 0);
+  ABSL_CHECK_NE(real_inputs_pointer, 0);
   const StrokeInputBatch& real_inputs =
       CastToStrokeInputBatch(real_inputs_pointer);
-  CHECK_NE(predicted_inputs_pointer, 0);
+  ABSL_CHECK_NE(predicted_inputs_pointer, 0);
   const StrokeInputBatch& predicted_inputs =
       CastToStrokeInputBatch(predicted_inputs_pointer);
   absl::Status status =
@@ -203,7 +203,7 @@ JNI_METHOD(strokes, InProgressStroke, jint, nativeFillInputs)
   const StrokeInputBatch& inputs = in_progress_stroke.GetInputs();
   for (int i = from; i < to; ++i) {
     // The input here should have already been validated.
-    CHECK_OK(batch->Append(inputs.Get(i)));
+    ABSL_CHECK_OK(batch->Append(inputs.Get(i)));
   }
   return in_progress_stroke.GetInputs().Size();
 }
@@ -318,14 +318,14 @@ JNI_METHOD(strokes, InProgressStroke, jobject, nativeGetRawVertexData)
 JNI_METHOD(strokes, InProgressStroke, jobject, nativeGetRawTriangleIndexData)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint mesh_index) {
-  CHECK_EQ(mesh_index, 0) << "Unsupported mesh index: " << mesh_index;
+  ABSL_CHECK_EQ(mesh_index, 0) << "Unsupported mesh index: " << mesh_index;
   auto in_progress_stroke_wrapper = GetInProgressStrokeWrapper(native_pointer);
   const InProgressStroke& in_progress_stroke =
       in_progress_stroke_wrapper->in_progress_stroke;
 
   const MutableMesh& mesh = in_progress_stroke.GetMesh(coat_index);
   size_t index_stride = mesh.IndexStride();
-  CHECK(index_stride == sizeof(uint32_t))
+  ABSL_CHECK(index_stride == sizeof(uint32_t))
       << "Unsupported index stride: " << index_stride;
 
   // If necessary, expand the list of caches.
@@ -364,7 +364,7 @@ JNI_METHOD(strokes, InProgressStroke, jobject, nativeGetRawTriangleIndexData)
     triangle_index_data_cache.push_back(triangle_index_16);
   }
 
-  CHECK_EQ(triangle_index_data_cache.size() % 3, 0);
+  ABSL_CHECK_EQ(triangle_index_data_cache.size() % 3, 0);
 
   // This direct byte buffer is writeable, but it will be wrapped at the Kotlin
   // layer in a read-only buffer that delegates to this one.

@@ -17,7 +17,7 @@
 #include <cmath>
 #include <string>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/strings/str_format.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/segment.h"
@@ -45,12 +45,12 @@ Segment Rect::GetEdge(int index) const {
     case 3:
       return Segment{Point{x_min_, y_max_}, Point{x_min_, y_min_}};
     default:
-      CHECK(false) << "Index " << index << " out of bounds";
+      ABSL_CHECK(false) << "Index " << index << " out of bounds";
   }
 }
 
 Rect Rect::ContainingRectWithAspectRatio(float aspect_ratio) const {
-  CHECK(aspect_ratio > 0) << "Aspect ratio cannot be <= 0";
+  ABSL_CHECK(aspect_ratio > 0) << "Aspect ratio cannot be <= 0";
   float corrected_width;
   float corrected_height;
   if (aspect_ratio > AspectRatio()) {
@@ -65,7 +65,7 @@ Rect Rect::ContainingRectWithAspectRatio(float aspect_ratio) const {
 }
 
 Rect Rect::InteriorRectWithAspectRatio(float aspect_ratio) const {
-  CHECK(aspect_ratio >= 0) << "Aspect ratio cannot be < 0";
+  ABSL_CHECK(aspect_ratio >= 0) << "Aspect ratio cannot be < 0";
   float corrected_width;
   float corrected_height;
   if (aspect_ratio > AspectRatio()) {

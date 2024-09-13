@@ -16,7 +16,7 @@
 #define INK_STROKES_INTERNAL_ROUNDED_POLYGON_H_
 
 #include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/internal/circle.h"
 #include "ink/geometry/point.h"
@@ -88,8 +88,8 @@ class RoundedPolygon {
 ////////////////////////////////////////////////////////////////////////////////
 
 inline Segment RoundedPolygon::GetSegment(int index) const {
-  DCHECK_GE(index, 0);
-  DCHECK_LT(index, arcs_.size());
+  ABSL_DCHECK_GE(index, 0);
+  ABSL_DCHECK_LT(index, arcs_.size());
   const Arc& first_arc = arcs_[index];
   const Arc& second_arc = arcs_[(index + 1) % arcs_.size()];
   return {.start = first_arc.circle.Center() +

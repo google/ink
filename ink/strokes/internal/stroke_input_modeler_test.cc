@@ -20,7 +20,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
@@ -85,7 +85,7 @@ std::vector<StrokeInputBatch> MakeStylusInputBatchSequence() {
   std::vector<StrokeInputBatch> batches;
   for (const StrokeInput& input : inputs) {
     auto batch = StrokeInputBatch::Create({input});
-    CHECK_OK(batch);
+    ABSL_CHECK_OK(batch);
     batches.push_back(*batch);
   }
   return batches;

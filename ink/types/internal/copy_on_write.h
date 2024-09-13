@@ -20,7 +20,7 @@
 #include <utility>
 
 #include "absl/base/nullability.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 
 namespace ink_internal {
 
@@ -80,7 +80,7 @@ class CopyOnWrite {
   // Check-fails if `HasValue()` is `false`. If `IsShared()` is `true`, this
   // function first creates a new copy of the managed object.
   T& MutableValue() {
-    CHECK_NE(value_, nullptr);
+    ABSL_CHECK_NE(value_, nullptr);
     if (IsShared()) Emplace(*value_);
     return *value_;
   }
@@ -88,21 +88,21 @@ class CopyOnWrite {
   // Returns a read-only reference to the managed object. Check-fails if
   // `HasValue()` is `false`.
   const T& Value() const {
-    CHECK(HasValue());
+    ABSL_CHECK(HasValue());
     return *value_;
   }
 
   // Returns a read-only reference to the managed object. Behavior is undefined
   // if `HasValue()` returns `false`; CHECK-fails in debug.
   const T& operator*() const {
-    DCHECK(HasValue());
+    ABSL_DCHECK(HasValue());
     return *value_;
   }
 
   // Returns a read-only pointer to the managed object. Behavior is undefined
   // if `HasValue()` returns `false`; CHECK-fails in debug.
   const T* operator->() const {
-    DCHECK(HasValue());
+    ABSL_DCHECK(HasValue());
     return value_.get();
   }
 

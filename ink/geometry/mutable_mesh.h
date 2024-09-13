@@ -24,7 +24,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/internal/mesh_packing.h"
 #include "ink/geometry/mesh.h"
@@ -49,8 +49,8 @@ class MutableMesh {
   // Constructs an empty mesh with the given format.
   explicit MutableMesh(const MeshFormat& format) : format_(format) {
     // Consistency check, it should be impossible for this to fail.
-    CHECK(format_.UnpackedIndexStride() == 2 ||
-          format_.UnpackedIndexStride() == 4);
+    ABSL_CHECK(format_.UnpackedIndexStride() == 2 ||
+               format_.UnpackedIndexStride() == 4);
   }
 
   // Constructs a `MutableMesh` from a `Mesh`, copying (and unpacking)
@@ -81,16 +81,16 @@ class MutableMesh {
   // the given one.
   void Reset(MeshFormat format) {
     // Consistency check, it should be impossible for this to fail.
-    CHECK(format.UnpackedIndexStride() == 2 ||
-          format.UnpackedIndexStride() == 4);
+    ABSL_CHECK(format.UnpackedIndexStride() == 2 ||
+               format.UnpackedIndexStride() == 4);
     Clear();
     format_ = format;
   }
 
   // Returns the number of vertices in the mesh.
   uint32_t VertexCount() const {
-    DCHECK_EQ(vertex_data_.size() % VertexStride(), 0u);
-    DCHECK_EQ(vertex_data_.size() / VertexStride(), vertex_count_);
+    ABSL_DCHECK_EQ(vertex_data_.size() % VertexStride(), 0u);
+    ABSL_DCHECK_EQ(vertex_data_.size() / VertexStride(), vertex_count_);
     return vertex_count_;
   }
 
@@ -105,7 +105,7 @@ class MutableMesh {
   // Returns the position of the vertex at the given index. This DCHECK-fails if
   // `index` >= `VertexCount()`.
   Point VertexPosition(uint32_t index) const {
-    DCHECK_LT(index, VertexCount());
+    ABSL_DCHECK_LT(index, VertexCount());
     Point position;
     static_assert(sizeof(position) == 2 * sizeof(float));
     std::memcpy(
@@ -120,7 +120,7 @@ class MutableMesh {
   // Sets the position of the vertex at the given index. This DCHECK-fails if
   // `index` >= `VertexCount()`.
   void SetVertexPosition(uint32_t index, Point position) {
-    DCHECK_LT(index, VertexCount());
+    ABSL_DCHECK_LT(index, VertexCount());
     static_assert(sizeof(position) == 2 * sizeof(float));
     std::memcpy(
         &vertex_data_[index * VertexStride() +
@@ -156,8 +156,8 @@ class MutableMesh {
 
   // Returns the number of triangles in the mesh.
   uint32_t TriangleCount() const {
-    DCHECK_EQ(index_data_.size() % (3 * IndexStride()), 0u);
-    DCHECK_EQ(index_data_.size() / (3 * IndexStride()), triangle_count_);
+    ABSL_DCHECK_EQ(index_data_.size() % (3 * IndexStride()), 0u);
+    ABSL_DCHECK_EQ(index_data_.size() / (3 * IndexStride()), triangle_count_);
     return triangle_count_;
   }
 
@@ -189,7 +189,7 @@ class MutableMesh {
   // vertices may be checked with `ValidateTriangles`, below.
   void SetTriangleIndices(uint32_t index,
                           std::array<uint32_t, 3> vertex_indices) {
-    DCHECK(absl::c_all_of(vertex_indices, [this](uint32_t i) {
+    ABSL_DCHECK(absl::c_all_of(vertex_indices, [this](uint32_t i) {
       return i < (static_cast<uint64_t>(1) << (8 * IndexStride()));
     }));
     mesh_internal::WriteTriangleIndicesToByteArray(index, IndexStride(),
@@ -204,11 +204,11 @@ class MutableMesh {
   // vertices may be checked with `ValidateTriangles`, below.
   void InsertTriangleIndices(uint32_t index,
                              std::array<uint32_t, 3> vertex_indices) {
-    DCHECK_LE(index, TriangleCount());
+    ABSL_DCHECK_LE(index, TriangleCount());
     index_data_.insert(index_data_.begin() + 3 * IndexStride() * index,
                        3 * IndexStride(), std::byte(0));
     ++triangle_count_;
-    DCHECK_EQ(index_data_.size() % (3 * IndexStride()), 0u);
+    ABSL_DCHECK_EQ(index_data_.size() % (3 * IndexStride()), 0u);
     SetTriangleIndices(index, vertex_indices);
   }
 

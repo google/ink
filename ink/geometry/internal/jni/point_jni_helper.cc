@@ -16,7 +16,7 @@
 
 #include <jni.h>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/point.h"
 
 namespace ink {
@@ -26,12 +26,12 @@ void FillJMutablePoint(JNIEnv* env, jobject mutable_point, Point point) {
 
   jmethodID set_x_method =
       env->GetMethodID(mutable_point_class, "setX", "(F)V");
-  CHECK(set_x_method);
+  ABSL_CHECK(set_x_method);
   env->CallVoidMethod(mutable_point, set_x_method, point.x);
 
   jmethodID set_y_method =
       env->GetMethodID(mutable_point_class, "setY", "(F)V");
-  CHECK(set_y_method);
+  ABSL_CHECK(set_y_method);
   env->CallVoidMethod(mutable_point, set_y_method, point.y);
 }
 

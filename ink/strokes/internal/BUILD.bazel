@@ -51,7 +51,7 @@ cc_library(
         "//ink/types:duration",
         "//ink/types:physical_distance",
         "@com_google_absl//absl/cleanup",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
         "@ink_stroke_modeler//ink_stroke_modeler:params",
         "@ink_stroke_modeler//ink_stroke_modeler:stroke_modeler",
@@ -72,7 +72,7 @@ cc_test(
         "//ink/types:duration",
         "//ink/types:physical_distance",
         "//ink/types:type_matchers",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
         "@com_google_googletest//:gtest_main",
     ],
@@ -117,7 +117,7 @@ cc_library(
         "//ink/strokes/input:stroke_input",
         "//ink/types:duration",
         "//ink/types:physical_distance",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -162,7 +162,7 @@ cc_library(
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -198,7 +198,7 @@ cc_library(
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/functional:overload",
         "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -233,7 +233,7 @@ cc_library(
         "//ink/geometry:vec",
         "//ink/geometry/internal:algorithms",
         "//ink/geometry/internal:circle",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ],
 )
 
@@ -271,7 +271,7 @@ cc_library(
         "//ink/geometry/internal:circle",
         "//ink/types:small_array",
         "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -321,7 +321,7 @@ cc_library(
         "//ink/strokes/internal/brush_tip_extruder:mutable_mesh_view",
         "//ink/strokes/internal/brush_tip_extruder:side",
         "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -360,7 +360,7 @@ cc_library(
         "//ink/geometry/internal:algorithms",
         "//ink/types:small_array",
         "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -388,7 +388,7 @@ cc_library(
     deps = [
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/numeric:bits",
         "@com_google_absl//absl/types:span",
     ],
@@ -420,7 +420,7 @@ cc_library(
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
         "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -463,7 +463,7 @@ cc_test(
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_benchmark//:benchmark_main",
@@ -491,7 +491,7 @@ cc_library(
         "//ink/geometry:vec",
         "//ink/geometry/internal:circle",
         "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -518,7 +518,7 @@ cc_library(
         ":brush_tip_state",
         "//ink/geometry:distance",
         "//ink/geometry/internal:algorithms",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ],
 )
 

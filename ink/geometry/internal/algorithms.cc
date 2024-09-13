@@ -21,7 +21,7 @@
 #include <optional>
 #include <utility>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/color/color.h"
 #include "ink/geometry/affine_transform.h"
@@ -177,7 +177,7 @@ std::optional<std::pair<float, float>> SegmentIntersectionRatio(
     std::optional<float> a_project_b_end = a.Project(b.end);
     std::optional<float> b_project_a_end = b.Project(a.end);
     // If projection was computable for one point, it should be for all.
-    CHECK(a_project_b_end.has_value() && b_project_a_end.has_value());
+    ABSL_CHECK(a_project_b_end.has_value() && b_project_a_end.has_value());
 
     if ((*a_project_b_start < 0 && *a_project_b_end < 0) ||
         (*a_project_b_start > 1 && *a_project_b_end > 1)) {
@@ -236,7 +236,7 @@ std::optional<Point> SegmentIntersection(const Segment& a, const Segment& b) {
 Segment CalculateCollapsedSegment(
     absl::Span<const Mesh> meshes, const Rect& bounds,
     const AffineTransform& non_invertible_transform) {
-  DCHECK(!non_invertible_transform.Inverse().has_value());
+  ABSL_DCHECK(!non_invertible_transform.Inverse().has_value());
 
   // We first transform the diagonal of `query`'s bounds to find the line that
   // `query` will lie on after transforming it.
@@ -259,7 +259,8 @@ Segment CalculateCollapsedSegment(
   float min_value = std::numeric_limits<float>::infinity();
   float max_value = -std::numeric_limits<float>::infinity();
   for (const Mesh& mesh : meshes) {
-    DCHECK(mesh.Bounds().IsEmpty() || bounds.Contains(*mesh.Bounds().AsRect()));
+    ABSL_DCHECK(mesh.Bounds().IsEmpty() ||
+                bounds.Contains(*mesh.Bounds().AsRect()));
     for (uint32_t t_idx = 0; t_idx < mesh.TriangleCount(); ++t_idx) {
       for (uint32_t v_idx : mesh.TriangleIndices(t_idx)) {
         Point transformed_vertex =

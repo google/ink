@@ -18,7 +18,7 @@
 #include <optional>
 #include <string>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/strings/str_format.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/segment.h"
@@ -91,7 +91,7 @@ Segment Triangle::GetEdge(int index) const {
     case 2:
       return Segment{p2, p0};
     default:
-      CHECK(false) << "Index " << index << " out of bounds";
+      ABSL_CHECK(false) << "Index " << index << " out of bounds";
   }
 }
 

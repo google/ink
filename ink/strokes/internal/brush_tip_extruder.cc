@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/mutable_mesh.h"
@@ -55,7 +55,7 @@ float GetSimplificationThreshold(float brush_epsilon) { return brush_epsilon; }
 }  // namespace
 
 void BrushTipExtruder::StartStroke(float brush_epsilon, MutableMesh& mesh) {
-  CHECK_GT(brush_epsilon, 0);
+  ABSL_CHECK_GT(brush_epsilon, 0);
   brush_epsilon_ = brush_epsilon;
   max_chord_height_ = GetMaxChordHeight(brush_epsilon);
   simplification_threshold_ = GetSimplificationThreshold(brush_epsilon);
@@ -107,7 +107,7 @@ StrokeShapeUpdate ConstructUpdate(const Geometry& geometry,
 StrokeShapeUpdate BrushTipExtruder::ExtendStroke(
     absl::Span<const BrushTipState> new_fixed_states,
     absl::Span<const BrushTipState> volatile_states) {
-  CHECK_GT(brush_epsilon_, 0) << "`StartStroke()` has not been called";
+  ABSL_CHECK_GT(brush_epsilon_, 0) << "`StartStroke()` has not been called";
 
   geometry_.ResetMutationTracking();
   uint32_t triangle_count_before_update =
@@ -160,7 +160,7 @@ void UpdateCachedPartialBoundsForSide(
     const MutableMeshView& mesh_view, const Side& side,
     Envelope& cached_partial_bounds,
     uint32_t& cached_partial_bounds_side_index_count) {
-  CHECK_LE(cached_partial_bounds_side_index_count, side.indices.size());
+  ABSL_CHECK_LE(cached_partial_bounds_side_index_count, side.indices.size());
 
   auto new_indices = absl::MakeSpan(side.indices)
                          .subspan(cached_partial_bounds_side_index_count);
@@ -233,7 +233,7 @@ void BrushTipExtruder::Restore() {
 void BrushTipExtruder::ClearSinceLastExtrusionBreak(
     std::vector<BrushTipExtrusion>::iterator first_extrusion_to_erase,
     bool triggered_by_volatile_extrusion) {
-  CHECK(first_extrusion_to_erase != extrusions_.end());
+  ABSL_CHECK(first_extrusion_to_erase != extrusions_.end());
 
   // We're about to delete extrusions; if they contributed to the state when
   // we last called `Save()`, then we'll need to be able to replace them if

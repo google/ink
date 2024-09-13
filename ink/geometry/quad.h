@@ -19,7 +19,7 @@
 #include <optional>
 #include <utility>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
@@ -161,7 +161,7 @@ class Quad {
   // Returns the aspect ratio of the Quad, i.e. the width divided by the height.
   // This CHECK-fails if the height is zero.
   float AspectRatio() const {
-    CHECK(Height() != 0)
+    ABSL_CHECK(Height() != 0)
         << "Cannot determine the aspect ratio when the height is 0";
     return Width() / Height();
   }

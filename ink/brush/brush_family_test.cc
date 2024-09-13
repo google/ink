@@ -23,7 +23,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -92,7 +92,7 @@ BrushTip CreatePressureTestTip() {
 
 Uri CreateTextureUri() {
   auto uri = Uri::Parse("ink://ink/texture:test-paint");
-  CHECK_OK(uri);
+  ABSL_CHECK_OK(uri);
   return *uri;
 }
 

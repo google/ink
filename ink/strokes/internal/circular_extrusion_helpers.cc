@@ -18,7 +18,7 @@
 #include <optional>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/internal/circle.h"
@@ -71,8 +71,8 @@ void AppendCircularTurnExtrusionPoints(
 
   // This is guaranteed by the fact that the consecutive circles do not contain
   // one another.
-  CHECK(incoming_angles.has_value());
-  CHECK(outgoing_angles.has_value());
+  ABSL_CHECK(incoming_angles.has_value());
+  ABSL_CHECK(outgoing_angles.has_value());
 
   // Snap nearly-collinear angles together, to prevent adding an unnecessary
   // loop. The chosen tolerance is just a bit over four times machine precision

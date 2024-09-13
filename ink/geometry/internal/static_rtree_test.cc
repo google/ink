@@ -19,7 +19,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/distance.h"
 #include "ink/geometry/point.h"
@@ -276,8 +276,8 @@ TEST(StaticRTreeTest, CreateWithNormalBranchingFactor) {
     uint32_t current_depth = 1;
     uint32_t current_idx = 0;
     while (!branch_nodes[current_idx].is_leaf_parent) {
-      CHECK_NE(branch_nodes[current_idx].child_indices.Size(), 0);
-      CHECK_LT(current_idx, branch_nodes[current_idx].child_indices[0]);
+      ABSL_CHECK_NE(branch_nodes[current_idx].child_indices.Size(), 0);
+      ABSL_CHECK_LT(current_idx, branch_nodes[current_idx].child_indices[0]);
       current_idx = branch_nodes[current_idx].child_indices[0];
       ++current_depth;
     }

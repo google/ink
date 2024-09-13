@@ -20,7 +20,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -289,7 +289,7 @@ MeshFormat MakeFormatWithSkippedAttribute(
 
   auto new_format =
       MeshFormat::Create(new_types_and_ids, starting_format.GetIndexFormat());
-  CHECK_OK(new_format);
+  ABSL_CHECK_OK(new_format);
   return *new_format;
 }
 
@@ -406,7 +406,7 @@ MeshFormat MakeFormatWithModifiedType(
   auto format =
       MeshFormat::Create(modified_types_and_ids,
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  CHECK_OK(format);
+  ABSL_CHECK_OK(format);
   return *format;
 }
 

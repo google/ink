@@ -26,7 +26,7 @@ cc_library(
     srcs = ["jni_throw_util.cc"],
     hdrs = ["jni_throw_util.h"],
     deps = [
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
     ] + select({
         "@platforms//os:android": [],

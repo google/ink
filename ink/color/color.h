@@ -20,7 +20,7 @@
 #include <cstdint>
 #include <string>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/color/color_space.h"
 
 namespace ink {
@@ -248,12 +248,12 @@ class Color {
 
   Color(std::array<float, 4> rgba, ColorSpace color_space)
       : rgba_(rgba), color_space_(color_space) {
-    DCHECK(!std::isnan(rgba_[0]));
-    DCHECK(!std::isnan(rgba_[1]));
-    DCHECK(!std::isnan(rgba_[2]));
-    DCHECK(!std::isnan(rgba_[3]));
-    DCHECK_GE(rgba_[3], 0.0f);
-    DCHECK_LE(rgba_[3], 1.0f);
+    ABSL_DCHECK(!std::isnan(rgba_[0]));
+    ABSL_DCHECK(!std::isnan(rgba_[1]));
+    ABSL_DCHECK(!std::isnan(rgba_[2]));
+    ABSL_DCHECK(!std::isnan(rgba_[3]));
+    ABSL_DCHECK_GE(rgba_[3], 0.0f);
+    ABSL_DCHECK_LE(rgba_[3], 1.0f);
   }
 
   std::string ToFormattedString() const;

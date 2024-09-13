@@ -32,7 +32,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_join.h"
@@ -90,10 +90,10 @@ MutableMesh MutableMesh::FromMesh(const Mesh& mesh) {
 void MutableMesh::SetFloatVertexAttribute(uint32_t vertex_index,
                                           uint32_t attribute_index,
                                           SmallArray<float, 4> value) {
-  DCHECK_LT(vertex_index, VertexCount());
-  DCHECK_LT(attribute_index, format_.Attributes().size());
+  ABSL_DCHECK_LT(vertex_index, VertexCount());
+  ABSL_DCHECK_LT(attribute_index, format_.Attributes().size());
   const MeshFormat::Attribute attr = format_.Attributes()[attribute_index];
-  DCHECK_EQ(MeshFormat::ComponentCount(attr.type), value.Size());
+  ABSL_DCHECK_EQ(MeshFormat::ComponentCount(attr.type), value.Size());
   std::byte* dst =
       &vertex_data_[vertex_index * VertexStride() + attr.unpacked_offset];
   const float* src = value.Values().data();
@@ -151,11 +151,11 @@ mesh_internal::AttributeBoundsArray ComputeAttributeBoundsForPartition(
     const absl::flat_hash_set<MeshFormat::AttributeId>& omit_set) {
   constexpr float kInf = std::numeric_limits<float>::infinity();
 
-  CHECK_GE(partition.vertex_indices.size(), 0u);
+  ABSL_CHECK_GE(partition.vertex_indices.size(), 0u);
   absl::Span<const MeshFormat::Attribute> old_attributes =
       mesh.Format().Attributes();
   size_t n_old_attrs = old_attributes.size();
-  CHECK_GT(n_old_attrs, omit_set.size());
+  ABSL_CHECK_GT(n_old_attrs, omit_set.size());
   int n_new_attrs = n_old_attrs - omit_set.size();
   mesh_internal::AttributeBoundsArray bounds_array(n_new_attrs);
   for (size_t old_attr_idx = 0, new_attr_idx = 0; old_attr_idx < n_old_attrs;
@@ -193,7 +193,7 @@ mesh_internal::AttributeBoundsArray ComputeTotalAttributeBounds(
     }
   };
 
-  CHECK(!partition_attribute_bounds.empty());
+  ABSL_CHECK(!partition_attribute_bounds.empty());
   mesh_internal::AttributeBoundsArray total_bounds =
       partition_attribute_bounds[0];
   int n_attrs = partition_attribute_bounds[0].Size();
@@ -351,7 +351,7 @@ void PopulateAdjacentTriangleMap(FlippedTriangleCorrectionData& data) {
 
 Rect CalculateQuantizationBounds(const FlippedTriangleCorrectionData& data,
                                  SmallArray<uint8_t, 4> bits_per_component) {
-  DCHECK_EQ(bits_per_component.Size(), 2);
+  ABSL_DCHECK_EQ(bits_per_component.Size(), 2);
   float max_value_for_x_bits =
       mesh_internal::MaxValueForBits(bits_per_component[0]);
   float max_value_for_y_bits =
@@ -723,7 +723,7 @@ absl::StatusOr<absl::InlinedVector<Mesh, 1>> MutableMesh::AsMeshes(
 
   // Consistency check; the fact that there are valid triangles guarantees that
   // we have vertices.
-  DCHECK_GT(n_vertices, 0);
+  ABSL_DCHECK_GT(n_vertices, 0);
 
   constexpr uint32_t kMaxVerticesPerPartition = 1 << 8 * Mesh::kBytesPerIndex;
   absl::InlinedVector<mesh_internal::PartitionInfo, 1> partitions =

@@ -22,7 +22,7 @@
 #include <optional>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
@@ -32,7 +32,7 @@ namespace ink::geometry_internal {
 void Circle::AppendArcToPolyline(Angle start, Angle arc_angle,
                                  float max_chord_height,
                                  std::vector<Point>& polyline) const {
-  CHECK_GT(max_chord_height, 0);
+  ABSL_CHECK_GT(max_chord_height, 0);
 
   if (radius_ == 0) {
     polyline.insert(polyline.end(), {center_, center_});

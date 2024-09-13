@@ -20,7 +20,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/hash/hash_testing.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "ink/geometry/angle.h"
@@ -38,7 +38,7 @@ constexpr float kInfinity = std::numeric_limits<float>::infinity();
 
 Uri CreateTestTextureUri() {
   auto uri = Uri::Parse("ink://ink/texture:test-texture");
-  CHECK_OK(uri);
+  ABSL_CHECK_OK(uri);
   return *uri;
 }
 

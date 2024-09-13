@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "fuzztest/fuzztest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/mesh_format.h"
@@ -140,7 +140,7 @@ fuzztest::Domain<MeshFormat> ArbitraryMeshFormat() {
                 MeshFormat::AttributeType position_type,
                 absl::Span<const MeshFormat::AttributeType> other_types,
                 absl::Span<const MeshFormat::AttributeId> other_ids) {
-              CHECK_EQ(other_types.size(), other_ids.size());
+              ABSL_CHECK_EQ(other_types.size(), other_ids.size());
               std::vector<
                   std::pair<MeshFormat::AttributeType, MeshFormat::AttributeId>>
                   attributes;
@@ -155,7 +155,7 @@ fuzztest::Domain<MeshFormat> ArbitraryMeshFormat() {
                 attributes.emplace_back(other_types[i], other_ids[i]);
               }
               auto format = MeshFormat::Create(attributes, index_format);
-              CHECK_OK(format);
+              ABSL_CHECK_OK(format);
               return *std::move(format);
             },
             ArbitraryMeshIndexFormat(),
@@ -235,7 +235,7 @@ fuzztest::Domain<Vec> NotNanVec() {
 fuzztest::Domain<MutableMesh> ValidPackableNonEmptyPositionOnlyMutableMesh(
     MeshFormat::AttributeType position_attribute_type,
     MeshFormat::IndexFormat index_format) {
-  CHECK_EQ(MeshFormat::ComponentCount(position_attribute_type), 2);
+  ABSL_CHECK_EQ(MeshFormat::ComponentCount(position_attribute_type), 2);
 
   // We need at least three vertices. We restrict the values to [-1e18, 1e18] to
   // ensure that neither the dimensions of the mesh bounds nor the area of
@@ -306,7 +306,7 @@ fuzztest::Domain<MutableMesh> ValidPackableNonEmptyPositionOnlyMutableMesh(
         auto format = MeshFormat::Create(
             {{position_attribute_type, MeshFormat::AttributeId::kPosition}},
             index_format);
-        CHECK_OK(format);
+        ABSL_CHECK_OK(format);
         MutableMesh m(*format);
         for (auto p : pos_and_tri.first) m.AppendVertex(p);
         for (auto t : pos_and_tri.second) m.AppendTriangleIndices(t);

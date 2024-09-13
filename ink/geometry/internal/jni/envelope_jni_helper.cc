@@ -16,7 +16,7 @@
 
 #include <jni.h>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/rect.h"
 #include "ink/jni/internal/jni_defines.h"
@@ -30,14 +30,14 @@ void FillJMutableEnvelope(JNIEnv* env, const Envelope& envelope,
     jmethodID reset_method =
         env->GetMethodID(mutable_envelope_class, "reset",
                          "()L" INK_PACKAGE "/geometry/BoxAccumulator;");
-    CHECK(reset_method);
+    ABSL_CHECK(reset_method);
     env->CallObjectMethod(mutable_envelope, reset_method);
   } else {
     const Rect rect = *envelope.AsRect();
     jmethodID overwrite_method =
         env->GetMethodID(mutable_envelope_class, "overwriteFrom",
                          "(FFFF)L" INK_PACKAGE "/geometry/BoxAccumulator;");
-    CHECK(overwrite_method);
+    ABSL_CHECK(overwrite_method);
     env->CallObjectMethod(mutable_envelope, overwrite_method, rect.XMin(),
                           rect.YMin(), rect.XMax(), rect.YMax());
   }

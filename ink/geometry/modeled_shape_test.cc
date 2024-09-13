@@ -22,7 +22,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"
@@ -1416,7 +1416,7 @@ ModeledShape MakeRisingSawtoothShape() {
   mesh.AppendTriangleIndices({5, 7, 8});
 
   absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(mesh);
-  CHECK_OK(shape);
+  ABSL_CHECK_OK(shape);
   return *shape;
 }
 

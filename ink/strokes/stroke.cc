@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
@@ -65,7 +65,7 @@ Stroke::Stroke(const Brush& brush, const StrokeInputBatch& inputs)
 Stroke::Stroke(const Brush& brush, const StrokeInputBatch& inputs,
                const ModeledShape& shape)
     : brush_(brush), inputs_(inputs), shape_(shape) {
-  CHECK_EQ(shape_.RenderGroupCount(), brush_.CoatCount())
+  ABSL_CHECK_EQ(shape_.RenderGroupCount(), brush_.CoatCount())
       << "`shape` must have one render group per brush coat in `brush`";
 }
 
@@ -125,7 +125,7 @@ absl::Status Stroke::SetBrushEpsilon(float epsilon) {
 
 void Stroke::SetInputs(const StrokeInputBatch& inputs) {
   inputs_.Clear();
-  CHECK_OK(inputs_.Append(inputs));
+  ABSL_CHECK_OK(inputs_.Append(inputs));
   RegenerateShape();
 }
 
@@ -194,7 +194,7 @@ void Stroke::RegenerateShape() {
     shape_ = ModeledShape::WithEmptyGroups(brush_.CoatCount());
   }
 
-  DCHECK_EQ(shape_.RenderGroupCount(), brush_.CoatCount());
+  ABSL_DCHECK_EQ(shape_.RenderGroupCount(), brush_.CoatCount());
 }
 
 }  // namespace ink

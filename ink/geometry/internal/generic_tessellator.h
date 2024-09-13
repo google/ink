@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "libtess2/tesselator.h"
 
@@ -346,7 +346,7 @@ TessellationResult<typename VertexTessellationHelper::VertexType> Tessellate(
   // This is using default allocation, but could customize that by passing
   // TESSAlloc*.
   TESStesselator* tess = tessNewTess(/*alloc=*/nullptr);
-  CHECK(tess != nullptr);
+  ABSL_CHECK(tess != nullptr);
   if (TessellateConnectedPolygons<VertexTessellationHelper>(tess, edges,
                                                             winding_rule)) {
     PopulateResult<VertexTessellationHelper>(tess, edges, result);

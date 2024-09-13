@@ -20,7 +20,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
@@ -96,7 +96,7 @@ absl::Status InProgressStroke::EnqueueInputs(
     return status;
   }
 
-  CHECK_OK(queued_real_inputs_.Append(real_inputs));
+  ABSL_CHECK_OK(queued_real_inputs_.Append(real_inputs));
   queued_predicted_inputs_ = predicted_inputs;
   return absl::OkStatus();
 }
@@ -119,9 +119,9 @@ absl::Status InProgressStroke::UpdateShape(Duration32 current_elapsed_time) {
     processed_inputs_.Erase(real_input_count_);
   }
 
-  CHECK_OK(processed_inputs_.Append(queued_real_inputs_));
+  ABSL_CHECK_OK(processed_inputs_.Append(queued_real_inputs_));
   real_input_count_ += queued_real_inputs_.Size();
-  CHECK_OK(processed_inputs_.Append(queued_predicted_inputs_));
+  ABSL_CHECK_OK(processed_inputs_.Append(queued_predicted_inputs_));
 
   current_elapsed_time_ = current_elapsed_time;
 
@@ -197,7 +197,7 @@ absl::Status InProgressStroke::ValidateNewElapsedTime(
 Stroke InProgressStroke::CopyToStroke(
     RetainAttributes retain_attributes) const {
   const Brush* brush = GetBrush();
-  CHECK(brush);
+  ABSL_CHECK(brush);
 
   uint32_t num_coats = BrushCoatCount();
   absl::InlinedVector<absl::InlinedVector<MeshFormat::AttributeId,

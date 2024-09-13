@@ -18,7 +18,7 @@
 #include <cstddef>
 #include <optional>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/internal/circle.h"
@@ -31,18 +31,18 @@ namespace ink::strokes_internal {
 using ::ink::geometry_internal::Circle;
 
 RoundedPolygon::RoundedPolygon(absl::Span<const Circle> circles) {
-  CHECK_GT(circles.size(), 1u);
+  ABSL_CHECK_GT(circles.size(), 1u);
 
-  CHECK(!circles.front().Contains(circles.back()));
-  CHECK(!circles.back().Contains(circles.front()));
+  ABSL_CHECK(!circles.front().Contains(circles.back()));
+  ABSL_CHECK(!circles.back().Contains(circles.front()));
 
   Angle last_to_first_tangent_angle =
       circles.back().GuaranteedRightTangentAngle(circles.front());
 
   Angle incoming_tangent_angle = last_to_first_tangent_angle;
   for (size_t i = 0; i < circles.size() - 1; ++i) {
-    CHECK(!circles[i].Contains(circles[i + 1]));
-    CHECK(!circles[i + 1].Contains(circles[i]));
+    ABSL_CHECK(!circles[i].Contains(circles[i + 1]));
+    ABSL_CHECK(!circles[i + 1].Contains(circles[i]));
 
     Angle outgoing_tangent_angle =
         circles[i].GuaranteedRightTangentAngle(circles[i + 1]);

@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "absl/cleanup/cleanup.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
@@ -50,7 +50,7 @@ void StrokeInputModeler::StartStroke(const BrushFamily::InputModel& input_model,
   // The `stroke_modeler_` cannot be reset until we get the first input in order
   // to know the `StrokeInput::ToolType`.
 
-  CHECK_GT(brush_epsilon, 0);
+  ABSL_CHECK_GT(brush_epsilon, 0);
   input_model_ = input_model;
   brush_epsilon_ = brush_epsilon;
   last_real_stroke_input_.reset();
@@ -104,7 +104,7 @@ void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
                                                            stroke_unit_length);
   // We use the defaults for `PositionModelerParams` and
   // `StylusStateModelerParams`.
-  CHECK_OK(stroke_modeler.Reset(
+  ABSL_CHECK_OK(stroke_modeler.Reset(
       {// We turn off wobble smoothing because, in order to choose parameters
        // appropriately, we need to know the input rate and range of speeds that
        // we'll see for a stroke, which we don't have access to.
@@ -133,7 +133,7 @@ void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
 void StrokeInputModeler::ExtendStroke(const StrokeInputBatch& real_inputs,
                                       const StrokeInputBatch& predicted_inputs,
                                       Duration32 current_elapsed_time) {
-  CHECK_GT(brush_epsilon_, 0) << "`StartStroke()` has not been called.";
+  ABSL_CHECK_GT(brush_epsilon_, 0) << "`StartStroke()` has not been called.";
 
   absl::Cleanup update_time_and_distance = [&]() {
     UpdateStateTimeAndDistance(current_elapsed_time);
@@ -231,7 +231,7 @@ void StrokeInputModeler::ModelInput(const StrokeInput& input,
 
   // `StrokeInputBatch` and `InProgressStroke` are designed to perform all the
   // necessary validation so that this operation should not fail.
-  CHECK_OK(stroke_modeler_.Update(
+  ABSL_CHECK_OK(stroke_modeler_.Update(
       {.event_type = event_type,
        .position = {input.position.x, input.position.y},
        .time = stroke_model::Time(input.elapsed_time.ToSeconds()),

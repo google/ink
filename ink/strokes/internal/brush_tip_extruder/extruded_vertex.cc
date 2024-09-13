@@ -17,7 +17,7 @@
 #include <array>
 #include <optional>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/color/color.h"
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/point.h"
@@ -69,7 +69,7 @@ ExtrudedVertex BarycentricLerp(const ExtrudedVertex& a, const ExtrudedVertex& b,
       geometry_internal::GetBarycentricCoordinates(
           Triangle{.p0 = a.position, .p1 = b.position, .p2 = c.position},
           position);
-  CHECK(coords.has_value());
+  ABSL_CHECK(coords.has_value());
 
   return {
       .position = position,

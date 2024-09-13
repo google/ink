@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/point.h"
@@ -65,7 +65,7 @@ void DerivativeCalculator::UpdateMesh(
   if ((left_indices_to_update.empty() && right_indices_to_update.empty())) {
     return;
   }
-  CHECK(mesh.HasMeshData());
+  ABSL_CHECK(mesh.HasMeshData());
 
   ResetTrackedValues(left_indices_to_update, right_indices_to_update, mesh);
 
@@ -88,11 +88,11 @@ void DerivativeCalculator::ResetTrackedValues(
   } else if (!left_indices_to_update.empty()) {
     minimum_tracked_index_ = left_indices_to_update.front();
   } else {
-    DCHECK(!right_indices_to_update.empty());
+    ABSL_DCHECK(!right_indices_to_update.empty());
     minimum_tracked_index_ = right_indices_to_update.front();
   }
 
-  CHECK_LT(minimum_tracked_index_, mesh.VertexCount());
+  ABSL_CHECK_LT(minimum_tracked_index_, mesh.VertexCount());
   uint32_t tracked_vertex_count = mesh.VertexCount() - minimum_tracked_index_;
 
   tracked_average_derivatives_.clear();
@@ -297,7 +297,7 @@ VertexDerivatives CalculateAverages(
 // forward categories. Expects to be called with non-empty `indices`.
 uint32_t StartingSameCategoryCoincidentCount(absl::Span<const uint32_t> indices,
                                              const MutableMeshView& mesh) {
-  DCHECK(!indices.empty());
+  ABSL_DCHECK(!indices.empty());
 
   Point first_point = mesh.GetPosition(indices.front());
   StrokeVertex::SideCategory first_side_category =
@@ -508,7 +508,7 @@ namespace {
 // geometrically continuous section of the mesh.
 uint32_t StartingCoincidentConnectedCount(absl::Span<const uint32_t> indices,
                                           const MutableMeshView& mesh) {
-  DCHECK(!indices.empty());
+  ABSL_DCHECK(!indices.empty());
 
   Point first_point = mesh.GetPosition(indices.front());
   StrokeVertex::ForwardCategory previous_category =

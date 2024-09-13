@@ -16,7 +16,7 @@
 
 #include <jni.h>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 
@@ -24,19 +24,19 @@ namespace ink {
 
 jobject CreateJImmutableVecFromVec(JNIEnv* env, Vec vec,
                                    jclass immutable_vec_class) {
-  CHECK(immutable_vec_class);
+  ABSL_CHECK(immutable_vec_class);
   jmethodID constructor =
       env->GetMethodID(immutable_vec_class, "<init>", "(FF)V");
-  CHECK(constructor);
+  ABSL_CHECK(constructor);
   return env->NewObject(immutable_vec_class, constructor, vec.x, vec.y);
 }
 
 jobject CreateJImmutableVecFromPoint(JNIEnv* env, Point point,
                                      jclass immutable_vec_class) {
-  CHECK(immutable_vec_class);
+  ABSL_CHECK(immutable_vec_class);
   jmethodID constructor =
       env->GetMethodID(immutable_vec_class, "<init>", "(FF)V");
-  CHECK(constructor);
+  ABSL_CHECK(constructor);
   return env->NewObject(immutable_vec_class, constructor, point.x, point.y);
 }
 
@@ -44,11 +44,11 @@ void FillJMutableVecFromVec(JNIEnv* env, jobject mutable_vec, Vec vec) {
   jclass mutable_vec_class = env->GetObjectClass(mutable_vec);
 
   jmethodID set_x_method = env->GetMethodID(mutable_vec_class, "setX", "(F)V");
-  CHECK(set_x_method);
+  ABSL_CHECK(set_x_method);
   env->CallVoidMethod(mutable_vec, set_x_method, vec.x);
 
   jmethodID set_y_method = env->GetMethodID(mutable_vec_class, "setY", "(F)V");
-  CHECK(set_y_method);
+  ABSL_CHECK(set_y_method);
   env->CallVoidMethod(mutable_vec, set_y_method, vec.y);
 }
 
@@ -56,11 +56,11 @@ void FillJMutableVecFromPoint(JNIEnv* env, jobject mutable_vec, Point point) {
   jclass mutable_vec_class = env->GetObjectClass(mutable_vec);
 
   jmethodID set_x_method = env->GetMethodID(mutable_vec_class, "setX", "(F)V");
-  CHECK(set_x_method);
+  ABSL_CHECK(set_x_method);
   env->CallVoidMethod(mutable_vec, set_x_method, point.x);
 
   jmethodID set_y_method = env->GetMethodID(mutable_vec_class, "setY", "(F)V");
-  CHECK(set_y_method);
+  ABSL_CHECK(set_y_method);
   env->CallVoidMethod(mutable_vec, set_y_method, point.y);
 }
 

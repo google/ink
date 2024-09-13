@@ -21,7 +21,7 @@ cc_library(
     hdrs = ["copy_on_write.h"],
     deps = [
         "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ],
 )
 

@@ -27,7 +27,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/functional/function_ref.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/substitute.h"
@@ -570,7 +570,7 @@ bool ModeledShape::CoverageIsGreaterThan(
 }
 
 const RTree& ModeledShape::Data::SpatialIndex() const {
-  CHECK(!meshes_.empty());
+  ABSL_CHECK(!meshes_.empty());
 
   absl::MutexLock lock(&cache_mutex_);
 
@@ -615,7 +615,7 @@ const RTree& ModeledShape::Data::SpatialIndex() const {
 }
 
 float ModeledShape::Data::TotalAbsoluteArea() const {
-  CHECK(!meshes_.empty());
+  ABSL_CHECK(!meshes_.empty());
 
   absl::MutexLock lock(&cache_mutex_);
   if (!cached_total_absolute_area_.has_value()) {

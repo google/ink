@@ -22,7 +22,7 @@
 #include <variant>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_tip.h"
@@ -322,7 +322,7 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::ConstantNode& node,
 
 void ProcessBehaviorNodeImpl(const BrushBehavior::FallbackFilterNode& node,
                              const BehaviorNodeContext& context) {
-  DCHECK(!context.stack.empty());
+  ABSL_DCHECK(!context.stack.empty());
   if (IsOptionalInputPropertyPresent(node.is_fallback_for,
                                      context.current_input)) {
     context.stack.back() = kNullBehaviorNodeValue;
@@ -331,7 +331,7 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::FallbackFilterNode& node,
 
 void ProcessBehaviorNodeImpl(const BrushBehavior::ToolTypeFilterNode& node,
                              const BehaviorNodeContext& context) {
-  DCHECK(!context.stack.empty());
+  ABSL_DCHECK(!context.stack.empty());
   if (!IsToolTypeEnabled(node.enabled_tool_types,
                          context.input_modeler_state.tool_type)) {
     context.stack.back() = kNullBehaviorNodeValue;
@@ -340,7 +340,7 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::ToolTypeFilterNode& node,
 
 void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
                              const BehaviorNodeContext& context) {
-  DCHECK(!context.stack.empty());
+  ABSL_DCHECK(!context.stack.empty());
   float& damped_value = context.damped_values[node.damping_index];
   float input = context.stack.back();
   if (IsNullBehaviorNodeValue(input)) {
@@ -357,7 +357,7 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
     // value towards the input according to the damping settings.  Note that a
     // non-null previous damped value implies that there was at least one
     // previous input, and thus `context.previous_input_metrics` is present.
-    DCHECK(context.previous_input_metrics.has_value());
+    ABSL_DCHECK(context.previous_input_metrics.has_value());
     switch (node.damping_source) {
       case BrushBehavior::DampingSource::kDistanceInCentimeters: {
         // If no mapping from stroke units to physical units is available, then
@@ -398,13 +398,13 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
 
 void ProcessBehaviorNodeImpl(const EasingImplementation& node,
                              const BehaviorNodeContext& context) {
-  DCHECK(!context.stack.empty());
+  ABSL_DCHECK(!context.stack.empty());
   context.stack.back() = node.GetY(context.stack.back());
 }
 
 void ProcessBehaviorNodeImpl(const BrushBehavior::BinaryOpNode& node,
                              const BehaviorNodeContext& context) {
-  DCHECK_GE(context.stack.size(), 2);
+  ABSL_DCHECK_GE(context.stack.size(), 2);
   float second_input = context.stack.back();
   context.stack.pop_back();
   float first_input = context.stack.back();
@@ -430,7 +430,7 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::BinaryOpNode& node,
 
 void ProcessBehaviorNodeImpl(const BrushBehavior::InterpolationNode& node,
                              const BehaviorNodeContext& context) {
-  DCHECK_GE(context.stack.size(), 3);
+  ABSL_DCHECK_GE(context.stack.size(), 3);
   float range_end = context.stack.back();
   context.stack.pop_back();
   float range_start = context.stack.back();
@@ -463,7 +463,7 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::InterpolationNode& node,
 
 void ProcessBehaviorNodeImpl(const TargetNodeImplementation& node,
                              const BehaviorNodeContext& context) {
-  DCHECK(!context.stack.empty());
+  ABSL_DCHECK(!context.stack.empty());
   float input = context.stack.back();
   context.stack.pop_back();
   if (IsNullBehaviorNodeValue(input)) return;
@@ -502,7 +502,7 @@ struct BrushTipStateModifiers {
 void ApplyModifierToTarget(Angle travel_direction, float modifier,
                            BrushBehavior::Target target, float brush_size,
                            BrushTipStateModifiers& tip_state_modifiers) {
-  DCHECK(std::isfinite(modifier));
+  ABSL_DCHECK(std::isfinite(modifier));
   switch (target) {
     case BrushBehavior::Target::kWidthMultiplier:
       tip_state_modifiers.width_multiplier *= modifier;
@@ -607,7 +607,7 @@ BrushTipState CreateTipState(Point position, Angle direction,
                              const BrushTip& brush_tip, float brush_size,
                              absl::Span<const BrushBehavior::Target> targets,
                              absl::Span<const float> target_modifiers) {
-  DCHECK_EQ(targets.size(), target_modifiers.size());
+  ABSL_DCHECK_EQ(targets.size(), target_modifiers.size());
 
   BrushTipStateModifiers tip_state_modifiers = {};
   for (size_t i = 0; i < targets.size(); ++i) {

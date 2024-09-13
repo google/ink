@@ -24,7 +24,7 @@
 #include <utility>
 
 #include "absl/algorithm/container.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/mesh_format.h"
@@ -140,7 +140,7 @@ StrokeVertex::CustomPackingArray StrokeVertex::MakeCustomPackingArray(
     absl::Span<const MeshFormat::AttributeId> skipped_attribute_ids) {
   absl::Span<const MeshFormat::Attribute> attributes = mesh_format.Attributes();
   CustomPackingArray packing_array(kMaxAttributeCount);
-  CHECK_LE(attributes.size(), packing_array.MaxSize());
+  ABSL_CHECK_LE(attributes.size(), packing_array.MaxSize());
 
   size_t custom_packing_index = 0;
   for (MeshFormat::Attribute attribute : attributes) {
@@ -192,7 +192,7 @@ MeshFormat MakeValidatedFullFormat() {
           },
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  CHECK_OK(format);
+  ABSL_CHECK_OK(format);
   return *format;
 }
 
@@ -243,7 +243,7 @@ StrokeVertex::FormatAttributeIndices StrokeVertex::FindAttributeIndices(
 
 StrokeVertex StrokeVertex::GetFromMesh(const MutableMesh& mesh,
                                        uint32_t index) {
-  DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
+  ABSL_DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
   StrokeVertex vertex;
   std::memcpy(&vertex, &mesh.RawVertexData()[index * sizeof(StrokeVertex)],
               sizeof(StrokeVertex));
@@ -305,7 +305,7 @@ void SetNonPositionAttributes(
 }  // namespace
 
 void StrokeVertex::AppendToMesh(MutableMesh& mesh, const StrokeVertex& vertex) {
-  DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
+  ABSL_DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
   mesh.AppendVertex(vertex.position);
   SetNonPositionAttributes(mesh, mesh.VertexCount() - 1,
                            vertex.non_position_attributes);
@@ -313,14 +313,14 @@ void StrokeVertex::AppendToMesh(MutableMesh& mesh, const StrokeVertex& vertex) {
 
 void StrokeVertex::SetInMesh(MutableMesh& mesh, uint32_t index,
                              const StrokeVertex& vertex) {
-  DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
+  ABSL_DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
   mesh.SetVertexPosition(index, vertex.position);
   SetNonPositionAttributes(mesh, index, vertex.non_position_attributes);
 }
 
 void StrokeVertex::SetSideDerivativeInMesh(MutableMesh& mesh, uint32_t index,
                                            Vec derivative) {
-  DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
+  ABSL_DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
   mesh.SetFloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.side_derivative,
       {derivative.x, derivative.y});
@@ -328,7 +328,7 @@ void StrokeVertex::SetSideDerivativeInMesh(MutableMesh& mesh, uint32_t index,
 
 void StrokeVertex::SetForwardDerivativeInMesh(MutableMesh& mesh, uint32_t index,
                                               Vec derivative) {
-  DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
+  ABSL_DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
   mesh.SetFloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.forward_derivative,
       {derivative.x, derivative.y});
@@ -336,7 +336,7 @@ void StrokeVertex::SetForwardDerivativeInMesh(MutableMesh& mesh, uint32_t index,
 
 void StrokeVertex::SetSideLabelInMesh(MutableMesh& mesh, uint32_t index,
                                       Label label) {
-  DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
+  ABSL_DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
   mesh.SetFloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.side_label,
       {label.encoded_value});
@@ -344,7 +344,7 @@ void StrokeVertex::SetSideLabelInMesh(MutableMesh& mesh, uint32_t index,
 
 void StrokeVertex::SetForwardLabelInMesh(MutableMesh& mesh, uint32_t index,
                                          Label label) {
-  DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
+  ABSL_DCHECK(MeshFormat::IsUnpackedEquivalent(mesh.Format(), kFullFormat));
   mesh.SetFloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.forward_label,
       {label.encoded_value});

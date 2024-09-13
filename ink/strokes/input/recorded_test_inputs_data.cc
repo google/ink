@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
@@ -48,7 +48,7 @@ StrokeInput MakeInput(StrokeInput::ToolType tool_type, Point position,
 
 StrokeInputBatch MakeBatch(absl::Span<const StrokeInput> inputs) {
   absl::StatusOr<StrokeInputBatch> result = StrokeInputBatch::Create(inputs);
-  CHECK_OK(result);
+  ABSL_CHECK_OK(result);
   return *std::move(result);
 }
 

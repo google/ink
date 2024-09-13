@@ -16,7 +16,7 @@
 
 #include <utility>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/distance.h"
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/strokes/internal/brush_tip_extrusion.h"
@@ -107,10 +107,10 @@ ConstrainedBrushTipExtrusion ConstrainBrushTipExtrusion(
 
   for (int iter = 0; iter < max_iterations; ++iter) {
     // Consistency check; these should be guaranteed by the logic below.
-    DCHECK(BrushTipShape::EvaluateTangentQuality(
-               last_extrusion.GetShape(), current_best_guess.GetShape()) ==
-           TangentQuality::kGoodTangents);
-    DCHECK_LE(lower_bound, upper_bound);
+    ABSL_DCHECK(BrushTipShape::EvaluateTangentQuality(
+                    last_extrusion.GetShape(), current_best_guess.GetShape()) ==
+                TangentQuality::kGoodTangents);
+    ABSL_DCHECK_LE(lower_bound, upper_bound);
 
     float next_lerp_amount = Lerp(lower_bound, upper_bound, 0.5);
     BrushTipExtrusion next_guess = lerp_extrusion(next_lerp_amount);

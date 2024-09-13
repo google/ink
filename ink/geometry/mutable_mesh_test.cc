@@ -27,7 +27,6 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"

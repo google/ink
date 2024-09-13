@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -38,9 +38,9 @@
 namespace ink {
 
 StrokeInputBatch::ConstIterator& StrokeInputBatch::ConstIterator::operator++() {
-  DCHECK(!batch_subdata_.empty())
+  ABSL_DCHECK(!batch_subdata_.empty())
       << "Attempted to dereference singular or past-the-end iterator";
-  DCHECK_EQ(batch_subdata_.size() % FloatsPerInput(value_), 0);
+  ABSL_DCHECK_EQ(batch_subdata_.size() % FloatsPerInput(value_), 0);
 
   batch_subdata_.remove_prefix(FloatsPerInput(value_));
   if (!batch_subdata_.empty()) {
@@ -176,7 +176,7 @@ absl::Status ValidateInputSequence(absl::Span<const StrokeInput> inputs) {
 }  // namespace
 
 void StrokeInputBatch::SetInlineFormatMetadata(const StrokeInput& input) {
-  DCHECK(IsEmpty());
+  ABSL_DCHECK(IsEmpty());
   tool_type_ = input.tool_type;
   stroke_unit_length_ = input.stroke_unit_length;
   has_pressure_ = input.HasPressure();
@@ -201,7 +201,7 @@ void AppendInputToFloatVector(const StrokeInput& input,
 }  // namespace
 
 absl::Status StrokeInputBatch::Set(size_t i, const StrokeInput& input) {
-  CHECK_LT(i, Size());
+  ABSL_CHECK_LT(i, Size());
   absl::Status status = ValidateSingleInput(input);
   if (!status.ok()) {
     return status;
@@ -241,7 +241,7 @@ absl::Status StrokeInputBatch::Set(size_t i, const StrokeInput& input) {
 }
 
 StrokeInput StrokeInputBatch::Get(size_t i) const {
-  CHECK_LT(i, Size());
+  ABSL_CHECK_LT(i, Size());
 
   auto data = absl::MakeSpan(data_.Value()).subspan(i * FloatsPerInput());
   auto iter = data.begin();
@@ -353,7 +353,7 @@ absl::Status StrokeInputBatch::Append(const StrokeInputBatch& inputs) {
 }
 
 void StrokeInputBatch::Erase(size_t start, size_t count) {
-  CHECK_LE(start, Size());
+  ABSL_CHECK_LE(start, Size());
 
   count = std::min(count, Size() - start);
   if (count == 0) return;

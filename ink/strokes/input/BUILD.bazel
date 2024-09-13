@@ -49,7 +49,7 @@ cc_library(
         "//ink/types:duration",
         "//ink/types:physical_distance",
         "//ink/types/internal:copy_on_write",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
@@ -161,7 +161,7 @@ cc_library(
         "//ink/geometry:angle",
         "//ink/geometry:rect",
         "//ink/types:duration",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ],
 )
 
@@ -198,7 +198,7 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry:rect",
         "//ink/types:duration",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
 )

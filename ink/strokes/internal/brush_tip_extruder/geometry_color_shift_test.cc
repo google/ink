@@ -18,7 +18,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/strokes/internal/brush_tip_extruder/geometry.h"
@@ -38,14 +38,14 @@ using ::testing::FloatEq;
 float GetOpacityShift(const MutableMesh& mesh, uint32_t index) {
   const SmallArray<float, 4>& attribute = mesh.FloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.opacity_shift);
-  CHECK_EQ(attribute.Size(), 1);
+  ABSL_CHECK_EQ(attribute.Size(), 1);
   return attribute[0];
 }
 
 std::array<float, 3> GetHslShift(const MutableMesh& mesh, uint32_t index) {
   const SmallArray<float, 4>& attribute = mesh.FloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.hsl_shift);
-  CHECK_EQ(attribute.Size(), 3);
+  ABSL_CHECK_EQ(attribute.Size(), 3);
   return {attribute[0], attribute[1], attribute[2]};
 }
 

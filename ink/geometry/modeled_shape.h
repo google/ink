@@ -26,7 +26,7 @@
 #include "absl/base/thread_annotations.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/functional/function_ref.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
@@ -417,7 +417,7 @@ inline const MeshFormat& ModeledShape::RenderGroupFormat(
     uint32_t group_index) const {
   // If data_ is null, then there are zero groups, so group_index is necessarily
   // out of bounds.
-  CHECK(data_);
+  ABSL_CHECK(data_);
   return data_->RenderGroupFormat(group_index);
 }
 
@@ -425,7 +425,7 @@ inline absl::Span<const Mesh> ModeledShape::RenderGroupMeshes(
     uint32_t group_index) const {
   // If data_ is null, then there are zero groups, so group_index is necessarily
   // out of bounds.
-  CHECK(data_);
+  ABSL_CHECK(data_);
   return data_->RenderGroupMeshes(group_index);
 }
 
@@ -437,13 +437,13 @@ inline absl::Span<const Mesh> ModeledShape::Meshes() const {
 inline uint32_t ModeledShape::OutlineCount(uint32_t group_index) const {
   // If data_ is null, then there are zero groups, so group_index is necessarily
   // out of bounds.
-  CHECK(data_);
+  ABSL_CHECK(data_);
   return data_->Outlines(group_index).size();
 }
 
 inline absl::Span<const ModeledShape::VertexIndexPair> ModeledShape::Outline(
     uint32_t group_index, uint32_t outline_index) const {
-  CHECK_LT(outline_index, OutlineCount(group_index));
+  ABSL_CHECK_LT(outline_index, OutlineCount(group_index));
   return data_->Outlines(group_index)[outline_index];
 }
 
@@ -452,7 +452,7 @@ inline Point ModeledShape::OutlinePosition(uint32_t group_index,
                                            uint32_t vertex_index) const {
   absl::Span<const VertexIndexPair> outline =
       Outline(group_index, outline_index);
-  CHECK_LT(vertex_index, outline.size());
+  ABSL_CHECK_LT(vertex_index, outline.size());
   VertexIndexPair index = outline[vertex_index];
   return data_->RenderGroupMeshes(group_index)[index.mesh_index].VertexPosition(
       index.vertex_index);
@@ -477,13 +477,13 @@ inline uint32_t ModeledShape::Data::RenderGroupCount() const {
 
 inline const MeshFormat& ModeledShape::Data::RenderGroupFormat(
     uint32_t group_index) const {
-  CHECK_LT(group_index, RenderGroupCount());
+  ABSL_CHECK_LT(group_index, RenderGroupCount());
   return group_formats_[group_index];
 }
 
 inline absl::Span<const Mesh> ModeledShape::Data::RenderGroupMeshes(
     uint32_t group_index) const {
-  CHECK_LT(group_index, RenderGroupCount());
+  ABSL_CHECK_LT(group_index, RenderGroupCount());
   size_t start = group_first_mesh_indices_[group_index];
   size_t end = group_index + 1 < group_first_mesh_indices_.size()
                    ? group_first_mesh_indices_[group_index + 1]
@@ -497,7 +497,7 @@ inline absl::Span<const Mesh> ModeledShape::Data::Meshes() const {
 
 inline absl::Span<const std::vector<ModeledShape::VertexIndexPair>>
 ModeledShape::Data::Outlines(uint32_t group_index) const {
-  CHECK_LT(group_index, RenderGroupCount());
+  ABSL_CHECK_LT(group_index, RenderGroupCount());
   size_t start = group_first_outline_indices_[group_index];
   size_t end = group_index + 1 < group_first_outline_indices_.size()
                    ? group_first_outline_indices_[group_index + 1]

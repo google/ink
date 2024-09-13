@@ -22,7 +22,7 @@
 
 #include "absl/container/inlined_vector.h"
 #include "absl/functional/overload.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "ink/brush/easing_function.h"
@@ -91,10 +91,10 @@ void EasingImplementation::SetUpImplementationType(
 
 void EasingImplementation::SetUpImplementationType(
     const EasingFunction::CubicBezier& cubic_bezier) {
-  DCHECK_GE(cubic_bezier.x1, 0);
-  DCHECK_LE(cubic_bezier.x1, 1);
-  DCHECK_GE(cubic_bezier.x2, 0);
-  DCHECK_LE(cubic_bezier.x2, 1);
+  ABSL_DCHECK_GE(cubic_bezier.x1, 0);
+  ABSL_DCHECK_LE(cubic_bezier.x1, 1);
+  ABSL_DCHECK_GE(cubic_bezier.x2, 0);
+  ABSL_DCHECK_LE(cubic_bezier.x2, 1);
 
   CubicBezierApproximation cubic_bezier_approximation;
   Vec v1 = {cubic_bezier.x1, cubic_bezier.y1};
@@ -168,7 +168,7 @@ void EasingImplementation::SetUpImplementationType(
 
 void EasingImplementation::SetUpImplementationType(
     const EasingFunction::Steps& steps) {
-  DCHECK_GT(steps.step_count, 0);
+  ABSL_DCHECK_GT(steps.step_count, 0);
   Steps steps_implementation = {
       .step_count = static_cast<float>(steps.step_count),
       .step_position = steps.step_position};
@@ -182,7 +182,7 @@ void EasingImplementation::SetUpImplementationType(
       steps_implementation.starting_y = steps_implementation.step_height;
       break;
     case EasingFunction::StepPosition::kJumpNone:
-      DCHECK_GT(steps.step_count, 1);
+      ABSL_DCHECK_GT(steps.step_count, 1);
       steps_implementation.step_height =
           1 / (steps_implementation.step_count - 1);
       steps_implementation.starting_y = 0;

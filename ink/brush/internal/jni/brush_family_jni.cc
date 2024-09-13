@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
@@ -38,7 +38,7 @@ JNI_METHOD(brush, BrushFamily, jlong, nativeCreateBrushFamily)
   coats.reserve(num_coats);
   jlong* coat_pointers =
       env->GetLongArrayElements(coat_native_pointer_array, nullptr);
-  CHECK(coat_pointers);
+  ABSL_CHECK(coat_pointers);
   for (jsize i = 0; i < num_coats; ++i) {
     coats.push_back(ink::CastToBrushCoat(coat_pointers[i]));
   }

@@ -19,7 +19,7 @@
 #include <optional>
 #include <vector>
 
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "ink/geometry/internal/legacy_segment_intersection.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/segment.h"
@@ -60,7 +60,7 @@ uint32_t DirectedPartialOutline::StartingSideSize() const {
 }
 
 IndexType DirectedPartialOutline::operator[](uint32_t i) const {
-  DCHECK_LT(i, Size());
+  ABSL_DCHECK_LT(i, Size());
   if (i < n_starting_indices_) {
     return (*starting_indices_)[starting_indices_start_ + n_starting_indices_ -
                                 i - 1];

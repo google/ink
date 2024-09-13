@@ -33,7 +33,7 @@ cc_library(
         "//ink/geometry:vec",
         "//ink/strokes/internal:legacy_vertex",
         "//ink/strokes/internal:stroke_vertex",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ],
 )
 
@@ -64,7 +64,7 @@ cc_library(
         "//ink/geometry/internal:algorithms",
         "//ink/strokes/internal:stroke_vertex",
         "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -94,7 +94,7 @@ cc_library(
         ":side",
         "//ink/geometry:point",
         "//ink/strokes/internal:stroke_vertex",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -125,7 +125,7 @@ cc_library(
         "//ink/geometry:triangle",
         "//ink/geometry:vec",
         "//ink/geometry/internal:legacy_segment_intersection",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ],
 )
 
@@ -154,7 +154,7 @@ cc_library(
         "//ink/geometry/internal:algorithms",
         "//ink/strokes/internal:legacy_vertex",
         "//ink/strokes/internal:stroke_vertex",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
     ],
 )
 
@@ -241,7 +241,7 @@ cc_library(
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -257,7 +257,7 @@ cc_test(
         "//ink/strokes/internal:brush_tip_state",
         "//ink/strokes/internal:stroke_vertex",
         "//ink/types:small_array",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -352,7 +352,7 @@ cc_test(
         "//ink/geometry:vec",
         "//ink/strokes/internal:brush_tip_state",
         "//ink/types:small_array",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_googletest//:gtest_main",
     ],
 )

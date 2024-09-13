@@ -21,7 +21,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
@@ -61,7 +61,7 @@ using ::testing::Property;
 
 Uri CreateTestTextureUri() {
   auto uri = Uri::Parse("ink://ink/texture:test-texture");
-  CHECK_OK(uri);
+  ABSL_CHECK_OK(uri);
   return *uri;
 }
 
@@ -81,12 +81,12 @@ Brush CreateRectangularTestBrush() {
                                           .rotation = kHalfPi / 2}},
                            .blend_mode = BrushPaint::BlendMode::kSrcIn}}},
       "//test/brush-family:awesome-rectangular-brush");
-  CHECK_OK(family);
+  ABSL_CHECK_OK(family);
   Color color;
   float brush_size = 10;
   float brush_epsilon = 0.01;
   auto brush = Brush::Create(*family, color, brush_size, brush_epsilon);
-  CHECK_OK(brush);
+  ABSL_CHECK_OK(brush);
   return *brush;
 }
 
@@ -104,12 +104,12 @@ Brush CreateCircularTestBrush() {
                                           .rotation = kHalfPi / 2}},
                            .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
       "//test/brush-family:awesome-circular-brush");
-  CHECK_OK(family);
+  ABSL_CHECK_OK(family);
   Color color;
   float brush_size = 5;
   float brush_epsilon = 0.01;
   auto brush = Brush::Create(*family, color, brush_size, brush_epsilon);
-  CHECK_OK(brush);
+  ABSL_CHECK_OK(brush);
   return *brush;
 }
 

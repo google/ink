@@ -26,7 +26,7 @@
 #include "gtest/gtest.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
-#include "absl/log/check.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
 #include "ink/geometry/mesh_format.h"
@@ -73,7 +73,7 @@ SmallArray<float, 4> PackAttributeAndGetAsFloatArray(
                 absl::MakeSpan(byte_vector));
 
   // Check that the packed attribute cleanly repacks into floats.
-  CHECK_EQ(MeshFormat::PackedAttributeSize(type) % sizeof(float), 0);
+  ABSL_CHECK_EQ(MeshFormat::PackedAttributeSize(type) % sizeof(float), 0);
 
   // Create the output array.
   SmallArray<float, 4> output(MeshFormat::PackedAttributeSize(type) /
