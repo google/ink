@@ -21,7 +21,7 @@
 #include <string>
 
 #include "absl/log/absl_check.h"
-#include "absl/log/log.h"
+#include "absl/log/absl_log.h"
 #include "absl/strings/str_format.h"
 #include "ink/color/color_space.h"
 
@@ -59,7 +59,7 @@ Color Color::FromFloat(float red, float green, float blue, float alpha,
       (red != 0.0f || green != 0.0f || blue != 0.0f)) {
     // If alpha is zero and the inputs were correctly premultiplied, then all
     // color channels must necessarily be zero too.
-    LOG(FATAL) << absl::StrFormat(
+    ABSL_LOG(FATAL) << absl::StrFormat(
         "Premultiplied alpha=0 must have RGB=0. Got RGBA={%f, %f, %f, %f}.",
         red, green, blue, alpha);
   }
@@ -86,7 +86,7 @@ Color Color::FromUint8(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha,
       (red != 0 || green != 0 || blue != 0)) {
     // If alpha is zero and the inputs were correctly premultiplied, then all
     // color channels must necessarily be zero too.
-    LOG(FATAL) << absl::StrFormat(
+    ABSL_LOG(FATAL) << absl::StrFormat(
         "Premultiplied alpha=0 must have RGB=0. Got RGBA={%d, %d, %d, %d}.",
         red, green, blue, alpha);
   }

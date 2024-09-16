@@ -17,7 +17,7 @@
 #include <cstddef>
 #include <string>
 
-#include "absl/log/log.h"
+#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 
@@ -76,7 +76,7 @@ size_t PixelFormatBytesPerPixel(Bitmap::PixelFormat format) {
     case Bitmap::PixelFormat::kRgba8888:
       return 4;
   }
-  LOG(FATAL) << "Invalid PixelFormat value: " << static_cast<int>(format);
+  ABSL_LOG(FATAL) << "Invalid PixelFormat value: " << static_cast<int>(format);
 }
 
 }  // namespace ink

@@ -25,8 +25,8 @@ cc_library(
     ],
     deps = [
         ":color_space",
-        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings:str_format",
     ],
 )
@@ -62,7 +62,7 @@ cc_library(
     srcs = ["color_space.cc"],
     hdrs = ["color_space.h"],
     deps = [
-        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings:str_format",
     ],
 )

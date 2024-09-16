@@ -25,7 +25,7 @@
 #include "absl/base/nullability.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
-#include "absl/log/log.h"
+#include "absl/log/absl_log.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_tip.h"
@@ -57,8 +57,9 @@ float InitialTargetModifierValue(BrushBehavior::Target target) {
     case BrushBehavior::Target::kLuminosity:
       return 0.f;
   }
-  LOG(FATAL) << "`target` should not be able to have non-enumerator value: "
-             << static_cast<int>(target);
+  ABSL_LOG(FATAL)
+      << "`target` should not be able to have non-enumerator value: "
+      << static_cast<int>(target);
 }
 
 bool SourceOutOfRangeBehaviorHasUpperBound(
@@ -70,9 +71,10 @@ bool SourceOutOfRangeBehaviorHasUpperBound(
     case BrushBehavior::OutOfRange::kMirror:
       return false;
   }
-  LOG(FATAL) << "`source_out_of_range_behavior` should not be able to have: "
-                "non-enumerator value: "
-             << static_cast<int>(source_out_of_range_behavior);
+  ABSL_LOG(FATAL)
+      << "`source_out_of_range_behavior` should not be able to have: "
+         "non-enumerator value: "
+      << static_cast<int>(source_out_of_range_behavior);
 }
 
 // Returns the upper bound for values of input source that are affected by this
@@ -140,7 +142,7 @@ float DistanceRemainingUpperBound(const BrushBehavior::SourceNode& node,
         kInputAccelerationLateralInCentimetersPerSecondSquared:
       return 0;
   }
-  LOG(FATAL)
+  ABSL_LOG(FATAL)
       << "`node.source` should not be able to have non-enumerator value: "
       << static_cast<int>(node.source);
 }
@@ -199,7 +201,7 @@ Duration32 TimeRemainingUpperBound(const BrushBehavior::SourceNode& node) {
         kInputAccelerationLateralInCentimetersPerSecondSquared:
       return Duration32::Zero();
   }
-  LOG(FATAL)
+  ABSL_LOG(FATAL)
       << "`node.source` should not be able to have non-enumerator value: "
       << static_cast<int>(node.source);
 }

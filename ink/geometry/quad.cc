@@ -21,7 +21,7 @@
 #include <optional>
 #include <utility>
 
-#include "absl/log/log.h"
+#include "absl/log/absl_log.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/segment.h"
@@ -62,7 +62,7 @@ Segment Quad::GetEdge(int index) const {
     case 3:
       return Segment{corners[3], corners[0]};
     default:
-      LOG(FATAL) << "Index " << index << " out of bounds";
+      ABSL_LOG(FATAL) << "Index " << index << " out of bounds";
   }
 }
 

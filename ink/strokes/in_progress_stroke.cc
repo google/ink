@@ -21,7 +21,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
-#include "absl/log/log.h"
+#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
@@ -245,8 +245,8 @@ Stroke InProgressStroke::CopyToStroke(
   if (modeled_shape.ok()) {
     return Stroke(*brush, processed_inputs_.MakeDeepCopy(), *modeled_shape);
   } else {
-    LOG(WARNING) << "Failed to create ModeledShape for InProgressStroke: "
-                 << modeled_shape.status();
+    ABSL_LOG(WARNING) << "Failed to create ModeledShape for InProgressStroke: "
+                      << modeled_shape.status();
     return Stroke(*brush, processed_inputs_.MakeDeepCopy(),
                   ModeledShape::WithEmptyGroups(brush->CoatCount()));
   }

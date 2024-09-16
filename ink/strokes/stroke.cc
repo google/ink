@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "absl/log/absl_check.h"
-#include "absl/log/log.h"
+#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
@@ -190,7 +190,8 @@ void Stroke::RegenerateShape() {
   if (modeled_shape.ok()) {
     shape_ = *std::move(modeled_shape);
   } else {
-    LOG(WARNING) << "Failed to create ModeledShape: " << modeled_shape.status();
+    ABSL_LOG(WARNING) << "Failed to create ModeledShape: "
+                      << modeled_shape.status();
     shape_ = ModeledShape::WithEmptyGroups(brush_.CoatCount());
   }
 

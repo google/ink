@@ -23,7 +23,7 @@ cc_library(
     deps = [
         "//ink/color",
         "//ink/color:color_space",
-        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",

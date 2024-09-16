@@ -23,7 +23,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/functional/overload.h"
 #include "absl/log/absl_check.h"
-#include "absl/log/log.h"
+#include "absl/log/absl_log.h"
 #include "absl/strings/str_cat.h"
 #include "ink/brush/easing_function.h"
 #include "ink/geometry/internal/algorithms.h"
@@ -56,9 +56,10 @@ EasingFunction::CubicBezier GetAsCubicBezierParameters(
     case EasingFunction::Predefined::kStepEnd:
       break;
   }
-  LOG(FATAL) << "Should only be possible for `predefined` to be a predefined "
-                "cubic Bezier. Got "
-             << absl::StrCat(predefined);
+  ABSL_LOG(FATAL)
+      << "Should only be possible for `predefined` to be a predefined "
+         "cubic Bezier. Got "
+      << absl::StrCat(predefined);
 }
 
 }  // namespace

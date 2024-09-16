@@ -18,7 +18,7 @@
 #include <cmath>
 #include <string>
 
-#include "absl/log/log.h"
+#include "absl/log/absl_log.h"
 #include "absl/strings/str_format.h"
 
 namespace ink {
@@ -73,7 +73,8 @@ std::array<double, 9> GetFromXyzD65(ColorSpace space) {
     case ColorSpace::kDisplayP3:
       return kXyzD65ToDisplayP3;
   }
-  LOG(DFATAL) << "Unknown ColorSpace enum value " << static_cast<int>(space);
+  ABSL_LOG(DFATAL) << "Unknown ColorSpace enum value "
+                   << static_cast<int>(space);
   return {};
 }
 
@@ -84,7 +85,8 @@ std::array<double, 9> GetToXyzD65(ColorSpace space) {
     case ColorSpace::kDisplayP3:
       return kDisplayP3ToXyzD65;
   }
-  LOG(DFATAL) << "Unknown ColorSpace enum value " << static_cast<int>(space);
+  ABSL_LOG(DFATAL) << "Unknown ColorSpace enum value "
+                   << static_cast<int>(space);
   return {};
 }
 
@@ -101,7 +103,8 @@ float GammaDecode(float encoded_value, ColorSpace space) {
       return std::pow(kSrgbA * encoded_value + kSrgbB, kSrgbG);
     }
   }
-  LOG(DFATAL) << "Unknown ColorSpace enum value " << static_cast<int>(space);
+  ABSL_LOG(DFATAL) << "Unknown ColorSpace enum value "
+                   << static_cast<int>(space);
   return 0.0f;
 }
 
@@ -116,7 +119,8 @@ float GammaEncode(float linear_value, ColorSpace space) {
       return (std::pow(linear_value, 1.0 / kSrgbG) - kSrgbB) / kSrgbA;
     }
   }
-  LOG(DFATAL) << "Unknown ColorSpace enum value " << static_cast<int>(space);
+  ABSL_LOG(DFATAL) << "Unknown ColorSpace enum value "
+                   << static_cast<int>(space);
   return 0.0f;
 }
 
@@ -169,7 +173,7 @@ std::array<float, 5> GetGammaDecodingParameters(ColorSpace space) {
       return {kSrgbA, kSrgbB, kSrgbC, kSrgbD, kSrgbG};
     }
   }
-  LOG(DFATAL) << "Unknown ColorSpace enum value " << space;
+  ABSL_LOG(DFATAL) << "Unknown ColorSpace enum value " << space;
   return {};
 }
 

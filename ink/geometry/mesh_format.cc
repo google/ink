@@ -24,7 +24,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/log/log.h"
+#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -201,7 +201,7 @@ uint8_t MeshFormat::ComponentCount(AttributeType type) {
     case AttributeType::kFloat4PackedIn3Floats:
       return 4;
   }
-  LOG(FATAL) << "Unrecognized AttributeType " << static_cast<int>(type);
+  ABSL_LOG(FATAL) << "Unrecognized AttributeType " << static_cast<int>(type);
 }
 
 std::optional<SmallArray<uint8_t, 4>> MeshFormat::PackedBitsPerComponent(
@@ -232,7 +232,7 @@ std::optional<SmallArray<uint8_t, 4>> MeshFormat::PackedBitsPerComponent(
     case AttributeType::kFloat4PackedIn3Floats:
       return SmallArray<uint8_t, 4>({18, 18, 18, 18});
   }
-  LOG(FATAL) << "Unrecognized AttributeType " << static_cast<int>(type);
+  ABSL_LOG(FATAL) << "Unrecognized AttributeType " << static_cast<int>(type);
 }
 
 uint8_t MeshFormat::UnpackedAttributeSize(AttributeType type) {
@@ -258,7 +258,7 @@ bool MeshFormat::IsPackedAsFloat(AttributeType type) {
     case MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
       return false;
   }
-  LOG(FATAL) << "Unrecognized AttributeType " << static_cast<int>(type);
+  ABSL_LOG(FATAL) << "Unrecognized AttributeType " << static_cast<int>(type);
 }
 
 uint8_t MeshFormat::PackedAttributeSize(AttributeType type) {
@@ -284,7 +284,7 @@ uint8_t MeshFormat::PackedAttributeSize(AttributeType type) {
     case AttributeType::kFloat4Unpacked:
       return 16;
   }
-  LOG(FATAL) << "Unrecognized AttributeType " << static_cast<int>(type);
+  ABSL_LOG(FATAL) << "Unrecognized AttributeType " << static_cast<int>(type);
 }
 
 uint8_t MeshFormat::UnpackedIndexSize(IndexFormat index_format) {
@@ -294,7 +294,8 @@ uint8_t MeshFormat::UnpackedIndexSize(IndexFormat index_format) {
     case IndexFormat::k32BitUnpacked16BitPacked:
       return 4;
   }
-  LOG(FATAL) << "Unrecognized IndexFormat " << static_cast<int>(index_format);
+  ABSL_LOG(FATAL) << "Unrecognized IndexFormat "
+                  << static_cast<int>(index_format);
 }
 
 void MeshFormat::PopulateOffsetWidthAndStride() {

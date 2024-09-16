@@ -29,7 +29,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
-#include "absl/log/log.h"
+#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/substitute.h"
@@ -664,7 +664,7 @@ SmallArray<uint32_t, 4> UnpackIntegersFromPackedAttribute(
     case MeshFormat::AttributeType::kFloat4Unpacked:
       break;
   }
-  LOG(FATAL) << "Non-packed AttributeType: " << static_cast<uint8_t>(type);
+  ABSL_LOG(FATAL) << "Non-packed AttributeType: " << static_cast<uint8_t>(type);
 }
 
 SmallArray<float, 4> ReadFloatsFromUnpackedAttribute(
@@ -690,7 +690,7 @@ SmallArray<float, 4> ReadFloatsFromUnpackedAttribute(
     case MeshFormat::AttributeType::kFloat4PackedIn3Floats:
       break;
   }
-  LOG(FATAL) << "Packed AttributeType: " << static_cast<uint8_t>(type);
+  ABSL_LOG(FATAL) << "Packed AttributeType: " << static_cast<uint8_t>(type);
 }
 
 std::array<uint32_t, 3> ReadTriangleIndicesFromByteArray(
@@ -780,7 +780,7 @@ SmallArray<float, 4> ReadUnpackedFloatAttributeFromByteArray(
           UnalignedLoadFloat(src + 3 * sizeof(float)),
       };
   }
-  LOG(FATAL) << "Unrecognized AttributeType: " << attr.type;
+  ABSL_LOG(FATAL) << "Unrecognized AttributeType: " << attr.type;
 }
 
 absl::InlinedVector<PartitionInfo, 1> PartitionTriangles(
