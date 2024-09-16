@@ -76,8 +76,10 @@ class InProgressStroke {
   };
 
   InProgressStroke() = default;
+  InProgressStroke(InProgressStroke&&) = default;
   InProgressStroke(const InProgressStroke&) = delete;
   InProgressStroke& operator=(const InProgressStroke&) = delete;
+  InProgressStroke& operator=(InProgressStroke&&) = default;
   ~InProgressStroke() = default;
 
   // Clears the in progress stroke without starting a new one.

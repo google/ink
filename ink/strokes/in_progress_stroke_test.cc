@@ -23,6 +23,7 @@
 #include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_family.h"
@@ -217,6 +218,38 @@ TEST(InProgressStrokeTest, DefaultConstructed) {
   EXPECT_TRUE(stroke.GetUpdatedRegion().IsEmpty());
   EXPECT_TRUE(stroke.InputsAreFinished());
   EXPECT_FALSE(stroke.NeedsUpdate());
+}
+
+TEST(InProgressStrokeTest, MoveConstructedAndAssigned) {
+  Brush brush = CreateRectangularTestBrush();
+  InProgressStroke stroke;
+  stroke.Start(brush);
+  absl::StatusOr<StrokeInputBatch> inputs = StrokeInputBatch::Create({
+      {.position = {1, 2}},
+      {.position = {3, 4}},
+  });
+  absl::StatusOr<StrokeInputBatch> predicted_inputs = StrokeInputBatch::Create({
+      {.position = {5, 6}},
+  });
+  ASSERT_EQ(inputs.status(), absl::OkStatus());
+  ASSERT_EQ(predicted_inputs.status(), absl::OkStatus());
+  ASSERT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*inputs, *predicted_inputs));
+  ASSERT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
+  EXPECT_EQ(stroke.InputCount(), 3);
+  EXPECT_EQ(stroke.RealInputCount(), 2);
+  EXPECT_EQ(stroke.PredictedInputCount(), 1);
+
+  // `stroke` is in an indeterminate state and should not be used after move.
+  InProgressStroke stroke2(std::move(stroke));
+  EXPECT_EQ(stroke2.InputCount(), 3);
+  EXPECT_EQ(stroke2.RealInputCount(), 2);
+  EXPECT_EQ(stroke2.PredictedInputCount(), 1);
+
+  // `stroke2` is in an indeterminate state and should not be used after move.
+  InProgressStroke stroke3 = std::move(stroke2);
+  EXPECT_EQ(stroke3.InputCount(), 3);
+  EXPECT_EQ(stroke3.RealInputCount(), 2);
+  EXPECT_EQ(stroke3.PredictedInputCount(), 1);
 }
 
 TEST(InProgressStrokeTest, StartAfterConstruction) {
