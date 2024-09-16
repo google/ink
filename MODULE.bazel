@@ -1,9 +1,24 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 module(
     name = "ink-strokes-api",
     version = "0.0.1",
 )
 
 git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 #################################################################################
 ## Toolchain setup
@@ -52,6 +67,18 @@ git_repository(
     commit = "fc52516467dfa124bdd967c15c7cf9faf02a34ca",
     remote = "https://github.com/memononen/libtess2.git",
 )
+
+SKIA_COMMIT = "515a23f3cbe1e2f54ffa6821e6da6f4891763f47"
+http_archive(
+    name = "skia",
+    strip_prefix = "skia-" + SKIA_COMMIT,
+    url = "https://github.com/google/skia/archive/" + SKIA_COMMIT + ".zip",
+)
+
+# Skia configuration
+local_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:local.bzl",
+                                 "local_repository")
+local_repository(name = "skia_user_config", path = "skia_user_config")
 
 #################################################################################
 ## Development dependencies
@@ -106,3 +133,12 @@ bazel_dep(
     version = "5.3.0-21.7",
     dev_dependency = True,
 )
+
+# We can remove these when Skia has a MODULE.bazel file.
+# See: https://g-issues.skia.org/issues/367315534
+
+# Required for Skia
+bazel_dep(name = "rules_license", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.0.9")
+bazel_dep(name = "platforms", version = "0.0.10")
+
