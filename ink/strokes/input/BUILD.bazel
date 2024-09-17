@@ -185,10 +185,14 @@ cc_library(
     testonly = 1,
     srcs = [
         "recorded_test_inputs.cc",
-        "recorded_test_inputs_data.cc",
+        "recorded_test_inputs/spring_shape_raw.cc",
+        "recorded_test_inputs/straight_line_raw.cc",
+        "recorded_test_inputs/zfold6_wave.cc",
+    ],
+    hdrs = [
+        "recorded_test_inputs.h",
         "recorded_test_inputs_data.h",
     ],
-    hdrs = ["recorded_test_inputs.h"],
     deps = [
         ":stroke_input",
         ":stroke_input_batch",
@@ -198,7 +202,10 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry:rect",
         "//ink/types:duration",
+        "//ink/types:physical_distance",
         "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/types:span",
     ],
 )
