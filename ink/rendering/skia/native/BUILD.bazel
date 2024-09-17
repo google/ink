@@ -21,6 +21,9 @@ cc_library(
     name = "skia_renderer",
     srcs = ["skia_renderer.cc"],
     hdrs = ["skia_renderer.h"],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [
         "//ink/brush",
         "//ink/brush:brush_paint",
