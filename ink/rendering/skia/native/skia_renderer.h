@@ -16,9 +16,11 @@
 #define INK_RENDERING_SKIA_NATIVE_SKIA_RENDERER_H_
 
 #include <cstdint>
+#include <functional>
 #include <variant>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -27,8 +29,11 @@
 #include "ink/rendering/skia/native/internal/mesh_drawable.h"
 #include "ink/rendering/skia/native/internal/mesh_specification_cache.h"
 #include "ink/rendering/skia/native/internal/path_drawable.h"
+#include "ink/rendering/skia/native/internal/shader_cache.h"
+#include "ink/rendering/texture_bitmap_store.h"
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/stroke.h"
+#include "ink/types/uri.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkMesh.h"
 #include "include/gpu/ganesh/GrDirectContext.h"
@@ -77,7 +82,10 @@ class SkiaRenderer {
  public:
   class Drawable;
 
-  SkiaRenderer() = default;
+  // If non-null, `texture_provider` must outlive the `SkiaRenderer`.
+  explicit SkiaRenderer(
+      absl::Nullable<const TextureBitmapStore*> texture_provider = nullptr);
+
   SkiaRenderer(const SkiaRenderer&) = delete;
   SkiaRenderer(SkiaRenderer&&) = default;
   SkiaRenderer& operator=(const SkiaRenderer&) = delete;
@@ -138,6 +146,7 @@ class SkiaRenderer {
   // TODO: b/284117747 - Add functions to "update" a `Drawable`.
 
  private:
+  skia_native_internal::ShaderCache shader_cache_;
   skia_native_internal::MeshSpecificationCache specification_cache_;
 
   // Buffer of 16-bit integers used during index buffer creation when the

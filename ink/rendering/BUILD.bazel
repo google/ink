@@ -57,3 +57,14 @@ cc_library(
         "@com_google_fuzztest//fuzztest",
     ],
 )
+
+cc_library(
+    name = "texture_bitmap_store",
+    hdrs = ["texture_bitmap_store.h"],
+    deps = [
+        ":bitmap",
+        "//ink/types:uri",
+        "@com_google_absl//absl/base:nullability",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)

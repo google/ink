@@ -22,6 +22,7 @@
 #include <variant>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/functional/overload.h"
 #include "absl/log/absl_check.h"
@@ -41,6 +42,7 @@
 #include "ink/rendering/skia/native/internal/mesh_drawable.h"
 #include "ink/rendering/skia/native/internal/mesh_uniform_data.h"
 #include "ink/rendering/skia/native/internal/path_drawable.h"
+#include "ink/rendering/texture_bitmap_store.h"
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/stroke.h"
 #include "include/core/SkCanvas.h"
@@ -95,6 +97,10 @@ float OpacityMultiplierForPath(const Brush& brush, uint32_t coat_index) {
 
 }  // namespace
 
+SkiaRenderer::SkiaRenderer(
+    absl::Nullable<const TextureBitmapStore*> texture_provider)
+    : shader_cache_(texture_provider) {}
+
 absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     GrDirectContext* context, const InProgressStroke& stroke,
     const AffineTransform& object_to_canvas) {
@@ -103,7 +109,7 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     return Drawable(object_to_canvas, {});
   }
 
-  uint32_t num_coats = stroke.BrushCoatCount();
+  uint32_t num_coats = brush->CoatCount();
   absl::InlinedVector<Drawable::Implementation, 1> drawables;
   drawables.reserve(num_coats);
   for (uint32_t coat_index = 0; coat_index < num_coats; ++coat_index) {
@@ -115,6 +121,11 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
           brush->GetColor(), OpacityMultiplierForPath(*brush, coat_index)));
       continue;
     }
+
+    const BrushPaint& brush_paint = brush->GetCoats()[coat_index].paint;
+    absl::StatusOr<sk_sp<SkShader>> shader = shader_cache_.GetShaderForPaint(
+        brush_paint, brush->GetSize(), stroke.GetInputs());
+    if (!shader.ok()) return shader.status();
 
     absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
         specification_cache_.GetFor(stroke);
@@ -131,6 +142,7 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
 
     absl::StatusOr<MeshDrawable> mesh_drawable = MeshDrawable::Create(
         *std::move(specification),
+        shader_cache_.GetBlenderForPaint(brush_paint), *std::move(shader),
         {{
             .vertex_buffer = SkMeshes::MakeVertexBuffer(
                 context, vertex_data.data(), vertex_data.size()),
@@ -176,6 +188,11 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
       continue;
     }
 
+    const BrushPaint& brush_paint = brush.GetCoats()[coat_index].paint;
+    absl::StatusOr<sk_sp<SkShader>> shader = shader_cache_.GetShaderForPaint(
+        brush_paint, brush.GetSize(), stroke.GetInputs());
+    if (!shader.ok()) return shader.status();
+
     // TODO: b/284117747 - Pass `brush.GetCoats()[coat_index].paint` to the
     // `specification_cache_`.
     absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
@@ -207,9 +224,10 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     MeshUniformData uniform_data(**specification,
                                  first_mesh.Format().Attributes(),
                                  get_attribute_unpacking_transform);
-    absl::StatusOr<MeshDrawable> mesh_drawable =
-        MeshDrawable::Create(*std::move(specification), std::move(partitions),
-                             std::move(uniform_data));
+    absl::StatusOr<MeshDrawable> mesh_drawable = MeshDrawable::Create(
+        *std::move(specification),
+        shader_cache_.GetBlenderForPaint(brush_paint), *std::move(shader),
+        std::move(partitions), std::move(uniform_data));
     if (!mesh_drawable.ok()) return mesh_drawable.status();
 
     mesh_drawable->SetBrushColor(brush.GetColor());

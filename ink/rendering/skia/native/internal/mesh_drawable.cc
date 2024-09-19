@@ -26,7 +26,9 @@
 #include "absl/types/span.h"
 #include "ink/rendering/skia/native/internal/mesh_uniform_data.h"
 #include "include/core/SkBitmap.h"
+#include "include/core/SkBlender.h"
 #include "include/core/SkCanvas.h"
+#include "include/core/SkColor.h"
 #include "include/core/SkMesh.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkRefCnt.h"
@@ -46,7 +48,7 @@ SkMesh::Result MakeSkiaMesh(sk_sp<SkMeshSpecification> specification,
                              /* vertexOffset = */ 0, partition.index_buffer,
                              partition.index_count,
                              /* indexOffset = */ 0, std::move(uniforms),
-                             /* children = */ {}, partition.bounds);
+                             /* children= */ {}, partition.bounds);
 }
 
 // Validates that `SkMesh::MakeIndexed()` will succeed for every partition.
@@ -58,11 +60,12 @@ absl::Status ValidatePartitions(
     sk_sp<SkMeshSpecification> specification,
     absl::Span<const MeshDrawable::Partition> partitions,
     sk_sp<const SkData> uniform_data) {
-  for (const auto& p : partitions) {
-    ABSL_CHECK_NE(p.vertex_buffer, nullptr);
-    ABSL_CHECK_NE(p.index_buffer, nullptr);
+  for (const MeshDrawable::Partition& partition : partitions) {
+    ABSL_CHECK_NE(partition.vertex_buffer, nullptr);
+    ABSL_CHECK_NE(partition.index_buffer, nullptr);
 
-    SkMesh::Result result = MakeSkiaMesh(specification, p, uniform_data);
+    SkMesh::Result result =
+        MakeSkiaMesh(specification, partition, uniform_data);
     if (!result.mesh.isValid()) {
       return absl::InvalidArgumentError(absl::StrCat(
           "`SkMesh::MakeIndex()` returned error: ",
@@ -76,19 +79,20 @@ absl::Status ValidatePartitions(
 }  // namespace
 
 absl::StatusOr<MeshDrawable> MeshDrawable::Create(
-    sk_sp<SkMeshSpecification> specification,
-    absl::InlinedVector<Partition, 1> partitions,
+    sk_sp<SkMeshSpecification> specification, sk_sp<SkBlender> blender,
+    sk_sp<SkShader> shader, absl::InlinedVector<Partition, 1> partitions,
     std::optional<MeshUniformData> starting_uniforms) {
   ABSL_CHECK_NE(specification, nullptr);
 
   MeshUniformData uniform_data = starting_uniforms.has_value()
                                      ? *std::move(starting_uniforms)
                                      : MeshUniformData(*specification);
-  auto status =
+  absl::Status status =
       ValidatePartitions(specification, partitions, uniform_data.Get());
   if (!status.ok()) return status;
 
-  return MeshDrawable(std::move(specification), std::move(partitions),
+  return MeshDrawable(std::move(specification), std::move(blender),
+                      std::move(shader), std::move(partitions),
                       std::move(uniform_data));
 }
 
@@ -100,7 +104,12 @@ void MeshDrawable::Draw(SkCanvas& canvas) const {
   //   * In order to support shader-based antialiasing, we will need to update
   //     a uniform value anytime the object-to-canvas transformation changes.
 
-  // We do not actively use the `SkPaint` or `SkBlender` when drawing, because:
+  // TODO: b/267164444 - Use shader uniforms instead of `SkPaint`, once that's
+  // exposed on Android. (We could do it here in the native renderer right now,
+  // but we'd prefer to keep the native and Android renderers consistent.)
+  //
+  // We would prefer not to actively use the `SkPaint` or `SkBlender` when
+  // drawing, because:
   //   * Color uniforms need to be set on the mesh instead of on a paint,
   //     because the mesh SkSL is the only place where we can apply per-vertex
   //     color shift.
@@ -108,19 +117,23 @@ void MeshDrawable::Draw(SkCanvas& canvas) const {
   //     `SkMesh` instead of the `SkPaint` so that an object can be drawn with
   //     two textures and use a different set of texture coordiantes to sample
   //     from each.
-  const SkPaint kUnusedPaint;
-  const sk_sp<SkBlender> kMeshOnlyBlender = SkBlender::Mode(SkBlendMode::kDst);
+  SkPaint paint;
+  paint.setShader(shader_);
+  paint.setColor(SK_ColorWHITE);
   sk_sp<const SkData> uniform_data = uniform_data_.Get();
   for (const Partition& partition : partitions_) {
     SkMesh mesh = MakeSkiaMesh(specification_, partition, uniform_data).mesh;
-    canvas.drawMesh(mesh, kMeshOnlyBlender, kUnusedPaint);
+    canvas.drawMesh(mesh, blender_, paint);
   }
 }
 
 MeshDrawable::MeshDrawable(sk_sp<SkMeshSpecification> specification,
+                           sk_sp<SkBlender> blender, sk_sp<SkShader> shader,
                            absl::InlinedVector<Partition, 1> partitions,
                            MeshUniformData uniform_data)
     : specification_(std::move(specification)),
+      blender_(std::move(blender)),
+      shader_(std::move(shader)),
       partitions_(std::move(partitions)),
       uniform_data_(std::move(uniform_data)) {}
 

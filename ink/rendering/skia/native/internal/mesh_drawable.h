@@ -24,11 +24,13 @@
 #include "ink/color/color.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/rendering/skia/native/internal/mesh_uniform_data.h"
+#include "include/core/SkBlender.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkMesh.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkRect.h"
 #include "include/core/SkRefCnt.h"
+#include "include/core/SkShader.h"
 
 namespace ink::skia_native_internal {
 
@@ -59,8 +61,8 @@ class MeshDrawable {
   //
   // CHECK-fails if `specification` or any buffer in `partitions` is null.
   static absl::StatusOr<MeshDrawable> Create(
-      sk_sp<SkMeshSpecification> specification,
-      absl::InlinedVector<Partition, 1> partitions,
+      sk_sp<SkMeshSpecification> specification, sk_sp<SkBlender> blender,
+      sk_sp<SkShader> shader, absl::InlinedVector<Partition, 1> partitions,
       std::optional<MeshUniformData> starting_uniforms = std::nullopt);
 
   MeshDrawable() = default;
@@ -93,10 +95,13 @@ class MeshDrawable {
 
  private:
   MeshDrawable(sk_sp<SkMeshSpecification> specification,
+               sk_sp<SkBlender> blender, sk_sp<SkShader> shader,
                absl::InlinedVector<Partition, 1> partitions,
                MeshUniformData uniform_data);
 
   sk_sp<SkMeshSpecification> specification_;
+  sk_sp<SkBlender> blender_;
+  sk_sp<SkShader> shader_;
   absl::InlinedVector<Partition, 1> partitions_;
   MeshUniformData uniform_data_;
 };

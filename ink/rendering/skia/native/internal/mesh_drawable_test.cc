@@ -78,8 +78,10 @@ TEST(MeshDrawableTest, DefaultConstructed) {
 }
 
 TEST(MeshDrawableTest, CreateWithoutPartitionsIsNotAnError) {
-  auto drawable = MeshDrawable::Create(SpecificationForInProgressStroke(),
-                                       /* partitions = */ {});
+  auto drawable =
+      MeshDrawable::Create(SpecificationForInProgressStroke(),
+                           /* blender= */ nullptr, /* shader= */ nullptr,
+                           /* partitions = */ {});
   ASSERT_EQ(absl::OkStatus(), drawable.status());
   EXPECT_TRUE(drawable->HasObjectToCanvas());
   EXPECT_TRUE(drawable->HasBrushColor());
@@ -89,8 +91,9 @@ TEST(MeshDrawableTest, CreateNonEmptyWithoutUnpackingTransform) {
   sk_sp<SkMeshSpecification> spec = SpecificationForInProgressStroke();
 
   auto drawable =
-      MeshDrawable::Create(spec, {MakeNonEmptyTestPartition(spec->stride()),
-                                  MakeNonEmptyTestPartition(spec->stride())});
+      MeshDrawable::Create(spec, /* blender= */ nullptr, /* shader= */ nullptr,
+                           {MakeNonEmptyTestPartition(spec->stride()),
+                            MakeNonEmptyTestPartition(spec->stride())});
   ASSERT_EQ(absl::OkStatus(), drawable.status());
   EXPECT_TRUE(drawable->HasObjectToCanvas());
   EXPECT_TRUE(drawable->HasBrushColor());
@@ -101,7 +104,7 @@ TEST(MeshDrawableTest, CreateSucceedsWithProvidedStartingUniforms) {
 
   MeshUniformData starting_uniforms(*spec);
   auto drawable =
-      MeshDrawable::Create(spec,
+      MeshDrawable::Create(spec, /* blender= */ nullptr, /* shader= */ nullptr,
                            {MakeNonEmptyTestPartition(spec->stride()),
                             MakeNonEmptyTestPartition(spec->stride())},
                            starting_uniforms);
@@ -117,7 +120,7 @@ TEST(MeshDrawableTest, ReturnsSkiaError) {
   ASSERT_NE(spec->stride(), incompatible_stride);
 
   absl::Status skia_error =
-      MeshDrawable::Create(spec,
+      MeshDrawable::Create(spec, /* blender= */ nullptr, /* shader= */ nullptr,
                            {MakeNonEmptyTestPartition(incompatible_stride)})
           .status();
   EXPECT_EQ(skia_error.code(), absl::StatusCode::kInvalidArgument);
@@ -126,10 +129,11 @@ TEST(MeshDrawableTest, ReturnsSkiaError) {
 }
 
 TEST(MeshDrawableDeathTest, CreateWithNullSpecification) {
-  EXPECT_DEATH_IF_SUPPORTED(
-      auto drawable = MeshDrawable::Create(/* specification */ nullptr,
-                                           /* partitions = */ {}),
-      "");
+  EXPECT_DEATH_IF_SUPPORTED(auto drawable = MeshDrawable::Create(
+                                /* specification= */ nullptr,
+                                /* blender= */ nullptr, /* shader= */ nullptr,
+                                /* partitions= */ {}),
+                            "specification");
 }
 
 TEST(MeshDrawableDeathTest, CreateWithNullVertexBuffer) {
@@ -137,8 +141,10 @@ TEST(MeshDrawableDeathTest, CreateWithNullVertexBuffer) {
   MeshDrawable::Partition partition = MakeNonEmptyTestPartition(spec->stride());
   partition.vertex_buffer.reset();
 
-  EXPECT_DEATH_IF_SUPPORTED(
-      auto drawable = MeshDrawable::Create(spec, {std::move(partition)}), "");
+  EXPECT_DEATH_IF_SUPPORTED(auto drawable = MeshDrawable::Create(
+                                spec, /* blender= */ nullptr,
+                                /* shader= */ nullptr, {std::move(partition)}),
+                            "vertex_buffer");
 }
 
 TEST(MeshDrawableDeathTest, CreateWithNullIndexBuffer) {
@@ -146,8 +152,10 @@ TEST(MeshDrawableDeathTest, CreateWithNullIndexBuffer) {
   MeshDrawable::Partition partition = MakeNonEmptyTestPartition(spec->stride());
   partition.index_buffer.reset();
 
-  EXPECT_DEATH_IF_SUPPORTED(
-      auto drawable = MeshDrawable::Create(spec, {std::move(partition)}), "");
+  EXPECT_DEATH_IF_SUPPORTED(auto drawable = MeshDrawable::Create(
+                                spec, /* blender= */ nullptr,
+                                /* shader= */ nullptr, {std::move(partition)}),
+                            "index_buffer");
 }
 
 }  // namespace
