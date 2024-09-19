@@ -169,7 +169,6 @@ Domain<BrushBehavior::OutOfRange> ValidBrushBehaviorOutOfRangeForSource(
 // LINT.IfChange(source)
 Domain<BrushBehavior::Source> ArbitraryBrushBehaviorSource() {
   return ElementOf({
-      BrushBehavior::Source::kConstantZero,
       BrushBehavior::Source::kNormalizedPressure,
       BrushBehavior::Source::kTiltInRadians,
       BrushBehavior::Source::kTiltXInRadians,

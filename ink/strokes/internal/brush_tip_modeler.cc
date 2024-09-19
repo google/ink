@@ -93,7 +93,6 @@ float DistanceRemainingUpperBound(const BrushBehavior::SourceNode& node,
   switch (node.source) {
     case BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize:
       return brush_size * SourceValueUpperBound(node);
-    case BrushBehavior::Source::kConstantZero:
     case BrushBehavior::Source::kNormalizedPressure:
     case BrushBehavior::Source::kTiltInRadians:
     case BrushBehavior::Source::kTiltXInRadians:
@@ -153,7 +152,6 @@ Duration32 TimeRemainingUpperBound(const BrushBehavior::SourceNode& node) {
       return Duration32::Seconds(SourceValueUpperBound(node));
     case BrushBehavior::Source::kTimeSinceInputInMillis:
       return Duration32::Millis(SourceValueUpperBound(node));
-    case BrushBehavior::Source::kConstantZero:
     case BrushBehavior::Source::kNormalizedPressure:
     case BrushBehavior::Source::kTiltInRadians:
     case BrushBehavior::Source::kTiltXInRadians:

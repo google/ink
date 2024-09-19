@@ -100,8 +100,6 @@ std::optional<float> GetSourceValue(
     const StrokeInputModeler::State& input_modeler_state,
     BrushBehavior::Source source) {
   switch (source) {
-    case BrushBehavior::Source::kConstantZero:
-      return 0.f;
     case BrushBehavior::Source::kNormalizedPressure:
       if (input.pressure == StrokeInput::kNoPressure) break;
       return input.pressure;

@@ -157,7 +157,6 @@ namespace {
 
 bool IsValidBehaviorSource(BrushBehavior::Source source) {
   switch (source) {
-    case BrushBehavior::Source::kConstantZero:
     case BrushBehavior::Source::kNormalizedPressure:
     case BrushBehavior::Source::kTiltInRadians:
     case BrushBehavior::Source::kTiltXInRadians:
@@ -221,7 +220,6 @@ absl::Status ValidateSourceAndOutOfRangeCombination(
             "`source_out_of_range_behavior` of `kClamp`.");
       }
       break;
-    case BrushBehavior::Source::kConstantZero:
     case BrushBehavior::Source::kNormalizedPressure:
     case BrushBehavior::Source::kTiltInRadians:
     case BrushBehavior::Source::kTiltXInRadians:
@@ -510,8 +508,6 @@ absl::Status ValidateBrushBehavior(const BrushBehavior& behavior) {
 
 std::string ToFormattedString(BrushBehavior::Source source) {
   switch (source) {
-    case BrushBehavior::Source::kConstantZero:
-      return "kConstantZero";
     case BrushBehavior::Source::kNormalizedPressure:
       return "kNormalizedPressure";
     case BrushBehavior::Source::kTiltInRadians:

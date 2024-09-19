@@ -109,9 +109,6 @@ struct BrushBehavior {
   //
   // This should match the enum in BrushBehavior.kt and BrushExtensions.kt.
   enum class Source : int8_t {
-    // A source whose value is always zero.
-    // DEPRECATED: Use a `ConstantNode` instead.
-    kConstantZero,
     // Stylus or touch pressure with values reported in the range [0, 1].
     kNormalizedPressure,
     // Stylus tilt with values reported in the range [0, π/2] radians.

@@ -59,16 +59,6 @@ class ProcessBehaviorNodeTest : public ::testing::Test {
   };
 };
 
-TEST_F(ProcessBehaviorNodeTest, SourceNodeConstantZero) {
-  ProcessBehaviorNode(
-      BrushBehavior::SourceNode{
-          .source = BrushBehavior::Source::kConstantZero,
-          .source_value_range = {0, 1},
-      },
-      context_);
-  EXPECT_THAT(stack_, ElementsAre(0.0f));
-}
-
 TEST_F(ProcessBehaviorNodeTest, SourceNodeNormalizedPressure) {
   BrushBehavior::SourceNode source_node = {
       .source = BrushBehavior::Source::kNormalizedPressure,
