@@ -45,6 +45,27 @@ class BrushTipExtrusion {
   const BrushTipState& GetState() const { return tip_state_and_shape_->first; }
   const BrushTipShape& GetShape() const { return tip_state_and_shape_->second; }
 
+  // Evaluates whether we can construct tangents between `first` and `second`,
+  // and whether those tangents are "good"; i.e. whether the shape formed by
+  // connecting `first` and `second` covers all of `first` and `second`.
+  enum class TangentQuality {
+    // We can't construct tangents, because `first` contains `second`.
+    kNoTangentsFirstContainsSecond,
+    // We can't construct tangents, because `second` contains `first`.
+    kNoTangentsSecondContainsFirst,
+    // We can construct tangents, but the joined shape doesn't cover all of
+    // `first` and `second`.
+    kBadTangentsJoinedShapeDoesNotCoverInputShapes,
+    // We can construct tangents, and the joined shape covers `first` and
+    // `second`.
+    kGoodTangents,
+  };
+  // `travel_threshold` is used to determine if the centers of the extrusions
+  // are sufficiently close to be considered not moving.
+  static TangentQuality EvaluateTangentQuality(const BrushTipExtrusion& first,
+                                               const BrushTipExtrusion& second,
+                                               float travel_threshold);
+
  private:
   std::optional<std::pair<BrushTipState, BrushTipShape>> tip_state_and_shape_;
 };

@@ -15,7 +15,6 @@
 #include "ink/strokes/internal/brush_tip_shape.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -38,7 +37,6 @@
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/circular_extrusion_helpers.h"
 #include "ink/strokes/internal/extrusion_points.h"
-#include "ink/strokes/internal/rounded_polygon.h"
 #include "ink/types/small_array.h"
 
 namespace ink::strokes_internal {
@@ -434,11 +432,9 @@ BrushTipShape::TangentCircleIndices BrushTipShape::GetTangentCircleIndices(
   return indices;
 }
 
-namespace {
-
 // Returns the minimum bounding rectangle of the `BrushTipShape`.
-Rect Bounds(const BrushTipShape& shape) {
-  absl::Span<const Circle> circles = shape.PerimeterCircles();
+Rect BrushTipShape::Bounds() const {
+  absl::Span<const Circle> circles = PerimeterCircles();
   ABSL_DCHECK(
       !circles.empty());  // There is no way to construct an "empty" shape.
 
@@ -450,124 +446,6 @@ Rect Bounds(const BrushTipShape& shape) {
     bounds.Join(Rect::FromCenterAndDimensions(c.Center(), d, d));
   }
   return bounds;
-}
-
-// Constructs a `RoundedPolygon` representing the shape that results from
-// connecting `first` and `second` by the tangents of the circles indicated by
-// `indices`. The returned shape starts at `indices.left.first`, proceeds to
-// `indices.right.first`, then jumps to `indices.right.second` and proceeds to
-// `indices.left.second`, always moving counter-clockwise per
-// `GetNextPerimeterIndexCcw`. `indices` is expected to be the result of calling
-// `GetTangentCircleIndices(first, second)`. `first` must not contain `second`,
-// and vice versa.
-//
-// `offset` specifies how much the returned `RoundedPolygon` should be offset
-// from the actual joined shape. This value must be >= 0.
-//
-// Note that not all of the component circles of `first` and `second` are
-// guaranteed to be contained in the returned shape; e.g. you could have two
-// rectangular `BrushTipShape`s that form a cross, which would leave two
-// circles outside the `RoundedPolygon`.
-static RoundedPolygon ConstructJoinedShape(
-    const BrushTipShape& first, const BrushTipShape& second,
-    const BrushTipShape::TangentCircleIndices& indices, float offset) {
-  ABSL_DCHECK(!first.Contains(second));
-  ABSL_DCHECK(!second.Contains(first));
-  ABSL_CHECK_GE(offset, 0);
-
-  // Each `BrushTipShape` has at most four circles, so we need at most eight
-  // for the `RoundedPolygon`.
-  absl::InlinedVector<Circle, 8> circles;
-
-  auto add_circles = [&circles, offset](const BrushTipShape& shape,
-                                        int first_index, int last_index) {
-    auto add_one_circle_with_offset = [&circles, offset](const Circle& circle) {
-      circles.push_back({circle.Center(), circle.Radius() + offset});
-    };
-    if (first_index == last_index) {
-      add_one_circle_with_offset(shape.PerimeterCircles()[first_index]);
-    } else {
-      for (int index = first_index; index != last_index;
-           index = shape.GetNextPerimeterIndexCcw(index)) {
-        add_one_circle_with_offset(shape.PerimeterCircles()[index]);
-      }
-      add_one_circle_with_offset(shape.PerimeterCircles()[last_index]);
-    }
-  };
-
-  add_circles(first, indices.left.first, indices.right.first);
-  add_circles(second, indices.right.second, indices.left.second);
-
-  return RoundedPolygon(circles);
-}
-
-}  // namespace
-
-BrushTipShape::TangentQuality BrushTipShape::EvaluateTangentQuality(
-    const BrushTipShape& first, const BrushTipShape& second) {
-  if (first.Contains(second)) {
-    return TangentQuality::kNoTangentsFirstContainsSecond;
-  }
-
-  if ((second.Contains(first))) {
-    return TangentQuality::kNoTangentsSecondContainsFirst;
-  }
-
-  // If we have two circles that don't contain each other, then we can always
-  // construct good tangents.
-  // NOMUTANTS -- this is just a short-circuit for performance.
-  if (first.PerimeterCircles().size() == 1 &&
-      second.PerimeterCircles().size() == 1) {
-    return TangentQuality::kGoodTangents;
-  }
-
-  // Fetch the indices of the circles that will be connect the two shapes.
-  BrushTipShape::TangentCircleIndices indices =
-      BrushTipShape::GetTangentCircleIndices(first, second);
-
-  // If the first circle is immediately *clockwise* to the last circle for
-  // each shape, then all circles contribute to the boundary of the joined
-  // shape and there are no unused circles.
-  // NOMUTANTS -- This is just a short-circuit for performance.
-  if (first.GetNextPerimeterIndexCw(indices.left.first) ==
-          indices.right.first &&
-      second.GetNextPerimeterIndexCw(indices.right.second) ==
-          indices.left.second) {
-    return TangentQuality::kGoodTangents;
-  }
-
-  // In order to avoid false-negatives from `RoundedPolygon::ContainsCircle` due
-  // to floating-point precision issues, we enlarge the joined shape by a small
-  // amount.
-  Rect first_bounds = Bounds(first);
-  Rect second_bounds = Bounds(second);
-  float max_absolute_coordinate = std::max(
-      {std::abs(first_bounds.XMin()), std::abs(first_bounds.XMax()),
-       std::abs(first_bounds.YMin()), std::abs(first_bounds.YMax()),
-       std::abs(second_bounds.XMin()), std::abs(second_bounds.XMax()),
-       std::abs(second_bounds.YMin()), std::abs(second_bounds.YMax())});
-  float offset = 1e-6 * max_absolute_coordinate;
-
-  // Construct the joined shape, with the offset.
-  RoundedPolygon joined_shape =
-      ConstructJoinedShape(first, second, indices, offset);
-
-  // Finally, check whether the unused circles are contained inside the joined
-  // shape.
-  for (int index = first.GetNextPerimeterIndexCcw(indices.right.first);
-       index != indices.left.first;
-       index = first.GetNextPerimeterIndexCcw(index)) {
-    if (!joined_shape.ContainsCircle(first.PerimeterCircles()[index]))
-      return TangentQuality::kBadTangentsJoinedShapeDoesNotCoverInputShapes;
-  }
-  for (int index = second.GetNextPerimeterIndexCcw(indices.left.second);
-       index != indices.right.second;
-       index = second.GetNextPerimeterIndexCcw(index)) {
-    if (!joined_shape.ContainsCircle(second.PerimeterCircles()[index]))
-      return TangentQuality::kBadTangentsJoinedShapeDoesNotCoverInputShapes;
-  }
-
-  return TangentQuality::kGoodTangents;
 }
 
 namespace {
@@ -989,7 +867,7 @@ bool ShapeIsOutsideOfCorner(const BrushTipShape& shape,
 bool BrushTipShape::Contains(const BrushTipShape& other_shape) const {
   // First do a rough bounds check to see if we can exit early without calling
   // `Vec::Magnitude()` or any trig functions.
-  if (!Bounds(*this).Contains(Bounds(other_shape))) return false;
+  if (!this->Bounds().Contains(other_shape.Bounds())) return false;
 
   if (circles_.Size() == 1) {
     const Circle& circle = circles_[0];

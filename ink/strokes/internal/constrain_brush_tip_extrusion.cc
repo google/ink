@@ -20,7 +20,6 @@
 #include "ink/geometry/distance.h"
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/strokes/internal/brush_tip_extrusion.h"
-#include "ink/strokes/internal/brush_tip_shape.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 
 namespace ink::strokes_internal {
@@ -28,14 +27,19 @@ namespace ink::strokes_internal {
 using ::ink::geometry_internal::Lerp;
 using ResultType =
     ::ink::strokes_internal::ConstrainedBrushTipExtrusion::ResultType;
-using TangentQuality = ::ink::strokes_internal::BrushTipShape::TangentQuality;
+using TangentQuality =
+    ::ink::strokes_internal::BrushTipExtrusion::TangentQuality;
 
 ConstrainedBrushTipExtrusion ConstrainBrushTipExtrusion(
     const BrushTipExtrusion& last_extrusion,
     const BrushTipExtrusion& proposed_extrusion,
     float min_nonzero_radius_and_separation, int max_iterations) {
-  TangentQuality tangent_quality = BrushTipShape::EvaluateTangentQuality(
-      last_extrusion.GetShape(), proposed_extrusion.GetShape());
+  // The tolerance used to determine if the centers are the extrusions are
+  // sufficiently close to be considered not moving.
+  // TODO: b/317366793 - This value may need to be tuned.
+  const float kStationaryTol = 0.1 * min_nonzero_radius_and_separation;
+  TangentQuality tangent_quality = BrushTipExtrusion::EvaluateTangentQuality(
+      last_extrusion, proposed_extrusion, kStationaryTol);
 
   if (tangent_quality == TangentQuality::kNoTangentsFirstContainsSecond) {
     return {.result_type = ResultType::kLastExtrusionContainsProposedExtrusion,
@@ -57,11 +61,6 @@ ConstrainedBrushTipExtrusion ConstrainBrushTipExtrusion(
     return {.result_type = ResultType::kProposedExtrusionIsValid,
             .lerp_amount = -1};
   }
-
-  // The tolerance used to determine if the centers are the extrusions are
-  // sufficiently close to be considered not moving.
-  // TODO: b/317366793 - This value may need to be tuned.
-  const float kStationaryTol = 0.1 * min_nonzero_radius_and_separation;
 
   // If the brush tip has not moved, then we expect that we won't be able to
   // find an intermediate shape with good tangents. This is because all of the
@@ -97,8 +96,8 @@ ConstrainedBrushTipExtrusion ConstrainBrushTipExtrusion(
   float lower_bound = 0;
   float upper_bound = 1;
   BrushTipExtrusion current_best_guess = lerp_extrusion(0);
-  if (BrushTipShape::EvaluateTangentQuality(last_extrusion.GetShape(),
-                                            current_best_guess.GetShape()) !=
+  if (BrushTipExtrusion::EvaluateTangentQuality(
+          last_extrusion, current_best_guess, kStationaryTol) !=
       TangentQuality::kGoodTangents) {
     // TODO: b/323763534 - Find a repro test case for this branch.
     return {.result_type = ResultType::kCannotFindValidIntermediateExtrusion,
@@ -107,16 +106,16 @@ ConstrainedBrushTipExtrusion ConstrainBrushTipExtrusion(
 
   for (int iter = 0; iter < max_iterations; ++iter) {
     // Consistency check; these should be guaranteed by the logic below.
-    ABSL_DCHECK(BrushTipShape::EvaluateTangentQuality(
-                    last_extrusion.GetShape(), current_best_guess.GetShape()) ==
+    ABSL_DCHECK(BrushTipExtrusion::EvaluateTangentQuality(
+                    last_extrusion, current_best_guess, kStationaryTol) ==
                 TangentQuality::kGoodTangents);
     ABSL_DCHECK_LE(lower_bound, upper_bound);
 
     float next_lerp_amount = Lerp(lower_bound, upper_bound, 0.5);
     BrushTipExtrusion next_guess = lerp_extrusion(next_lerp_amount);
 
-    if (BrushTipShape::EvaluateTangentQuality(last_extrusion.GetShape(),
-                                              next_guess.GetShape()) ==
+    if (BrushTipExtrusion::EvaluateTangentQuality(last_extrusion, next_guess,
+                                                  kStationaryTol) ==
         TangentQuality::kGoodTangents) {
       lower_bound = next_lerp_amount;
       current_best_guess = std::move(next_guess);

@@ -20,6 +20,7 @@
 #include "absl/types/span.h"
 #include "ink/geometry/internal/circle.h"
 #include "ink/geometry/point.h"
+#include "ink/geometry/rect.h"
 #include "ink/geometry/vec.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/extrusion_points.h"
@@ -124,24 +125,6 @@ class BrushTipShape {
   static TangentCircleIndices GetTangentCircleIndices(
       const BrushTipShape& first, const BrushTipShape& second);
 
-  // Evaluates whether we can construct tangents between `first` and `second`,
-  // and whether those tangents are "good"; i.e. whether the shape formed by
-  // connecting `first` and `second` covers all of `first` and `second`.
-  enum class TangentQuality {
-    // We can't construct tangents, because `first` contains `second`.
-    kNoTangentsFirstContainsSecond,
-    // We can't construct tangents, because `second` contains `first`.
-    kNoTangentsSecondContainsFirst,
-    // We can construct tangents, but the joined shape doesn't cover all of
-    // `first` and `second`.
-    kBadTangentsJoinedShapeDoesNotCoverInputShapes,
-    // We can construct tangents, and the joined shape covers `first` and
-    // `second`.
-    kGoodTangents,
-  };
-  static TangentQuality EvaluateTangentQuality(const BrushTipShape& first,
-                                               const BrushTipShape& second);
-
   // Returns the center position, which is equivalent to the position of the
   // `BrushTipState` used to construct the shape.
   Point Center() const;
@@ -164,6 +147,9 @@ class BrushTipShape {
   // circle that is positioned clockwise around the `Center()` when viewed from
   // the positive z-axis.
   int GetNextPerimeterIndexCw(int index) const;
+
+  // Returns the minimum bounding rectangle of the `BrushTipShape`.
+  Rect Bounds() const;
 
  private:
   Point center_;

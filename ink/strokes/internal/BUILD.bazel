@@ -260,7 +260,6 @@ cc_library(
         ":brush_tip_state",
         ":circular_extrusion_helpers",
         ":extrusion_points",
-        ":rounded_polygon",
         "//ink/geometry:affine_transform",
         "//ink/geometry:angle",
         "//ink/geometry:point",
@@ -295,10 +294,28 @@ cc_test(
 
 cc_library(
     name = "brush_tip_extrusion",
+    srcs = ["brush_tip_extrusion.cc"],
     hdrs = ["brush_tip_extrusion.h"],
     deps = [
         ":brush_tip_shape",
         ":brush_tip_state",
+        ":rounded_polygon",
+        "//ink/geometry:distance",
+        "//ink/geometry:rect",
+        "//ink/geometry/internal:circle",
+        "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "brush_tip_extrusion_test",
+    srcs = ["brush_tip_extrusion_test.cc"],
+    deps = [
+        ":brush_tip_extrusion",
+        "//ink/geometry:angle",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -514,7 +531,6 @@ cc_library(
     hdrs = ["constrain_brush_tip_extrusion.h"],
     deps = [
         ":brush_tip_extrusion",
-        ":brush_tip_shape",
         ":brush_tip_state",
         "//ink/geometry:distance",
         "//ink/geometry/internal:algorithms",
@@ -527,7 +543,6 @@ cc_test(
     srcs = ["constrain_brush_tip_extrusion_test.cc"],
     deps = [
         ":brush_tip_extrusion",
-        ":brush_tip_shape",
         ":brush_tip_state",
         ":constrain_brush_tip_extrusion",
         ":type_matchers",

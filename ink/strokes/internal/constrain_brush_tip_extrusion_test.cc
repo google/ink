@@ -18,7 +18,6 @@
 #include "gtest/gtest.h"
 #include "ink/geometry/angle.h"
 #include "ink/strokes/internal/brush_tip_extrusion.h"
-#include "ink/strokes/internal/brush_tip_shape.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/type_matchers.h"
 
@@ -31,6 +30,7 @@ using ResultType =
 using ::testing::FloatNear;
 
 constexpr float kEpsilon = 1e-4;
+constexpr float kTravelThreshold = kEpsilon * 0.1;
 constexpr float kTol = 1e-3;
 constexpr int kMaxIter = 20;
 
@@ -116,9 +116,9 @@ TEST(ConstrainBrushTipTest, SimpleConstrainedCase) {
               BrushTipStateNear(expected_extrusion.GetState(), kTol));
   EXPECT_THAT(result.extrusion.GetShape(),
               BrushTipShapeNear(expected_extrusion.GetShape(), kTol));
-  EXPECT_EQ(BrushTipShape::EvaluateTangentQuality(last.GetShape(),
-                                                  result.extrusion.GetShape()),
-            BrushTipShape::TangentQuality::kGoodTangents);
+  EXPECT_EQ(BrushTipExtrusion::EvaluateTangentQuality(last, result.extrusion,
+                                                      kTravelThreshold),
+            BrushTipExtrusion::TangentQuality::kGoodTangents);
 }
 
 TEST(ConstrainBrushTipTest, OptimalShapeIsAtLerpAmountZero) {
@@ -144,9 +144,9 @@ TEST(ConstrainBrushTipTest, OptimalShapeIsAtLerpAmountZero) {
               BrushTipStateNear(expected_extrusion.GetState(), kTol));
   EXPECT_THAT(result.extrusion.GetShape(),
               BrushTipShapeNear(expected_extrusion.GetShape(), kTol));
-  EXPECT_EQ(BrushTipShape::EvaluateTangentQuality(last.GetShape(),
-                                                  result.extrusion.GetShape()),
-            BrushTipShape::TangentQuality::kGoodTangents);
+  EXPECT_EQ(BrushTipExtrusion::EvaluateTangentQuality(last, result.extrusion,
+                                                      kTravelThreshold),
+            BrushTipExtrusion::TangentQuality::kGoodTangents);
 }
 
 TEST(ConstrainBrushTipTest, ConstrainWhenTangentIndicesChangeWithLerpAmount) {
@@ -175,9 +175,9 @@ TEST(ConstrainBrushTipTest, ConstrainWhenTangentIndicesChangeWithLerpAmount) {
               BrushTipStateNear(expected_extrusion.GetState(), kTol));
   EXPECT_THAT(result.extrusion.GetShape(),
               BrushTipShapeNear(expected_extrusion.GetShape(), kTol));
-  EXPECT_EQ(BrushTipShape::EvaluateTangentQuality(last.GetShape(),
-                                                  result.extrusion.GetShape()),
-            BrushTipShape::TangentQuality::kGoodTangents);
+  EXPECT_EQ(BrushTipExtrusion::EvaluateTangentQuality(last, result.extrusion,
+                                                      kTravelThreshold),
+            BrushTipExtrusion::TangentQuality::kGoodTangents);
 }
 
 TEST(ConstrainBrushTipTest, MoreIterationsResultsInMorePrecision) {
