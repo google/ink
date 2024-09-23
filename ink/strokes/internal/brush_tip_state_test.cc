@@ -17,6 +17,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/type_matchers.h"
 #include "ink/strokes/internal/type_matchers.h"
 
 namespace ink::strokes_internal {
@@ -199,13 +200,22 @@ TEST(BrushTipStateTest, LerpShapeAttributesGreaterThanOne) {
                        .width = 5,
                        .height = -1,
                        .percent_radius = 1.4,
-                       .rotation = Angle::Radians(-1),
+                       .rotation = kTwoPi - Angle::Radians(1),
                        .slant = Angle::Radians(4),
                        .pinch = 1.2,
                        .hue_offset_in_full_turns = b.hue_offset_in_full_turns,
                        .saturation_multiplier = b.saturation_multiplier,
                        .luminosity_shift = b.luminosity_shift,
                        .opacity_multiplier = b.opacity_multiplier}));
+}
+
+TEST(BrushTipStateTest, LerpShapeAttributesRotationAboutBoundary) {
+  BrushTipState a{.rotation = kPi / 4};
+  BrushTipState b{.rotation = 7 * kPi / 4};
+
+  // Interpolation should go through the shorter path that crosses zero.
+  EXPECT_THAT(BrushTipState::LerpShapeAttributes(a, b, 0.5).rotation,
+              AngleNear(Angle::Radians(0), 0.001));
 }
 
 }  // namespace

@@ -60,7 +60,8 @@ struct BrushTipState {
 
   // Returns a `BrushTipState` whose `width`, `height`, `percent_radius`,
   // `rotation`, and `slant` are linearly interpolated between 'a' and 'b'; all
-  // other fields are copied from `b`.
+  // other fields are copied from `b`. The interpolation of `rotation` will be
+  // in the direction of the shortest path around a circle.
   //
   // If `t` is outside the interval [0, 1], then this will extrapolate for those
   // fields. Note that this may result in values that are not valid (e.g. a

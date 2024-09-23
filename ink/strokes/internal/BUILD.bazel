@@ -96,6 +96,7 @@ cc_test(
         ":brush_tip_state",
         ":type_matchers",
         "//ink/geometry:angle",
+        "//ink/geometry:type_matchers",
         "@com_google_googletest//:gtest_main",
     ],
 )

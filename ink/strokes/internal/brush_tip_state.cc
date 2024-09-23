@@ -22,13 +22,14 @@ BrushTipState BrushTipState::LerpShapeAttributes(const BrushTipState& a,
                                                  const BrushTipState& b,
                                                  float t) {
   using ::ink::geometry_internal::Lerp;
+  using ::ink::geometry_internal::NormalizedAngleLerp;
 
   return {
       .position = b.position,
       .width = Lerp(a.width, b.width, t),
       .height = Lerp(a.height, b.height, t),
       .percent_radius = Lerp(a.percent_radius, b.percent_radius, t),
-      .rotation = Lerp(a.rotation, b.rotation, t),
+      .rotation = NormalizedAngleLerp(a.rotation, b.rotation, t),
       .slant = Lerp(a.slant, b.slant, t),
       .pinch = Lerp(a.pinch, b.pinch, t),
       .hue_offset_in_full_turns = b.hue_offset_in_full_turns,
