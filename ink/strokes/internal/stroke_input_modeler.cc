@@ -17,11 +17,13 @@
 #include <algorithm>
 #include <cstddef>
 #include <optional>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
 #include "absl/cleanup/cleanup.h"
 #include "absl/log/absl_check.h"
+#include "absl/log/check.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
@@ -67,30 +69,60 @@ void StrokeInputModeler::StartStroke(const BrushFamily::InputModel& input_model,
 
 namespace {
 
+// LINT.IfChange(input_model_types)
+
 stroke_model::PositionModelerParams::LoopContractionMitigationParameters
-GetLoopContractionMitigationParameters(
+MakeLoopContractionMitigationParameters(
     const BrushFamily::InputModel& input_model, float stroke_unit_length) {
-  stroke_model::PositionModelerParams::LoopContractionMitigationParameters
-      params;
-  if (std::holds_alternative<BrushFamily::SpringModelV2>(input_model)) {
-    params.is_enabled = true;
-    params.speed_lower_bound =
-        kDefaultLoopMitigationSpeedLowerBoundInCmPerSec / stroke_unit_length;
-    params.speed_upper_bound =
-        kDefaultLoopMitigationSpeedUpperBoundInCmPerSec / stroke_unit_length;
-    params.interpolation_strength_at_speed_lower_bound =
-        kDefaultLoopMitigationInterpolationStrengthAtSpeedLowerBound;
-    params.interpolation_strength_at_speed_upper_bound =
-        kDefaultLoopMitigationInterpolationStrengthAtSpeedUpperBound;
-    params.min_speed_sampling_window =
-        kDefaultLoopMitigationMinSpeedSamplingWindow;
-    params.min_discrete_speed_samples =
-        kDefaultLoopMitigationMinDiscreteSpeedSamples;
-  } else if (std::holds_alternative<BrushFamily::SpringModelV1>(input_model)) {
-    params.is_enabled = false;
-  }
-  return params;
+  return std::visit(
+      [stroke_unit_length](auto&& input_model)
+      // NOLINTNEXTLINE(whitespace/line_length)
+      -> stroke_model::PositionModelerParams::LoopContractionMitigationParameters {
+        using ModelType = std::decay_t<decltype(input_model)>;
+        if constexpr (std::is_same_v<ModelType, BrushFamily::SpringModelV2>) {
+          return {
+              .is_enabled = true,
+              .speed_lower_bound =
+                  kDefaultLoopMitigationSpeedLowerBoundInCmPerSec /
+                  stroke_unit_length,
+              .speed_upper_bound =
+                  kDefaultLoopMitigationSpeedUpperBoundInCmPerSec /
+                  stroke_unit_length,
+              .interpolation_strength_at_speed_lower_bound =
+                  kDefaultLoopMitigationInterpolationStrengthAtSpeedLowerBound,
+              .interpolation_strength_at_speed_upper_bound =
+                  kDefaultLoopMitigationInterpolationStrengthAtSpeedUpperBound,
+              .min_speed_sampling_window =
+                  kDefaultLoopMitigationMinSpeedSamplingWindow,
+              .min_discrete_speed_samples =
+                  kDefaultLoopMitigationMinDiscreteSpeedSamples};
+        } else if constexpr (std::is_same_v<ModelType,
+                                            BrushFamily::SpringModelV1>) {
+          return {.is_enabled = false};
+        }
+      },
+      input_model);
 }
+
+stroke_model::StylusStateModelerParams MakeStylusStateModelerParams(
+    const BrushFamily::InputModel& input_model) {
+  return std::visit(
+      [](auto&& input_model) -> stroke_model::StylusStateModelerParams {
+        using ModelType = std::decay_t<decltype(input_model)>;
+        if constexpr (std::is_same_v<ModelType, BrushFamily::SpringModelV2>) {
+          return {.use_stroke_normal_projection = true,
+                  .min_input_samples = 10,
+                  .min_sample_duration = stroke_model::Duration(0.04)};
+        } else if constexpr (std::is_same_v<ModelType,
+                                            BrushFamily::SpringModelV1>) {
+          return {.max_input_samples = 10,
+                  .use_stroke_normal_projection = false};
+        }
+      },
+      input_model);
+}
+
+// LINT.ThenChange(../../brush/brush_family.h:input_model_types)
 
 void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
                         const BrushFamily::InputModel& input_model,
@@ -99,9 +131,6 @@ void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
   // in turn chosen to upsample enough to produce relatively smooth-looking
   // curves on 60 Hz touchscreens.
   constexpr double kMinOutputRateHz = 180;
-  stroke_model::PositionModelerParams::LoopContractionMitigationParameters
-      loop_params = GetLoopContractionMitigationParameters(input_model,
-                                                           stroke_unit_length);
   // We use the defaults for `PositionModelerParams` and
   // `StylusStateModelerParams`.
   ABSL_CHECK_OK(stroke_modeler.Reset(
@@ -112,15 +141,15 @@ void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
        // We turn off loop contraction mitigation if the input model is not
        // spring model v2.
        .position_modeler_params = {.loop_contraction_mitigation_params =
-                                       loop_params},
+                                       MakeLoopContractionMitigationParameters(
+                                           input_model, stroke_unit_length)},
        // `brush_epsilon` is used for the stopping distance because once end of
        // the stroke is with `brush_epsilon` of the final input, further changes
        // are not considered visually distinct.
        .sampling_params = {.min_output_rate = kMinOutputRateHz,
                            .end_of_stroke_stopping_distance = brush_epsilon},
        // If we use loop mitigation, we need to use the new projection method.
-       .stylus_state_modeler_params = {.use_stroke_normal_projection =
-                                           loop_params.is_enabled},
+       .stylus_state_modeler_params = MakeStylusStateModelerParams(input_model),
        // We disable the internal predictor on the `StrokeModeler`,
        // because it performs prediction after modeling. We wish to
        // accept external un-modeled prediction, as in the case of

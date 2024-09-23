@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include "absl/status/statusor.h"
@@ -44,6 +45,8 @@ namespace ink {
 // out the specification of the stock brushes using the new tip and paint types.
 class BrushFamily {
  public:
+  // LINT.IfChange(input_model_types)
+
   // The legacy spring-based input modeler, provided for backwards compatibility
   // with existing Ink clients.
   struct SpringModelV1 {};
@@ -61,6 +64,8 @@ class BrushFamily {
   // Returns the default `InputModel` that will be used by
   // `BrushFamily::Create()` when none is specified.
   static InputModel DefaultInputModel();
+
+  // LINT.ThenChange(../strokes/internal/stroke_input_modeler.cc:input_model_types)
 
   // Returns the maximum number of `BrushCoat`s that a `BrushFamily` is allowed
   // to have. Note that this limit may increase in the future.
