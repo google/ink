@@ -14,7 +14,6 @@
 
 #include "ink/strokes/internal/brush_tip_modeler.h"
 
-#include <cstddef>
 #include <limits>
 #include <vector>
 
@@ -1088,6 +1087,61 @@ TEST(BrushTipModelerTest, UnstableTargetModifierReplacedWithNull) {
   ASSERT_EQ(modeler.VolatileTipStates().size(), 1);
   EXPECT_THAT(modeler.VolatileTipStates().front().width, FloatNear(0.5, 0.01));
 }
+
+class BrushTipModelerSourceParamTest
+    : public testing::TestWithParam<BrushBehavior::Source> {};
+
+TEST_P(BrushTipModelerSourceParamTest, LastStableInputCreatesVolatileTipState) {
+  BrushBehavior::Source behavior_source = GetParam();
+
+  BrushTipModeler modeler;
+  BrushTip brush_tip = {
+      .behaviors = {BrushBehavior{{
+          BrushBehavior::SourceNode{
+              .source = behavior_source,
+              .source_value_range = {0, kTwoPi.ValueInRadians()},
+          },
+          BrushBehavior::TargetNode{
+              .target = BrushBehavior::Target::kRotationOffsetInRadians,
+              .target_modifier_range = {0, kTwoPi.ValueInRadians()},
+          },
+      }}},
+  };
+  modeler.StartStroke(&brush_tip, 1);
+
+  std::vector<ModeledStrokeInput> inputs;
+  StrokeInputModeler::State input_modeler_state = {};
+
+  // A single stable input should be used to create a single volatile tip state:
+  inputs.resize(1);
+  input_modeler_state.stable_input_count = 1;
+  modeler.UpdateStroke(input_modeler_state, inputs);
+  EXPECT_TRUE(modeler.NewFixedTipStates().empty());
+  EXPECT_EQ(modeler.VolatileTipStates().size(), 1);
+
+  // Adding an unstable input should result in it and the first stable input
+  // being used to create volatile tip states:
+  inputs.resize(2);
+  modeler.UpdateStroke(input_modeler_state, inputs);
+  EXPECT_TRUE(modeler.NewFixedTipStates().empty());
+  EXPECT_EQ(modeler.VolatileTipStates().size(), 2);
+
+  // If the second input is switched to stable, it should still create a
+  // volatile tip state along with the new unstable input. The first input
+  // should now be able to create a fixed tip state:
+  inputs.resize(3);
+  input_modeler_state.stable_input_count = 2;
+  modeler.UpdateStroke(input_modeler_state, inputs);
+  EXPECT_EQ(modeler.NewFixedTipStates().size(), 1);
+  EXPECT_EQ(modeler.VolatileTipStates().size(), 2);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    SourceUsesNextInput, BrushTipModelerSourceParamTest,
+    ::testing::Values(BrushBehavior::Source::kDirectionInRadians,
+                      BrushBehavior::Source::kDirectionAboutZeroInRadians,
+                      BrushBehavior::Source::kNormalizedDirectionX,
+                      BrushBehavior::Source::kNormalizedDirectionY));
 
 TEST(BrushTipModelerDeathTest, NullptrBrushTip) {
   BrushTipModeler modeler;

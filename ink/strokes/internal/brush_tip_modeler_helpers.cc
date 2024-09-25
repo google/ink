@@ -96,8 +96,8 @@ Duration32 GetTimeSinceInput(
 }
 
 std::optional<float> GetSourceValue(
-    const ModeledStrokeInput& input, float brush_size,
-    const StrokeInputModeler::State& input_modeler_state,
+    const ModeledStrokeInput& input, std::optional<Angle> travel_direction,
+    float brush_size, const StrokeInputModeler::State& input_modeler_state,
     BrushBehavior::Source source) {
   switch (source) {
     case BrushBehavior::Source::kNormalizedPressure:
@@ -133,17 +133,17 @@ std::optional<float> GetSourceValue(
     case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:
       return input.velocity.y / brush_size;
     case BrushBehavior::Source::kDirectionInRadians:
-      if (input.velocity == Vec()) break;
-      return input.velocity.Direction().Normalized().ValueInRadians();
+      if (!travel_direction.has_value()) break;
+      return travel_direction->Normalized().ValueInRadians();
     case BrushBehavior::Source::kDirectionAboutZeroInRadians:
-      if (input.velocity == Vec()) break;
-      return input.velocity.Direction().NormalizedAboutZero().ValueInRadians();
+      if (!travel_direction.has_value()) break;
+      return travel_direction->ValueInRadians();
     case BrushBehavior::Source::kNormalizedDirectionX:
-      if (input.velocity == Vec()) break;
-      return input.velocity.AsUnitVec().x;
+      if (!travel_direction.has_value()) break;
+      return Cos(*travel_direction);
     case BrushBehavior::Source::kNormalizedDirectionY:
-      if (input.velocity == Vec()) break;
-      return input.velocity.AsUnitVec().y;
+      if (!travel_direction.has_value()) break;
+      return Sin(*travel_direction);
     case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
       return input.traveled_distance / brush_size;
     case BrushBehavior::Source::kTimeOfInputInSeconds:
@@ -299,9 +299,9 @@ inline float DampOffsetTransition(float target_offset, float previous_offset,
 
 void ProcessBehaviorNodeImpl(const BrushBehavior::SourceNode& node,
                              const BehaviorNodeContext& context) {
-  std::optional<float> source_value =
-      GetSourceValue(context.current_input, context.brush_size,
-                     context.input_modeler_state, node.source);
+  std::optional<float> source_value = GetSourceValue(
+      context.current_input, context.current_travel_direction,
+      context.brush_size, context.input_modeler_state, node.source);
   if (!source_value.has_value()) {
     context.stack.push_back(kNullBehaviorNodeValue);
     return;
@@ -497,8 +497,9 @@ struct BrushTipStateModifiers {
 
 // Adds `modifier` to the appropriate member of `tip_state_modifiers` according
 // to the `target` enum.
-void ApplyModifierToTarget(Angle travel_direction, float modifier,
-                           BrushBehavior::Target target, float brush_size,
+void ApplyModifierToTarget(float modifier, BrushBehavior::Target target,
+                           std::optional<Angle> travel_direction,
+                           float brush_size,
                            BrushTipStateModifiers& tip_state_modifiers) {
   ABSL_DCHECK(std::isfinite(modifier));
   switch (target) {
@@ -533,14 +534,18 @@ void ApplyModifierToTarget(Angle travel_direction, float modifier,
           modifier * brush_size;
       break;
     case BrushBehavior::Target::kPositionOffsetForwardInMultiplesOfBrushSize:
-      tip_state_modifiers.position_offset_in_stroke_units +=
-          Vec::FromDirectionAndMagnitude(travel_direction,
-                                         modifier * brush_size);
+      if (travel_direction.has_value()) {
+        tip_state_modifiers.position_offset_in_stroke_units +=
+            Vec::FromDirectionAndMagnitude(*travel_direction,
+                                           modifier * brush_size);
+      }
       break;
     case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
-      tip_state_modifiers.position_offset_in_stroke_units +=
-          Vec::FromDirectionAndMagnitude(travel_direction + kHalfPi,
-                                         modifier * brush_size);
+      if (travel_direction.has_value()) {
+        tip_state_modifiers.position_offset_in_stroke_units +=
+            Vec::FromDirectionAndMagnitude(*travel_direction + kHalfPi,
+                                           modifier * brush_size);
+      }
       break;
     case BrushBehavior::Target::kHueOffsetInRadians:
       tip_state_modifiers.hue_offset += Angle::Radians(modifier);
@@ -601,7 +606,7 @@ void ApplyModifiersToTipState(const BrushTipStateModifiers& modifiers,
 
 }  // namespace
 
-BrushTipState CreateTipState(Point position, Angle direction,
+BrushTipState CreateTipState(Point position, std::optional<Angle> direction,
                              const BrushTip& brush_tip, float brush_size,
                              absl::Span<const BrushBehavior::Target> targets,
                              absl::Span<const float> target_modifiers) {
@@ -609,7 +614,7 @@ BrushTipState CreateTipState(Point position, Angle direction,
 
   BrushTipStateModifiers tip_state_modifiers = {};
   for (size_t i = 0; i < targets.size(); ++i) {
-    ApplyModifierToTarget(direction, target_modifiers[i], targets[i],
+    ApplyModifierToTarget(target_modifiers[i], targets[i], direction,
                           brush_size, tip_state_modifiers);
   }
 

@@ -15,7 +15,6 @@
 #include "ink/strokes/internal/brush_tip_modeler_helpers.h"
 
 #include <cmath>
-#include <cstddef>
 #include <optional>
 #include <vector>
 
@@ -270,15 +269,13 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodeDirectionInRadians) {
       .source_value_range = {0, Angle::Degrees(360).ValueInRadians()},
   };
 
-  current_input_.velocity =
-      Vec::FromDirectionAndMagnitude(Angle::Degrees(-60), 37);
+  context_.current_travel_direction = Angle::Degrees(-60);
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(FloatNear(5.0f / 6.0f, 1e-5)));
 
-  // If velocity is zero, then the direction is undefined, so the source node
-  // emits a null value.
+  // If the direction is undefined, the source node emits a null value.
   stack_.clear();
-  current_input_.velocity = {0.0f, 0.0f};
+  context_.current_travel_direction = std::nullopt;
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
 }
@@ -290,15 +287,13 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodeDirectionAboutZeroInRadians) {
                              Angle::Degrees(180).ValueInRadians()},
   };
 
-  current_input_.velocity =
-      Vec::FromDirectionAndMagnitude(Angle::Degrees(-60), 37);
+  context_.current_travel_direction = Angle::Degrees(-60);
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(FloatNear(1.0f / 3.0f, 1e-5)));
 
-  // If velocity is zero, then the direction is undefined, so the source node
-  // emits a null value.
+  // If the direction is undefined, the source node emits a null value.
   stack_.clear();
-  current_input_.velocity = {0.0f, 0.0f};
+  context_.current_travel_direction = std::nullopt;
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
 }
@@ -309,15 +304,13 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodeNormalizedDirectionX) {
       .source_value_range = {-1, 1},
   };
 
-  current_input_.velocity =
-      Vec::FromDirectionAndMagnitude(Angle::Degrees(-60), 37);
+  context_.current_travel_direction = Angle::Degrees(-60);
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(FloatNear(0.75f, 1e-5)));
 
-  // If velocity is zero, then the direction is undefined, so the source node
-  // emits a null value.
+  // If the direction is undefined, the source node emits a null value.
   stack_.clear();
-  current_input_.velocity = {0.0f, 0.0f};
+  context_.current_travel_direction = std::nullopt;
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
 }
@@ -328,15 +321,13 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodeNormalizedDirectionY) {
       .source_value_range = {-1, 1},
   };
 
-  current_input_.velocity =
-      Vec::FromDirectionAndMagnitude(Angle::Degrees(-150), 37);
+  context_.current_travel_direction = Angle::Degrees(-150);
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(FloatNear(0.25f, 1e-5)));
 
-  // If velocity is zero, then the direction is undefined, so the source node
-  // emits a null value.
+  // If the direction is undefined, the source node emits a null value.
   stack_.clear();
-  current_input_.velocity = {0.0f, 0.0f};
+  context_.current_travel_direction = std::nullopt;
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
 }

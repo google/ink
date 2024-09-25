@@ -23,12 +23,13 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/nullability.h"
-#include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/geometry/angle.h"
+#include "ink/geometry/point.h"
 #include "ink/strokes/internal/brush_tip_modeler_helpers.h"
 #include "ink/strokes/internal/easing_implementation.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
@@ -204,6 +205,61 @@ Duration32 TimeRemainingUpperBound(const BrushBehavior::SourceNode& node) {
       << static_cast<int>(node.source);
 }
 
+bool SourceDependsOnNextModeledInput(BrushBehavior::Source source) {
+  switch (source) {
+    case BrushBehavior::Source::kDirectionInRadians:
+    case BrushBehavior::Source::kDirectionAboutZeroInRadians:
+    case BrushBehavior::Source::kNormalizedDirectionX:
+    case BrushBehavior::Source::kNormalizedDirectionY:
+      return true;
+    case BrushBehavior::Source::kNormalizedPressure:
+    case BrushBehavior::Source::kTiltInRadians:
+    case BrushBehavior::Source::kTiltXInRadians:
+    case BrushBehavior::Source::kTiltYInRadians:
+    case BrushBehavior::Source::kOrientationInRadians:
+    case BrushBehavior::Source::kOrientationAboutZeroInRadians:
+    case BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond:
+    case BrushBehavior::Source::kVelocityXInMultiplesOfBrushSizePerSecond:
+    case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:
+    case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
+    case BrushBehavior::Source::kTimeOfInputInSeconds:
+    case BrushBehavior::Source::kTimeOfInputInMillis:
+    case BrushBehavior::Source::
+        kPredictedDistanceTraveledInMultiplesOfBrushSize:
+    case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
+    case BrushBehavior::Source::kPredictedTimeElapsedInMillis:
+    case BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize:
+    case BrushBehavior::Source::kTimeSinceInputInSeconds:
+    case BrushBehavior::Source::kTimeSinceInputInMillis:
+    case BrushBehavior::Source::
+        kAccelerationInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::
+        kAccelerationXInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::
+        kAccelerationYInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::
+        kAccelerationForwardInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::
+        kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::kInputSpeedInCentimetersPerSecond:
+    case BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond:
+    case BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond:
+    case BrushBehavior::Source::kInputDistanceTraveledInCentimeters:
+    case BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters:
+    case BrushBehavior::Source::kInputAccelerationInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::
+        kInputAccelerationXInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::
+        kInputAccelerationYInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::
+        kInputAccelerationForwardInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::
+        kInputAccelerationLateralInCentimetersPerSecondSquared:
+      break;
+  }
+  return false;
+}
+
 Duration32 TimeSinceLastInput(
     const StrokeInputModeler::State& input_modeler_state) {
   // TODO: b/287041801 - Do we need to consider predicted inputs here too?
@@ -232,9 +288,12 @@ void BrushTipModeler::StartStroke(absl::Nonnull<const BrushTip*> brush_tip,
   saved_tip_states_.clear();
   new_fixed_tip_state_count_ = 0;
 
-  // These fields will be initialized by the `AppendBehaviorNode()` loop below.
+  // The following three fields will be updated by the `AppendBehaviorNode()`
+  // loop below.
   distance_remaining_behavior_upper_bound_ = 0;
   time_remaining_behavior_upper_bound_ = Duration32::Zero();
+  behaviors_depend_on_next_input_ = false;
+
   behavior_nodes_.clear();
   current_damped_values_.clear();
   fixed_damped_values_.clear();
@@ -258,6 +317,9 @@ void BrushTipModeler::AppendBehaviorNode(
   time_remaining_behavior_upper_bound_ = std::max(
       time_remaining_behavior_upper_bound_, TimeRemainingUpperBound(node));
   behavior_nodes_.push_back(node);
+  if (SourceDependsOnNextModeledInput(node.source)) {
+    behaviors_depend_on_next_input_ = true;
+  }
 }
 
 void BrushTipModeler::AppendBehaviorNode(
@@ -313,6 +375,19 @@ void BrushTipModeler::AppendBehaviorNode(
   fixed_target_modifiers_.push_back(initial_modifier);
 }
 
+namespace {
+
+std::optional<Angle> GetTravelDirection(
+    absl::Span<const ModeledStrokeInput> inputs, size_t i) {
+  const Point& start = i > 0 ? inputs[i - 1].position : inputs[i].position;
+  const Point& end =
+      i + 1 < inputs.size() ? inputs[i + 1].position : inputs[i].position;
+  if (start == end) return std::nullopt;
+  return (end - start).Direction();
+}
+
+}  // namespace
+
 void BrushTipModeler::UpdateStroke(
     const StrokeInputModeler::State& input_modeler_state,
     absl::Span<const ModeledStrokeInput> inputs) {
@@ -336,8 +411,11 @@ void BrushTipModeler::UpdateStroke(
   std::optional<InputMetrics> last_modeled_tip_state_metrics =
       last_fixed_modeled_tip_state_metrics_;
 
-  // Generate new fixed tip states, making sure to only use stable input:
-  while (input_index_for_next_fixed_state_ <
+  // Generate new fixed tip states, making sure to only use stable input and
+  // reserving the last stable input if any behaviors would actually depend on
+  // the first unstable input.
+  int reserved_stable_input = behaviors_depend_on_next_input_ ? 1 : 0;
+  while (input_index_for_next_fixed_state_ + reserved_stable_input <
          input_modeler_state.stable_input_count) {
     const ModeledStrokeInput& current_input =
         inputs[input_index_for_next_fixed_state_];
@@ -351,8 +429,10 @@ void BrushTipModeler::UpdateStroke(
       break;
     }
 
-    ProcessSingleInput(input_modeler_state, current_input, previous_input,
-                       last_modeled_tip_state_metrics);
+    ProcessSingleInput(
+        input_modeler_state, current_input,
+        GetTravelDirection(inputs, input_index_for_next_fixed_state_),
+        previous_input, last_modeled_tip_state_metrics);
     previous_input = &current_input;
     ++input_index_for_next_fixed_state_;
   }
@@ -370,7 +450,8 @@ void BrushTipModeler::UpdateStroke(
   for (size_t i = input_index_for_next_fixed_state_; i < inputs.size(); ++i) {
     const ModeledStrokeInput& current_input = inputs[i];
 
-    ProcessSingleInput(input_modeler_state, current_input, previous_input,
+    ProcessSingleInput(input_modeler_state, current_input,
+                       GetTravelDirection(inputs, i), previous_input,
                        last_modeled_tip_state_metrics);
     previous_input = &current_input;
   }
@@ -405,6 +486,7 @@ InputMetrics BrushTipModeler::CalculateMaxFixedInputMetrics(
 void BrushTipModeler::ProcessSingleInput(
     const StrokeInputModeler::State& input_modeler_state,
     const ModeledStrokeInput& current_input,
+    std::optional<Angle> current_travel_direction,
     absl::Nullable<const ModeledStrokeInput*> previous_input,
     std::optional<InputMetrics>& last_modeled_tip_state_metrics) {
   bool do_continuous_extrusion =
@@ -419,7 +501,7 @@ void BrushTipModeler::ProcessSingleInput(
     //      which should always result in emitting a single particle.
 
     AddNewTipState(
-        input_modeler_state, current_input,
+        input_modeler_state, current_input, current_travel_direction,
         previous_input == nullptr
             ? std::nullopt
             : std::optional<InputMetrics>({
@@ -472,7 +554,7 @@ void BrushTipModeler::ProcessSingleInput(
                           input_delta.elapsed_time);
     }
     ModeledStrokeInput lerped_input = Lerp(current_input, *previous_input, t);
-    AddNewTipState(input_modeler_state, lerped_input,
+    AddNewTipState(input_modeler_state, lerped_input, current_travel_direction,
                    // Use `last_modeled_tip_state_metrics` as the "previous
                    // input" metrics (copied by value):
                    last_modeled_tip_state_metrics,
@@ -486,13 +568,14 @@ void BrushTipModeler::ProcessSingleInput(
 
 void BrushTipModeler::AddNewTipState(
     const StrokeInputModeler::State& input_modeler_state,
-    const ModeledStrokeInput& input,
+    const ModeledStrokeInput& input, std::optional<Angle> travel_direction,
     std::optional<InputMetrics> previous_input_metrics,
     std::optional<InputMetrics>& last_modeled_tip_state_metrics) {
   ABSL_CHECK_NE(brush_tip_, nullptr);
   BehaviorNodeContext context = {
       .input_modeler_state = input_modeler_state,
       .current_input = input,
+      .current_travel_direction = travel_direction,
       .brush_size = brush_size_,
       .previous_input_metrics = previous_input_metrics,
       .stack = behavior_stack_,
@@ -505,9 +588,9 @@ void BrushTipModeler::AddNewTipState(
   }
   ABSL_DCHECK(behavior_stack_.empty());
 
-  saved_tip_states_.push_back(CreateTipState(
-      input.position, input.velocity.Direction(), *brush_tip_, brush_size_,
-      behavior_targets_, current_target_modifiers_));
+  saved_tip_states_.push_back(
+      CreateTipState(input.position, travel_direction, *brush_tip_, brush_size_,
+                     behavior_targets_, current_target_modifiers_));
   last_modeled_tip_state_metrics = {
       .traveled_distance = input.traveled_distance,
       .elapsed_time = input.elapsed_time,

@@ -31,7 +31,6 @@
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/easing_implementation.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
-#include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
 
@@ -77,6 +76,7 @@ using BehaviorNodeImplementation =
 struct BehaviorNodeContext {
   const StrokeInputModeler::State& input_modeler_state;
   const ModeledStrokeInput& current_input;
+  std::optional<Angle> current_travel_direction;
   float brush_size;
   // Distance/time from the start of the stroke up to the previous input (if
   // any).
@@ -100,7 +100,7 @@ void ProcessBehaviorNode(const BehaviorNodeImplementation& node,
 // `behavior_modifiers` is expected to be the same size as `brush_tip.behaviors`
 // and to hold the current modifier value for each behavior calculated using
 // `UpdateBehaviorModifier()` above.
-BrushTipState CreateTipState(Point position, Angle direction,
+BrushTipState CreateTipState(Point position, std::optional<Angle> direction,
                              const BrushTip& brush_tip, float brush_size,
                              absl::Span<const BrushBehavior::Target> targets,
                              absl::Span<const float> target_modifiers);

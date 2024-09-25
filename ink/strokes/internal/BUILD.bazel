@@ -159,6 +159,8 @@ cc_library(
         ":stroke_input_modeler",
         "//ink/brush:brush_behavior",
         "//ink/brush:brush_tip",
+        "//ink/geometry:angle",
+        "//ink/geometry:point",
         "//ink/types:duration",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/base:nullability",

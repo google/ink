@@ -23,6 +23,7 @@
 #include "absl/types/span.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/geometry/angle.h"
 #include "ink/strokes/internal/brush_tip_modeler_helpers.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
@@ -133,6 +134,7 @@ class BrushTipModeler {
   void ProcessSingleInput(
       const StrokeInputModeler::State& input_modeler_state,
       const ModeledStrokeInput& current_input,
+      std::optional<Angle> current_travel_direction,
       absl::Nullable<const ModeledStrokeInput*> previous_input,
       std::optional<InputMetrics>& last_modeled_tip_state_metrics);
 
@@ -140,7 +142,7 @@ class BrushTipModeler {
   // current `input`.
   void AddNewTipState(
       const StrokeInputModeler::State& input_modeler_state,
-      const ModeledStrokeInput& input,
+      const ModeledStrokeInput& input, std::optional<Angle> travel_direction,
       std::optional<InputMetrics> previous_input_metrics,
       std::optional<InputMetrics>& last_modeled_tip_state_metrics);
 
@@ -178,6 +180,9 @@ class BrushTipModeler {
   // time remaining that are affected by the tip's behaviors.
   float distance_remaining_behavior_upper_bound_ = 0;
   Duration32 time_remaining_behavior_upper_bound_ = Duration32::Zero();
+  // Flag for whether the current `brush_tip_` has behaviors that depend on
+  // properties of subsequent modeled inputs, like the travel direction.
+  bool behaviors_depend_on_next_input_ = false;
 
   std::vector<BehaviorNodeImplementation> behavior_nodes_;
   std::vector<float> behavior_stack_;
