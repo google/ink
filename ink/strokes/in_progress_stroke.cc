@@ -31,6 +31,7 @@
 #include "ink/geometry/modeled_shape.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/strokes/input/internal/stroke_input_validation_helpers.h"
+#include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/stroke_shape_update.h"
 #include "ink/strokes/internal/stroke_vertex.h"
@@ -156,21 +157,34 @@ bool InProgressStroke::NeedsUpdate() const {
 absl::Status InProgressStroke::ValidateNewInputs(
     const StrokeInputBatch& real_inputs,
     const StrokeInputBatch& predicted_inputs) const {
+  // If there are no new inputs, there's nothing to validate.
   if (real_inputs.IsEmpty() && predicted_inputs.IsEmpty()) {
     return absl::OkStatus();
   }
 
-  if (real_input_count_ != 0) {
-    auto status = ValidateConsecutiveInputs(
-        processed_inputs_.Get(real_input_count_ - 1),
-        real_inputs.IsEmpty() ? predicted_inputs.Get(0) : real_inputs.Get(0));
-    if (!status.ok()) return status;
+  // If there's a previous real input, check that against the first new input.
+  if (!queued_real_inputs_.IsEmpty() || real_input_count_ != 0) {
+    const StrokeInput& last_old_real_input =
+        queued_real_inputs_.IsEmpty()
+            ? processed_inputs_.Get(real_input_count_ - 1)
+            : queued_real_inputs_.Get(queued_real_inputs_.Size() - 1);
+    const StrokeInput& first_new_input =
+        real_inputs.IsEmpty() ? predicted_inputs.Get(0) : real_inputs.Get(0);
+    if (absl::Status status =
+            ValidateConsecutiveInputs(last_old_real_input, first_new_input);
+        !status.ok()) {
+      return status;
+    }
   }
 
+  // If there are both new real and predicted inputs, check that the first
+  // predicted input is valid against the last real input.
   if (!real_inputs.IsEmpty() && !predicted_inputs.IsEmpty()) {
-    auto status = ValidateConsecutiveInputs(
-        real_inputs.Get(real_inputs.Size() - 1), predicted_inputs.Get(0));
-    if (!status.ok()) return status;
+    if (absl::Status status = ValidateConsecutiveInputs(
+            real_inputs.Get(real_inputs.Size() - 1), predicted_inputs.Get(0));
+        !status.ok()) {
+      return status;
+    }
   }
 
   return absl::OkStatus();

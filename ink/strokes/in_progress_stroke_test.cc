@@ -544,6 +544,32 @@ TEST(InProgressStrokeTest, EnqueueInputsDuplicatePositionAndTime) {
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
 }
 
+TEST(InProgressStrokeTest,
+     EnqueueInputsDuplicatePositionAndTimeOnSubsequentUpdate) {
+  InProgressStroke stroke;
+  Brush brush = CreateRectangularTestBrush();
+  stroke.Start(brush);
+
+  absl::StatusOr<StrokeInputBatch> first = StrokeInputBatch::Create(
+      {{.position = {1, 2}, .elapsed_time = Duration32::Seconds(1)}});
+  ASSERT_EQ(first.status(), absl::OkStatus());
+  absl::StatusOr<StrokeInputBatch> second = StrokeInputBatch::Create(
+      {{.position = {3, 4}, .elapsed_time = Duration32::Seconds(2)}});
+
+  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*first, {}));
+  EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
+  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(1)));
+
+  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*second, {}));
+  EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
+  // But not actually doing an update yet. We reject updates that would
+  // duplicate against the last real input, which is currently queued.
+  EXPECT_THAT(stroke.EnqueueInputs(*second, {}),
+              IsInvalidArgumentErrorThat(HasSubstr("duplicate")));
+  EXPECT_THAT(stroke.EnqueueInputs({}, *second),
+              IsInvalidArgumentErrorThat(HasSubstr("duplicate")));
+}
+
 TEST(InProgressStrokeTest, EnqueueInputsWithDecreasingElapsedTime) {
   InProgressStroke stroke;
   Brush brush = CreateRectangularTestBrush();
