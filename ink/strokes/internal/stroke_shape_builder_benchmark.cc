@@ -207,10 +207,28 @@ Brush MakeMultiBehaviorBrush(float size, float epsilon) {
   return *std::move(brush);
 }
 
+StrokeInputBatch MakeSyntheticStraightLineInputs(
+    const Rect& bounds, int input_count, Duration32 full_stroke_duration) {
+  Duration32 time_per_input = full_stroke_duration / input_count;
+  float x_per_input = bounds.Width() / input_count;
+  float y_center = bounds.Center().y;
+  std::vector<StrokeInput> inputs;
+  inputs.reserve(input_count);
+  for (int i = 0; i < input_count; ++i) {
+    inputs.push_back({
+        .position = {bounds.XMin() + x_per_input * i, y_center},
+        .elapsed_time = time_per_input * i,
+    });
+  }
+  absl::StatusOr<StrokeInputBatch> result = StrokeInputBatch::Create(inputs);
+  ABSL_CHECK_OK(result);
+  return *std::move(result);
+}
+
 // ********************** Benchmark Tests **********************************
 //
-// For tests that have meaningful input (not empty or dot) the tests for any
-// given shape will be
+// For the following tests that have meaningful input (not empty or dot) the
+// tests for any given shape will be
 //
 // - Incremental input (including real and predicted) on cold StrokeShapeBuilder
 // - Incremental input on pre-warmed StrokeShapeBuilder
@@ -452,6 +470,436 @@ void BM_SpringShapeCompletePreWarmedMultipleBehavior(benchmark::State& state) {
   state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
 }
 BENCHMARK(BM_SpringShapeCompletePreWarmedMultipleBehavior);
+
+// ********************** Benchmark Tests **********************************
+//
+// The following tests we will use synthetically created inputs to test the
+// impact of checking for partially overlapping `BrushTip`s. We will use the
+// following `BrushTip`s:
+// - Rectangle with overlapping corners
+// - Pill with overlapping corners
+// - Rectangle with no overlapping corners
+// - Pill with no overlapping corners
+//
+// We will also contrast `rotation` and `hue offset` behaviors to rule out the
+// impact of just adding a `BrushBehavior`.
+//
+// We will benchmark the following cases:
+// - All Input count in one StrokeInputBatch on cold StrokeShapeBuilder
+// - All Input count in one StrokeInputBatch on pre-warmed StrokeShapeBuilder
+
+void BM_SyntheticStraightLineOverlappingRectangleBrushtips(
+    benchmark::State& state) {
+  Rect bounds = Rect::FromTwoPoints({0, 0}, {100, 100});
+  StrokeInputBatch inputs =
+      MakeSyntheticStraightLineInputs(bounds, 200, Duration32::Seconds(5));
+  BrushTip tip = {
+      .scale = {2, 8},
+      .corner_rounding = 0,
+      .behaviors =
+          {
+              BrushBehavior{{
+                  BrushBehavior::SourceNode{
+                      .source = BrushBehavior::Source::
+                          kDistanceTraveledInMultiplesOfBrushSize,
+                      .source_out_of_range_behavior =
+                          BrushBehavior::OutOfRange::kRepeat,
+                      .source_value_range = {0, 4},
+                  },
+                  BrushBehavior::ResponseNode{
+                      .response_curve = {EasingFunction::Predefined::kLinear},
+                  },
+                  BrushBehavior::TargetNode{
+                      .target = BrushBehavior::Target::kRotationOffsetInRadians,
+                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                  },
+              }},
+          },
+  };
+  auto brush_family = BrushFamily::Create(tip, BrushPaint{}, "");
+  ABSL_CHECK_OK(brush_family);
+  auto brush = Brush::Create(*brush_family, Color::GoogleBlue(), 1, 0.25);
+  ABSL_CHECK_OK(brush);
+
+  for (auto s : state) {
+    BuildStrokeShapeAllAtOnce(*brush, inputs);
+  }
+  state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
+}
+BENCHMARK(BM_SyntheticStraightLineOverlappingRectangleBrushtips);
+
+void BM_SyntheticStraightLineOverlappingRectangleBrushtipsPrewarmed(
+    benchmark::State& state) {
+  Rect bounds = Rect::FromTwoPoints({0, 0}, {100, 100});
+  StrokeInputBatch inputs =
+      MakeSyntheticStraightLineInputs(bounds, 200, Duration32::Seconds(5));
+  BrushTip tip = {
+      .scale = {2, 8},
+      .corner_rounding = 0,
+      .behaviors =
+          {
+              BrushBehavior{{
+                  BrushBehavior::SourceNode{
+                      .source = BrushBehavior::Source::
+                          kDistanceTraveledInMultiplesOfBrushSize,
+                      .source_out_of_range_behavior =
+                          BrushBehavior::OutOfRange::kRepeat,
+                      .source_value_range = {0, 4},
+                  },
+                  BrushBehavior::TargetNode{
+                      .target = BrushBehavior::Target::kRotationOffsetInRadians,
+                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                  },
+              }},
+          },
+  };
+  auto brush_family = BrushFamily::Create(tip, BrushPaint{}, "");
+  ABSL_CHECK_OK(brush_family);
+  auto brush = Brush::Create(*brush_family, Color::GoogleBlue(), 1, 0.25);
+  ABSL_CHECK_OK(brush);
+
+  StrokeShapeBuilder builder;
+  BuildStrokeShapeAllAtOnce(*brush, inputs, builder);
+  benchmark::DoNotOptimize(builder);
+  for (auto s : state) {
+    BuildStrokeShapeAllAtOnce(*brush, inputs, builder);
+    benchmark::DoNotOptimize(builder);
+  }
+  state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
+}
+BENCHMARK(BM_SyntheticStraightLineOverlappingRectangleBrushtipsPrewarmed);
+
+void BM_SyntheticStraightLineHueChangeRectangleBrushtips(
+    benchmark::State& state) {
+  Rect bounds = Rect::FromTwoPoints({0, 0}, {100, 100});
+  StrokeInputBatch inputs =
+      MakeSyntheticStraightLineInputs(bounds, 200, Duration32::Seconds(5));
+  BrushTip tip = {
+      .scale = {2, 8},
+      .corner_rounding = 0,
+      .behaviors =
+          {
+              BrushBehavior{{
+                  BrushBehavior::SourceNode{
+                      .source = BrushBehavior::Source::
+                          kDistanceTraveledInMultiplesOfBrushSize,
+                      .source_out_of_range_behavior =
+                          BrushBehavior::OutOfRange::kRepeat,
+                      .source_value_range = {0, 4},
+                  },
+                  BrushBehavior::ResponseNode{
+                      .response_curve = {EasingFunction::Predefined::kLinear},
+                  },
+                  BrushBehavior::TargetNode{
+                      .target = BrushBehavior::Target::kHueOffsetInRadians,
+                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                  },
+              }},
+          },
+  };
+  auto brush_family = BrushFamily::Create(tip, BrushPaint{}, "");
+  ABSL_CHECK_OK(brush_family);
+  auto brush = Brush::Create(*brush_family, Color::GoogleBlue(), 1, 0.25);
+  ABSL_CHECK_OK(brush);
+
+  for (auto s : state) {
+    BuildStrokeShapeAllAtOnce(*brush, inputs);
+  }
+  state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
+}
+BENCHMARK(BM_SyntheticStraightLineHueChangeRectangleBrushtips);
+
+void BM_SyntheticStraightLineHueChangeRectangleBrushtipsPrewarmed(
+    benchmark::State& state) {
+  Rect bounds = Rect::FromTwoPoints({0, 0}, {100, 100});
+  StrokeInputBatch inputs =
+      MakeSyntheticStraightLineInputs(bounds, 200, Duration32::Seconds(5));
+  BrushTip tip = {
+      .scale = {2, 8},
+      .corner_rounding = 0,
+      .behaviors =
+          {
+              BrushBehavior{{
+                  BrushBehavior::SourceNode{
+                      .source = BrushBehavior::Source::
+                          kDistanceTraveledInMultiplesOfBrushSize,
+                      .source_out_of_range_behavior =
+                          BrushBehavior::OutOfRange::kRepeat,
+                      .source_value_range = {0, 4},
+                  },
+                  BrushBehavior::TargetNode{
+                      .target = BrushBehavior::Target::kHueOffsetInRadians,
+                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                  },
+              }},
+          },
+  };
+  auto brush_family = BrushFamily::Create(tip, BrushPaint{}, "");
+  ABSL_CHECK_OK(brush_family);
+  auto brush = Brush::Create(*brush_family, Color::GoogleBlue(), 1, 0.25);
+  ABSL_CHECK_OK(brush);
+
+  StrokeShapeBuilder builder;
+  BuildStrokeShapeAllAtOnce(*brush, inputs, builder);
+  benchmark::DoNotOptimize(builder);
+  for (auto s : state) {
+    BuildStrokeShapeAllAtOnce(*brush, inputs, builder);
+    benchmark::DoNotOptimize(builder);
+  }
+  state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
+}
+BENCHMARK(BM_SyntheticStraightLineHueChangeRectangleBrushtipsPrewarmed);
+
+void BM_SyntheticStraightLineNoRotationRectangleBrushtips(
+    benchmark::State& state) {
+  Rect bounds = Rect::FromTwoPoints({0, 0}, {100, 100});
+  StrokeInputBatch inputs =
+      MakeSyntheticStraightLineInputs(bounds, 200, Duration32::Seconds(5));
+  BrushTip tip = {
+      .scale = {2, 8},
+      .corner_rounding = 0,
+  };
+  auto brush_family = BrushFamily::Create(tip, BrushPaint{}, "");
+  ABSL_CHECK_OK(brush_family);
+  auto brush = Brush::Create(*brush_family, Color::GoogleBlue(), 1, 0.25);
+  ABSL_CHECK_OK(brush);
+
+  for (auto s : state) {
+    BuildStrokeShapeAllAtOnce(*brush, inputs);
+  }
+  state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
+}
+BENCHMARK(BM_SyntheticStraightLineNoRotationRectangleBrushtips);
+
+void BM_SyntheticStraightLineNoRotationRectangleBrushtipsPrewarmed(
+    benchmark::State& state) {
+  Rect bounds = Rect::FromTwoPoints({0, 0}, {100, 100});
+  StrokeInputBatch inputs =
+      MakeSyntheticStraightLineInputs(bounds, 200, Duration32::Seconds(5));
+  BrushTip tip = {
+      .scale = {2, 8},
+      .corner_rounding = 0,
+  };
+  auto brush_family = BrushFamily::Create(tip, BrushPaint{}, "");
+  ABSL_CHECK_OK(brush_family);
+  auto brush = Brush::Create(*brush_family, Color::GoogleBlue(), 1, 0.25);
+  ABSL_CHECK_OK(brush);
+
+  StrokeShapeBuilder builder;
+  BuildStrokeShapeAllAtOnce(*brush, inputs, builder);
+  benchmark::DoNotOptimize(builder);
+  for (auto s : state) {
+    BuildStrokeShapeAllAtOnce(*brush, inputs, builder);
+    benchmark::DoNotOptimize(builder);
+  }
+  state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
+}
+BENCHMARK(BM_SyntheticStraightLineNoRotationRectangleBrushtipsPrewarmed);
+
+void BM_SyntheticStraightLineOverlappingPillBrushtips(benchmark::State& state) {
+  Rect bounds = Rect::FromTwoPoints({0, 0}, {100, 100});
+  StrokeInputBatch inputs =
+      MakeSyntheticStraightLineInputs(bounds, 200, Duration32::Seconds(5));
+  BrushTip tip = {
+      .scale = {2, 8},
+      .corner_rounding = 1,
+      .behaviors =
+          {
+              BrushBehavior{{
+                  BrushBehavior::SourceNode{
+                      .source = BrushBehavior::Source::
+                          kDistanceTraveledInMultiplesOfBrushSize,
+                      .source_out_of_range_behavior =
+                          BrushBehavior::OutOfRange::kRepeat,
+                      .source_value_range = {0, 4},
+                  },
+                  BrushBehavior::ResponseNode{
+                      .response_curve = {EasingFunction::Predefined::kLinear},
+                  },
+                  BrushBehavior::TargetNode{
+                      .target = BrushBehavior::Target::kRotationOffsetInRadians,
+                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                  },
+              }},
+          },
+  };
+  auto brush_family = BrushFamily::Create(tip, BrushPaint{}, "");
+  ABSL_CHECK_OK(brush_family);
+  auto brush = Brush::Create(*brush_family, Color::GoogleBlue(), 1, 0.25);
+  ABSL_CHECK_OK(brush);
+
+  for (auto s : state) {
+    BuildStrokeShapeAllAtOnce(*brush, inputs);
+  }
+  state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
+}
+BENCHMARK(BM_SyntheticStraightLineOverlappingPillBrushtips);
+
+void BM_SyntheticStraightLineOverlappingPillBrushtipsPrewarmed(
+    benchmark::State& state) {
+  Rect bounds = Rect::FromTwoPoints({0, 0}, {100, 100});
+  StrokeInputBatch inputs =
+      MakeSyntheticStraightLineInputs(bounds, 200, Duration32::Seconds(5));
+  BrushTip tip = {
+      .scale = {2, 8},
+      .corner_rounding = 1,
+      .behaviors =
+          {
+              BrushBehavior{{
+                  BrushBehavior::SourceNode{
+                      .source = BrushBehavior::Source::
+                          kDistanceTraveledInMultiplesOfBrushSize,
+                      .source_out_of_range_behavior =
+                          BrushBehavior::OutOfRange::kRepeat,
+                      .source_value_range = {0, 4},
+                  },
+                  BrushBehavior::TargetNode{
+                      .target = BrushBehavior::Target::kRotationOffsetInRadians,
+                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                  },
+              }},
+          },
+  };
+  auto brush_family = BrushFamily::Create(tip, BrushPaint{}, "");
+  ABSL_CHECK_OK(brush_family);
+  auto brush = Brush::Create(*brush_family, Color::GoogleBlue(), 1, 0.25);
+  ABSL_CHECK_OK(brush);
+
+  StrokeShapeBuilder builder;
+  BuildStrokeShapeAllAtOnce(*brush, inputs, builder);
+  benchmark::DoNotOptimize(builder);
+  for (auto s : state) {
+    BuildStrokeShapeAllAtOnce(*brush, inputs, builder);
+    benchmark::DoNotOptimize(builder);
+  }
+  state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
+}
+BENCHMARK(BM_SyntheticStraightLineOverlappingPillBrushtipsPrewarmed);
+
+void BM_SyntheticStraightLineHueChangePillBrushtips(benchmark::State& state) {
+  Rect bounds = Rect::FromTwoPoints({0, 0}, {100, 100});
+  StrokeInputBatch inputs =
+      MakeSyntheticStraightLineInputs(bounds, 200, Duration32::Seconds(5));
+  BrushTip tip = {
+      .scale = {2, 8},
+      .corner_rounding = 1,
+      .behaviors =
+          {
+              BrushBehavior{{
+                  BrushBehavior::SourceNode{
+                      .source = BrushBehavior::Source::
+                          kDistanceTraveledInMultiplesOfBrushSize,
+                      .source_out_of_range_behavior =
+                          BrushBehavior::OutOfRange::kRepeat,
+                      .source_value_range = {0, 4},
+                  },
+                  BrushBehavior::ResponseNode{
+                      .response_curve = {EasingFunction::Predefined::kLinear},
+                  },
+                  BrushBehavior::TargetNode{
+                      .target = BrushBehavior::Target::kHueOffsetInRadians,
+                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                  },
+              }},
+          },
+  };
+  auto brush_family = BrushFamily::Create(tip, BrushPaint{}, "");
+  ABSL_CHECK_OK(brush_family);
+  auto brush = Brush::Create(*brush_family, Color::GoogleBlue(), 1, 0.25);
+  ABSL_CHECK_OK(brush);
+
+  for (auto s : state) {
+    BuildStrokeShapeAllAtOnce(*brush, inputs);
+  }
+  state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
+}
+BENCHMARK(BM_SyntheticStraightLineHueChangePillBrushtips);
+
+void BM_SyntheticStraightLineHueChangePillBrushtipsPrewarmed(
+    benchmark::State& state) {
+  Rect bounds = Rect::FromTwoPoints({0, 0}, {100, 100});
+  StrokeInputBatch inputs =
+      MakeSyntheticStraightLineInputs(bounds, 200, Duration32::Seconds(5));
+  BrushTip tip = {
+      .scale = {2, 8},
+      .corner_rounding = 1,
+      .behaviors =
+          {
+              BrushBehavior{{
+                  BrushBehavior::SourceNode{
+                      .source = BrushBehavior::Source::
+                          kDistanceTraveledInMultiplesOfBrushSize,
+                      .source_out_of_range_behavior =
+                          BrushBehavior::OutOfRange::kRepeat,
+                      .source_value_range = {0, 4},
+                  },
+                  BrushBehavior::TargetNode{
+                      .target = BrushBehavior::Target::kHueOffsetInRadians,
+                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                  },
+              }},
+          },
+  };
+  auto brush_family = BrushFamily::Create(tip, BrushPaint{}, "");
+  ABSL_CHECK_OK(brush_family);
+  auto brush = Brush::Create(*brush_family, Color::GoogleBlue(), 1, 0.25);
+  ABSL_CHECK_OK(brush);
+
+  StrokeShapeBuilder builder;
+  BuildStrokeShapeAllAtOnce(*brush, inputs, builder);
+  benchmark::DoNotOptimize(builder);
+  for (auto s : state) {
+    BuildStrokeShapeAllAtOnce(*brush, inputs, builder);
+    benchmark::DoNotOptimize(builder);
+  }
+  state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
+}
+BENCHMARK(BM_SyntheticStraightLineHueChangePillBrushtipsPrewarmed);
+
+void BM_SyntheticStraightLineNoRotationPillBrushtips(benchmark::State& state) {
+  Rect bounds = Rect::FromTwoPoints({0, 0}, {100, 100});
+  StrokeInputBatch inputs =
+      MakeSyntheticStraightLineInputs(bounds, 200, Duration32::Seconds(5));
+  BrushTip tip = {
+      .scale = {2, 8},
+      .corner_rounding = 1,
+  };
+  auto brush_family = BrushFamily::Create(tip, BrushPaint{}, "");
+  ABSL_CHECK_OK(brush_family);
+  auto brush = Brush::Create(*brush_family, Color::GoogleBlue(), 1, 0.25);
+  ABSL_CHECK_OK(brush);
+
+  for (auto s : state) {
+    BuildStrokeShapeAllAtOnce(*brush, inputs);
+  }
+  state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
+}
+BENCHMARK(BM_SyntheticStraightLineNoRotationPillBrushtips);
+
+void BM_SyntheticStraightLineNoRotationPillBrushtipsPrewarmed(
+    benchmark::State& state) {
+  Rect bounds = Rect::FromTwoPoints({0, 0}, {100, 100});
+  StrokeInputBatch inputs =
+      MakeSyntheticStraightLineInputs(bounds, 200, Duration32::Seconds(5));
+  BrushTip tip = {
+      .scale = {2, 8},
+      .corner_rounding = 1,
+  };
+  auto brush_family = BrushFamily::Create(tip, BrushPaint{}, "");
+  ABSL_CHECK_OK(brush_family);
+  auto brush = Brush::Create(*brush_family, Color::GoogleBlue(), 1, 0.25);
+  ABSL_CHECK_OK(brush);
+
+  StrokeShapeBuilder builder;
+  BuildStrokeShapeAllAtOnce(*brush, inputs, builder);
+  benchmark::DoNotOptimize(builder);
+  for (auto s : state) {
+    BuildStrokeShapeAllAtOnce(*brush, inputs, builder);
+    benchmark::DoNotOptimize(builder);
+  }
+  state.SetLabel(absl::StrCat("Input count: ", inputs.Size()));
+}
+BENCHMARK(BM_SyntheticStraightLineNoRotationPillBrushtipsPrewarmed);
 
 }  // namespace
 }  // namespace ink::strokes_internal
