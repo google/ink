@@ -218,7 +218,7 @@ class ModeledShape {
                         uint32_t vertex_index) const;
 
   // Fetches the bounds of the `ModeledShape`, i.e. the bounds of its `Mesh`es.
-  // This will be empty if this is empty.
+  // The bounds will be empty if the meshes are empty.
   Envelope Bounds() const;
 
   // Forces initialization of the spatial index. This is a no-op if the spatial
