@@ -22,6 +22,20 @@ cc_library(
 )
 
 cc_library(
+    name = "jni_string_util",
+    srcs = ["jni_string_util.cc"],
+    hdrs = ["jni_string_util.h"],
+    deps = [
+        "@com_google_absl//absl/strings:string_view",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+)
+
+cc_library(
     name = "jni_throw_util",
     srcs = ["jni_throw_util.cc"],
     hdrs = ["jni_throw_util.h"],

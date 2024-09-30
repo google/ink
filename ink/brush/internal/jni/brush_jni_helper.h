@@ -28,10 +28,6 @@
 
 namespace ink {
 
-// Creates a std::string copy of j_string. If j_string is null, returns an empty
-// string.
-std::string JStringToStdString(JNIEnv* env, jstring j_string);
-
 // Casts a Kotlin Brush.nativePointer to a C++ Brush. The returned
 // Brush is a const ref as the kotlin Brush is immutable.
 inline const ink::Brush& CastToBrush(jlong brush_native_pointer) {

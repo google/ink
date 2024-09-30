@@ -23,6 +23,7 @@
 #include "ink/geometry/angle.h"
 #include "ink/geometry/vec.h"
 #include "ink/jni/internal/jni_defines.h"
+#include "ink/jni/internal/jni_string_util.h"
 #include "ink/jni/internal/jni_throw_util.h"
 #include "ink/types/uri.h"
 
@@ -87,7 +88,7 @@ JNI_METHOD_INNER(brush, BrushPaint, TextureLayer, jlong,
  jfloat size_y, jfloat offset_x, jfloat offset_y, jfloat rotation_in_radians,
  jfloat opacity, jint size_unit, jint origin, jint mapping, jint blend_mode) {
   auto uri = ink::Uri::Parse(
-      absl::string_view(ink::JStringToStdString(env, color_texture_uri)));
+      ink::jni::JStringView(env, color_texture_uri).string_view());
   if (!uri.ok()) {
     ink::jni::ThrowExceptionFromStatus(env, uri.status());
     return -1;  // Invalid Uri.

@@ -25,6 +25,7 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
+#include "ink/jni/internal/jni_string_util.h"
 #include "ink/jni/internal/jni_throw_util.h"
 
 extern "C" {
@@ -44,15 +45,13 @@ JNI_METHOD(brush, BrushFamily, jlong, nativeCreateBrushFamily)
   }
   env->ReleaseLongArrayElements(coat_native_pointer_array, coat_pointers, 0);
 
-  std::string uri = ink::JStringToStdString(env, j_uri);
-
   ink::BrushFamily::InputModel input_model = ink::BrushFamily::SpringModelV1();
   if (use_spring_model_v2) {
     input_model = ink::BrushFamily::SpringModelV2();
   }
 
-  absl::StatusOr<ink::BrushFamily> brush_family =
-      ink::BrushFamily::Create(coats, uri, input_model);
+  absl::StatusOr<ink::BrushFamily> brush_family = ink::BrushFamily::Create(
+      coats, ink::jni::JStringView(env, j_uri).string_view(), input_model);
   if (!brush_family.ok()) {
     ink::jni::ThrowExceptionFromStatus(env, brush_family.status());
     return -1;  // Unused return value.

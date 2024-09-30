@@ -12,23 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/jni/internal/jni_string_util.h"
 
 #include <jni.h>
 
-#include <string>
-
 namespace ink {
+namespace jni {
 
-std::string JStringToStdString(JNIEnv* env, jstring j_string) {
-  if (j_string == nullptr) {
-    return "";
+JStringView::JStringView(JNIEnv* env, jstring j_string) : env_(env) {
+  if (j_string != nullptr) {
+    j_string_ = static_cast<jstring>(env_->NewGlobalRef(j_string));
+    string_view_ =
+        absl::string_view(env_->GetStringUTFChars(j_string_, nullptr),
+                          env_->GetStringUTFLength(j_string_));
   }
-  const char* temp_copy = env->GetStringUTFChars(j_string, nullptr);
-  std::string string(temp_copy);
-  env->ReleaseStringUTFChars(j_string, temp_copy);
-
-  return string;
 }
 
+JStringView::~JStringView() {
+  if (j_string_ != nullptr) {
+    env_->ReleaseStringUTFChars(j_string_, string_view_.data());
+    env_->DeleteGlobalRef(j_string_);
+  }
+}
+
+}  // namespace jni
 }  // namespace ink
