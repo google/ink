@@ -91,13 +91,21 @@ absl::Status InProgressStroke::EnqueueInputs(
 
   // Separately validate the new inputs first, so that the calls to
   // `StrokeInputBatch::Append` below always succeed. This helps ensure that we
-  // don't modify the `InProgressStroke` if an error occurs.
+  // don't modify the `InProgressStroke` if an error occurs. Since we expect
+  // the subsequent calls to `Append` to succeed, we log an error if they don't.
   if (auto status = ValidateNewInputs(real_inputs, predicted_inputs);
       !status.ok()) {
     return status;
   }
 
-  ABSL_CHECK_OK(queued_real_inputs_.Append(real_inputs));
+  if (absl::Status status = queued_real_inputs_.Append(real_inputs);
+      !status.ok()) {
+    ABSL_LOG(ERROR) << "Failed to append new real inputs to queued real inputs "
+                       "after validation: "
+                    << status;
+    return status;
+  }
+
   queued_predicted_inputs_ = predicted_inputs;
   return absl::OkStatus();
 }
@@ -113,16 +121,30 @@ absl::Status InProgressStroke::UpdateShape(Duration32 current_elapsed_time) {
       !status.ok()) {
     return status;
   }
-
   if (inputs_are_finished_ || !queued_real_inputs_.IsEmpty() ||
       !queued_predicted_inputs_.IsEmpty()) {
     // Erase any old predicted inputs.
     processed_inputs_.Erase(real_input_count_);
   }
 
-  ABSL_CHECK_OK(processed_inputs_.Append(queued_real_inputs_));
+  if (absl::Status status = processed_inputs_.Append(queued_real_inputs_);
+      !status.ok()) {
+    ABSL_LOG(ERROR)
+        << "Failed to appened queued real inputs to processed inputs "
+           "after validation: "
+        << status;
+    return status;
+  }
   real_input_count_ += queued_real_inputs_.Size();
-  ABSL_CHECK_OK(processed_inputs_.Append(queued_predicted_inputs_));
+
+  if (absl::Status status = processed_inputs_.Append(queued_predicted_inputs_);
+      !status.ok()) {
+    ABSL_LOG(ERROR)
+        << "Failed to appened queued predicted inputs to processed inputs "
+           "after validation: "
+        << status;
+    return status;
+  }
 
   current_elapsed_time_ = current_elapsed_time;
 
