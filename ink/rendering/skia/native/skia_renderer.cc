@@ -32,6 +32,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
+#include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/color/color.h"
 #include "ink/geometry/affine_transform.h"
@@ -93,7 +94,12 @@ bool UsePathRendering(GrDirectContext* context, const BrushPaint&) {
 // TODO: b/285594469 - Add a brush tip index parameter once a valid `BrushCoat`
 // has something other than exactly one `BrushTip`.
 float OpacityMultiplierForPath(const Brush& brush, uint32_t coat_index) {
-  return brush.GetCoats()[coat_index].tips.front().opacity_multiplier;
+  const BrushCoat& coat = brush.GetCoats()[coat_index];
+  return coat.tips.front().opacity_multiplier * coat.paint.opacity;
+}
+
+Color ApplyPaintOpacity(const BrushPaint& paint, const Color& color) {
+  return color.WithAlphaFloat(color.GetAlphaFloat() * paint.opacity);
 }
 
 }  // namespace
@@ -157,7 +163,8 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
         }});
     if (!mesh_drawable.ok()) return mesh_drawable.status();
 
-    mesh_drawable->SetBrushColor(brush->GetColor());
+    mesh_drawable->SetBrushColor(
+        ApplyPaintOpacity(brush_paint, brush->GetColor()));
     drawables.push_back(*std::move(mesh_drawable));
   }
 
@@ -232,7 +239,8 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
         std::move(partitions), std::move(uniform_data));
     if (!mesh_drawable.ok()) return mesh_drawable.status();
 
-    mesh_drawable->SetBrushColor(brush.GetColor());
+    mesh_drawable->SetBrushColor(
+        ApplyPaintOpacity(brush_paint, brush.GetColor()));
     drawables.push_back(*std::move(mesh_drawable));
   }
 

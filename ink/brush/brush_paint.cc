@@ -212,6 +212,11 @@ absl::Status ValidateBrushPaint(const BrushPaint& paint) {
       return status;
     }
   }
+  if (!(paint.opacity >= 0.0f && paint.opacity <= 1.0f)) {
+    return absl::InvalidArgumentError(absl::StrFormat(
+        "`BrushPaint::opacity` must be in the interval [0, 1]. Got %v",
+        paint.opacity));
+  }
   return absl::OkStatus();
 }
 
@@ -318,9 +323,9 @@ std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
 }
 
 std::string ToFormattedString(const BrushPaint& paint) {
-  std::string formatted =
-      absl::StrCat("BrushPaint{texture_layers={",
-                   absl::StrJoin(paint.texture_layers, ", "), "}}");
+  std::string formatted = absl::StrCat(
+      "BrushPaint{texture_layers={", absl::StrJoin(paint.texture_layers, ", "),
+      "}, opacity=", paint.opacity, "}");
 
   return formatted;
 }

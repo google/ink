@@ -375,14 +375,15 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
 }
 
 TEST(BrushPaintTest, StringifyBrushPaint) {
-  EXPECT_EQ(absl::StrCat(BrushPaint{}), "BrushPaint{texture_layers={}}");
+  EXPECT_EQ(absl::StrCat(BrushPaint{}),
+            "BrushPaint{texture_layers={}, opacity=1}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{.texture_layers = {{}}}),
       "BrushPaint{texture_layers={TextureLayer{color_texture_uri=, "
       "mapping=kTiling, origin=kStrokeSpaceOrigin, "
-      "size_unit=kStrokeCoordinates, size=<1, 1>, offset=<0, 0>, "
-      "rotation=0π, size_jitter=<0, 0>, offset_jitter=<0, 0>, "
-      "rotation_jitter=0π, opacity=1, keyframes={}, blend_mode=kModulate}}}");
+      "size_unit=kStrokeCoordinates, size=<1, 1>, offset=<0, 0>, rotation=0π, "
+      "size_jitter=<0, 0>, offset_jitter=<0, 0>, rotation_jitter=0π, "
+      "opacity=1, keyframes={}, blend_mode=kModulate}}, opacity=1}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.color_texture_uri = CreateTestTextureUri()}}}),
@@ -392,7 +393,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "size=<1, 1>, offset=<0, 0>, rotation=0π, "
       "size_jitter=<0, 0>, "
       "offset_jitter=<0, 0>, rotation_jitter=0π, opacity=1, keyframes={}, "
-      "blend_mode=kModulate}}}");
+      "blend_mode=kModulate}}, opacity=1}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
@@ -403,7 +404,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "texture:test-texture, mapping=kWinding, origin=kStrokeSpaceOrigin, "
       "size_unit=kBrushSize, size=<1, 1>, offset=<0, 0>, rotation=0π, "
       "size_jitter=<0, 0>, offset_jitter=<0, 0>, rotation_jitter=0π, "
-      "opacity=1, keyframes={}, blend_mode=kModulate}}}");
+      "opacity=1, keyframes={}, blend_mode=kModulate}}, opacity=1}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
@@ -415,7 +416,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "texture:test-texture, mapping=kWinding, origin=kStrokeSpaceOrigin, "
       "size_unit=kBrushSize, size=<3, 5>, offset=<0, 0>, rotation=0π, "
       "size_jitter=<0, 0>, offset_jitter=<0, 0>, rotation_jitter=0π, "
-      "opacity=1, keyframes={}, blend_mode=kModulate}}}");
+      "opacity=1, keyframes={}, blend_mode=kModulate}}, opacity=1}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
@@ -424,29 +425,29 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "texture:test-texture, mapping=kTiling, origin=kStrokeSpaceOrigin, "
       "size_unit=kStrokeCoordinates, size=<3, 5>, offset=<0, 0>, rotation=0π, "
       "size_jitter=<0, 0>, offset_jitter=<0, 0>, rotation_jitter=0π, "
-      "opacity=1, keyframes={}, blend_mode=kModulate}}}");
-  EXPECT_EQ(
-      absl::StrCat(BrushPaint{
-          .texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
-                              .size = {3, 5},
-                              .offset = {2, 0.2}}}}),
-      "BrushPaint{texture_layers={TextureLayer{color_texture_uri=/"
-      "texture:test-texture, mapping=kTiling, origin=kStrokeSpaceOrigin, "
-      "size_unit=kStrokeCoordinates, size=<3, 5>, offset=<2, 0.2>, "
-      "rotation=0π, size_jitter=<0, 0>, offset_jitter=<0, 0>, "
-      "rotation_jitter=0π, opacity=1, keyframes={}, blend_mode=kModulate}}}");
-  EXPECT_EQ(
-      absl::StrCat(BrushPaint{
-          .texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
-                              .size = {3, 5},
-                              .offset = {2, 0.2},
-                              .rotation = kHalfPi,
-                              .opacity = 0.6}}}),
-      "BrushPaint{texture_layers={TextureLayer{color_texture_uri=/"
-      "texture:test-texture, mapping=kTiling, origin=kStrokeSpaceOrigin, "
-      "size_unit=kStrokeCoordinates, size=<3, 5>, offset=<2, 0.2>, "
-      "rotation=0.5π, size_jitter=<0, 0>, offset_jitter=<0, 0>, "
-      "rotation_jitter=0π, opacity=0.6, keyframes={}, blend_mode=kModulate}}}");
+      "opacity=1, keyframes={}, blend_mode=kModulate}}, opacity=1}");
+  EXPECT_EQ(absl::StrCat(BrushPaint{
+                .texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
+                                    .size = {3, 5},
+                                    .offset = {2, 0.2}}}}),
+            "BrushPaint{texture_layers={TextureLayer{color_texture_uri=/"
+            "texture:test-texture, mapping=kTiling, origin=kStrokeSpaceOrigin, "
+            "size_unit=kStrokeCoordinates, size=<3, 5>, offset=<2, 0.2>, "
+            "rotation=0π, size_jitter=<0, 0>, offset_jitter=<0, 0>, "
+            "rotation_jitter=0π, opacity=1, keyframes={}, "
+            "blend_mode=kModulate}}, opacity=1}");
+  EXPECT_EQ(absl::StrCat(BrushPaint{
+                .texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
+                                    .size = {3, 5},
+                                    .offset = {2, 0.2},
+                                    .rotation = kHalfPi,
+                                    .opacity = 0.6}}}),
+            "BrushPaint{texture_layers={TextureLayer{color_texture_uri=/"
+            "texture:test-texture, mapping=kTiling, origin=kStrokeSpaceOrigin, "
+            "size_unit=kStrokeCoordinates, size=<3, 5>, offset=<2, 0.2>, "
+            "rotation=0.5π, size_jitter=<0, 0>, offset_jitter=<0, 0>, "
+            "rotation_jitter=0π, opacity=0.6, keyframes={}, "
+            "blend_mode=kModulate}}, opacity=1}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
@@ -460,7 +461,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "texture:test-texture, mapping=kWinding, origin=kStrokeSpaceOrigin, "
       "size_unit=kBrushSize, size=<3, 5>, offset=<2, 0.2>, rotation=0π, "
       "size_jitter=<0, 0>, offset_jitter=<0, 0>, rotation_jitter=0π, "
-      "opacity=1, keyframes={}, blend_mode=kSrcIn}}}");
+      "opacity=1, keyframes={}, blend_mode=kSrcIn}}, opacity=1}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
@@ -475,7 +476,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "texture:test-texture, mapping=kWinding, origin=kStrokeSpaceOrigin, "
       "size_unit=kBrushSize, size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, "
       "size_jitter=<0, 0>, offset_jitter=<0, 0>, rotation_jitter=0π, "
-      "opacity=0.6, keyframes={}, blend_mode=kModulate}}}");
+      "opacity=0.6, keyframes={}, blend_mode=kModulate}}, opacity=1}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
@@ -495,7 +496,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "size_unit=kBrushSize, size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, "
       "size_jitter=<0.1, 0.2>, offset_jitter=<0.7, 0.3>, "
       "rotation_jitter=0.125π, opacity=0.6, keyframes={}, "
-      "blend_mode=kSrcIn}}}");
+      "blend_mode=kSrcIn}}, opacity=1}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers =
@@ -520,7 +521,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "size_jitter=<0.1, 0.2>, offset_jitter=<0.7, 0.3>, "
       "rotation_jitter=0.125π, opacity=0.6, "
       "keyframes={TextureKeyframe{progress=0.3, size=<4, 6>, offset=<2, 0.2>, "
-      "rotation=0.5π, opacity=0.6}}, blend_mode=kModulate}}}");
+      "rotation=0.5π, opacity=0.6}}, blend_mode=kModulate}}, opacity=1}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers =
@@ -558,7 +559,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "rotation_jitter=0π, opacity=0.7, "
       "keyframes={TextureKeyframe{progress=0.2, size=<2, 5>, rotation=0.125π}, "
       "TextureKeyframe{progress=0.4, offset=<2, 0.2>, opacity=0.4}}, "
-      "blend_mode=kDstIn}}}");
+      "blend_mode=kDstIn}}, opacity=1}");
 }
 
 TEST(BrushPaintTest, InvalidTextureLayerRotation) {
@@ -587,6 +588,21 @@ TEST(BrushPaintTest, InvalidTextureLayerRotationJitter) {
                           .rotation_jitter = Angle::Radians(kNan)}}});
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("rotation_jitter` must be finite"));
+}
+
+TEST(BrushPaintTest, InvalidPaintOpacity) {
+  absl::Status status =
+      brush_internal::ValidateBrushPaint(BrushPaint{.opacity = -0.5f});
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("opacity"));
+
+  status = brush_internal::ValidateBrushPaint(BrushPaint{.opacity = 1.25f});
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("opacity"));
+
+  status = brush_internal::ValidateBrushPaint(BrushPaint{.opacity = kNan});
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("opacity"));
 }
 
 }  // namespace

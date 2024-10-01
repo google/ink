@@ -595,8 +595,8 @@ fuzztest::Domain<BrushPaint::TextureLayer> ValidBrushPaintTextureLayer() {
 }
 
 fuzztest::Domain<BrushPaint> ValidBrushPaint() {
-  return fuzztest::StructOf<BrushPaint>(
-      VectorOf(ValidBrushPaintTextureLayer()));
+  return fuzztest::StructOf<BrushPaint>(VectorOf(ValidBrushPaintTextureLayer()),
+                                        InRange<float>(0.f, 1.f));
 }
 
 Domain<BrushTip> ValidBrushTip() {

@@ -292,9 +292,10 @@ MATCHER_P(BrushPaintEqMatcher, expected,
                        " BrushPaint (expected: ",
                        ::testing::PrintToString(expected), ")")) {
   return ExplainMatchResult(
-      AllOf(Field(
-          "texture_layers", &BrushPaint::texture_layers,
-          Pointwise(BrushPaintTextureLayerEq(), expected.texture_layers))),
+      AllOf(
+          Field("texture_layers", &BrushPaint::texture_layers,
+                Pointwise(BrushPaintTextureLayerEq(), expected.texture_layers)),
+          Field("opacity", &BrushPaint::opacity, FloatEq(expected.opacity))),
       arg, result_listener);
 }
 

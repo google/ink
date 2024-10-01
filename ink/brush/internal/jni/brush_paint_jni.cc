@@ -14,6 +14,8 @@
 
 #include <jni.h>
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -46,11 +48,17 @@ extern "C" {
 
 // Construct a native BrushPaint and return a pointer to it as a long.
 JNI_METHOD(brush, BrushPaint, jlong, nativeCreateBrushPaint)
-(JNIEnv* env, jobject thiz, jint texture_layers_count) {
+(JNIEnv* env, jobject thiz, jint texture_layers_count, jfloat opacity) {
   std::vector<ink::BrushPaint::TextureLayer> texture_layers;
   texture_layers.reserve(texture_layers_count);
-  return reinterpret_cast<jlong>(
-      new ink::BrushPaint{.texture_layers = texture_layers});
+  auto brush_paint = std::make_unique<ink::BrushPaint>(ink::BrushPaint{
+      .texture_layers = std::move(texture_layers), .opacity = opacity});
+  absl::Status status = ink::brush_internal::ValidateBrushPaint(*brush_paint);
+  if (!status.ok()) {
+    ink::jni::ThrowExceptionFromStatus(env, status);
+    return 0;  // This return value is ignored.
+  }
+  return reinterpret_cast<jlong>(brush_paint.release());
 }
 
 // Appends a texture layer to a *mutable* C++ BrushPaint object as referenced by
