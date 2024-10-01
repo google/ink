@@ -231,6 +231,16 @@ std::optional<float> GetSourceValue(
       return Vec::DotProduct(input.acceleration,
                              input.velocity.AsUnitVec().Orthogonal()) *
              input_modeler_state.stroke_unit_length->ToCentimeters();
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInSeconds:
+      if (!input_modeler_state.inputs_are_finished) break;
+      return (input_modeler_state.complete_elapsed_time -
+              input_modeler_state.total_real_elapsed_time)
+          .ToSeconds();
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInMillis:
+      if (!input_modeler_state.inputs_are_finished) break;
+      return (input_modeler_state.complete_elapsed_time -
+              input_modeler_state.total_real_elapsed_time)
+          .ToMillis();
   }
   return std::nullopt;
 }

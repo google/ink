@@ -191,5 +191,22 @@ TEST(StrokeShapeBuilderDeathTest, ExtendWithoutStart) {
                             "");
 }
 
+TEST(StrokeShapeBuilderDeathTest, ExtendInputsAfterInputsFinished) {
+  absl::StatusOr<StrokeInputBatch> inputs = StrokeInputBatch::Create({
+      {.position = {5, 7}, .elapsed_time = Duration32::Zero()},
+  });
+  ASSERT_EQ(inputs.status(), absl::OkStatus());
+
+  StrokeShapeBuilder builder;
+  std::vector<BrushTip> brush_tips = {BrushTip()};
+  builder.StartStroke(BrushFamily::DefaultInputModel(), brush_tips, 1, 0.1);
+  builder.ExtendStroke(*inputs, {}, Duration32::Zero());
+  builder.FinishStrokeInputs();
+
+  EXPECT_DEATH_IF_SUPPORTED(
+      builder.ExtendStroke(*inputs, {}, Duration32::Zero()),
+      "Can't add more inputs");
+}
+
 }  // namespace
 }  // namespace ink::strokes_internal

@@ -204,6 +204,8 @@ bool IsValidBehaviorSource(BrushBehavior::Source source) {
         kInputAccelerationForwardInCentimetersPerSecondSquared:
     case BrushBehavior::Source::
         kInputAccelerationLateralInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInSeconds:
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInMillis:
       return true;
   }
   return false;
@@ -214,9 +216,11 @@ absl::Status ValidateSourceAndOutOfRangeCombination(
   switch (source) {
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
     case BrushBehavior::Source::kTimeSinceInputInMillis:
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInSeconds:
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInMillis:
       if (out_of_range != BrushBehavior::OutOfRange::kClamp) {
         return absl::InvalidArgumentError(
-            "`Source::kTimeSinceInput*` must only be used with "
+            "`Source::kTimeSince*` must only be used with "
             "`source_out_of_range_behavior` of `kClamp`.");
       }
       break;
@@ -592,6 +596,10 @@ std::string ToFormattedString(BrushBehavior::Source source) {
     case BrushBehavior::Source::
         kInputAccelerationLateralInCentimetersPerSecondSquared:
       return "kInputAccelerationLateralInCentimetersPerSecondSquared";
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInSeconds:
+      return "kTimeSinceInputsFinishedInSeconds";
+    case BrushBehavior::Source::kTimeSinceInputsFinishedInMillis:
+      return "kTimeSinceInputsFinishedInMillis";
   }
   return absl::StrCat("Source(", static_cast<int>(source), ")");
 }
