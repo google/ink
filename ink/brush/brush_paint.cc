@@ -84,7 +84,7 @@ absl::Status ValidateBrushPaintTextureKeyframe(
         keyframe.progress));
   }
   if (keyframe.size.has_value()) {
-    if (!isfinite(keyframe.size->x) || !isfinite(keyframe.size->y) ||
+    if (!std::isfinite(keyframe.size->x) || !std::isfinite(keyframe.size->y) ||
         keyframe.size->x <= 0 || keyframe.size->y <= 0) {
       return absl::InvalidArgumentError(
           absl::StrFormat("`BrushPaint::TextureKeyframe::size` components must "
@@ -102,7 +102,7 @@ absl::Status ValidateBrushPaintTextureKeyframe(
     }
   }
   if (keyframe.rotation.has_value()) {
-    if (!isfinite(keyframe.rotation->ValueInRadians())) {
+    if (!std::isfinite(keyframe.rotation->ValueInRadians())) {
       return absl::InvalidArgumentError(
           absl::StrFormat("`BrushPaint::TextureKeyframe::rotation` must be "
                           "finite. Got %v",
@@ -159,7 +159,7 @@ absl::Status ValidateBrushPaintTextureLayer(
                         "interval [0, 1]. Got %v",
                         layer.offset));
   }
-  if (!isfinite(layer.rotation.ValueInRadians())) {
+  if (!std::isfinite(layer.rotation.ValueInRadians())) {
     return absl::InvalidArgumentError(
         absl::StrFormat("`BrushPaint::TextureLayer::rotation` must be finite. "
                         "Got %v",
@@ -179,7 +179,7 @@ absl::Status ValidateBrushPaintTextureLayer(
         "interval [0, 1]. Got %v",
         layer.offset_jitter));
   }
-  if (!isfinite(layer.rotation_jitter.ValueInRadians())) {
+  if (!std::isfinite(layer.rotation_jitter.ValueInRadians())) {
     return absl::InvalidArgumentError(absl::StrFormat(
         "`BrushPaint::TextureLayer::rotation_jitter` must be finite. "
         "Got %v",
