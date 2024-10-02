@@ -31,6 +31,7 @@
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/types/duration.h"
+#include "ink/types/physical_distance.h"
 #include "ink_stroke_modeler/params.h"
 #include "ink_stroke_modeler/stroke_modeler.h"
 #include "ink_stroke_modeler/types.h"
@@ -73,21 +74,27 @@ namespace {
 
 stroke_model::PositionModelerParams::LoopContractionMitigationParameters
 MakeLoopContractionMitigationParameters(
-    const BrushFamily::InputModel& input_model, float stroke_unit_length) {
+    const BrushFamily::InputModel& input_model,
+    std::optional<PhysicalDistance> stroke_unit_length) {
   return std::visit(
       [stroke_unit_length](auto&& input_model)
       // NOLINTNEXTLINE(whitespace/line_length)
       -> stroke_model::PositionModelerParams::LoopContractionMitigationParameters {
         using ModelType = std::decay_t<decltype(input_model)>;
         if constexpr (std::is_same_v<ModelType, BrushFamily::SpringModelV2>) {
+          // Without the stroke unit length, we cannot determine the speed of
+          // the stroke inputs, so we cannot enable loop mitigation.
+          if (!stroke_unit_length.has_value()) {
+            return {.is_enabled = false};
+          }
           return {
               .is_enabled = true,
               .speed_lower_bound =
                   kDefaultLoopMitigationSpeedLowerBoundInCmPerSec /
-                  stroke_unit_length,
+                  stroke_unit_length->ToCentimeters(),
               .speed_upper_bound =
                   kDefaultLoopMitigationSpeedUpperBoundInCmPerSec /
-                  stroke_unit_length,
+                  stroke_unit_length->ToCentimeters(),
               .interpolation_strength_at_speed_lower_bound =
                   kDefaultLoopMitigationInterpolationStrengthAtSpeedLowerBound,
               .interpolation_strength_at_speed_upper_bound =
@@ -126,7 +133,8 @@ stroke_model::StylusStateModelerParams MakeStylusStateModelerParams(
 
 void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
                         const BrushFamily::InputModel& input_model,
-                        float brush_epsilon, float stroke_unit_length) {
+                        float brush_epsilon,
+                        std::optional<PhysicalDistance> stroke_unit_length) {
   // The minimum output rate was chosen to match legacy behavior, which was
   // in turn chosen to upsample enough to produce relatively smooth-looking
   // curves on 60 Hz touchscreens.
@@ -183,9 +191,7 @@ void StrokeInputModeler::ExtendStroke(const StrokeInputBatch& real_inputs,
                                     ? predicted_inputs.GetStrokeUnitLength()
                                     : real_inputs.GetStrokeUnitLength();
     ResetStrokeModeler(stroke_modeler_, input_model_, brush_epsilon_,
-                       real_inputs.HasStrokeUnitLength()
-                           ? real_inputs.GetStrokeUnitLength()->ToCentimeters()
-                           : 1.0f);
+                       real_inputs.GetStrokeUnitLength());
     stroke_modeler_has_input_ = false;
   }
 

@@ -16,8 +16,10 @@
 #define INK_STROKES_INPUT_SYNTHETIC_TEST_INPUTS_H_
 
 #include "ink/geometry/rect.h"
+#include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/types/duration.h"
+#include "ink/types/physical_distance.h"
 
 namespace ink {
 
@@ -28,7 +30,8 @@ namespace ink {
 //
 // TODO: b/314950788 - Remove `input_count` once upsampling is implemented.
 StrokeInputBatch MakeCompleteLissajousCurveInputs(
-    Duration32 full_stroke_duration, const Rect& bounds, int input_count = 180);
+    Duration32 full_stroke_duration, const Rect& bounds, int input_count = 180,
+    PhysicalDistance stroke_unit_length = StrokeInput::kNoStrokeUnitLength);
 
 }  // namespace ink
 

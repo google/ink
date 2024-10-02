@@ -23,11 +23,13 @@
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/types/duration.h"
+#include "ink/types/physical_distance.h"
 
 namespace ink {
 
 StrokeInputBatch MakeCompleteLissajousCurveInputs(
-    Duration32 full_stroke_duration, const Rect& bounds, int input_count) {
+    Duration32 full_stroke_duration, const Rect& bounds, int input_count,
+    PhysicalDistance stroke_unit_length) {
   auto wave_function = [](float min, float max, float progress,
                           float frequency) {
     return 0.5f * (min + max) +
@@ -47,6 +49,7 @@ StrokeInputBatch MakeCompleteLissajousCurveInputs(
     inputs.push_back({
         .position = {x, y},
         .elapsed_time = progress * full_stroke_duration,
+        .stroke_unit_length = stroke_unit_length,
     });
   }
 

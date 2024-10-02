@@ -161,6 +161,7 @@ cc_library(
         "//ink/geometry:angle",
         "//ink/geometry:rect",
         "//ink/types:duration",
+        "//ink/types:physical_distance",
         "@com_google_absl//absl/log:absl_check",
     ],
 )
