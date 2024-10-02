@@ -118,7 +118,7 @@ stroke_model::StylusStateModelerParams MakeStylusStateModelerParams(
         using ModelType = std::decay_t<decltype(input_model)>;
         if constexpr (std::is_same_v<ModelType, BrushFamily::SpringModelV2>) {
           return {.use_stroke_normal_projection = true,
-                  .min_input_samples = 10,
+                  .min_input_samples = 8,
                   .min_sample_duration = stroke_model::Duration(0.04)};
         } else if constexpr (std::is_same_v<ModelType,
                                             BrushFamily::SpringModelV1>) {
