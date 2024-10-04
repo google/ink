@@ -28,7 +28,17 @@ using ::ink::Rect;
 
 extern "C" {
 
-JNI_METHOD(geometry, BoxHelper, void, nativeCenter)
+JNI_METHOD(geometry, BoxHelper, jobject, nativeCreateCenter)
+(JNIEnv* env, jclass clazz, float rect_x_min, jfloat rect_y_min,
+ jfloat rect_x_max, jfloat rect_y_max, jclass immutable_vec_class) {
+  Rect rect =
+      Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
+  Point point = rect.Center();
+
+  return ink::CreateJImmutableVecFromPoint(env, point, immutable_vec_class);
+}
+
+JNI_METHOD(geometry, BoxHelper, void, nativePopulateCenter)
 (JNIEnv* env, jclass clazz, float rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max, jobject mutable_vec) {
   Rect rect =
