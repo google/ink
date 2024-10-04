@@ -239,9 +239,14 @@ AffineTransform operator*(const AffineTransform& lhs,
 ////////////////////////////////////////////////////////////////////////////////
 
 inline std::optional<AffineTransform> AffineTransform::Inverse() const {
-  float determinant = a_ * e_ - b_ * d_;
-  if (determinant == 0) return std::nullopt;
+  // We calculate the determinant in two parts here in order to avoid a
+  // fused-multiply-add, because loss of precision on certain Mac arm64 CPUs can
+  // result in a non-zero determinant even when `a_` == `b_` and `d_` == `e_`.
+  float determinant_lhs = a_ * e_;
+  float determinant_rhs = b_ * d_;
+  if (determinant_lhs == determinant_rhs) return std::nullopt;
 
+  float determinant = determinant_lhs - determinant_rhs;
   return AffineTransform{
       e_ / determinant,  -b_ / determinant, (b_ * f_ - c_ * e_) / determinant,
       -d_ / determinant, a_ / determinant,  (c_ * d_ - a_ * f_) / determinant};
