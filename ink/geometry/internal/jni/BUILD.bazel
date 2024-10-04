@@ -250,6 +250,7 @@ cc_library(
         ":vec_jni_helper",
         "//ink/geometry:angle",
         "//ink/geometry:envelope",
+        "//ink/geometry:point",
         "//ink/geometry:quad",
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_defines",
