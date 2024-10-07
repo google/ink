@@ -1,6 +1,8 @@
 #include "ink/rendering/skia/native/internal/shader_cache.h"
 
+#include <cstdint>
 #include <cstring>
+#include <memory>
 #include <utility>
 
 #include "absl/base/nullability.h"
@@ -9,6 +11,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/color/color.h"
 #include "ink/color/color_space.h"
@@ -244,7 +247,7 @@ absl::StatusOr<sk_sp<SkImage>> ShaderCache::GetImageForTexture(
   }
   sk_sp<SkImage>& cached_image = texture_images_[texture_uri];
   if (cached_image == nullptr) {
-    absl::StatusOr<absl::Nonnull<const Bitmap*>> bitmap =
+    absl::StatusOr<std::shared_ptr<Bitmap>> bitmap =
         texture_provider_->GetTextureBitmap(texture_uri);
     if (!bitmap.ok()) return bitmap.status();
     absl::StatusOr<sk_sp<SkImage>> image = CreateImageFromBitmap(**bitmap);
@@ -259,20 +262,20 @@ absl::StatusOr<sk_sp<SkImage>> ShaderCache::CreateImageFromBitmap(
   absl::Status status = rendering_internal::ValidateBitmap(ink_bitmap);
   if (!status.ok()) return status;
   SkImageInfo image_info = SkImageInfo::Make(
-      ink_bitmap.width, ink_bitmap.height,
-      ToSkColorType(ink_bitmap.pixel_format),
-      GetAlphaType(ink_bitmap.color_format),
-      GetColorSpace(ink_bitmap.color_space, ink_bitmap.color_format));
-  ABSL_CHECK_EQ(ink_bitmap.data.size(), image_info.computeMinByteSize());
+      ink_bitmap.width(), ink_bitmap.height(),
+      ToSkColorType(ink_bitmap.pixel_format()),
+      GetAlphaType(ink_bitmap.color_format()),
+      GetColorSpace(ink_bitmap.color_space(), ink_bitmap.color_format()));
+  absl::Span<const uint8_t> pixel_data = ink_bitmap.GetPixelData();
+  ABSL_CHECK_EQ(pixel_data.size(), image_info.computeMinByteSize());
   SkBitmap skia_bitmap;
   bool success = skia_bitmap.tryAllocPixels(image_info);
   if (!success) {
     return absl::InternalError(absl::StrCat("failed to allocate pixels for ",
-                                            ink_bitmap.width, "x",
-                                            ink_bitmap.height, " SkImage"));
+                                            ink_bitmap.width(), "x",
+                                            ink_bitmap.height(), " SkImage"));
   }
-  std::memcpy(skia_bitmap.getPixels(), ink_bitmap.data.data(),
-              ink_bitmap.data.size());
+  std::memcpy(skia_bitmap.getPixels(), pixel_data.data(), pixel_data.size());
   skia_bitmap.setImmutable();
   return skia_bitmap.asImage();
 }

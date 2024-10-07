@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <utility>
 #include <variant>
@@ -98,8 +99,9 @@ float OpacityMultiplierForPath(const Brush& brush, uint32_t coat_index) {
 }  // namespace
 
 SkiaRenderer::SkiaRenderer(
-    absl::Nullable<const TextureBitmapStore*> texture_provider)
-    : shader_cache_(texture_provider) {}
+    absl::Nullable<std::shared_ptr<TextureBitmapStore>> texture_provider)
+    : texture_provider_(std::move(texture_provider)),
+      shader_cache_(texture_provider_.get()) {}
 
 absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     GrDirectContext* context, const InProgressStroke& stroke,

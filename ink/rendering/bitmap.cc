@@ -15,11 +15,16 @@
 #include "ink/rendering/bitmap.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
+#include "ink/color/color.h"
+#include "ink/color/color_space.h"
 
 namespace ink {
 namespace rendering_internal {
@@ -36,27 +41,28 @@ bool IsValidPixelFormat(Bitmap::PixelFormat format) {
 }  // namespace
 
 absl::Status ValidateBitmap(const Bitmap& bitmap) {
-  if (bitmap.width <= 0) {
+  if (bitmap.width() <= 0) {
     return absl::InvalidArgumentError(
-        absl::StrCat("`Bitmap::width` must be positive; was ", bitmap.width));
+        absl::StrCat("`Bitmap::width` must be positive; was ", bitmap.width()));
   }
-  if (bitmap.height <= 0) {
+  if (bitmap.height() <= 0) {
     return absl::InvalidArgumentError(
-        absl::StrCat("Bitmap height must be positive; was ", bitmap.height));
+        absl::StrCat("Bitmap height must be positive; was ", bitmap.height()));
   }
-  if (!IsValidPixelFormat(bitmap.pixel_format)) {
+  if (!IsValidPixelFormat(bitmap.pixel_format())) {
     return absl::InvalidArgumentError(
         absl::StrCat("`Bitmap::pixel_format` holds non-enumerator value ",
-                     static_cast<int>(bitmap.pixel_format)));
+                     static_cast<int>(bitmap.pixel_format())));
   }
-  size_t expected_data_size = static_cast<size_t>(bitmap.width) *
-                              static_cast<size_t>(bitmap.height) *
-                              PixelFormatBytesPerPixel(bitmap.pixel_format);
-  if (bitmap.data.size() != expected_data_size) {
+  size_t expected_data_size = static_cast<size_t>(bitmap.width()) *
+                              static_cast<size_t>(bitmap.height()) *
+                              PixelFormatBytesPerPixel(bitmap.pixel_format());
+  size_t actual_data_size = bitmap.GetPixelData().size();
+  if (actual_data_size != expected_data_size) {
     return absl::InvalidArgumentError(absl::StrCat(
-        "`Bitmap::data` should have size ", expected_data_size, " for a ",
-        bitmap.width, "x", bitmap.height, " ", bitmap.pixel_format,
-        " image, but has size ", bitmap.data.size()));
+        "`Bitmap` pixel data should have size ", expected_data_size, " for a ",
+        bitmap.width(), "x", bitmap.height(), " ", bitmap.pixel_format(),
+        " image, but has size ", actual_data_size));
   }
   return absl::OkStatus();
 }
@@ -70,6 +76,20 @@ std::string ToFormattedString(Bitmap::PixelFormat format) {
 }
 
 }  // namespace rendering_internal
+
+Bitmap::Bitmap(int width, int height, PixelFormat pixel_format,
+               Color::Format color_format, ColorSpace color_space)
+    : width_(width),
+      height_(height),
+      pixel_format_(pixel_format),
+      color_format_(color_format),
+      color_space_(color_space) {}
+
+VectorBitmap::VectorBitmap(int width, int height, PixelFormat pixel_format,
+                           Color::Format color_format, ColorSpace color_space,
+                           std::vector<uint8_t> pixel_data)
+    : Bitmap(width, height, pixel_format, color_format, color_space),
+      pixel_data_(std::move(pixel_data)) {}
 
 size_t PixelFormatBytesPerPixel(Bitmap::PixelFormat format) {
   switch (format) {

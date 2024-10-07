@@ -15,10 +15,13 @@
 #ifndef INK_RENDERING_BITMAP_H_
 #define INK_RENDERING_BITMAP_H_
 
+#include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/types/span.h"
 #include "ink/color/color.h"
 #include "ink/color/color_space.h"
 
@@ -32,19 +35,49 @@ namespace ink {
 //     must be valid.
 //   - `data` must contain the correct number of bytes for the image size and
 //     pixel format.
-struct Bitmap {
+class Bitmap {
+ public:
+  virtual ~Bitmap() = default;
+
   // LINT.IfChange(pixel_format)
   enum class PixelFormat {
     kRgba8888,
   };
   // LINT.ThenChange(fuzz_domains.h:pixel_format)
 
-  std::vector<uint8_t> data;
-  int width;
-  int height;
-  PixelFormat pixel_format;
-  Color::Format color_format;
-  ColorSpace color_space;
+  int width() const { return width_; }
+  int height() const { return height_; }
+  PixelFormat pixel_format() const { return pixel_format_; }
+  Color::Format color_format() const { return color_format_; }
+  ColorSpace color_space() const { return color_space_; }
+
+  virtual absl::Span<const uint8_t> GetPixelData() const = 0;
+
+ protected:
+  Bitmap(int width, int height, PixelFormat pixel_format,
+         Color::Format color_format, ColorSpace color_space);
+
+ private:
+  int width_;
+  int height_;
+  PixelFormat pixel_format_;
+  Color::Format color_format_;
+  ColorSpace color_space_;
+};
+
+// A `Bitmap` that stores its pixel data directly in a `std::vector`.
+class VectorBitmap : public Bitmap {
+ public:
+  VectorBitmap(int width, int height, PixelFormat pixel_format,
+               Color::Format color_format, ColorSpace color_space,
+               std::vector<uint8_t> pixel_data);
+
+  absl::Span<const uint8_t> GetPixelData() const override {
+    return pixel_data_;
+  }
+
+ private:
+  std::vector<uint8_t> pixel_data_;
 };
 
 size_t PixelFormatBytesPerPixel(Bitmap::PixelFormat format);

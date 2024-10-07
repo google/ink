@@ -16,7 +16,7 @@
 #define INK_RENDERING_SKIA_NATIVE_SKIA_RENDERER_H_
 
 #include <cstdint>
-#include <functional>
+#include <memory>
 #include <variant>
 #include <vector>
 
@@ -82,9 +82,8 @@ class SkiaRenderer {
  public:
   class Drawable;
 
-  // If non-null, `texture_provider` must outlive the `SkiaRenderer`.
-  explicit SkiaRenderer(
-      absl::Nullable<const TextureBitmapStore*> texture_provider = nullptr);
+  explicit SkiaRenderer(absl::Nullable<std::shared_ptr<TextureBitmapStore>>
+                            texture_provider = nullptr);
 
   SkiaRenderer(const SkiaRenderer&) = delete;
   SkiaRenderer(SkiaRenderer&&) = default;
@@ -146,6 +145,7 @@ class SkiaRenderer {
   // TODO: b/284117747 - Add functions to "update" a `Drawable`.
 
  private:
+  absl::Nullable<std::shared_ptr<TextureBitmapStore>> texture_provider_;
   skia_native_internal::ShaderCache shader_cache_;
   skia_native_internal::MeshSpecificationCache specification_cache_;
 

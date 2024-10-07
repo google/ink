@@ -15,6 +15,8 @@
 #ifndef INK_RENDERING_TEXTURE_BITMAP_STORE_H_
 #define INK_RENDERING_TEXTURE_BITMAP_STORE_H_
 
+#include <memory>
+
 #include "absl/base/nullability.h"
 #include "absl/status/statusor.h"
 #include "ink/rendering/bitmap.h"
@@ -32,8 +34,8 @@ class TextureBitmapStore {
   // decoding them into bitmap data should be done in advance. The result may be
   // cached by consumers, so this should return a deterministic result for a
   // given input.
-  virtual absl::StatusOr<absl::Nonnull<const Bitmap*>> GetTextureBitmap(
-      const Uri& texture_uri) const = 0;
+  virtual absl::StatusOr<absl::Nonnull<std::shared_ptr<Bitmap>>>
+  GetTextureBitmap(const Uri& texture_uri) const = 0;
 };
 
 }  // namespace ink

@@ -14,7 +14,9 @@
 
 #include "ink/rendering/skia/native/internal/shader_cache.h"
 
+#include <cstdint>
 #include <utility>
+#include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -57,15 +59,16 @@ Uri TestTextureUri() {
 // the texture URI.
 class FakeBitmapStore : public TextureBitmapStore {
  public:
-  explicit FakeBitmapStore(Bitmap bitmap) : bitmap_(std::move(bitmap)) {}
+  explicit FakeBitmapStore(std::shared_ptr<Bitmap> bitmap)
+      : bitmap_(std::move(bitmap)) {}
 
-  absl::StatusOr<absl::Nonnull<const Bitmap*>> GetTextureBitmap(
+  absl::StatusOr<absl::Nonnull<std::shared_ptr<Bitmap>>> GetTextureBitmap(
       const Uri& texture_uri) const override {
-    return &bitmap_;
+    return bitmap_;
   }
 
  private:
-  Bitmap bitmap_;
+  std::shared_ptr<Bitmap> bitmap_;
 };
 
 TEST(ShaderCacheTest, GetShaderForEmptyBrushPaint) {
@@ -87,14 +90,10 @@ TEST(ShaderCacheTest, TryGetTextureShaderWithoutTextureProvider) {
 }
 
 TEST(ShaderCacheTest, GetShaderForTexturedBrushPaint) {
-  FakeBitmapStore provider(Bitmap{
-      .data = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-      .width = 2,
-      .height = 1,
-      .pixel_format = Bitmap::PixelFormat::kRgba8888,
-      .color_format = Color::Format::kLinear,
-      .color_space = ColorSpace::kDisplayP3,
-  });
+  FakeBitmapStore provider(std::make_shared<VectorBitmap>(
+      /*width=*/2, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kLinear, ColorSpace::kDisplayP3,
+      std::vector<uint8_t>{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}));
   ShaderCache cache(&provider);
   absl::StatusOr<sk_sp<SkShader>> shader = cache.GetShaderForPaint(
       BrushPaint{{{.color_texture_uri = TestTextureUri()}}}, 10,
@@ -112,11 +111,11 @@ TEST(ShaderCacheTest, GetShaderForTexturedBrushPaint) {
   EXPECT_FALSE(image->colorSpace()->isSRGB());
 }
 
-void CanGetShaderForAnyValidInputs(const Bitmap& bitmap,
+void CanGetShaderForAnyValidInputs(std::shared_ptr<Bitmap> bitmap,
                                    const BrushPaint& brush_paint,
                                    float brush_size,
                                    const StrokeInputBatch& inputs) {
-  FakeBitmapStore provider(bitmap);
+  FakeBitmapStore provider(std::move(bitmap));
   ShaderCache cache(&provider);
   absl::StatusOr<sk_sp<SkShader>> shader =
       cache.GetShaderForPaint(brush_paint, brush_size, inputs);

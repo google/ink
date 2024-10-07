@@ -14,6 +14,8 @@
 
 #include "ink/rendering/bitmap.h"
 
+#include <cstdint>
+#include <memory>
 #include <vector>
 
 #include "gmock/gmock.h"
@@ -44,43 +46,46 @@ TEST(BitmapTest, PixelFormatBytesPerPixel) {
 }
 
 TEST(BitmapTest, ValidateBitmap) {
-  Bitmap valid_bitmap = {
-      .data = {0x12, 0x34, 0x56, 0x78},
-      .width = 1,
-      .height = 1,
-      .pixel_format = Bitmap::PixelFormat::kRgba8888,
-      .color_format = Color::Format::kGammaEncoded,
-      .color_space = ColorSpace::kSrgb,
-  };
-  EXPECT_EQ(rendering_internal::ValidateBitmap(valid_bitmap), absl::OkStatus());
+  std::unique_ptr<Bitmap> valid_bitmap = std::make_unique<VectorBitmap>(
+      /*width=*/1, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb,
+      std::vector<uint8_t>{0x12, 0x34, 0x56, 0x78});
+  EXPECT_EQ(rendering_internal::ValidateBitmap(*valid_bitmap),
+            absl::OkStatus());
 
-  Bitmap invalid_bitmap = valid_bitmap;
-  invalid_bitmap.width = -1;
-  absl::Status status = rendering_internal::ValidateBitmap(invalid_bitmap);
+  std::unique_ptr<Bitmap> invalid_bitmap = std::make_unique<VectorBitmap>(
+      /*width=*/-1, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb,
+      std::vector<uint8_t>{0x12, 0x34, 0x56, 0x78});
+  absl::Status status = rendering_internal::ValidateBitmap(*invalid_bitmap);
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("width"));
 
-  invalid_bitmap = valid_bitmap;
-  invalid_bitmap.height = 0;
-  status = rendering_internal::ValidateBitmap(invalid_bitmap);
+  invalid_bitmap = std::make_unique<VectorBitmap>(
+      /*width=*/1, /*height=*/0, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
+  status = rendering_internal::ValidateBitmap(*invalid_bitmap);
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("height"));
 
-  invalid_bitmap = valid_bitmap;
-  invalid_bitmap.pixel_format = static_cast<Bitmap::PixelFormat>(123);
-  status = rendering_internal::ValidateBitmap(invalid_bitmap);
+  invalid_bitmap = std::make_unique<VectorBitmap>(
+      /*width=*/1, /*height=*/1, static_cast<Bitmap::PixelFormat>(123),
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb,
+      std::vector<uint8_t>{0x12, 0x34, 0x56, 0x78});
+  status = rendering_internal::ValidateBitmap(*invalid_bitmap);
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("pixel_format"));
 
-  invalid_bitmap = valid_bitmap;
-  invalid_bitmap.data.clear();
-  status = rendering_internal::ValidateBitmap(invalid_bitmap);
+  invalid_bitmap = std::make_unique<VectorBitmap>(
+      /*width=*/1, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
+  status = rendering_internal::ValidateBitmap(*invalid_bitmap);
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("should have size 4"));
 }
 
-void CanValidateValidBitmap(const Bitmap& bitmap) {
-  EXPECT_EQ(ink::rendering_internal::ValidateBitmap(bitmap), absl::OkStatus());
+void CanValidateValidBitmap(std::unique_ptr<Bitmap> bitmap) {
+  EXPECT_EQ(ink::rendering_internal::ValidateBitmap(*bitmap), absl::OkStatus());
 }
 FUZZ_TEST(ShaderCacheTest, CanValidateValidBitmap)
     .WithDomains(ValidBitmapWithMaxSize(100, 100));

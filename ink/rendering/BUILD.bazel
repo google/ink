@@ -52,6 +52,8 @@ cc_library(
     hdrs = ["fuzz_domains.h"],
     deps = [
         ":bitmap",
+        "//ink/color",
+        "//ink/color:color_space",
         "//ink/color:fuzz_domains",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_fuzztest//fuzztest",

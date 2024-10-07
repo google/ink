@@ -15,6 +15,8 @@
 #ifndef INK_RENDERING_FUZZ_DOMAINS_H_
 #define INK_RENDERING_FUZZ_DOMAINS_H_
 
+#include <memory>
+
 #include "fuzztest/fuzztest.h"
 #include "ink/rendering/bitmap.h"
 
@@ -24,7 +26,8 @@ namespace ink {
 fuzztest::Domain<Bitmap::PixelFormat> ArbitraryBitmapPixelFormat();
 
 // The domain of all valid bitmaps up the specified maximum size.
-fuzztest::Domain<Bitmap> ValidBitmapWithMaxSize(int max_width, int max_height);
+fuzztest::Domain<std::unique_ptr<Bitmap>> ValidBitmapWithMaxSize(
+    int max_width, int max_height);
 
 }  // namespace ink
 
