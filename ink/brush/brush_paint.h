@@ -239,6 +239,11 @@ struct BrushPaint {
   };
 
   std::vector<TextureLayer> texture_layers;
+  // Overall paint opacity, which is applied after texture layer blending with
+  // the brush color. This allows for a static opacity multiplier that (unlike a
+  // `BrushTip` opacity behavior) can be applied even by a path-based renderer
+  // that doesn't support per-vertex opacity.
+  float opacity = 1;
 };
 
 bool operator==(const BrushPaint::TextureKeyframe& lhs,
@@ -326,7 +331,7 @@ H AbslHashValue(H h, const BrushPaint::TextureLayer& layer) {
 
 template <typename H>
 H AbslHashValue(H h, const BrushPaint& paint) {
-  return H::combine(std::move(h), paint.texture_layers);
+  return H::combine(std::move(h), paint.texture_layers, paint.opacity);
 }
 
 inline bool operator!=(const BrushPaint::TextureKeyframe& lhs,
@@ -340,7 +345,7 @@ inline bool operator!=(const BrushPaint::TextureLayer& lhs,
 }
 
 inline bool operator==(const BrushPaint& lhs, const BrushPaint& rhs) {
-  return lhs.texture_layers == rhs.texture_layers;
+  return lhs.texture_layers == rhs.texture_layers && lhs.opacity == rhs.opacity;
 }
 
 inline bool operator!=(const BrushPaint& lhs, const BrushPaint& rhs) {
