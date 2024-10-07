@@ -30,7 +30,8 @@ using ::ink::Quad;
 
 extern "C" {
 
-JNI_METHOD(geometry, AffineTransformHelper, void, nativeApplyParallelogram)
+JNI_METHOD(geometry_internal, AffineTransformNative, void,
+           nativeApplyParallelogram)
 (JNIEnv* env, jclass clazz, jfloat affine_transform_A,
  jfloat affine_transform_B, jfloat affine_transform_C,
  jfloat affine_transform_D, jfloat affine_transform_E,
