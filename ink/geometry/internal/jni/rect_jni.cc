@@ -28,7 +28,7 @@ using ::ink::Rect;
 
 extern "C" {
 
-JNI_METHOD(geometry, BoxHelper, jobject, nativeCreateCenter)
+JNI_METHOD(geometry_internal, BoxNative, jobject, nativeCreateCenter)
 (JNIEnv* env, jclass clazz, float rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max, jclass immutable_vec_class) {
   Rect rect =
@@ -38,7 +38,7 @@ JNI_METHOD(geometry, BoxHelper, jobject, nativeCreateCenter)
   return ink::CreateJImmutableVecFromPoint(env, point, immutable_vec_class);
 }
 
-JNI_METHOD(geometry, BoxHelper, void, nativePopulateCenter)
+JNI_METHOD(geometry_internal, BoxNative, void, nativePopulateCenter)
 (JNIEnv* env, jclass clazz, float rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max, jobject mutable_vec) {
   Rect rect =
@@ -48,7 +48,7 @@ JNI_METHOD(geometry, BoxHelper, void, nativePopulateCenter)
   ink::FillJMutableVecFromPoint(env, mutable_vec, point);
 }
 
-JNI_METHOD(geometry, BoxHelper, jboolean, nativeContainsPoint)
+JNI_METHOD(geometry_internal, BoxNative, jboolean, nativeContainsPoint)
 (JNIEnv* env, jclass clazz, jfloat rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max, jfloat point_x, jfloat point_y) {
   Rect rect =
@@ -56,7 +56,7 @@ JNI_METHOD(geometry, BoxHelper, jboolean, nativeContainsPoint)
   return rect.Contains(Point{point_x, point_y});
 }
 
-JNI_METHOD(geometry, BoxHelper, jboolean, nativeContainsBox)
+JNI_METHOD(geometry_internal, BoxNative, jboolean, nativeContainsBox)
 (JNIEnv* env, jclass clazz, jfloat rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max, jfloat other_x_min, jfloat other_y_min,
  jfloat other_x_max, jfloat other_y_max) {
