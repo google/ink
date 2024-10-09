@@ -56,6 +56,16 @@ bool IsValidBrushPaintTextureSizeUnit(BrushPaint::TextureSizeUnit size_unit) {
   return false;
 }
 
+bool IsValidBrushPaintTextureWrap(BrushPaint::TextureWrap wrap) {
+  switch (wrap) {
+    case BrushPaint::TextureWrap::kRepeat:
+    case BrushPaint::TextureWrap::kMirror:
+    case BrushPaint::TextureWrap::kClamp:
+      return true;
+  }
+  return false;
+}
+
 bool IsValidBrushPaintBlendMode(BrushPaint::BlendMode blend_mode) {
   switch (blend_mode) {
     case BrushPaint::BlendMode::kModulate:
@@ -144,6 +154,18 @@ absl::Status ValidateBrushPaintTextureLayer(
     return absl::InvalidArgumentError(absl::StrFormat(
         "`BrushPaint::texture_layers::size_unit` holds non-enumerator value %d",
         static_cast<int>(layer.size_unit)));
+  }
+  if (!IsValidBrushPaintTextureWrap(layer.wrap_x)) {
+    return absl::InvalidArgumentError(
+        absl::StrFormat("`BrushPaint::texture_layers::wrap_x` holds "
+                        "non-enumerator value %d",
+                        static_cast<int>(layer.wrap_x)));
+  }
+  if (!IsValidBrushPaintTextureWrap(layer.wrap_y)) {
+    return absl::InvalidArgumentError(
+        absl::StrFormat("`BrushPaint::texture_layers::wrap_y` holds "
+                        "non-enumerator value %d",
+                        static_cast<int>(layer.wrap_y)));
   }
   if (layer.size.x <= 0.0f || !std::isfinite(layer.size.x) ||
       layer.size.y <= 0.0f || !std::isfinite(layer.size.y)) {
@@ -251,6 +273,18 @@ std::string ToFormattedString(BrushPaint::TextureSizeUnit texture_size_unit) {
                       ")");
 }
 
+std::string ToFormattedString(BrushPaint::TextureWrap texture_wrap) {
+  switch (texture_wrap) {
+    case BrushPaint::TextureWrap::kRepeat:
+      return "kRepeat";
+    case BrushPaint::TextureWrap::kMirror:
+      return "kMirror";
+    case BrushPaint::TextureWrap::kClamp:
+      return "kClamp";
+  }
+  return absl::StrCat("TextureWrap(", static_cast<int>(texture_wrap), ")");
+}
+
 std::string ToFormattedString(BrushPaint::BlendMode blend_mode) {
   switch (blend_mode) {
     case BrushPaint::BlendMode::kModulate:
@@ -307,6 +341,8 @@ std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
       ", mapping=", ToFormattedString(texture_layer.mapping),
       ", origin=", ToFormattedString(texture_layer.origin),
       ", size_unit=", ToFormattedString(texture_layer.size_unit),
+      ", wrap_x=", ToFormattedString(texture_layer.wrap_x),
+      ", wrap_y=", ToFormattedString(texture_layer.wrap_y),
       ", size=", texture_layer.size, ", offset=", texture_layer.offset,
       ", rotation=", texture_layer.rotation,
       ", size_jitter=", texture_layer.size_jitter,
@@ -338,7 +374,8 @@ bool operator==(const BrushPaint::TextureLayer& lhs,
                 const BrushPaint::TextureLayer& rhs) {
   return lhs.color_texture_uri == rhs.color_texture_uri &&
          lhs.mapping == rhs.mapping && lhs.origin == rhs.origin &&
-         lhs.size_unit == rhs.size_unit && lhs.size == rhs.size &&
+         lhs.size_unit == rhs.size_unit && lhs.wrap_x == rhs.wrap_x &&
+         lhs.wrap_y == rhs.wrap_y && lhs.size == rhs.size &&
          lhs.offset == rhs.offset && lhs.rotation == rhs.rotation &&
          lhs.size_jitter == rhs.size_jitter &&
          lhs.offset_jitter == rhs.offset_jitter &&

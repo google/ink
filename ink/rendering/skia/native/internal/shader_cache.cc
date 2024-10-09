@@ -38,6 +38,19 @@
 namespace ink::skia_native_internal {
 namespace {
 
+SkTileMode ToSkTileMode(BrushPaint::TextureWrap wrap) {
+  switch (wrap) {
+    case BrushPaint::TextureWrap::kRepeat:
+      return SkTileMode::kRepeat;
+    case BrushPaint::TextureWrap::kMirror:
+      return SkTileMode::kMirror;
+    case BrushPaint::TextureWrap::kClamp:
+      return SkTileMode::kClamp;
+  }
+  ABSL_LOG(FATAL) << "invalid `BrushPaint::TextureWrap` value: "
+                  << static_cast<int>(wrap);
+}
+
 SkBlendMode ToSkBlendMode(BrushPaint::BlendMode blend_mode) {
   switch (blend_mode) {
     case BrushPaint::BlendMode::kModulate:
@@ -234,8 +247,9 @@ absl::StatusOr<sk_sp<SkShader>> ShaderCache::CreateBaseShaderForLayer(
   SkISize size = (*image)->dimensions();
   SkMatrix matrix = ToSkMatrix(
       ComputeTexelToSizeUnitTransform(layer, size.width(), size.height()));
-  return SkShaders::Image(*std::move(image), SkTileMode::kRepeat,
-                          SkTileMode::kRepeat, SkSamplingOptions(), &matrix);
+  return SkShaders::Image(*std::move(image), ToSkTileMode(layer.wrap_x),
+                          ToSkTileMode(layer.wrap_y), SkSamplingOptions(),
+                          &matrix);
 }
 
 absl::StatusOr<sk_sp<SkImage>> ShaderCache::GetImageForTexture(
