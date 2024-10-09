@@ -113,15 +113,17 @@ TEST(SpiralLerpTest, NonZeroInputVectorsWithDifferentDirections) {
   EXPECT_THAT(SpiralLerp({4, 0}, {0, 5}, -4), VecNear({0, 0}, 0.001));
   EXPECT_THAT(SpiralLerp({4, 0}, {0, 5}, -1), VecNear({0, -3}, 0.001));
   EXPECT_THAT(SpiralLerp({4, 0}, {0, 5}, 0), VecEq({4, 0}));
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, 5}, 0.5),
-              VecNear(Vec::FromDirectionAndMagnitude(kPi / 4, 4.5), 0.001));
+  EXPECT_THAT(
+      SpiralLerp({4, 0}, {0, 5}, 0.5),
+      VecNear(Vec::FromDirectionAndMagnitude(kFullTurn / 8, 4.5), 0.001));
   EXPECT_THAT(SpiralLerp({4, 0}, {0, 5}, 1), VecEq({0, 5}));
   EXPECT_THAT(SpiralLerp({4, 0}, {0, 5}, 3), VecNear({0, -7}, 0.001));
 
   EXPECT_THAT(SpiralLerp({4, 0}, {0, -3}, -1), VecNear({0, 5}, 0.001));
   EXPECT_THAT(SpiralLerp({4, 0}, {0, -3}, 0), VecEq({4, 0}));
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, -3}, 0.5),
-              VecNear(Vec::FromDirectionAndMagnitude(-kPi / 4, 3.5), 0.001));
+  EXPECT_THAT(
+      SpiralLerp({4, 0}, {0, -3}, 0.5),
+      VecNear(Vec::FromDirectionAndMagnitude(-kFullTurn / 8, 3.5), 0.001));
   EXPECT_THAT(SpiralLerp({4, 0}, {0, -3}, 1), VecEq({0, -3}));
   EXPECT_THAT(SpiralLerp({4, 0}, {0, -3}, 4), VecNear({0, 0}, 0.001));
   EXPECT_THAT(SpiralLerp({4, 0}, {0, -3}, 5), VecNear({0, 1}, 0.001));
@@ -143,7 +145,7 @@ TEST(SpiralLerpTest, ZeroInputVectors) {
   EXPECT_THAT(SpiralLerp({0, 0}, {0, 2}, 0), VecEq({0, 0}));
   EXPECT_THAT(
       SpiralLerp({0, 0}, {0, 2}, 0.75),
-      VecNear(Vec::FromDirectionAndMagnitude(3.f / 8 * kPi, 1.5), 0.001));
+      VecNear(Vec::FromDirectionAndMagnitude(3 * kFullTurn / 16, 1.5), 0.001));
   EXPECT_THAT(SpiralLerp({0, 0}, {0, 2}, 1), VecEq({0, 2}));
   EXPECT_THAT(SpiralLerp({0, 0}, {0, 2}, 2), VecNear({-4, 0}, 0.001));
 

@@ -143,8 +143,8 @@ TEST(VecTest, Direction) {
   // Handle the zero vector the same way that std::atan2 does:
   EXPECT_THAT((Vec{+0.f, +0.f}).Direction(), AngleEq(Angle()));
   EXPECT_THAT((Vec{+0.f, -0.f}).Direction(), AngleEq(Angle()));
-  EXPECT_THAT((Vec{-0.f, +0.f}).Direction(), AngleEq(kPi));
-  EXPECT_THAT((Vec{-0.f, -0.f}).Direction(), AngleEq(-kPi));
+  EXPECT_THAT((Vec{-0.f, +0.f}).Direction(), AngleEq(kHalfTurn));
+  EXPECT_THAT((Vec{-0.f, -0.f}).Direction(), AngleEq(-kHalfTurn));
 }
 
 void DirectionIsNanIfEitherComponentIsNan(Vec vec) {
@@ -155,7 +155,7 @@ FUZZ_TEST(VecTest, DirectionIsNanIfEitherComponentIsNan)
     .WithDomains(ArbitraryVec());
 
 void DirectionIsBetweenMinusPiAndPiInclusive(Vec vec) {
-  EXPECT_THAT(vec.Direction(), AllOf(Ge(-kPi), Le(kPi)))
+  EXPECT_THAT(vec.Direction(), AllOf(Ge(-kHalfTurn), Le(kHalfTurn)))
       << "Where vec is: " << testing::PrintToString(vec);
 }
 FUZZ_TEST(VecTest, DirectionIsBetweenMinusPiAndPiInclusive)
@@ -278,7 +278,8 @@ TEST(VecTest, AbsoluteAngleBetween) {
 }
 
 void AbsoluteAngleIsBetweenZeroAndPiInclusive(Vec a, Vec b) {
-  EXPECT_THAT(Vec::AbsoluteAngleBetween(a, b), AllOf(Ge(Angle()), Le(kPi)))
+  EXPECT_THAT(Vec::AbsoluteAngleBetween(a, b),
+              AllOf(Ge(Angle()), Le(kHalfTurn)))
       << "Where a is: " << testing::PrintToString(a)
       << "\n  And b is: " << testing::PrintToString(b);
 }
@@ -323,7 +324,8 @@ TEST(VecTest, SignedAngleBetween) {
 }
 
 void SignedAngleIsBetweenMinusPiExclusiveAndPiInclusive(Vec a, Vec b) {
-  EXPECT_THAT(Vec::SignedAngleBetween(a, b), AllOf(Gt(-kPi), Le(kPi)))
+  EXPECT_THAT(Vec::SignedAngleBetween(a, b),
+              AllOf(Gt(-kHalfTurn), Le(kHalfTurn)))
       << "Where a is: " << testing::PrintToString(a)
       << "\nAnd b is: " << testing::PrintToString(b);
 }

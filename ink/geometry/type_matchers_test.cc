@@ -82,14 +82,14 @@ TEST(TriangleEqTest, Unequal) {
   EXPECT_THAT(b, Not(TriangleEq(a)));
 }
 TEST(QuadEqTest, Equal) {
-  Quad quad = Quad::FromCenterDimensionsRotationAndShear({4.0f, 7.0f}, 8.0f,
-                                                         6.0f, kHalfPi, 0.8f);
+  Quad quad = Quad::FromCenterDimensionsRotationAndShear(
+      {4.0f, 7.0f}, 8.0f, 6.0f, kQuarterTurn, 0.8f);
   EXPECT_THAT(quad, QuadEq(quad));
 }
 
 TEST(QuadEqTest, Unequal) {
   Quad base_quad = Quad::FromCenterDimensionsRotationAndShear(
-      {4.0f, 7.0f}, 8.0f, 6.0f, kHalfPi, 0.8f);
+      {4.0f, 7.0f}, 8.0f, 6.0f, kQuarterTurn, 0.8f);
 
   Quad changed_center = base_quad;
   changed_center.SetCenter({1.0f, 1.0f});
@@ -107,7 +107,7 @@ TEST(QuadEqTest, Unequal) {
   EXPECT_THAT(changed_height, Not(QuadEq(base_quad)));
 
   Quad changed_rotation = base_quad;
-  changed_rotation.SetRotation(kTwoPi);
+  changed_rotation.SetRotation(kFullTurn);
   EXPECT_THAT(base_quad, Not(QuadEq(changed_rotation)));
   EXPECT_THAT(changed_rotation, Not(QuadEq(base_quad)));
 

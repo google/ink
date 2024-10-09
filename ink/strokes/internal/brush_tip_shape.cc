@@ -248,7 +248,7 @@ std::optional<int> GetLeftmostTurningIndex(const Circle& starting_circle,
   for (size_t i = 0; i < circles.size(); ++i) {
     std::optional<TangentProperties> tangent = CalculateTangentProperties(
         starting_circle, circles[i], direction, TangentSide::kLeft);
-    if (!tangent.has_value() || tangent->turn_angle > kHalfPi) continue;
+    if (!tangent.has_value() || tangent->turn_angle > kQuarterTurn) continue;
 
     if (!leftmost_index.has_value() ||
         tangent->turn_angle > leftmost_tangent.turn_angle ||
@@ -283,7 +283,7 @@ std::optional<int> GetRightmostTurningIndex(const Circle& starting_circle,
   for (size_t i = 0; i < circles.size(); ++i) {
     std::optional<TangentProperties> tangent = CalculateTangentProperties(
         starting_circle, circles[i], direction, TangentSide::kRight);
-    if (!tangent.has_value() || tangent->turn_angle < -kHalfPi) continue;
+    if (!tangent.has_value() || tangent->turn_angle < -kQuarterTurn) continue;
 
     if (!rightmost_index.has_value() ||
         tangent->turn_angle < rightmost_tangent.turn_angle ||
@@ -327,9 +327,9 @@ BrushTipShape::TangentCircleIndices BrushTipShape::GetTangentCircleIndices(
 
   if (first.circles_.Size() == 1) {
     std::optional<int> second_left =
-        GetLeftmostTurningIndex(first.circles_[0], forward, second, -kPi);
+        GetLeftmostTurningIndex(first.circles_[0], forward, second, -kHalfTurn);
     std::optional<int> second_right =
-        GetRightmostTurningIndex(first.circles_[0], forward, second, kPi);
+        GetRightmostTurningIndex(first.circles_[0], forward, second, kHalfTurn);
     // It should be impossible for the second indices to not have a value with
     // the relaxed threshold and limit angles. At least one perimeter circle in
     // `second` should not be traveling backwards relative to `forward`.
@@ -385,7 +385,7 @@ BrushTipShape::TangentCircleIndices BrushTipShape::GetTangentCircleIndices(
     // If we failed to converge on a result, we relax the threshold angle to
     // find an index on `second`.
     std::optional<int> index_on_second = GetLeftmostTurningIndex(
-        first.circles_[indices.left.first], forward, second, -kPi);
+        first.circles_[indices.left.first], forward, second, -kHalfTurn);
     // It should be impossible for the second index to not have a value. At
     // least one control point in second should not be traveling backwards from
     // the rearmost control point in `first`.
@@ -421,7 +421,7 @@ BrushTipShape::TangentCircleIndices BrushTipShape::GetTangentCircleIndices(
     // If we failed to converge on a result, we relax the limit angle to find an
     // index on `second`.
     std::optional<int> index_on_second = GetRightmostTurningIndex(
-        first.circles_[indices.right.first], forward, second, kPi);
+        first.circles_[indices.right.first], forward, second, kHalfTurn);
     // It should be impossible for the second index to not have a value. At
     // least one control point in second should not be traveling backwards from
     // the rearmost control point in `first`.
@@ -523,11 +523,11 @@ void BrushTipShape::AppendTurnExtrusionPoints(
   // circle.
 
   if (outgoing_angles.left < incoming_angles.left)
-    outgoing_angles.left += kTwoPi;
+    outgoing_angles.left += kFullTurn;
   if (incoming_angles.right < incoming_angles.left)
-    incoming_angles.right += kTwoPi;
+    incoming_angles.right += kFullTurn;
   if (outgoing_angles.right < incoming_angles.left)
-    outgoing_angles.right += kTwoPi;
+    outgoing_angles.right += kFullTurn;
 
   // Left side:
   if (incoming_tangent_indices.left.second ==
@@ -760,13 +760,13 @@ void BrushTipShape::AppendWholeShapeExtrusionPoints(
 
     const Circle& circle = shape.circles_[0];
     Angle max_chord_angle =
-        std::min(circle.GetArcAngleForChordHeight(max_chord_height), kPi);
+        std::min(circle.GetArcAngleForChordHeight(max_chord_height), kHalfTurn);
     Angle rear_angle = (-forward_direction).Direction();
     Angle left_arc_start = rear_angle - max_chord_angle / 2;
     Angle right_arc_start = rear_angle + max_chord_angle / 2;
-    circle.AppendArcToPolyline(left_arc_start, max_chord_angle - kPi,
+    circle.AppendArcToPolyline(left_arc_start, max_chord_angle - kHalfTurn,
                                max_chord_height, extrusion_points.left);
-    circle.AppendArcToPolyline(right_arc_start, kPi - max_chord_angle,
+    circle.AppendArcToPolyline(right_arc_start, kHalfTurn - max_chord_angle,
                                max_chord_height, extrusion_points.right);
     return;
   }
@@ -842,7 +842,7 @@ bool ShapeIsOutsideOfCorner(const BrushTipShape& shape,
 
   // To check the order of tangent angles about the circle, we will renormalize
   // the angles so that the incoming angle is the smallest.
-  if (ccw_outgoing_angle < ccw_incoming_angle) ccw_outgoing_angle += kTwoPi;
+  if (ccw_outgoing_angle < ccw_incoming_angle) ccw_outgoing_angle += kFullTurn;
 
   for (const Circle& test_circle : shape.PerimeterCircles()) {
     // If either circle contains the other, there is no well defined tangent
@@ -855,7 +855,7 @@ bool ShapeIsOutsideOfCorner(const BrushTipShape& shape,
     }
 
     Angle angle = corner_circle.GuaranteedRightTangentAngle(test_circle);
-    if (angle < ccw_incoming_angle) angle += kTwoPi;
+    if (angle < ccw_incoming_angle) angle += kFullTurn;
     if (angle < ccw_outgoing_angle) return true;
   }
 

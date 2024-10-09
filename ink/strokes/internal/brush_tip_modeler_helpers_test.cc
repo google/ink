@@ -1231,9 +1231,9 @@ BrushTip MakeBaseBrushTip() {
   return {
       .scale = {2, 0.5},
       .corner_rounding = 0.25,
-      .slant = -kPi / 4,
+      .slant = -kFullTurn / 8,
       .pinch = 0.3,
-      .rotation = -kHalfPi,
+      .rotation = -kQuarterTurn,
       .opacity_multiplier = 0.7f,
   };
 }
@@ -1339,12 +1339,12 @@ TEST(CreateTipStateTest, WithBehaviorTargetingSlant) {
   EXPECT_THAT(state.slant, AngleEq(brush_tip.slant +
                                    Angle::Radians(slant_offset_in_radians)));
 
-  float clamp_offset_in_radians = kTwoPi.ValueInRadians();
+  float clamp_offset_in_radians = kFullTurn.ValueInRadians();
   state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
                          {BrushBehavior::Target::kSlantOffsetInRadians},
                          {clamp_offset_in_radians});
 
-  EXPECT_THAT(state.slant, kHalfPi);
+  EXPECT_THAT(state.slant, kQuarterTurn);
 }
 
 TEST(CreateTipStateTest, WithBehaviorTargetingPinch) {
@@ -1414,15 +1414,15 @@ TEST(CreateTipStateTest, WithBehaviorTargetingHue) {
       {BrushBehavior::Target::kHueOffsetInRadians}, {hue_offset_in_radians});
 
   EXPECT_FLOAT_EQ(state.hue_offset_in_full_turns,
-                  hue_offset_in_radians / kTwoPi.ValueInRadians());
+                  hue_offset_in_radians / kFullTurn.ValueInRadians());
   EXPECT_FLOAT_EQ(state.width, brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height, brush_tip.scale.y * brush_size);
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
-  float normalize_offset = 3.f * kPi.ValueInRadians();
+  Angle normalize_offset = kFullTurn * 1.5f;
   state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
                          {BrushBehavior::Target::kHueOffsetInRadians},
-                         {normalize_offset});
+                         {normalize_offset.ValueInRadians()});
   EXPECT_FLOAT_EQ(state.hue_offset_in_full_turns, 0.5);
 }
 
@@ -1562,15 +1562,15 @@ TEST(ModeledStrokeInputLerpTest, ZeroT) {
                           .traveled_distance = 73.f,
                           .elapsed_time = Duration32::Seconds(52),
                           .pressure = .3f,
-                          .tilt = kHalfPi,
-                          .orientation = kPi / 8};
+                          .tilt = kQuarterTurn,
+                          .orientation = kFullTurn / 16};
   ModeledStrokeInput b = {.position = {10, 10},
                           .velocity = {5, 5},
                           .traveled_distance = 79.f,
                           .elapsed_time = Duration32::Seconds(56),
                           .pressure = .7f,
-                          .tilt = kHalfPi / 2,
-                          .orientation = kPi / 4};
+                          .tilt = kFullTurn / 8,
+                          .orientation = kFullTurn / 8};
 
   ModeledStrokeInput result = Lerp(a, b, 0);
   EXPECT_THAT(result, ModeledStrokeInputEq(a));
@@ -1582,15 +1582,15 @@ TEST(ModeledStrokeInputLerpTest, OneT) {
                           .traveled_distance = 73.f,
                           .elapsed_time = Duration32::Seconds(52),
                           .pressure = .3f,
-                          .tilt = kHalfPi,
-                          .orientation = kPi / 8};
+                          .tilt = kQuarterTurn,
+                          .orientation = kFullTurn / 16};
   ModeledStrokeInput b = {.position = {10, 10},
                           .velocity = {5, 5},
                           .traveled_distance = 79.f,
                           .elapsed_time = Duration32::Seconds(56),
                           .pressure = .7f,
-                          .tilt = kHalfPi / 2,
-                          .orientation = kPi / 4};
+                          .tilt = kFullTurn / 8,
+                          .orientation = kFullTurn / 8};
 
   ModeledStrokeInput result = Lerp(a, b, 1);
   EXPECT_THAT(result, ModeledStrokeInputEq(b));
@@ -1602,15 +1602,15 @@ TEST(ModeledStrokeInputLerpTest, TBetweenZeroAndOne) {
                           .traveled_distance = 73.f,
                           .elapsed_time = Duration32::Seconds(52),
                           .pressure = .3f,
-                          .tilt = kHalfPi,
-                          .orientation = kPi / 8};
+                          .tilt = kQuarterTurn,
+                          .orientation = kFullTurn / 16};
   ModeledStrokeInput b = {.position = {10, 10},
                           .velocity = {5, 5},
                           .traveled_distance = 79.f,
                           .elapsed_time = Duration32::Seconds(56),
                           .pressure = .7f,
-                          .tilt = kHalfPi / 2,
-                          .orientation = kPi / 4};
+                          .tilt = kFullTurn / 8,
+                          .orientation = kFullTurn / 8};
 
   ModeledStrokeInput result = Lerp(a, b, 0.2);
   EXPECT_THAT(result.position, PointEq({2, 2}));
@@ -1618,8 +1618,8 @@ TEST(ModeledStrokeInputLerpTest, TBetweenZeroAndOne) {
   EXPECT_FLOAT_EQ(result.traveled_distance, 74.2);
   EXPECT_THAT(result.elapsed_time, Duration32Eq(Duration32::Seconds(52.8)));
   EXPECT_FLOAT_EQ(result.pressure, 0.38);
-  EXPECT_THAT(result.tilt, AngleEq(0.45 * kPi));
-  EXPECT_THAT(result.orientation, AngleEq(0.15 * kPi));
+  EXPECT_THAT(result.tilt, AngleEq(0.45 * kHalfTurn));
+  EXPECT_THAT(result.orientation, AngleEq(0.15 * kHalfTurn));
 }
 
 TEST(ModeledStrokeInputLerpTest, AboveOneT) {
@@ -1628,15 +1628,15 @@ TEST(ModeledStrokeInputLerpTest, AboveOneT) {
                           .traveled_distance = 73.f,
                           .elapsed_time = Duration32::Seconds(52),
                           .pressure = .3f,
-                          .tilt = kHalfPi,
-                          .orientation = kPi / 8};
+                          .tilt = kQuarterTurn,
+                          .orientation = kFullTurn / 16};
   ModeledStrokeInput b = {.position = {10, 10},
                           .velocity = {5, 5},
                           .traveled_distance = 79.f,
                           .elapsed_time = Duration32::Seconds(56),
                           .pressure = .7f,
-                          .tilt = kHalfPi / 2,
-                          .orientation = kPi / 4};
+                          .tilt = kFullTurn / 8,
+                          .orientation = kFullTurn / 8};
 
   ModeledStrokeInput result = Lerp(a, b, 1.1);
   EXPECT_THAT(result.position, PointEq({11, 11}));
@@ -1644,8 +1644,8 @@ TEST(ModeledStrokeInputLerpTest, AboveOneT) {
   EXPECT_FLOAT_EQ(result.traveled_distance, 79.6);
   EXPECT_THAT(result.elapsed_time, Duration32Eq(Duration32::Seconds(56.4)));
   EXPECT_FLOAT_EQ(result.pressure, 0.74);
-  EXPECT_THAT(result.tilt, AngleEq(0.225 * kPi));
-  EXPECT_THAT(result.orientation, AngleEq(0.2625 * kPi));
+  EXPECT_THAT(result.tilt, AngleEq(0.225 * kHalfTurn));
+  EXPECT_THAT(result.orientation, AngleEq(0.2625 * kHalfTurn));
 }
 
 TEST(ModeledStrokeInputLerpTest, BelowZeroT) {
@@ -1654,15 +1654,15 @@ TEST(ModeledStrokeInputLerpTest, BelowZeroT) {
                           .traveled_distance = 73.f,
                           .elapsed_time = Duration32::Seconds(52),
                           .pressure = .3f,
-                          .tilt = kHalfPi,
-                          .orientation = kPi / 8};
+                          .tilt = kQuarterTurn,
+                          .orientation = kFullTurn / 16};
   ModeledStrokeInput b = {.position = {10, 10},
                           .velocity = {5, 5},
                           .traveled_distance = 79.f,
                           .elapsed_time = Duration32::Seconds(56),
                           .pressure = .7f,
-                          .tilt = kHalfPi / 2,
-                          .orientation = kPi / 4};
+                          .tilt = kFullTurn / 8,
+                          .orientation = kFullTurn / 8};
 
   ModeledStrokeInput result = Lerp(a, b, -0.1);
   EXPECT_THAT(result.position, PointEq({-1, -1}));
@@ -1670,8 +1670,8 @@ TEST(ModeledStrokeInputLerpTest, BelowZeroT) {
   EXPECT_FLOAT_EQ(result.traveled_distance, 72.4);
   EXPECT_THAT(result.elapsed_time, Duration32Eq(Duration32::Seconds(51.6)));
   EXPECT_FLOAT_EQ(result.pressure, 0.26);
-  EXPECT_THAT(result.tilt, AngleEq(0.525 * kPi));
-  EXPECT_THAT(result.orientation, AngleEq(0.1125 * kPi));
+  EXPECT_THAT(result.tilt, AngleEq(0.525 * kHalfTurn));
+  EXPECT_THAT(result.orientation, AngleEq(0.1125 * kHalfTurn));
 }
 
 }  // namespace

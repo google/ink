@@ -39,7 +39,7 @@ TEST(SkiaRendererDrawableTest, SetObjectToCanvas) {
               AffineTransformEq(AffineTransform::Identity()));
 
   AffineTransform transform =
-      AffineTransform::RotateAboutPoint(kPi / 4, {5, -9});
+      AffineTransform::RotateAboutPoint(kFullTurn / 8, {5, -9});
   drawable.SetObjectToCanvas(transform);
   EXPECT_THAT(drawable.ObjectToCanvas(), AffineTransformEq(transform));
 }

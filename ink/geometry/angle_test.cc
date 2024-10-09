@@ -36,8 +36,8 @@ using ::testing::Lt;
 
 TEST(AngleTest, Stringify) {
   EXPECT_EQ(absl::StrCat(Angle()), "0π");
-  EXPECT_EQ(absl::StrCat(kTwoPi), "2π");
-  EXPECT_EQ(absl::StrCat(-kHalfPi), "-0.5π");
+  EXPECT_EQ(absl::StrCat(kFullTurn), "2π");
+  EXPECT_EQ(absl::StrCat(-kQuarterTurn), "-0.5π");
   EXPECT_EQ(absl::StrCat(Angle::Degrees(57.2958)), "0.31831π");
   EXPECT_EQ(absl::StrCat(Angle::Radians(1.0)), "0.31831π");
   EXPECT_EQ(
@@ -49,12 +49,12 @@ TEST(AngleTest, Stringify) {
 TEST(AngleTest, SupportsAbslHash) {
   EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
       Angle(),
-      kHalfPi,
-      -kHalfPi,
-      kPi,
-      -kPi,
-      kTwoPi,
-      -kTwoPi,
+      kQuarterTurn,
+      -kQuarterTurn,
+      kHalfTurn,
+      -kHalfTurn,
+      kFullTurn,
+      -kFullTurn,
       Angle::Radians(std::numeric_limits<float>::infinity()),
       Angle::Radians(-std::numeric_limits<float>::infinity()),
   }));
@@ -148,7 +148,7 @@ TEST(AngleTest, Normalized) {
 }
 
 void NormalizedAngleIsBetweenZeroInclusiveAndTwoPiExclusive(Angle angle) {
-  EXPECT_THAT(angle.Normalized(), AllOf(Ge(Angle()), Lt(kTwoPi)))
+  EXPECT_THAT(angle.Normalized(), AllOf(Ge(Angle()), Lt(kFullTurn)))
       << "Where angle is: " << testing::PrintToString(angle);
 }
 FUZZ_TEST(AngleTest, NormalizedAngleIsBetweenZeroInclusiveAndTwoPiExclusive)
@@ -193,7 +193,7 @@ TEST(AngleTest, NormalizedAboutZero) {
 }
 
 void NormalizedAboutZeroIsBetweenMinusPiExclusiveAndPiInclusive(Angle angle) {
-  EXPECT_THAT(angle.NormalizedAboutZero(), AllOf(Gt(-kPi), Le(kPi)))
+  EXPECT_THAT(angle.NormalizedAboutZero(), AllOf(Gt(-kHalfTurn), Le(kHalfTurn)))
       << "Where angle is: " << testing::PrintToString(angle);
 }
 FUZZ_TEST(AngleTest, NormalizedAboutZeroIsBetweenMinusPiExclusiveAndPiInclusive)

@@ -48,7 +48,7 @@ TEST(BrushPaintTest, TextureKeyframeSupportsAbslHash) {
       BrushPaint::TextureKeyframe{.progress = 1},
       BrushPaint::TextureKeyframe{.progress = 0, .size = Vec{1, 1}},
       BrushPaint::TextureKeyframe{.progress = 0, .offset = Vec{1, 1}},
-      BrushPaint::TextureKeyframe{.progress = 0, .rotation = kPi},
+      BrushPaint::TextureKeyframe{.progress = 0, .rotation = kHalfTurn},
       BrushPaint::TextureKeyframe{.progress = 0, .opacity = 0.5},
   }));
 }
@@ -71,13 +71,14 @@ TEST(BrushPaintTest, TextureLayerSupportsAbslHash) {
           .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize},
       BrushPaint::TextureLayer{.color_texture_uri = *uri1, .size = {2, 2}},
       BrushPaint::TextureLayer{.color_texture_uri = *uri1, .offset = {1, 1}},
-      BrushPaint::TextureLayer{.color_texture_uri = *uri1, .rotation = kPi},
+      BrushPaint::TextureLayer{.color_texture_uri = *uri1,
+                               .rotation = kHalfTurn},
       BrushPaint::TextureLayer{.color_texture_uri = *uri1,
                                .size_jitter = {2, 2}},
       BrushPaint::TextureLayer{.color_texture_uri = *uri1,
                                .offset_jitter = {1, 1}},
       BrushPaint::TextureLayer{.color_texture_uri = *uri1,
-                               .rotation_jitter = kPi},
+                               .rotation_jitter = kHalfTurn},
       BrushPaint::TextureLayer{.color_texture_uri = *uri1, .opacity = 0.5},
       BrushPaint::TextureLayer{.color_texture_uri = *uri1,
                                .keyframes = {{.progress = 1}}},
@@ -103,7 +104,7 @@ TEST(BrushPaintTest, TextureKeyframeEqualAndNotEqual) {
       .progress = 1,
       .size = Vec{2, 2},
       .offset = Vec{1, 1},
-      .rotation = kPi,
+      .rotation = kHalfTurn,
       .opacity = 0.5,
   };
 
@@ -180,7 +181,7 @@ TEST(BrushPaintTest, TextureLayerEqualAndNotEqual) {
   EXPECT_NE(layer, other);
 
   other = layer;
-  other.rotation = kPi;
+  other.rotation = kHalfTurn;
   EXPECT_NE(layer, other);
 
   other = layer;
@@ -192,7 +193,7 @@ TEST(BrushPaintTest, TextureLayerEqualAndNotEqual) {
   EXPECT_NE(layer, other);
 
   other = layer;
-  other.rotation_jitter = kPi;
+  other.rotation_jitter = kHalfTurn;
   EXPECT_NE(layer, other);
 
   other = layer;
@@ -289,14 +290,14 @@ TEST(BrushPaintTest, StringifyTextureKeyFrame) {
                 .progress = 0.3,
                 .size = std::optional<Vec>({4, 6}),
                 .offset = std::optional<Vec>({2, 0.2}),
-                .rotation = kHalfPi}),
+                .rotation = kQuarterTurn}),
             "TextureKeyframe{progress=0.3, size=<4, 6>, offset=<2, 0.2>, "
             "rotation=0.5π}");
   EXPECT_EQ(absl::StrCat(BrushPaint::TextureKeyframe{
                 .progress = 0.3,
                 .size = std::optional<Vec>({4, 6}),
                 .offset = std::optional<Vec>({2, 0.2}),
-                .rotation = kHalfPi,
+                .rotation = kQuarterTurn,
                 .opacity = 0.6}),
             "TextureKeyframe{progress=0.3, size=<4, 6>, offset=<2, 0.2>, "
             "rotation=0.5π, opacity=0.6}");
@@ -330,14 +331,14 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
           .size = {3, 5},
           .offset = {2, 0.2},
-          .rotation = kHalfPi,
+          .rotation = kQuarterTurn,
           .size_jitter = {0.1, 0.2},
           .offset_jitter = {0.7, 0.3},
-          .rotation_jitter = kPi / 8,
+          .rotation_jitter = kFullTurn / 16,
           .opacity = 0.6,
           .keyframes = {{.progress = 0.2,
                          .size = std::optional<Vec>({2, 5}),
-                         .rotation = kPi / 8}},
+                         .rotation = kFullTurn / 16}},
           .blend_mode = BrushPaint::BlendMode::kDstIn}),
       "TextureLayer{color_texture_uri=/texture:test-texture, "
       "mapping=kWinding, origin=kFirstStrokeInput, size_unit=kBrushSize, "
@@ -353,14 +354,14 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
           .size = {3, 5},
           .offset = {2, 0.2},
-          .rotation = kHalfPi,
+          .rotation = kQuarterTurn,
           .size_jitter = {0.1, 0.2},
           .offset_jitter = {0.7, 0.3},
-          .rotation_jitter = kPi / 8,
+          .rotation_jitter = kFullTurn / 16,
           .opacity = 0.6,
           .keyframes = {{.progress = 0.2,
                          .size = std::optional<Vec>({2, 5}),
-                         .rotation = kPi / 8},
+                         .rotation = kFullTurn / 16},
                         {.progress = 0.4,
                          .offset = std::optional<Vec>({2, 0.2}),
                          .opacity = 0.4}},
@@ -440,7 +441,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
           .texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
                               .size = {3, 5},
                               .offset = {2, 0.2},
-                              .rotation = kHalfPi,
+                              .rotation = kQuarterTurn,
                               .opacity = 0.6}}}),
       "BrushPaint{texture_layers={TextureLayer{color_texture_uri=/"
       "texture:test-texture, mapping=kTiling, origin=kStrokeSpaceOrigin, "
@@ -469,7 +470,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                                   BrushPaint::TextureSizeUnit::kBrushSize,
                               .size = {3, 5},
                               .offset = {2, 0.2},
-                              .rotation = kHalfPi,
+                              .rotation = kQuarterTurn,
                               .opacity = 0.6}}}),
       "BrushPaint{texture_layers={TextureLayer{color_texture_uri=/"
       "texture:test-texture, mapping=kWinding, origin=kStrokeSpaceOrigin, "
@@ -484,10 +485,10 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                                   BrushPaint::TextureSizeUnit::kBrushSize,
                               .size = {3, 5},
                               .offset = {2, 0.2},
-                              .rotation = kHalfPi,
+                              .rotation = kQuarterTurn,
                               .size_jitter = {0.1, 0.2},
                               .offset_jitter = {0.7, 0.3},
-                              .rotation_jitter = kPi / 8,
+                              .rotation_jitter = kFullTurn / 16,
                               .opacity = 0.6,
                               .blend_mode = BrushPaint::BlendMode::kSrcIn}}}),
       "BrushPaint{texture_layers={TextureLayer{color_texture_uri=/"
@@ -504,15 +505,15 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                 .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                 .size = {3, 5},
                 .offset = {2, 0.2},
-                .rotation = kHalfPi,
+                .rotation = kQuarterTurn,
                 .size_jitter = {0.1, 0.2},
                 .offset_jitter = {0.7, 0.3},
-                .rotation_jitter = kPi / 8,
+                .rotation_jitter = kFullTurn / 16,
                 .opacity = 0.6,
                 .keyframes = {{.progress = 0.3,
                                .size = std::optional<Vec>({4, 6}),
                                .offset = std::optional<Vec>({2, 0.2}),
-                               .rotation = kHalfPi,
+                               .rotation = kQuarterTurn,
                                .opacity = 0.6}}}}}),
       "BrushPaint{texture_layers={TextureLayer{color_texture_uri=/"
       "texture:test-texture, mapping=kWinding, origin=kStrokeSpaceOrigin, "
@@ -529,10 +530,10 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                 .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                 .size = {3, 5},
                 .offset = {2, 0.2},
-                .rotation = kHalfPi,
+                .rotation = kQuarterTurn,
                 .size_jitter = {0.1, 0.2},
                 .offset_jitter = {0.7, 0.3},
-                .rotation_jitter = kPi / 8,
+                .rotation_jitter = kFullTurn / 16,
                 .opacity = 0.6,
                 .blend_mode = BrushPaint::BlendMode::kSrcIn},
                {.color_texture_uri = CreateTestTextureUri(),
@@ -542,7 +543,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                 .opacity = 0.7,
                 .keyframes = {{.progress = 0.2,
                                .size = std::optional<Vec>({2, 5}),
-                               .rotation = kPi / 8},
+                               .rotation = kFullTurn / 16},
                               {.progress = 0.4,
                                .offset = std::optional<Vec>({2, 0.2}),
                                .opacity = 0.4}},

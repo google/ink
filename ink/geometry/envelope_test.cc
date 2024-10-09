@@ -67,7 +67,7 @@ TEST(EnvelopeTest, RectConstructor) {
 
 TEST(EnvelopeTest, QuadConstructor) {
   Envelope envelope(Quad::FromCenterDimensionsRotationAndShear(
-      Point{0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f));
+      Point{0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f));
   EXPECT_THAT(
       envelope.AsRect(),
       Optional(RectEq(Rect::FromTwoPoints(Point{-2, -14}, Point{2, 14}))));
@@ -179,7 +179,7 @@ TEST(EnvelopeTest, AddRectToNonEmptyEnvelope) {
 TEST(EnvelopeTest, AddQuadToEmptyEnvelope) {
   Envelope envelope;
   envelope.Add(Quad::FromCenterDimensionsRotationAndShear(
-      Point{0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f));
+      Point{0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f));
   EXPECT_FALSE(envelope.IsEmpty());
   EXPECT_THAT(
       envelope.AsRect(),
@@ -198,10 +198,10 @@ TEST(EnvelopeTest, AddQuadNotContainingOriginToEmptyEnvelope) {
 TEST(EnvelopeTest, AddQuadToNonEmptyEnvelope) {
   Envelope envelope;
   envelope.Add(Quad::FromCenterDimensionsRotationAndShear(
-      Point{0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f));
+      Point{0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f));
   EXPECT_FALSE(envelope.IsEmpty());
   envelope.Add(Quad::FromCenterDimensionsRotationAndShear(
-      Point{-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f));
+      Point{-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f));
   EXPECT_THAT(
       envelope.AsRect(),
       Optional(RectEq(Rect::FromTwoPoints(Point{-53, -33}, Point{2, 14}))));

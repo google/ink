@@ -48,8 +48,8 @@ TEST(StrokeInputTest, Stringify) {
                 .elapsed_time = Duration32::Seconds(4.5f),
                 .stroke_unit_length = PhysicalDistance::Centimeters(6.5f),
                 .pressure = 1.0f,
-                .tilt = 0.25f * kPi,
-                .orientation = 1.5f * kPi,
+                .tilt = kFullTurn / 8,
+                .orientation = kFullTurn * 0.75f,
             }),
             "StrokeInput[Stylus, (0, -4), 4.5s, stroke_unit_length=6.5cm, "
             "pressure=1, tilt=0.25π, orientation=1.5π]");

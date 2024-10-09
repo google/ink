@@ -39,13 +39,13 @@ TEST(ValidateConsecutiveInputsTest, ValidInputsWithAllOptionalProperties) {
             ValidateConsecutiveInputs({.position = {1, 2},
                                        .elapsed_time = Duration32::Millis(5),
                                        .pressure = 0.5,
-                                       .tilt = kPi / 4,
-                                       .orientation = kPi},
+                                       .tilt = kFullTurn / 8,
+                                       .orientation = kHalfTurn},
                                       {.position = {2, 3},
                                        .elapsed_time = Duration32::Millis(10),
                                        .pressure = 0.6,
-                                       .tilt = kHalfPi,
-                                       .orientation = kTwoPi}));
+                                       .tilt = kQuarterTurn,
+                                       .orientation = kFullTurn}));
 }
 
 TEST(ValidateConsecutiveInputsTest, ValidInputsWithOnlyPressure) {
@@ -62,20 +62,20 @@ TEST(ValidateConsecutiveInputsTest, ValidInputsWithOnlyTilt) {
   EXPECT_EQ(absl::OkStatus(),
             ValidateConsecutiveInputs({.position = {1, 2},
                                        .elapsed_time = Duration32::Millis(5),
-                                       .tilt = kPi / 4},
+                                       .tilt = kFullTurn / 8},
                                       {.position = {2, 3},
                                        .elapsed_time = Duration32::Millis(10),
-                                       .tilt = kHalfPi}));
+                                       .tilt = kQuarterTurn}));
 }
 
 TEST(ValidateConsecutiveInputsTest, ValidInputsWithOnlyOrientation) {
   EXPECT_EQ(absl::OkStatus(),
             ValidateConsecutiveInputs({.position = {1, 2},
                                        .elapsed_time = Duration32::Millis(5),
-                                       .orientation = kPi},
+                                       .orientation = kHalfTurn},
                                       {.position = {2, 3},
                                        .elapsed_time = Duration32::Millis(10),
-                                       .orientation = kTwoPi}));
+                                       .orientation = kFullTurn}));
 }
 
 TEST(ValidateConsecutiveInputsTest, ValidInputsDuplicatePosition) {
@@ -151,7 +151,7 @@ TEST(ValidateConsecutiveInputsTest, MismatchedOptionalTilt) {
                                  .tilt = StrokeInput::kNoTilt},
                                 {.position = {2, 3},
                                  .elapsed_time = Duration32::Millis(10),
-                                 .tilt = kHalfPi});
+                                 .tilt = kQuarterTurn});
   EXPECT_EQ(mismatched_has_tilt.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(mismatched_has_tilt.message(), HasSubstr("tilt"));
 }
@@ -163,7 +163,7 @@ TEST(ValidateConsecutiveInputsTest, MismatchedOptionalOrientation) {
                                  .orientation = StrokeInput::kNoOrientation},
                                 {.position = {2, 3},
                                  .elapsed_time = Duration32::Millis(10),
-                                 .orientation = kPi});
+                                 .orientation = kHalfTurn});
   EXPECT_EQ(mismatched_has_orientation.code(),
             absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(mismatched_has_orientation.message(), HasSubstr("orientation"));

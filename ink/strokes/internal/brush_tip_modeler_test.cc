@@ -116,7 +116,7 @@ TEST(BrushTipModelerTest, UpdateWithAllStableInputs) {
   BrushTip brush_tip = {
       .scale = {0.5, 0.75},
       .corner_rounding = 0.5,
-      .rotation = kHalfPi,
+      .rotation = kQuarterTurn,
   };
   float brush_size = 1.5;
   BrushTipState expected_non_position_values = {
@@ -150,7 +150,7 @@ TEST(BrushTipModelerTest, UpdateWithNoStableInputs) {
   BrushTip brush_tip{
       .scale = {0, 1},
       .corner_rounding = 0,
-      .rotation = kPi,
+      .rotation = kHalfTurn,
   };
   float brush_size = 1.7;
   BrushTipState expected_non_position_values = {
@@ -291,7 +291,7 @@ TEST(BrushTipModelerTest, TipWithBehaviors) {
                // Increasing tilt maps to increasing width
                BrushBehavior::SourceNode{
                    .source = BrushBehavior::Source::kTiltInRadians,
-                   .source_value_range = {0, kHalfPi.ValueInRadians()},
+                   .source_value_range = {0, kQuarterTurn.ValueInRadians()},
                },
                BrushBehavior::TargetNode{
                    .target = BrushBehavior::Target::kWidthMultiplier,
@@ -312,19 +312,19 @@ TEST(BrushTipModelerTest, TipWithBehaviors) {
       {.position = {1, 3},
        .elapsed_time = Duration32::Seconds(1.f / 180),
        .pressure = 0,
-       .tilt = kHalfPi},
+       .tilt = kQuarterTurn},
       {.position = {2, 3},
        .elapsed_time = Duration32::Seconds(0.1),
        .pressure = 0,
-       .tilt = kHalfPi},
+       .tilt = kQuarterTurn},
       {.position = {3, 3},
        .elapsed_time = Duration32::Seconds(0.125),
        .pressure = 0,
-       .tilt = kHalfPi},
+       .tilt = kQuarterTurn},
       {.position = {4, 3},
        .elapsed_time = Duration32::Seconds(0.5),
        .pressure = 0,
-       .tilt = kHalfPi}};
+       .tilt = kQuarterTurn}};
   StrokeInputModeler::State input_modeler_state = {
       .stable_input_count = 4,
   };
@@ -347,7 +347,7 @@ TEST(BrushTipModelerTest, TipWithBehaviors) {
   inputs.push_back({.position = {2, 2},
                     .elapsed_time = Duration32::Seconds(0.15),
                     .pressure = 0,
-                    .tilt = kHalfPi});
+                    .tilt = kQuarterTurn});
   input_modeler_state.stable_input_count = inputs.size();
   modeler.UpdateStroke(input_modeler_state, inputs);
 
@@ -363,7 +363,7 @@ TEST(BrushTipModelerTest, TipWithBehaviors) {
   inputs = {{.position = {2, 2},
              .elapsed_time = Duration32::Seconds(0.15),
              .pressure = 0,
-             .tilt = kHalfPi}};
+             .tilt = kQuarterTurn}};
   input_modeler_state.stable_input_count = 1;
   modeler.UpdateStroke(input_modeler_state, inputs);
 
@@ -1050,7 +1050,7 @@ TEST(BrushTipModelerTest, UnstableTargetModifierReplacedWithNull) {
       .behaviors = {BrushBehavior{{
           BrushBehavior::SourceNode{
               .source = BrushBehavior::Source::kOrientationAboutZeroInRadians,
-              .source_value_range = {0, kPi.ValueInRadians()},
+              .source_value_range = {0, kHalfTurn.ValueInRadians()},
           },
           BrushBehavior::TargetNode{
               .target = BrushBehavior::Target::kWidthMultiplier,
@@ -1099,11 +1099,11 @@ TEST_P(BrushTipModelerSourceParamTest, LastStableInputCreatesVolatileTipState) {
       .behaviors = {BrushBehavior{{
           BrushBehavior::SourceNode{
               .source = behavior_source,
-              .source_value_range = {0, kTwoPi.ValueInRadians()},
+              .source_value_range = {0, kFullTurn.ValueInRadians()},
           },
           BrushBehavior::TargetNode{
               .target = BrushBehavior::Target::kRotationOffsetInRadians,
-              .target_modifier_range = {0, kTwoPi.ValueInRadians()},
+              .target_modifier_range = {0, kFullTurn.ValueInRadians()},
           },
       }}},
   };

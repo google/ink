@@ -76,27 +76,27 @@ void AppendCircularTurnExtrusionPoints(
 
   // Snap nearly-collinear angles together, to prevent adding an unnecessary
   // loop. The chosen tolerance is just a bit over four times machine precision
-  // for ±π, which is ~5.73e-5 degrees.
+  // for ±π radians, which is ~5.73e-5 degrees.
   constexpr Angle kCollinearTol = Angle::Radians(1e-5);
   if (Angle left_delta = Abs(incoming_angles->left - outgoing_angles->left);
-      left_delta < kCollinearTol || left_delta + kCollinearTol > kTwoPi) {
+      left_delta < kCollinearTol || left_delta + kCollinearTol > kFullTurn) {
     incoming_angles->left = outgoing_angles->left;
   }
   if (Angle right_delta = Abs(incoming_angles->right - outgoing_angles->right);
-      right_delta < kCollinearTol || right_delta + kCollinearTol > kTwoPi) {
+      right_delta < kCollinearTol || right_delta + kCollinearTol > kFullTurn) {
     incoming_angles->right = outgoing_angles->right;
   }
 
   // W.l.o.g., we designate incoming_angles->left as the start of the order (we
   // can do this because the order is cyclic). So, we normalize the rest of
   // the angles to lie within the range
-  // [incoming_angles->left, incoming_angles->left + 2π).
+  // [incoming_angles->left, incoming_angles->left + 2π radians).
   if (outgoing_angles->left < incoming_angles->left)
-    outgoing_angles->left += kTwoPi;
+    outgoing_angles->left += kFullTurn;
   if (incoming_angles->right < incoming_angles->left)
-    incoming_angles->right += kTwoPi;
+    incoming_angles->right += kFullTurn;
   if (outgoing_angles->right < incoming_angles->left)
-    outgoing_angles->right += kTwoPi;
+    outgoing_angles->right += kFullTurn;
 
   auto add_intersection = [&start, &middle, &end](Angle incoming_angle,
                                                   Angle outgoing_angle,
@@ -122,18 +122,18 @@ void AppendCircularTurnExtrusionPoints(
   auto add_left_arc = [&]() {
     if (left_points == nullptr) return;
 
-    // "Normalize" the left arc angle to be in [-2pi, 0) so that the arc is
-    // traversed on the "left" side of the circle given the travel directions.
-    // Note that we have ordered the angles above such that
+    // "Normalize" the left arc angle to be in [-2π, 0) radians so that the arc
+    // is traversed on the "left" side of the circle given the travel
+    // directions.  Note that we have ordered the angles above such that
     // `incoming_angles->left` is the smallest value.
-    Angle arc_angle = outgoing_angles->left - incoming_angles->left - kTwoPi;
+    Angle arc_angle = outgoing_angles->left - incoming_angles->left - kFullTurn;
     middle.AppendArcToPolyline(incoming_angles->left, arc_angle,
                                max_chord_height, *left_points);
   };
   auto add_right_arc = [&]() {
     if (right_points == nullptr) return;
 
-    // Normalize the right arc angle to be in [0, 2pi) so that the arc is
+    // Normalize the right arc angle to be in [0, 2π) radians so that the arc is
     // traverse on the "right" side of the circle given the travel directions.
     Angle arc_angle =
         (outgoing_angles->right - incoming_angles->right).Normalized();
@@ -187,7 +187,7 @@ void AppendCircularTurnExtrusionPoints(
       // depending on the sign of the turn angle.
       Angle turn_angle = Vec::SignedAngleBetween(
           middle.Center() - start.Center(), end.Center() - middle.Center());
-      if (Abs(turn_angle) >= kTwoPi / 3) {
+      if (Abs(turn_angle) >= kFullTurn / 3) {
         add_left_arc();
         add_right_arc();
       } else if (turn_angle < Angle()) {

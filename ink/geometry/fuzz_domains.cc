@@ -99,8 +99,8 @@ fuzztest::Domain<Angle> AngleInRange(Angle min, Angle max) {
 fuzztest::Domain<Angle> NormalizedAngle() {
   // AngleInRange and fuzztest::InRange are inclusive on both ends of the range,
   // but NormalizedAngle needs an exclusive upper bound, so we use a Filter.
-  return fuzztest::Filter([](Angle angle) { return angle < kTwoPi; },
-                          AngleInRange(Angle(), kTwoPi));
+  return fuzztest::Filter([](Angle angle) { return angle < kFullTurn; },
+                          AngleInRange(Angle(), kFullTurn));
 }
 
 // LINT.IfChange(attribute_types)

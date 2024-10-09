@@ -43,11 +43,12 @@ struct Vec {
 
   // Returns the direction of the vector, represented as the angle between the
   // positive x-axis and this vector. If either component of the vector is NaN,
-  // this returns a NaN angle; otherwise, the returned value will lie in the
-  // interval [-π, π], and will have the same sign as the vector's y-component.
+  // this returns a NaN angle; otherwise, the returned angle will lie in the
+  // interval [-π, π] radians, and will have the same sign as the vector's
+  // y-component.
   //
-  // Following the behavior of std::atan2, this will return either ±0 or ±π for
-  // the zero vector, depending on the signs of the zeros.
+  // Following the behavior of std::atan2, this will return either ±0 or ±π
+  // radians for the zero vector, depending on the signs of the zeros.
   Angle Direction() const { return Angle::Radians(std::atan2(y, x)); }
 
   // Returns a vector with the same magnitude as this one, but rotated by
@@ -85,8 +86,8 @@ struct Vec {
 
   // Returns the absolute angle between the given vectors. If either component
   // of either vector is NaN, this returns a NaN angle; otherwise, the return
-  // value will lie in the interval [0, π]. This method is equivalent to (but
-  // faster than):
+  // value will lie in the interval [0, π] radians. This method is equivalent to
+  // (but faster than):
   //   Abs((b.Direction() - a.Direction()).NormalizedAboutZero())
   // or:
   //   Abs(Vec::SignedAngleBetween(a, b))
@@ -97,8 +98,8 @@ struct Vec {
 
   // Returns the signed angle between the given vectors. If either component of
   // either vector is NaN, this returns a NaN angle; otherwise, the return value
-  // will lie in the interval (-π, π]. This method is equivalent to (but faster
-  // than):
+  // will lie in the interval (-π, π] radians. This method is equivalent to (but
+  // faster than):
   //   (b.Direction() - a.Direction()).NormalizedAboutZero();
   static Angle SignedAngleBetween(const Vec &a, const Vec &b);
 };

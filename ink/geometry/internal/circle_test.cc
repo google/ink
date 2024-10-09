@@ -125,10 +125,10 @@ TEST(CircleTest, GetPoint) {
   Circle circle({1, 2}, 3.f);
 
   EXPECT_THAT(circle.GetPoint(Angle()), PointNear({4, 2}, 0.001));
-  EXPECT_THAT(circle.GetPoint(kHalfPi), PointNear({1, 5}, 0.001));
-  EXPECT_THAT(circle.GetPoint(kPi), PointNear({-2, 2}, 0.001));
-  EXPECT_THAT(circle.GetPoint(kTwoPi), PointNear({4, 2}, 0.001));
-  EXPECT_THAT(circle.GetPoint(-kPi / 3),
+  EXPECT_THAT(circle.GetPoint(kQuarterTurn), PointNear({1, 5}, 0.001));
+  EXPECT_THAT(circle.GetPoint(kHalfTurn), PointNear({-2, 2}, 0.001));
+  EXPECT_THAT(circle.GetPoint(kFullTurn), PointNear({4, 2}, 0.001));
+  EXPECT_THAT(circle.GetPoint(-kFullTurn / 6),
               PointNear({2.5f, 2 - 1.5f * std::sqrt(3.f)}, 0.001));
 }
 
@@ -159,20 +159,16 @@ TEST(CircleTest, GetTangentAnglesSameRadius) {
   Circle b({5, 5}, 2);
   auto tangents = a.GetTangentAngles(b);
   EXPECT_TRUE(tangents.has_value());
-  EXPECT_FLOAT_EQ(tangents->left.ValueInRadians(),
-                  (3 * kPi / 4).ValueInRadians());
-  EXPECT_FLOAT_EQ(tangents->right.ValueInRadians(),
-                  (-kPi / 4).ValueInRadians());
+  EXPECT_THAT(tangents->left, AngleEq(3 * kFullTurn / 8));
+  EXPECT_THAT(tangents->right, AngleEq(-kFullTurn / 8));
 }
 
 TEST(CircleTest, GetTangentAnglesDifferentRadii) {
   Circle a({0, 0}, 2);
   Circle b({-2, 0}, 1);
   auto tangents = a.GetTangentAngles(b);
-  EXPECT_FLOAT_EQ(tangents->left.ValueInRadians(),
-                  (-2 * kPi / 3).ValueInRadians());
-  EXPECT_FLOAT_EQ(tangents->right.ValueInRadians(),
-                  (2 * kPi / 3).ValueInRadians());
+  EXPECT_THAT(tangents->left, AngleEq(-kFullTurn / 3));
+  EXPECT_THAT(tangents->right, AngleEq(kFullTurn / 3));
 }
 
 TEST(CircleTest, GetGuaranteedRightTangentAngle) {
@@ -194,7 +190,7 @@ TEST(CircleTest, AppendArcToPolylinePositiveArcAngle) {
   std::vector<Point> polyline;
   float max_chord_height = 1;
   Angle starting_angle = Angle();
-  Angle arc_angle = kHalfPi;
+  Angle arc_angle = kQuarterTurn;
   circle.AppendArcToPolyline(starting_angle, arc_angle, max_chord_height,
                              polyline);
 
@@ -212,8 +208,8 @@ TEST(CircleTest, AppendArcToPolylineNegativeArcAngle) {
   Circle circle({5, 8}, 2);
   std::vector<Point> polyline;
   float max_chord_height = .1;
-  Angle starting_angle = kHalfPi;
-  Angle arc_angle = -kPi;
+  Angle starting_angle = kQuarterTurn;
+  Angle arc_angle = -kHalfTurn;
   circle.AppendArcToPolyline(starting_angle, arc_angle, max_chord_height,
                              polyline);
 
@@ -232,7 +228,7 @@ TEST(CircleTest, AppendArcToPolylineFullCircle) {
   std::vector<Point> polyline;
   float max_chord_height = .1;
   Angle starting_angle = Angle();
-  Angle arc_angle = kTwoPi;
+  Angle arc_angle = kFullTurn;
   circle.AppendArcToPolyline(starting_angle, arc_angle, max_chord_height,
                              polyline);
 
@@ -250,7 +246,7 @@ TEST(CircleTest, AppendArcToPolylineZeroArcAngle) {
   Circle circle({5, 8}, 1);
   std::vector<Point> polyline;
   float max_chord_height = .05;
-  Angle starting_angle = 1.5 * kPi;
+  Angle starting_angle = kFullTurn * 0.75f;
   Angle arc_angle = Angle();
   circle.AppendArcToPolyline(starting_angle, arc_angle, max_chord_height,
                              polyline);
@@ -270,7 +266,7 @@ TEST(CircleTest, AppendArcToPolylineMoreThanFullCircle) {
   std::vector<Point> polyline;
   float max_chord_height = 5;
   Angle starting_angle = Angle::Radians(1);
-  Angle arc_angle = 3 * kTwoPi;
+  Angle arc_angle = 3 * kFullTurn;
   circle.AppendArcToPolyline(starting_angle, arc_angle, max_chord_height,
                              polyline);
 
@@ -289,7 +285,7 @@ TEST(CircleTest, AppendArcToPolylineMaxChordHeightGreaterThanRadius) {
   std::vector<Point> polyline;
   float max_chord_height = 2.5;
   Angle starting_angle = Angle::Radians(1);
-  Angle arc_angle = 1.5 * kPi;
+  Angle arc_angle = kFullTurn * 0.75f;
   circle.AppendArcToPolyline(starting_angle, arc_angle, max_chord_height,
                              polyline);
 
@@ -308,7 +304,7 @@ TEST(CircleTest, AppendArcToPolylineMaxChordHeightGreaterThanDiameter) {
   std::vector<Point> polyline;
   float max_chord_height = 5;
   Angle starting_angle = Angle::Radians(1);
-  Angle arc_angle = 1.5 * kPi;
+  Angle arc_angle = kFullTurn * 0.75f;
   circle.AppendArcToPolyline(starting_angle, arc_angle, max_chord_height,
                              polyline);
 
@@ -325,7 +321,7 @@ TEST(CircleTest, AppendArcToPolylineMaxChordHeightGreaterThanDiameter) {
 TEST(CircleTest, AppendArcToPolylineDegenerateCircle) {
   Circle circle({5, 6}, 0);
   std::vector<Point> polyline;
-  circle.AppendArcToPolyline(-kHalfPi, kPi, 0.01, polyline);
+  circle.AppendArcToPolyline(-kQuarterTurn, kHalfTurn, 0.01, polyline);
 
   EXPECT_THAT(polyline, ElementsAre(PointEq({5, 6}), PointEq({5, 6})));
 }
@@ -333,7 +329,7 @@ TEST(CircleTest, AppendArcToPolylineDegenerateCircle) {
 TEST(CircleTest, AppendArcToPolylineKeepsPriorContents) {
   Circle circle({5, 6}, 0);
   std::vector<Point> polyline = {{-1, -1}, {0, 3}};
-  circle.AppendArcToPolyline(-kHalfPi, kPi, 0.01, polyline);
+  circle.AppendArcToPolyline(-kQuarterTurn, kHalfTurn, 0.01, polyline);
   EXPECT_THAT(polyline, ElementsAre(PointEq({-1, -1}), PointEq({0, 3}),
                                     PointEq({5, 6}), PointEq({5, 6})));
 }
@@ -341,10 +337,9 @@ TEST(CircleTest, AppendArcToPolylineKeepsPriorContents) {
 TEST(CircleTest, GetArcAngleForChordHeightZeroRadius) {
   Circle circle({1, 2}, 0);
 
-  EXPECT_THAT(circle.GetArcAngleForChordHeight(-1).ValueInRadians(),
-              FloatEq(0));
-  EXPECT_THAT(circle.GetArcAngleForChordHeight(0).ValueInRadians(), FloatEq(0));
-  EXPECT_THAT(circle.GetArcAngleForChordHeight(1).ValueInRadians(), FloatEq(0));
+  EXPECT_THAT(circle.GetArcAngleForChordHeight(-1), AngleEq(Angle()));
+  EXPECT_THAT(circle.GetArcAngleForChordHeight(0), AngleEq(Angle()));
+  EXPECT_THAT(circle.GetArcAngleForChordHeight(1), AngleEq(Angle()));
 }
 
 TEST(CircleTest, GetArcAngleForChordHeightNonZeroRadius) {
@@ -357,11 +352,11 @@ TEST(CircleTest, GetArcAngleForChordHeightNonZeroRadius) {
   EXPECT_THAT(circle.GetArcAngleForChordHeight(0.05).ValueInRadians(),
               FloatNear(0.2, 0.001));
   EXPECT_THAT(circle.GetArcAngleForChordHeight(10).ValueInRadians(),
-              FloatNear(kPi.ValueInRadians(), 0.001));
+              FloatNear(kHalfTurn.ValueInRadians(), 0.001));
   EXPECT_THAT(circle.GetArcAngleForChordHeight(20).ValueInRadians(),
-              FloatNear(kTwoPi.ValueInRadians(), 0.001));
+              FloatNear(kFullTurn.ValueInRadians(), 0.001));
   EXPECT_THAT(circle.GetArcAngleForChordHeight(21).ValueInRadians(),
-              FloatNear(kTwoPi.ValueInRadians(), 0.001));
+              FloatNear(kFullTurn.ValueInRadians(), 0.001));
 }
 
 TEST(CircleTest, Contains) {
@@ -386,14 +381,14 @@ TEST(CircleDeathTest, AppendArcToPolylineZeroChordHeight) {
   Circle circle;
   std::vector<Point> polyline;
   EXPECT_DEATH_IF_SUPPORTED(
-      circle.AppendArcToPolyline(kPi, kTwoPi, 0, polyline), "");
+      circle.AppendArcToPolyline(kHalfTurn, kFullTurn, 0, polyline), "");
 }
 
 TEST(CircleDeathTest, AppendArcToPolylineNegativeChordHeight) {
   Circle circle;
   std::vector<Point> polyline;
   EXPECT_DEATH_IF_SUPPORTED(
-      circle.AppendArcToPolyline(kPi, kTwoPi, -1, polyline), "");
+      circle.AppendArcToPolyline(kHalfTurn, kFullTurn, -1, polyline), "");
 }
 
 }  // namespace

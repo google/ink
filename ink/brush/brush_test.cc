@@ -53,7 +53,7 @@ BrushFamily CreateTestFamily() {
       {
           .scale = {0.5, 1},
           .corner_rounding = 0.3,
-          .rotation = kPi / 4,
+          .rotation = kFullTurn / 8,
           .behaviors = {BrushBehavior{{
               BrushBehavior::SourceNode{
                   .source = BrushBehavior::Source::kNormalizedPressure,
@@ -81,7 +81,7 @@ BrushFamily CreateTestFamily() {
                            .size = {3, 5},
                            .size_jitter = {0.1, 2},
                            .keyframes = {{.progress = 0.1,
-                                          .rotation = kHalfPi / 2}},
+                                          .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kDstIn}}},
       "/brush-family:test-family");
   ABSL_CHECK_OK(family);
@@ -98,7 +98,7 @@ TEST(BrushTest, Stringify) {
                            .size = {3, 5},
                            .size_jitter = {0.1, 2},
                            .keyframes = {{.progress = 0.1,
-                                          .rotation = kHalfPi / 2}},
+                                          .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kDstOut}}},
       "/brush-family:big-square");
   ASSERT_EQ(family.status(), absl::OkStatus());
@@ -245,7 +245,7 @@ TEST(BrushTest, SetNewFamily) {
                            .size = {3, 5},
                            .size_jitter = {0.1, 2},
                            .keyframes = {{.progress = 0.1,
-                                          .rotation = kHalfPi / 2}},
+                                          .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kDstIn}}},
       "/brush-family:new-test-family");
   ASSERT_EQ(absl::OkStatus(), new_family.status());

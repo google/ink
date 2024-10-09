@@ -195,7 +195,7 @@ Brush MakeMultiBehaviorBrush(float size, float epsilon) {
               },
               BrushBehavior::TargetNode{
                   .target = BrushBehavior::Target::kHueOffsetInRadians,
-                  .target_modifier_range = {0, kPi.ValueInRadians()},
+                  .target_modifier_range = {0, kHalfTurn.ValueInRadians()},
               },
           }}}};
   absl::StatusOr<BrushFamily> family =
@@ -251,8 +251,8 @@ void BM_Dot(benchmark::State& state) {
                                  .position = {.x = 1888.5, .y = 592.5},
                                  .elapsed_time = Duration32::Millis(17.000001),
                                  .pressure = 0.657875,
-                                 .tilt = 0.0833333 * kPi,
-                                 .orientation = 1.5 * kPi}});
+                                 .tilt = 0.0833333 * kHalfTurn,
+                                 .orientation = 1.5 * kHalfTurn}});
   ABSL_CHECK_OK(dot_input);
   Brush brush = MakeDefaultBrush(20, 0.05);
   for (auto s : state) {
@@ -511,7 +511,7 @@ void BM_SyntheticStraightLineOverlappingRectangleBrushtips(
                   },
                   BrushBehavior::TargetNode{
                       .target = BrushBehavior::Target::kRotationOffsetInRadians,
-                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                      .target_modifier_range = {0, kHalfTurn.ValueInRadians()},
                   },
               }},
           },
@@ -548,7 +548,7 @@ void BM_SyntheticStraightLineOverlappingRectangleBrushtipsPrewarmed(
                   },
                   BrushBehavior::TargetNode{
                       .target = BrushBehavior::Target::kRotationOffsetInRadians,
-                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                      .target_modifier_range = {0, kHalfTurn.ValueInRadians()},
                   },
               }},
           },
@@ -592,7 +592,7 @@ void BM_SyntheticStraightLineHueChangeRectangleBrushtips(
                   },
                   BrushBehavior::TargetNode{
                       .target = BrushBehavior::Target::kHueOffsetInRadians,
-                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                      .target_modifier_range = {0, kHalfTurn.ValueInRadians()},
                   },
               }},
           },
@@ -629,7 +629,7 @@ void BM_SyntheticStraightLineHueChangeRectangleBrushtipsPrewarmed(
                   },
                   BrushBehavior::TargetNode{
                       .target = BrushBehavior::Target::kHueOffsetInRadians,
-                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                      .target_modifier_range = {0, kHalfTurn.ValueInRadians()},
                   },
               }},
           },
@@ -718,7 +718,7 @@ void BM_SyntheticStraightLineOverlappingPillBrushtips(benchmark::State& state) {
                   },
                   BrushBehavior::TargetNode{
                       .target = BrushBehavior::Target::kRotationOffsetInRadians,
-                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                      .target_modifier_range = {0, kHalfTurn.ValueInRadians()},
                   },
               }},
           },
@@ -755,7 +755,7 @@ void BM_SyntheticStraightLineOverlappingPillBrushtipsPrewarmed(
                   },
                   BrushBehavior::TargetNode{
                       .target = BrushBehavior::Target::kRotationOffsetInRadians,
-                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                      .target_modifier_range = {0, kHalfTurn.ValueInRadians()},
                   },
               }},
           },
@@ -798,7 +798,7 @@ void BM_SyntheticStraightLineHueChangePillBrushtips(benchmark::State& state) {
                   },
                   BrushBehavior::TargetNode{
                       .target = BrushBehavior::Target::kHueOffsetInRadians,
-                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                      .target_modifier_range = {0, kHalfTurn.ValueInRadians()},
                   },
               }},
           },
@@ -835,7 +835,7 @@ void BM_SyntheticStraightLineHueChangePillBrushtipsPrewarmed(
                   },
                   BrushBehavior::TargetNode{
                       .target = BrushBehavior::Target::kHueOffsetInRadians,
-                      .target_modifier_range = {0, kPi.ValueInRadians()},
+                      .target_modifier_range = {0, kHalfTurn.ValueInRadians()},
                   },
               }},
           },

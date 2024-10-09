@@ -45,7 +45,9 @@ fuzztest::Domain<PhysicalDistance> ValidStrokeUnitLength() {
 fuzztest::Domain<float> ValidPressure() { return fuzztest::InRange(0.f, 1.f); }
 
 // The domain of all valid, non-absent stroke input tilt values.
-fuzztest::Domain<Angle> ValidTilt() { return AngleInRange(Angle(), kHalfPi); }
+fuzztest::Domain<Angle> ValidTilt() {
+  return AngleInRange(Angle(), kQuarterTurn);
+}
 
 // The domain of all valid, non-absent stroke input orientation values.
 fuzztest::Domain<Angle> ValidOrientation() { return NormalizedAngle(); }

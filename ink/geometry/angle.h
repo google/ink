@@ -75,9 +75,9 @@ class Angle {
   float radians_ = 0;
 };
 
-inline constexpr Angle kHalfPi = Angle::Radians(1.5707963268f);
-inline constexpr Angle kPi = Angle::Radians(3.1415926536f);
-inline constexpr Angle kTwoPi = Angle::Radians(6.2831853072f);
+inline constexpr Angle kQuarterTurn = Angle::Radians(1.5707963268f);
+inline constexpr Angle kHalfTurn = Angle::Radians(3.1415926536f);
+inline constexpr Angle kFullTurn = Angle::Radians(6.2831853072f);
 
 // Convenience functions for trigonometric functions in std.
 float Sin(Angle angle);

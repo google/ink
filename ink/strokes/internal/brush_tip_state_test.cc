@@ -200,7 +200,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesGreaterThanOne) {
                        .width = 5,
                        .height = -1,
                        .percent_radius = 1.4,
-                       .rotation = kTwoPi - Angle::Radians(1),
+                       .rotation = kFullTurn - Angle::Radians(1),
                        .slant = Angle::Radians(4),
                        .pinch = 1.2,
                        .hue_offset_in_full_turns = b.hue_offset_in_full_turns,
@@ -210,8 +210,8 @@ TEST(BrushTipStateTest, LerpShapeAttributesGreaterThanOne) {
 }
 
 TEST(BrushTipStateTest, LerpShapeAttributesRotationAboutBoundary) {
-  BrushTipState a{.rotation = kPi / 4};
-  BrushTipState b{.rotation = 7 * kPi / 4};
+  BrushTipState a{.rotation = kFullTurn / 8};
+  BrushTipState b{.rotation = 7 * kFullTurn / 8};
 
   // Interpolation should go through the shorter path that crosses zero.
   EXPECT_THAT(BrushTipState::LerpShapeAttributes(a, b, 0.5).rotation,

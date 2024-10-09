@@ -33,7 +33,7 @@ StrokeInputBatch MakeCompleteLissajousCurveInputs(
   auto wave_function = [](float min, float max, float progress,
                           float frequency) {
     return 0.5f * (min + max) +
-           0.5f * (max - min) * Cos(frequency * kPi * progress);
+           0.5f * (max - min) * Cos(frequency * kHalfTurn * progress);
   };
 
   constexpr float kXFrequency = 7;

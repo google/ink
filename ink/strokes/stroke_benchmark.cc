@@ -177,7 +177,7 @@ void BM_RoundedRectangleBrushWithSizeMultipleBehavior(benchmark::State& state) {
               },
               BrushBehavior::TargetNode{
                   .target = BrushBehavior::Target::kHueOffsetInRadians,
-                  .target_modifier_range = {0, kPi.ValueInRadians()},
+                  .target_modifier_range = {0, kHalfTurn.ValueInRadians()},
               },
           }},
       }};

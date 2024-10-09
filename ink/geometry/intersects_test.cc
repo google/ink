@@ -164,7 +164,7 @@ TEST(IntersectsTest, PointToRect) {
 
 TEST(IntersectsTest, PointToQuad) {
   Quad test_quad = Quad::FromCenterDimensionsRotationAndShear(
-      Point{-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f);
+      Point{-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f);
 
   // Inside the Quad.
   EXPECT_TRUE(Intersects(test_quad, Point{-46.0f, -16.0f}));
@@ -452,104 +452,104 @@ TEST(IntersectsTest, SegmentToRectOutside) {
 TEST(IntersectsTest, SegmentToQuadOverlap) {
   // Segment is fully overlapping an edge of the Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Segment{{-43, -33}, {-27, -17}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Segment{{2, -14}, {2, 6}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Segment{{-37, -17}, {-27, -17}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Segment{{-2, 14}, {-2, -6}}));
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40, -25}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                              {-40, -25}, 10.0f, 16.0f, kFullTurn, 1.0f),
                           Segment{{-42.9, -33}, {-26.9, -17}}));
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                              {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                           Segment{{2, -14.1}, {-2, -6.1}}));
 
   // Segment is partially overlapping an edge of the Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Segment{{-40, -30}, {-49, -39}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Segment{{2, -4}, {2, 22}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Segment{{-40, -17}, {-30, -17}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Segment{{-2, 10}, {-2, 33}}));
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                              {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                           Segment{{-2, 14.1}, {-2, 200}}));
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40, -25}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                              {-40, -25}, 10.0f, 16.0f, kFullTurn, 1.0f),
                           Segment{{-42, -33}, {1, -33}}));
 }
 
 TEST(IntersectsTest, SegmentToQuadCrossing) {
   // Segment crosses through Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Segment{{-46, -41}, {-34, -9}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Segment{{-3, -9}, {3, 9}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Segment{{-50, -28}, {-30, -22}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Segment{{-2, -9}, {1, 9}}));
 
   // Segment crosses one side of the Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Segment{{-46, -41}, {-50, -25}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Segment{{-3, -9}, {3, 9}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Segment{{-50, -28}, {-35, -18}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Segment{{-2, -9}, {0, 0}}));
 }
 
 TEST(IntersectsTest, SegmentToQuadInside) {
   // Segment is fully inside the Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Segment{{-50, -32}, {-42, -30}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Segment{{.5, .5}, {-.5, -.5}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Segment{{-32, -20}, {-33, -19}}));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Segment{{-1, 10}, {0, 6}}));
 }
 
 TEST(IntersectsTest, SegmentToQuadOutside) {
   // Segment is fully outside the Quad.
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                              {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                           Segment{{-1000, 5}, {1000, 5}}));
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                              {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                           Segment{{-3, -1000}, {-3, 1000}}));
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                              {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                           Segment{{100, -50}, {-50, 100}}));
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                              {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                           Segment{{-100, -20}, {50, 100}}));
 }
 
@@ -883,10 +883,10 @@ TEST(IntersectsTest, TriangleToRectCornerTouchingEdge) {
 TEST(IntersectsTest, TriangleToQuadEdgeIntersecting) {
   // Quad 1 Corners: (-53,-33), (-43,-33), (-27,-17), (-37,-17)
   Quad test_quad_1 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f);
+      {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f);
   // Quad 2 Corners: (2, -14), (2, 6), (-2, 14), (-2, -6),
   Quad test_quad_2 = Quad::FromCenterDimensionsRotationAndShear(
-      {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f);
+      {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f);
 
   // Intersects the "right" side of test_quad_1
   EXPECT_TRUE(
@@ -930,115 +930,118 @@ TEST(IntersectsTest, TriangleToQuadEdgeIntersecting) {
 TEST(IntersectsTest, TriangleToQuadFullyContained) {
   // The Triangle is contained within the Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Triangle{{-50, -32}, {-42, -30}, {-30, -18}}));
   EXPECT_TRUE(Intersects(Triangle{{-50, -32}, {-42, -30}, {-30, -18}},
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Triangle{{-1, 9}, {-1, -6}, {1, -10}}));
   EXPECT_TRUE(Intersects(Triangle{{-1, 9}, {-1, -6}, {1, -10}},
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
 
   // The Quad is contained within the Triangle.
   EXPECT_TRUE(Intersects(Triangle{{-70, -35}, {-20, -35}, {-20, 20}},
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Triangle{{-10, 30}, {-10, -50}, {40, 10}}));
 }
 
 TEST(IntersectsTest, TriangleToQuadFullyOutside) {
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                              {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                           Triangle{{-53, -32}, {-38, -17}, {-50, -20}}));
-  EXPECT_FALSE(Intersects(Triangle{{-53, -32}, {-38, -17}, {-50, -20}},
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+  EXPECT_FALSE(
+      Intersects(Triangle{{-53, -32}, {-38, -17}, {-50, -20}},
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                              {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                           Triangle{{3, 5}, {5, -5}, {3, -14}}));
   EXPECT_FALSE(Intersects(Triangle{{3, 5}, {5, -5}, {3, -14}},
                           Quad::FromCenterDimensionsRotationAndShear(
-                              {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                              {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
 }
 
 TEST(IntersectsTest, TriangleToQuadOverlappingEdges) {
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Triangle{{2, 6}, {5, -5}, {2, -14}}));
   EXPECT_TRUE(Intersects(Triangle{{2, 6}, {5, -5}, {2, -14}},
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Triangle{{-53, -33}, {-37, -17}, {-50, -20}}));
   EXPECT_TRUE(Intersects(Triangle{{-53, -33}, {-37, -17}, {-50, -20}},
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   // The Triangle is slightly too far in the positive x direction to make
   // contact with the "right" side of the Quad.
   EXPECT_FALSE(
       Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                     {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                  Triangle{{-26.99f, -16.99f}, {-42.99f, -33.01f}, {-25, -30}}));
   EXPECT_FALSE(
       Intersects(Triangle{{-26.99f, -16.99f}, {-42.99f, -33.01f}, {-25, -30}},
                  Quad::FromCenterDimensionsRotationAndShear(
-                     {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
 }
 
 TEST(IntersectsTest, TriangleToQuadTouchingCorners) {
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Triangle{{1.99f, 6}, {10, 3}, {30, 0}}));
   EXPECT_TRUE(Intersects(Triangle{{2, -14}, {5, -5}, {30, 0}},
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Triangle{{-27, -17}, {-35, -35}, {-50, -50}}));
   EXPECT_TRUE(Intersects(Triangle{{-53, -33}, {-37, -17}, {-50, -20}},
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   // The corner of the Triangle is slightly too far in the positive x direction
   // to make contact with the "top-right" corner of the Quad.
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                              {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                           Triangle{{-26.99, -17}, {-35, -35}, {-50, -50}}));
   // The corner of the Triangle is slightly too far in the negative y direction
   // to make contact with the "bottom-left" corner of the Quad.
-  EXPECT_FALSE(Intersects(Triangle{{-53, -33.01f}, {-35, -35}, {-50, -50}},
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+  EXPECT_FALSE(
+      Intersects(Triangle{{-53, -33.01f}, {-35, -35}, {-50, -50}},
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
 }
 
 TEST(IntersectsTest, TriangleToQuadCornerTouchingEdge) {
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Triangle{{1.99f, -5}, {10, 3}, {30, 0}}));
   EXPECT_TRUE(Intersects(Triangle{{0, 10}, {5, -5}, {30, 0}},
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Triangle{{-40, -30}, {-35, -35}, {-50, -50}}));
   EXPECT_TRUE(Intersects(Triangle{{-48, -33}, {-35, -35}, {-50, -50}},
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   // The Triangle is slightly too far in the positive x direction to make
   // contact with the "right" side of the Quad.
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                              {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                           Triangle{{-39.99, -30}, {-35, -35}, {-50, -50}}));
   // The Triangle is slightly too far in the negative y direction to make
   // contact with the "bottom" of the Quad.
-  EXPECT_FALSE(Intersects(Triangle{{-48, -33.01f}, {-35, -35}, {-50, -50}},
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+  EXPECT_FALSE(
+      Intersects(Triangle{{-48, -33.01f}, {-35, -35}, {-50, -50}},
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
 }
 
 TEST(IntersectsTest, RectToRectEdgeIntersecting) {
@@ -1162,7 +1165,7 @@ TEST(IntersectsTest, RectToRectTouchingCorners) {
 TEST(IntersectsTest, RectToQuadEdgeIntersecting) {
   // Quad 1 Corners: (-53,-33), (-43,-33), (-27,-17), (-37,-17)
   Quad test_quad_1 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f);
+      {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f);
 
   // The Rect intersects just the "right" side of test_quad_1.
   EXPECT_TRUE(
@@ -1192,7 +1195,7 @@ TEST(IntersectsTest, RectToQuadEdgeIntersecting) {
 
   // Quad 2 Corners: (2, -14), (2, 6), (-2, 14), (-2, -6),
   Quad test_quad_2 = Quad::FromCenterDimensionsRotationAndShear(
-      {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f);
+      {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f);
 
   // The Rect intersects just the "right" side of test_quad_2.
   EXPECT_TRUE(Intersects(test_quad_2, Rect::FromTwoPoints({-1, -5}, {5, 5})));
@@ -1216,169 +1219,172 @@ TEST(IntersectsTest, RectToQuadEdgeIntersecting) {
 TEST(IntersectsTest, RectToQuadFullyContained) {
   // The Rect is contained within the Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Rect::FromTwoPoints({-49, -32}, {-43, -30})));
   EXPECT_TRUE(Intersects(Rect::FromTwoPoints({-42, -26}, {-38, -24}),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Rect::FromTwoPoints({-1, -7}, {1, -2})));
   EXPECT_TRUE(Intersects(Rect::FromTwoPoints({1, -3}, {-1, 6}),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
 
   // The Quad is contained within the Rect.
   EXPECT_TRUE(
       Intersects(Rect::FromTwoPoints({-6000, -4000}, {-20, -10}),
                  Quad::FromCenterDimensionsRotationAndShear(
-                     Point{-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                     Point{-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Rect::FromTwoPoints({-1000, -2000}, {10, 20})));
 }
 
 TEST(IntersectsTest, RectToQuadFullyOutside) {
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                              {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                           Rect::FromTwoPoints({-36, -32}, {-29, -27})));
-  EXPECT_FALSE(Intersects(Rect::FromTwoPoints({-51, -23}, {-44, -18}),
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+  EXPECT_FALSE(
+      Intersects(Rect::FromTwoPoints({-51, -23}, {-44, -18}),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                              {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                           Rect::FromTwoPoints({0, 11}, {5, 20})));
   EXPECT_FALSE(Intersects(Rect::FromTwoPoints({3, -20}, {5, 20}),
                           Quad::FromCenterDimensionsRotationAndShear(
-                              {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                              {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
 }
 
 TEST(IntersectsTest, RectToQuadOverlappingEdges) {
   // The "left" side of the Rect is overlapping the "right" side of the Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Rect::FromTwoPoints({2, -14}, {5, 6})));
   // The "right" side of the Rect is overlapping the "left" side of the Quad.
   EXPECT_TRUE(Intersects(Rect::FromTwoPoints({-5, -6}, {-2, 14}),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
   // The "bottom" of the Rect is overlapping the "top" of the Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Rect::FromTwoPoints({-37, -17}, {-27, 40})));
   // The "top" of the Rect is overlapping the "bottom" of the Quad.
   EXPECT_TRUE(Intersects(Rect::FromTwoPoints({-53, -33}, {-43, -50}),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
 
   // The "left" side of the Rect is slightly too far in the positive x direction
   // to overlap the "right" side of the Quad.
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                              {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                           Rect::FromTwoPoints({2.001f, -14}, {5, 6})));
   // The "right" side of the Rect is slightly too far in the negative x
   // direction to overlap the "left" side of the Quad.
   EXPECT_FALSE(Intersects(Rect::FromTwoPoints({-5, -6}, {-2.001f, 14}),
                           Quad::FromCenterDimensionsRotationAndShear(
-                              {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                              {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
   // The "bottom" of the Rect is slightly too far in the positive y direction to
   // overlap the "top" of the Quad.
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                              {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                           Rect::FromTwoPoints({-37, -16.999f}, {-27, 40})));
   // The "top" of the Rect is slightly too far in the negative y direction to
   // overlap the "bottom" of the Quad.
-  EXPECT_FALSE(Intersects(Rect::FromTwoPoints({-53, -33.001f}, {-43, -50}),
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+  EXPECT_FALSE(
+      Intersects(Rect::FromTwoPoints({-53, -33.001f}, {-43, -50}),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
 }
 
 TEST(IntersectsTest, RectToQuadTouchingCorners) {
   // The "top-left" corner of the Rect is overlapping the "bottom-right" corner
   // of the Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Rect::FromTwoPoints({2, -14}, {5, -20})));
   EXPECT_TRUE(Intersects(Rect::FromTwoPoints({-43, -33}, {-20, -50}),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   // The "top-right" corner of the Rect is overlapping the "bottom-left" corner
   // of the Quad.
   EXPECT_TRUE(Intersects(Rect::FromTwoPoints({-1.99f, -6}, {-10, -14}),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
   EXPECT_TRUE(Intersects(Rect::FromTwoPoints({-53, -33}, {-80, -50}),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   // The "bottom-left" corner of the Rect is overlapping the "top-right" corner
   // of the Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Rect::FromTwoPoints({-27, -17}, {-10, 40})));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Rect::FromTwoPoints({1.99f, 6}, {5, 20})));
   // The "bottom-right" corner of the Rect is overlapping the "top-left" corner
   // of the Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Rect::FromTwoPoints({-37, -17}, {-50, 40})));
   EXPECT_TRUE(Intersects(Rect::FromTwoPoints({-2, 14}, {-10, 20}),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
 }
 
 TEST(IntersectsTest, RectToQuadCornerTouchingEdge) {
   // The "left" side of the Rect is overlapped by the "top-right" corner of the
   // Quad.
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Rect::FromTwoPoints({-27, -30}, {-10, -10})));
   // The "right" side of the Rect is overlapped by the "bottom-left" corner of
   // the Quad.
   EXPECT_TRUE(Intersects(Rect::FromTwoPoints({-53, -20}, {-80, -50}),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   // The "bottom" of the Rect is overlapped by the "top-left" corner of the
   // Quad.
   EXPECT_TRUE(Intersects(Rect::FromTwoPoints({-10, 14}, {10, 20}),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
   // The "top" of the Rect is overlapped by the "bottom-right" corner of the
   // Quad.
   EXPECT_TRUE(Intersects(Rect::FromTwoPoints({-10, -14}, {10, -20}),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
 
   // The "left" side of the Rect is slightly too far in the positive x direction
   // to be overlapped by the "top-right" corner of the Quad.
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                              {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                           Rect::FromTwoPoints({-26.999f, -30}, {-10, -10})));
   // The "right" side of the Rect is slightly too far in the negative x
   // direction to be overlapped by the "bottom-left" corner of the Quad.
-  EXPECT_FALSE(Intersects(Rect::FromTwoPoints({-53.001f, -20}, {-80, -50}),
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+  EXPECT_FALSE(
+      Intersects(Rect::FromTwoPoints({-53.001f, -20}, {-80, -50}),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   // The "bottom" of the Rect is slightly too far in the positive y direction to
   // be overlapped by the "top-left" corner of the Quad.
   EXPECT_FALSE(Intersects(Rect::FromTwoPoints({-10, 14.001f}, {10, 20}),
                           Quad::FromCenterDimensionsRotationAndShear(
-                              {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                              {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
   // The "top" of the Rect is slightly too far in the negative y direction to
   // be overlapped by the "bottom-right" corner of the Quad.
   EXPECT_FALSE(Intersects(Rect::FromTwoPoints({-10, -14.001f}, {10, -20}),
                           Quad::FromCenterDimensionsRotationAndShear(
-                              {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                              {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
 }
 
 TEST(IntersectsTest, QuadToQuadEdgeIntersecting) {
   // Quad 1 Corners: (-53,-33), (-43,-33), (-27,-17), (-37,-17)
   Quad test_quad_1 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f);
+      {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f);
   // Quad 2 Corners: (2, -14), (2, 6), (-2, 14), (-2, -6),
   Quad test_quad_2 = Quad::FromCenterDimensionsRotationAndShear(
-      {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f);
+      {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f);
   // Intersects the "right" side of test_quad_1
   EXPECT_TRUE(
       Intersects(test_quad_1,
@@ -1453,132 +1459,143 @@ TEST(IntersectsTest, QuadToQuadEdgeIntersecting) {
 
 TEST(IntersectsTest, QuadToQuadFullyContained) {
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Quad::FromCenterDimensionsRotationAndShear(
                              {-43.0f, -27.0f}, 2.0f, 3.0f, Angle(), 0.1f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
                              {-43.0f, -27.0f}, 2.0f, 3.0f, Angle(), 0.1f),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   EXPECT_TRUE(
       Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                     {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                     {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                  Quad::FromCenterDimensionsRotationAndShear(
                      {0.0f, -3.0f}, 2.0f, 3.0f, Angle::Radians(2.5f), 0.1f)));
   EXPECT_TRUE(
       Intersects(Quad::FromCenterDimensionsRotationAndShear(
                      {0.0f, -3.0f}, 2.0f, 3.0f, Angle::Radians(2.5f), 0.1f),
                  Quad::FromCenterDimensionsRotationAndShear(
-                     {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                     {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
 }
 
 TEST(IntersectsTest, QuadToQuadFullyOutside) {
   EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                              {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                           Quad::FromCenterDimensionsRotationAndShear(
                               {-38.0f, -32.0f}, 2.0f, 3.0f, Angle(), 0.1f)));
-  EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-38.0f, -32.0f}, 2.0f, 3.0f, Angle(), 0.1f),
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
   EXPECT_FALSE(
       Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                     {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                     {-38.0f, -32.0f}, 2.0f, 3.0f, Angle(), 0.1f),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
+  EXPECT_FALSE(
+      Intersects(Quad::FromCenterDimensionsRotationAndShear(
+                     {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                  Quad::FromCenterDimensionsRotationAndShear(
                      {-5.0f, -1.0f}, 2.0f, 3.0f, Angle::Radians(2.5f), 0.1f)));
   EXPECT_FALSE(
       Intersects(Quad::FromCenterDimensionsRotationAndShear(
                      {-5.0f, -1.0f}, 2.0f, 3.0f, Angle::Radians(2.5f), 0.1f),
                  Quad::FromCenterDimensionsRotationAndShear(
-                     {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                     {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
 }
 
 TEST(IntersectsTest, QuadToQuadOverlappingEdges) {
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {4.0f, -10.0f}, 20.0f, 4.0f, kHalfPi, 0.1f)));
+                             {4.0f, -10.0f}, 20.0f, 4.0f, kQuarterTurn, 0.1f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {4.0f, -10.0f}, 20.0f, 4.0f, kHalfPi, 0.1f),
+                             {4.0f, -10.0f}, 20.0f, 4.0f, kQuarterTurn, 0.1f),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-35.0f, -30.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-35.0f, -30.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-35.0f, -30.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-35.0f, -30.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   // The Quad centered at (-47, -47.01) is slightly too far in the -y direction
   // to make contact with the "bottom" edge of the Quad centered at (-40, -25).
-  EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-35.0f, -30.01f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
-  EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-35.0f, -30.01f}, 10.0f, 16.0f, kTwoPi, 1.0f),
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+  EXPECT_FALSE(
+      Intersects(Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-35.0f, -30.01f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
+  EXPECT_FALSE(
+      Intersects(Quad::FromCenterDimensionsRotationAndShear(
+                     {-35.0f, -30.01f}, 10.0f, 16.0f, kFullTurn, 1.0f),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
 }
 
 TEST(IntersectsTest, QuadToQuadTouchingCorners) {
+  EXPECT_TRUE(
+      Intersects(Quad::FromCenterDimensionsRotationAndShear(
+                     {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-3.99f, -11.99f}, 20.0f, 4.0f, kQuarterTurn, 0.1f)));
+  EXPECT_TRUE(
+      Intersects(Quad::FromCenterDimensionsRotationAndShear(
+                     {-3.99f, -11.99f}, 20.0f, 4.0f, kQuarterTurn, 0.1f),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-3.99f, -11.99f}, 20.0f, 4.0f, kHalfPi, 0.1f)));
+                             {-66.0f, -41.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-3.99f, -11.99f}, 20.0f, 4.0f, kHalfPi, 0.1f),
+                             {-66.0f, -41.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
-  EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
-                         Quad::FromCenterDimensionsRotationAndShear(
-                             {-66.0f, -41.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
-  EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-66.0f, -41.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
-                         Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   // The Quad centered at (-66.01, -41) is slightly too far in the -x direction
   // to make contact with the "top-left" corner of the Quad centered at (-40,
   // -25).
-  EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-66.01f, -41.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
-  EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-66.01f, -41.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+  EXPECT_FALSE(
+      Intersects(Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-66.01f, -41.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
+  EXPECT_FALSE(
+      Intersects(Quad::FromCenterDimensionsRotationAndShear(
+                     {-66.01f, -41.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
 }
 
 TEST(IntersectsTest, QuadToQuadCornerTouchingEdge) {
+  EXPECT_TRUE(
+      Intersects(Quad::FromCenterDimensionsRotationAndShear(
+                     {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-14.99f, -11.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
+                             {-14.99f, -11.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {-14.99f, -11.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
+  EXPECT_TRUE(
+      Intersects(Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-47.0f, -47.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
   EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-14.99f, -11.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
+                             {-47.0f, -47.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                          Quad::FromCenterDimensionsRotationAndShear(
-                             {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
-  EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
-                         Quad::FromCenterDimensionsRotationAndShear(
-                             {-47.0f, -47.0f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
-  EXPECT_TRUE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                             {-47.0f, -47.0f}, 20.0f, 4.0f, kHalfPi, 2.0f),
-                         Quad::FromCenterDimensionsRotationAndShear(
-                             {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+                             {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
   // The Quad centered at (-47, -47.01) is slightly too far in the -y direction
   // to make contact with the "bottom" edge of the Quad centered at (-40, -25).
-  EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f),
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-47.0f, -47.01f}, 20.0f, 4.0f, kHalfPi, 2.0f)));
-  EXPECT_FALSE(Intersects(Quad::FromCenterDimensionsRotationAndShear(
-                              {-47.0f, -47.01f}, 20.0f, 4.0f, kHalfPi, 2.0f),
-                          Quad::FromCenterDimensionsRotationAndShear(
-                              {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)));
+  EXPECT_FALSE(
+      Intersects(Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-47.0f, -47.01f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)));
+  EXPECT_FALSE(
+      Intersects(Quad::FromCenterDimensionsRotationAndShear(
+                     {-47.0f, -47.01f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
+                 Quad::FromCenterDimensionsRotationAndShear(
+                     {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
 }
 
 TEST(IntersectsTest, ModeledShapeToPointWithIdentityTransform) {

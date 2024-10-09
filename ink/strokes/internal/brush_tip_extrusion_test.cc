@@ -41,40 +41,42 @@ TEST(BrushTipExtrusionTest, EvaluateTangentQualityTwoNonOverlappingStadiums) {
 
 TEST(BrushTipExtrusionTest,
      EvaluateTangentQualityTwoTrapezoidsPointingInOppositeDirections) {
-  EXPECT_EQ(BrushTipExtrusion::EvaluateTangentQuality({{.position = {-1, 0},
-                                                        .width = 1,
-                                                        .height = 1,
-                                                        .rotation = -kHalfPi,
-                                                        .pinch = 0.5},
-                                                       kTravelThreshold},
-                                                      {{.position = {1, 0},
-                                                        .width = 1,
-                                                        .height = 1,
-                                                        .rotation = kHalfPi,
-                                                        .pinch = 0.5},
-                                                       kEpsilon},
-                                                      kTravelThreshold),
-            BrushTipExtrusion::TangentQuality::kGoodTangents);
+  EXPECT_EQ(
+      BrushTipExtrusion::EvaluateTangentQuality({{.position = {-1, 0},
+                                                  .width = 1,
+                                                  .height = 1,
+                                                  .rotation = -kQuarterTurn,
+                                                  .pinch = 0.5},
+                                                 kTravelThreshold},
+                                                {{.position = {1, 0},
+                                                  .width = 1,
+                                                  .height = 1,
+                                                  .rotation = kQuarterTurn,
+                                                  .pinch = 0.5},
+                                                 kEpsilon},
+                                                kTravelThreshold),
+      BrushTipExtrusion::TangentQuality::kGoodTangents);
 }
 
 TEST(BrushTipExtrusionTest,
      EvaluateTangentQualityTwoRoundedTrapezoidsPointingInOppositeDirections) {
-  EXPECT_EQ(BrushTipExtrusion::EvaluateTangentQuality({{.position = {-1, 0},
-                                                        .width = 1,
-                                                        .height = 1,
-                                                        .percent_radius = 0.5,
-                                                        .rotation = -kHalfPi,
-                                                        .pinch = 0.5},
-                                                       kTravelThreshold},
-                                                      {{.position = {1, 0},
-                                                        .width = 1,
-                                                        .height = 1,
-                                                        .percent_radius = 0.5,
-                                                        .rotation = kHalfPi,
-                                                        .pinch = 0.5},
-                                                       kEpsilon},
-                                                      kTravelThreshold),
-            BrushTipExtrusion::TangentQuality::kGoodTangents);
+  EXPECT_EQ(
+      BrushTipExtrusion::EvaluateTangentQuality({{.position = {-1, 0},
+                                                  .width = 1,
+                                                  .height = 1,
+                                                  .percent_radius = 0.5,
+                                                  .rotation = -kQuarterTurn,
+                                                  .pinch = 0.5},
+                                                 kTravelThreshold},
+                                                {{.position = {1, 0},
+                                                  .width = 1,
+                                                  .height = 1,
+                                                  .percent_radius = 0.5,
+                                                  .rotation = kQuarterTurn,
+                                                  .pinch = 0.5},
+                                                 kEpsilon},
+                                                kTravelThreshold),
+      BrushTipExtrusion::TangentQuality::kGoodTangents);
 }
 
 TEST(BrushTipExtrusionTest, JoinedShapeTwoPillsAtRightAngles) {
@@ -86,7 +88,7 @@ TEST(BrushTipExtrusionTest, JoinedShapeTwoPillsAtRightAngles) {
             .width = 2,
             .height = 1,
             .percent_radius = 1,
-            .rotation = kHalfPi},
+            .rotation = kQuarterTurn},
            kEpsilon},
           kTravelThreshold),
       BrushTipExtrusion::TangentQuality::kGoodTangents);
@@ -132,12 +134,15 @@ TEST(BrushTipExtrusionTest,
      EvaluateTangentQualityAccountsForFloatingPointPrecision) {
   EXPECT_EQ(
       BrushTipExtrusion::EvaluateTangentQuality(
-          {{.position = {1, 2}, .width = 5, .height = 7, .rotation = kPi / 4},
+          {{.position = {1, 2},
+            .width = 5,
+            .height = 7,
+            .rotation = kFullTurn / 8},
            kEpsilon},
           {{.position = {1.1818182, 2.1818182},
             .width = 5,
             .height = 7,
-            .rotation = kPi / 4},
+            .rotation = kFullTurn / 8},
            kEpsilon},
           kTravelThreshold),
       // Without the offset to the `RoundedPolygon` in `EvaluateTangentQuality`,

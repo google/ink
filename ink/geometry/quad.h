@@ -150,8 +150,8 @@ class Quad {
   // determine the return value, even for degenerate Quads.
   bool IsAxisAligned(Angle tolerance = Angle::Radians(1e-5)) const {
     return IsRectangular() &&
-           (Abs(Mod(rotation_, kHalfPi)) <= tolerance ||
-            Abs(Mod(rotation_, kHalfPi) - kHalfPi) <= tolerance);
+           (Abs(Mod(rotation_, kQuarterTurn)) <= tolerance ||
+            Abs(Mod(rotation_, kQuarterTurn) - kQuarterTurn) <= tolerance);
   }
 
   // Returns the signed area of the Quad. The area will be negative if and only
@@ -198,7 +198,7 @@ class Quad {
     if (width_ < 0) {
       width_ = -width_;
       height_ = -height_;
-      rotation_ = (rotation_ + kPi).Normalized();
+      rotation_ = (rotation_ + kHalfTurn).Normalized();
     }
   }
 

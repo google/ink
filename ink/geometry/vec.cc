@@ -71,12 +71,17 @@ Angle Vec::SignedAngleBetween(const Vec &a, const Vec &b) {
   // Determinant(a, b); however, using the unit vectors avoids problems such as
   // Determinant returning NaN if both multiplications overflow to infinity.
   Angle angle = Acos(std::clamp(DotProduct(a_unit, b_unit), -1.0f, 1.0f));
-  // Mathematically, the absolute angle will be strictly less than kPi if the
-  // determinant is nonzero, but due to float rounding it's possible for the
-  // determinant to be a small negative number while the angle is exactly kPi.
-  // Since this method promises to return a value strictly greater than -kPi, we
-  // just return kPi in this case.
-  return angle == kPi || Determinant(a_unit, b_unit) >= 0.f ? angle : -angle;
+  // Negate the angle if the determinant is negative, with one weird exception
+  // for `angle == kHalfTurn` that's needed due to floating point rounding.
+  //
+  // Mathematically, the absolute angle will be strictly less than π radians if
+  // the determinant is nonzero, but due to float rounding it's possible for the
+  // determinant to be a small (but nonzero) negative number while the absolute
+  // angle is exactly π radians. Since this method promises to return a value
+  // strictly greater than -π radians, we always return the positive angle when
+  // the angle is exactly π radians (i.e. `kHalfTurn`).
+  return angle == kHalfTurn || Determinant(a_unit, b_unit) >= 0.f ? angle
+                                                                  : -angle;
 }
 
 namespace vec_internal {

@@ -68,7 +68,7 @@ TEST(BrushTipShapeTest, ConstructedFormingStadium) {
                                              .width = 4,
                                              .height = 16,
                                              .percent_radius = 1,
-                                             .rotation = 3 * kHalfPi});
+                                             .rotation = 3 * kQuarterTurn});
     EXPECT_THAT(shape.Center(), PointEq({1, 1}));
     EXPECT_THAT(shape.PerimeterCircles(),
                 ElementsAre(CircleNear(Circle({7, 1}, 2), 0.001),
@@ -82,7 +82,7 @@ TEST(BrushTipShapeTest, ConstructedFormingRectangle) {
                                            .width = 8,
                                            .height = 8.f / 3,
                                            .percent_radius = 0,
-                                           .rotation = kPi / 3});
+                                           .rotation = kFullTurn / 6});
   EXPECT_THAT(shape.Center(), PointEq({2, 3}));
   EXPECT_THAT(shape.PerimeterCircles(),
               ElementsAre(CircleNear(Circle({2.85, 7.13}, 0), 0.01),
@@ -258,7 +258,7 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedRectangle) {
                                              .height = 9.f / 3,
                                              .percent_radius = 0,
                                              .rotation = Angle(),
-                                             .slant = kPi / 3});
+                                             .slant = kFullTurn / 6});
     EXPECT_THAT(shape.Center(), PointEq({0, 0}));
     EXPECT_THAT(shape.PerimeterCircles(),
                 ElementsAre(CircleNear(Circle({3.2, 0.75}, 0), 0.01),
@@ -273,7 +273,7 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedRectangle) {
                                              .height = 9.f / 3,
                                              .percent_radius = 0.2,
                                              .rotation = Angle(),
-                                             .slant = kPi / 3});
+                                             .slant = kFullTurn / 6});
     EXPECT_THAT(shape.Center(), PointEq({0, 0}));
     EXPECT_THAT(shape.PerimeterCircles(),
                 ElementsAre(CircleNear(Circle({3.16, 0.6}, 0.3), 0.01),
@@ -287,7 +287,7 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedRectangle) {
                                          .height = 9.f / 3,
                                          .percent_radius = 0.0,
                                          .rotation = Angle(),
-                                         .slant = kPi / 3},
+                                         .slant = kFullTurn / 6},
                                         0.2);
     EXPECT_THAT(shape.Center(), PointEq({0, 0}));
     EXPECT_THAT(shape.PerimeterCircles(),
@@ -302,8 +302,8 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedRectangle) {
                                          .width = 9,
                                          .height = 9.f / 3,
                                          .percent_radius = 0.2,
-                                         .rotation = kPi / 4,
-                                         .slant = kPi / 3},
+                                         .rotation = kFullTurn / 8,
+                                         .slant = kFullTurn / 6},
                                         0.2);
     EXPECT_THAT(shape.Center(), PointEq({0, 0}));
     EXPECT_THAT(shape.PerimeterCircles(),
@@ -318,8 +318,8 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedRectangle) {
                                          .width = 9,
                                          .height = 9.f / 3,
                                          .percent_radius = 0.2,
-                                         .rotation = kPi / 4,
-                                         .slant = kPi / 3},
+                                         .rotation = kFullTurn / 8,
+                                         .slant = kFullTurn / 6},
                                         0.2);
     EXPECT_THAT(shape.Center(), PointEq({2, 3}));
     EXPECT_THAT(shape.PerimeterCircles(),
@@ -338,7 +338,7 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedPinchedQuad) {
                                              .height = 9.f / 3,
                                              .percent_radius = 0,
                                              .rotation = Angle(),
-                                             .slant = kPi / 3,
+                                             .slant = kFullTurn / 6,
                                              .pinch = 0.3});
     EXPECT_THAT(shape.Center(), PointEq({0, 0}));
     EXPECT_THAT(shape.PerimeterCircles(),
@@ -354,7 +354,7 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedPinchedQuad) {
                                              .height = 9.f / 3,
                                              .percent_radius = 0.2,
                                              .rotation = Angle(),
-                                             .slant = kPi / 3,
+                                             .slant = kFullTurn / 6,
                                              .pinch = 0.3});
     EXPECT_THAT(shape.Center(), PointEq({0, 0}));
     EXPECT_THAT(shape.PerimeterCircles(),
@@ -369,7 +369,7 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedPinchedQuad) {
                                          .height = 9.f / 3,
                                          .percent_radius = 0.0,
                                          .rotation = Angle(),
-                                         .slant = kPi / 3,
+                                         .slant = kFullTurn / 6,
                                          .pinch = 0.3},
                                         0.2);
     EXPECT_THAT(shape.Center(), PointEq({0, 0}));
@@ -385,8 +385,8 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedPinchedQuad) {
                                          .width = 9,
                                          .height = 9.f / 3,
                                          .percent_radius = 0.2,
-                                         .rotation = kPi / 4,
-                                         .slant = kPi / 3,
+                                         .rotation = kFullTurn / 8,
+                                         .slant = kFullTurn / 6,
                                          .pinch = 0.3},
                                         0.2);
     EXPECT_THAT(shape.Center(), PointEq({0, 0}));
@@ -402,8 +402,8 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedPinchedQuad) {
                                          .width = 9,
                                          .height = 9.f / 3,
                                          .percent_radius = 0.2,
-                                         .rotation = kPi / 4,
-                                         .slant = kPi / 3,
+                                         .rotation = kFullTurn / 8,
+                                         .slant = kFullTurn / 6,
                                          .pinch = 0.3},
                                         0.2);
     EXPECT_THAT(shape.Center(), PointEq({2, 3}));
@@ -421,7 +421,7 @@ TEST(BrushTipShapeTest, ConstructedFormingRoundedSquare) {
                                            .width = 4,
                                            .height = 4,
                                            .percent_radius = 0.5,
-                                           .rotation = kPi / 4});
+                                           .rotation = kFullTurn / 8});
   EXPECT_THAT(shape.Center(), PointEq({0, 0}));
   EXPECT_THAT(shape.PerimeterCircles(),
               ElementsAre(CircleNear(Circle({0, 1.414}, 1), 0.001),
@@ -537,7 +537,7 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleStadium) {
                                              .width = 4,
                                              .height = 2,
                                              .percent_radius = 1,
-                                             .rotation = -kHalfPi});
+                                             .rotation = -kQuarterTurn});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(circle, stadium);
     EXPECT_EQ(indices.left.first, 0);
@@ -552,7 +552,7 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleStadium) {
                                              .width = 2,
                                              .height = 4,
                                              .percent_radius = 1,
-                                             .rotation = kHalfPi});
+                                             .rotation = kQuarterTurn});
     BrushTipShape circle = ShapeWithZeroMinRadiusAndSeparation(
         {.position = {0, 2}, .width = 4, .height = 4, .percent_radius = 1});
     BrushTipShape::TangentCircleIndices indices =
@@ -604,7 +604,7 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleSquare) {
                                              .width = 4,
                                              .height = 4,
                                              .percent_radius = 0.25,
-                                             .rotation = kPi / 4});
+                                             .rotation = kFullTurn / 8});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(circle, square);
     EXPECT_EQ(indices.left.first, 0);
@@ -621,7 +621,7 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleSquare) {
                                              .width = 2,
                                              .height = 2,
                                              .percent_radius = 0.25,
-                                             .rotation = -kHalfPi});
+                                             .rotation = -kQuarterTurn});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(circle, square);
     EXPECT_EQ(indices.left.first, 0);
@@ -700,7 +700,7 @@ TEST(BrushTipShapeTest, TangentIndicesWithStadia) {
                                              .width = 2,
                                              .height = 4,
                                              .percent_radius = 1,
-                                             .rotation = kHalfPi});
+                                             .rotation = kQuarterTurn});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(stadium_1, stadium_2);
     EXPECT_EQ(indices.left.first, 0);
@@ -760,13 +760,13 @@ TEST(BrushTipShapeTest, TangentIndicesWithRectangles) {
                                              .width = 6,
                                              .height = 6,
                                              .percent_radius = 0.25,
-                                             .rotation = kPi / 4});
+                                             .rotation = kFullTurn / 8});
     BrushTipShape square_2 =
         ShapeWithZeroMinRadiusAndSeparation({.position = {1, 0},
                                              .width = 6,
                                              .height = 6,
                                              .percent_radius = 0.25,
-                                             .rotation = -kPi / 4});
+                                             .rotation = -kFullTurn / 8});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(square_1, square_2);
     EXPECT_EQ(indices.left.first, 0);
@@ -865,7 +865,7 @@ TEST(BrushTipShapeDeathTest, TangentIndicesWithOneInsideTheOther) {
                                              .width = 2,
                                              .height = 2,
                                              .percent_radius = 0.5,
-                                             .rotation = kPi / 4});
+                                             .rotation = kFullTurn / 8});
     EXPECT_DEATH_IF_SUPPORTED(
         BrushTipShape::GetTangentCircleIndices(square, square), "");
   }
@@ -903,7 +903,7 @@ TEST(BrushTipShapeTest, TangentIndicesWithMoreThanTwoPointsOfIntersection) {
                                            .width = 2,
                                            .height = 2,
                                            .percent_radius = 0,
-                                           .rotation = kPi / 4});
+                                           .rotation = kFullTurn / 8});
   {
     // See brush_tip_shape_tests.svg More Than Two Points Of
     // Intersection #1
@@ -970,7 +970,7 @@ TEST(AddRoundedQuadTurnPoints, AppendTurnExtrusionPoints) {
                                         .width = 2,
                                         .height = 2,
                                         .percent_radius = 0.25,
-                                        .rotation = kHalfPi},
+                                        .rotation = kQuarterTurn},
                                        {.position = {4, 0},
                                         .width = 2,
                                         .height = 2,
@@ -995,7 +995,7 @@ TEST(AddRoundedQuadTurnPoints, AppendTurnExtrusionPoints) {
                                         .width = 2,
                                         .height = 2,
                                         .percent_radius = 0.25,
-                                        .rotation = kHalfPi},
+                                        .rotation = kQuarterTurn},
                                        {.position = {4, 0},
                                         .width = 2,
                                         .height = 2,
@@ -1218,7 +1218,7 @@ TEST(BrushTipShapeTest, AppendRoundedRectangleWholeShapeExtrusionPoints) {
                                            .width = 4,
                                            .height = 5,
                                            .percent_radius = 0.5,
-                                           .rotation = kTwoPi / 3});
+                                           .rotation = kFullTurn / 3});
 
   // Fill the points with some starting values to check they are not modified.
   ExtrusionPoints points = {
@@ -1281,7 +1281,7 @@ TEST(BrushTipShapeTest, ContainsSelf) {
       .width = 4,
       .height = 8,
       .percent_radius = 0.5,
-      .rotation = kPi / 3,
+      .rotation = kFullTurn / 6,
   });
   EXPECT_TRUE(rounded_rectangle.Contains(rounded_rectangle));
 
@@ -1290,7 +1290,7 @@ TEST(BrushTipShapeTest, ContainsSelf) {
       .width = 4,
       .height = 8,
       .percent_radius = 0,
-      .rotation = -kHalfPi,
+      .rotation = -kQuarterTurn,
   });
   EXPECT_TRUE(rectangle.Contains(rectangle));
 }
@@ -1301,14 +1301,14 @@ TEST(BrushTipShapeTest, ContainsWithDistantShapes) {
       .width = 4,
       .height = 8,
       .percent_radius = 0.5,
-      .rotation = kPi / 3,
+      .rotation = kFullTurn / 6,
   });
   BrushTipShape shape2 = ShapeWithZeroMinRadiusAndSeparation({
       .position = {20, -8},
       .width = 7,
       .height = 3,
       .percent_radius = 1,
-      .rotation = kPi / 5,
+      .rotation = kFullTurn / 10,
   });
   EXPECT_FALSE(shape1.Contains(shape2));
   EXPECT_FALSE(shape2.Contains(shape1));
@@ -1327,13 +1327,13 @@ TEST(BrushTipShapeTest, ContainsWithCircleAndRoundedRectangle) {
                                            .width = 6,
                                            .height = 6,
                                            .percent_radius = 0.1,
-                                           .rotation = kHalfPi})));
+                                           .rotation = kQuarterTurn})));
   EXPECT_FALSE(circle.Contains(
       ShapeWithZeroMinRadiusAndSeparation({.position = {1, 4},
                                            .width = 6,
                                            .height = 6,
                                            .percent_radius = 0.2,
-                                           .rotation = -kHalfPi})));
+                                           .rotation = -kQuarterTurn})));
 }
 
 TEST(BrushTipShapeTest, ContainsWithRoundedRectangleAndCircleEdgeCases) {
@@ -1391,7 +1391,7 @@ TEST(BrushTipShapeTest, ContainsWithRoundedSquares) {
       .width = 10,
       .height = 10,
       .percent_radius = 0.25,
-      .rotation = kPi / 4,
+      .rotation = kFullTurn / 8,
   });
 
   BrushTipState small_rounded_square = {

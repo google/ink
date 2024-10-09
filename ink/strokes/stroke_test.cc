@@ -65,7 +65,7 @@ Brush CreateBrush() {
       {
           .scale = {0.5, 0.7},
           .corner_rounding = 0,
-          .rotation = kPi / 4,
+          .rotation = kFullTurn / 8,
       },
       {.texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
                            .mapping = BrushPaint::TextureMapping::kWinding,
@@ -73,7 +73,7 @@ Brush CreateBrush() {
                            .size = {3, 5},
                            .size_jitter = {0.1, 2},
                            .keyframes = {{.progress = 0.1,
-                                          .rotation = kHalfPi / 2}},
+                                          .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
       "//test/brush-family:awesome-rectangular-brush");
   ABSL_CHECK_OK(family);

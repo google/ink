@@ -74,7 +74,7 @@ TEST(QuadTest, ConstructorsVariousValues) {
   EXPECT_THAT(quad_2.Center(), PointEq({-4.5f, 0.2f}));
   EXPECT_EQ(quad_2.Width(), 11.6f);
   EXPECT_EQ(quad_2.Height(), -5);
-  EXPECT_EQ(quad_2.Rotation(), Angle::Radians(-.5f) + 2.0f * kPi);
+  EXPECT_EQ(quad_2.Rotation(), Angle::Radians(-.5f) + kFullTurn);
   EXPECT_EQ(quad_2.ShearFactor(), 0);
 
   Quad quad_3 = Quad::FromCenterDimensionsRotationAndShear(
@@ -82,7 +82,7 @@ TEST(QuadTest, ConstructorsVariousValues) {
   EXPECT_THAT(quad_3.Center(), PointEq({-4.5f, 0.2f}));
   EXPECT_EQ(quad_3.Width(), 11.6f);
   EXPECT_EQ(quad_3.Height(), -5);
-  EXPECT_EQ(quad_3.Rotation(), Angle::Radians(-.5f) + 2.0f * kPi);
+  EXPECT_EQ(quad_3.Rotation(), Angle::Radians(-.5f) + kFullTurn);
   EXPECT_EQ(quad_3.ShearFactor(), -8.4f);
 
   Quad quad_4 =
@@ -99,7 +99,7 @@ TEST(QuadTest, ConstructorsNegativeWidth) {
   EXPECT_THAT(quad_1.Center(), PointEq({-4.5f, 0.2f}));
   EXPECT_EQ(quad_1.Width(), 11.6f);
   EXPECT_EQ(quad_1.Height(), 5);
-  EXPECT_EQ(quad_1.Rotation(), kPi);
+  EXPECT_EQ(quad_1.Rotation(), kHalfTurn);
   EXPECT_EQ(quad_1.ShearFactor(), 0);
 
   Quad quad_2 = Quad::FromCenterDimensionsAndRotation({-4.5f, 0.2f}, -11.6f, -5,
@@ -107,7 +107,7 @@ TEST(QuadTest, ConstructorsNegativeWidth) {
   EXPECT_THAT(quad_2.Center(), PointEq({-4.5f, 0.2f}));
   EXPECT_EQ(quad_2.Width(), 11.6f);
   EXPECT_EQ(quad_2.Height(), 5);
-  EXPECT_EQ(quad_2.Rotation(), Angle::Radians(1.0f) + kPi);
+  EXPECT_EQ(quad_2.Rotation(), Angle::Radians(1.0f) + kHalfTurn);
   EXPECT_EQ(quad_2.ShearFactor(), 0);
 
   Quad quad_3 = Quad::FromCenterDimensionsRotationAndShear(
@@ -115,7 +115,7 @@ TEST(QuadTest, ConstructorsNegativeWidth) {
   EXPECT_THAT(quad_3.Center(), PointEq({-4.5f, 0.2f}));
   EXPECT_EQ(quad_3.Width(), 11.6f);
   EXPECT_EQ(quad_3.Height(), 5);
-  EXPECT_EQ(quad_3.Rotation(), Angle::Radians(1.0f) + kPi);
+  EXPECT_EQ(quad_3.Rotation(), Angle::Radians(1.0f) + kHalfTurn);
   EXPECT_EQ(quad_3.ShearFactor(), -8.4f);
 }
 
@@ -141,7 +141,7 @@ TEST(QuadTest, GettersGetVariousValues) {
   EXPECT_THAT(quad_3.Center(), PointEq({-2.5f, -4.5f}));
   EXPECT_EQ(quad_3.Width(), 2.4f);
   EXPECT_EQ(quad_3.Height(), -3.6f);
-  EXPECT_EQ(quad_3.Rotation(), Angle::Radians(-1.2f) + 2.0f * kPi);
+  EXPECT_EQ(quad_3.Rotation(), Angle::Radians(-1.2f) + kFullTurn);
   EXPECT_EQ(quad_3.ShearFactor(), -4.8f);
 }
 
@@ -237,7 +237,7 @@ TEST(QuadTest, SettersSetNegativeValue) {
   quad_2.SetWidth(-6.0f);
   EXPECT_FLOAT_EQ(quad_2.Width(), 6.0f);
   EXPECT_FLOAT_EQ(quad_2.Height(), -4.0f);
-  EXPECT_EQ(quad_2.Rotation(), Angle::Radians(2.0f) + kPi);
+  EXPECT_EQ(quad_2.Rotation(), Angle::Radians(2.0f) + kHalfTurn);
 
   Quad quad_3 = Quad::FromCenterDimensionsRotationAndShear(
       {4.0f, 5.0f}, 2.0f, 4.0f, Angle::Radians(2.0f), 3.0f);
@@ -247,7 +247,7 @@ TEST(QuadTest, SettersSetNegativeValue) {
   Quad quad_4 = Quad::FromCenterDimensionsRotationAndShear(
       {4.0f, 5.0f}, 2.0f, 4.0f, Angle::Radians(2.0f), 3.0f);
   quad_4.SetRotation(Angle::Radians(-1.0f));
-  EXPECT_EQ(quad_4.Rotation(), Angle::Radians(-1.0f) + 2.0f * kPi);
+  EXPECT_EQ(quad_4.Rotation(), Angle::Radians(-1.0f) + kFullTurn);
 
   Quad quad_5 = Quad::FromCenterDimensionsRotationAndShear(
       {4.0f, 5.0f}, 2.0f, 4.0f, Angle::Radians(2.0f), 3.0f);
@@ -400,15 +400,15 @@ TEST(QuadTest, IsAxisAlignedOnRectangularRightAngleRotatedQuads) {
                   .IsAxisAligned());
 
   EXPECT_TRUE(Quad::FromCenterDimensionsRotationAndShear(
-                  {-40.0f, -25.0f}, 20.0f, 4.0f, kTwoPi, 0.0f)
+                  {-40.0f, -25.0f}, 20.0f, 4.0f, kFullTurn, 0.0f)
                   .IsAxisAligned());
 
   EXPECT_TRUE(Quad::FromCenterDimensionsRotationAndShear(
-                  {-40.0f, -25.0f}, 20.0f, 4.0f, kHalfPi, 0.0f)
+                  {-40.0f, -25.0f}, 20.0f, 4.0f, kQuarterTurn, 0.0f)
                   .IsAxisAligned());
 
   EXPECT_TRUE(Quad::FromCenterDimensionsRotationAndShear(
-                  {-40.0f, -25.0f}, 20.0f, 4.0f, kHalfPi * 30, 0.0f)
+                  {-40.0f, -25.0f}, 20.0f, 4.0f, kQuarterTurn * 30, 0.0f)
                   .IsAxisAligned());
 }
 
@@ -489,12 +489,12 @@ TEST(QuadTest, IsAxisAlignedToleranceSet) {
                    {-40.0f, -25.0f}, 3.0f, 4.0f, Angle::Radians(1e-9), 0.0f)
                    .IsAxisAligned(Angle::Radians(0.0f)));
 
-  // A tolerance >= π/4 makes the rotation check always pass.
+  // A tolerance >= 1/8 turn makes the rotation check always pass.
   for (int i = 0; i < 100; i++) {
     EXPECT_TRUE(
         Quad::FromCenterDimensionsRotationAndShear(
             {-40.0f, -25.0f}, 3.0f, 4.0f, Angle::Radians(0.05f * i), 0.0f)
-            .IsAxisAligned(kHalfPi / 2));
+            .IsAxisAligned(kFullTurn / 8));
   }
 }
 
@@ -593,7 +593,7 @@ TEST(QuadDeathTest, AspectRatioFailsWithZeroHeight) {
 TEST(QuadTest, Corners) {
   std::array<Point, 4> test_corners_1 =
       Quad::FromCenterDimensionsRotationAndShear({-40.0f, -25.0f}, 10.0f, 16.0f,
-                                                 kTwoPi, 1.0f)
+                                                 kFullTurn, 1.0f)
           .Corners();
 
   EXPECT_THAT(test_corners_1[0], PointEq({-53.0f, -33.0f}));
@@ -603,7 +603,7 @@ TEST(QuadTest, Corners) {
 
   std::array<Point, 4> test_corners_2 =
       Quad::FromCenterDimensionsRotationAndShear({0.0f, 0.0f}, 20.0f, 4.0f,
-                                                 kHalfPi, 2.0f)
+                                                 kQuarterTurn, 2.0f)
           .Corners();
 
   EXPECT_THAT(test_corners_2[0], PointEq({2.0f, -14.0f}));
@@ -614,7 +614,7 @@ TEST(QuadTest, Corners) {
 
 TEST(QuadTest, GetEdge) {
   Quad test_quad_1 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f);
+      {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f);
 
   EXPECT_THAT(test_quad_1.GetEdge(0),
               SegmentEq(Segment{{-53.0f, -33.0f}, {-43.0f, -33.0f}}));
@@ -626,7 +626,7 @@ TEST(QuadTest, GetEdge) {
               SegmentEq(Segment{{-37.0f, -17.0f}, {-53.0f, -33.0f}}));
 
   Quad test_quad_2 = Quad::FromCenterDimensionsRotationAndShear(
-      {0.0f, 0.0f}, 20.0f, 4.0f, kHalfPi, 2.0f);
+      {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f);
 
   EXPECT_THAT(test_quad_2.GetEdge(0),
               SegmentEq(Segment{{2.0f, -14.0f}, {2.0f, 6.0f}}));
@@ -640,15 +640,15 @@ TEST(QuadTest, GetEdge) {
 
 TEST(QuadDeathTest, GetEdge) {
   EXPECT_DEATH_IF_SUPPORTED(Quad::FromCenterDimensionsRotationAndShear(
-                                {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)
+                                {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)
                                 .GetEdge(4),
                             "out of bounds");
   EXPECT_DEATH_IF_SUPPORTED(Quad::FromCenterDimensionsRotationAndShear(
-                                {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)
+                                {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)
                                 .GetEdge(12),
                             "out of bounds");
   EXPECT_DEATH_IF_SUPPORTED(Quad::FromCenterDimensionsRotationAndShear(
-                                {-40.0f, -25.0f}, 10.0f, 16.0f, kTwoPi, 1.0f)
+                                {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)
                                 .GetEdge(-1),
                             "out of bounds");
 }
@@ -698,51 +698,57 @@ TEST(QuadTest, JoinForExteriorPointOnUprightQuad) {
 TEST(QuadTest, JoinForInteriorPointOnSlantedRotatedQuad) {
   // Inside the Quad.
   Quad test_quad_1 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f);
+      {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f);
   test_quad_1.Join({-46.0f, -16.0f});
-  EXPECT_THAT(test_quad_1, QuadEq(Quad::FromCenterDimensionsRotationAndShear(
-                               {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f)));
+  EXPECT_THAT(test_quad_1,
+              QuadEq(Quad::FromCenterDimensionsRotationAndShear(
+                  {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f)));
   // On the side of the Quad.
   Quad test_quad_2 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f);
+      {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f);
   test_quad_2.Join({-36.0f, -34.0f});
-  EXPECT_THAT(test_quad_2, QuadEq(Quad::FromCenterDimensionsRotationAndShear(
-                               {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f)));
+  EXPECT_THAT(test_quad_2,
+              QuadEq(Quad::FromCenterDimensionsRotationAndShear(
+                  {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f)));
   // At the corner of the Quad.
   Quad test_quad_3 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f);
+      {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f);
   test_quad_3.Join({-48.0f, -22.0f});
-  EXPECT_THAT(test_quad_3, QuadEq(Quad::FromCenterDimensionsRotationAndShear(
-                               {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f)));
+  EXPECT_THAT(test_quad_3,
+              QuadEq(Quad::FromCenterDimensionsRotationAndShear(
+                  {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f)));
 }
 
 TEST(QuadTest, JoinForExteriorPointOnSlantedRotatedQuad) {
   // Below relative to the center and rotation of the Quad.
   Quad test_quad_1 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f);
+      {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f);
   test_quad_1.Join({-28.0f, -38.0f});
-  EXPECT_THAT(test_quad_1, QuadEq(Quad::FromCenterDimensionsRotationAndShear(
-                               {-38.0f, -27.0f}, 10.0f, 20.0f, kHalfPi, 1.0f)));
+  EXPECT_THAT(test_quad_1,
+              QuadEq(Quad::FromCenterDimensionsRotationAndShear(
+                  {-38.0f, -27.0f}, 10.0f, 20.0f, kQuarterTurn, 1.0f)));
   // To the Left relative to the center and rotation of the Quad.
   Quad test_quad_2 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f);
+      {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f);
   test_quad_2.Join({-44.0f, -36.0f});
-  EXPECT_THAT(test_quad_2, QuadEq(Quad::FromCenterDimensionsRotationAndShear(
-                               {-40.0f, -30.0f}, 20.0f, 16.0f, kHalfPi, 1.0f)));
+  EXPECT_THAT(test_quad_2,
+              QuadEq(Quad::FromCenterDimensionsRotationAndShear(
+                  {-40.0f, -30.0f}, 20.0f, 16.0f, kQuarterTurn, 1.0f)));
   // Above & to the right relative to the center and rotation of the Quad.
   Quad test_quad_3 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f);
+      {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f);
   test_quad_3.Join({-50.0f, -6.0f});
-  EXPECT_THAT(test_quad_3, QuadEq(Quad::FromCenterDimensionsRotationAndShear(
-                               {-41.0f, -22.0f}, 14.0f, 18.0f, kHalfPi, 1.0f)));
+  EXPECT_THAT(test_quad_3,
+              QuadEq(Quad::FromCenterDimensionsRotationAndShear(
+                  {-41.0f, -22.0f}, 14.0f, 18.0f, kQuarterTurn, 1.0f)));
   // Quad with 2 points in Q1, center in Q2, two points in Q3, joining a point
   // in Q4.
   Quad test_quad_4 = Quad::FromCenterDimensionsRotationAndShear(
-      {-10.0f, 2.0f}, 10.0f, 25.0f, kHalfPi + kPi, -2.0f);
+      {-10.0f, 2.0f}, 10.0f, 25.0f, kQuarterTurn + kHalfTurn, -2.0f);
   test_quad_4.Join({20.0f, -20.0f});
-  EXPECT_THAT(test_quad_4,
-              QuadEq(Quad::FromCenterDimensionsRotationAndShear(
-                  {-1.25f, -19.0f}, 87.0f, 42.5f, kHalfPi + kPi, -2.0f)));
+  EXPECT_THAT(test_quad_4, QuadEq(Quad::FromCenterDimensionsRotationAndShear(
+                               {-1.25f, -19.0f}, 87.0f, 42.5f,
+                               kQuarterTurn + kHalfTurn, -2.0f)));
 }
 
 TEST(QuadTest, JoinForInteriorPointOnLineLikeQuad) {
@@ -759,19 +765,19 @@ TEST(QuadTest, JoinForInteriorPointOnLineLikeQuad) {
                                {10.0f, 10.0f}, 0.0f, 16.0f, Angle(), 0.0f)));
 
   Quad test_quad_3 = Quad::FromCenterDimensionsRotationAndShear(
-      {10.0f, 10.0f}, 8.0f, 0.0f, kHalfPi, 0.0f);
+      {10.0f, 10.0f}, 8.0f, 0.0f, kQuarterTurn, 0.0f);
   test_quad_3.Join({10.0f, 14.0f});
   EXPECT_THAT(test_quad_3,
               QuadNear(Quad::FromCenterDimensionsRotationAndShear(
-                           {10.0f, 10.0f}, 8.0f, 0.0f, kHalfPi, 0.0f),
+                           {10.0f, 10.0f}, 8.0f, 0.0f, kQuarterTurn, 0.0f),
                        0.001));
 
   Quad test_quad_4 = Quad::FromCenterDimensionsRotationAndShear(
-      {10.0f, 10.0f}, 0.0f, 16.0f, kHalfPi, 0.0f);
+      {10.0f, 10.0f}, 0.0f, 16.0f, kQuarterTurn, 0.0f);
   test_quad_4.Join({18.0f, 10.0f});
   EXPECT_THAT(test_quad_4,
               QuadNear(Quad::FromCenterDimensionsRotationAndShear(
-                           {10.0f, 10.0f}, 0.0f, 16.0f, kHalfPi, 0.0f),
+                           {10.0f, 10.0f}, 0.0f, 16.0f, kQuarterTurn, 0.0f),
                        0.001));
 }
 
@@ -789,41 +795,44 @@ TEST(QuadTest, JoinForExteriorPointOnLineLikeQuad) {
                                {11.0f, 10.0f}, 2.0f, 16.0f, Angle(), 0.0f)));
 
   Quad test_quad_3 = Quad::FromCenterDimensionsRotationAndShear(
-      {10.0f, 10.0f}, 8.0f, 0.0f, kHalfPi, 0.0f);
+      {10.0f, 10.0f}, 8.0f, 0.0f, kQuarterTurn, 0.0f);
   test_quad_3.Join({15.0f, 14.0f});
   EXPECT_THAT(test_quad_3,
               QuadNear(Quad::FromCenterDimensionsRotationAndShear(
-                           {12.5f, 10.0f}, 8.0f, 5.0f, kHalfPi, 0.0f),
+                           {12.5f, 10.0f}, 8.0f, 5.0f, kQuarterTurn, 0.0f),
                        0.001));
 
   Quad test_quad_4 = Quad::FromCenterDimensionsRotationAndShear(
-      {10.0f, 10.0f}, 0.0f, 16.0f, kHalfPi, 0.0f);
+      {10.0f, 10.0f}, 0.0f, 16.0f, kQuarterTurn, 0.0f);
   test_quad_4.Join({18.0f, 4.0f});
   EXPECT_THAT(test_quad_4,
               QuadNear(Quad::FromCenterDimensionsRotationAndShear(
-                           {10.0f, 7.0f}, 6.0f, 16.0f, kHalfPi, 0.0f),
+                           {10.0f, 7.0f}, 6.0f, 16.0f, kQuarterTurn, 0.0f),
                        0.001));
 }
 
 TEST(QuadTest, JoinPointOnPointLikeQuad) {
   // Contained Point.
   Quad test_quad_1 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 0.0f, 0.0f, kHalfPi, 1.0f);
+      {-40.0f, -25.0f}, 0.0f, 0.0f, kQuarterTurn, 1.0f);
   test_quad_1.Join({-40.0f, -25.0f});
-  EXPECT_THAT(test_quad_1, QuadEq(Quad::FromCenterDimensionsRotationAndShear(
-                               {-40.0f, -25.0f}, 0.0f, 0.0f, kHalfPi, 1.0f)));
+  EXPECT_THAT(test_quad_1,
+              QuadEq(Quad::FromCenterDimensionsRotationAndShear(
+                  {-40.0f, -25.0f}, 0.0f, 0.0f, kQuarterTurn, 1.0f)));
   // To the Bottom Left relative to the center and rotation of the Quad.
   Quad test_quad_2 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 0.0f, 0.0f, kHalfPi, 1.0f);
+      {-40.0f, -25.0f}, 0.0f, 0.0f, kQuarterTurn, 1.0f);
   test_quad_2.Join({-32.0f, -38.0f});
-  EXPECT_THAT(test_quad_2, QuadEq(Quad::FromCenterDimensionsRotationAndShear(
-                               {-36.0f, -31.5f}, 5.0f, 8.0f, kHalfPi, 1.0f)));
+  EXPECT_THAT(test_quad_2,
+              QuadEq(Quad::FromCenterDimensionsRotationAndShear(
+                  {-36.0f, -31.5f}, 5.0f, 8.0f, kQuarterTurn, 1.0f)));
   // To the Upper Right relative to the center and rotation of the Quad.
   Quad test_quad_3 = Quad::FromCenterDimensionsRotationAndShear(
-      {-40.0f, -25.0f}, 0.0f, 0.0f, kHalfPi, 1.0f);
+      {-40.0f, -25.0f}, 0.0f, 0.0f, kQuarterTurn, 1.0f);
   test_quad_3.Join({-48.0f, -12.0f});
-  EXPECT_THAT(test_quad_3, QuadEq(Quad::FromCenterDimensionsRotationAndShear(
-                               {-44.0f, -18.5f}, 5.0f, 8.0f, kHalfPi, 1.0f)));
+  EXPECT_THAT(test_quad_3,
+              QuadEq(Quad::FromCenterDimensionsRotationAndShear(
+                  {-44.0f, -18.5f}, 5.0f, 8.0f, kQuarterTurn, 1.0f)));
 }
 
 TEST(QuadTest, ContainsForInteriorPointOnUprightQuad) {
@@ -863,41 +872,42 @@ TEST(QuadTest, ContainsForExteriorPointOnUprightQuad) {
 TEST(QuadTest, ContainsForInteriorPointOnSlantedRotatedQuad) {
   // Inside the Quad.
   EXPECT_TRUE(Quad::FromCenterDimensionsRotationAndShear(
-                  {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f)
+                  {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f)
                   .Contains({-46.0f, -16.0f}));
 
   // On the side of the Quad.
   EXPECT_TRUE(Quad::FromCenterDimensionsRotationAndShear(
-                  {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f)
+                  {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f)
                   .Contains({-36.01f, -33.98f}));
 
   // At the corner of the Quad.
   EXPECT_TRUE(Quad::FromCenterDimensionsRotationAndShear(
-                  {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f)
+                  {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f)
                   .Contains({-48.0f, -22.0f}));
 }
 
 TEST(QuadTest, ContainsForExteriorPointOnSlantedRotatedQuad) {
   // Below relative to the center and rotation of the Quad.
   EXPECT_FALSE(Quad::FromCenterDimensionsRotationAndShear(
-                   {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f)
+                   {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f)
                    .Contains({-28.0f, -38.0f}));
 
   // To the Left relative to the center and rotation of the Quad.
   EXPECT_FALSE(Quad::FromCenterDimensionsRotationAndShear(
-                   {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f)
+                   {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f)
                    .Contains({-44.0f, -36.0f}));
 
   // Above & to the right relative to the center and rotation of the Quad.
   EXPECT_FALSE(Quad::FromCenterDimensionsRotationAndShear(
-                   {-40.0f, -25.0f}, 10.0f, 16.0f, kHalfPi, 1.0f)
+                   {-40.0f, -25.0f}, 10.0f, 16.0f, kQuarterTurn, 1.0f)
                    .Contains({-50.0f, -6.0f}));
 
   // A Quad with 2 points in Q1, center in Q2, 2 points in Q3, and checking
   // containment with a point in Q4.
-  EXPECT_FALSE(Quad::FromCenterDimensionsRotationAndShear(
-                   {-10.0f, 2.0f}, 10.0f, 25.0f, kHalfPi + kPi, -2.0f)
-                   .Contains({20.0f, -20.0f}));
+  EXPECT_FALSE(
+      Quad::FromCenterDimensionsRotationAndShear(
+          {-10.0f, 2.0f}, 10.0f, 25.0f, kQuarterTurn + kHalfTurn, -2.0f)
+          .Contains({20.0f, -20.0f}));
 }
 
 TEST(QuadTest, ContainsForInteriorPointOnLineLikeQuad) {
@@ -909,12 +919,12 @@ TEST(QuadTest, ContainsForInteriorPointOnLineLikeQuad) {
                                                          16.0f, Angle(), 0.0f)
                   .Contains({10.0f, 14.0f}));
 
-  EXPECT_TRUE(Quad::FromCenterDimensionsRotationAndShear({10.0f, 10.0f}, 8.0f,
-                                                         0.0f, kHalfPi, 0.0f)
+  EXPECT_TRUE(Quad::FromCenterDimensionsRotationAndShear(
+                  {10.0f, 10.0f}, 8.0f, 0.0f, kQuarterTurn, 0.0f)
                   .Contains({10.0f, 10.0f}));
 
-  EXPECT_TRUE(Quad::FromCenterDimensionsRotationAndShear({10.0f, 10.0f}, 0.0f,
-                                                         16.0f, kHalfPi, 0.0f)
+  EXPECT_TRUE(Quad::FromCenterDimensionsRotationAndShear(
+                  {10.0f, 10.0f}, 0.0f, 16.0f, kQuarterTurn, 0.0f)
                   .Contains({10.0f, 10.0f}));
 }
 
@@ -927,29 +937,29 @@ TEST(QuadTest, ContainsForExteriorPointOnLineLikeQuad) {
                                                           16.0f, Angle(), 0.0f)
                    .Contains({12.0f, 14.0f}));
 
-  EXPECT_FALSE(Quad::FromCenterDimensionsRotationAndShear({10.0f, 10.0f}, 8.0f,
-                                                          0.0f, kHalfPi, 0.0f)
+  EXPECT_FALSE(Quad::FromCenterDimensionsRotationAndShear(
+                   {10.0f, 10.0f}, 8.0f, 0.0f, kQuarterTurn, 0.0f)
                    .Contains({15.0f, 14.0f}));
 
-  EXPECT_FALSE(Quad::FromCenterDimensionsRotationAndShear({10.0f, 10.0f}, 0.0f,
-                                                          16.0f, kHalfPi, 0.0f)
+  EXPECT_FALSE(Quad::FromCenterDimensionsRotationAndShear(
+                   {10.0f, 10.0f}, 0.0f, 16.0f, kQuarterTurn, 0.0f)
                    .Contains({18.0f, 4.0f}));
 }
 
 TEST(QuadTest, ContainsPointOnPointLikeQuad) {
   // Contained Point.
-  EXPECT_TRUE(Quad::FromCenterDimensionsRotationAndShear({-40.0f, -25.0f}, 0.0f,
-                                                         0.0f, kHalfPi, 1.0f)
+  EXPECT_TRUE(Quad::FromCenterDimensionsRotationAndShear(
+                  {-40.0f, -25.0f}, 0.0f, 0.0f, kQuarterTurn, 1.0f)
                   .Contains({-40.0f, -25.0f}));
 
   // To the Bottom Left relative to the center and rotation of the Quad.
   EXPECT_FALSE(Quad::FromCenterDimensionsRotationAndShear(
-                   {-40.0f, -25.0f}, 0.0f, 0.0f, kHalfPi, 1.0f)
+                   {-40.0f, -25.0f}, 0.0f, 0.0f, kQuarterTurn, 1.0f)
                    .Contains({-32.0f, -38.0f}));
 
   // To the Upper Right relative to the center and rotation of the Quad.
   EXPECT_FALSE(Quad::FromCenterDimensionsRotationAndShear(
-                   {-40.0f, -25.0f}, 0.0f, 0.0f, kHalfPi, 1.0f)
+                   {-40.0f, -25.0f}, 0.0f, 0.0f, kQuarterTurn, 1.0f)
                    .Contains({-48.0f, -12.0f}));
 }
 

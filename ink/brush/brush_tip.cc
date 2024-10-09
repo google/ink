@@ -60,10 +60,10 @@ absl::Status ValidateBrushTip(const BrushTip& tip) {
   }
 
   if (!std::isfinite(tip.slant.ValueInRadians()) ||
-      !(tip.slant >= -kHalfPi && tip.slant <= kHalfPi)) {
+      !(tip.slant >= -kQuarterTurn && tip.slant <= kQuarterTurn)) {
     return absl::InvalidArgumentError(
-        absl::StrFormat("`BrushTip::slant` must be finite and a value in the "
-                        "interval [-pi/2, pi/2]. Got %v",
+        absl::StrFormat("`BrushTip::slant` must be a finite value in the "
+                        "interval [-π/2, π/2] radians. Got %v",
                         tip.slant));
   }
   if (!(tip.pinch >= 0 && tip.pinch <= 1)) {

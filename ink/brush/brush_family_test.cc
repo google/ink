@@ -61,7 +61,7 @@ BrushTip CreatePressureTestTip() {
   return {
       .scale = {2, 1},
       .corner_rounding = 0.75,
-      .rotation = kHalfPi,
+      .rotation = kQuarterTurn,
       .behaviors = {BrushBehavior{{
           BrushBehavior::SourceNode{
               .source = BrushBehavior::Source::kNormalizedPressure,
@@ -103,7 +103,7 @@ BrushPaint CreateTestPaint() {
                .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                .size = {3, 5},
                .size_jitter = {0.1, 2},
-               .keyframes = {{.progress = 0.1, .rotation = kHalfPi / 2}},
+               .keyframes = {{.progress = 0.1, .rotation = kFullTurn / 8}},
                .blend_mode = BrushPaint::BlendMode::kDstIn}}};
 }
 
@@ -393,12 +393,14 @@ TEST(BrushFamilyTest, CreateWithInvalidTipSlant) {
     EXPECT_THAT(status.message(), HasSubstr("slant"));
   }
   {
-    absl::Status status = BrushFamily::Create({.slant = -kPi}, {}).status();
+    absl::Status status =
+        BrushFamily::Create({.slant = -kHalfTurn}, {}).status();
     EXPECT_EQ(status.code(), kInvalidArgument);
     EXPECT_THAT(status.message(), HasSubstr("slant"));
   }
   {
-    absl::Status status = BrushFamily::Create({.slant = kPi}, {}).status();
+    absl::Status status =
+        BrushFamily::Create({.slant = kHalfTurn}, {}).status();
     EXPECT_EQ(status.code(), kInvalidArgument);
     EXPECT_THAT(status.message(), HasSubstr("slant"));
   }

@@ -135,7 +135,8 @@ absl::Status ValidateSingleInput(const StrokeInput& input) {
   }
 
   if (!std::isfinite(input.tilt.ValueInRadians()) ||
-      (input.HasTilt() && !(input.tilt >= Angle() && input.tilt <= kHalfPi))) {
+      (input.HasTilt() &&
+       !(input.tilt >= Angle() && input.tilt <= kQuarterTurn))) {
     return absl::InvalidArgumentError(
         absl::Substitute("`StrokeInput::tilt` must be -1 or in the range [0, "
                          "pi / 2]. Got: $0",
@@ -144,7 +145,7 @@ absl::Status ValidateSingleInput(const StrokeInput& input) {
 
   if (!std::isfinite(input.orientation.ValueInRadians()) ||
       (input.HasOrientation() &&
-       !(input.orientation >= Angle() && input.orientation <= kTwoPi))) {
+       !(input.orientation >= Angle() && input.orientation <= kFullTurn))) {
     return absl::InvalidArgumentError(
         absl::Substitute("`StrokeInput::orientation` must be -1 or in the "
                          "range [0, 2 * pi). Got: $0",

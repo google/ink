@@ -34,15 +34,15 @@ constexpr StrokeInput::ToolType kStylus = StrokeInput::ToolType::kStylus;
 
 StrokeInput MakeInput(StrokeInput::ToolType tool_type, Point position,
                       float elapsed_time_seconds, float pressure,
-                      float tilt_in_multiples_of_pi,
-                      float orientation_in_multiples_of_pi) {
+                      float tilt_in_multiples_of_pi_radians,
+                      float orientation_in_multiples_of_pi_radians) {
   return {
       .tool_type = tool_type,
       .position = position,
       .elapsed_time = Duration32::Millis(elapsed_time_seconds),
       .pressure = pressure,
-      .tilt = tilt_in_multiples_of_pi * kPi,
-      .orientation = orientation_in_multiples_of_pi * kPi,
+      .tilt = tilt_in_multiples_of_pi_radians * kHalfTurn,
+      .orientation = orientation_in_multiples_of_pi_radians * kHalfTurn,
   };
 }
 

@@ -116,7 +116,7 @@ TEST(MeshUniformDataTest, WithObjectToCanvasLinearComponent) {
   EXPECT_FALSE(data.HasBrushColor());
 
   // Check that setting the brush color stores the expected bytes:
-  data.SetObjectToCanvasLinearComponent(AffineTransform::Rotate(kHalfPi));
+  data.SetObjectToCanvasLinearComponent(AffineTransform::Rotate(kQuarterTurn));
 
   sk_sp<const SkData> first_get_data = data.Get();
   ASSERT_NE(first_get_data, nullptr);
@@ -124,7 +124,7 @@ TEST(MeshUniformDataTest, WithObjectToCanvasLinearComponent) {
   EXPECT_THAT(
       GetStoredAffineTransformLinearComponent(
           first_get_data->bytes() + result.specification->uniforms()[0].offset),
-      AffineTransformEq(AffineTransform::Rotate(kHalfPi)));
+      AffineTransformEq(AffineTransform::Rotate(kQuarterTurn)));
 
   // Setting a new value for the color should not affect the values pointed to
   // by the result of the first call:
@@ -133,7 +133,7 @@ TEST(MeshUniformDataTest, WithObjectToCanvasLinearComponent) {
   EXPECT_THAT(
       GetStoredAffineTransformLinearComponent(
           first_get_data->bytes() + result.specification->uniforms()[0].offset),
-      AffineTransformEq(AffineTransform::Rotate(kHalfPi)));
+      AffineTransformEq(AffineTransform::Rotate(kQuarterTurn)));
 
   sk_sp<const SkData> second_get_data = data.Get();
   EXPECT_NE(first_get_data, second_get_data);

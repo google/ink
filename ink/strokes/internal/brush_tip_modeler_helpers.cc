@@ -62,7 +62,7 @@ std::optional<float> GetTiltX(Angle tilt, Angle orientation) {
   if (tilt == Angle()) return 0;
   // When tilt equals pi/2, tilt-x and tilt-y are indeterminate, so we return
   // std::nullopt.
-  if (tilt == kHalfPi) return std::nullopt;
+  if (tilt == kQuarterTurn) return std::nullopt;
   return Atan(Cos(orientation) * Tan(tilt)).ValueInRadians();
 }
 
@@ -70,7 +70,7 @@ std::optional<float> GetTiltY(Angle tilt, Angle orientation) {
   if (tilt == Angle()) return 0;
   // When tilt equals pi/2, tilt-x and tilt-y are indeterminate, so we return
   // std::nullopt.
-  if (tilt == kHalfPi) return std::nullopt;
+  if (tilt == kQuarterTurn) return std::nullopt;
   return Atan(Sin(orientation) * Tan(tilt)).ValueInRadians();
 }
 
@@ -543,7 +543,7 @@ void ApplyModifierToTarget(float modifier, BrushBehavior::Target target,
     case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
       if (travel_direction.has_value()) {
         tip_state_modifiers.position_offset_in_stroke_units +=
-            Vec::FromDirectionAndMagnitude(*travel_direction + kHalfPi,
+            Vec::FromDirectionAndMagnitude(*travel_direction + kQuarterTurn,
                                            modifier * brush_size);
       }
       break;
@@ -572,8 +572,8 @@ void ApplyModifiersToTipState(const BrushTipStateModifiers& modifiers,
     tip_state.height *= std::clamp(modifiers.height_multiplier, 0.f, 2.f);
   }
   if (modifiers.slant_offset != Angle()) {
-    tip_state.slant =
-        std::clamp(tip_state.slant + modifiers.slant_offset, -kHalfPi, kHalfPi);
+    tip_state.slant = std::clamp(tip_state.slant + modifiers.slant_offset,
+                                 -kQuarterTurn, kQuarterTurn);
   }
   if (modifiers.pinch_offset != 0) {
     tip_state.pinch =
@@ -589,7 +589,7 @@ void ApplyModifiersToTipState(const BrushTipStateModifiers& modifiers,
   }
   if (modifiers.hue_offset != Angle()) {
     tip_state.hue_offset_in_full_turns =
-        modifiers.hue_offset.Normalized() / kTwoPi;
+        modifiers.hue_offset.Normalized() / kFullTurn;
   }
   if (modifiers.saturation_multiplier != 1) {
     tip_state.saturation_multiplier =
