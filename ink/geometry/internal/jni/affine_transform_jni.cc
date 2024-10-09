@@ -30,7 +30,28 @@ using ::ink::Quad;
 
 extern "C" {
 
-JNI_METHOD(geometry, AffineTransformHelper, void, nativeApplyParallelogram)
+JNI_METHOD(geometry_internal, AffineTransformNative, jobject,
+           createFromApplyParallelogram)
+(JNIEnv* env, jclass clazz, jfloat affine_transform_A,
+ jfloat affine_transform_B, jfloat affine_transform_C,
+ jfloat affine_transform_D, jfloat affine_transform_E,
+ jfloat affine_transform_F, jfloat quad_center_x, jfloat quad_center_y,
+ jfloat quad_width, jfloat quad_height, jfloat quad_rotation,
+ jfloat quad_shear_factor, jclass immutable_parallelogram_class,
+ jclass immutable_vec_class) {
+  return ink::CreateJImmutableParallelogram(
+      env,
+      AffineTransform(affine_transform_A, affine_transform_B,
+                      affine_transform_C, affine_transform_D,
+                      affine_transform_E, affine_transform_F)
+          .Apply(Quad::FromCenterDimensionsRotationAndShear(
+              {.x = quad_center_x, .y = quad_center_y}, quad_width, quad_height,
+              Angle::Radians(quad_rotation), quad_shear_factor)),
+      immutable_parallelogram_class, immutable_vec_class);
+}
+
+JNI_METHOD(geometry_internal, AffineTransformNative, void,
+           populateFromApplyParallelogram)
 (JNIEnv* env, jclass clazz, jfloat affine_transform_A,
  jfloat affine_transform_B, jfloat affine_transform_C,
  jfloat affine_transform_D, jfloat affine_transform_E,
