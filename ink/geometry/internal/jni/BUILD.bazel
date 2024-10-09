@@ -250,6 +250,7 @@ cc_library(
         ":vec_jni_helper",
         "//ink/geometry:angle",
         "//ink/geometry:envelope",
+        "//ink/geometry:point",
         "//ink/geometry:quad",
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_defines",
@@ -268,8 +269,10 @@ cc_library(
     srcs = ["parallelogram_jni_helper.cc"],
     hdrs = ["parallelogram_jni_helper.h"],
     deps = [
+        ":vec_jni_helper",
         "//ink/geometry:point",
         "//ink/geometry:quad",
+        "//ink/jni/internal:jni_defines",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
