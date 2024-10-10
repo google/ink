@@ -269,8 +269,10 @@ cc_library(
     srcs = ["parallelogram_jni_helper.cc"],
     hdrs = ["parallelogram_jni_helper.h"],
     deps = [
+        ":vec_jni_helper",
         "//ink/geometry:point",
         "//ink/geometry:quad",
+        "//ink/jni/internal:jni_defines",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
