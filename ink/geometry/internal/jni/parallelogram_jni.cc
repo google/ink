@@ -35,7 +35,7 @@ using ::ink::Vec;
 
 extern "C" {
 
-JNI_METHOD(geometry, ParallelogramNative, jobject, nativeCreateBoundingBox)
+JNI_METHOD(geometry_internal, ParallelogramNative, jobject, createBoundingBox)
 (JNIEnv* env, jclass clazz, jfloat center_x, jfloat center_y, jfloat width,
  jfloat height, jfloat rotation, jfloat shear_factor,
  jclass immutable_box_class, jclass immutable_vec_class) {
@@ -48,7 +48,7 @@ JNI_METHOD(geometry, ParallelogramNative, jobject, nativeCreateBoundingBox)
                                           immutable_vec_class);
 }
 
-JNI_METHOD(geometry, ParallelogramNative, void, nativePopulateBoundingBox)
+JNI_METHOD(geometry_internal, ParallelogramNative, void, populateBoundingBox)
 (JNIEnv* env, jclass clazz, jfloat center_x, jfloat center_y, jfloat width,
  jfloat height, jfloat rotation, jfloat shear_factor, jobject mutable_box) {
   Quad quad = Quad::FromCenterDimensionsRotationAndShear(
@@ -59,7 +59,7 @@ JNI_METHOD(geometry, ParallelogramNative, void, nativePopulateBoundingBox)
                                Envelope(quad).AsRect().value());
 }
 
-JNI_METHOD(geometry, ParallelogramNative, jobjectArray, nativeCreateSemiAxes)
+JNI_METHOD(geometry_internal, ParallelogramNative, jobjectArray, createSemiAxes)
 (JNIEnv* env, jclass clazz, jfloat center_x, jfloat center_y, jfloat width,
  jfloat height, jfloat rotation, jfloat shear_factor,
  jclass immutable_vec_class) {
@@ -78,7 +78,7 @@ JNI_METHOD(geometry, ParallelogramNative, jobjectArray, nativeCreateSemiAxes)
   return vector_array;
 }
 
-JNI_METHOD(geometry, ParallelogramNative, void, nativePopulateSemiAxes)
+JNI_METHOD(geometry_internal, ParallelogramNative, void, populateSemiAxes)
 (JNIEnv* env, jclass clazz, jfloat center_x, jfloat center_y, jfloat width,
  jfloat height, jfloat rotation, jfloat shear_factor, jobject out_axis1,
  jobject out_axis2) {
