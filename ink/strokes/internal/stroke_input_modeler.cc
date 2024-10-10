@@ -23,7 +23,6 @@
 
 #include "absl/cleanup/cleanup.h"
 #include "absl/log/absl_check.h"
-#include "absl/log/check.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
