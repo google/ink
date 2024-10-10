@@ -28,18 +28,27 @@
 #include "ink/types/uri.h"
 
 namespace {
+
 ink::BrushPaint::TextureSizeUnit JIntToSizeUnit(jint val) {
   return static_cast<ink::BrushPaint::TextureSizeUnit>(val);
 }
+
 ink::BrushPaint::TextureOrigin JIntToOrigin(jint val) {
   return static_cast<ink::BrushPaint::TextureOrigin>(val);
 }
+
 ink::BrushPaint::TextureMapping JIntToMapping(jint val) {
   return static_cast<ink::BrushPaint::TextureMapping>(val);
 }
+
+ink::BrushPaint::TextureWrap JIntToWrap(jint val) {
+  return static_cast<ink::BrushPaint::TextureWrap>(val);
+}
+
 ink::BrushPaint::BlendMode JIntToBlendMode(jint val) {
   return static_cast<ink::BrushPaint::BlendMode>(val);
 }
+
 }  // namespace
 
 extern "C" {
@@ -86,7 +95,8 @@ JNI_METHOD_INNER(brush, BrushPaint, TextureLayer, jlong,
                  nativeCreateTextureLayer)
 (JNIEnv* env, jobject thiz, jstring color_texture_uri, jfloat size_x,
  jfloat size_y, jfloat offset_x, jfloat offset_y, jfloat rotation_in_radians,
- jfloat opacity, jint size_unit, jint origin, jint mapping, jint blend_mode) {
+ jfloat opacity, jint size_unit, jint origin, jint mapping, jint wrap_x,
+ jint wrap_y, jint blend_mode) {
   auto uri = ink::Uri::Parse(
       ink::jni::JStringView(env, color_texture_uri).string_view());
   if (!uri.ok()) {
@@ -100,6 +110,8 @@ JNI_METHOD_INNER(brush, BrushPaint, TextureLayer, jlong,
           .mapping = JIntToMapping(mapping),
           .origin = JIntToOrigin(origin),
           .size_unit = JIntToSizeUnit(size_unit),
+          .wrap_x = JIntToWrap(wrap_x),
+          .wrap_y = JIntToWrap(wrap_y),
           .size = ink::Vec{size_x, size_y},
           .offset = ink::Vec{offset_x, offset_y},
           .rotation = ink::Angle::Radians(rotation_in_radians),
@@ -122,4 +134,5 @@ JNI_METHOD_INNER(brush, BrushPaint, TextureLayer, void, nativeFreeTextureLayer)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   delete reinterpret_cast<ink::BrushPaint::TextureLayer*>(native_pointer);
 }
-}
+
+}  // extern "C"

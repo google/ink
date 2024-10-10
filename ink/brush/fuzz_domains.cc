@@ -548,6 +548,16 @@ Domain<BrushPaint::TextureOrigin> ArbitraryBrushPaintTextureOrigin() {
 }
 // LINT.ThenChange(brush_paint.h:texture_origin)
 
+// LINT.IfChange(texture_wrap)
+Domain<BrushPaint::TextureWrap> ArbitraryBrushPaintTextureWrap() {
+  return ElementOf({
+      BrushPaint::TextureWrap::kRepeat,
+      BrushPaint::TextureWrap::kMirror,
+      BrushPaint::TextureWrap::kClamp,
+  });
+}
+// LINT.ThenChange(brush_paint.h:texture_wrap)
+
 // LINT.IfChange(blend_mode)
 Domain<BrushPaint::BlendMode> ArbitraryBrushPaintBlendMode() {
   return ElementOf({
@@ -581,7 +591,8 @@ fuzztest::Domain<BrushPaint::TextureLayer> ValidBrushPaintTextureLayer() {
     return StructOf<BrushPaint::TextureLayer>(
         ValidColorTextureUri(), ArbitraryBrushPaintTextureMapping(),
         ArbitraryBrushPaintTextureOrigin(),
-        ArbitraryBrushPaintTextureSizeUnit(), Just(size),
+        ArbitraryBrushPaintTextureSizeUnit(), ArbitraryBrushPaintTextureWrap(),
+        ArbitraryBrushPaintTextureWrap(), Just(size),
         StructOf<Vec>(InRange<float>(0.f, 1.f), InRange<float>(0.f, 1.f)),
         FiniteAngle(),
         StructOf<Vec>(InRange<float>(0.f, size.x), InRange<float>(0.f, size.y)),
