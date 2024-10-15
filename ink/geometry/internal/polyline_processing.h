@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
+#include "ink/geometry/internal/static_rtree.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/segment.h"
 
@@ -51,6 +52,10 @@ struct PolylineData {
   float min_connection_ratio;
   float min_trimming_ratio;
 };
+
+void FindFirstAndLastIntersections(
+    PolylineData& polyline,
+    ink::geometry_internal::StaticRTree<SegmentBundle> rtree);
 
 PolylineData CreateNewPolylineData(absl::Span<const Point> points);
 
