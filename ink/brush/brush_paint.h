@@ -80,6 +80,26 @@ struct BrushPaint {
     kStrokeCoordinates,
   };
 
+  // Texture wrapping modes for specifying `TextureLayer::wrap_x` and `wrap_y`.
+  //
+  // This should match the platform enum in BrushPaint.kt.
+  enum class TextureWrap {
+    // Repeats texture image horizontally/vertically.
+    kRepeat,
+    // Repeats texture image horizontally/vertically, alternating mirror images
+    // so that adjacent edges always match.
+    kMirror,
+    // Points outside of the texture have the color of the nearest texture edge
+    // point. This mode is typically most useful when the edge pixels of the
+    // texture image are all the same, e.g. either transparent or a single solid
+    // color.
+    kClamp,
+    // ClampToBorder/Decal/MirrorClampToEdge modes are intentionally omitted
+    // here, because they're not supported by all graphics libraries; in
+    // particular, Skia does not support ClampToBorder or MirrorClampToEdge, and
+    // WebGL and WebGPU do not support any of them.
+  };
+
   // Setting for how an incoming ("source" / "src") color should be combined
   // with the already present ("destination" / "dst") color at a given pixel.
   // LINT.IfChange(blend_mode)
@@ -205,6 +225,8 @@ struct BrushPaint {
     TextureMapping mapping = TextureMapping::kTiling;
     TextureOrigin origin = TextureOrigin::kStrokeSpaceOrigin;
     TextureSizeUnit size_unit = TextureSizeUnit::kStrokeCoordinates;
+    TextureWrap wrap_x = TextureWrap::kRepeat;
+    TextureWrap wrap_y = TextureWrap::kRepeat;
 
     // The size of the texture, specified in `size_unit`s.
     Vec size = {1, 1};
@@ -267,6 +289,7 @@ absl::Status ValidateBrushPaintTextureLayer(
 std::string ToFormattedString(BrushPaint::TextureMapping texture_mapping);
 std::string ToFormattedString(BrushPaint::TextureOrigin texture_origin);
 std::string ToFormattedString(BrushPaint::TextureSizeUnit texture_size_unit);
+std::string ToFormattedString(BrushPaint::TextureWrap texture_wrap);
 std::string ToFormattedString(BrushPaint::BlendMode blend_mode);
 std::string ToFormattedString(const BrushPaint::TextureKeyframe& keyframe);
 std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer);
@@ -287,6 +310,11 @@ void AbslStringify(Sink& sink, BrushPaint::TextureOrigin texture_origin) {
 template <typename Sink>
 void AbslStringify(Sink& sink, BrushPaint::TextureSizeUnit texture_size_unit) {
   sink.Append(brush_internal::ToFormattedString(texture_size_unit));
+}
+
+template <typename Sink>
+void AbslStringify(Sink& sink, BrushPaint::TextureWrap texture_wrap) {
+  sink.Append(brush_internal::ToFormattedString(texture_wrap));
 }
 
 template <typename Sink>
@@ -318,10 +346,10 @@ H AbslHashValue(H h, const BrushPaint::TextureKeyframe& keyframe) {
 template <typename H>
 H AbslHashValue(H h, const BrushPaint::TextureLayer& layer) {
   return H::combine(std::move(h), layer.color_texture_uri, layer.mapping,
-                    layer.origin, layer.size_unit, layer.size, layer.offset,
-                    layer.rotation, layer.size_jitter, layer.offset_jitter,
-                    layer.rotation_jitter, layer.opacity, layer.keyframes,
-                    layer.blend_mode);
+                    layer.origin, layer.size_unit, layer.wrap_x, layer.wrap_y,
+                    layer.size, layer.offset, layer.rotation, layer.size_jitter,
+                    layer.offset_jitter, layer.rotation_jitter, layer.opacity,
+                    layer.keyframes, layer.blend_mode);
 }
 
 template <typename H>
