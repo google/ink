@@ -145,6 +145,30 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "polyline_processing",
+    srcs = ["polyline_processing.cc"],
+    hdrs = ["polyline_processing.h"],
+    deps = [
+        "//ink/geometry:distance",
+        "//ink/geometry:point",
+        "//ink/geometry:segment",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "polyline_processing_test",
+    srcs = ["polyline_processing_test.cc"],
+    deps = [
+        ":polyline_processing",
+        "//ink/geometry:point",
+        "//ink/geometry:segment",
+        "//ink/geometry:type_matchers",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 cc_test(
     name = "circle_test",
     srcs = ["circle_test.cc"],
