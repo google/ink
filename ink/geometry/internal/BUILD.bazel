@@ -150,8 +150,11 @@ cc_library(
     srcs = ["polyline_processing.cc"],
     hdrs = ["polyline_processing.h"],
     deps = [
+        ":algorithms",
+        ":static_rtree",
         "//ink/geometry:distance",
         "//ink/geometry:point",
+        "//ink/geometry:rect",
         "//ink/geometry:segment",
         "@com_google_absl//absl/types:span",
     ],
@@ -162,7 +165,9 @@ cc_test(
     srcs = ["polyline_processing_test.cc"],
     deps = [
         ":polyline_processing",
+        ":static_rtree",
         "//ink/geometry:point",
+        "//ink/geometry:rect",
         "//ink/geometry:segment",
         "//ink/geometry:type_matchers",
         "@com_google_googletest//:gtest_main",
