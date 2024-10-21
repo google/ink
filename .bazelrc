@@ -7,12 +7,6 @@ build:android-arm64-v8a --platforms=//:android-arm64
 # Enable Bzlmod for all Bazel commands.
 common --enable_bzlmod
 
-# Use the builtin crc32 for fast integer hashing.
-#
-# TODO: b/365609306 - This causes an unused flag warning on macOS.  Find a
-# portable way to enable CRC instructions.
-build --copt=-mcrc32
-
 # To create this file, please run:
 #  bazel run @com_google_fuzztest//bazel:setup_configs > fuzztest.bazelrc
 try-import %workspace%/fuzztest.bazelrc
