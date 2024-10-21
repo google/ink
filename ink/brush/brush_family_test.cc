@@ -1113,27 +1113,27 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     EXPECT_EQ(status.code(), kInvalidArgument);
     EXPECT_THAT(status.message(), HasSubstr("BrushPaint::TextureLayer::size"));
   }
-  // `TextureLayer::offset` has negative component.
+  // `TextureLayer::offset` is infinite.
   {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
             {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
                                  .size = {1, 3},
-                                 .offset = {-1, 0.4}}}})
+                                 .offset = {kInfinity, 0.4}}}})
             .status();
     EXPECT_EQ(status.code(), kInvalidArgument);
     EXPECT_THAT(status.message(),
                 HasSubstr("BrushPaint::TextureLayer::offset"));
   }
-  // `TextureLayer::offset` is greater 1.
+  // `TextureLayer::offset` is NaN.
   {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
             {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
                                  .size = {1, 3},
-                                 .offset = {1, 4}}}})
+                                 .offset = {1, kNan}}}})
             .status();
     EXPECT_EQ(status.code(), kInvalidArgument);
     EXPECT_THAT(status.message(),

@@ -174,12 +174,10 @@ absl::Status ValidateBrushPaintTextureLayer(
                         "greater than zero. Got %v",
                         layer.size));
   }
-  if (!(layer.offset.x >= 0.0f && layer.offset.x <= 1.0f &&
-        layer.offset.y >= 0.0f && layer.offset.y <= 1.0f)) {
-    return absl::InvalidArgumentError(
-        absl::StrFormat("`BrushPaint::TextureLayer::offset` must be in the "
-                        "interval [0, 1]. Got %v",
-                        layer.offset));
+  if (!std::isfinite(layer.offset.x) || !std::isfinite(layer.offset.y)) {
+    return absl::InvalidArgumentError(absl::StrFormat(
+        "`BrushPaint::TextureLayer::offset` must be finite. Got %v",
+        layer.offset));
   }
   if (!std::isfinite(layer.rotation.ValueInRadians())) {
     return absl::InvalidArgumentError(
