@@ -30,6 +30,7 @@
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_packing_types.h"
 #include "ink/geometry/mutable_mesh.h"
+#include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 
 namespace ink::strokes_internal {
@@ -104,6 +105,14 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
   // LINT.ThenChange(
   //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:label_packing)
 
+  // LINT.IfChange(uv_packing)
+  constexpr MeshAttributeCodingParams::ComponentCodingParams
+      kSurfaceUCodingParams12bit = {.scale = 1.f / 4095};
+  constexpr MeshAttributeCodingParams::ComponentCodingParams
+      kSurfaceVCodingParams20bit = {.scale = 1.f / 1048575};
+  // LINT.ThenChange(
+  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:uv_packing)
+
   switch (attribute.id) {
     case MeshFormat::AttributeId::kOpacityShift:
       if (attribute.type ==
@@ -125,6 +134,14 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
       if (attribute.type ==
           MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte) {
         return MeshAttributeCodingParams{.components = {kLabelCodingParams}};
+      }
+      break;
+    case MeshFormat::AttributeId::kSurfaceUv:
+      if (attribute.type ==
+          MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20) {
+        return MeshAttributeCodingParams{
+            .components = {kSurfaceUCodingParams12bit,
+                           kSurfaceVCodingParams20bit}};
       }
       break;
     default:
@@ -190,6 +207,10 @@ MeshFormat MakeValidatedFullFormat() {
               MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
               MeshFormat::AttributeId::kForwardLabel,
           },
+          {
+              MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+              MeshFormat::AttributeId::kSurfaceUv,
+          },
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ABSL_CHECK_OK(format);
@@ -233,6 +254,9 @@ StrokeVertex::FormatAttributeIndices StrokeVertex::FindAttributeIndices(
       case MeshFormat::AttributeId::kForwardLabel:
         indices.forward_label = index;
         break;
+      case MeshFormat::AttributeId::kSurfaceUv:
+        indices.surface_uv = index;
+        break;
       default:
         break;
     }
@@ -270,6 +294,11 @@ StrokeVertex::Label StrokeVertex::GetForwardLabelFromMesh(
   return GetFromMesh(mesh, index).non_position_attributes.forward_label;
 }
 
+Point StrokeVertex::GetSurfaceUvFromMesh(const MutableMesh& mesh,
+                                         uint32_t index) {
+  return GetFromMesh(mesh, index).non_position_attributes.surface_uv;
+}
+
 namespace {
 
 // TODO: b/306149329 - Investigate memcpy-ing the entire struct instead of
@@ -300,6 +329,9 @@ void SetNonPositionAttributes(
   mesh.SetFloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.forward_label,
       {attributes.forward_label.encoded_value});
+  mesh.SetFloatVertexAttribute(
+      index, StrokeVertex::kFullFormatAttributeIndices.surface_uv,
+      {attributes.surface_uv.x, attributes.surface_uv.y});
 }
 
 }  // namespace
@@ -356,6 +388,15 @@ void StrokeVertex::SetForwardLabelInMesh(MutableMesh& mesh, uint32_t index,
       {label.encoded_value});
 }
 
+void StrokeVertex::SetSurfaceUvInMesh(MutableMesh& mesh, uint32_t index,
+                                      Point uv) {
+  ABSL_DCHECK(
+      MeshFormat::IsUnpackedEquivalent(mesh.Format(), FullMeshFormat()));
+  mesh.SetFloatVertexAttribute(
+      index, StrokeVertex::kFullFormatAttributeIndices.surface_uv,
+      {uv.x, uv.y});
+}
+
 namespace {
 
 StrokeVertex::Label LerpLabel(StrokeVertex::Label a, StrokeVertex::Label b,
@@ -391,6 +432,7 @@ StrokeVertex::NonPositionAttributes Lerp(
                     Lerp(a.hsl_shift[2], b.hsl_shift[2], t)},
       .side_label = LerpLabel(a.side_label, b.side_label, t),
       .forward_label = LerpLabel(a.forward_label, b.forward_label, t),
+      .surface_uv = Lerp(a.surface_uv, b.surface_uv, t),
   };
 }
 
@@ -412,6 +454,10 @@ StrokeVertex::NonPositionAttributes BarycentricLerp(
           BarycentricLerpLabel(a.side_label, b.side_label, c.side_label, t),
       .forward_label = BarycentricLerpLabel(a.forward_label, b.forward_label,
                                             c.forward_label, t),
+      .surface_uv = {a.surface_uv.x * t[0] + b.surface_uv.x * t[1] +
+                         c.surface_uv.x * t[2],
+                     a.surface_uv.y * t[0] + b.surface_uv.y * t[1] +
+                         c.surface_uv.y * t[2]},
   };
 }
 

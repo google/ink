@@ -300,6 +300,13 @@ TEST(MeshSpecificationDataTest, CreateForStrokeWithoutHslColorShiftIsOk) {
             absl::OkStatus());
 }
 
+TEST(MeshSpecificationDataTest, CreateForStrokeWithoutSurfaceUvIsOk) {
+  MeshFormat format_without_uv = MakeFormatWithSkippedAttribute(
+      StrokeVertex::FullMeshFormat(), MeshFormat::AttributeId::kSurfaceUv);
+  EXPECT_EQ(MeshSpecificationData::CreateForStroke(format_without_uv).status(),
+            absl::OkStatus());
+}
+
 TEST(MeshSpecificationDataTest,
      CreateForStrokeWithoutRequiredAttributesReturnsError) {
   MeshFormat format_with_missing_required_attribute =
@@ -373,8 +380,9 @@ GetFormatTypesAndIds(const MeshFormat& format) {
 TEST(MeshSpecificationDataTest,
      CreateForStrokeWithUnsupportedAttributeOrderReturnsError) {
   // Modify the `InProgressStroke` format by performing a single swap of
-  // attributes. Because HSL shift is the only format attribute that is not
-  // required to be paired, any single swap will cause an unsupported order.
+  // attributes. Because HSL shift and surface UV are the only format attributes
+  // that are not required to be paired, any single swap other than exactly
+  // those two will cause an unsupported order.
 
   auto types_and_ids = GetFormatTypesAndIds(StrokeVertex::FullMeshFormat());
   for (int i = 0; i + 1 < types_and_ids.size(); ++i) {
@@ -390,9 +398,16 @@ TEST(MeshSpecificationDataTest,
 
       absl::Status unsupported_order =
           MeshSpecificationData::CreateForStroke(*reordered_format).status();
-      EXPECT_EQ(unsupported_order.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(unsupported_order.message(),
-                  HasSubstr("must be immediately after"));
+      if (types_and_ids[i].second == MeshFormat::AttributeId::kColorShiftHsl &&
+          types_and_ids[j].second == MeshFormat::AttributeId::kSurfaceUv) {
+        // This is the only pair of attributes that won't result in an error, as
+        // noted above.
+        EXPECT_EQ(unsupported_order, absl::OkStatus());
+      } else {
+        EXPECT_EQ(unsupported_order.code(), absl::StatusCode::kInvalidArgument);
+        EXPECT_THAT(unsupported_order.message(),
+                    HasSubstr("must be immediately after"));
+      }
     }
   }
 }
@@ -493,6 +508,18 @@ TEST(MeshSpecificationDataTest,
                 types_and_ids,
                 StrokeVertex::kFullFormatAttributeIndices.forward_label,
                 MeshFormat::AttributeType::kFloat2PackedIn1Float))
+            .status();
+    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+    EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
+  }
+
+  {
+    absl::Status status =
+        MeshSpecificationData::CreateForStroke(
+            MakeFormatWithModifiedType(
+                types_and_ids,
+                StrokeVertex::kFullFormatAttributeIndices.surface_uv,
+                MeshFormat::AttributeType::kFloat3PackedIn1Float))
             .status();
     EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));

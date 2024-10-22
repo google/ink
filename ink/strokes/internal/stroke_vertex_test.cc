@@ -26,6 +26,7 @@
 #include "absl/status/statusor.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mutable_mesh.h"
+#include "ink/geometry/point.h"
 #include "ink/geometry/type_matchers.h"
 #include "ink/geometry/vec.h"
 #include "ink/types/small_array.h"
@@ -286,6 +287,16 @@ TEST(StrokeVertexTest, MemoryLayoutMatchesUnpackedFullMeshFormat) {
   EXPECT_EQ(
       attribute.unpacked_width,
       sizeof(decltype(StrokeVertex::NonPositionAttributes::forward_label)));
+
+  // Surface UV:
+  ASSERT_LT(StrokeVertex::kFullFormatAttributeIndices.surface_uv,
+            format.Attributes().size());
+  attribute =
+      format.Attributes()[StrokeVertex::kFullFormatAttributeIndices.surface_uv];
+  EXPECT_EQ(attribute.unpacked_offset,
+            offsetof(StrokeVertex, non_position_attributes.surface_uv));
+  EXPECT_EQ(attribute.unpacked_width,
+            sizeof(decltype(StrokeVertex::NonPositionAttributes::surface_uv)));
 }
 
 TEST(StrokeVertexTest, FindAttributeIndicesResultMatchesFullFormatIndices) {
@@ -306,6 +317,8 @@ TEST(StrokeVertexTest, FindAttributeIndicesResultMatchesFullFormatIndices) {
             StrokeVertex::kFullFormatAttributeIndices.forward_derivative);
   EXPECT_EQ(indices.forward_label,
             StrokeVertex::kFullFormatAttributeIndices.forward_label);
+  EXPECT_EQ(indices.surface_uv,
+            StrokeVertex::kFullFormatAttributeIndices.surface_uv);
 }
 
 TEST(StrokeVertexTest, FindAttributeIndicesReturnsMinusOneForNotFound) {
@@ -328,6 +341,7 @@ TEST(StrokeVertexTest, FindAttributeIndicesReturnsMinusOneForNotFound) {
   EXPECT_EQ(indices.side_label, -1);
   EXPECT_EQ(indices.forward_derivative, -1);
   EXPECT_EQ(indices.forward_label, -1);
+  EXPECT_EQ(indices.surface_uv, -1);
 }
 
 TEST(StrokeVertexTest, EqualityOfNonPositionAttributes) {
@@ -338,6 +352,7 @@ TEST(StrokeVertexTest, EqualityOfNonPositionAttributes) {
       .side_label = StrokeVertex::kExteriorLeftLabel,
       .forward_derivative = {3, 4},
       .forward_label = StrokeVertex::kExteriorFrontLabel,
+      .surface_uv = {0.75, 0.125},
   };
   StrokeVertex::NonPositionAttributes b = a;
 
@@ -369,6 +384,10 @@ TEST(StrokeVertexTest, EqualityOfNonPositionAttributes) {
   a = b;
   b.forward_label.encoded_value = 15;
   EXPECT_FALSE(a == b);  // NOLINT
+
+  a = b;
+  b.surface_uv.y = 0.5;
+  EXPECT_FALSE(a == b);  // NOLINT
 }
 
 TEST(StrokeVertexTest, LerpNonPositionAttributes) {
@@ -380,6 +399,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
       .side_label = shared_side_label,
       .forward_derivative = {3, 4},
       .forward_label = StrokeVertex::kExteriorFrontLabel,
+      .surface_uv = {0.6, 0.7},
   };
   StrokeVertex::NonPositionAttributes b = {
       .opacity_shift = -0.3,
@@ -388,6 +408,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
       .side_label = shared_side_label,
       .forward_derivative = {8, 1},
       .forward_label = StrokeVertex::kExteriorBackLabel,
+      .surface_uv = {0.7, 0.8},
   };
 
   ASSERT_NE(a.side_label, StrokeVertex::kInteriorLabel);
@@ -402,6 +423,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
   EXPECT_EQ(result.side_label, a.side_label);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, a.forward_label);
+  EXPECT_THAT(result.surface_uv, PointEq({0.59, 0.69}));
 
   result = Lerp(a, b, 0);
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.1);
@@ -410,6 +432,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
   EXPECT_EQ(result.side_label, a.side_label);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, a.forward_label);
+  EXPECT_THAT(result.surface_uv, PointEq({0.6, 0.7}));
 
   result = Lerp(a, b, 0.25);
   EXPECT_FLOAT_EQ(result.opacity_shift, 0);
@@ -419,6 +442,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
   EXPECT_EQ(result.side_label, b.side_label);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, StrokeVertex::kInteriorLabel);
+  EXPECT_THAT(result.surface_uv, PointEq({0.625, 0.725}));
 
   result = Lerp(a, b, 1);
   EXPECT_FLOAT_EQ(result.opacity_shift, -0.3);
@@ -427,6 +451,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
   EXPECT_EQ(result.side_label, b.side_label);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, b.forward_label);
+  EXPECT_THAT(result.surface_uv, PointEq({0.7, 0.8}));
 
   result = Lerp(a, b, 1.2);
   EXPECT_FLOAT_EQ(result.opacity_shift, -0.38);
@@ -435,6 +460,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
   EXPECT_EQ(result.side_label, b.side_label);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, b.forward_label);
+  EXPECT_THAT(result.surface_uv, PointEq({0.72, 0.82}));
 }
 
 TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
@@ -451,6 +477,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
       .side_label = ac_side_label,
       .forward_derivative = {3, 4},
       .forward_label = a_forward_label,
+      .surface_uv = {0, 1},
   };
   StrokeVertex::NonPositionAttributes b = {
       .opacity_shift = 0,
@@ -459,6 +486,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
       .side_label = b_side_label,
       .forward_derivative = {8, 1},
       .forward_label = bc_forward_label,
+      .surface_uv = {0.5, 0.5},
   };
   StrokeVertex::NonPositionAttributes c = {
       .opacity_shift = 1,
@@ -467,6 +495,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
       .side_label = ac_side_label,
       .forward_derivative = {8, -2},
       .forward_label = bc_forward_label,
+      .surface_uv = {1, 0},
   };
 
   ASSERT_NE(a.side_label, StrokeVertex::kInteriorLabel);
@@ -484,6 +513,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
   EXPECT_EQ(result.side_label, StrokeVertex::kInteriorLabel);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, StrokeVertex::kInteriorLabel);
+  EXPECT_THAT(result.surface_uv, PointEq({0.375, 0.625}));
 
   result = BarycentricLerp(a, b, c, {0.25, 0, 0.75});
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.5);
@@ -493,6 +523,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
   EXPECT_EQ(result.side_label, c.side_label);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, StrokeVertex::kInteriorLabel);
+  EXPECT_THAT(result.surface_uv, PointEq({0.75, 0.25}));
 
   result = BarycentricLerp(a, b, c, {0, 0.25, 0.75});
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.75);
@@ -502,6 +533,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, b.forward_label);
   EXPECT_EQ(result.forward_label, c.forward_label);
+  EXPECT_THAT(result.surface_uv, PointEq({0.875, 0.125}));
 
   result = BarycentricLerp(a, b, c, {0.25, 0.25, 0.5});
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.25);
@@ -510,6 +542,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
   EXPECT_EQ(result.side_label, StrokeVertex::kInteriorLabel);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, StrokeVertex::kInteriorLabel);
+  EXPECT_THAT(result.surface_uv, PointEq({0.625, 0.375}));
 }
 
 TEST(StrokeVertexTest, GetFromMesh) {
@@ -526,6 +559,7 @@ TEST(StrokeVertexTest, GetFromMesh) {
               .side_label = StrokeVertex::kExteriorLeftLabel,
               .forward_derivative = {6, 7},
               .forward_label = StrokeVertex::kExteriorBackLabel,
+              .surface_uv = {0.8, 0.9},
           },
   };
 
@@ -553,6 +587,10 @@ TEST(StrokeVertexTest, GetFromMesh) {
   mesh.SetFloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.forward_label,
       {expected.non_position_attributes.forward_label.encoded_value});
+  mesh.SetFloatVertexAttribute(
+      index, StrokeVertex::kFullFormatAttributeIndices.surface_uv,
+      {expected.non_position_attributes.surface_uv.x,
+       expected.non_position_attributes.surface_uv.y});
 
   StrokeVertex actual = StrokeVertex::GetFromMesh(mesh, index);
   EXPECT_THAT(actual.position, PointEq(expected.position));
@@ -615,6 +653,20 @@ TEST(StrokeVertexTest, GetForwardLabelFromMesh) {
             expected_forward_label);
 }
 
+TEST(StrokeVertexTest, GetSurfaceUvFromMesh) {
+  MutableMesh mesh(StrokeVertex::FullMeshFormat());
+  mesh.Resize(5, 3);
+
+  uint32_t index = 1;
+  Point expected_surface_uv = {0.75, 0.125};
+  mesh.SetFloatVertexAttribute(
+      index, StrokeVertex::kFullFormatAttributeIndices.surface_uv,
+      {expected_surface_uv.x, expected_surface_uv.y});
+
+  EXPECT_THAT(StrokeVertex::GetSurfaceUvFromMesh(mesh, index),
+              PointEq(expected_surface_uv));
+}
+
 TEST(StrokeVertexTest, AppendToMesh) {
   MutableMesh mesh(StrokeVertex::FullMeshFormat());
   mesh.Resize(5, 3);
@@ -629,6 +681,7 @@ TEST(StrokeVertexTest, AppendToMesh) {
               .side_label = {.encoded_value = 5},
               .forward_derivative = {6, 7},
               .forward_label = {.encoded_value = 8},
+              .surface_uv = {0.9, 0.1},
           },
   };
 
@@ -675,6 +728,12 @@ TEST(StrokeVertexTest, AppendToMesh) {
   ASSERT_EQ(attribute.Size(), 1);
   EXPECT_EQ(attribute[0],
             expected.non_position_attributes.forward_label.encoded_value);
+
+  attribute = mesh.FloatVertexAttribute(
+      index, StrokeVertex::kFullFormatAttributeIndices.surface_uv);
+  ASSERT_EQ(attribute.Size(), 2);
+  EXPECT_THAT((Point{attribute[0], attribute[1]}),
+              PointEq(expected.non_position_attributes.surface_uv));
 }
 
 TEST(StrokeVertexTest, SetInMesh) {
@@ -691,6 +750,7 @@ TEST(StrokeVertexTest, SetInMesh) {
               .side_label = StrokeVertex::kExteriorLeftLabel,
               .forward_derivative = {6, 7},
               .forward_label = StrokeVertex::kExteriorBackLabel,
+              .surface_uv = {0.8, 0.9},
           },
   };
 
@@ -735,6 +795,12 @@ TEST(StrokeVertexTest, SetInMesh) {
   ASSERT_EQ(attribute.Size(), 1);
   EXPECT_EQ(attribute[0],
             expected.non_position_attributes.forward_label.encoded_value);
+
+  attribute = mesh.FloatVertexAttribute(
+      index, StrokeVertex::kFullFormatAttributeIndices.surface_uv);
+  ASSERT_EQ(attribute.Size(), 2);
+  EXPECT_THAT((Point{attribute[0], attribute[1]}),
+              PointEq(expected.non_position_attributes.surface_uv));
 }
 
 TEST(StrokeVertexTest, OutOfBoundsColorShiftValuesAreClamped) {
@@ -837,6 +903,21 @@ TEST(StrokeVertexTest, SetForwardLabelInMesh) {
               Eq(StrokeVertex::kExteriorFrontLabel));
 }
 
+TEST(StrokeVertexTest, SetSurfaceUvInMesh) {
+  MutableMesh mesh(StrokeVertex::FullMeshFormat());
+  mesh.Resize(5, 3);
+
+  uint32_t index = 1;
+  ASSERT_THAT(
+      StrokeVertex::GetFromMesh(mesh, index).non_position_attributes.surface_uv,
+      PointEq(kOrigin));
+
+  StrokeVertex::SetSurfaceUvInMesh(mesh, index, {0.75, 0.125});
+  EXPECT_THAT(
+      StrokeVertex::GetFromMesh(mesh, index).non_position_attributes.surface_uv,
+      PointEq({0.75, 0.125}));
+}
+
 TEST(StrokeVertexDeathTest, MakeCustomPackingArrayWithTooManyAttributes) {
   auto format =
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2Unpacked,
@@ -854,7 +935,9 @@ TEST(StrokeVertexDeathTest, MakeCustomPackingArrayWithTooManyAttributes) {
                           {MeshFormat::AttributeType::kFloat2Unpacked,
                            MeshFormat::AttributeId::kCustom5},
                           {MeshFormat::AttributeType::kFloat2Unpacked,
-                           MeshFormat::AttributeId::kCustom6}},
+                           MeshFormat::AttributeId::kCustom6},
+                          {MeshFormat::AttributeType::kFloat2Unpacked,
+                           MeshFormat::AttributeId::kCustom7}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
 

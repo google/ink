@@ -393,6 +393,7 @@ cc_test(
         ":stroke_vertex",
         "//ink/geometry:mesh_format",
         "//ink/geometry:mutable_mesh",
+        "//ink/geometry:point",
         "//ink/geometry:type_matchers",
         "//ink/geometry:vec",
         "//ink/types:small_array",

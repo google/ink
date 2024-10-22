@@ -166,6 +166,7 @@ class MeshFormat {
     kSideLabel,
     kForwardDerivative,
     kForwardLabel,
+    kSurfaceUv,
     kCustom0,
     kCustom1,
     kCustom2,

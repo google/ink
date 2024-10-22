@@ -68,6 +68,7 @@ bool IsValidAttributeId(MeshFormat::AttributeId id) {
     case MeshFormat::AttributeId::kSideLabel:
     case MeshFormat::AttributeId::kForwardDerivative:
     case MeshFormat::AttributeId::kForwardLabel:
+    case MeshFormat::AttributeId::kSurfaceUv:
     case MeshFormat::AttributeId::kCustom0:
     case MeshFormat::AttributeId::kCustom1:
     case MeshFormat::AttributeId::kCustom2:
@@ -438,6 +439,8 @@ std::string ToFormattedString(MeshFormat::AttributeId id) {
       return "kForwardDerivative";
     case MeshFormat::AttributeId::kForwardLabel:
       return "kForwardLabel";
+    case MeshFormat::AttributeId::kSurfaceUv:
+      return "kSurfaceUv";
     case MeshFormat::AttributeId::kCustom0:
       return "kCustom0";
     case MeshFormat::AttributeId::kCustom1:

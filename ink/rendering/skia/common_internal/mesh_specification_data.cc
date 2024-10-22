@@ -128,7 +128,7 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
   constexpr StrokeVertex::FormatAttributeIndices kAttributeIndices =
       StrokeVertex::kFullFormatAttributeIndices;
 
-  constexpr int kRenderingAttributeCount = 4;
+  constexpr int kRenderingAttributeCount = 5;
   SmallArray<Attribute, kMaxAttributes> rendering_attributes(
       kRenderingAttributeCount);
 
@@ -163,6 +163,12 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
       .offset = format_attributes[kAttributeIndices.forward_derivative]
                     .unpacked_offset,
       .name = "forwardDerivativeAndLabel"};
+
+  // Surface UV
+  rendering_attributes[4] = {
+      .type = AttributeType::kFloat2,
+      .offset = format_attributes[kAttributeIndices.surface_uv].unpacked_offset,
+      .name = "surfaceUv"};
 
   return MeshSpecificationData{
       .attributes = rendering_attributes,
@@ -233,6 +239,20 @@ FindTypeForDerivativeAndLabel(MeshFormat::AttributeType derivative_type,
   return std::nullopt;
 }
 
+// Returns the supported `AttributeType` for the surface UV attribute based on
+// its `MeshFormat::AttributeType`.
+std::optional<MeshSpecificationData::AttributeType> FindTypeForSurfaceUv(
+    MeshFormat::AttributeType surface_uv_type) {
+  if (surface_uv_type == MeshFormat::AttributeType::kFloat2Unpacked) {
+    return MeshSpecificationData::AttributeType::kFloat2;
+  }
+  if (surface_uv_type ==
+      MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20) {
+    return MeshSpecificationData::AttributeType::kUByte4;
+  }
+  return std::nullopt;
+}
+
 // Vertex attribute type and offset.
 struct TypeAndByteOffset {
   MeshSpecificationData::AttributeType type;
@@ -244,6 +264,7 @@ struct SkiaStrokeAttributeTypesAndOffsets {
   std::optional<TypeAndByteOffset> hsl_shift;
   TypeAndByteOffset side_derivative_and_label;
   TypeAndByteOffset forward_derivative_and_label;
+  std::optional<TypeAndByteOffset> surface_uv;
 };
 
 // Validates that the given `mesh_format` is supported and returns the shader
@@ -355,6 +376,21 @@ GetValidatedStrokeAttributeTypesAndOffsets(
       .type = *derivative_and_label_type,
       .offset = attributes[attribute_indices.forward_derivative].packed_offset};
 
+  // --------------------------------------------------------------------------
+  // Surface UV
+  if (attribute_indices.surface_uv != -1) {
+    std::optional<MeshSpecificationData::AttributeType> surface_uv_type =
+        FindTypeForSurfaceUv(attributes[attribute_indices.surface_uv].type);
+    if (!surface_uv_type.has_value()) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Unsupported type for `kSurfaceUv` attribute. Got `mesh_format`: ",
+          mesh_format));
+    }
+    result.surface_uv = {
+        .type = *surface_uv_type,
+        .offset = attributes[attribute_indices.surface_uv].packed_offset};
+  }
+
   return result;
 }
 
@@ -364,8 +400,9 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
     const MeshFormat& mesh_format) {
   StrokeVertex::FormatAttributeIndices attribute_indices =
       StrokeVertex::FindAttributeIndices(mesh_format);
-  auto types_and_offsets = GetValidatedStrokeAttributeTypesAndOffsets(
-      mesh_format, attribute_indices);
+  absl::StatusOr<SkiaStrokeAttributeTypesAndOffsets> types_and_offsets =
+      GetValidatedStrokeAttributeTypesAndOffsets(mesh_format,
+                                                 attribute_indices);
   if (!types_and_offsets.ok()) return types_and_offsets.status();
 
   // TODO: b/284117747 - Add support to the vertex and fragment shaders for
@@ -431,7 +468,7 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
       }
   )";
 
-  absl::InlinedVector<Attribute, 4> mesh_specification_attributes = {
+  absl::InlinedVector<Attribute, 5> mesh_specification_attributes = {
       {.type = types_and_offsets->position_and_opacity_shift.type,
        .offset = types_and_offsets->position_and_opacity_shift.offset,
        .name = "positionAndOpacityShift"},
@@ -447,6 +484,12 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
         {.type = types_and_offsets->hsl_shift->type,
          .offset = types_and_offsets->hsl_shift->offset,
          .name = "hslShift"});
+  }
+  if (types_and_offsets->surface_uv.has_value()) {
+    mesh_specification_attributes.push_back(
+        {.type = types_and_offsets->surface_uv->type,
+         .offset = types_and_offsets->surface_uv->offset,
+         .name = "surfaceUv"});
   }
 
   return MeshSpecificationData{
