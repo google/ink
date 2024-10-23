@@ -14,6 +14,11 @@ namespace ink::geometry_internal {
 
 namespace {
 
+const float kMinWalkDistance = 2.0f;
+const float kMaxConnectionDistance = 1.1f;
+const float kMinConnectionRatio = 2.0f;
+const float kMinTrimmingRatio = 1.8f;
+
 PolylineData CreateWalkingPolylineData() {
   std::vector<Point> walking_points = {
       Point{3, 3},   Point{3, 10}, Point{3, 20}, Point{10, 20},
@@ -33,6 +38,25 @@ PolylineData CreatePolylineAndFindIntersections(std::vector<Point> points) {
   ink::geometry_internal::StaticRTree<SegmentBundle> rtree(
       output_polyline.segments, segment_bounds);
   FindFirstAndLastIntersections(rtree, output_polyline);
+  return output_polyline;
+}
+
+PolylineData CreatePolylineAndFindBestConnections(
+    std::vector<Point> points, float min_walk_distance = kMinWalkDistance,
+    float max_connection_distance = kMaxConnectionDistance,
+    float min_connection_ratio = kMinConnectionRatio,
+    float min_trimming_ratio = kMinTrimmingRatio) {
+  PolylineData output_polyline = CreateNewPolylineData(points);
+
+  output_polyline.min_walk_distance = min_walk_distance;
+  output_polyline.max_connection_distance = max_connection_distance;
+  output_polyline.min_connection_ratio = min_connection_ratio;
+  output_polyline.min_trimming_ratio = min_trimming_ratio;
+
+  ink::geometry_internal::StaticRTree<SegmentBundle> rtree(
+      output_polyline.segments, segment_bounds);
+  FindFirstAndLastIntersections(rtree, output_polyline);
+  FindBestEndpointConnections(rtree, output_polyline);
   return output_polyline;
 }
 
@@ -232,6 +256,277 @@ TEST(PolylineProcessingTest, IntersectionsWithMultipleIntersections) {
   EXPECT_EQ(polyline.last_intersection.index_int, 14);
   EXPECT_EQ(polyline.last_intersection.index_fraction, 0.5f);
   EXPECT_THAT(polyline.new_last_point, PointEq(Point{18, 9}));
+}
+
+TEST(PolylineProcessingTest, ConnectionsWithTinyMaxConnectionDistance) {
+  std::vector<Point> points = {Point{5, 3.1f}, Point{5, 8},   Point{5, 15},
+                               Point{10, 20},  Point{15, 25}, Point{20, 30},
+                               Point{30, 20},  Point{20, 10}, Point{11, 3},
+                               Point{5.1f, 3}};
+  PolylineData polyline = CreatePolylineAndFindBestConnections(
+      points, kMinWalkDistance, 0.1f, kMinConnectionRatio, kMinTrimmingRatio);
+
+  EXPECT_EQ(polyline.has_intersection, false);
+
+  EXPECT_EQ(polyline.connect_first, false);
+  EXPECT_EQ(polyline.connect_last, false);
+}
+
+TEST(PolylineProcessingTest, ConnectionsWithLargeMaxConnectionDistance) {
+  std::vector<Point> points = {
+      Point{5, 7},   Point{5, 8},   Point{5, 15},  Point{10, 20}, Point{15, 25},
+      Point{20, 30}, Point{30, 20}, Point{20, 10}, Point{11, 3},  Point{1, 3}};
+  PolylineData polyline = CreatePolylineAndFindBestConnections(
+      points, kMinWalkDistance, 4.5f, kMinConnectionRatio, kMinTrimmingRatio);
+
+  EXPECT_EQ(polyline.has_intersection, true);
+
+  // The connection distance is large enough that the first point is able to
+  // connect with a connection length of 4.
+  EXPECT_EQ(polyline.connect_first, true);
+  EXPECT_THAT(polyline.new_first_point, PointEq(Point{5, 3}));
+
+  EXPECT_EQ(polyline.connect_last, false);
+}
+
+TEST(PolylineProcessingTest, ConnectionsWithVeryLargeMaxConnectionDistance) {
+  std::vector<Point> points = {
+      Point{5, 7},   Point{5, 8},   Point{5, 15},  Point{10, 20}, Point{15, 25},
+      Point{20, 30}, Point{30, 20}, Point{20, 10}, Point{11, 3},  Point{1, 3}};
+  PolylineData polyline = CreatePolylineAndFindBestConnections(
+      points, kMinWalkDistance, 400.0f, kMinConnectionRatio, kMinTrimmingRatio);
+
+  EXPECT_EQ(polyline.has_intersection, true);
+
+  EXPECT_EQ(polyline.connect_first, true);
+  EXPECT_THAT(polyline.new_first_point, PointEq(Point{5, 3}));
+
+  // The connection distance is large enough that the last point is able to
+  // connect with the first point.
+  EXPECT_EQ(polyline.connect_last, true);
+  EXPECT_THAT(polyline.new_last_point, PointEq(Point{5, 7}));
+}
+
+TEST(PolylineProcessingTest, BestConnectionsWithSmallTrimmingRatio) {
+  std::vector<Point> points = {
+      Point{6, 23}, Point{8, 21},  Point{11, 18}, Point{14, 15}, Point{18, 9},
+      Point{16, 3}, Point{10, 0},  Point{4, 3},   Point{2, 9},   Point{6, 15},
+      Point{9, 18}, Point{12, 21}, Point{14, 23}};
+  PolylineData polyline = CreatePolylineAndFindBestConnections(
+      points, kMinWalkDistance, 1000.0f, kMinConnectionRatio, .1f);
+  // With a large max connection distance and a small trimming ratio, the
+  // polyline will connect even if it is part of a straight extension which
+  // would otherwise be trimmed. Both connections are to the nearest point, even
+  // if it is the intersection point as it is here.
+  EXPECT_EQ(polyline.has_intersection, true);
+
+  EXPECT_EQ(polyline.connect_first, true);
+  EXPECT_THAT(polyline.new_first_point, PointEq(Point{10, 19}));
+
+  EXPECT_EQ(polyline.connect_last, true);
+  EXPECT_THAT(polyline.new_last_point, PointEq(Point{10, 19}));
+}
+
+TEST(PolylineProcessingTest, BestConnectionsMinWalkingDistance) {
+  std::vector<Point> points = {
+      Point{2, 2}, Point{3, 2}, Point{4, 2}, Point{5, 2},
+      Point{6, 2}, Point{7, 2}, Point{8, 2}, Point{9, 2},
+  };
+  PolylineData polyline = CreatePolylineAndFindBestConnections(
+      points, 5.0f, 1000.0f, .9f, kMinTrimmingRatio);
+  // With a large max connection distance and a connection ratio less than 1,
+  // the endpoints will connect to the nearest point on the nearest segment that
+  // is at least min_walking_distance away from them.
+  EXPECT_EQ(polyline.has_intersection, true);
+
+  EXPECT_EQ(polyline.connect_first, true);
+  EXPECT_THAT(polyline.new_first_point, PointEq(Point{7, 2}));
+
+  EXPECT_EQ(polyline.connect_last, true);
+  EXPECT_THAT(polyline.new_last_point, PointEq(Point{4, 2}));
+}
+
+TEST(PolylineProcessingTest, BestConnectionsMinConnectionRatio) {
+  std::vector<Point> points = {
+      Point{20, 0}, Point{15, 0}, Point{10, 0}, Point{5, 0}, Point{0, 0},
+      Point{0, 1},  Point{0, 2},  Point{0, 3},  Point{0, 4}, Point{0, 5},
+      Point{0, 6},  Point{0, 7},  Point{0, 8},  Point{0, 9}, Point{0, 10},
+      Point{0, 11}, Point{0, 12}, Point{0, 13}, Point{0, 14}};
+  PolylineData polyline_1 = CreatePolylineAndFindBestConnections(
+      points, kMinWalkDistance, 1000.0f, 1.1f, kMinTrimmingRatio);
+
+  EXPECT_EQ(polyline_1.has_intersection, true);
+
+  EXPECT_EQ(polyline_1.connect_first, true);
+  EXPECT_THAT(polyline_1.new_first_point, PointEq(Point{0, 3}));
+
+  EXPECT_EQ(polyline_1.connect_last, true);
+  EXPECT_THAT(polyline_1.new_last_point, PointEq(Point{5, 0}));
+
+  PolylineData polyline_2 = CreatePolylineAndFindBestConnections(
+      points, kMinWalkDistance, 1000.0f, 1.3f, kMinTrimmingRatio);
+
+  EXPECT_EQ(polyline_2.has_intersection, true);
+
+  EXPECT_EQ(polyline_2.connect_first, true);
+  EXPECT_THAT(polyline_2.new_first_point, PointEq(Point{0, 9}));
+
+  EXPECT_EQ(polyline_2.connect_last, true);
+  EXPECT_THAT(polyline_2.new_last_point, PointEq(Point{10, 0}));
+}
+
+TEST(PolylineProcessingTest, ConnectionsForPerfectlyClosedLoop) {
+  std::vector<Point> points = {
+      Point{5, 3},   Point{5, 8},   Point{5, 15},  Point{10, 20}, Point{15, 25},
+      Point{20, 30}, Point{30, 20}, Point{20, 10}, Point{11, 3},  Point{5, 3}};
+  PolylineData polyline = CreatePolylineAndFindBestConnections(points);
+
+  EXPECT_EQ(polyline.has_intersection, true);
+
+  EXPECT_EQ(polyline.connect_first, true);
+  EXPECT_EQ(polyline.connect_last, true);
+
+  // EXPECT_EQ(polyline.first_intersection.index_int, 1);
+  // EXPECT_EQ(polyline.first_intersection.index_fraction, 0.5f);
+  EXPECT_THAT(polyline.new_first_point, PointEq(Point{5, 3}));
+
+  // EXPECT_EQ(polyline.last_intersection.index_int, 14);
+  // EXPECT_EQ(polyline.last_intersection.index_fraction, 0.5f);
+  EXPECT_THAT(polyline.new_last_point, PointEq(Point{5, 3}));
+}
+
+TEST(PolylineProcessingTest, ConnectionsForNearlyClosedLoop) {
+  std::vector<Point> points = {Point{5, 3.1f}, Point{5, 8},   Point{5, 15},
+                               Point{10, 20},  Point{15, 25}, Point{20, 30},
+                               Point{30, 20},  Point{20, 10}, Point{11, 3},
+                               Point{5.1f, 3}};
+  PolylineData polyline = CreatePolylineAndFindBestConnections(points);
+
+  EXPECT_EQ(polyline.has_intersection, true);
+
+  EXPECT_EQ(polyline.connect_first, true);
+  EXPECT_THAT(polyline.new_first_point, PointEq(Point{5.1f, 3}));
+
+  EXPECT_EQ(polyline.connect_last, true);
+  EXPECT_THAT(polyline.new_last_point, PointEq(Point{5, 3.1f}));
+}
+
+TEST(PolylineProcessingTest,
+     BestConnectionsWithNoIntersectionsAndNoConnections) {
+  std::vector<Point> points = {Point{-1, 0}, Point{5, 1},  Point{10, 2},
+                               Point{15, 4}, Point{20, 6}, Point{25, 9}};
+  PolylineData polyline = CreatePolylineAndFindBestConnections(points);
+
+  EXPECT_EQ(polyline.has_intersection, false);
+
+  EXPECT_EQ(polyline.connect_first, false);
+  EXPECT_EQ(polyline.connect_last, false);
+}
+
+TEST(PolylineProcessingTest,
+     BestConnectionsWithOneIntersectionAndNoConnections) {
+  std::vector<Point> points = {
+      Point{6, 23},  Point{8, 21},  Point{10, 19}, Point{14, 15}, Point{18, 9},
+      Point{16, 3},  Point{10, 0},  Point{4, 3},   Point{2, 9},   Point{6, 15},
+      Point{10, 19}, Point{12, 21}, Point{14, 23}};
+  PolylineData polyline = CreatePolylineAndFindBestConnections(points);
+
+  EXPECT_EQ(polyline.has_intersection, true);
+
+  EXPECT_EQ(polyline.connect_first, false);
+  EXPECT_EQ(polyline.connect_last, false);
+}
+
+TEST(PolylineProcessingTest, ConnectionsWithOneIntersectionConnectsBothPoints) {
+  std::vector<Point> points = {
+      Point{1, 9},  Point{-1, 13}, Point{1, 17},  Point{6, 19},  Point{14, 15},
+      Point{18, 9}, Point{16, 3},  Point{10, 0},  Point{4, 3},   Point{2, 9},
+      Point{6, 15}, Point{14, 19}, Point{19, 17}, Point{21, 13}, Point{19, 9}};
+
+  PolylineData polyline = CreatePolylineAndFindBestConnections(points);
+
+  EXPECT_EQ(polyline.has_intersection, true);
+
+  EXPECT_EQ(polyline.connect_first, true);
+  EXPECT_THAT(polyline.new_first_point, PointEq(Point{2, 9}));
+
+  EXPECT_EQ(polyline.connect_last, true);
+  EXPECT_THAT(polyline.new_last_point, PointEq(Point{18, 9}));
+}
+
+TEST(PolylineProcessingTest, ConnectionsConnectsFirstPointAndUpdatesLastPoint) {
+  std::vector<Point> points = {
+      Point{5, 3.2}, Point{5, 8},   Point{5, 15},  Point{10, 20}, Point{15, 25},
+      Point{20, 30}, Point{30, 20}, Point{20, 10}, Point{11, 3},  Point{1, 3}};
+
+  PolylineData polyline = CreatePolylineAndFindBestConnections(points);
+
+  EXPECT_EQ(polyline.has_intersection, true);
+
+  EXPECT_EQ(polyline.connect_first, true);
+  EXPECT_THAT(polyline.new_first_point, PointEq(Point{5, 3}));
+
+  EXPECT_EQ(polyline.connect_last, false);
+  EXPECT_THAT(polyline.new_last_point, PointEq(Point{5, 3}));
+}
+
+TEST(PolylineProcessingTest, ConnectionsConnectsLastPointAndUpdatesFirstPoint) {
+  std::vector<Point> points = {Point{1, 3},   Point{11, 3},  Point{20, 10},
+                               Point{30, 20}, Point{20, 30}, Point{15, 25},
+                               Point{10, 20}, Point{5, 15},  Point{5, 8},
+                               Point{5, 3.2}};
+
+  PolylineData polyline = CreatePolylineAndFindBestConnections(points);
+
+  EXPECT_EQ(polyline.has_intersection, true);
+
+  EXPECT_EQ(polyline.connect_first, false);
+  EXPECT_THAT(polyline.new_first_point, PointEq(Point{5, 3}));
+
+  EXPECT_EQ(polyline.connect_last, true);
+  EXPECT_THAT(polyline.new_last_point, PointEq(Point{5, 3}));
+}
+
+TEST(PolylineProcessingTest, connectsFrontToBackAndBackToClosestPoint) {
+  std::vector<Point> points = {Point{4.95, 3}, Point{11, 3},  Point{20, 10},
+                               Point{30, 20},  Point{20, 30}, Point{15, 25},
+                               Point{10, 20},  Point{5, 15},  Point{5, 8},
+                               Point{5, 3.2}};
+  std::vector<Point> expected_points = {
+      Point{5, 3.2}, Point{4.95, 3}, Point{11, 3},  Point{20, 10},
+      Point{30, 20}, Point{20, 30},  Point{15, 25}, Point{10, 20},
+      Point{5, 15},  Point{5, 8},    Point{5, 3.2}, Point{5, 3}};
+
+  PolylineData polyline = CreatePolylineAndFindBestConnections(points);
+
+  EXPECT_EQ(polyline.has_intersection, true);
+
+  EXPECT_EQ(polyline.connect_first, true);
+  EXPECT_THAT(polyline.new_first_point, PointEq(Point{5, 3.2}));
+
+  EXPECT_EQ(polyline.connect_last, true);
+  EXPECT_THAT(polyline.new_last_point, PointEq(Point{5, 3}));
+}
+
+TEST(PolylineProcessingTest, connectsBacktoFrontAndFrontToClosestPoint) {
+  std::vector<Point> points = {Point{5.2, 3}, Point{11, 3},  Point{20, 10},
+                               Point{30, 20}, Point{20, 30}, Point{15, 25},
+                               Point{10, 20}, Point{5, 15},  Point{5, 8},
+                               Point{5, 2.95}};
+  std::vector<Point> expected_points = {
+      Point{5, 3},   Point{5.2, 3}, Point{11, 3},   Point{20, 10},
+      Point{30, 20}, Point{20, 30}, Point{15, 25},  Point{10, 20},
+      Point{5, 15},  Point{5, 8},   Point{5, 2.95}, Point{5.2, 3}};
+
+  PolylineData polyline = CreatePolylineAndFindBestConnections(points);
+
+  EXPECT_EQ(polyline.has_intersection, true);
+
+  EXPECT_EQ(polyline.connect_first, true);
+  EXPECT_THAT(polyline.new_first_point, PointEq(Point{5, 3}));
+
+  EXPECT_EQ(polyline.connect_last, true);
+  EXPECT_THAT(polyline.new_last_point, PointEq(Point{5.2, 3}));
 }
 
 }  // namespace
