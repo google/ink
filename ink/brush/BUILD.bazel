@@ -101,6 +101,7 @@ cc_test(
         ":fuzz_domains",
         "//ink/geometry:mesh_format",
         "//ink/types:uri",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_fuzztest//fuzztest",

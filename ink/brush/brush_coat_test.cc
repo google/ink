@@ -17,6 +17,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "ink/brush/brush_behavior.h"
@@ -33,6 +34,12 @@ using ::testing::Contains;
 using ::testing::HasSubstr;
 using ::testing::Not;
 using ::testing::UnorderedElementsAre;
+
+Uri CreateTextureUri() {
+  auto uri = Uri::Parse("ink://ink/texture:test-paint");
+  ABSL_CHECK_OK(uri);
+  return *uri;
+}
 
 TEST(BrushCoatTest, Stringify) {
   EXPECT_EQ(absl::StrCat(BrushCoat{}),
@@ -143,6 +150,30 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithColorShift) {
     EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
                 Contains(MeshFormat::AttributeId::kColorShiftHsl));
   }
+}
+
+TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutWindingTextures) {
+  BrushPaint paint = {
+      .texture_layers = {BrushPaint::TextureLayer{
+          .color_texture_uri = CreateTextureUri(),
+          .mapping = BrushPaint::TextureMapping::kTiling,
+      }},
+  };
+  BrushCoat coat = {.tips = {BrushTip()}, .paint = paint};
+  EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
+              Not(Contains(MeshFormat::AttributeId::kSurfaceUv)));
+}
+
+TEST(BrushCoatTest, GetRequiredAttributeIdsWithWindingTextures) {
+  BrushPaint paint = {
+      .texture_layers = {BrushPaint::TextureLayer{
+          .color_texture_uri = CreateTextureUri(),
+          .mapping = BrushPaint::TextureMapping::kWinding,
+      }},
+  };
+  BrushCoat coat = {.tips = {BrushTip()}, .paint = paint};
+  EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
+              Contains(MeshFormat::AttributeId::kSurfaceUv));
 }
 
 }  // namespace

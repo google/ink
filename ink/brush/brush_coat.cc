@@ -95,9 +95,12 @@ std::vector<MeshFormat::AttributeId> GetRequiredAttributeIds(
     }
   }
 
-  // TODO: b/271837965 - Once we've finalized `AttributeId` values for tiling
-  // and winding textures, add those to `ids` if the `BrushPaint` uses
-  // tiling/winding textures.
+  for (const BrushPaint::TextureLayer& layer : coat.paint.texture_layers) {
+    if (layer.mapping == BrushPaint::TextureMapping::kWinding) {
+      ids.push_back(MeshFormat::AttributeId::kSurfaceUv);
+      break;
+    }
+  }
 
   return ids;
 }
