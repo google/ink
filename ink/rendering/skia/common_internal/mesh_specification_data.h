@@ -40,7 +40,7 @@ namespace ink::skia_common_internal {
 struct MeshSpecificationData {
   static constexpr int kMaxAttributes = 8;
   static constexpr int kMaxVaryings = 6;
-  static constexpr int kMaxUniforms = 6;
+  static constexpr int kMaxUniforms = 7;
 
   // Subsets of shader variable types for attributes, varyings, and uniforms
   // that are used by Ink and available across platforms.
@@ -58,6 +58,7 @@ struct MeshSpecificationData {
   };
   enum class UniformType {
     kFloat4 = 3,
+    kInt = 5,
   };
 
   enum class UniformId {
@@ -73,6 +74,11 @@ struct MeshSpecificationData {
     kPositionUnpackingTransform = 2,
     kSideDerivativeUnpackingTransform = 3,
     kForwardDerivativeUnpackingTransform = 4,
+    // The `BrushPaint::TextureMapping` value.
+    // TODO: b/375203215 - Get rid of this uniform once we are able to mix
+    // tiling
+    // and winding textures in a single `BrushPaint`.
+    kTextureMapping = 5,
   };
 
   struct Attribute {

@@ -21,6 +21,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
+#include "ink/brush/brush_paint.h"
 #include "ink/color/color.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/rendering/skia/native/internal/mesh_uniform_data.h"
@@ -81,6 +82,21 @@ class MeshDrawable {
   // does not have this uniform.
   void SetBrushColor(const Color& color);
 
+  // Returns true if the drawable has the texture-mapping uniform.
+  //
+  // TODO: b/375203215 - Get rid of this uniform once we are able to mix tiling
+  // and winding textures in a single `BrushPaint`.
+  bool HasTextureMapping() const;
+
+  // Sets the value of the texture-mapping uniform.
+  //
+  // CHECK-fails if the drawable was created with an `SkMeshSpecification` that
+  // does not have this uniform.
+  //
+  // TODO: b/375203215 - Get rid of this uniform once we are able to mix tiling
+  // and winding textures in a single `BrushPaint`.
+  void SetTextureMapping(BrushPaint::TextureMapping mapping);
+
   // Returns true if the drawable has an object-to-canvas uniform.
   bool HasObjectToCanvas() const;
 
@@ -115,6 +131,15 @@ inline bool MeshDrawable::HasBrushColor() const {
 
 inline void MeshDrawable::SetBrushColor(const Color& color) {
   uniform_data_.SetBrushColor(color);
+}
+
+inline bool MeshDrawable::HasTextureMapping() const {
+  return uniform_data_.HasTextureMapping();
+}
+
+inline void MeshDrawable::SetTextureMapping(
+    BrushPaint::TextureMapping mapping) {
+  uniform_data_.SetTextureMapping(mapping);
 }
 
 inline bool MeshDrawable::HasObjectToCanvas() const {

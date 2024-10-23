@@ -96,6 +96,21 @@ float OpacityMultiplierForPath(const Brush& brush, uint32_t coat_index) {
   return brush.GetCoats()[coat_index].tips.front().opacity_multiplier;
 }
 
+// Returns the `TextureMapping` used by the given `BrushPaint`. Right now, we
+// don't support rendering a `BrushPaint` that mixes different `TextureMapping`
+// modes, so this just returns the `TextureMapping` of the first texture layer,
+// if any. If the `BrushPaint` has no `TextureLayers`, then the return value
+// doesn't really matter either way, so it just returns `kTiling` (since that
+// mode is marginally easier for the shader to calculate).
+//
+// TODO: b/375203215 - Get rid of this function once we are able to mix tiling
+// and winding textures in a single `BrushPaint`.
+BrushPaint::TextureMapping GetBrushPaintTextureMapping(
+    const BrushPaint& paint) {
+  return !paint.texture_layers.empty() ? paint.texture_layers[0].mapping
+                                       : BrushPaint::TextureMapping::kTiling;
+}
+
 }  // namespace
 
 SkiaRenderer::SkiaRenderer(
@@ -158,6 +173,7 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     if (!mesh_drawable.ok()) return mesh_drawable.status();
 
     mesh_drawable->SetBrushColor(brush->GetColor());
+    mesh_drawable->SetTextureMapping(GetBrushPaintTextureMapping(brush_paint));
     drawables.push_back(*std::move(mesh_drawable));
   }
 
@@ -233,6 +249,7 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     if (!mesh_drawable.ok()) return mesh_drawable.status();
 
     mesh_drawable->SetBrushColor(brush.GetColor());
+    mesh_drawable->SetTextureMapping(GetBrushPaintTextureMapping(brush_paint));
     drawables.push_back(*std::move(mesh_drawable));
   }
 

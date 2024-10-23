@@ -112,6 +112,8 @@ SkMeshSpecification::Uniform::Type ToSkiaUniformType(
   switch (type) {
     case MeshSpecificationData::UniformType::kFloat4:
       return SkMeshSpecification::Uniform::Type::kFloat4;
+    case MeshSpecificationData::UniformType::kInt:
+      return SkMeshSpecification::Uniform::Type::kInt;
   }
   ABSL_LOG(FATAL) << "Non-enumerator value";
 }

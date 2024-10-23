@@ -327,10 +327,27 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
                     1024.0 * fract(mixedYZ) + 63.75 * float(packedValue.w)) /
                  511.0 -
              float3(1.0);
+    })"
+    // LINT.ThenChange(
+    //     ../../../strokes/internal/stroke_vertex.cc:hsl_packing)
+
+    // Unpacks a surface UV value into a `float2` from one of the supported
+    // "packed" types.
+    // LINT.IfChange(uv_packing)
+    R"(
+    float2 unpackSurfaceUv(const float2 unpackedValue) {
+      return unpackedValue;
+    }
+    float2 unpackSurfaceUv(const half4 packedValue) {
+      float mixedXY = 15.9375 * float(packedValue.y);
+      return float2((4080.0 * float(packedValue.x) + floor(mixedXY)) / 4095.0,
+                    (1048576.0 * fract(mixedXY) +
+                     65280.0 * float(packedValue.z) +
+                     255.0 * float(packedValue.w)) / 1048575.0);
     }
 )";
 // LINT.ThenChange(
-//     ../../../strokes/internal/stroke_vertex.cc:hsl_packing)
+//     ../../../strokes/internal/stroke_vertex.cc:uv_packing)
 
 }  // namespace ink::skia_common_internal
 
