@@ -22,6 +22,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
 #include "absl/types/span.h"
+#include "ink/brush/brush_paint.h"
 #include "ink/color/color.h"
 #include "ink/color/color_space.h"
 #include "ink/geometry/affine_transform.h"
@@ -51,6 +52,8 @@ SkMeshSpecification::Uniform::Type ExpectedSkiaUniformType(
     case MeshSpecificationData::UniformId::kSideDerivativeUnpackingTransform:
     case MeshSpecificationData::UniformId::kForwardDerivativeUnpackingTransform:
       return SkMeshSpecification::Uniform::Type::kFloat4;
+    case MeshSpecificationData::UniformId::kTextureMapping:
+      return SkMeshSpecification::Uniform::Type::kInt;
   }
   ABSL_LOG(FATAL) << "Got `uniform_id` with non-enumerator value: "
                   << static_cast<int>(uniform_id);
@@ -91,7 +94,9 @@ MeshUniformData::MeshUniformData(const SkMeshSpecification& spec)
           spec,
           MeshSpecificationData::UniformId::kObjectToCanvasLinearComponent)),
       brush_color_offset_(FindUniformOffset(
-          spec, MeshSpecificationData::UniformId::kBrushColor)) {}
+          spec, MeshSpecificationData::UniformId::kBrushColor)),
+      texture_mapping_offset_(FindUniformOffset(
+          spec, MeshSpecificationData::UniformId::kTextureMapping)) {}
 
 namespace {
 
@@ -111,12 +116,13 @@ void SetUnpackingTransform(MeshSpecificationData::UniformId uniform_id,
   switch (uniform_id) {
     case MeshSpecificationData::UniformId::kObjectToCanvasLinearComponent:
     case MeshSpecificationData::UniformId::kBrushColor:
+    case MeshSpecificationData::UniformId::kTextureMapping:
       break;
     case MeshSpecificationData::UniformId::kPositionUnpackingTransform:
     case MeshSpecificationData::UniformId::kSideDerivativeUnpackingTransform:
     case MeshSpecificationData::UniformId::kForwardDerivativeUnpackingTransform:
       Copy2DUnpackingParams(unpacking_transform, sk_data_target_address);
-      return;
+      break;
   }
 }
 
@@ -163,6 +169,17 @@ void MeshUniformData::SetBrushColor(const Color& color) {
   static_assert(sizeof(rgba) == 4 * sizeof(float));
   std::memcpy(static_cast<char*>(data_->writable_data()) + brush_color_offset_,
               &rgba, sizeof(rgba));
+}
+
+void MeshUniformData::SetTextureMapping(BrushPaint::TextureMapping mapping) {
+  ABSL_CHECK(HasTextureMapping());
+  if (!data_->unique()) {
+    data_ = SkData::MakeWithCopy(data_->bytes(), data_->size());
+  }
+  int mapping_int = static_cast<int>(mapping);
+  std::memcpy(
+      static_cast<char*>(data_->writable_data()) + texture_mapping_offset_,
+      &mapping_int, sizeof(int));
 }
 
 void MeshUniformData::SetObjectToCanvasLinearComponent(
