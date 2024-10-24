@@ -52,9 +52,9 @@ JNI_METHOD(rendering_android_canvas_internal, CanvasMeshRenderer, void,
  jintArray attribute_types_out, jintArray attribute_offsets_out,
  jobjectArray attribute_names_out, jintArray vertex_stride_out,
  jintArray varying_types_out, jobjectArray varying_names_out,
- jintArray uniform_ids_out, jintArray uniform_types_out,
- jintArray uniform_unpacking_indices_out, jobjectArray uniform_names_out,
- jobjectArray vertex_shader_out, jobjectArray fragment_shader_out) {
+ jintArray uniform_ids_out, jintArray uniform_unpacking_indices_out,
+ jobjectArray uniform_names_out, jobjectArray vertex_shader_out,
+ jobjectArray fragment_shader_out) {
   const auto spec_data =
       GetMeshSpecificationData(raw_ptr_to_mesh_format, packed);
   if (!spec_data.ok()) {
@@ -101,15 +101,12 @@ JNI_METHOD(rendering_android_canvas_internal, CanvasMeshRenderer, void,
   // Uniforms
   const auto& uniforms = spec_data->uniforms;
   std::array<int, MeshSpecificationData::kMaxUniforms> uniform_ids;
-  std::array<int, MeshSpecificationData::kMaxUniforms> uniform_types;
   std::array<int, MeshSpecificationData::kMaxUniforms>
       uniform_unpacking_indices;
   uniform_ids.fill(-1);
-  uniform_types.fill(-1);
   uniform_unpacking_indices.fill(-1);
   for (int i = 0; i < uniforms.Size(); i++) {
     uniform_ids[i] = static_cast<int>(uniforms[i].id);
-    uniform_types[i] = static_cast<int>(uniforms[i].type);
     if (uniforms[i].unpacking_attribute_index.has_value()) {
       uniform_unpacking_indices[i] = *uniforms[i].unpacking_attribute_index;
     }
@@ -122,9 +119,6 @@ JNI_METHOD(rendering_android_canvas_internal, CanvasMeshRenderer, void,
   env->SetIntArrayRegion(uniform_ids_out, 0,
                          MeshSpecificationData::kMaxUniforms,
                          uniform_ids.data());
-  env->SetIntArrayRegion(uniform_types_out, 0,
-                         MeshSpecificationData::kMaxUniforms,
-                         uniform_types.data());
   env->SetIntArrayRegion(uniform_unpacking_indices_out, 0,
                          MeshSpecificationData::kMaxUniforms,
                          uniform_unpacking_indices.data());
