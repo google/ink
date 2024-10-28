@@ -47,7 +47,7 @@ register_toolchains("@androidndk//:all")
 
 bazel_dep(
     name = "abseil-cpp",
-    version = "20240116.1",
+    version = "20240722.0",
     repo_name = "com_google_absl",
 )
 
@@ -93,7 +93,7 @@ local_repository(
 #################################################################################
 bazel_dep(
     name = "googletest",
-    version = "1.14.0.bcr.1",
+    version = "1.15.2",
     dev_dependency = True,
     repo_name = "com_google_googletest",
 )
@@ -122,7 +122,7 @@ git_repository(
 # Required for fuzztest
 bazel_dep(
     name = "re2",
-    version = "2024-04-01",
+    version = "2024-07-02",
     dev_dependency = True,
     repo_name = "com_googlesource_code_re2",
 )
@@ -137,7 +137,7 @@ bazel_dep(
 # Required for fuzztest
 bazel_dep(
     name = "rules_proto",
-    version = "5.3.0-21.7",
+    version = "6.0.0-rc1",
     dev_dependency = True,
 )
 
