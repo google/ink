@@ -59,11 +59,20 @@ void FindFirstAndLastIntersections(
     ink::geometry_internal::StaticRTree<SegmentBundle> rtree,
     PolylineData& polyline);
 
+// Finds the best connections for the first and last points of the polyline and
+// updates the input PolylineData with the results.
+void FindBestEndpointConnections(
+    ink::geometry_internal::StaticRTree<SegmentBundle> rtree,
+    PolylineData& polyline);
+
 PolylineData CreateNewPolylineData(absl::Span<const Point> points);
 
 float WalkDistance(PolylineData& polyline, int index, float fractional_index,
                    bool walk_backwards);
 
+bool EndpointIsConnectable(PolylineData& polyline, float index,
+                           float fractional_index, float straight_line_distance,
+                           bool walk_backwards);
 }  // namespace ink::geometry_internal
 
 #endif  // INK_GEOMETRY_INTERNAL_POLYLINE_PROCESSING_H_

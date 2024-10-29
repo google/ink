@@ -14,11 +14,13 @@
 
 #include "ink/geometry/internal/polyline_processing.h"
 
+#include <algorithm>
 #include <limits>
 #include <optional>
 #include <utility>
 #include <vector>
 
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/distance.h"
 #include "ink/geometry/internal/algorithms.h"
@@ -118,17 +120,17 @@ void FindFirstAndLastIntersections(
   }
 
   // If we didn't find an Intersection, then we can return early since we don't
-  // need to check again in the other direction.
+  // need to check for intersections again in the other direction.
   if (!polyline.has_intersection) return;
 
   // This is very similar to the loop above, with some modifications made as
-  // we are now starting at the back and looking for the latest Intersection.
+  // we are now starting at the back and looking for a later Intersection.
   float largest_intersection_ratio = -std::numeric_limits<float>::infinity();
   for (int i = polyline.segments.size() - 1;
        i >= polyline.last_intersection.index_int; --i) {
     // Start from the back of the polyline and only check as long as the segment
     // you are checking has an index higher than the current last intersection
-    // -1.
+    // index -1.
     SegmentBundle current_segment_bundle = polyline.segments[i];
     rtree.VisitIntersectedElements(
         Rect::FromTwoPoints(current_segment_bundle.segment.start,
@@ -162,6 +164,196 @@ void FindFirstAndLastIntersections(
                        polyline.last_intersection.index_fraction, true);
       break;
     }
+  }
+}
+
+bool EndpointIsConnectable(PolylineData& polyline, float index,
+                           float fractional_index, float straight_line_distance,
+                           bool walk_backwards) {
+  // this will fail when the straight line and walk distance to the point is
+  // very similar. If the line isn't sufficiently curvy then we don't want to
+  // connect.
+  float walk_distance =
+      WalkDistance(polyline, index, fractional_index, walk_backwards);
+  if ((walk_distance < polyline.min_walk_distance) ||
+      (walk_distance / straight_line_distance <
+       polyline.min_connection_ratio)) {
+    return false;
+  };
+  if (polyline.has_intersection) {
+    float walk_distance_to_intersection =
+        walk_backwards ? polyline.last_intersection.walk_distance
+                       : polyline.first_intersection.walk_distance;
+    if (walk_distance_to_intersection / straight_line_distance <
+        polyline.min_trimming_ratio) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Helper function to simplify the logic in FindBestEndpointConnections.
+// Returns true if the new intersection formed by the given connection is closer
+// to the end of the polyline than the current last intersection.
+inline bool BetterLastIntersection(PolylineData& polyline,
+                                   Intersection best_first_point_connection) {
+  if (!polyline.connect_first || polyline.connect_last) {
+    // The last intersection cannot be updated if we are not connecting the
+    // front because there isn't a new intersection being made to check against
+    // the current last intersection.
+    // The last intersection shouldn't be updated if we are connecting the last
+    // point because the last intersection is only needed when trimming the end
+    // of the polyline, and connecting the last point means the polyline will
+    // not be trimmed at the end.
+    return false;
+  }
+  if (!polyline.has_intersection) {
+    // If no Intersection was previously found, we just take the new connection.
+    return true;
+  }
+  // If an Intersection was previously found, we only update if the connection
+  // is closer to the end of the polyline (either a later index than the last
+  // intersection, or farther along on the same index).
+  if (best_first_point_connection.index_int >
+      polyline.last_intersection.index_int) {
+    return true;
+  }
+  return best_first_point_connection.index_int ==
+             polyline.last_intersection.index_int &&
+         best_first_point_connection.index_fraction >
+             polyline.last_intersection.index_fraction;
+}
+
+// Helper function to simplify the logic in FindBestEndpointConnections.
+// Returns true if the new intersection formed by the given connection is closer
+// to the beginning of the polyline than the current first intersection.
+inline bool BetterFirstIntersection(PolylineData& polyline,
+                                    Intersection best_last_point_connection) {
+  if (polyline.connect_first || !polyline.connect_last) {
+    // The first intersection cannot be updated if we are not connecting the
+    // end because there isn't a new intersection being made to check against
+    // the current first intersection.
+    // The first intersection shouldn't be updated if we are connecting the
+    // first point because the first intersection is only needed when trimming
+    // the front of the polyline, and connecting the first point means the
+    // polyline will not be trimmed at the front.
+    return false;
+  }
+  if (!polyline.has_intersection) {
+    // If no Intersection was previously found, we just take the new connection.
+    return true;
+  }
+  // If an Intersection was previously found, we only update if the connection
+  // is closer to the front of the polyline (either a lower index than the first
+  // intersection, or earlier along on the same index).
+  if (best_last_point_connection.index_int <
+      polyline.first_intersection.index_int) {
+    return true;
+  }
+  return best_last_point_connection.index_int ==
+             polyline.first_intersection.index_int &&
+         best_last_point_connection.index_fraction <
+             polyline.first_intersection.index_fraction;
+}
+
+void FindBestEndpointConnections(
+    ink::geometry_internal::StaticRTree<SegmentBundle> rtree,
+    PolylineData& polyline) {
+  Intersection best_first_point_connection;
+  float best_first_point_connection_length =
+      std::numeric_limits<float>::infinity();
+  // find the first endpoint connections first
+  Point first_point = polyline.segments.front().segment.start;
+  rtree.VisitIntersectedElements(
+      Rect::FromCenterAndDimensions(first_point,
+                                    polyline.max_connection_distance * 2,
+                                    polyline.max_connection_distance * 2),
+      [&first_point, &polyline, &best_first_point_connection,
+       &best_first_point_connection_length](SegmentBundle current_segment) {
+        float distance = ink::Distance(first_point, current_segment.segment);
+        if (distance < polyline.max_connection_distance &&
+            distance < best_first_point_connection_length &&
+            current_segment.index > 1) {
+          std::optional<float> connection_projection =
+              current_segment.segment.Project(first_point);
+          ABSL_CHECK(connection_projection.has_value());
+          float clamped_projection =
+              std::clamp(*connection_projection, 0.0f, 1.0f);
+
+          if (EndpointIsConnectable(polyline, current_segment.index,
+                                    clamped_projection, distance, false)) {
+            best_first_point_connection.index_int = current_segment.index;
+            best_first_point_connection.index_fraction = clamped_projection;
+            best_first_point_connection_length = distance;
+          }
+        }
+        return true;
+      });
+
+  if (best_first_point_connection_length <= polyline.max_connection_distance) {
+    polyline.connect_first = true;
+    polyline.new_first_point =
+        polyline.segments[best_first_point_connection.index_int].segment.Lerp(
+            best_first_point_connection.index_fraction);
+  }
+
+  Intersection best_last_point_connection;
+  float best_last_point_connection_length =
+      std::numeric_limits<float>::infinity();
+  // find the last endpoint connections first
+  Point last_point = polyline.segments.back().segment.end;
+  rtree.VisitIntersectedElements(
+      Rect::FromCenterAndDimensions(last_point,
+                                    polyline.max_connection_distance * 2,
+                                    polyline.max_connection_distance * 2),
+      [&last_point, &polyline, &best_last_point_connection,
+       &best_last_point_connection_length](SegmentBundle current_segment) {
+        float distance = ink::Distance(last_point, current_segment.segment);
+        if (distance < polyline.max_connection_distance &&
+            distance < best_last_point_connection_length &&
+            current_segment.index <
+                static_cast<int>(polyline.segments.size()) - 2) {
+          std::optional<float> connection_projection =
+              current_segment.segment.Project(last_point);
+          ABSL_CHECK(connection_projection.has_value());
+          float clamped_projection =
+              std::clamp(*connection_projection, 0.0f, 1.0f);
+
+          if (EndpointIsConnectable(polyline, current_segment.index,
+                                    clamped_projection, distance, true)) {
+            best_last_point_connection.index_int = current_segment.index;
+            best_last_point_connection.index_fraction = clamped_projection;
+            best_last_point_connection_length = distance;
+          }
+        }
+        return true;
+      });
+
+  if (best_last_point_connection_length <= polyline.max_connection_distance) {
+    polyline.connect_last = true;
+    polyline.new_last_point =
+        polyline.segments[best_last_point_connection.index_int].segment.Lerp(
+            best_last_point_connection.index_fraction);
+  }
+
+  // We check if we need to update the first or last Intersection point based on
+  // any newly found connections. If we connect both or neither endpoint we
+  // don't need to trim anything so we don't need to update these values.
+  if (BetterLastIntersection(polyline, best_first_point_connection)) {
+    polyline.last_intersection.index_int =
+        best_first_point_connection.index_int;
+    polyline.last_intersection.index_fraction =
+        best_first_point_connection.index_fraction;
+    polyline.new_last_point = polyline.new_first_point;
+  } else if (BetterFirstIntersection(polyline, best_last_point_connection)) {
+    polyline.first_intersection.index_int =
+        best_last_point_connection.index_int;
+    polyline.first_intersection.index_fraction =
+        best_last_point_connection.index_fraction;
+    polyline.new_first_point = polyline.new_last_point;
+  }
+  if (polyline.connect_first || polyline.connect_last) {
+    polyline.has_intersection = true;
   }
 }
 
