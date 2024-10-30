@@ -103,48 +103,25 @@ bazel_dep(
     dev_dependency = True,
     repo_name = "com_google_benchmark",
 )
-
-git_repository(
-    name = "com_google_fuzztest",
-    commit = "c6de0d47c05d0036b656d983209b98dc2fd0edf6",
-    remote = "https://github.com/google/fuzztest.git",
+bazel_dep(
+    name = "fuzztest",
+    version = "20241028.0",
+    dev_dependency = True,
+    repo_name = "com_google_fuzztest",
 )
 
 #################################################################################
 ## Transitive dependencies
 #################################################################################
 
-# We can remove these when fuzztest has a MODULE.bazel file.
-# See:
-#   https://github.com/google/fuzztest/issues/950
-#   https://github.com/bazelbuild/bazel-central-registry/issues/1391
-
-# Required for fuzztest
-bazel_dep(
-    name = "re2",
-    version = "2024-07-02",
-    dev_dependency = True,
-    repo_name = "com_googlesource_code_re2",
-)
-
-# Required for fuzztest
-bazel_dep(
-    name = "bazel_skylib",
-    version = "1.6.1",
-    dev_dependency = True,
-)
-
-# Required for fuzztest
-bazel_dep(
-    name = "rules_proto",
-    version = "6.0.0-rc1",
-    dev_dependency = True,
-)
-
 # We can remove these when Skia has a MODULE.bazel file.
 # See: https://g-issues.skia.org/issues/367315534
-
-# Required for Skia
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_cc", version = "0.0.9")
 bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+
+# Silence warnings about duplicate Python toolchain registration by using a
+# newer version of rules_python.  We can remove this when any of our
+# dependencies use a sufficiently newer rules_python.
+bazel_dep(name = "rules_python", version = "0.37.1")
