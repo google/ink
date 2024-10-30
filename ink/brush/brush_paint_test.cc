@@ -275,6 +275,14 @@ TEST(BrushPaintTest, StringifyTextureSizeUnit) {
             "TextureSizeUnit(99)");
 }
 
+TEST(BrushPaintTest, StringifyTextureWrap) {
+  EXPECT_EQ(absl::StrCat(BrushPaint::TextureWrap::kRepeat), "kRepeat");
+  EXPECT_EQ(absl::StrCat(BrushPaint::TextureWrap::kMirror), "kMirror");
+  EXPECT_EQ(absl::StrCat(BrushPaint::TextureWrap::kClamp), "kClamp");
+  EXPECT_EQ(absl::StrCat(static_cast<BrushPaint::TextureWrap>(99)),
+            "TextureWrap(99)");
+}
+
 TEST(BrushPaintTest, StringifyBlendMode) {
   EXPECT_EQ(absl::StrCat(BrushPaint::BlendMode::kModulate), "kModulate");
   EXPECT_EQ(absl::StrCat(BrushPaint::BlendMode::kDstIn), "kDstIn");

@@ -466,6 +466,17 @@ TEST(BrushBehaviorTest, BinaryOpNodeEqualAndNotEqual) {
             node);
 }
 
+TEST(BrushBehaviorTest, InterpolationNodeEqualAndNotEqual) {
+  BrushBehavior::InterpolationNode node = {
+      .interpolation = BrushBehavior::Interpolation::kLerp};
+  EXPECT_EQ((BrushBehavior::InterpolationNode{
+                .interpolation = BrushBehavior::Interpolation::kLerp}),
+            node);
+  EXPECT_NE((BrushBehavior::InterpolationNode{
+                .interpolation = BrushBehavior::Interpolation::kInverseLerp}),
+            node);
+}
+
 TEST(BrushBehaviorTest, TargetNodeEqualAndNotEqual) {
   BrushBehavior::TargetNode node = {
       .target = BrushBehavior::Target::kSizeMultiplier,

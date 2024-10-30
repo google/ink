@@ -25,6 +25,7 @@
 #include "fuzztest/fuzztest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -44,6 +45,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::HasSubstr;
@@ -209,6 +212,14 @@ TEST(BrushFamilyTest, CreateWithTooManyCoats) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(coats);
   EXPECT_EQ(family.status().code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(family.status().message(), HasSubstr("coats.size()"));
+}
+
+TEST(BrushFamilyTest, CreateWithInvalidUri) {
+  absl::StatusOr<Uri> uri = Uri::Parse("/texture:foobar");
+  ASSERT_THAT(uri, IsOk());
+  EXPECT_THAT(
+      BrushFamily::Create({CreateTestCoat()}, *uri),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("asset-type")));
 }
 
 TEST(BrushFamilyTest, CreateWithInvalidTipScale) {
