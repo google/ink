@@ -217,6 +217,13 @@ class ModeledShape {
   Point OutlinePosition(uint32_t group_index, uint32_t outline_index,
                         uint32_t vertex_index) const;
 
+  // Returns the number of vertices in the outline at `outline_index` within
+  // render group `group_index`.
+  //
+  // This method CHECK-fails if `group_index` >= `RenderGroupCount()` or if
+  // `outline_index` >= `OutlineCount(group_index)`.
+  uint32_t VertexCount(uint32_t group_index, uint32_t outline_index) const;
+
   // Fetches the bounds of the `ModeledShape`, i.e. the bounds of its `Mesh`es.
   // The bounds will be empty if the meshes are empty.
   Envelope Bounds() const;
@@ -456,6 +463,11 @@ inline Point ModeledShape::OutlinePosition(uint32_t group_index,
   VertexIndexPair index = outline[vertex_index];
   return data_->RenderGroupMeshes(group_index)[index.mesh_index].VertexPosition(
       index.vertex_index);
+}
+
+inline uint32_t ModeledShape::VertexCount(uint32_t group_index,
+                                          uint32_t outline_index) const {
+  return Outline(group_index, outline_index).size();
 }
 
 inline void ModeledShape::InitializeSpatialIndex() {

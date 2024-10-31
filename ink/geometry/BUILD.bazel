@@ -601,7 +601,6 @@ cc_library(
         "//ink/geometry/internal:intersects_internal",
         "//ink/geometry/internal:mesh_packing",
         "//ink/geometry/internal:static_rtree",
-        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/container:flat_hash_map",
