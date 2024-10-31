@@ -247,13 +247,14 @@ cc_library(
 )
 
 cc_test(
-    name = "geometry_color_shift_test",
-    srcs = ["geometry_color_shift_test.cc"],
+    name = "geometry_non_position_attributes_test",
+    srcs = ["geometry_non_position_attributes_test.cc"],
     deps = [
         ":geometry",
         ":mutable_mesh_view",
         "//ink/geometry:mutable_mesh",
         "//ink/geometry:point",
+        "//ink/geometry:type_matchers",
         "//ink/strokes/internal:brush_tip_state",
         "//ink/strokes/internal:stroke_vertex",
         "//ink/types:small_array",

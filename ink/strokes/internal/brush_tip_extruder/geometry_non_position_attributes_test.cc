@@ -21,6 +21,7 @@
 #include "absl/log/absl_check.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
+#include "ink/geometry/type_matchers.h"
 #include "ink/strokes/internal/brush_tip_extruder/geometry.h"
 #include "ink/strokes/internal/brush_tip_extruder/mutable_mesh_view.h"
 #include "ink/strokes/internal/brush_tip_state.h"
@@ -49,7 +50,15 @@ std::array<float, 3> GetHslShift(const MutableMesh& mesh, uint32_t index) {
   return {attribute[0], attribute[1], attribute[2]};
 }
 
-TEST(GeometryColorShiftTest, ValuesAreSetInMesh) {
+Point GetSurfaceUv(const MutableMesh& mesh, uint32_t index) {
+  const SmallArray<float, 4>& attribute = mesh.FloatVertexAttribute(
+      index, StrokeVertex::kFullFormatAttributeIndices.surface_uv);
+  ABSL_CHECK_EQ(attribute.Size(), 2);
+  return {attribute[0], attribute[1]};
+}
+
+TEST(GeometryNonPositionAttributesTest,
+     OpacityAndColorShiftValuesAreSetInMesh) {
   MutableMesh mesh(StrokeVertex::FullMeshFormat());
   MutableMeshView mesh_view(mesh);
   Geometry geometry(mesh_view);
@@ -98,6 +107,44 @@ TEST(GeometryColorShiftTest, ValuesAreSetInMesh) {
               ElementsAreArray(right_hsl_shifts[0]));
   EXPECT_THAT(GetHslShift(mesh, geometry.RightSide().indices[1]),
               ElementsAreArray(right_hsl_shifts[1]));
+}
+
+TEST(GeometryNonPositionAttributesTest, SurfaceUvValuesAreSetInMesh) {
+  MutableMesh mesh(StrokeVertex::FullMeshFormat());
+  MutableMeshView mesh_view(mesh);
+  Geometry geometry(mesh_view);
+
+  geometry.AppendLeftVertex(Point{0, 0},
+                            /* opacity_shift = */ 0,
+                            /* hsl_shift = */ {},
+                            /* surface_uv = */ {0.1, 0.2});
+  geometry.AppendLeftVertex(Point{0, 1},
+                            /* opacity_shift = */ 0,
+                            /* hsl_shift = */ {},
+                            /* surface_uv = */ {0.3, 0.4});
+  geometry.AppendRightVertex(Point{1, 0},
+                             /* opacity_shift = */ 0,
+                             /* hsl_shift = */ {},
+                             /* surface_uv = */ {0.5, 0.6});
+  geometry.AppendRightVertex(Point{1, 1},
+                             /* opacity_shift = */ 0,
+                             /* hsl_shift = */ {},
+                             /* surface_uv = */ {0.7, 0.8});
+  geometry.ProcessNewVertices(0, BrushTipState{});
+
+  ASSERT_EQ(geometry.LeftSide().indices.size(), 2);
+  ASSERT_EQ(geometry.RightSide().indices.size(), 2);
+  ASSERT_EQ(mesh.VertexCount(), 4);
+  ASSERT_EQ(mesh.TriangleCount(), 2);
+
+  EXPECT_THAT(GetSurfaceUv(mesh, geometry.LeftSide().indices[0]),
+              PointEq({0.1, 0.2}));
+  EXPECT_THAT(GetSurfaceUv(mesh, geometry.LeftSide().indices[1]),
+              PointEq({0.3, 0.4}));
+  EXPECT_THAT(GetSurfaceUv(mesh, geometry.RightSide().indices[0]),
+              PointEq({0.5, 0.6}));
+  EXPECT_THAT(GetSurfaceUv(mesh, geometry.RightSide().indices[1]),
+              PointEq({0.7, 0.8}));
 }
 
 }  // namespace

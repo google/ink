@@ -170,7 +170,7 @@ void Stroke::RegenerateShape() {
 
   for (size_t i = 0; i < num_coats; ++i) {
     StrokeShapeBuilder& builder = shape_gen.builders[i];
-    builder.StartStroke(brush_.GetFamily().GetInputModel(), coats[i].tips,
+    builder.StartStroke(brush_.GetFamily().GetInputModel(), coats[i],
                         brush_.GetSize(), brush_.GetEpsilon());
     builder.ExtendStroke(inputs_, StrokeInputBatch(), inputs_.GetDuration());
 

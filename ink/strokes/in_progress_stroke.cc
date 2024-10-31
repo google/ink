@@ -70,7 +70,7 @@ void InProgressStroke::Start(const Brush& brush) {
 
   for (uint32_t i = 0; i < num_coats; ++i) {
     shape_builders_[i].StartStroke(brush_->GetFamily().GetInputModel(),
-                                   coats[i].tips, brush_->GetSize(),
+                                   coats[i], brush_->GetSize(),
                                    brush_->GetEpsilon());
   }
 }

@@ -25,6 +25,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
+#include "ink/geometry/affine_transform.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
@@ -54,11 +55,14 @@ float GetSimplificationThreshold(float brush_epsilon) { return brush_epsilon; }
 
 }  // namespace
 
-void BrushTipExtruder::StartStroke(float brush_epsilon, MutableMesh& mesh) {
+void BrushTipExtruder::StartStroke(float brush_epsilon,
+                                   bool is_winding_texture_particle_brush,
+                                   MutableMesh& mesh) {
   ABSL_CHECK_GT(brush_epsilon, 0);
   brush_epsilon_ = brush_epsilon;
   max_chord_height_ = GetMaxChordHeight(brush_epsilon);
   simplification_threshold_ = GetSimplificationThreshold(brush_epsilon);
+  is_winding_texture_particle_brush_ = is_winding_texture_particle_brush;
   extrusions_.clear();
   saved_extrusion_data_count_ = 0;
   deleted_save_point_extrusions_.clear();
@@ -370,10 +374,25 @@ bool BrushTipExtruder::TryAppendNonBreakPointState(
 
 namespace {
 
+// This calculates a transform that maps from the vertex position to the texture
+// surface UV-coordinates for the particle generated from `tip_state`. See also
+// `StrokeVertex::surface_uv`.
+AffineTransform ComputeParticleSurfaceUvTransform(
+    const BrushTipState& tip_state) {
+  // TODO: b/373649423 - Handle other shape parameters on the tip state, e.g.
+  // rotation.
+  return AffineTransform::Scale(1.0f / tip_state.width,
+                                1.0f / tip_state.height) *
+         AffineTransform::Translate(
+             {tip_state.width / 2 - tip_state.position.x,
+              tip_state.height / 2 - tip_state.position.y});
+}
+
 // Appends and processes new "left" and "right" vertices in `geometry`.
 void ExtrudeGeometry(const ExtrusionPoints& points,
                      const BrushTipState& tip_state,
                      float simplification_threshold,
+                     bool apply_particle_surface_uv,
                      brush_tip_extruder_internal::Geometry& geometry) {
   // TODO: b/271837965 - Add calculation of winding texture coordinates.
 
@@ -389,11 +408,20 @@ void ExtrudeGeometry(const ExtrusionPoints& points,
                                     tip_state.saturation_multiplier - 1.f,
                                     tip_state.luminosity_shift};
 
+  AffineTransform position_to_particle_surface_uv =
+      ComputeParticleSurfaceUvTransform(tip_state);
+
   for (Point point : points.left) {
-    geometry.AppendLeftVertex(point, opacity_shift, hsl_shift);
+    geometry.AppendLeftVertex(point, opacity_shift, hsl_shift,
+                              apply_particle_surface_uv
+                                  ? position_to_particle_surface_uv.Apply(point)
+                                  : Point{0, 0});
   }
   for (Point point : points.right) {
-    geometry.AppendRightVertex(point, opacity_shift, hsl_shift);
+    geometry.AppendRightVertex(
+        point, opacity_shift, hsl_shift,
+        apply_particle_surface_uv ? position_to_particle_surface_uv.Apply(point)
+                                  : Point{0, 0});
   }
   geometry.ProcessNewVertices(simplification_threshold, tip_state);
 }
@@ -437,7 +465,8 @@ void BrushTipExtruder::Extrude(const BrushTipState& tip_state,
 
   const BrushTipState& extruded_state = (end_iter - 2)->GetState();
   ExtrudeGeometry(current_extrusion_points_, extruded_state,
-                  simplification_threshold_, geometry_);
+                  simplification_threshold_, is_winding_texture_particle_brush_,
+                  geometry_);
 }
 
 void BrushTipExtruder::ExtrudeBreakPoint() {
@@ -464,7 +493,8 @@ void BrushTipExtruder::ExtrudeBreakPoint() {
   }
 
   ExtrudeGeometry(current_extrusion_points_, extrusions_.back().GetState(),
-                  simplification_threshold_, geometry_);
+                  simplification_threshold_, is_winding_texture_particle_brush_,
+                  geometry_);
   geometry_.AddExtrusionBreak();
   extrusions_.emplace_back(BrushTipExtrusion::BreakPoint{});
 }

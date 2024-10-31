@@ -25,7 +25,6 @@ cc_library(
         "//ink/brush:brush_coat",
         "//ink/brush:brush_family",
         "//ink/color",
-        "//ink/geometry:affine_transform",
         "//ink/geometry:modeled_shape",
         "//ink/geometry:mutable_mesh",
         "//ink/strokes/input:stroke_input_batch",

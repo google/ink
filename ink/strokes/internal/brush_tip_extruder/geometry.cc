@@ -714,23 +714,27 @@ void Geometry::AppendVertexToSide(Side& side, const ExtrudedVertex& vertex) {
 }
 
 void Geometry::AppendLeftVertex(Point position, float opacity_shift,
-                                const std::array<float, 3>& hsl_shift) {
+                                const std::array<float, 3>& hsl_shift,
+                                Point surface_uv) {
   AppendVertexToSide(left_side_,
                      {.position = position,
                       .new_non_position_attributes = {
                           .opacity_shift = opacity_shift,
                           .hsl_shift = hsl_shift,
-                          .side_label = StrokeVertex::kExteriorLeftLabel}});
+                          .side_label = StrokeVertex::kExteriorLeftLabel,
+                          .surface_uv = surface_uv}});
 }
 
 void Geometry::AppendRightVertex(Point position, float opacity_shift,
-                                 const std::array<float, 3>& hsl_shift) {
+                                 const std::array<float, 3>& hsl_shift,
+                                 Point surface_uv) {
   AppendVertexToSide(right_side_,
                      {.position = position,
                       .new_non_position_attributes = {
                           .opacity_shift = opacity_shift,
                           .hsl_shift = hsl_shift,
-                          .side_label = StrokeVertex::kExteriorRightLabel}});
+                          .side_label = StrokeVertex::kExteriorRightLabel,
+                          .surface_uv = surface_uv}});
 }
 
 void Geometry::AppendLeftVertex(const LegacyVertex& vertex) {

@@ -19,8 +19,8 @@
 
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
+#include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
-#include "ink/brush/brush_tip.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/strokes/input/stroke_input_batch.h"
@@ -60,15 +60,15 @@ class StrokeShapeBuilder {
   // Clears any ongoing stroke geometry and starts a new stroke with the given
   // brush tips, size, and epsilon.
   //
-  // Each `BrushTip` in `brush_tips` must remain valid and unchanged for the
+  // `coat` and its `BrushTips`  must remain valid and unchanged for the
   // duration of the stroke. `brush_size` and `brush_epsilon` must be greater
   // than zero. See also `Brush::Create()` for detailed documentation. This
   // function must be called before calling `ExtendStroke()`.
   //
-  // For now, `brush_tips` must contain exactly one brush tip.
+  // For now, `coat` must contain exactly one brush tip.
   // TODO: b/285594469 - Lift this restriction.
   void StartStroke(const BrushFamily::InputModel& input_model,
-                   absl::Span<const BrushTip> brush_tips, float brush_size,
+                   const BrushCoat& coat, float brush_size,
                    float brush_epsilon);
 
   // Adds new incremental real and predicted inputs to the current stroke.

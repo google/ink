@@ -47,9 +47,8 @@ void BuildStrokeShapeIncrementally(
     const std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>>& inputs,
     StrokeShapeBuilder& builder) {
   ABSL_CHECK_EQ(brush.CoatCount(), 1u);
-  builder.StartStroke(BrushFamily::DefaultInputModel(),
-                      brush.GetCoats()[0].tips, brush.GetSize(),
-                      brush.GetEpsilon());
+  builder.StartStroke(BrushFamily::DefaultInputModel(), brush.GetCoats()[0],
+                      brush.GetSize(), brush.GetEpsilon());
   benchmark::DoNotOptimize(builder);
   for (const auto& [real_inputs, predicted_inputs] : inputs) {
     StrokeShapeUpdate update = builder.ExtendStroke(
@@ -80,9 +79,8 @@ void BuildStrokeShapeAllAtOnce(const Brush& brush,
                                StrokeShapeBuilder& builder) {
   benchmark::DoNotOptimize(builder);
   ABSL_CHECK_EQ(brush.CoatCount(), 1u);
-  builder.StartStroke(BrushFamily::DefaultInputModel(),
-                      brush.GetCoats()[0].tips, brush.GetSize(),
-                      brush.GetEpsilon());
+  builder.StartStroke(BrushFamily::DefaultInputModel(), brush.GetCoats()[0],
+                      brush.GetSize(), brush.GetEpsilon());
   StrokeShapeUpdate update =
       builder.ExtendStroke(inputs, {}, Duration32::Infinite());
   benchmark::DoNotOptimize(update);

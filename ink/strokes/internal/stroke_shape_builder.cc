@@ -18,9 +18,9 @@
 #include <cstdint>
 
 #include "absl/log/absl_check.h"
-#include "absl/types/span.h"
+#include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
-#include "ink/brush/brush_tip.h"
+#include "ink/brush/brush_paint.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/brush_tip_extruder.h"
 #include "ink/strokes/internal/brush_tip_modeler.h"
@@ -28,10 +28,20 @@
 #include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
+namespace {
+
+bool IsWindingTextureCoat(const BrushCoat& coat) {
+  // We can only handle winding textures when there is a single texture layer.
+  return coat.paint.texture_layers.size() == 1 &&
+         coat.paint.texture_layers[0].mapping ==
+             BrushPaint::TextureMapping::kWinding;
+}
+
+}  // namespace
 
 void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
-                                     absl::Span<const BrushTip> brush_tips,
-                                     float brush_size, float brush_epsilon) {
+                                     const BrushCoat& coat, float brush_size,
+                                     float brush_epsilon) {
   // The `input_modeler_`, `tip_modeler_` and `tip_extruder_` CHECK-validate
   // `brush_tip` being not null, and `brush_size` and `brush_epsilon` being
   // greater than zero.
@@ -39,7 +49,7 @@ void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
 
   mesh_bounds_.Reset();
 
-  const size_t num_tips = brush_tips.size();
+  const size_t num_tips = coat.tips.size();
   // TODO: b/285594469 - For now, a BrushFamily always has exactly one tip, but
   // we'll want to relax this restriction.
   ABSL_CHECK_EQ(num_tips, 1u);
@@ -55,12 +65,18 @@ void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
     tips_.resize(num_tips);
   }
 
+  bool is_winding_texture_brush = IsWindingTextureCoat(coat);
   for (size_t i = 0; i < num_tips; ++i) {
-    tips_[i].modeler.StartStroke(&brush_tips[i], brush_size);
+    bool is_winding_texture_particle_brush =
+        is_winding_texture_brush &&
+        (coat.tips[i].particle_gap_distance_scale != 0 ||
+         coat.tips[i].particle_gap_duration != Duration32::Zero());
+    tips_[i].modeler.StartStroke(&coat.tips[i], brush_size);
     // TODO: b/285594469 - Once it's possible for there to be more than one tip,
     // this will need to be more careful about how the various extruders append
     // onto the same mesh.
-    tips_[i].extruder.StartStroke(brush_epsilon, mesh_);
+    tips_[i].extruder.StartStroke(brush_epsilon,
+                                  is_winding_texture_particle_brush, mesh_);
   }
 }
 
