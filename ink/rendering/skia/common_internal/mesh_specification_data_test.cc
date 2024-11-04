@@ -63,6 +63,7 @@ bool IsValidVaryingType(MeshSpecificationData::VaryingType type) {
 bool IsValidUniformType(MeshSpecificationData::UniformType type) {
   switch (type) {
     case MeshSpecificationData::UniformType::kFloat4:
+    case MeshSpecificationData::UniformType::kInt:
       return true;
   }
   return false;
@@ -75,6 +76,7 @@ bool IsValidUniformId(MeshSpecificationData::UniformId id) {
     case MeshSpecificationData::UniformId::kPositionUnpackingTransform:
     case MeshSpecificationData::UniformId::kSideDerivativeUnpackingTransform:
     case MeshSpecificationData::UniformId::kForwardDerivativeUnpackingTransform:
+    case MeshSpecificationData::UniformId::kTextureMapping:
       return true;
   }
   return false;
@@ -84,6 +86,7 @@ bool IsUnpackingTransformUniformId(MeshSpecificationData::UniformId id) {
   switch (id) {
     case MeshSpecificationData::UniformId::kObjectToCanvasLinearComponent:
     case MeshSpecificationData::UniformId::kBrushColor:
+    case MeshSpecificationData::UniformId::kTextureMapping:
       break;
     case MeshSpecificationData::UniformId::kPositionUnpackingTransform:
     case MeshSpecificationData::UniformId::kSideDerivativeUnpackingTransform:

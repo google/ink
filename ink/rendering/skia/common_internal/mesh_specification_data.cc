@@ -45,6 +45,7 @@ constexpr absl::string_view kUniformSideDerivativeUnpackingTransformName =
     "uSideUnpackingTransform";
 constexpr absl::string_view kUniformForwardDerivativeUnpackingTransformName =
     "uForwardUnpackingTransform";
+constexpr absl::string_view kTextureMappingName = "uTextureMapping";
 
 }  // namespace
 
@@ -60,6 +61,8 @@ absl::string_view MeshSpecificationData::GetUniformName(UniformId uniform_id) {
       return kUniformSideDerivativeUnpackingTransformName;
     case UniformId::kForwardDerivativeUnpackingTransform:
       return kUniformForwardDerivativeUnpackingTransformName;
+    case UniformId::kTextureMapping:
+      return kTextureMappingName;
   }
   return "";
 }
@@ -75,17 +78,19 @@ MeshSpecificationData::CreateForInProgressStroke(
 }
 
 MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
-  // TODO: b/284117747 - Add support to the vertex and fragment shaders for
-  // rendering `InProgressStroke` with winding texture coordinates.
   static_assert(kUniformBrushColorName == "uBrushColor");
   static_assert(kObjectToCanvasLinearComponentName ==
                 "uObjectToCanvasLinearComponent");
+  // TODO: b/373649509 - Use texture mapping uniform to help calculate the
+  // texture coordinates to be emitted from the fragment shader.
+  static_assert(kTextureMappingName == "uTextureMapping");
   // Do not use `layout(color)` for uBrushColor, as the color is being converted
   // into the shader color space manually rather than relying on the implicit
   // conversion of setColorUniform.
   constexpr absl::string_view kVertexMain = R"(
       uniform float4 uObjectToCanvasLinearComponent;
       uniform float4 uBrushColor;
+      uniform int uTextureMapping;
 
       Varyings main(const Attributes attributes) {
         Varyings varyings;
@@ -180,8 +185,9 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
                    {.type = VaryingType::kFloat4, .name = "outsetPixelsLRFB"}},
       .uniforms = {{.type = UniformType::kFloat4,
                     .id = UniformId::kObjectToCanvasLinearComponent},
-                   {.type = UniformType::kFloat4,
-                    .id = UniformId::kBrushColor}},
+                   {.type = UniformType::kFloat4, .id = UniformId::kBrushColor},
+                   {.type = UniformType::kInt,
+                    .id = UniformId::kTextureMapping}},
       .vertex_shader_source = absl::StrCat(
           kSkSLCommonShaderHelpers, kSkSLVertexShaderHelpers, kVertexMain),
       .fragment_shader_source = absl::StrCat(
@@ -405,8 +411,6 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
                                                  attribute_indices);
   if (!types_and_offsets.ok()) return types_and_offsets.status();
 
-  // TODO: b/284117747 - Add support to the vertex and fragment shaders for
-  // rendering `Stroke` with winding texture coordinates.
   static_assert(kUniformBrushColorName == "uBrushColor");
   static_assert(kUniformPositionUnpackingTransformName ==
                 "uPositionUnpackingTransform");
@@ -416,6 +420,9 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
                 "uSideUnpackingTransform");
   static_assert(kUniformForwardDerivativeUnpackingTransformName ==
                 "uForwardUnpackingTransform");
+  // TODO: b/373649509 - Use texture mapping uniform to help calculate the
+  // texture coordinates to be emitted from the fragment shader.
+  static_assert(kTextureMappingName == "uTextureMapping");
   // Do not use `layout(color)` for uBrushColor, as the color is being converted
   // into the shader color space manually rather than relying on the implicit
   // conversion of setColorUniform.
@@ -425,6 +432,7 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
       uniform float4 uPositionUnpackingTransform;
       uniform float4 uSideUnpackingTransform;
       uniform float4 uForwardUnpackingTransform;
+      uniform int uTextureMapping;
 
       Varyings main(const Attributes attributes) {
         Varyings varyings;
@@ -501,20 +509,20 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
                    {.type = VaryingType::kFloat4,
                     .name = "normalizedToEdgeLRFB"},
                    {.type = VaryingType::kFloat4, .name = "outsetPixelsLRFB"}},
-      .uniforms = {{.type = UniformType::kFloat4,
-                    .id = UniformId::kObjectToCanvasLinearComponent},
-                   {.type = UniformType::kFloat4, .id = UniformId::kBrushColor},
-                   {.type = UniformType::kFloat4,
-                    .id = UniformId::kPositionUnpackingTransform,
-                    .unpacking_attribute_index = attribute_indices.position},
-                   {.type = UniformType::kFloat4,
-                    .id = UniformId::kSideDerivativeUnpackingTransform,
-                    .unpacking_attribute_index =
-                        attribute_indices.side_derivative},
-                   {.type = UniformType::kFloat4,
-                    .id = UniformId::kForwardDerivativeUnpackingTransform,
-                    .unpacking_attribute_index =
-                        attribute_indices.forward_derivative}},
+      .uniforms =
+          {{.type = UniformType::kFloat4,
+            .id = UniformId::kObjectToCanvasLinearComponent},
+           {.type = UniformType::kFloat4, .id = UniformId::kBrushColor},
+           {.type = UniformType::kFloat4,
+            .id = UniformId::kPositionUnpackingTransform,
+            .unpacking_attribute_index = attribute_indices.position},
+           {.type = UniformType::kFloat4,
+            .id = UniformId::kSideDerivativeUnpackingTransform,
+            .unpacking_attribute_index = attribute_indices.side_derivative},
+           {.type = UniformType::kFloat4,
+            .id = UniformId::kForwardDerivativeUnpackingTransform,
+            .unpacking_attribute_index = attribute_indices.forward_derivative},
+           {.type = UniformType::kInt, .id = UniformId::kTextureMapping}},
       .vertex_shader_source = absl::StrCat(
           kSkSLCommonShaderHelpers, kSkSLVertexShaderHelpers, kVertexMainStart,
           types_and_offsets->hsl_shift.has_value()

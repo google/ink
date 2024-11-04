@@ -19,6 +19,7 @@
 
 #include "absl/functional/function_ref.h"
 #include "absl/types/span.h"
+#include "ink/brush/brush_paint.h"
 #include "ink/color/color.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/mesh_format.h"
@@ -77,6 +78,7 @@ class MeshUniformData {
   // The following getters return whether the data has specific uniforms:
   bool HasObjectToCanvasLinearComponent() const;
   bool HasBrushColor() const;
+  bool HasTextureMapping() const;
 
   // The following setters update the values for each uniform.
   //
@@ -85,6 +87,7 @@ class MeshUniformData {
 
   void SetObjectToCanvasLinearComponent(const AffineTransform& transform);
   void SetBrushColor(const Color& color);
+  void SetTextureMapping(BrushPaint::TextureMapping mapping);
 
   // Returns the data for `SkMesh` creation. This function returns `nullptr` if
   // this uniform data was either default-constructed, or constructed from a
@@ -102,6 +105,7 @@ class MeshUniformData {
   // Offsets in bytes into `data_` for where to copy uniform values.
   int16_t object_to_canvas_linear_component_offset_ = -1;
   int16_t brush_color_offset_ = -1;
+  int16_t texture_mapping_offset_ = -1;
 };
 
 // ---------------------------------------------------------------------------
@@ -113,6 +117,10 @@ inline bool MeshUniformData::HasObjectToCanvasLinearComponent() const {
 
 inline bool MeshUniformData::HasBrushColor() const {
   return brush_color_offset_ != -1;
+}
+
+inline bool MeshUniformData::HasTextureMapping() const {
+  return texture_mapping_offset_ != -1;
 }
 
 }  // namespace ink::skia_native_internal

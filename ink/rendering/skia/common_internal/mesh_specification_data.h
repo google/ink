@@ -38,9 +38,15 @@ namespace ink::skia_common_internal {
 //
 // TODO: b/284117747 - Use this type in place of `ink::SkiaMeshFormat`.
 struct MeshSpecificationData {
+  //
+  // Skia limits the number of attributes to 8 and the number of varyings to 6
+  // (see https://api.skia.org/classSkMeshSpecification.html).
   static constexpr int kMaxAttributes = 8;
   static constexpr int kMaxVaryings = 6;
-  static constexpr int kMaxUniforms = 6;
+  // Skia doesn't seem to place any clear limit on the number of uniforms, so
+  // this value is just the size we choose to use for our array. Currently it is
+  // set to the actual number of uniforms we happen to use right now.
+  static constexpr int kMaxUniforms = 7;
 
   // Subsets of shader variable types for attributes, varyings, and uniforms
   // that are used by Ink and available across platforms.
@@ -58,6 +64,7 @@ struct MeshSpecificationData {
   };
   enum class UniformType {
     kFloat4 = 3,
+    kInt = 5,
   };
 
   enum class UniformId {
@@ -73,6 +80,10 @@ struct MeshSpecificationData {
     kPositionUnpackingTransform = 2,
     kSideDerivativeUnpackingTransform = 3,
     kForwardDerivativeUnpackingTransform = 4,
+    // The `BrushPaint::TextureMapping` value.
+    // TODO: b/375203215 - Get rid of this uniform once we are able to mix
+    // tiling and winding textures in a single `BrushPaint`.
+    kTextureMapping = 5,
   };
 
   struct Attribute {
