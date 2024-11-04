@@ -24,6 +24,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"
 #include "absl/types/span.h"
@@ -149,10 +150,12 @@ TEST(ModeledShapeTest, FromMutableMeshWithOutlines) {
       shape->Outline(0, 0),
       ElementsAre(VertexIndexPairEq({0, 1}), VertexIndexPairEq({0, 5}),
                   VertexIndexPairEq({0, 4}), VertexIndexPairEq({0, 0})));
+  EXPECT_EQ(shape->OutlineVertexCount(0, 0), 4);
   EXPECT_THAT(
       shape->Outline(0, 1),
       ElementsAre(VertexIndexPairEq({0, 5}), VertexIndexPairEq({0, 9}),
                   VertexIndexPairEq({0, 8}), VertexIndexPairEq({0, 4})));
+  EXPECT_EQ(shape->OutlineVertexCount(0, 1), 4);
   EXPECT_THAT(shape->OutlinePosition(0, 0, 0), PointEq({1, -1}));
   EXPECT_THAT(shape->OutlinePosition(0, 0, 1), PointEq({5, -1}));
   EXPECT_THAT(shape->OutlinePosition(0, 0, 2), PointEq({4, 0}));
