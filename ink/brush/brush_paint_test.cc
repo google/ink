@@ -19,10 +19,13 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "fuzztest/fuzztest.h"
 #include "absl/hash/hash_testing.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/strings/str_cat.h"
+#include "ink/brush/fuzz_domains.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/vec.h"
 #include "ink/types/uri.h"
@@ -30,6 +33,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::testing::HasSubstr;
 
 static_assert(std::numeric_limits<float>::has_quiet_NaN);
@@ -648,6 +653,22 @@ TEST(BrushPaintTest, InvalidTextureLayerTextureWrap) {
   EXPECT_THAT(status.message(),
               HasSubstr("wrap_y` holds non-enumerator value"));
 }
+
+TEST(BrushPaintTest, MismatchedTextureMappings) {
+  EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
+                  {{.color_texture_uri = CreateTestTextureUri(),
+                    .mapping = BrushPaint::TextureMapping::kTiling},
+                   {.color_texture_uri = CreateTestTextureUri(),
+                    .mapping = BrushPaint::TextureMapping::kWinding}}}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("TextureLayer::mapping` must be the same")));
+}
+
+void CanValidateAnyValidBrushPaint(const BrushPaint& paint) {
+  EXPECT_THAT(brush_internal::ValidateBrushPaint(paint), IsOk());
+}
+FUZZ_TEST(BrushPaintTest, CanValidateAnyValidBrushPaint)
+    .WithDomains(ValidBrushPaint());
 
 }  // namespace
 }  // namespace ink

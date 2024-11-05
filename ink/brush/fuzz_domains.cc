@@ -586,10 +586,11 @@ Domain<BrushPaint::TextureKeyframe> ValidBrushPaintTextureKeyframe() {
       OptionalOf(FiniteAngle()), OptionalOf(InRange(0.f, 1.f)));
 }
 
-fuzztest::Domain<BrushPaint::TextureLayer> ValidBrushPaintTextureLayer() {
-  auto texture_layer = [](Vec size) {
+fuzztest::Domain<BrushPaint::TextureLayer>
+ValidBrushPaintTextureLayerWithMapping(BrushPaint::TextureMapping mapping) {
+  auto texture_layer = [mapping](Vec size) {
     return StructOf<BrushPaint::TextureLayer>(
-        ValidColorTextureUri(), ArbitraryBrushPaintTextureMapping(),
+        ValidColorTextureUri(), Just(mapping),
         ArbitraryBrushPaintTextureOrigin(),
         ArbitraryBrushPaintTextureSizeUnit(), ArbitraryBrushPaintTextureWrap(),
         ArbitraryBrushPaintTextureWrap(), Just(size),
@@ -606,8 +607,12 @@ fuzztest::Domain<BrushPaint::TextureLayer> ValidBrushPaintTextureLayer() {
 }
 
 fuzztest::Domain<BrushPaint> ValidBrushPaint() {
-  return fuzztest::StructOf<BrushPaint>(
-      VectorOf(ValidBrushPaintTextureLayer()));
+  return FlatMap(
+      [](BrushPaint::TextureMapping mapping) {
+        return fuzztest::StructOf<BrushPaint>(
+            VectorOf(ValidBrushPaintTextureLayerWithMapping(mapping)));
+      },
+      ArbitraryBrushPaintTextureMapping());
 }
 
 Domain<BrushTip> ValidBrushTip() {

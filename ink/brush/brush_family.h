@@ -101,6 +101,9 @@ class BrushFamily {
   //      ~ offset components, if present, must be in interval [0, 1].
   //      ~ rotation, if present, must finite.
   //      ~ opacity, if present, must be in interval [0, 1].
+  //  * For now, all texture layers must use the same `TextureMapping` value.
+  //    TODO: b/375203215 - Relax this requirement once we are able to mix
+  //    rendering tiling and winding textures in a single `BrushPaint`.
   //  * Every enum property must be equal to one of the named enumerators for
   //    that property's type.
   //
