@@ -26,10 +26,10 @@ cc_library(
         ":intersects_jni",
         ":mesh_format_jni",
         ":mesh_jni",
-        ":modeled_shape_jni",
         ":mutable_envelope_jni",
         ":parallelogram_jni",
         ":parallelogram_jni_helper",
+        ":partitioned_mesh_jni",
         ":rect_jni",
         ":rect_jni_helper",
         ":triangle_jni",
@@ -62,7 +62,7 @@ cc_library(
         "//ink/geometry:angle",
         "//ink/geometry:intersects",
         "//ink/geometry:mesh",
-        "//ink/geometry:modeled_shape",
+        "//ink/geometry:partitioned_mesh",
         "//ink/geometry:point",
         "//ink/geometry:quad",
         "//ink/geometry:rect",
@@ -81,14 +81,14 @@ cc_library(
 )
 
 cc_library(
-    name = "modeled_shape_jni",
-    srcs = ["modeled_shape_jni.cc"],
+    name = "partitioned_mesh_jni",
+    srcs = ["partitioned_mesh_jni.cc"],
     deps = [
         "//ink/geometry:affine_transform",
         "//ink/geometry:angle",
         "//ink/geometry:mesh",
         "//ink/geometry:mesh_format",
-        "//ink/geometry:modeled_shape",
+        "//ink/geometry:partitioned_mesh",
         "//ink/geometry:point",
         "//ink/geometry:quad",
         "//ink/geometry:rect",

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -52,13 +52,14 @@
 namespace ink {
 
 // Convenience alias for the R-Tree.
-using RTree = geometry_internal::StaticRTree<ModeledShape::TriangleIndexPair>;
+using RTree =
+    geometry_internal::StaticRTree<PartitionedMesh::TriangleIndexPair>;
 
-ModeledShape ModeledShape::WithEmptyGroups(uint32_t num_groups) {
-  return *ModeledShape::FromMeshGroups(std::vector<MeshGroup>(num_groups));
+PartitionedMesh PartitionedMesh::WithEmptyGroups(uint32_t num_groups) {
+  return *PartitionedMesh::FromMeshGroups(std::vector<MeshGroup>(num_groups));
 }
 
-absl::StatusOr<ModeledShape> ModeledShape::FromMutableMesh(
+absl::StatusOr<PartitionedMesh> PartitionedMesh::FromMutableMesh(
     const MutableMesh& mesh,
     absl::Span<const absl::Span<const uint32_t>> outlines,
     absl::Span<const MeshFormat::AttributeId> omit_attributes,
@@ -69,10 +70,10 @@ absl::StatusOr<ModeledShape> ModeledShape::FromMutableMesh(
       .omit_attributes = omit_attributes,
       .packing_params = packing_params,
   };
-  return ModeledShape::FromMutableMeshGroups(absl::MakeConstSpan(&group, 1));
+  return PartitionedMesh::FromMutableMeshGroups(absl::MakeConstSpan(&group, 1));
 }
 
-absl::StatusOr<ModeledShape> ModeledShape::FromMutableMeshGroups(
+absl::StatusOr<PartitionedMesh> PartitionedMesh::FromMutableMeshGroups(
     absl::Span<const MutableMeshGroup> groups) {
   std::vector<std::vector<std::vector<VertexIndexPair>>>
       all_partitioned_outlines;
@@ -184,22 +185,22 @@ absl::StatusOr<ModeledShape> ModeledShape::FromMutableMeshGroups(
   return FromMeshGroups(absl::MakeConstSpan(mesh_groups));
 }
 
-absl::StatusOr<ModeledShape> ModeledShape::FromMeshes(
+absl::StatusOr<PartitionedMesh> PartitionedMesh::FromMeshes(
     absl::Span<const Mesh> meshes,
     absl::Span<const absl::Span<const VertexIndexPair>> outlines) {
   MeshGroup group = {.meshes = meshes, .outlines = outlines};
-  return ModeledShape::FromMeshGroups(absl::MakeConstSpan(&group, 1));
+  return PartitionedMesh::FromMeshGroups(absl::MakeConstSpan(&group, 1));
 }
 
-absl::StatusOr<ModeledShape> ModeledShape::FromMeshGroups(
+absl::StatusOr<PartitionedMesh> PartitionedMesh::FromMeshGroups(
     absl::Span<const MeshGroup> groups) {
   absl::StatusOr<std::unique_ptr<Data>> data = Data::FromMeshGroups(groups);
   if (!data.ok()) return data.status();
-  return ModeledShape(*std::move(data));
+  return PartitionedMesh(*std::move(data));
 }
 
-absl::StatusOr<absl::Nonnull<std::unique_ptr<ModeledShape::Data>>>
-ModeledShape::Data::FromMeshGroups(absl::Span<const MeshGroup> groups) {
+absl::StatusOr<absl::Nonnull<std::unique_ptr<PartitionedMesh::Data>>>
+PartitionedMesh::Data::FromMeshGroups(absl::Span<const MeshGroup> groups) {
   size_t total_meshes = 0;
   size_t total_outlines = 0;
   for (const MeshGroup& group : groups) {
@@ -207,10 +208,10 @@ ModeledShape::Data::FromMeshGroups(absl::Span<const MeshGroup> groups) {
     total_outlines += group.outlines.size();
   }
   if (total_meshes > std::numeric_limits<uint16_t>::max()) {
-    return absl::InvalidArgumentError(
-        absl::Substitute("Too many meshes; ModeledShape supports a maximum of "
-                         "2^16 (65536) meshes ($0 meshes given)",
-                         total_meshes));
+    return absl::InvalidArgumentError(absl::Substitute(
+        "Too many meshes; PartitionedMesh supports a maximum of "
+        "2^16 (65536) meshes ($0 meshes given)",
+        total_meshes));
   }
 
   absl::InlinedVector<MeshFormat, 1> group_formats;
@@ -267,7 +268,7 @@ ModeledShape::Data::FromMeshGroups(absl::Span<const MeshGroup> groups) {
     }
   }
 
-  auto data = std::make_unique<ModeledShape::Data>();
+  auto data = std::make_unique<PartitionedMesh::Data>();
   data->meshes_.reserve(total_meshes);
   data->outlines_.reserve(total_outlines);
   data->group_first_mesh_indices_.reserve(groups.size());
@@ -290,7 +291,7 @@ ModeledShape::Data::FromMeshGroups(absl::Span<const MeshGroup> groups) {
   return std::move(data);
 }
 
-Envelope ModeledShape::Bounds() const {
+Envelope PartitionedMesh::Bounds() const {
   if (data_ == nullptr) return {};
   Envelope bounds;
   for (size_t i = 0; i < data_->Meshes().size(); ++i) {
@@ -307,7 +308,7 @@ template <typename QueryType>
 void VisitIntersectedTrianglesHelper(
     const QueryType& query,
     absl::FunctionRef<
-        ModeledShape::FlowControl(ModeledShape::TriangleIndexPair)>
+        PartitionedMesh::FlowControl(PartitionedMesh::TriangleIndexPair)>
         visitor,
     const AffineTransform& query_to_this, absl::Span<const Mesh> meshes,
     const RTree& rtree) {
@@ -315,13 +316,13 @@ void VisitIntersectedTrianglesHelper(
   // `AffineTransform::Apply` returns a `Quad`, not a `Rect`.
   auto transformed_query = query_to_this.Apply(query);
   auto visitor_wrapper = [transformed_query, visitor,
-                          &meshes](ModeledShape::TriangleIndexPair index) {
+                          &meshes](PartitionedMesh::TriangleIndexPair index) {
     if (!geometry_internal::IntersectsInternal(
             transformed_query,
             meshes[index.mesh_index].GetTriangle(index.triangle_index))) {
       return true;
     }
-    return visitor(index) == ModeledShape::FlowControl::kContinue;
+    return visitor(index) == PartitionedMesh::FlowControl::kContinue;
   };
   rtree.VisitIntersectedElements(*Envelope(transformed_query).AsRect(),
                                  visitor_wrapper);
@@ -329,7 +330,7 @@ void VisitIntersectedTrianglesHelper(
 
 }  // namespace
 
-void ModeledShape::VisitIntersectedTriangles(
+void PartitionedMesh::VisitIntersectedTriangles(
     Point query, absl::FunctionRef<FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this) const {
   if (!data_) return;
@@ -338,7 +339,7 @@ void ModeledShape::VisitIntersectedTriangles(
                                   data_->Meshes(), data_->SpatialIndex());
 }
 
-void ModeledShape::VisitIntersectedTriangles(
+void PartitionedMesh::VisitIntersectedTriangles(
     const Segment& query,
     absl::FunctionRef<FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this) const {
@@ -348,7 +349,7 @@ void ModeledShape::VisitIntersectedTriangles(
                                   data_->Meshes(), data_->SpatialIndex());
 }
 
-void ModeledShape::VisitIntersectedTriangles(
+void PartitionedMesh::VisitIntersectedTriangles(
     const Triangle& query,
     absl::FunctionRef<FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this) const {
@@ -358,7 +359,7 @@ void ModeledShape::VisitIntersectedTriangles(
                                   data_->Meshes(), data_->SpatialIndex());
 }
 
-void ModeledShape::VisitIntersectedTriangles(
+void PartitionedMesh::VisitIntersectedTriangles(
     const Rect& query,
     absl::FunctionRef<FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this) const {
@@ -368,7 +369,7 @@ void ModeledShape::VisitIntersectedTriangles(
                                   data_->Meshes(), data_->SpatialIndex());
 }
 
-void ModeledShape::VisitIntersectedTriangles(
+void PartitionedMesh::VisitIntersectedTriangles(
     const Quad& query,
     absl::FunctionRef<FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this) const {
@@ -380,15 +381,15 @@ void ModeledShape::VisitIntersectedTriangles(
 
 namespace {
 
-// This is a helper function for the `ModeledShape` overload of
+// This is a helper function for the `PartitionedMesh` overload of
 // `VisitIntersectedTriangles`, that handles the case in which the given
 // transform is invertible.
-void VisitIntersectedTrianglesWithModeledShapeWithInvertibleTransform(
+void VisitIntersectedTrianglesWithPartitionedMeshWithInvertibleTransform(
     absl::Span<const Mesh> meshes, const RTree& rtree,
-    const ModeledShape& query, const AffineTransform& query_to_target,
+    const PartitionedMesh& query, const AffineTransform& query_to_target,
     const AffineTransform& target_to_query,
     absl::FunctionRef<
-        ModeledShape::FlowControl(ModeledShape::TriangleIndexPair)>
+        PartitionedMesh::FlowControl(PartitionedMesh::TriangleIndexPair)>
         visitor) {
   // To find the intersected triangles, we'll first find all triangles that
   // intersect the bounds of `query`, and then test those triangles to see if
@@ -397,7 +398,7 @@ void VisitIntersectedTrianglesWithModeledShapeWithInvertibleTransform(
       *Envelope(query_to_target.Apply(*query.Bounds().AsRect())).AsRect();
 
   auto visitor_wrapper = [&meshes, &query, &target_to_query,
-                          visitor](ModeledShape::TriangleIndexPair index) {
+                          visitor](PartitionedMesh::TriangleIndexPair index) {
     // This triangle hits the bounding box of `query`, now we need to check
     // that it actually hits `query` itself. Note that we can't call
     // `IntersectsInternal` here, because it would result in a circular
@@ -407,14 +408,14 @@ void VisitIntersectedTrianglesWithModeledShapeWithInvertibleTransform(
     query.VisitIntersectedTriangles(
         meshes[index.mesh_index].GetTriangle(index.triangle_index),
 
-        [&found_intersection](ModeledShape::TriangleIndexPair query_index) {
+        [&found_intersection](PartitionedMesh::TriangleIndexPair query_index) {
           found_intersection = true;
-          return ModeledShape::FlowControl::kBreak;
+          return PartitionedMesh::FlowControl::kBreak;
         },
         target_to_query);
 
     if (found_intersection) {
-      return visitor(index) == ModeledShape::FlowControl::kContinue;
+      return visitor(index) == PartitionedMesh::FlowControl::kContinue;
     }
     return true;
   };
@@ -424,8 +425,8 @@ void VisitIntersectedTrianglesWithModeledShapeWithInvertibleTransform(
 
 }  // namespace
 
-void ModeledShape::VisitIntersectedTriangles(
-    const ModeledShape& query,
+void PartitionedMesh::VisitIntersectedTriangles(
+    const PartitionedMesh& query,
     absl::FunctionRef<FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this) const {
   if (!data_) return;
@@ -433,14 +434,14 @@ void ModeledShape::VisitIntersectedTriangles(
   // If `query` is empty, it can't intersect this shape.
   if (query.Meshes().empty()) return;
 
-  // `ModeledShape` intersection is a little bit more complicated, so we can't
-  // just use `VisitIntersectedTrianglesHelper` here.
+  // `PartitionedMesh` intersection is a little bit more complicated, so we
+  // can't just use `VisitIntersectedTrianglesHelper` here.
 
   // First, we need to try to get the inverse of `this_to_query`, since the
   // approach is different depending on whether the transform is invertible.
   std::optional<AffineTransform> this_to_query = query_to_this.Inverse();
   if (this_to_query.has_value()) {
-    VisitIntersectedTrianglesWithModeledShapeWithInvertibleTransform(
+    VisitIntersectedTrianglesWithPartitionedMeshWithInvertibleTransform(
         data_->Meshes(), data_->SpatialIndex(), query, query_to_this,
         *this_to_query, visitor);
   } else {
@@ -460,15 +461,16 @@ namespace {
 template <typename QueryType>
 float ComputeCoverage(const QueryType& query,
                       const AffineTransform& query_to_target,
-                      const ModeledShape& target, float total_absolute_area) {
+                      const PartitionedMesh& target,
+                      float total_absolute_area) {
   float covered_area = 0;
   target.VisitIntersectedTriangles(
       query,
-      [&target, &covered_area](const ModeledShape::TriangleIndexPair index) {
+      [&target, &covered_area](const PartitionedMesh::TriangleIndexPair index) {
         covered_area += std::abs(target.Meshes()[index.mesh_index]
                                      .GetTriangle(index.triangle_index)
                                      .SignedArea());
-        return ModeledShape::FlowControl::kContinue;
+        return PartitionedMesh::FlowControl::kContinue;
       },
       query_to_target);
   return covered_area / total_absolute_area;
@@ -476,29 +478,29 @@ float ComputeCoverage(const QueryType& query,
 
 }  // namespace
 
-float ModeledShape::Coverage(const Triangle& query,
-                             const AffineTransform& query_to_this) const {
+float PartitionedMesh::Coverage(const Triangle& query,
+                                const AffineTransform& query_to_this) const {
   if (data_ == nullptr) return 0;
   return ComputeCoverage(query, query_to_this, *this,
                          data_->TotalAbsoluteArea());
 }
 
-float ModeledShape::Coverage(const Rect& query,
-                             const AffineTransform& query_to_this) const {
+float PartitionedMesh::Coverage(const Rect& query,
+                                const AffineTransform& query_to_this) const {
   if (data_ == nullptr) return 0;
   return ComputeCoverage(query, query_to_this, *this,
                          data_->TotalAbsoluteArea());
 }
 
-float ModeledShape::Coverage(const Quad& query,
-                             const AffineTransform& query_to_this) const {
+float PartitionedMesh::Coverage(const Quad& query,
+                                const AffineTransform& query_to_this) const {
   if (data_ == nullptr) return 0;
   return ComputeCoverage(query, query_to_this, *this,
                          data_->TotalAbsoluteArea());
 }
 
-float ModeledShape::Coverage(const ModeledShape& query,
-                             const AffineTransform& query_to_this) const {
+float PartitionedMesh::Coverage(const PartitionedMesh& query,
+                                const AffineTransform& query_to_this) const {
   if (data_ == nullptr) return 0;
   return ComputeCoverage(query, query_to_this, *this,
                          data_->TotalAbsoluteArea());
@@ -511,7 +513,7 @@ namespace {
 template <typename QueryType>
 float CoverageIsGreaterThanHelper(const QueryType& query,
                                   const AffineTransform& query_to_target,
-                                  const ModeledShape& target,
+                                  const PartitionedMesh& target,
                                   float coverage_threshold,
                                   float total_absolute_area) {
   float area_threshold = coverage_threshold * total_absolute_area;
@@ -519,13 +521,13 @@ float CoverageIsGreaterThanHelper(const QueryType& query,
   target.VisitIntersectedTriangles(
       query,
       [&target, &covered_area,
-       area_threshold](const ModeledShape::TriangleIndexPair index) {
+       area_threshold](const PartitionedMesh::TriangleIndexPair index) {
         covered_area += std::abs(target.Meshes()[index.mesh_index]
                                      .GetTriangle(index.triangle_index)
                                      .SignedArea());
         return covered_area > area_threshold
-                   ? ModeledShape::FlowControl::kBreak
-                   : ModeledShape::FlowControl::kContinue;
+                   ? PartitionedMesh::FlowControl::kBreak
+                   : PartitionedMesh::FlowControl::kContinue;
       },
       query_to_target);
   return covered_area > area_threshold;
@@ -533,7 +535,7 @@ float CoverageIsGreaterThanHelper(const QueryType& query,
 
 }  // namespace
 
-bool ModeledShape::CoverageIsGreaterThan(
+bool PartitionedMesh::CoverageIsGreaterThan(
     const Triangle& query, float coverage_threshold,
     const AffineTransform& query_to_this) const {
   if (data_ == nullptr) return false;
@@ -542,7 +544,7 @@ bool ModeledShape::CoverageIsGreaterThan(
                                      data_->TotalAbsoluteArea());
 }
 
-bool ModeledShape::CoverageIsGreaterThan(
+bool PartitionedMesh::CoverageIsGreaterThan(
     const Rect& query, float coverage_threshold,
     const AffineTransform& query_to_this) const {
   if (data_ == nullptr) return false;
@@ -551,7 +553,7 @@ bool ModeledShape::CoverageIsGreaterThan(
                                      data_->TotalAbsoluteArea());
 }
 
-bool ModeledShape::CoverageIsGreaterThan(
+bool PartitionedMesh::CoverageIsGreaterThan(
     const Quad& query, float coverage_threshold,
     const AffineTransform& query_to_this) const {
   if (data_ == nullptr) return false;
@@ -560,8 +562,8 @@ bool ModeledShape::CoverageIsGreaterThan(
                                      data_->TotalAbsoluteArea());
 }
 
-bool ModeledShape::CoverageIsGreaterThan(
-    const ModeledShape& query, float coverage_threshold,
+bool PartitionedMesh::CoverageIsGreaterThan(
+    const PartitionedMesh& query, float coverage_threshold,
     const AffineTransform& query_to_this) const {
   if (data_ == nullptr) return false;
   return CoverageIsGreaterThanHelper(query, query_to_this, *this,
@@ -569,7 +571,7 @@ bool ModeledShape::CoverageIsGreaterThan(
                                      data_->TotalAbsoluteArea());
 }
 
-const RTree& ModeledShape::Data::SpatialIndex() const {
+const RTree& PartitionedMesh::Data::SpatialIndex() const {
   ABSL_CHECK(!meshes_.empty());
 
   absl::MutexLock lock(&cache_mutex_);
@@ -583,8 +585,8 @@ const RTree& ModeledShape::Data::SpatialIndex() const {
   uint32_t n_tris = 0;
   for (const Mesh& mesh : meshes_) n_tris += mesh.TriangleCount();
 
-  // This generates each valid `TriangleIndexPair` for this `ModeledShape`, in
-  // order of mesh index, then triangle index.
+  // This generates each valid `TriangleIndexPair` for this `PartitionedMesh`,
+  // in order of mesh index, then triangle index.
   //
   // We want to start at mesh_index = 0, triangle_index = 0, but since they're
   // `uint16_t`s, we have to make a copy of the current index, then increment
@@ -603,7 +605,7 @@ const RTree& ModeledShape::Data::SpatialIndex() const {
         return value_before_increment;
       };
   // This gets the bounds for a `TriangleIndexPair` by looking up the triangle
-  // in this `ModeledShape`'s meshes.
+  // in this `PartitionedMesh`'s meshes.
   auto bounds_func = [&meshes = meshes_](TriangleIndexPair idx) {
     return *Envelope(meshes[idx.mesh_index].GetTriangle(idx.triangle_index))
                 .AsRect();
@@ -614,7 +616,7 @@ const RTree& ModeledShape::Data::SpatialIndex() const {
   return *rtree_;
 }
 
-float ModeledShape::Data::TotalAbsoluteArea() const {
+float PartitionedMesh::Data::TotalAbsoluteArea() const {
   ABSL_CHECK(!meshes_.empty());
 
   absl::MutexLock lock(&cache_mutex_);

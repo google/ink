@@ -19,8 +19,8 @@
 
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/mesh_format.h"
-#include "ink/geometry/modeled_shape.h"
 #include "ink/geometry/mutable_mesh.h"
+#include "ink/geometry/partitioned_mesh.h"
 
 namespace ink {
 
@@ -47,8 +47,8 @@ MutableMesh MakeStraightLineMutableMesh(
     const AffineTransform& vertex_transform = {});
 
 // Same as `MakeStraightLineMutableMesh` above, except that instead of returning
-// a `MutableMesh`, it returns a `ModeledShape` built from that mesh.
-ModeledShape MakeStraightLineModeledShape(
+// a `MutableMesh`, it returns a `PartitionedMesh` built from that mesh.
+PartitionedMesh MakeStraightLinePartitionedMesh(
     uint32_t num_triangles, const MeshFormat& format = MeshFormat(),
     const AffineTransform& vertex_transform = {});
 
@@ -76,8 +76,8 @@ MutableMesh MakeCoiledRingMutableMesh(
     const AffineTransform& vertex_transform = {});
 
 // Same as `MakeCoiledRingMutableMesh` above, except that instead of returning a
-// `MutableMesh`, it returns a `ModeledShape` built from that mesh.
-ModeledShape MakeCoiledRingModeledShape(
+// `MutableMesh`, it returns a `PartitionedMesh` built from that mesh.
+PartitionedMesh MakeCoiledRingPartitionedMesh(
     uint32_t n_triangles, uint32_t n_subdivisions,
     const MeshFormat& format = MeshFormat(),
     const AffineTransform& vertex_transform = {});
@@ -105,10 +105,10 @@ MutableMesh MakeStarMutableMesh(uint32_t n_triangles,
                                 const AffineTransform& vertex_transform = {});
 
 // Same as `MakeStarMutableMesh` above, except that instead of returning a
-// `MutableMesh`, it returns a `ModeledShape` built from that mesh.
-ModeledShape MakeStarModeledShape(uint32_t n_triangles,
-                                  const MeshFormat& format = MeshFormat(),
-                                  const AffineTransform& vertex_transform = {});
+// `MutableMesh`, it returns a `PartitionedMesh` built from that mesh.
+PartitionedMesh MakeStarPartitionedMesh(
+    uint32_t n_triangles, const MeshFormat& format = MeshFormat(),
+    const AffineTransform& vertex_transform = {});
 
 }  // namespace ink
 

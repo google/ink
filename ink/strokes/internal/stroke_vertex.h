@@ -183,7 +183,7 @@ struct StrokeVertex {
   // Only color-shift and label attributes that have a recognized packed format
   // will be given non-nullopt values of custom packing parameters. Attributes
   // in `mesh_format` with an id found in `skipped_attribute_ids` will be
-  // skipped. See also the comment on `ModeledShape::FromMutableMesh()`.
+  // skipped. See also the comment on `PartitionedMesh::FromMutableMesh()`.
   //
   // CHECK-fails if the format has more than `kMaxAttributeCount` attributes.
   static CustomPackingArray MakeCustomPackingArray(

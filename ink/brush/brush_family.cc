@@ -39,7 +39,7 @@ BrushFamily::InputModel BrushFamily::DefaultInputModel() {
 }
 
 uint32_t BrushFamily::MaxBrushCoats() {
-  // This value was chosen somewhat arbitrarily. A `ModeledShape` can't have
+  // This value was chosen somewhat arbitrarily. A `PartitionedMesh` can't have
   // more than 2^16 meshes, and each coat creates at least one mesh, so we need
   // *some* limit. We can always raise this limit in the future, but lowering it
   // will be harder once clients start relying on being able to have a certain

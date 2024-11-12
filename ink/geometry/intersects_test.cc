@@ -18,7 +18,7 @@
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/mesh_test_helpers.h"
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
 #include "ink/geometry/rect.h"
@@ -1598,8 +1598,8 @@ TEST(IntersectsTest, QuadToQuadCornerTouchingEdge) {
                      {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)));
 }
 
-TEST(IntersectsTest, ModeledShapeToPointWithIdentityTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToPointWithIdentityTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Point p0{1, -0.5};
   Point p1{3, 4};
 
@@ -1609,8 +1609,8 @@ TEST(IntersectsTest, ModeledShapeToPointWithIdentityTransform) {
   EXPECT_FALSE(Intersects(shape, AffineTransform::Identity(), p1));
 }
 
-TEST(IntersectsTest, ModeledShapeToPointWithNormalTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToPointWithNormalTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Point p0{3, -1.5};
   Point p1{0, 0};
   AffineTransform transform0 = AffineTransform::Scale(2);
@@ -1622,8 +1622,8 @@ TEST(IntersectsTest, ModeledShapeToPointWithNormalTransform) {
   EXPECT_FALSE(Intersects(shape, transform1, p1));
 }
 
-TEST(IntersectsTest, ModeledShapeToPointWithNonInvertibleTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToPointWithNonInvertibleTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Point p{3, 4};
   // This transform collapses the mesh to the segment (1, 4)-(5, 4).
   AffineTransform transform0{1, 0, 1, 0, 0, 4};
@@ -1637,8 +1637,8 @@ TEST(IntersectsTest, ModeledShapeToPointWithNonInvertibleTransform) {
   EXPECT_FALSE(Intersects(shape, transform1, p));
 }
 
-TEST(IntersectsTest, ModeledShapeToPointEmptyShape) {
-  ModeledShape shape;
+TEST(IntersectsTest, PartitionedMeshToPointEmptyShape) {
+  PartitionedMesh shape;
   Point p{5, 10};
 
   EXPECT_FALSE(Intersects(p, shape, AffineTransform::Identity()));
@@ -1651,8 +1651,8 @@ TEST(IntersectsTest, ModeledShapeToPointEmptyShape) {
   EXPECT_FALSE(Intersects(shape, AffineTransform{0, 0, 1, 1, 1, 1}, p));
 }
 
-TEST(IntersectsTest, ModeledShapeToSegmentWithIdentityTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToSegmentWithIdentityTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Segment s0{{1, 1}, {1, -1}};
   Segment s1{{3, 4}, {4, 5}};
 
@@ -1662,8 +1662,8 @@ TEST(IntersectsTest, ModeledShapeToSegmentWithIdentityTransform) {
   EXPECT_FALSE(Intersects(shape, AffineTransform::Identity(), s1));
 }
 
-TEST(IntersectsTest, ModeledShapeToSegmentWithNormalTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToSegmentWithNormalTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Segment s0{{3, -1.5}, {5, -1.5}};
   Segment s1{{0, 0}, {0, 5}};
   AffineTransform transform0 = AffineTransform::Scale(2);
@@ -1675,8 +1675,8 @@ TEST(IntersectsTest, ModeledShapeToSegmentWithNormalTransform) {
   EXPECT_FALSE(Intersects(shape, transform1, s1));
 }
 
-TEST(IntersectsTest, ModeledShapeToSegmentWithNonInvertibleTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToSegmentWithNonInvertibleTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Segment s{{3, 3}, {3, 5}};
   // This transform collapses the mesh to the segment (1, 4)-(5, 4).
   AffineTransform transform0{1, 0, 1, 0, 0, 4};
@@ -1689,8 +1689,8 @@ TEST(IntersectsTest, ModeledShapeToSegmentWithNonInvertibleTransform) {
   EXPECT_FALSE(Intersects(shape, transform1, s));
 }
 
-TEST(IntersectsTest, ModeledShapeToSegmentEmptyShape) {
-  ModeledShape shape;
+TEST(IntersectsTest, PartitionedMeshToSegmentEmptyShape) {
+  PartitionedMesh shape;
   Segment s{{5, 10}, {10, 20}};
 
   EXPECT_FALSE(Intersects(s, shape, AffineTransform::Identity()));
@@ -1703,8 +1703,8 @@ TEST(IntersectsTest, ModeledShapeToSegmentEmptyShape) {
   EXPECT_FALSE(Intersects(shape, AffineTransform{0, 0, 1, 1, 1, 1}, s));
 }
 
-TEST(IntersectsTest, ModeledShapeToTriangleWithIdentityTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToTriangleWithIdentityTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Triangle t0{{1, 1}, {1, -1}, {0.5, 0}};
   Triangle t1{{3, 4}, {4, 5}, {2, 6}};
 
@@ -1714,8 +1714,8 @@ TEST(IntersectsTest, ModeledShapeToTriangleWithIdentityTransform) {
   EXPECT_FALSE(Intersects(shape, AffineTransform::Identity(), t1));
 }
 
-TEST(IntersectsTest, ModeledShapeToTriangleWithNormalTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToTriangleWithNormalTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Triangle t0{{3, -1.5}, {5, -1.5}, {4, -2}};
   Triangle t1{{0, 0}, {0, 5}, {-1, 3}};
   AffineTransform transform0 = AffineTransform::Scale(2);
@@ -1727,8 +1727,8 @@ TEST(IntersectsTest, ModeledShapeToTriangleWithNormalTransform) {
   EXPECT_FALSE(Intersects(shape, transform1, t1));
 }
 
-TEST(IntersectsTest, ModeledShapeToTriangleWithNonInvertibleTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToTriangleWithNonInvertibleTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Triangle t{{3, 3}, {3, 5}, {5, 5}};
   // This transform collapses the mesh to the segment (1, 4)-(5, 4).
   AffineTransform transform0{1, 0, 1, 0, 0, 4};
@@ -1741,8 +1741,8 @@ TEST(IntersectsTest, ModeledShapeToTriangleWithNonInvertibleTransform) {
   EXPECT_FALSE(Intersects(shape, transform1, t));
 }
 
-TEST(IntersectsTest, ModeledShapeToTriangleEmptyShape) {
-  ModeledShape shape;
+TEST(IntersectsTest, PartitionedMeshToTriangleEmptyShape) {
+  PartitionedMesh shape;
   Triangle t{{5, 10}, {10, 20}, {50, 0}};
 
   EXPECT_FALSE(Intersects(t, shape, AffineTransform::Identity()));
@@ -1755,8 +1755,8 @@ TEST(IntersectsTest, ModeledShapeToTriangleEmptyShape) {
   EXPECT_FALSE(Intersects(shape, AffineTransform{0, 0, 1, 1, 1, 1}, t));
 }
 
-TEST(IntersectsTest, ModeledShapeToRectWithIdentityTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToRectWithIdentityTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Rect r0 = Rect::FromTwoPoints({1, 1}, {1, -1});
   Rect r1 = Rect::FromTwoPoints({3, 4}, {4, 5});
 
@@ -1766,8 +1766,8 @@ TEST(IntersectsTest, ModeledShapeToRectWithIdentityTransform) {
   EXPECT_FALSE(Intersects(shape, AffineTransform::Identity(), r1));
 }
 
-TEST(IntersectsTest, ModeledShapeToRectWithNormalTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToRectWithNormalTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Rect r0 = Rect::FromTwoPoints({3, -1.5}, {5, -2});
   Rect r1 = Rect::FromTwoPoints({0, 0}, {-1, 5});
   AffineTransform transform0 = AffineTransform::Scale(2);
@@ -1779,8 +1779,8 @@ TEST(IntersectsTest, ModeledShapeToRectWithNormalTransform) {
   EXPECT_FALSE(Intersects(shape, transform1, r1));
 }
 
-TEST(IntersectsTest, ModeledShapeToRectWithNonInvertibleTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToRectWithNonInvertibleTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Rect r = Rect::FromTwoPoints({3, 3}, {5, 5});
   // This transform collapses the mesh to the segment (1, 4)-(5, 4).
   AffineTransform transform0{1, 0, 1, 0, 0, 4};
@@ -1793,8 +1793,8 @@ TEST(IntersectsTest, ModeledShapeToRectWithNonInvertibleTransform) {
   EXPECT_FALSE(Intersects(shape, transform1, r));
 }
 
-TEST(IntersectsTest, ModeledShapeToRectEmptyShape) {
-  ModeledShape shape;
+TEST(IntersectsTest, PartitionedMeshToRectEmptyShape) {
+  PartitionedMesh shape;
   Rect r = Rect::FromTwoPoints({5, 10}, {10, 20});
 
   EXPECT_FALSE(Intersects(r, shape, AffineTransform::Identity()));
@@ -1807,8 +1807,8 @@ TEST(IntersectsTest, ModeledShapeToRectEmptyShape) {
   EXPECT_FALSE(Intersects(shape, AffineTransform{0, 0, 1, 1, 1, 1}, r));
 }
 
-TEST(IntersectsTest, ModeledShapeToQuadWithIdentityTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToQuadWithIdentityTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Quad q0 = Quad::FromCenterDimensionsAndRotation({1, 0}, 0.5, 0.5,
                                                   Angle::Degrees(45));
   Quad q1 = Quad::FromCenterDimensionsRotationAndShear(
@@ -1820,8 +1820,8 @@ TEST(IntersectsTest, ModeledShapeToQuadWithIdentityTransform) {
   EXPECT_FALSE(Intersects(shape, AffineTransform::Identity(), q1));
 }
 
-TEST(IntersectsTest, ModeledShapeToQuadWithNormalTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToQuadWithNormalTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Quad q0 = Quad::FromCenterAndDimensions({4, -3}, 1, 2);
   Quad q1 =
       Quad::FromCenterDimensionsAndRotation({0, 0}, 1, 1, Angle::Degrees(60));
@@ -1834,8 +1834,8 @@ TEST(IntersectsTest, ModeledShapeToQuadWithNormalTransform) {
   EXPECT_FALSE(Intersects(shape, transform1, q1));
 }
 
-TEST(IntersectsTest, ModeledShapeToQuadWithNonInvertibleTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToQuadWithNonInvertibleTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Quad q = Quad::FromCenterAndDimensions({4, 4}, 2, 2);
   // This transform collapses the mesh to the segment (1, 4)-(5, 4).
   AffineTransform transform0{1, 0, 1, 0, 0, 4};
@@ -1848,8 +1848,8 @@ TEST(IntersectsTest, ModeledShapeToQuadWithNonInvertibleTransform) {
   EXPECT_FALSE(Intersects(shape, transform1, q));
 }
 
-TEST(IntersectsTest, ModeledShapeToQuadEmptyShape) {
-  ModeledShape shape;
+TEST(IntersectsTest, PartitionedMeshToQuadEmptyShape) {
+  PartitionedMesh shape;
   Quad q = Quad::FromCenterDimensionsRotationAndShear({10, 10}, 20, 30,
                                                       Angle::Degrees(-75), -1);
 
@@ -1863,11 +1863,11 @@ TEST(IntersectsTest, ModeledShapeToQuadEmptyShape) {
   EXPECT_FALSE(Intersects(shape, AffineTransform{0, 0, 1, 1, 1, 1}, q));
 }
 
-TEST(IntersectsTest, ModeledShapeToModeledShapeWithIdentityTransform) {
-  ModeledShape line_at_origin = MakeStraightLineModeledShape(3);
-  ModeledShape ring_at_origin = MakeCoiledRingModeledShape(12, 6);
-  ModeledShape ring_with_offset =
-      MakeCoiledRingModeledShape(12, 6, {}, AffineTransform::Translate({2, 2}));
+TEST(IntersectsTest, PartitionedMeshToPartitionedMeshWithIdentityTransform) {
+  PartitionedMesh line_at_origin = MakeStraightLinePartitionedMesh(3);
+  PartitionedMesh ring_at_origin = MakeCoiledRingPartitionedMesh(12, 6);
+  PartitionedMesh ring_with_offset = MakeCoiledRingPartitionedMesh(
+      12, 6, {}, AffineTransform::Translate({2, 2}));
 
   EXPECT_TRUE(Intersects(line_at_origin, AffineTransform::Identity(),
                          ring_at_origin, AffineTransform::Identity()));
@@ -1879,11 +1879,11 @@ TEST(IntersectsTest, ModeledShapeToModeledShapeWithIdentityTransform) {
                           line_at_origin, AffineTransform::Identity()));
 }
 
-TEST(IntersectsTest, ModeledShapeToModeledShapeWithNormalTransform) {
-  ModeledShape line_at_origin = MakeStraightLineModeledShape(3);
-  ModeledShape ring_at_origin = MakeCoiledRingModeledShape(12, 6);
-  ModeledShape ring_with_offset =
-      MakeCoiledRingModeledShape(12, 6, {}, AffineTransform::Translate({2, 2}));
+TEST(IntersectsTest, PartitionedMeshToPartitionedMeshWithNormalTransform) {
+  PartitionedMesh line_at_origin = MakeStraightLinePartitionedMesh(3);
+  PartitionedMesh ring_at_origin = MakeCoiledRingPartitionedMesh(12, 6);
+  PartitionedMesh ring_with_offset = MakeCoiledRingPartitionedMesh(
+      12, 6, {}, AffineTransform::Translate({2, 2}));
 
   EXPECT_TRUE(Intersects(line_at_origin, AffineTransform::Translate({0, 1}),
                          ring_with_offset,
@@ -1899,11 +1899,12 @@ TEST(IntersectsTest, ModeledShapeToModeledShapeWithNormalTransform) {
                           line_at_origin, AffineTransform::Scale(.1)));
 }
 
-TEST(IntersectsTest, ModeledShapeToModeledShapeWithOneNonInvertibleTransform) {
-  ModeledShape line_at_origin = MakeStraightLineModeledShape(3);
-  ModeledShape ring_at_origin = MakeCoiledRingModeledShape(12, 6);
-  ModeledShape ring_with_offset =
-      MakeCoiledRingModeledShape(12, 6, {}, AffineTransform::Translate({2, 2}));
+TEST(IntersectsTest,
+     PartitionedMeshToPartitionedMeshWithOneNonInvertibleTransform) {
+  PartitionedMesh line_at_origin = MakeStraightLinePartitionedMesh(3);
+  PartitionedMesh ring_at_origin = MakeCoiledRingPartitionedMesh(12, 6);
+  PartitionedMesh ring_with_offset = MakeCoiledRingPartitionedMesh(
+      12, 6, {}, AffineTransform::Translate({2, 2}));
 
   // This transform collapses all shapes to the line y = x / 2.
   AffineTransform transform0{1, 1, 0, 0.5, 0.5, 0};
@@ -1920,9 +1921,10 @@ TEST(IntersectsTest, ModeledShapeToModeledShapeWithOneNonInvertibleTransform) {
                           AffineTransform::Identity()));
 }
 
-TEST(IntersectsTest, ModeledShapeToModeledShapeWithTwoNonInvertibleTransforms) {
-  ModeledShape line_at_origin = MakeStraightLineModeledShape(3);
-  ModeledShape ring_at_origin = MakeCoiledRingModeledShape(12, 6);
+TEST(IntersectsTest,
+     PartitionedMeshToPartitionedMeshWithTwoNonInvertibleTransforms) {
+  PartitionedMesh line_at_origin = MakeStraightLinePartitionedMesh(3);
+  PartitionedMesh ring_at_origin = MakeCoiledRingPartitionedMesh(12, 6);
 
   // This transform collapses all shapes to the line y = x / 5.
   AffineTransform transform0{5, 5, 0, 1, 1, 0};
@@ -1941,9 +1943,9 @@ TEST(IntersectsTest, ModeledShapeToModeledShapeWithTwoNonInvertibleTransforms) {
       Intersects(ring_at_origin, transform2, line_at_origin, transform1));
 }
 
-TEST(IntersectsTest, ModeledShapeToModeledShapeEmptyShape) {
-  ModeledShape empty;
-  ModeledShape line_at_origin = MakeStraightLineModeledShape(3);
+TEST(IntersectsTest, PartitionedMeshToPartitionedMeshEmptyShape) {
+  PartitionedMesh empty;
+  PartitionedMesh line_at_origin = MakeStraightLinePartitionedMesh(3);
 
   EXPECT_FALSE(Intersects(line_at_origin, AffineTransform::Identity(), empty,
                           AffineTransform::Identity()));
@@ -1960,9 +1962,9 @@ TEST(IntersectsTest, ModeledShapeToModeledShapeEmptyShape) {
 }
 
 TEST(IntersectsTest,
-     ModeledShapeToModeledShapeEmptyShapeWithTwoNonInvertibleTransforms) {
-  ModeledShape empty;
-  ModeledShape line_at_origin = MakeStraightLineModeledShape(3);
+     PartitionedMeshToPartitionedMeshEmptyShapeWithTwoNonInvertibleTransforms) {
+  PartitionedMesh empty;
+  PartitionedMesh line_at_origin = MakeStraightLinePartitionedMesh(3);
 
   // This transform collapses all shapes to the line y = x / 5.
   AffineTransform transform0{5, 5, 0, 1, 1, 0};

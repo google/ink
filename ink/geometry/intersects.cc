@@ -18,7 +18,7 @@
 
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/internal/algorithms.h"
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
 #include "ink/geometry/rect.h"
@@ -29,12 +29,12 @@ namespace ink {
 namespace {
 
 // This is a helper function for the `Intersects` overloads that take a
-// `ModeledShape` and a different primitive, and handles the logic that does not
-// depend on the primitive type itself.
+// `PartitionedMesh` and a different primitive, and handles the logic that does
+// not depend on the primitive type itself.
 template <typename ObjectType>
-bool IntersectsModeledShape(const ModeledShape& a,
-                            const AffineTransform& a_to_b_transform,
-                            const ObjectType& b) {
+bool IntersectsPartitionedMesh(const PartitionedMesh& a,
+                               const AffineTransform& a_to_b_transform,
+                               const ObjectType& b) {
   // An empty shape does not intersect anything.
   if (a.Meshes().empty()) return false;
 
@@ -50,14 +50,14 @@ bool IntersectsModeledShape(const ModeledShape& a,
     bool found_intersection = false;
     a.VisitIntersectedTriangles(
         transformed_b,
-        [&found_intersection](const ModeledShape::TriangleIndexPair) {
+        [&found_intersection](const PartitionedMesh::TriangleIndexPair) {
           found_intersection = true;
-          return ModeledShape::FlowControl::kBreak;
+          return PartitionedMesh::FlowControl::kBreak;
         });
     return found_intersection;
   } else {
-    // A non-invertible transform collapses the `ModeledShape` to a `Segment`,
-    // so we can defer to the `Segment` overload of `Intersects`.
+    // A non-invertible transform collapses the `PartitionedMesh` to a
+    // `Segment`, so we can defer to the `Segment` overload of `Intersects`.
     Segment collapsed_shape = geometry_internal::CalculateCollapsedSegment(
         a.Meshes(), *a.Bounds().AsRect(), a_to_b_transform);
     return Intersects(collapsed_shape, b);
@@ -66,25 +66,25 @@ bool IntersectsModeledShape(const ModeledShape& a,
 
 }  // namespace
 
-bool Intersects(const ModeledShape& a, const AffineTransform& a_to_b_transform,
-                Point b) {
-  return IntersectsModeledShape(a, a_to_b_transform, b);
+bool Intersects(const PartitionedMesh& a,
+                const AffineTransform& a_to_b_transform, Point b) {
+  return IntersectsPartitionedMesh(a, a_to_b_transform, b);
 }
-bool Intersects(const ModeledShape& a, const AffineTransform& a_to_b_transform,
-                const Segment& b) {
-  return IntersectsModeledShape(a, a_to_b_transform, b);
+bool Intersects(const PartitionedMesh& a,
+                const AffineTransform& a_to_b_transform, const Segment& b) {
+  return IntersectsPartitionedMesh(a, a_to_b_transform, b);
 }
-bool Intersects(const ModeledShape& a, const AffineTransform& a_to_b_transform,
-                const Triangle& b) {
-  return IntersectsModeledShape(a, a_to_b_transform, b);
+bool Intersects(const PartitionedMesh& a,
+                const AffineTransform& a_to_b_transform, const Triangle& b) {
+  return IntersectsPartitionedMesh(a, a_to_b_transform, b);
 }
-bool Intersects(const ModeledShape& a, const AffineTransform& a_to_b_transform,
-                const Rect& b) {
-  return IntersectsModeledShape(a, a_to_b_transform, b);
+bool Intersects(const PartitionedMesh& a,
+                const AffineTransform& a_to_b_transform, const Rect& b) {
+  return IntersectsPartitionedMesh(a, a_to_b_transform, b);
 }
-bool Intersects(const ModeledShape& a, const AffineTransform& a_to_b_transform,
-                const Quad& b) {
-  return IntersectsModeledShape(a, a_to_b_transform, b);
+bool Intersects(const PartitionedMesh& a,
+                const AffineTransform& a_to_b_transform, const Quad& b) {
+  return IntersectsPartitionedMesh(a, a_to_b_transform, b);
 }
 
 namespace {
@@ -93,9 +93,9 @@ namespace {
 // Checking in `rhs`'s coordinate space requires that `rhs_transform` is
 // invertible. If `rhs_transform` is non-invertible, this will return
 // `std::nullopt`; otherwise, it will return whether they intersect.
-std::optional<bool> TryOneWayModeledShapeToModeledShapeIntersects(
-    const ModeledShape& lhs, const AffineTransform& lhs_transform,
-    const ModeledShape& rhs, const AffineTransform& rhs_transform) {
+std::optional<bool> TryOneWayPartitionedMeshToPartitionedMeshIntersects(
+    const PartitionedMesh& lhs, const AffineTransform& lhs_transform,
+    const PartitionedMesh& rhs, const AffineTransform& rhs_transform) {
   std::optional<AffineTransform> inverse_rhs_transform =
       rhs_transform.Inverse();
   if (!inverse_rhs_transform.has_value()) return std::nullopt;
@@ -103,9 +103,9 @@ std::optional<bool> TryOneWayModeledShapeToModeledShapeIntersects(
   bool found_intersection = false;
   rhs.VisitIntersectedTriangles(
       lhs,
-      [&found_intersection](const ModeledShape::TriangleIndexPair) {
+      [&found_intersection](const PartitionedMesh::TriangleIndexPair) {
         found_intersection = true;
-        return ModeledShape::FlowControl::kBreak;
+        return PartitionedMesh::FlowControl::kBreak;
       },
       *inverse_rhs_transform * lhs_transform);
   return found_intersection;
@@ -113,21 +113,21 @@ std::optional<bool> TryOneWayModeledShapeToModeledShapeIntersects(
 
 }  // namespace
 
-bool Intersects(const ModeledShape& a,
+bool Intersects(const PartitionedMesh& a,
                 const AffineTransform& a_to_common_transform,
-                const ModeledShape& b,
+                const PartitionedMesh& b,
                 const AffineTransform& b_to_common_transform) {
   // An empty shape does not intersect anything.
   if (a.Meshes().empty() || b.Meshes().empty()) return false;
 
   // Try checking for intersection in `b`'s coordinate space, and if that fails,
   // try in `a`'s coordinate space.
-  if (auto result = TryOneWayModeledShapeToModeledShapeIntersects(
+  if (auto result = TryOneWayPartitionedMeshToPartitionedMeshIntersects(
           a, a_to_common_transform, b, b_to_common_transform);
       result.has_value()) {
     return *result;
   }
-  if (auto result = TryOneWayModeledShapeToModeledShapeIntersects(
+  if (auto result = TryOneWayPartitionedMeshToPartitionedMeshIntersects(
           b, b_to_common_transform, a, a_to_common_transform);
       result.has_value()) {
     return *result;

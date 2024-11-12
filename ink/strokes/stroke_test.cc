@@ -36,7 +36,7 @@
 #include "ink/geometry/angle.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/mesh_test_helpers.h"
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/rect.h"
 #include "ink/geometry/type_matchers.h"
 #include "ink/strokes/input/fuzz_domains.h"
@@ -111,8 +111,8 @@ StrokeInputBatch CreateFilledInputs() {
 
 StrokeInputBatch CreateEmptyInputs() { return StrokeInputBatch(); }
 
-ModeledShape CreateFilledShape() {
-  auto shape = ModeledShape::FromMutableMesh(
+PartitionedMesh CreateFilledShape() {
+  auto shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(18, MakeSinglePackedPositionFormat()),
       {{1, 5, 4, 0}, {5, 9, 4}});
   ABSL_CHECK_OK(shape);
@@ -155,11 +155,11 @@ TEST(StrokeTest, ConstructFromBrushAndInputs) {
 TEST(StrokeTest, ConstructFromBrushAndInputsAndShape) {
   Brush brush = CreateBrush();
   StrokeInputBatch inputs = CreateFilledInputs();
-  ModeledShape shape = CreateFilledShape();
+  PartitionedMesh shape = CreateFilledShape();
   Stroke stroke(brush, inputs, shape);
 
   // The same `Mesh` instances are shared rather than copied.
-  EXPECT_THAT(stroke.GetShape(), ModeledShapeShallowEq(shape));
+  EXPECT_THAT(stroke.GetShape(), PartitionedMeshShallowEq(shape));
 
   // Modifying the original brush and inputs should not modify the Stroke since
   // it has its own copies.
@@ -171,13 +171,13 @@ TEST(StrokeTest, ConstructFromBrushAndInputsAndShape) {
 
   EXPECT_EQ(stroke.GetBrush().GetSize(), 10u);
   EXPECT_EQ(stroke.GetInputs().Size(), 3u);
-  EXPECT_THAT(stroke.GetShape(), ModeledShapeDeepEq(CreateFilledShape()));
+  EXPECT_THAT(stroke.GetShape(), PartitionedMeshDeepEq(CreateFilledShape()));
 }
 
 TEST(StrokeTest, GetBounds) {
   Brush brush = CreateBrush();
   StrokeInputBatch inputs = CreateFilledInputs();
-  ModeledShape shape = CreateFilledShape();
+  PartitionedMesh shape = CreateFilledShape();
   Stroke stroke(brush, inputs, shape);
 
   EXPECT_THAT(stroke.GetShape().Bounds(),
@@ -238,11 +238,11 @@ TEST(StrokeTest, SetBrushSizeToSameValueDoesNotRegenerateShape) {
   absl::StatusOr<Brush> brush = Brush::Create({}, Color::Red(), 12, 1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
-  ModeledShape shape = stroke.GetShape();
+  PartitionedMesh shape = stroke.GetShape();
 
   // Setting to the same size should not regenerate the shape.
   EXPECT_EQ(absl::OkStatus(), stroke.SetBrushSize(12));
-  EXPECT_THAT(stroke.GetShape(), ModeledShapeShallowEq(shape));
+  EXPECT_THAT(stroke.GetShape(), PartitionedMeshShallowEq(shape));
 }
 
 TEST(StrokeTest, SetBrushEpsilonChangesEpsilonAndShape) {
@@ -250,12 +250,12 @@ TEST(StrokeTest, SetBrushEpsilonChangesEpsilonAndShape) {
   ASSERT_EQ(brush.status(), absl::OkStatus());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   EXPECT_EQ(stroke.GetBrush().GetEpsilon(), 1.25);
-  ModeledShape shape = stroke.GetShape();
+  PartitionedMesh shape = stroke.GetShape();
 
   EXPECT_EQ(absl::OkStatus(), stroke.SetBrushEpsilon(0.5));
   EXPECT_EQ(stroke.GetBrush().GetEpsilon(), 0.5);
-  EXPECT_THAT(stroke.GetShape(), Not(ModeledShapeShallowEq(shape)));
-  EXPECT_THAT(stroke.GetShape(), Not(ModeledShapeDeepEq(shape)));
+  EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshShallowEq(shape)));
+  EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshDeepEq(shape)));
 }
 
 TEST(StrokeTest, SetBrushEpsilonToInvalidValueReturnsError) {
@@ -273,11 +273,11 @@ TEST(StrokeTest, SetBrushEpsilonToSameValueDoesNotRegenerateShape) {
   absl::StatusOr<Brush> brush = Brush::Create({}, Color::Red(), 12, 1.25);
   ASSERT_EQ(brush.status(), absl::OkStatus());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
-  ModeledShape shape = stroke.GetShape();
+  PartitionedMesh shape = stroke.GetShape();
 
   // Setting to the same epsilon should not regenerate the shape.
   EXPECT_EQ(absl::OkStatus(), stroke.SetBrushEpsilon(1.25));
-  EXPECT_THAT(stroke.GetShape(), ModeledShapeShallowEq(shape));
+  EXPECT_THAT(stroke.GetShape(), PartitionedMeshShallowEq(shape));
 }
 
 TEST(StrokeTest, ConstructorBrushOnly) {
@@ -329,13 +329,13 @@ TEST(StrokeTest, ConstructorBrushEmptyStrokeInputBatch) {
 }
 
 TEST(StrokeTest, ConstructorBrushStrokeInputBatchShape) {
-  ModeledShape shape = CreateFilledShape();
+  PartitionedMesh shape = CreateFilledShape();
   StrokeInputBatch inputs = CreateFilledInputs();
   Brush brush = CreateBrush();
 
   Stroke stroke(brush, inputs, shape);
 
-  ModeledShape shape_out = stroke.GetShape();
+  PartitionedMesh shape_out = stroke.GetShape();
   StrokeInputBatch inputs_out = stroke.GetInputs();
   EXPECT_EQ(shape_out.Meshes().size(), 1u);
   ASSERT_EQ(shape_out.RenderGroupCount(), 1u);
@@ -348,10 +348,11 @@ TEST(StrokeTest, ConstructorBrushStrokeInputBatchShape) {
 TEST(StrokeTest, ConstructorBrushEmptyStrokeInputBatchShape) {
   Brush brush = CreateBrush();
 
-  Stroke stroke(brush, StrokeInputBatch(),
-                *ModeledShape::FromMeshGroups({ModeledShape::MeshGroup{}}));
+  Stroke stroke(
+      brush, StrokeInputBatch(),
+      *PartitionedMesh::FromMeshGroups({PartitionedMesh::MeshGroup{}}));
 
-  ModeledShape shape_out = stroke.GetShape();
+  PartitionedMesh shape_out = stroke.GetShape();
   StrokeInputBatch inputs_out = stroke.GetInputs();
   ASSERT_EQ(shape_out.RenderGroupCount(), 1u);
   EXPECT_THAT(shape_out.RenderGroupMeshes(0), IsEmpty());
@@ -446,14 +447,14 @@ TEST(StrokeTest, SetBrushDifferentColor) {
   ASSERT_EQ(absl::OkStatus(), brush.status());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   ASSERT_THAT(stroke.GetBrush(), BrushEq(*brush));
-  ModeledShape shape = stroke.GetShape();
+  PartitionedMesh shape = stroke.GetShape();
 
   // Color change should change the brush but not regenerate the shape.
   auto new_brush = Brush::Create({}, Color::Red(), 12, 1);
   ASSERT_EQ(absl::OkStatus(), new_brush.status());
   stroke.SetBrush(*new_brush);
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*new_brush));
-  EXPECT_THAT(stroke.GetShape(), ModeledShapeShallowEq(shape));
+  EXPECT_THAT(stroke.GetShape(), PartitionedMeshShallowEq(shape));
 }
 
 TEST(StrokeTest, SetBrushDifferentSize) {
@@ -461,7 +462,7 @@ TEST(StrokeTest, SetBrushDifferentSize) {
   ASSERT_EQ(absl::OkStatus(), brush.status());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   ASSERT_THAT(stroke.GetBrush(), BrushEq(*brush));
-  ModeledShape shape = stroke.GetShape();
+  PartitionedMesh shape = stroke.GetShape();
   ASSERT_THAT(stroke.GetShape().Meshes(), SizeIs(1));
   ASSERT_GT(shape.Meshes()[0].VertexCount(), 0u);
 
@@ -470,8 +471,8 @@ TEST(StrokeTest, SetBrushDifferentSize) {
   ASSERT_EQ(absl::OkStatus(), new_brush.status());
   stroke.SetBrush(*new_brush);
   ASSERT_THAT(stroke.GetBrush(), BrushEq(*new_brush));
-  EXPECT_THAT(stroke.GetShape(), Not(ModeledShapeShallowEq(shape)));
-  EXPECT_THAT(stroke.GetShape(), Not(ModeledShapeDeepEq(shape)));
+  EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshShallowEq(shape)));
+  EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshDeepEq(shape)));
 
   ASSERT_THAT(stroke.GetShape().Meshes(), SizeIs(Ge(1)));
   EXPECT_GT(stroke.GetShape().Meshes()[0].VertexCount(), 0u);
@@ -486,15 +487,15 @@ TEST(StrokeTest, SetBrushDifferentEpsilon) {
   ASSERT_EQ(absl::OkStatus(), brush.status());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   ASSERT_THAT(stroke.GetBrush(), BrushEq(*brush));
-  ModeledShape shape = stroke.GetShape();
+  PartitionedMesh shape = stroke.GetShape();
 
   // Changing brush epsilon should change the brush and regenerate the shape.
   auto new_brush = Brush::Create({}, Color::Red(), 12, 0.6);
   ASSERT_EQ(absl::OkStatus(), new_brush.status());
   stroke.SetBrush(*new_brush);
   ASSERT_THAT(stroke.GetBrush(), BrushEq(*new_brush));
-  EXPECT_THAT(stroke.GetShape(), Not(ModeledShapeShallowEq(shape)));
-  EXPECT_THAT(stroke.GetShape(), Not(ModeledShapeDeepEq(shape)));
+  EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshShallowEq(shape)));
+  EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshDeepEq(shape)));
 }
 
 TEST(StrokeTest, SetBrushWithDifferentTipRegeneratesShape) {
@@ -506,7 +507,7 @@ TEST(StrokeTest, SetBrushWithDifferentTipRegeneratesShape) {
   ASSERT_EQ(brush.status(), absl::OkStatus());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*brush));
-  ModeledShape shape = stroke.GetShape();
+  PartitionedMesh shape = stroke.GetShape();
 
   // Changing brush tip should change the brush and regenerate the shape.
   absl::StatusOr<BrushFamily> new_family =
@@ -517,8 +518,8 @@ TEST(StrokeTest, SetBrushWithDifferentTipRegeneratesShape) {
   ASSERT_EQ(new_brush.status(), absl::OkStatus());
   stroke.SetBrush(*new_brush);
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*new_brush));
-  EXPECT_THAT(stroke.GetShape(), Not(ModeledShapeShallowEq(shape)));
-  EXPECT_THAT(stroke.GetShape(), Not(ModeledShapeDeepEq(shape)));
+  EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshShallowEq(shape)));
+  EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshDeepEq(shape)));
 }
 
 TEST(StrokeTest, GetBrushFamily) {
@@ -557,7 +558,7 @@ TEST(StrokeTest, SetBrushFamilyWithDifferentTipRegeneratesShape) {
   ASSERT_EQ(brush.status(), absl::OkStatus());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   EXPECT_THAT(stroke.GetBrushFamily(), BrushFamilyEq(*family));
-  ModeledShape shape = stroke.GetShape();
+  PartitionedMesh shape = stroke.GetShape();
 
   // Changing brush tip should change the brush and regenerate the shape.
   absl::StatusOr<BrushFamily> new_family =
@@ -565,8 +566,8 @@ TEST(StrokeTest, SetBrushFamilyWithDifferentTipRegeneratesShape) {
   ASSERT_EQ(new_family.status(), absl::OkStatus());
   stroke.SetBrushFamily(*new_family);
   EXPECT_THAT(stroke.GetBrushFamily(), BrushFamilyEq(*new_family));
-  EXPECT_THAT(stroke.GetShape(), Not(ModeledShapeShallowEq(shape)));
-  EXPECT_THAT(stroke.GetShape(), Not(ModeledShapeDeepEq(shape)));
+  EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshShallowEq(shape)));
+  EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshDeepEq(shape)));
 }
 
 TEST(StrokeTest, GetInputDurationEmptyStroke) {
@@ -590,7 +591,7 @@ TEST(StrokeDeathTest, ConstructFromMismatchedShapeAndBrush) {
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::White(), 10, 0.1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
   StrokeInputBatch inputs = CreateFilledInputs();
-  ModeledShape shape = CreateFilledShape();
+  PartitionedMesh shape = CreateFilledShape();
 
   EXPECT_EQ(brush->CoatCount(), 2);
   EXPECT_EQ(shape.RenderGroupCount(), 1);
@@ -605,7 +606,7 @@ void CanConstructStrokeFromAnyInputBatch(const Brush& brush,
   EXPECT_THAT(stroke.GetInputs(), StrokeInputBatchEq(batch));
 }
 // TODO(b/299275580): Add fuzz tests for stroke mesh generation. This currently
-// fails, being unable to create a ModeledShape in Stroke::RegenerateShape.
+// fails, being unable to create a PartitionedMesh in Stroke::RegenerateShape.
 FUZZ_TEST(DISABLED_StrokeTest, CanConstructStrokeFromAnyInputBatch)
     .WithDomains(ArbitraryBrush(), ArbitraryStrokeInputBatch());
 

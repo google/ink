@@ -17,7 +17,7 @@
 #include "absl/log/absl_check.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/stroke.h"
@@ -25,7 +25,7 @@
 namespace {
 
 using ::ink::CastToBrush;
-using ::ink::ModeledShape;
+using ::ink::PartitionedMesh;
 using ::ink::Stroke;
 using ::ink::StrokeInputBatch;
 
@@ -53,10 +53,11 @@ JNI_METHOD(strokes, StrokeJni, jlong, createWithBrushAndInputs)
 
 JNI_METHOD(strokes, StrokeJni, jlong, createWithBrushInputsAndShape)
 (JNIEnv* env, jclass clazz, jlong brush_native_pointer,
- jlong inputs_native_pointer, jlong modeled_shape_native_pointer) {
+ jlong inputs_native_pointer, jlong partitioned_mesh_native_pointer) {
   const ink::Brush& brush = CastToBrush(brush_native_pointer);
   auto batch = reinterpret_cast<StrokeInputBatch*>(inputs_native_pointer);
-  auto shape = reinterpret_cast<ModeledShape*>(modeled_shape_native_pointer);
+  auto shape =
+      reinterpret_cast<PartitionedMesh*>(partitioned_mesh_native_pointer);
   return reinterpret_cast<jlong>(new Stroke(brush, *batch, *shape));
 }
 
@@ -74,15 +75,15 @@ JNI_METHOD(strokes, StrokeJni, jlong, allocShallowCopyOfInputs)
 }
 
 // Make a heap-allocated shallow (doesn't replicate all the individual meshes)
-// copy of the `ModeledShape` belonging to this `Stroke`. Return the raw
-// pointer to this copy, so that it can be wrapped by a JVM `ModeledShape`,
+// copy of the `PartitionedMesh` belonging to this `Stroke`. Return the raw
+// pointer to this copy, so that it can be wrapped by a JVM `PartitionedMesh`,
 // which is responsible for freeing the copy when it is garbage collected and
 // finalized.
 JNI_METHOD(strokes, StrokeJni, jlong, allocShallowCopyOfShape)
 (JNIEnv* env, jclass clazz, jlong raw_ptr_to_stroke) {
   const Stroke* stroke = GetStroke(raw_ptr_to_stroke);
-  const ModeledShape& stroke_shape = stroke->GetShape();
-  ModeledShape* shallow_copy = new ModeledShape(stroke_shape);
+  const PartitionedMesh& stroke_shape = stroke->GetShape();
+  PartitionedMesh* shallow_copy = new PartitionedMesh(stroke_shape);
   return reinterpret_cast<jlong>(shallow_copy);
 }
 

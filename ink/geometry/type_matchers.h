@@ -22,7 +22,7 @@
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_packing_types.h"
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
 #include "ink/geometry/rect.h"
@@ -124,22 +124,22 @@ namespace ink {
 // Note that all other `Mesh` properties are derived from these four.
 ::testing::Matcher<Mesh> MeshEq(const Mesh &mesh);
 
-::testing::Matcher<ModeledShape::VertexIndexPair> VertexIndexPairEq(
-    ModeledShape::VertexIndexPair expected);
+::testing::Matcher<PartitionedMesh::VertexIndexPair> VertexIndexPairEq(
+    PartitionedMesh::VertexIndexPair expected);
 
-// Returns a matcher that compares two `ModeledShape`s, which are considered
+// Returns a matcher that compares two `PartitionedMesh`s, which are considered
 // equal iff:
 // - They have the same meshes, compared via `MeshEq`.
 // - They have the same outlines, compared via `OutlineEq`.
-::testing::Matcher<ModeledShape> ModeledShapeDeepEq(
-    const ModeledShape &expected);
+::testing::Matcher<PartitionedMesh> PartitionedMeshDeepEq(
+    const PartitionedMesh &expected);
 
-// Returns a matcher that compares two `ModeledShape`s, which are considered
+// Returns a matcher that compares two `PartitionedMesh`s, which are considered
 // equal iff:
 // - They have the same meshes instances.
 // - They have the same outlines, compared via `OutlineEq`.
-::testing::Matcher<ModeledShape> ModeledShapeShallowEq(
-    const ModeledShape &expected);
+::testing::Matcher<PartitionedMesh> PartitionedMeshShallowEq(
+    const PartitionedMesh &expected);
 
 }  // namespace ink
 

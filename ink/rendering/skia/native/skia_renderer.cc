@@ -37,8 +37,8 @@
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_packing_types.h"
-#include "ink/geometry/modeled_shape.h"
 #include "ink/geometry/mutable_mesh.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/rect.h"
 #include "ink/rendering/skia/native/internal/mesh_drawable.h"
 #include "ink/rendering/skia/native/internal/mesh_uniform_data.h"
@@ -183,7 +183,7 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
 absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     GrDirectContext* context, const Stroke& stroke,
     const AffineTransform& object_to_canvas) {
-  const ModeledShape& stroke_shape = stroke.GetShape();
+  const PartitionedMesh& stroke_shape = stroke.GetShape();
   if (stroke_shape.RenderGroupCount() == 0) {
     return Drawable(object_to_canvas, {});
   }

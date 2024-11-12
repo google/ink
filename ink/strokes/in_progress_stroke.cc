@@ -23,13 +23,14 @@
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/geometry/mesh_format.h"
-#include "ink/geometry/modeled_shape.h"
 #include "ink/geometry/mutable_mesh.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/strokes/input/internal/stroke_input_validation_helpers.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
@@ -240,7 +241,7 @@ Stroke InProgressStroke::CopyToStroke(
                                           StrokeVertex::kMaxAttributeCount>,
                       1>
       omit_attributes(num_coats);
-  absl::InlinedVector<ModeledShape::MutableMeshGroup, 1> mesh_groups;
+  absl::InlinedVector<PartitionedMesh::MutableMeshGroup, 1> mesh_groups;
   mesh_groups.reserve(num_coats);
   absl::InlinedVector<StrokeVertex::CustomPackingArray, 1>
       custom_packing_arrays(num_coats);
@@ -276,15 +277,16 @@ Stroke InProgressStroke::CopyToStroke(
         .packing_params = custom_packing_arrays[coat_index].Values(),
     });
   }
-  absl::StatusOr<ModeledShape> modeled_shape =
-      ModeledShape::FromMutableMeshGroups(mesh_groups);
-  if (modeled_shape.ok()) {
-    return Stroke(*brush, processed_inputs_.MakeDeepCopy(), *modeled_shape);
+  absl::StatusOr<PartitionedMesh> partitioned_mesh =
+      PartitionedMesh::FromMutableMeshGroups(mesh_groups);
+  if (partitioned_mesh.ok()) {
+    return Stroke(*brush, processed_inputs_.MakeDeepCopy(), *partitioned_mesh);
   } else {
-    ABSL_LOG(WARNING) << "Failed to create ModeledShape for InProgressStroke: "
-                      << modeled_shape.status();
+    ABSL_LOG(WARNING)
+        << "Failed to create PartitionedMesh for InProgressStroke: "
+        << partitioned_mesh.status();
     return Stroke(*brush, processed_inputs_.MakeDeepCopy(),
-                  ModeledShape::WithEmptyGroups(brush->CoatCount()));
+                  PartitionedMesh::WithEmptyGroups(brush->CoatCount()));
   }
 }
 

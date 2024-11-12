@@ -21,8 +21,8 @@
 #include "absl/types/span.h"
 #include "ink/color/color.h"
 #include "ink/geometry/mesh.h"
-#include "ink/geometry/modeled_shape.h"
 #include "ink/geometry/mutable_mesh.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkPath.h"
@@ -47,11 +47,11 @@ class PathDrawable {
                absl::Span<const absl::Span<const uint32_t>> index_outlines,
                const Color& color, float opacity_multiplier);
 
-  // Constructs the drawable from one render group of a `ModeledShape`.
+  // Constructs the drawable from one render group of a `PartitionedMesh`.
   //
   // The `opacity multiplier` is combined with the `color` to set the color of
   // the `SkPaint`.
-  PathDrawable(const ModeledShape& shape, uint32_t render_group_index,
+  PathDrawable(const PartitionedMesh& shape, uint32_t render_group_index,
                const Color& color, float opacity_multiplier);
 
   PathDrawable() = default;

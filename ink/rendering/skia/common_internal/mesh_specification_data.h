@@ -134,12 +134,12 @@ struct MeshSpecificationData {
   static absl::StatusOr<MeshSpecificationData> CreateForInProgressStroke(
       const MeshFormat& mesh_format);
 
-  // Returns data for rendering a `ModeledShape` created for a `Stroke`.
+  // Returns data for rendering a `PartitionedMesh` created for a `Stroke`.
   //
   // Unlike the two overloads for `InProgressStroke`, this function accepting a
   // `MeshFormat` is the only way to get specification data for a `Stroke`.
   // This is because a `Stroke` may be constructed with a deserialized
-  // `ModeledShape`, in which case there is no guarantee for the rendering
+  // `PartitionedMesh`, in which case there is no guarantee for the rendering
   // compatibility of the `MeshFormat` it contains.
   //
   // Returns an invalid argument error if `mesh_format` is not supported.

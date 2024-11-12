@@ -19,7 +19,7 @@
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_family.h"
 #include "ink/color/color.h"
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/types/duration.h"
 
@@ -28,7 +28,7 @@ namespace ink {
 // A `Stroke` is combination of a `StrokeInputBatch` that represents a
 // user-drawn (or sometimes synthetic) path, a `Brush` that contains information
 // on how that path should be converted into a geometric shape and rendered on
-// screen, and a `ModeledShape`, which is the geometric shape calculated from
+// screen, and a `PartitionedMesh`, which is the geometric shape calculated from
 // the combination of the `StrokeInputBatch` and the `Brush`.
 //
 // Strokes can be constructed directly from a complete `StrokeInputBatch` or
@@ -56,7 +56,7 @@ class Stroke {
   // This CHECK-fails if `shape` doesn't have exactly one render group per brush
   // coat in `brush`.
   Stroke(const Brush& brush, const StrokeInputBatch& inputs,
-         const ModeledShape& shape);
+         const PartitionedMesh& shape);
 
   Stroke(const Stroke& s) = default;
   Stroke(Stroke&& s) = default;
@@ -66,9 +66,9 @@ class Stroke {
   const Brush& GetBrush() const { return brush_; }
   const BrushFamily& GetBrushFamily() const { return brush_.GetFamily(); }
   const StrokeInputBatch& GetInputs() const { return inputs_; }
-  // Returns the `ModeledShape` for this stroke. This shape will have exactly
+  // Returns the `PartitionedMesh` for this stroke. This shape will have exactly
   // one render group per brush coat in `GetBrush()`.
-  const ModeledShape& GetShape() const { return shape_; }
+  const PartitionedMesh& GetShape() const { return shape_; }
 
   // Returns the total input duration for this stroke.
   Duration32 GetInputDuration() const { return inputs_.GetDuration(); }
@@ -109,12 +109,12 @@ class Stroke {
   void SetInputs(const StrokeInputBatch& inputs);
 
  private:
-  // Regenerates the ModeledShape.
+  // Regenerates the PartitionedMesh.
   void RegenerateShape();
 
   Brush brush_;
   StrokeInputBatch inputs_;
-  ModeledShape shape_;
+  PartitionedMesh shape_;
 };
 
 }  // namespace ink

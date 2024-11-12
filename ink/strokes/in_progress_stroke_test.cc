@@ -803,12 +803,12 @@ TEST(InProgressStrokeTest, CopyToStroke) {
   Stroke another_finished_stroke = stroke.CopyToStroke();
 
   // Another `Stroke` generated with the same inputs should return an
-  // equivalent `ModeledShape`, but not one that shares the same `Mesh`
+  // equivalent `PartitionedMesh`, but not one that shares the same `Mesh`
   // instances.
   EXPECT_THAT(another_finished_stroke.GetShape(),
-              ModeledShapeDeepEq(finished_stroke.GetShape()));
+              PartitionedMeshDeepEq(finished_stroke.GetShape()));
   EXPECT_THAT(another_finished_stroke.GetShape(),
-              Not(ModeledShapeShallowEq(finished_stroke.GetShape())));
+              Not(PartitionedMeshShallowEq(finished_stroke.GetShape())));
 
   // Changing the brush and inputs of the `InProgressStroke` should not affect
   // the results of `CopyToStroke`.

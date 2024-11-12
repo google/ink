@@ -23,8 +23,8 @@
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/mesh_format.h"
-#include "ink/geometry/modeled_shape.h"
 #include "ink/geometry/mutable_mesh.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 
@@ -58,10 +58,10 @@ MutableMesh MakeStraightLineMutableMesh(
   return mesh;
 }
 
-ModeledShape MakeStraightLineModeledShape(
+PartitionedMesh MakeStraightLinePartitionedMesh(
     uint32_t num_triangles, const MeshFormat& format,
     const AffineTransform& vertex_transform) {
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(num_triangles, format, vertex_transform));
   ABSL_CHECK_OK(shape);
   return *std::move(shape);
@@ -89,11 +89,11 @@ MutableMesh MakeCoiledRingMutableMesh(uint32_t n_triangles,
   return mesh;
 }
 
-ModeledShape MakeCoiledRingModeledShape(
+PartitionedMesh MakeCoiledRingPartitionedMesh(
     uint32_t n_triangles, uint32_t n_subdivisions, const MeshFormat& format,
     const AffineTransform& vertex_transform) {
-  absl::StatusOr<ModeledShape> shape =
-      ModeledShape::FromMutableMesh(MakeCoiledRingMutableMesh(
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMutableMesh(MakeCoiledRingMutableMesh(
           n_triangles, n_subdivisions, format, vertex_transform));
   ABSL_CHECK_OK(shape);
   return *std::move(shape);
@@ -115,10 +115,10 @@ MutableMesh MakeStarMutableMesh(uint32_t n_triangles, const MeshFormat& format,
   return mesh;
 }
 
-ModeledShape MakeStarModeledShape(uint32_t n_triangles,
-                                  const MeshFormat& format,
-                                  const AffineTransform& vertex_transform) {
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+PartitionedMesh MakeStarPartitionedMesh(
+    uint32_t n_triangles, const MeshFormat& format,
+    const AffineTransform& vertex_transform) {
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStarMutableMesh(n_triangles, format, vertex_transform));
   ABSL_CHECK_OK(shape);
   return *std::move(shape);

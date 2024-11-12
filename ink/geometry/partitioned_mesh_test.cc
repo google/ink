@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 
 #include <cmath>
 #include <cstdint>
@@ -65,20 +65,20 @@ MATCHER_P(TriangleIndexPairEqMatcher, expected,
                                         expected.mesh_index,
                                         expected.triangle_index))) {
   return ExplainMatchResult(
-      AllOf(Field("mesh_index", &ModeledShape::TriangleIndexPair::mesh_index,
+      AllOf(Field("mesh_index", &PartitionedMesh::TriangleIndexPair::mesh_index,
                   expected.mesh_index),
             Field("triangle_index",
-                  &ModeledShape::TriangleIndexPair::triangle_index,
+                  &PartitionedMesh::TriangleIndexPair::triangle_index,
                   expected.triangle_index)),
       arg, result_listener);
 }
-Matcher<ModeledShape::TriangleIndexPair> TriangleIndexPairEq(
-    ModeledShape::TriangleIndexPair idx_pair) {
+Matcher<PartitionedMesh::TriangleIndexPair> TriangleIndexPairEq(
+    PartitionedMesh::TriangleIndexPair idx_pair) {
   return TriangleIndexPairEqMatcher(idx_pair);
 }
 
-TEST(ModeledShapeTest, DefaultCtor) {
-  ModeledShape shape;
+TEST(PartitionedMeshTest, DefaultCtor) {
+  PartitionedMesh shape;
 
   EXPECT_THAT(shape.Meshes(), IsEmpty());
   EXPECT_EQ(shape.RenderGroupCount(), 0);
@@ -86,8 +86,8 @@ TEST(ModeledShapeTest, DefaultCtor) {
   EXPECT_FALSE(shape.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, WithZeroEmptyGroups) {
-  ModeledShape shape = ModeledShape::WithEmptyGroups(0);
+TEST(PartitionedMeshTest, WithZeroEmptyGroups) {
+  PartitionedMesh shape = PartitionedMesh::WithEmptyGroups(0);
 
   EXPECT_THAT(shape.Meshes(), IsEmpty());
   EXPECT_EQ(shape.RenderGroupCount(), 0);
@@ -95,9 +95,9 @@ TEST(ModeledShapeTest, WithZeroEmptyGroups) {
   EXPECT_FALSE(shape.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, WithThreeEmptyGroups) {
+TEST(PartitionedMeshTest, WithThreeEmptyGroups) {
   uint32_t num_groups = 3;
-  ModeledShape shape = ModeledShape::WithEmptyGroups(num_groups);
+  PartitionedMesh shape = PartitionedMesh::WithEmptyGroups(num_groups);
 
   EXPECT_THAT(shape.Meshes(), IsEmpty());
   EXPECT_TRUE(shape.Bounds().IsEmpty());
@@ -109,7 +109,7 @@ TEST(ModeledShapeTest, WithThreeEmptyGroups) {
   }
 }
 
-TEST(ModeledShapeTest, FromMutableMesh) {
+TEST(PartitionedMeshTest, FromMutableMesh) {
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(100, MakeSinglePackedPositionFormat());
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes = mutable_mesh.AsMeshes();
@@ -117,8 +117,8 @@ TEST(ModeledShapeTest, FromMutableMesh) {
   ASSERT_THAT(*meshes, SizeIs(1));
   const Mesh& mesh = (*meshes)[0];
 
-  absl::StatusOr<ModeledShape> shape =
-      ModeledShape::FromMutableMesh(mutable_mesh);
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMutableMesh(mutable_mesh);
 
   ASSERT_EQ(shape.status(), absl::OkStatus());
   EXPECT_THAT(shape->Meshes(), ElementsAre(MeshEq(mesh)));
@@ -129,7 +129,7 @@ TEST(ModeledShapeTest, FromMutableMesh) {
   EXPECT_EQ(shape->OutlineCount(0), 0);
 }
 
-TEST(ModeledShapeTest, FromMutableMeshWithOutlines) {
+TEST(PartitionedMeshTest, FromMutableMeshWithOutlines) {
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(8, MakeSinglePackedPositionFormat());
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes = mutable_mesh.AsMeshes();
@@ -137,8 +137,8 @@ TEST(ModeledShapeTest, FromMutableMeshWithOutlines) {
   ASSERT_THAT(*meshes, SizeIs(1));
   const Mesh& mesh = (*meshes)[0];
 
-  absl::StatusOr<ModeledShape> shape =
-      ModeledShape::FromMutableMesh(mutable_mesh, {{1, 5, 4, 0}, {5, 9, 8, 4}});
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
+      mutable_mesh, {{1, 5, 4, 0}, {5, 9, 8, 4}});
 
   ASSERT_EQ(shape.status(), absl::OkStatus());
   EXPECT_THAT(shape->Meshes(), ElementsAre(MeshEq(mesh)));
@@ -166,7 +166,7 @@ TEST(ModeledShapeTest, FromMutableMeshWithOutlines) {
   EXPECT_THAT(shape->OutlinePosition(0, 1, 3), PointEq({4, 0}));
 }
 
-TEST(ModeledShapeTest, FromMutableMeshWithPackingParams) {
+TEST(PartitionedMeshTest, FromMutableMeshWithPackingParams) {
   MeshFormat packed_format =
       *MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedIn1Float,
                             MeshFormat::AttributeId::kPosition}},
@@ -177,7 +177,7 @@ TEST(ModeledShapeTest, FromMutableMeshWithPackingParams) {
   ASSERT_EQ(mutable_mesh.TriangleCount(), 2);
   ASSERT_EQ(mutable_mesh.VertexCount(), 4);
 
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       mutable_mesh, {}, {},
       {MeshAttributeCodingParams{
           {{.offset = -10, .scale = 1}, {.offset = -10, .scale = 1}}}});
@@ -196,7 +196,7 @@ TEST(ModeledShapeTest, FromMutableMeshWithPackingParams) {
   EXPECT_THAT(packed_mesh.VertexPosition(3), PointEq({3, -1}));
 }
 
-TEST(ModeledShapeTest, FromMutableMeshThatRequiresPartitioning) {
+TEST(PartitionedMeshTest, FromMutableMeshThatRequiresPartitioning) {
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(1e5, MakeSinglePackedPositionFormat());
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes = mutable_mesh.AsMeshes();
@@ -205,8 +205,8 @@ TEST(ModeledShapeTest, FromMutableMeshThatRequiresPartitioning) {
   const Mesh& mesh0 = (*meshes)[0];
   const Mesh& mesh1 = (*meshes)[1];
 
-  absl::StatusOr<ModeledShape> shape =
-      ModeledShape::FromMutableMesh(mutable_mesh);
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMutableMesh(mutable_mesh);
 
   ASSERT_EQ(shape.status(), absl::OkStatus());
   EXPECT_THAT(shape->Meshes(), ElementsAre(MeshEq(mesh0), MeshEq(mesh1)));
@@ -217,7 +217,7 @@ TEST(ModeledShapeTest, FromMutableMeshThatRequiresPartitioning) {
   EXPECT_EQ(shape->OutlineCount(0), 0);
 }
 
-TEST(ModeledShapeTest, FromMutableMeshThatRequiresPartitioningWithOutlines) {
+TEST(PartitionedMeshTest, FromMutableMeshThatRequiresPartitioningWithOutlines) {
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(1e5, MakeSinglePackedPositionFormat());
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes = mutable_mesh.AsMeshes();
@@ -226,7 +226,7 @@ TEST(ModeledShapeTest, FromMutableMeshThatRequiresPartitioningWithOutlines) {
   const Mesh& mesh0 = (*meshes)[0];
   const Mesh& mesh1 = (*meshes)[1];
 
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       mutable_mesh, {{0, 1, 99999, 99998}, {2, 3, 99997, 99996}});
 
   ASSERT_EQ(shape.status(), absl::OkStatus());
@@ -258,7 +258,7 @@ TEST(ModeledShapeTest, FromMutableMeshThatRequiresPartitioningWithOutlines) {
   EXPECT_THAT(shape->OutlinePosition(0, 1, 3), PointNear({99996, 0}, 24.5));
 }
 
-TEST(ModeledShapeTest, FromMutableMeshOmitAttribute) {
+TEST(PartitionedMeshTest, FromMutableMeshOmitAttribute) {
   absl::StatusOr<MeshFormat> original_format =
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedIn2Floats,
                            MeshFormat::AttributeId::kColorShiftHsl},
@@ -277,7 +277,7 @@ TEST(ModeledShapeTest, FromMutableMeshOmitAttribute) {
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_EQ(expected_format.status(), absl::OkStatus());
 
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       mutable_mesh, {{0, 1, 2}}, {MeshFormat::AttributeId::kColorShiftHsl});
 
   ASSERT_EQ(shape.status(), absl::OkStatus());
@@ -290,48 +290,48 @@ TEST(ModeledShapeTest, FromMutableMeshOmitAttribute) {
   EXPECT_EQ(mesh.GetTriangle(0), (Triangle{{0, 0}, {4, 0}, {0, 3}}));
 }
 
-TEST(ModeledShapeTest, FromMutableMeshEmptyMesh) {
+TEST(PartitionedMeshTest, FromMutableMeshEmptyMesh) {
   MutableMesh mutable_mesh;
 
   absl::Status no_triangles =
-      ModeledShape::FromMutableMesh(mutable_mesh).status();
+      PartitionedMesh::FromMutableMesh(mutable_mesh).status();
   EXPECT_EQ(no_triangles.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(no_triangles.message(), HasSubstr("contains no triangles"));
 }
 
-TEST(ModeledShapeTest, FromMutableMeshPartitioningError) {
+TEST(PartitionedMeshTest, FromMutableMeshPartitioningError) {
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(10, MakeSinglePackedPositionFormat());
   // Non-finite values cause `MutableMesh::AsMeshes` to fail.
   mutable_mesh.SetVertexPosition(0, {std::nanf(""), 0});
 
   absl::Status non_finite_value =
-      ModeledShape::FromMutableMesh(mutable_mesh).status();
+      PartitionedMesh::FromMutableMesh(mutable_mesh).status();
   EXPECT_EQ(non_finite_value.code(), absl::StatusCode::kFailedPrecondition);
   EXPECT_THAT(non_finite_value.message(), HasSubstr("non-finite value"));
 }
 
-TEST(ModeledShapeTest, FromMutableMeshOutlineIsEmpty) {
+TEST(PartitionedMeshTest, FromMutableMeshOutlineIsEmpty) {
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(10, MakeSinglePackedPositionFormat());
 
   absl::Status no_points =
-      ModeledShape::FromMutableMesh(mutable_mesh, {{}}).status();
+      PartitionedMesh::FromMutableMesh(mutable_mesh, {{}}).status();
   EXPECT_EQ(no_points.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(no_points.message(), HasSubstr("contains no points"));
 }
 
-TEST(ModeledShapeTest, FromMutableMeshOutlineRefersToNonExistentVertex) {
+TEST(PartitionedMeshTest, FromMutableMeshOutlineRefersToNonExistentVertex) {
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(8, MakeSinglePackedPositionFormat());
 
   absl::Status missing_vertex =
-      ModeledShape::FromMutableMesh(mutable_mesh, {{10}}).status();
+      PartitionedMesh::FromMutableMesh(mutable_mesh, {{10}}).status();
   EXPECT_EQ(missing_vertex.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(missing_vertex.message(), HasSubstr("non-existent vertex"));
 }
 
-TEST(ModeledShapeTest, FromMeshes) {
+TEST(PartitionedMeshTest, FromMeshes) {
   constexpr int kMeshCount = 3;
   std::vector<Mesh> meshes(kMeshCount);
   for (int i = 0; i < kMeshCount; ++i) {
@@ -344,8 +344,8 @@ TEST(ModeledShapeTest, FromMeshes) {
     meshes[i] = std::move((*partitions)[0]);
   }
 
-  absl::StatusOr<ModeledShape> shape =
-      ModeledShape::FromMeshes(absl::MakeConstSpan(meshes));
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMeshes(absl::MakeConstSpan(meshes));
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   ASSERT_THAT(shape->Meshes(), SizeIs(kMeshCount));
@@ -358,7 +358,7 @@ TEST(ModeledShapeTest, FromMeshes) {
               EnvelopeNear(Rect::FromTwoPoints({0, -1}, {31, 0}), 0.001));
 }
 
-TEST(ModeledShapeTest, FromMeshesWithOutlines) {
+TEST(PartitionedMeshTest, FromMeshesWithOutlines) {
   constexpr int kMeshCount = 3;
   std::vector<Mesh> meshes(kMeshCount);
   for (int i = 0; i < kMeshCount; ++i) {
@@ -371,7 +371,7 @@ TEST(ModeledShapeTest, FromMeshesWithOutlines) {
     meshes[i] = std::move((*partitions)[0]);
   }
 
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMeshes(
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMeshes(
       absl::MakeConstSpan(meshes),
       {{{0, 0}, {1, 5}, {2, 10}}, {{1, 19}, {2, 29}, {0, 9}}});
   ASSERT_EQ(shape.status(), absl::OkStatus());
@@ -397,7 +397,7 @@ TEST(ModeledShapeTest, FromMeshesWithOutlines) {
   EXPECT_THAT(shape->OutlinePosition(0, 1, 2), PointNear({9, -1}, 8e-3));
 }
 
-TEST(ModeledShapeTest, FromMultipleMeshGroupsWithOutlines) {
+TEST(PartitionedMeshTest, FromMultipleMeshGroupsWithOutlines) {
   constexpr int kMeshCount = 3;
   std::vector<Mesh> meshes(kMeshCount);
   for (int i = 0; i < kMeshCount; ++i) {
@@ -410,16 +410,16 @@ TEST(ModeledShapeTest, FromMultipleMeshGroupsWithOutlines) {
     meshes[i] = std::move((*partitions)[0]);
   }
 
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMeshGroups({
-      ModeledShape::MeshGroup{
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMeshGroups({
+      PartitionedMesh::MeshGroup{
           .meshes = absl::MakeConstSpan(&meshes[0], 1),
           .outlines = {{{0, 0}, {0, 9}}},
       },
-      ModeledShape::MeshGroup{
+      PartitionedMesh::MeshGroup{
           .meshes = absl::MakeConstSpan(&meshes[1], 1),
           .outlines = {{{0, 5}, {0, 19}}},
       },
-      ModeledShape::MeshGroup{
+      PartitionedMesh::MeshGroup{
           .meshes = absl::MakeConstSpan(&meshes[2], 1),
           .outlines = {{{0, 10}, {0, 29}}},
       },
@@ -441,8 +441,8 @@ TEST(ModeledShapeTest, FromMultipleMeshGroupsWithOutlines) {
                                                 VertexIndexPairEq({0, 29})));
 }
 
-TEST(ModeledShapeTest, FromMeshesEmptyMeshSpan) {
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMeshes({});
+TEST(PartitionedMeshTest, FromMeshesEmptyMeshSpan) {
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMeshes({});
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   EXPECT_THAT(shape->Meshes(), IsEmpty());
@@ -451,23 +451,23 @@ TEST(ModeledShapeTest, FromMeshesEmptyMeshSpan) {
   EXPECT_TRUE(shape->Bounds().IsEmpty());
 }
 
-TEST(ModeledShapeTest, FromMeshesTooManyMeshes) {
+TEST(PartitionedMeshTest, FromMeshesTooManyMeshes) {
   std::vector<Mesh> too_many_meshes(65536);
   absl::Status has_too_many_meshes =
-      ModeledShape::FromMeshes(absl::MakeSpan(too_many_meshes)).status();
+      PartitionedMesh::FromMeshes(absl::MakeSpan(too_many_meshes)).status();
   EXPECT_EQ(has_too_many_meshes.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(has_too_many_meshes.message(), HasSubstr("Too many meshes"));
 }
 
-TEST(ModeledShapeTest, FromMeshesEmptyMesh) {
+TEST(PartitionedMeshTest, FromMeshesEmptyMesh) {
   Mesh empty;
   absl::Status no_triangles =
-      ModeledShape::FromMeshes(absl::MakeSpan(&empty, 1)).status();
+      PartitionedMesh::FromMeshes(absl::MakeSpan(&empty, 1)).status();
   EXPECT_EQ(no_triangles.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(no_triangles.message(), HasSubstr("contains no triangles"));
 }
 
-TEST(ModeledShapeTest, FromMeshesWithDifferentFormats) {
+TEST(PartitionedMeshTest, FromMeshesWithDifferentFormats) {
   absl::StatusOr<MeshFormat> format_a =
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2Unpacked,
                            MeshFormat::AttributeId::kPosition},
@@ -496,48 +496,48 @@ TEST(ModeledShapeTest, FromMeshesWithDifferentFormats) {
   Mesh meshes[2] = {std::move((*meshes_a)[0]), std::move((*meshes_b)[0])};
 
   absl::Status inconsistent_format =
-      ModeledShape::FromMeshes(absl::MakeSpan(meshes)).status();
+      PartitionedMesh::FromMeshes(absl::MakeSpan(meshes)).status();
   EXPECT_EQ(inconsistent_format.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(inconsistent_format.message(),
               HasSubstr("must have the same format"));
 }
 
-TEST(ModeledShapeTest, FromMeshesEmptyOutline) {
+TEST(PartitionedMeshTest, FromMeshesEmptyOutline) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes =
       MakeStraightLineMutableMesh(20).AsMeshes();
   ASSERT_EQ(meshes.status(), absl::OkStatus());
-  absl::Status no_points =
-      ModeledShape::FromMeshes(absl::MakeSpan(*meshes), {{{0, 1}, {0, 2}}, {}})
-          .status();
+  absl::Status no_points = PartitionedMesh::FromMeshes(absl::MakeSpan(*meshes),
+                                                       {{{0, 1}, {0, 2}}, {}})
+                               .status();
   EXPECT_EQ(no_points.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(no_points.message(), HasSubstr("contains no points"));
 }
 
-TEST(ModeledShapeTest, FromMeshesOutlineRefersToNonExistentMesh) {
+TEST(PartitionedMeshTest, FromMeshesOutlineRefersToNonExistentMesh) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes =
       MakeStraightLineMutableMesh(5).AsMeshes();
   ASSERT_EQ(meshes.status(), absl::OkStatus());
   absl::Status missing_mesh =
-      ModeledShape::FromMeshes(absl::MakeSpan(*meshes),
-                               {{{0, 1}, {1, 2}, {0, 1}, {0, 3}}})
+      PartitionedMesh::FromMeshes(absl::MakeSpan(*meshes),
+                                  {{{0, 1}, {1, 2}, {0, 1}, {0, 3}}})
           .status();
   EXPECT_EQ(missing_mesh.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(missing_mesh.message(), HasSubstr("non-existent mesh"));
 }
 
-TEST(ModeledShapeTest, FromMeshesOutlineRefersToNonExistentVertex) {
+TEST(PartitionedMeshTest, FromMeshesOutlineRefersToNonExistentVertex) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes =
       MakeStraightLineMutableMesh(3).AsMeshes();
   ASSERT_EQ(meshes.status(), absl::OkStatus());
   absl::Status missing_vertex =
-      ModeledShape::FromMeshes(absl::MakeSpan(*meshes),
-                               {{{0, 1}, {0, 2}, {0, 5}, {0, 3}}})
+      PartitionedMesh::FromMeshes(absl::MakeSpan(*meshes),
+                                  {{{0, 1}, {0, 2}, {0, 5}, {0, 3}}})
           .status();
   EXPECT_EQ(missing_vertex.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(missing_vertex.message(), HasSubstr("non-existent vertex"));
 }
 
-TEST(ModeledShapeTest, FromMultipleMutableMeshGroups) {
+TEST(PartitionedMeshTest, FromMultipleMutableMeshGroups) {
   MutableMesh mutable_mesh0 = MakeStraightLineMutableMesh(8);
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes0 =
       mutable_mesh0.AsMeshes();
@@ -556,10 +556,11 @@ TEST(ModeledShapeTest, FromMultipleMutableMeshGroups) {
   // Different render groups can use different mesh formats.
   EXPECT_THAT(mesh0.Format(), Not(MeshFormatEq(mesh1.Format())));
 
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMeshGroups({
-      ModeledShape::MutableMeshGroup{.mesh = &mutable_mesh0},
-      ModeledShape::MutableMeshGroup{.mesh = &mutable_mesh1},
-  });
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMutableMeshGroups({
+          PartitionedMesh::MutableMeshGroup{.mesh = &mutable_mesh0},
+          PartitionedMesh::MutableMeshGroup{.mesh = &mutable_mesh1},
+      });
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   ASSERT_EQ(shape->RenderGroupCount(), 2u);
@@ -573,7 +574,7 @@ TEST(ModeledShapeTest, FromMultipleMutableMeshGroups) {
   EXPECT_FALSE(shape->IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, FromMultipleMeshGroups) {
+TEST(PartitionedMeshTest, FromMultipleMeshGroups) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes0 =
       MakeStraightLineMutableMesh(8).AsMeshes();
   ASSERT_EQ(meshes0.status(), absl::OkStatus());
@@ -590,9 +591,9 @@ TEST(ModeledShapeTest, FromMultipleMeshGroups) {
   // Different render groups can use different mesh formats.
   EXPECT_THAT(mesh0.Format(), Not(MeshFormatEq(mesh1.Format())));
 
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMeshGroups({
-      ModeledShape::MeshGroup{.meshes = *meshes0},
-      ModeledShape::MeshGroup{.meshes = *meshes1},
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMeshGroups({
+      PartitionedMesh::MeshGroup{.meshes = *meshes0},
+      PartitionedMesh::MeshGroup{.meshes = *meshes1},
   });
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
@@ -607,9 +608,9 @@ TEST(ModeledShapeTest, FromMultipleMeshGroups) {
   EXPECT_FALSE(shape->IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, InitializeSpatialIndex) {
-  absl::StatusOr<ModeledShape> shape =
-      ModeledShape::FromMutableMesh(MakeStraightLineMutableMesh(100));
+TEST(PartitionedMeshTest, InitializeSpatialIndex) {
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMutableMesh(MakeStraightLineMutableMesh(100));
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   EXPECT_FALSE(shape->IsSpatialIndexInitialized());
@@ -619,7 +620,7 @@ TEST(ModeledShapeTest, InitializeSpatialIndex) {
   EXPECT_TRUE(shape->IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, InitializeSpatialIndexWithMultipleMeshes) {
+TEST(PartitionedMeshTest, InitializeSpatialIndexWithMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(10).AsMeshes();
   ASSERT_EQ(first_mesh.status(), absl::OkStatus());
@@ -629,8 +630,8 @@ TEST(ModeledShapeTest, InitializeSpatialIndexWithMultipleMeshes) {
   ASSERT_EQ(first_mesh->size(), 1);
   ASSERT_EQ(second_mesh->size(), 1);
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
-  absl::StatusOr<ModeledShape> shape =
-      ModeledShape::FromMeshes(absl::MakeSpan(meshes));
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   EXPECT_FALSE(shape->IsSpatialIndexInitialized());
@@ -640,11 +641,11 @@ TEST(ModeledShapeTest, InitializeSpatialIndexWithMultipleMeshes) {
   EXPECT_TRUE(shape->IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, SpatialIndexIsSharedBetweenCopies) {
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+TEST(PartitionedMeshTest, SpatialIndexIsSharedBetweenCopies) {
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(100, MakeSinglePackedPositionFormat()));
   ASSERT_EQ(shape.status(), absl::OkStatus());
-  ModeledShape copy = *shape;
+  PartitionedMesh copy = *shape;
 
   EXPECT_FALSE(shape->IsSpatialIndexInitialized());
   EXPECT_FALSE(copy.IsSpatialIndexInitialized());
@@ -655,8 +656,8 @@ TEST(ModeledShapeTest, SpatialIndexIsSharedBetweenCopies) {
   EXPECT_TRUE(copy.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, InitializeSpatialIndexIsNoOpForEmptyModeledShape) {
-  ModeledShape shape;
+TEST(PartitionedMeshTest, InitializeSpatialIndexIsNoOpForEmptyPartitionedMesh) {
+  PartitionedMesh shape;
 
   EXPECT_FALSE(shape.IsSpatialIndexInitialized());
 
@@ -668,23 +669,23 @@ TEST(ModeledShapeTest, InitializeSpatialIndexIsNoOpForEmptyModeledShape) {
 // Helper function, visits all intersected triangles and returns them in a
 // vector.
 template <typename QueryType>
-std::vector<ModeledShape::TriangleIndexPair> GetAllIntersectedTriangles(
-    const ModeledShape& shape, const QueryType& query,
+std::vector<PartitionedMesh::TriangleIndexPair> GetAllIntersectedTriangles(
+    const PartitionedMesh& shape, const QueryType& query,
     const AffineTransform query_to_shape = {}) {
-  std::vector<ModeledShape::TriangleIndexPair> tri_index_pairs;
+  std::vector<PartitionedMesh::TriangleIndexPair> tri_index_pairs;
   shape.VisitIntersectedTriangles(
       query,
-      [&tri_index_pairs](ModeledShape::TriangleIndexPair idx) {
+      [&tri_index_pairs](PartitionedMesh::TriangleIndexPair idx) {
         tri_index_pairs.push_back(idx);
-        return ModeledShape::FlowControl::kContinue;
+        return PartitionedMesh::FlowControl::kContinue;
       },
       query_to_shape);
   return tri_index_pairs;
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesPointQuery) {
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesPointQuery) {
   // This mesh will wrap around and partially overlap itself.
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
 
   EXPECT_THAT(GetAllIntersectedTriangles(shape, Point{2, 0}), IsEmpty());
   EXPECT_THAT(GetAllIntersectedTriangles(shape, Point{-.8, .1}),
@@ -701,7 +702,7 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesPointQuery) {
                   TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 3})));
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesPointQueryMultipleMeshes) {
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesPointQueryMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(3).AsMeshes();
   ASSERT_EQ(first_mesh.status(), absl::OkStatus());
@@ -711,8 +712,8 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesPointQueryMultipleMeshes) {
   ASSERT_EQ(first_mesh->size(), 1);
   ASSERT_EQ(second_mesh->size(), 1);
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
-  absl::StatusOr<ModeledShape> shape =
-      ModeledShape::FromMeshes(absl::MakeSpan(meshes));
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   EXPECT_THAT(GetAllIntersectedTriangles(*shape, Point{0, -2}), IsEmpty());
@@ -732,22 +733,22 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesPointQueryMultipleMeshes) {
                   TriangleIndexPairEq({.mesh_index = 1, .triangle_index = 0})));
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesPointQueryEmptyShape) {
-  ModeledShape shape;
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesPointQueryEmptyShape) {
+  PartitionedMesh shape;
 
   EXPECT_THAT(GetAllIntersectedTriangles(shape, Point{0, 0}), IsEmpty());
   // An empty shape never has a spatial index.
   EXPECT_FALSE(shape.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesPointQueryExitEarly) {
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
-  std::vector<ModeledShape::TriangleIndexPair> visited_tris;
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesPointQueryExitEarly) {
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
+  std::vector<PartitionedMesh::TriangleIndexPair> visited_tris;
 
   shape.VisitIntersectedTriangles(
-      Point{.8, .1}, [&visited_tris](ModeledShape::TriangleIndexPair idx) {
+      Point{.8, .1}, [&visited_tris](PartitionedMesh::TriangleIndexPair idx) {
         visited_tris.push_back(idx);
-        return ModeledShape::FlowControl::kBreak;
+        return PartitionedMesh::FlowControl::kBreak;
       });
 
   // The visitor should find one triangle, then stop; but because visitation
@@ -760,23 +761,23 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesPointQueryExitEarly) {
                 TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 12}))));
 }
 
-TEST(ModeledShapeTest,
+TEST(PartitionedMeshTest,
      VisitIntersectedTrianglesPointQueryInitializesTheSpatialIndex) {
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
 
   shape.VisitIntersectedTriangles(Point{0, 0},
-                                  [](ModeledShape::TriangleIndexPair) {
+                                  [](PartitionedMesh::TriangleIndexPair) {
                                     // This doesn't actually need to do
                                     // anything.
-                                    return ModeledShape::FlowControl::kBreak;
+                                    return PartitionedMesh::FlowControl::kBreak;
                                   });
 
   EXPECT_TRUE(shape.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesSegmentQuery) {
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesSegmentQuery) {
   // This mesh will wrap around and partially overlap itself.
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
 
   EXPECT_THAT(GetAllIntersectedTriangles(shape, Segment{{2, 0}, {2, 2}}),
               IsEmpty());
@@ -799,7 +800,7 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesSegmentQuery) {
           TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 3})));
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesSegmentQueryMultipleMeshes) {
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesSegmentQueryMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(3).AsMeshes();
   ASSERT_EQ(first_mesh.status(), absl::OkStatus());
@@ -809,8 +810,8 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesSegmentQueryMultipleMeshes) {
   ASSERT_EQ(first_mesh->size(), 1);
   ASSERT_EQ(second_mesh->size(), 1);
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
-  absl::StatusOr<ModeledShape> shape =
-      ModeledShape::FromMeshes(absl::MakeSpan(meshes));
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   EXPECT_THAT(GetAllIntersectedTriangles(*shape, Segment{{0, -2}, {3, -2}}),
@@ -836,8 +837,8 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesSegmentQueryMultipleMeshes) {
                   TriangleIndexPairEq({.mesh_index = 1, .triangle_index = 3})));
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesSegmentQueryEmptyShape) {
-  ModeledShape shape;
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesSegmentQueryEmptyShape) {
+  PartitionedMesh shape;
 
   EXPECT_THAT(GetAllIntersectedTriangles(shape, Segment{{0, 0}, {1, 1}}),
               IsEmpty());
@@ -845,15 +846,15 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesSegmentQueryEmptyShape) {
   EXPECT_FALSE(shape.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesSegmentQueryExitEarly) {
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
-  std::vector<ModeledShape::TriangleIndexPair> visited_tris;
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesSegmentQueryExitEarly) {
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
+  std::vector<PartitionedMesh::TriangleIndexPair> visited_tris;
 
   shape.VisitIntersectedTriangles(
       Segment{{.8, .1}, {0, 0}},
-      [&visited_tris](ModeledShape::TriangleIndexPair idx) {
+      [&visited_tris](PartitionedMesh::TriangleIndexPair idx) {
         visited_tris.push_back(idx);
-        return ModeledShape::FlowControl::kBreak;
+        return PartitionedMesh::FlowControl::kBreak;
       });
 
   // The visitor should find one triangle, then stop; but because visitation
@@ -866,23 +867,23 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesSegmentQueryExitEarly) {
                 TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 12}))));
 }
 
-TEST(ModeledShapeTest,
+TEST(PartitionedMeshTest,
      VisitIntersectedTrianglesSegmentQueryInitializesTheSpatialIndex) {
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
 
   shape.VisitIntersectedTriangles(Segment{{0, 0}, {1, 1}},
-                                  [](ModeledShape::TriangleIndexPair) {
+                                  [](PartitionedMesh::TriangleIndexPair) {
                                     // This doesn't actually need to do
                                     // anything.
-                                    return ModeledShape::FlowControl::kBreak;
+                                    return PartitionedMesh::FlowControl::kBreak;
                                   });
 
   EXPECT_TRUE(shape.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesTriangleQuery) {
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesTriangleQuery) {
   // This mesh will wrap around and partially overlap itself.
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
 
   EXPECT_THAT(
       GetAllIntersectedTriangles(shape, Triangle{{2, 0}, {2, 2}, {1, 1}}),
@@ -907,7 +908,8 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesTriangleQuery) {
           TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 3})));
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesTriangleQueryMultipleMeshes) {
+TEST(PartitionedMeshTest,
+     VisitIntersectedTrianglesTriangleQueryMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(3).AsMeshes();
   ASSERT_EQ(first_mesh.status(), absl::OkStatus());
@@ -917,8 +919,8 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesTriangleQueryMultipleMeshes) {
   ASSERT_EQ(first_mesh->size(), 1);
   ASSERT_EQ(second_mesh->size(), 1);
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
-  absl::StatusOr<ModeledShape> shape =
-      ModeledShape::FromMeshes(absl::MakeSpan(meshes));
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   EXPECT_THAT(
@@ -948,8 +950,8 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesTriangleQueryMultipleMeshes) {
           TriangleIndexPairEq({.mesh_index = 1, .triangle_index = 3})));
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesTriangleQueryEmptyShape) {
-  ModeledShape shape;
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesTriangleQueryEmptyShape) {
+  PartitionedMesh shape;
 
   EXPECT_THAT(
       GetAllIntersectedTriangles(shape, Triangle{{0, 0}, {1, 1}, {1, 2}}),
@@ -958,15 +960,15 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesTriangleQueryEmptyShape) {
   EXPECT_FALSE(shape.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesTriangleQueryExitEarly) {
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
-  std::vector<ModeledShape::TriangleIndexPair> visited_tris;
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesTriangleQueryExitEarly) {
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
+  std::vector<PartitionedMesh::TriangleIndexPair> visited_tris;
 
   shape.VisitIntersectedTriangles(
       Triangle{{.8, .1}, {0, 0}, {0, .1}},
-      [&visited_tris](ModeledShape::TriangleIndexPair idx) {
+      [&visited_tris](PartitionedMesh::TriangleIndexPair idx) {
         visited_tris.push_back(idx);
-        return ModeledShape::FlowControl::kBreak;
+        return PartitionedMesh::FlowControl::kBreak;
       });
 
   // The visitor should find one triangle, then stop; but because visitation
@@ -979,23 +981,23 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesTriangleQueryExitEarly) {
                 TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 12}))));
 }
 
-TEST(ModeledShapeTest,
+TEST(PartitionedMeshTest,
      VisitIntersectedTrianglesTriangleQueryInitializesTheSpatialIndex) {
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
 
   shape.VisitIntersectedTriangles(Triangle{{0, 0}, {1, 1}, {1, 2}},
-                                  [](ModeledShape::TriangleIndexPair) {
+                                  [](PartitionedMesh::TriangleIndexPair) {
                                     // This doesn't actually need to do
                                     // anything.
-                                    return ModeledShape::FlowControl::kBreak;
+                                    return PartitionedMesh::FlowControl::kBreak;
                                   });
 
   EXPECT_TRUE(shape.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesRectQuery) {
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesRectQuery) {
   // This mesh will wrap around and partially overlap itself.
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
 
   EXPECT_THAT(GetAllIntersectedTriangles(
                   shape, Rect::FromCenterAndDimensions({2, 0}, .5, .5)),
@@ -1020,10 +1022,10 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesRectQuery) {
           TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 3})));
 }
 
-TEST(ModeledShapeTest,
+TEST(PartitionedMeshTest,
      VisitIntersectedTrianglesRectQueryHandlesNonAxisAlignedTransforms) {
   // This mesh will wrap around and partially overlap itself.
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
 
   // This `Rect` does not intersect the mesh when transformed, even the bounding
   // box of the transformed `Rect` would intersect the mesh.
@@ -1034,7 +1036,7 @@ TEST(ModeledShapeTest,
       IsEmpty());
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesRectQueryMultipleMeshes) {
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesRectQueryMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(3).AsMeshes();
   ASSERT_EQ(first_mesh.status(), absl::OkStatus());
@@ -1044,8 +1046,8 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesRectQueryMultipleMeshes) {
   ASSERT_EQ(first_mesh->size(), 1);
   ASSERT_EQ(second_mesh->size(), 1);
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
-  absl::StatusOr<ModeledShape> shape =
-      ModeledShape::FromMeshes(absl::MakeSpan(meshes));
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   EXPECT_THAT(
@@ -1075,8 +1077,8 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesRectQueryMultipleMeshes) {
                   TriangleIndexPairEq({.mesh_index = 1, .triangle_index = 3})));
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesRectQueryEmptyShape) {
-  ModeledShape shape;
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesRectQueryEmptyShape) {
+  PartitionedMesh shape;
 
   EXPECT_THAT(GetAllIntersectedTriangles(
                   shape, Rect::FromCenterAndDimensions({0, 0}, 1, 1)),
@@ -1085,15 +1087,15 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesRectQueryEmptyShape) {
   EXPECT_FALSE(shape.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesRectQueryExitEarly) {
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
-  std::vector<ModeledShape::TriangleIndexPair> visited_tris;
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesRectQueryExitEarly) {
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
+  std::vector<PartitionedMesh::TriangleIndexPair> visited_tris;
 
   shape.VisitIntersectedTriangles(
       Rect::FromTwoPoints({.8, .1}, {.05, .05}),
-      [&visited_tris](ModeledShape::TriangleIndexPair idx) {
+      [&visited_tris](PartitionedMesh::TriangleIndexPair idx) {
         visited_tris.push_back(idx);
-        return ModeledShape::FlowControl::kBreak;
+        return PartitionedMesh::FlowControl::kBreak;
       });
 
   // The visitor should find one triangle, then stop; but because visitation
@@ -1106,23 +1108,23 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesRectQueryExitEarly) {
                 TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 12}))));
 }
 
-TEST(ModeledShapeTest,
+TEST(PartitionedMeshTest,
      VisitIntersectedTrianglesRectQueryInitializesTheSpatialIndex) {
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
 
   shape.VisitIntersectedTriangles(Rect::FromTwoPoints({0, 0}, {1, 1}),
-                                  [](ModeledShape::TriangleIndexPair) {
+                                  [](PartitionedMesh::TriangleIndexPair) {
                                     // This doesn't actually need to do
                                     // anything.
-                                    return ModeledShape::FlowControl::kBreak;
+                                    return PartitionedMesh::FlowControl::kBreak;
                                   });
 
   EXPECT_TRUE(shape.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesQuadQuery) {
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesQuadQuery) {
   // This mesh will wrap around and partially overlap itself.
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
 
   EXPECT_THAT(GetAllIntersectedTriangles(
                   shape, Quad::FromCenterAndDimensions({2, 0}, .5, .5)),
@@ -1150,7 +1152,7 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesQuadQuery) {
                   TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 3})));
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesQuadQueryMultipleMeshes) {
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesQuadQueryMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(3).AsMeshes();
   ASSERT_EQ(first_mesh.status(), absl::OkStatus());
@@ -1160,8 +1162,8 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesQuadQueryMultipleMeshes) {
   ASSERT_EQ(first_mesh->size(), 1);
   ASSERT_EQ(second_mesh->size(), 1);
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
-  absl::StatusOr<ModeledShape> shape =
-      ModeledShape::FromMeshes(absl::MakeSpan(meshes));
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   EXPECT_THAT(GetAllIntersectedTriangles(
@@ -1194,8 +1196,8 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesQuadQueryMultipleMeshes) {
           TriangleIndexPairEq({.mesh_index = 1, .triangle_index = 3})));
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesQuadQueryEmptyShape) {
-  ModeledShape shape;
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesQuadQueryEmptyShape) {
+  PartitionedMesh shape;
 
   EXPECT_THAT(GetAllIntersectedTriangles(
                   shape, Quad::FromCenterAndDimensions({0, 0}, 1, 1)),
@@ -1204,15 +1206,15 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesQuadQueryEmptyShape) {
   EXPECT_FALSE(shape.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesQuadQueryExitEarly) {
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
-  std::vector<ModeledShape::TriangleIndexPair> visited_tris;
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesQuadQueryExitEarly) {
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
+  std::vector<PartitionedMesh::TriangleIndexPair> visited_tris;
 
   shape.VisitIntersectedTriangles(
       Quad::FromCenterAndDimensions({.8, .1}, .01, .01),
-      [&visited_tris](ModeledShape::TriangleIndexPair idx) {
+      [&visited_tris](PartitionedMesh::TriangleIndexPair idx) {
         visited_tris.push_back(idx);
-        return ModeledShape::FlowControl::kBreak;
+        return PartitionedMesh::FlowControl::kBreak;
       });
 
   // The visitor should find one triangle, then stop; but because visitation
@@ -1225,21 +1227,21 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesQuadQueryExitEarly) {
                 TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 12}))));
 }
 
-TEST(ModeledShapeTest,
+TEST(PartitionedMeshTest,
      VisitIntersectedTrianglesQuadQueryInitializesTheSpatialIndex) {
-  ModeledShape shape = MakeCoiledRingModeledShape(14, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(14, 6);
 
   shape.VisitIntersectedTriangles(Quad::FromCenterAndDimensions({0, 0}, 10, 10),
-                                  [](ModeledShape::TriangleIndexPair) {
+                                  [](PartitionedMesh::TriangleIndexPair) {
                                     // This doesn't actually need to do
                                     // anything.
-                                    return ModeledShape::FlowControl::kBreak;
+                                    return PartitionedMesh::FlowControl::kBreak;
                                   });
 
   EXPECT_TRUE(shape.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesModeledShapeQuery) {
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesPartitionedMeshQuery) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(3).AsMeshes();
   ASSERT_EQ(first_mesh.status(), absl::OkStatus());
@@ -1249,10 +1251,10 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesModeledShapeQuery) {
   ASSERT_EQ(first_mesh->size(), 1);
   ASSERT_EQ(second_mesh->size(), 1);
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
-  absl::StatusOr<ModeledShape> star_and_line =
-      ModeledShape::FromMeshes(absl::MakeSpan(meshes));
+  absl::StatusOr<PartitionedMesh> star_and_line =
+      PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
   ASSERT_EQ(star_and_line.status(), absl::OkStatus());
-  ModeledShape ring = MakeCoiledRingModeledShape(14, 6);
+  PartitionedMesh ring = MakeCoiledRingPartitionedMesh(14, 6);
 
   EXPECT_THAT(
       GetAllIntersectedTriangles(ring, *star_and_line),
@@ -1291,24 +1293,26 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesModeledShapeQuery) {
                   TriangleIndexPairEq({.mesh_index = 1, .triangle_index = 1})));
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesModeledShapeQueryEmptyShape) {
-  ModeledShape empty;
-  ModeledShape ring = MakeCoiledRingModeledShape(14, 6);
+TEST(PartitionedMeshTest,
+     VisitIntersectedTrianglesPartitionedMeshQueryEmptyShape) {
+  PartitionedMesh empty;
+  PartitionedMesh ring = MakeCoiledRingPartitionedMesh(14, 6);
 
   EXPECT_THAT(GetAllIntersectedTriangles(ring, empty), IsEmpty());
   EXPECT_THAT(GetAllIntersectedTriangles(empty, ring), IsEmpty());
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesModeledShapeQueryExitEarly) {
-  ModeledShape star = MakeStarModeledShape(4);
-  ModeledShape line = MakeStraightLineModeledShape(3);
-  std::vector<ModeledShape::TriangleIndexPair> visited_tris;
+TEST(PartitionedMeshTest,
+     VisitIntersectedTrianglesPartitionedMeshQueryExitEarly) {
+  PartitionedMesh star = MakeStarPartitionedMesh(4);
+  PartitionedMesh line = MakeStraightLinePartitionedMesh(3);
+  std::vector<PartitionedMesh::TriangleIndexPair> visited_tris;
 
   star.VisitIntersectedTriangles(
       line,
-      [&visited_tris](ModeledShape::TriangleIndexPair idx) {
+      [&visited_tris](PartitionedMesh::TriangleIndexPair idx) {
         visited_tris.push_back(idx);
-        return ModeledShape::FlowControl::kBreak;
+        return PartitionedMesh::FlowControl::kBreak;
       },
       AffineTransform::Translate({-2, 1.5}));
 
@@ -1322,24 +1326,24 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesModeledShapeQueryExitEarly) {
                 TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 1}))));
 }
 
-TEST(ModeledShapeTest,
-     VisitIntersectedTrianglesModeledShapeQueryInitializesTheSpatialIndex) {
-  ModeledShape star = MakeStarModeledShape(4);
-  ModeledShape line = MakeStraightLineModeledShape(3);
+TEST(PartitionedMeshTest,
+     VisitIntersectedTrianglesPartitionedMeshQueryInitializesTheSpatialIndex) {
+  PartitionedMesh star = MakeStarPartitionedMesh(4);
+  PartitionedMesh line = MakeStraightLinePartitionedMesh(3);
 
-  line.VisitIntersectedTriangles(star, [](ModeledShape::TriangleIndexPair) {
+  line.VisitIntersectedTriangles(star, [](PartitionedMesh::TriangleIndexPair) {
     // This doesn't actually need to do anything.
-    return ModeledShape::FlowControl::kBreak;
+    return PartitionedMesh::FlowControl::kBreak;
   });
 
   EXPECT_TRUE(line.IsSpatialIndexInitialized());
   EXPECT_TRUE(star.IsSpatialIndexInitialized());
 }
 
-TEST(ModeledShapeTest,
-     VisitIntersectedTrianglesModeledShapeQueryNonInvertibleTransformToPoint) {
-  ModeledShape star = MakeStarModeledShape(6);
-  ModeledShape line = MakeStraightLineModeledShape(3);
+TEST(PartitionedMeshTest,
+     VisitIntersectedTrianglesWithNonInvertibleTransformToPoint) {
+  PartitionedMesh star = MakeStarPartitionedMesh(6);
+  PartitionedMesh line = MakeStraightLinePartitionedMesh(3);
 
   // This transform collapses the query to the point (-1, 2);
   EXPECT_THAT(GetAllIntersectedTriangles(line, star,
@@ -1352,11 +1356,10 @@ TEST(ModeledShapeTest,
                   TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 1})));
 }
 
-TEST(
-    ModeledShapeTest,
-    VisitIntersectedTrianglesModeledShapeQueryNonInvertibleTransformToSegment) {
-  ModeledShape star = MakeStarModeledShape(6);
-  ModeledShape line = MakeStraightLineModeledShape(3);
+TEST(PartitionedMeshTest,
+     VisitIntersectedTrianglesWithNonInvertibleTransformToSegment) {
+  PartitionedMesh star = MakeStarPartitionedMesh(6);
+  PartitionedMesh line = MakeStraightLinePartitionedMesh(3);
 
   // This transform collapses the query to the segment from (1.634, -0.683) to
   // (4.366, 0.683).
@@ -1378,12 +1381,12 @@ TEST(
                   TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 0})));
 }
 
-TEST(ModeledShapeTest, VisitIntersectedTrianglesWithReentrantVisitor) {
-  ModeledShape shape = MakeStraightLineModeledShape(3);
+TEST(PartitionedMeshTest, VisitIntersectedTrianglesWithReentrantVisitor) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(3);
   Rect query = Rect::FromTwoPoints({3, -2}, {6, 2});
-  auto visitor = [&shape, &query](ModeledShape::TriangleIndexPair idx) {
+  auto visitor = [&shape, &query](PartitionedMesh::TriangleIndexPair idx) {
     GetAllIntersectedTriangles(shape, query);
-    return ModeledShape::FlowControl::kContinue;
+    return PartitionedMesh::FlowControl::kContinue;
   };
 
   // We don't actually care about the results here; we just want to validate
@@ -1391,8 +1394,8 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesWithReentrantVisitor) {
   shape.VisitIntersectedTriangles(query, visitor);
 }
 
-// Returns a `ModeledShape` with four triangles in a row along the x-axis, each
-// with a base of one unit, and with heights of 1, 2, 3, and 4 units. Each
+// Returns a `PartitionedMesh` with four triangles in a row along the x-axis,
+// each with a base of one unit, and with heights of 1, 2, 3, and 4 units. Each
 // triangle has a different area (to facilitate testing `Coverage` and
 // `CoverageIsGreaterThan`), and are 10%, 20%, 30%, and 40% of the total area of
 // the shape, respectively.
@@ -1402,7 +1405,7 @@ TEST(ModeledShapeTest, VisitIntersectedTrianglesWithReentrantVisitor) {
 //     4
 //   2
 // 0 1 3 5 7
-ModeledShape MakeRisingSawtoothShape() {
+PartitionedMesh MakeRisingSawtoothShape() {
   MutableMesh mesh;
   mesh.AppendVertex({0, 0});
   mesh.AppendVertex({1, 0});
@@ -1418,19 +1421,20 @@ ModeledShape MakeRisingSawtoothShape() {
   mesh.AppendTriangleIndices({3, 5, 6});
   mesh.AppendTriangleIndices({5, 7, 8});
 
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(mesh);
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMutableMesh(mesh);
   ABSL_CHECK_OK(shape);
   return *shape;
 }
 
-TEST(ModeledShapeTest, CoverageWithTriangleMissesShape) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithTriangleMissesShape) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
 
   EXPECT_FLOAT_EQ(shape.Coverage(Triangle{{-1, 0}, {-2, 1}, {-5, 3}}), 0);
 }
 
-TEST(ModeledShapeTest, CoverageWithTriangleSingleTriangle) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithTriangleSingleTriangle) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
 
   EXPECT_FLOAT_EQ(shape.Coverage(Triangle{{0.5, 0}, {0.5, 5}, {0.6, 2}}), 0.1);
   EXPECT_FLOAT_EQ(shape.Coverage(Triangle{{1.5, 0}, {1.5, 5}, {1.6, 2}}), 0.2);
@@ -1438,27 +1442,27 @@ TEST(ModeledShapeTest, CoverageWithTriangleSingleTriangle) {
   EXPECT_FLOAT_EQ(shape.Coverage(Triangle{{3.5, 0}, {3.5, 5}, {3.6, 2}}), 0.4);
 }
 
-TEST(ModeledShapeTest, CoverageWithTriangleMultipleTriangles) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithTriangleMultipleTriangles) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
 
   EXPECT_FLOAT_EQ(shape.Coverage(Triangle{{0.5, 0}, {1.5, 0}, {1, 1}}), 0.3);
   EXPECT_FLOAT_EQ(shape.Coverage(Triangle{{1.5, 0}, {2.5, 0}, {2, 1}}), 0.5);
   EXPECT_FLOAT_EQ(shape.Coverage(Triangle{{2.5, 0}, {3.5, 0}, {3, 1}}), 0.7);
 }
 
-TEST(ModeledShapeTest, CoverageWithTriangleOverlappingTriangles) {
+TEST(PartitionedMeshTest, CoverageWithTriangleOverlappingTriangles) {
   // This shape has 16 triangles, half of which have area of 0.0812 unit^2 and
   // the other half of which have area of 0.1083 unit^2, and a total area of
   // 1.5155 unit^2.
-  ModeledShape shape = MakeCoiledRingModeledShape(16, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(16, 6);
 
   // This point hits two overlapping triangles each of area 0.0812 unit^2.
   EXPECT_THAT(shape.Coverage(Triangle{{0, 0}, {0.6, 0.3}, {0, 0.1}}),
               FloatNear(0.1071, 1e-4));
 }
 
-TEST(ModeledShapeTest, CoverageWithTriangleWithTransform) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithTriangleWithTransform) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
 
   EXPECT_FLOAT_EQ(shape.Coverage(Triangle{{0.5, 0}, {0.5, 1}, {0.6, 1}},
                                  AffineTransform::Translate({3, 0})),
@@ -1468,15 +1472,15 @@ TEST(ModeledShapeTest, CoverageWithTriangleWithTransform) {
                   0);
 }
 
-TEST(ModeledShapeTest, CoverageWithRectMissesShape) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithRectMissesShape) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
 
   EXPECT_FLOAT_EQ(shape.Coverage(Rect::FromCenterAndDimensions({10, 10}, 1, 1)),
                   0);
 }
 
-TEST(ModeledShapeTest, CoverageWithRectSingleTriangle) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithRectSingleTriangle) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
 
   EXPECT_FLOAT_EQ(
       shape.Coverage(Rect::FromCenterAndDimensions({0.5, 0.5}, 0.1, 0.1)), 0.1);
@@ -1488,8 +1492,8 @@ TEST(ModeledShapeTest, CoverageWithRectSingleTriangle) {
       shape.Coverage(Rect::FromCenterAndDimensions({3.5, 0.5}, 0.1, 0.1)), 0.4);
 }
 
-TEST(ModeledShapeTest, CoverageWithRectMultipleTriangles) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithRectMultipleTriangles) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
 
   EXPECT_FLOAT_EQ(shape.Coverage(Rect::FromCenterAndDimensions({1, 0}, 1, 1)),
                   0.3);
@@ -1499,19 +1503,19 @@ TEST(ModeledShapeTest, CoverageWithRectMultipleTriangles) {
                   0.7);
 }
 
-TEST(ModeledShapeTest, CoverageWithRectOverlappingTriangles) {
+TEST(PartitionedMeshTest, CoverageWithRectOverlappingTriangles) {
   // This shape has 16 triangles, half of which have area of 0.0812 unit^2 and
   // the other half of which have area of 0.1083 unit^2, and a total area of
   // 1.5155 unit^2.
-  ModeledShape shape = MakeCoiledRingModeledShape(16, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(16, 6);
 
   // This point hits two overlapping triangles each of area 0.0812 unit^2.
   EXPECT_THAT(shape.Coverage(Rect::FromTwoPoints({0, 0}, {0.6, 0.3})),
               FloatNear(0.1071, 1e-4));
 }
 
-TEST(ModeledShapeTest, CoverageWithRectWithTransform) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithRectWithTransform) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
 
   EXPECT_FLOAT_EQ(
       shape.Coverage(Rect::FromCenterAndDimensions({0.5, 0}, 0.1, 0.1),
@@ -1523,15 +1527,15 @@ TEST(ModeledShapeTest, CoverageWithRectWithTransform) {
       0);
 }
 
-TEST(ModeledShapeTest, CoverageWithQuadMissesShape) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithQuadMissesShape) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
 
   EXPECT_FLOAT_EQ(shape.Coverage(Quad::FromCenterAndDimensions({10, 10}, 1, 1)),
                   0);
 }
 
-TEST(ModeledShapeTest, CoverageWithQuadSingleTriangle) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithQuadSingleTriangle) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
 
   EXPECT_FLOAT_EQ(
       shape.Coverage(Quad::FromCenterAndDimensions({0.5, 0.5}, 0.1, 0.1)), 0.1);
@@ -1543,8 +1547,8 @@ TEST(ModeledShapeTest, CoverageWithQuadSingleTriangle) {
       shape.Coverage(Quad::FromCenterAndDimensions({3.5, 0.5}, 0.1, 0.1)), 0.4);
 }
 
-TEST(ModeledShapeTest, CoverageWithQuadMultipleTriangles) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithQuadMultipleTriangles) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
 
   EXPECT_FLOAT_EQ(shape.Coverage(Quad::FromCenterAndDimensions({1, 0}, 1, 1)),
                   0.3);
@@ -1554,19 +1558,19 @@ TEST(ModeledShapeTest, CoverageWithQuadMultipleTriangles) {
                   0.7);
 }
 
-TEST(ModeledShapeTest, CoverageWithQuadOverlappingTriangles) {
+TEST(PartitionedMeshTest, CoverageWithQuadOverlappingTriangles) {
   // This shape has 16 triangles, half of which have area of 0.0812 unit^2 and
   // the other half of which have area of 0.1083 unit^2, and a total area of
   // 1.5155 unit^2.
-  ModeledShape shape = MakeCoiledRingModeledShape(16, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(16, 6);
 
   // This point hits two overlapping triangles each of area 0.0812 unit^2.
   EXPECT_THAT(shape.Coverage(Quad::FromCenterAndDimensions({0.6, 0.3}, .1, .1)),
               FloatNear(0.1071, 1e-4));
 }
 
-TEST(ModeledShapeTest, CoverageWithQuadWithTransform) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithQuadWithTransform) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
 
   EXPECT_FLOAT_EQ(
       shape.Coverage(Quad::FromCenterAndDimensions({0.5, 0}, 0.1, 0.1),
@@ -1578,52 +1582,52 @@ TEST(ModeledShapeTest, CoverageWithQuadWithTransform) {
       0);
 }
 
-TEST(ModeledShapeTest, CoverageWithModeledShapeMissesShape) {
-  ModeledShape target_shape = MakeRisingSawtoothShape();
-  ModeledShape query_shape =
-      MakeStraightLineModeledShape(3, {}, AffineTransform::Translate({10, 10}));
+TEST(PartitionedMeshTest, CoverageWithPartitionedMeshMissesShape) {
+  PartitionedMesh target_shape = MakeRisingSawtoothShape();
+  PartitionedMesh query_shape = MakeStraightLinePartitionedMesh(
+      3, {}, AffineTransform::Translate({10, 10}));
 
   EXPECT_FLOAT_EQ(target_shape.Coverage(query_shape), 0);
 }
 
-TEST(ModeledShapeTest, CoverageWithModeledShapeSingleTriangle) {
-  ModeledShape target_shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithPartitionedMeshSingleTriangle) {
+  PartitionedMesh target_shape = MakeRisingSawtoothShape();
   // This makes a ring with radius 0.1 centered at (0.5, 0).
-  ModeledShape query_shape = MakeCoiledRingModeledShape(
+  PartitionedMesh query_shape = MakeCoiledRingPartitionedMesh(
       12, 6, {},
       AffineTransform::Translate({0.5, 0}) * AffineTransform::Scale(0.1));
 
   EXPECT_FLOAT_EQ(target_shape.Coverage(query_shape), 0.1);
 }
 
-TEST(ModeledShapeTest, CoverageWithModeledShapeMultipleTriangles) {
-  ModeledShape target_shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageWithPartitionedMeshMultipleTriangles) {
+  PartitionedMesh target_shape = MakeRisingSawtoothShape();
   // This makes a ring with radius 0.1 centered at (1, 0).
-  ModeledShape query_shape = MakeCoiledRingModeledShape(
+  PartitionedMesh query_shape = MakeCoiledRingPartitionedMesh(
       12, 6, {},
       AffineTransform::Translate({1, 0}) * AffineTransform::Scale(0.1));
 
   EXPECT_FLOAT_EQ(target_shape.Coverage(query_shape), 0.3);
 }
 
-TEST(ModeledShapeTest, CoverageWithModeledShapeOverlappingTriangles) {
+TEST(PartitionedMeshTest, CoverageWithPartitionedMeshOverlappingTriangles) {
   // This shape has 16 triangles, half of which have area of 0.0812 unit^2 and
   // the other half of which have area of 0.1083 unit^2, and a total area of
   // 1.5155 unit^2.
-  ModeledShape target_shape = MakeCoiledRingModeledShape(16, 6);
+  PartitionedMesh target_shape = MakeCoiledRingPartitionedMesh(16, 6);
   // This makes a ring with radius 0.05 centered at (0.6, 0.3), which hits two
   // overlapping triangles in `target_shape`, each of which has area 0.0812
   // unit^2.
-  ModeledShape query_shape = MakeCoiledRingModeledShape(
+  PartitionedMesh query_shape = MakeCoiledRingPartitionedMesh(
       12, 6, {},
       AffineTransform::Translate({0.6, 0.3}) * AffineTransform::Scale(0.05));
 
   EXPECT_THAT(target_shape.Coverage(query_shape), FloatNear(0.1071, 1e-4));
 }
 
-TEST(ModeledShapeTest, CoverageWithModeledShapeWithTransform) {
-  ModeledShape target_shape = MakeRisingSawtoothShape();
-  ModeledShape query_shape = MakeStraightLineModeledShape(3);
+TEST(PartitionedMeshTest, CoverageWithPartitionedMeshWithTransform) {
+  PartitionedMesh target_shape = MakeRisingSawtoothShape();
+  PartitionedMesh query_shape = MakeStraightLinePartitionedMesh(3);
 
   EXPECT_FLOAT_EQ(
       target_shape.Coverage(query_shape, AffineTransform::Translate({0, 1})),
@@ -1633,16 +1637,16 @@ TEST(ModeledShapeTest, CoverageWithModeledShapeWithTransform) {
       0);
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithTriangleMissesShape) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageIsGreaterThanWithTriangleMissesShape) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
   Triangle query{{-5, 5}, {-10, 10}, {-10, 0}};
 
   EXPECT_FLOAT_EQ(shape.Coverage(query), 0);
   EXPECT_FALSE(shape.CoverageIsGreaterThan(query, 0));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithTriangleSingleTriangle) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageIsGreaterThanWithTriangleSingleTriangle) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
   Triangle query{{1.5, 0}, {1.5, -1}, {1.6, 0.5}};
 
   EXPECT_FLOAT_EQ(shape.Coverage(query), 0.2);
@@ -1650,11 +1654,12 @@ TEST(ModeledShapeTest, CoverageIsGreaterThanWithTriangleSingleTriangle) {
   EXPECT_FALSE(shape.CoverageIsGreaterThan(query, 0.21));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithTriangleOverlappingTriangles) {
+TEST(PartitionedMeshTest,
+     CoverageIsGreaterThanWithTriangleOverlappingTriangles) {
   // This shape has 16 triangles, half of which have area of 0.0812 unit^2 and
   // the other half of which have area of 0.1083 unit^2, and a total area of
   // 1.5155 unit^2.
-  ModeledShape shape = MakeCoiledRingModeledShape(16, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(16, 6);
   // This query hits two overlapping triangles each of area 0.0812 unit^2.
   Triangle query{{0.6, 0.3}, {0, 0}, {0, 0.1}};
 
@@ -1663,8 +1668,8 @@ TEST(ModeledShapeTest, CoverageIsGreaterThanWithTriangleOverlappingTriangles) {
   EXPECT_FALSE(shape.CoverageIsGreaterThan(query, 0.11));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithTriangleWithTransform) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageIsGreaterThanWithTriangleWithTransform) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
   Triangle query{{0.5, 0}, {0.5, 5}, {0.6, 2}};
   AffineTransform transform = AffineTransform::Translate({3, 0});
 
@@ -1673,16 +1678,16 @@ TEST(ModeledShapeTest, CoverageIsGreaterThanWithTriangleWithTransform) {
   EXPECT_FALSE(shape.CoverageIsGreaterThan(query, 0.41, transform));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithRectMissesShape) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageIsGreaterThanWithRectMissesShape) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
   Rect query = Rect::FromCenterAndDimensions({-10, 10}, 5, 5);
 
   EXPECT_FLOAT_EQ(shape.Coverage(query), 0);
   EXPECT_FALSE(shape.CoverageIsGreaterThan(query, 0));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithRectSingleTriangle) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageIsGreaterThanWithRectSingleTriangle) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
   Rect query = Rect::FromCenterAndDimensions({1.5, 0.5}, 0.2, 0.2);
 
   EXPECT_FLOAT_EQ(shape.Coverage(query), 0.2);
@@ -1690,11 +1695,11 @@ TEST(ModeledShapeTest, CoverageIsGreaterThanWithRectSingleTriangle) {
   EXPECT_FALSE(shape.CoverageIsGreaterThan(query, 0.21));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithRectOverlappingTriangles) {
+TEST(PartitionedMeshTest, CoverageIsGreaterThanWithRectOverlappingTriangles) {
   // This shape has 16 triangles, half of which have area of 0.0812 unit^2 and
   // the other half of which have area of 0.1083 unit^2, and a total area of
   // 1.5155 unit^2.
-  ModeledShape shape = MakeCoiledRingModeledShape(16, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(16, 6);
   // This query hits two overlapping triangles each of area 0.0812 unit^2.
   Rect query = Rect::FromCenterAndDimensions({0.6, 0.3}, 0.1, 0.1);
 
@@ -1703,8 +1708,8 @@ TEST(ModeledShapeTest, CoverageIsGreaterThanWithRectOverlappingTriangles) {
   EXPECT_FALSE(shape.CoverageIsGreaterThan(query, 0.11));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithRectWithTransform) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageIsGreaterThanWithRectWithTransform) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
   Rect query = Rect::FromCenterAndDimensions({0.5, 0.5}, 0.2, 0.2);
   AffineTransform transform = AffineTransform::Translate({3, 0});
 
@@ -1713,16 +1718,16 @@ TEST(ModeledShapeTest, CoverageIsGreaterThanWithRectWithTransform) {
   EXPECT_FALSE(shape.CoverageIsGreaterThan(query, 0.41, transform));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithQuadMissesShape) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageIsGreaterThanWithQuadMissesShape) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
   Quad query = Quad::FromCenterAndDimensions({-10, 10}, 5, 5);
 
   EXPECT_FLOAT_EQ(shape.Coverage(query), 0);
   EXPECT_FALSE(shape.CoverageIsGreaterThan(query, 0));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithQuadSingleTriangle) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageIsGreaterThanWithQuadSingleTriangle) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
   Quad query = Quad::FromCenterAndDimensions({1.5, 0.5}, 0.2, 0.2);
 
   EXPECT_FLOAT_EQ(shape.Coverage(query), 0.2);
@@ -1730,11 +1735,11 @@ TEST(ModeledShapeTest, CoverageIsGreaterThanWithQuadSingleTriangle) {
   EXPECT_FALSE(shape.CoverageIsGreaterThan(query, 0.21));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithQuadOverlappingTriangles) {
+TEST(PartitionedMeshTest, CoverageIsGreaterThanWithQuadOverlappingTriangles) {
   // This shape has 16 triangles, half of which have area of 0.0812 unit^2 and
   // the other half of which have area of 0.1083 unit^2, and a total area of
   // 1.5155 unit^2.
-  ModeledShape shape = MakeCoiledRingModeledShape(16, 6);
+  PartitionedMesh shape = MakeCoiledRingPartitionedMesh(16, 6);
   // This query hits two overlapping triangles each of area 0.0812 unit^2.
   Quad query = Quad::FromCenterAndDimensions({0.6, 0.3}, 0.1, 0.1);
 
@@ -1743,8 +1748,8 @@ TEST(ModeledShapeTest, CoverageIsGreaterThanWithQuadOverlappingTriangles) {
   EXPECT_FALSE(shape.CoverageIsGreaterThan(query, 0.11));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithQuadWithTransform) {
-  ModeledShape shape = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest, CoverageIsGreaterThanWithQuadWithTransform) {
+  PartitionedMesh shape = MakeRisingSawtoothShape();
   Quad query = Quad::FromCenterAndDimensions({0.5, 0.5}, 0.2, 0.2);
   AffineTransform transform = AffineTransform::Translate({3, 0});
 
@@ -1753,19 +1758,20 @@ TEST(ModeledShapeTest, CoverageIsGreaterThanWithQuadWithTransform) {
   EXPECT_FALSE(shape.CoverageIsGreaterThan(query, 0.41, transform));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithModeledShapeMissesShape) {
-  ModeledShape target = MakeRisingSawtoothShape();
-  ModeledShape query = MakeStraightLineModeledShape(
+TEST(PartitionedMeshTest, CoverageIsGreaterThanWithPartitionedMeshMissesShape) {
+  PartitionedMesh target = MakeRisingSawtoothShape();
+  PartitionedMesh query = MakeStraightLinePartitionedMesh(
       3, {}, AffineTransform::Translate({-20, 20}));
 
   EXPECT_FLOAT_EQ(target.Coverage(query), 0);
   EXPECT_FALSE(target.CoverageIsGreaterThan(query, 0));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithModeledShapeSingleTriangle) {
-  ModeledShape target = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest,
+     CoverageIsGreaterThanWithPartitionedMeshSingleTriangle) {
+  PartitionedMesh target = MakeRisingSawtoothShape();
   // This makes a ring with radius 0.1 centered at (1.5, 0.5).
-  ModeledShape query = MakeCoiledRingModeledShape(
+  PartitionedMesh query = MakeCoiledRingPartitionedMesh(
       12, 6, {},
       AffineTransform::Translate({1.5, 0.5}) * AffineTransform::Scale(0.1));
 
@@ -1774,15 +1780,15 @@ TEST(ModeledShapeTest, CoverageIsGreaterThanWithModeledShapeSingleTriangle) {
   EXPECT_FALSE(target.CoverageIsGreaterThan(query, 0.21));
 }
 
-TEST(ModeledShapeTest,
-     CoverageIsGreaterThanWithModeledShapeOverlappingTriangles) {
+TEST(PartitionedMeshTest,
+     CoverageIsGreaterThanWithPartitionedMeshOverlappingTriangles) {
   // This shape has 16 triangles, half of which have area of 0.0812 unit^2 and
   // the other half of which have area of 0.1083 unit^2, and a total area of
   // 1.5155 unit^2.
-  ModeledShape target = MakeCoiledRingModeledShape(16, 6);
+  PartitionedMesh target = MakeCoiledRingPartitionedMesh(16, 6);
   // This makes a ring with radius 0.05 centered at (0.6, 0.3), which hits two
   // overlapping triangles each of area 0.0812 unit^2.
-  ModeledShape query = MakeCoiledRingModeledShape(
+  PartitionedMesh query = MakeCoiledRingPartitionedMesh(
       12, 6, {},
       AffineTransform::Translate({0.6, 0.3}) * AffineTransform::Scale(0.05));
 
@@ -1791,10 +1797,11 @@ TEST(ModeledShapeTest,
   EXPECT_FALSE(target.CoverageIsGreaterThan(query, 0.11));
 }
 
-TEST(ModeledShapeTest, CoverageIsGreaterThanWithModeledShapeWithTransform) {
-  ModeledShape target = MakeRisingSawtoothShape();
+TEST(PartitionedMeshTest,
+     CoverageIsGreaterThanWithPartitionedMeshWithTransform) {
+  PartitionedMesh target = MakeRisingSawtoothShape();
   // This makes a ring with radius 0.1 centered at (0.5, 0.5).
-  ModeledShape query = MakeCoiledRingModeledShape(
+  PartitionedMesh query = MakeCoiledRingPartitionedMesh(
       12, 6, {},
       AffineTransform::Translate({0.5, 0.5}) * AffineTransform::Scale(0.1));
   AffineTransform transform = AffineTransform::Translate({3, 0});
@@ -1804,8 +1811,8 @@ TEST(ModeledShapeTest, CoverageIsGreaterThanWithModeledShapeWithTransform) {
   EXPECT_FALSE(target.CoverageIsGreaterThan(query, 0.41, transform));
 }
 
-TEST(ModeledShapeTest, QueryAgainstSelf) {
-  ModeledShape shape = MakeStraightLineModeledShape(4);
+TEST(PartitionedMeshTest, QueryAgainstSelf) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(4);
 
   EXPECT_THAT(GetAllIntersectedTriangles(shape, shape),
               UnorderedElementsAre(
@@ -1817,8 +1824,8 @@ TEST(ModeledShapeTest, QueryAgainstSelf) {
   EXPECT_TRUE(shape.CoverageIsGreaterThan(shape, 0.99));
 }
 
-TEST(ModeledShapeTest, QueryAgainstSelfWithTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(4);
+TEST(PartitionedMeshTest, QueryAgainstSelfWithTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(4);
   AffineTransform transform = AffineTransform::Translate({2.5, 0});
 
   EXPECT_THAT(GetAllIntersectedTriangles(shape, shape, transform),
@@ -1830,17 +1837,17 @@ TEST(ModeledShapeTest, QueryAgainstSelfWithTransform) {
   EXPECT_FALSE(shape.CoverageIsGreaterThan(shape, 0.51, transform));
 }
 
-TEST(ModeledShapeTest, QueryAgainstSelfEmptyShape) {
-  ModeledShape shape;
+TEST(PartitionedMeshTest, QueryAgainstSelfEmptyShape) {
+  PartitionedMesh shape;
 
   EXPECT_THAT(GetAllIntersectedTriangles(shape, shape), IsEmpty());
   EXPECT_FLOAT_EQ(shape.Coverage(shape), 0);
   EXPECT_FALSE(shape.CoverageIsGreaterThan(shape, 0));
 }
 
-TEST(ModeledShapeTest, QueryAgainstCopy) {
-  ModeledShape shape = MakeStraightLineModeledShape(4);
-  ModeledShape copy = shape;
+TEST(PartitionedMeshTest, QueryAgainstCopy) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(4);
+  PartitionedMesh copy = shape;
 
   EXPECT_THAT(GetAllIntersectedTriangles(shape, copy),
               UnorderedElementsAre(
@@ -1860,9 +1867,9 @@ TEST(ModeledShapeTest, QueryAgainstCopy) {
   EXPECT_TRUE(copy.CoverageIsGreaterThan(shape, 0.99));
 }
 
-TEST(ModeledShapeTest, QueryAgainstCopyWithTransform) {
-  ModeledShape shape = MakeStraightLineModeledShape(4);
-  ModeledShape copy = shape;
+TEST(PartitionedMeshTest, QueryAgainstCopyWithTransform) {
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(4);
+  PartitionedMesh copy = shape;
   AffineTransform transform = AffineTransform::Translate({2.5, 0});
 
   EXPECT_THAT(GetAllIntersectedTriangles(shape, copy, transform),
@@ -1881,9 +1888,9 @@ TEST(ModeledShapeTest, QueryAgainstCopyWithTransform) {
   EXPECT_FALSE(copy.CoverageIsGreaterThan(shape, 0.51, transform));
 }
 
-TEST(ModeledShapeTest, QueryAgainstCopyEmptyShape) {
-  ModeledShape shape;
-  ModeledShape copy = shape;
+TEST(PartitionedMeshTest, QueryAgainstCopyEmptyShape) {
+  PartitionedMesh shape;
+  PartitionedMesh copy = shape;
 
   EXPECT_THAT(GetAllIntersectedTriangles(shape, copy), IsEmpty());
   EXPECT_THAT(GetAllIntersectedTriangles(copy, shape), IsEmpty());
@@ -1893,36 +1900,36 @@ TEST(ModeledShapeTest, QueryAgainstCopyEmptyShape) {
   EXPECT_FALSE(copy.CoverageIsGreaterThan(shape, 0));
 }
 
-TEST(ModeledShapeDeathTest, OutlineGroupIndexOutOfBounds) {
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+TEST(PartitionedMeshDeathTest, OutlineGroupIndexOutOfBounds) {
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(10), {{1, 5, 4, 0}, {5, 9, 4}});
   ASSERT_EQ(shape.status(), absl::OkStatus());
   EXPECT_DEATH_IF_SUPPORTED(shape->Outline(2, 0), "");
 }
 
-TEST(ModeledShapeDeathTest, OutlineOutlineIndexOutOfBounds) {
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+TEST(PartitionedMeshDeathTest, OutlineOutlineIndexOutOfBounds) {
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(10), {{1, 5, 4, 0}, {5, 9, 4}});
   ASSERT_EQ(shape.status(), absl::OkStatus());
   EXPECT_DEATH_IF_SUPPORTED(shape->Outline(0, 2), "");
 }
 
-TEST(ModeledShapeDeathTest, OutlinePositionGroupIndexOutOfBounds) {
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+TEST(PartitionedMeshDeathTest, OutlinePositionGroupIndexOutOfBounds) {
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(10), {{1, 5, 4, 0}, {5, 9, 4}});
   ASSERT_EQ(shape.status(), absl::OkStatus());
   EXPECT_DEATH_IF_SUPPORTED(shape->OutlinePosition(2, 0, 0), "");
 }
 
-TEST(ModeledShapeDeathTest, OutlinePositionOutlineIndexOutOfBounds) {
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+TEST(PartitionedMeshDeathTest, OutlinePositionOutlineIndexOutOfBounds) {
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(10), {{1, 5, 4, 0}, {5, 9, 4}});
   ASSERT_EQ(shape.status(), absl::OkStatus());
   EXPECT_DEATH_IF_SUPPORTED(shape->OutlinePosition(0, 2, 0), "");
 }
 
-TEST(ModeledShapeDeathTest, OutlinePositionVertexIndexOutOfBounds) {
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+TEST(PartitionedMeshDeathTest, OutlinePositionVertexIndexOutOfBounds) {
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(10), {{1, 5, 4, 0}, {5, 9, 4}});
   ASSERT_EQ(shape.status(), absl::OkStatus());
   EXPECT_DEATH_IF_SUPPORTED(shape->OutlinePosition(0, 0, 4), "");

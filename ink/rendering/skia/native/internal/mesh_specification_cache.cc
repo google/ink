@@ -22,7 +22,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "ink/geometry/mesh_format.h"
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/rendering/skia/common_internal/mesh_specification_data.h"
 #include "ink/rendering/skia/native/internal/create_mesh_specification.h"
 #include "ink/strokes/in_progress_stroke.h"
@@ -54,7 +54,7 @@ absl::StatusOr<sk_sp<SkMeshSpecification>> MeshSpecificationCache::GetFor(
 }
 
 absl::StatusOr<sk_sp<SkMeshSpecification>> MeshSpecificationCache::GetForStroke(
-    const ModeledShape& stroke_shape, uint32_t coat_index) {
+    const PartitionedMesh& stroke_shape, uint32_t coat_index) {
   if (stroke_shape.RenderGroupCount() <= coat_index) {
     return absl::InvalidArgumentError(absl::StrCat(
         "`stroke_shape` has only ", stroke_shape.RenderGroupCount(),

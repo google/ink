@@ -29,7 +29,7 @@
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_packing_types.h"
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
 #include "ink/geometry/rect.h"
@@ -407,13 +407,13 @@ MATCHER(VertexIndexPairEqForPointwise, "") {
                             std::get<0>(arg), result_listener);
 }
 
-MATCHER_P2(ModeledShapeEqMatcher, expected, deep,
+MATCHER_P2(PartitionedMeshEqMatcher, expected, deep,
            absl::StrCat(negation ? "doesn't equal" : "equals",
                         deep ? " deeply" : " shallowly",
-                        " ModeledShape(expected: ", PrintToString(expected),
+                        " PartitionedMesh(expected: ", PrintToString(expected),
                         ")")) {
   if (arg.RenderGroupCount() != expected.RenderGroupCount()) {
-    *result_listener << "ModeledShape has " << arg.RenderGroupCount()
+    *result_listener << "PartitionedMesh has " << arg.RenderGroupCount()
                      << " render groups, expected "
                      << expected.RenderGroupCount();
     return false;
@@ -422,7 +422,7 @@ MATCHER_P2(ModeledShapeEqMatcher, expected, deep,
        ++group_index) {
     if (arg.RenderGroupMeshes(group_index).size() !=
         expected.RenderGroupMeshes(group_index).size()) {
-      *result_listener << "ModeledShape has "
+      *result_listener << "PartitionedMesh has "
                        << arg.RenderGroupMeshes(group_index).size()
                        << " meshes in render group " << group_index
                        << ", expected "
@@ -430,7 +430,8 @@ MATCHER_P2(ModeledShapeEqMatcher, expected, deep,
       return false;
     }
     if (arg.OutlineCount(group_index) != expected.OutlineCount(group_index)) {
-      *result_listener << "ModeledShape has " << arg.OutlineCount(group_index)
+      *result_listener << "PartitionedMesh has "
+                       << arg.OutlineCount(group_index)
                        << " outlines in render group " << group_index
                        << ", expected " << expected.OutlineCount(group_index);
       return false;
@@ -605,21 +606,23 @@ Matcher<Envelope> EnvelopeNear(const Rect& expected, float tolerance) {
 
 Matcher<Mesh> MeshEq(const Mesh& mesh) { return MeshEqMatcher(mesh); }
 
-Matcher<ModeledShape::VertexIndexPair> VertexIndexPairEq(
-    ModeledShape::VertexIndexPair expected) {
+Matcher<PartitionedMesh::VertexIndexPair> VertexIndexPairEq(
+    PartitionedMesh::VertexIndexPair expected) {
   return AllOf(
-      Field("mesh_index", &ModeledShape::VertexIndexPair::mesh_index,
+      Field("mesh_index", &PartitionedMesh::VertexIndexPair::mesh_index,
             expected.mesh_index),
-      Field("vertex_index", &ModeledShape::VertexIndexPair::vertex_index,
+      Field("vertex_index", &PartitionedMesh::VertexIndexPair::vertex_index,
             expected.vertex_index));
 }
 
-Matcher<ModeledShape> ModeledShapeDeepEq(const ModeledShape& expected) {
-  return ModeledShapeEqMatcher(expected, true);
+Matcher<PartitionedMesh> PartitionedMeshDeepEq(
+    const PartitionedMesh& expected) {
+  return PartitionedMeshEqMatcher(expected, true);
 }
 
-Matcher<ModeledShape> ModeledShapeShallowEq(const ModeledShape& expected) {
-  return ModeledShapeEqMatcher(expected, false);
+Matcher<PartitionedMesh> PartitionedMeshShallowEq(
+    const PartitionedMesh& expected) {
+  return PartitionedMeshEqMatcher(expected, false);
 }
 
 }  // namespace ink

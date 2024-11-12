@@ -21,13 +21,14 @@
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
 #include "ink/color/color.h"
-#include "ink/geometry/modeled_shape.h"
 #include "ink/geometry/mutable_mesh.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/stroke_shape_builder.h"
 #include "ink/strokes/internal/stroke_vertex.h"
@@ -55,7 +56,7 @@ bool BrushCoatTipsAreEqual(absl::Span<const BrushCoat> coats1,
 
 Stroke::Stroke(const Brush& brush)
     : brush_(brush),
-      shape_(ModeledShape::WithEmptyGroups(brush_.CoatCount())) {}
+      shape_(PartitionedMesh::WithEmptyGroups(brush_.CoatCount())) {}
 
 Stroke::Stroke(const Brush& brush, const StrokeInputBatch& inputs)
     : brush_(brush), inputs_(inputs) {
@@ -63,7 +64,7 @@ Stroke::Stroke(const Brush& brush, const StrokeInputBatch& inputs)
 }
 
 Stroke::Stroke(const Brush& brush, const StrokeInputBatch& inputs,
-               const ModeledShape& shape)
+               const PartitionedMesh& shape)
     : brush_(brush), inputs_(inputs), shape_(shape) {
   ABSL_CHECK_EQ(shape_.RenderGroupCount(), brush_.CoatCount())
       << "`shape` must have one render group per brush coat in `brush`";
@@ -136,7 +137,7 @@ namespace {
 struct ShapeGenerationResources {
   std::vector<StrokeShapeBuilder> builders;
   std::vector<StrokeVertex::CustomPackingArray> custom_packing_arrays;
-  std::vector<ModeledShape::MutableMeshGroup> mesh_groups;
+  std::vector<PartitionedMesh::MutableMeshGroup> mesh_groups;
 };
 
 }  // namespace
@@ -153,7 +154,7 @@ void Stroke::RegenerateShape() {
   absl::Span<const BrushCoat> coats = brush_.GetCoats();
   size_t num_coats = coats.size();
   if (num_coats == 0 || inputs_.IsEmpty()) {
-    shape_ = ModeledShape::WithEmptyGroups(brush_.CoatCount());
+    shape_ = PartitionedMesh::WithEmptyGroups(brush_.CoatCount());
     return;
   }
 
@@ -185,14 +186,14 @@ void Stroke::RegenerateShape() {
     });
   }
 
-  absl::StatusOr<ModeledShape> modeled_shape =
-      ModeledShape::FromMutableMeshGroups(shape_gen.mesh_groups);
-  if (modeled_shape.ok()) {
-    shape_ = *std::move(modeled_shape);
+  absl::StatusOr<PartitionedMesh> partitioned_mesh =
+      PartitionedMesh::FromMutableMeshGroups(shape_gen.mesh_groups);
+  if (partitioned_mesh.ok()) {
+    shape_ = *std::move(partitioned_mesh);
   } else {
-    ABSL_LOG(WARNING) << "Failed to create ModeledShape: "
-                      << modeled_shape.status();
-    shape_ = ModeledShape::WithEmptyGroups(brush_.CoatCount());
+    ABSL_LOG(WARNING) << "Failed to create PartitionedMesh: "
+                      << partitioned_mesh.status();
+    shape_ = PartitionedMesh::WithEmptyGroups(brush_.CoatCount());
   }
 
   ABSL_DCHECK_EQ(shape_.RenderGroupCount(), brush_.CoatCount());

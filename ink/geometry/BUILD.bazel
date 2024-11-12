@@ -163,7 +163,7 @@ cc_library(
     hdrs = ["intersects.h"],
     deps = [
         ":affine_transform",
-        ":modeled_shape",
+        ":partitioned_mesh",
         ":point",
         ":quad",
         ":rect",
@@ -182,7 +182,7 @@ cc_test(
         ":angle",
         ":intersects",
         ":mesh_test_helpers",
-        ":modeled_shape",
+        ":partitioned_mesh",
         ":point",
         ":quad",
         ":rect",
@@ -327,7 +327,7 @@ cc_library(
         ":mesh",
         ":mesh_format",
         ":mesh_packing_types",
-        ":modeled_shape",
+        ":partitioned_mesh",
         ":point",
         ":quad",
         ":rect",
@@ -349,7 +349,7 @@ cc_test(
         ":mesh_format",
         ":mesh_packing_types",
         ":mesh_test_helpers",
-        ":modeled_shape",
+        ":partitioned_mesh",
         ":point",
         ":quad",
         ":triangle",
@@ -553,8 +553,8 @@ cc_library(
         ":affine_transform",
         ":angle",
         ":mesh_format",
-        ":modeled_shape",
         ":mutable_mesh",
+        ":partitioned_mesh",
         ":point",
         ":vec",
         "@com_google_absl//absl/log:absl_check",
@@ -582,9 +582,9 @@ cc_test(
 )
 
 cc_library(
-    name = "modeled_shape",
-    srcs = ["modeled_shape.cc"],
-    hdrs = ["modeled_shape.h"],
+    name = "partitioned_mesh",
+    srcs = ["partitioned_mesh.cc"],
+    hdrs = ["partitioned_mesh.h"],
     deps = [
         ":affine_transform",
         ":envelope",
@@ -616,8 +616,8 @@ cc_library(
 )
 
 cc_test(
-    name = "modeled_shape_test",
-    srcs = ["modeled_shape_test.cc"],
+    name = "partitioned_mesh_test",
+    srcs = ["partitioned_mesh_test.cc"],
     deps = [
         ":affine_transform",
         ":angle",
@@ -625,8 +625,8 @@ cc_test(
         ":mesh_format",
         ":mesh_packing_types",
         ":mesh_test_helpers",
-        ":modeled_shape",
         ":mutable_mesh",
+        ":partitioned_mesh",
         ":point",
         ":quad",
         ":rect",

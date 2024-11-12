@@ -20,7 +20,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/mesh_format.h"
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/strokes/in_progress_stroke.h"
 #include "include/core/SkMesh.h"
 #include "include/core/SkRefCnt.h"
@@ -51,13 +51,13 @@ class MeshSpecificationCache {
   absl::StatusOr<sk_sp<SkMeshSpecification>> GetFor(
       const InProgressStroke& stroke);
 
-  // Returns the specification for a `ModeledShape` created for a `Stroke`.
+  // Returns the specification for a `PartitionedMesh` created for a `Stroke`.
   //
   // An invalid-argument error is returned if `stroke_shape` either has no
   // meshes, or has an unsupported `MeshFormat`.
   // TODO: b/284117747 - Update to also take a `const BrushFamily&`.
   absl::StatusOr<sk_sp<SkMeshSpecification>> GetForStroke(
-      const ModeledShape& stroke_shape, uint32_t coat_index);
+      const PartitionedMesh& stroke_shape, uint32_t coat_index);
 
  private:
   // TODO: b/284117747 - Update the in-progress stroke cache to a hash map if we

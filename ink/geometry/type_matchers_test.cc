@@ -29,7 +29,7 @@
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_packing_types.h"
 #include "ink/geometry/mesh_test_helpers.h"
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
 #include "ink/geometry/triangle.h"
@@ -414,51 +414,51 @@ TEST(MeshEqTest, Describe) {
   EXPECT_THAT(s.str(), HasSubstr("does not equal Mesh"));
 }
 
-TEST(ModeledShapeEqTest, OutlineIndexPairEquality) {
-  ModeledShape::VertexIndexPair pair{.mesh_index = 3, .vertex_index = 5};
+TEST(PartitionedMeshEqTest, OutlineIndexPairEquality) {
+  PartitionedMesh::VertexIndexPair pair{.mesh_index = 3, .vertex_index = 5};
 
-  EXPECT_THAT(pair, VertexIndexPairEq(ModeledShape::VertexIndexPair{
+  EXPECT_THAT(pair, VertexIndexPairEq(PartitionedMesh::VertexIndexPair{
                         .mesh_index = 3, .vertex_index = 5}));
-  EXPECT_THAT(pair, Not(VertexIndexPairEq(ModeledShape::VertexIndexPair{
+  EXPECT_THAT(pair, Not(VertexIndexPairEq(PartitionedMesh::VertexIndexPair{
                         .mesh_index = 999, .vertex_index = 5})));
-  EXPECT_THAT(pair, Not(VertexIndexPairEq(ModeledShape::VertexIndexPair{
+  EXPECT_THAT(pair, Not(VertexIndexPairEq(PartitionedMesh::VertexIndexPair{
                         .mesh_index = 3, .vertex_index = 999})));
 }
 
-TEST(ModeledShapeEqTest, DeepVsShallowEquality) {
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+TEST(PartitionedMeshEqTest, DeepVsShallowEquality) {
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(20, MakeSinglePackedPositionFormat()),
       {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}});
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
-  ModeledShape shape_with_same_meshes = *shape;
-  EXPECT_THAT(*shape, ModeledShapeDeepEq(shape_with_same_meshes));
-  EXPECT_THAT(*shape, ModeledShapeShallowEq(shape_with_same_meshes));
+  PartitionedMesh shape_with_same_meshes = *shape;
+  EXPECT_THAT(*shape, PartitionedMeshDeepEq(shape_with_same_meshes));
+  EXPECT_THAT(*shape, PartitionedMeshShallowEq(shape_with_same_meshes));
 
-  absl::StatusOr<ModeledShape> shape_with_equivalent_meshes =
-      ModeledShape::FromMutableMesh(
+  absl::StatusOr<PartitionedMesh> shape_with_equivalent_meshes =
+      PartitionedMesh::FromMutableMesh(
           MakeStraightLineMutableMesh(20, MakeSinglePackedPositionFormat()),
           {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}});
   ASSERT_EQ(shape_with_equivalent_meshes.status(), absl::OkStatus());
-  EXPECT_THAT(*shape, ModeledShapeDeepEq(*shape_with_equivalent_meshes));
+  EXPECT_THAT(*shape, PartitionedMeshDeepEq(*shape_with_equivalent_meshes));
   EXPECT_THAT(*shape,
-              Not(ModeledShapeShallowEq(*shape_with_equivalent_meshes)));
+              Not(PartitionedMeshShallowEq(*shape_with_equivalent_meshes)));
 }
 
-TEST(ModeledShapeEqTest, DifferentMeshes) {
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+TEST(PartitionedMeshEqTest, DifferentMeshes) {
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(20, MakeSinglePackedPositionFormat()),
       {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}});
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   // Equivalent outlines, different number of meshes.
 
-  std::vector<absl::Span<const ModeledShape::VertexIndexPair>> outlines;
-  ModeledShape::VertexIndexPair index_pair = {.mesh_index = 0,
-                                              .vertex_index = 7};
+  std::vector<absl::Span<const PartitionedMesh::VertexIndexPair>> outlines;
+  PartitionedMesh::VertexIndexPair index_pair = {.mesh_index = 0,
+                                                 .vertex_index = 7};
   ASSERT_EQ(shape->RenderGroupCount(), 1u);
   for (size_t i = 0; i < shape->OutlineCount(0); ++i) {
-    absl::Span<ModeledShape::VertexIndexPair> outline =
+    absl::Span<PartitionedMesh::VertexIndexPair> outline =
         absl::MakeSpan(&index_pair, 1);
     outlines.push_back(outline);
   }
@@ -469,23 +469,24 @@ TEST(ModeledShapeEqTest, DifferentMeshes) {
   for (size_t i = 0; i < shape->Meshes().size(); ++i) {
     meshes_twice.push_back(shape->Meshes()[i]);
   }
-  absl::StatusOr<ModeledShape>
+  absl::StatusOr<PartitionedMesh>
       shape_with_equivalent_outlines_but_different_mesh_count =
-          ModeledShape::FromMeshes(absl::MakeSpan(meshes_twice),
-                                   absl::MakeSpan(outlines));
+          PartitionedMesh::FromMeshes(absl::MakeSpan(meshes_twice),
+                                      absl::MakeSpan(outlines));
   ASSERT_EQ(shape_with_equivalent_outlines_but_different_mesh_count.status(),
             absl::OkStatus());
 
   EXPECT_THAT(*shape_with_equivalent_outlines_but_different_mesh_count,
-              Not(ModeledShapeShallowEq(*shape)));
+              Not(PartitionedMeshShallowEq(*shape)));
   EXPECT_THAT(*shape_with_equivalent_outlines_but_different_mesh_count,
-              Not(ModeledShapeDeepEq(*shape)));
+              Not(PartitionedMeshDeepEq(*shape)));
 
   // Equivalent outlines, same number of meshes, but different mesh contents.
 
-  absl::StatusOr<ModeledShape> other_shape = ModeledShape::FromMutableMesh(
-      MakeStraightLineMutableMesh(11, MakeSinglePackedPositionFormat()),
-      {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}});
+  absl::StatusOr<PartitionedMesh> other_shape =
+      PartitionedMesh::FromMutableMesh(
+          MakeStraightLineMutableMesh(11, MakeSinglePackedPositionFormat()),
+          {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}});
   ASSERT_EQ(other_shape.status(), absl::OkStatus());
   std::vector<Mesh> other_meshes;
   for (size_t i = 0; i < shape->Meshes().size(); ++i) {
@@ -493,56 +494,56 @@ TEST(ModeledShapeEqTest, DifferentMeshes) {
     // the other shape.
     other_meshes.push_back(other_shape->Meshes()[0]);
   }
-  absl::StatusOr<ModeledShape>
+  absl::StatusOr<PartitionedMesh>
       shape_with_equivalent_outlines_but_different_meshes =
-          ModeledShape::FromMeshes(absl::MakeSpan(other_meshes),
-                                   absl::MakeSpan(outlines));
+          PartitionedMesh::FromMeshes(absl::MakeSpan(other_meshes),
+                                      absl::MakeSpan(outlines));
   ASSERT_EQ(shape_with_equivalent_outlines_but_different_meshes.status(),
             absl::OkStatus());
 
   EXPECT_THAT(*shape_with_equivalent_outlines_but_different_meshes,
-              Not(ModeledShapeShallowEq(*shape)));
+              Not(PartitionedMeshShallowEq(*shape)));
   EXPECT_THAT(*shape_with_equivalent_outlines_but_different_meshes,
-              Not(ModeledShapeDeepEq(*shape)));
+              Not(PartitionedMeshDeepEq(*shape)));
 }
 
-TEST(ModeledShapeEqTest, DifferentOutlines) {
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMutableMesh(
+TEST(PartitionedMeshEqTest, DifferentOutlines) {
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(20, MakeSinglePackedPositionFormat()),
       {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}});
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   // Equivalent meshes but different number of outlines.
 
-  absl::StatusOr<ModeledShape> shape_with_equivalent_meshes_but_no_outline =
-      ModeledShape::FromMeshes(shape->Meshes());
+  absl::StatusOr<PartitionedMesh> shape_with_equivalent_meshes_but_no_outline =
+      PartitionedMesh::FromMeshes(shape->Meshes());
   ASSERT_EQ(shape_with_equivalent_meshes_but_no_outline.status(),
             absl::OkStatus());
   EXPECT_THAT(*shape_with_equivalent_meshes_but_no_outline,
-              Not(ModeledShapeShallowEq(*shape)));
+              Not(PartitionedMeshShallowEq(*shape)));
   EXPECT_THAT(*shape_with_equivalent_meshes_but_no_outline,
-              Not(ModeledShapeDeepEq(*shape)));
+              Not(PartitionedMeshDeepEq(*shape)));
 
   // Equivalent meshes, same number of outlines, but different outline contents.
-  ModeledShape::VertexIndexPair index_pair = {.mesh_index = 0,
-                                              .vertex_index = 7};
-  std::vector<absl::Span<const ModeledShape::VertexIndexPair>> outlines;
+  PartitionedMesh::VertexIndexPair index_pair = {.mesh_index = 0,
+                                                 .vertex_index = 7};
+  std::vector<absl::Span<const PartitionedMesh::VertexIndexPair>> outlines;
   ASSERT_EQ(shape->RenderGroupCount(), 1u);
   for (size_t i = 0; i < shape->OutlineCount(0); ++i) {
-    absl::Span<ModeledShape::VertexIndexPair> outline =
+    absl::Span<PartitionedMesh::VertexIndexPair> outline =
         absl::MakeSpan(&index_pair, 1);
     outlines.push_back(outline);
   }
-  absl::StatusOr<ModeledShape>
+  absl::StatusOr<PartitionedMesh>
       shape_with_equivalent_meshes_but_different_outlines =
-          ModeledShape::FromMeshes(shape->Meshes(), outlines);
+          PartitionedMesh::FromMeshes(shape->Meshes(), outlines);
   ASSERT_EQ(shape_with_equivalent_meshes_but_different_outlines.status(),
             absl::OkStatus());
 
   EXPECT_THAT(*shape_with_equivalent_meshes_but_different_outlines,
-              Not(ModeledShapeShallowEq(*shape)));
+              Not(PartitionedMeshShallowEq(*shape)));
   EXPECT_THAT(*shape_with_equivalent_meshes_but_different_outlines,
-              Not(ModeledShapeDeepEq(*shape)));
+              Not(PartitionedMeshDeepEq(*shape)));
 }
 
 }  // namespace

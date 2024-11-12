@@ -26,7 +26,7 @@
 #include "ink/color/color.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_test_helpers.h"
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/stroke.h"
@@ -168,8 +168,8 @@ TEST(MeshSpecificationCacheTest, GetForInvalidCoatIndex) {
 
 TEST(MeshSpecificationCacheTest, GetForStrokeWithEmptyShape) {
   MeshSpecificationCache cache;
-  absl::StatusOr<ModeledShape> shape = ModeledShape::FromMeshGroups(
-      {ModeledShape::MeshGroup{.meshes = {}, .outlines = {}}});
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMeshGroups(
+      {PartitionedMesh::MeshGroup{.meshes = {}, .outlines = {}}});
   ASSERT_EQ(shape.status(), absl::OkStatus());
   absl::Status no_meshes = cache.GetForStroke(*shape, 0).status();
   EXPECT_EQ(no_meshes.code(), absl::StatusCode::kInvalidArgument);
@@ -179,8 +179,8 @@ TEST(MeshSpecificationCacheTest, GetForStrokeWithEmptyShape) {
 TEST(MeshSpecificationCacheTest, GetForProvidedUnsupportedShape) {
   MeshSpecificationCache cache;
 
-  ModeledShape provided_shape =
-      MakeStraightLineModeledShape(/* n_triangles = */ 4, MeshFormat());
+  PartitionedMesh provided_shape =
+      MakeStraightLinePartitionedMesh(/* n_triangles = */ 4, MeshFormat());
 
   // The provided shape has the default position-only `MeshFormat` , which means
   // it is missing a number of required attributes.

@@ -17,7 +17,7 @@
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/intersects.h"
-#include "ink/geometry/modeled_shape.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
 #include "ink/geometry/rect.h"
@@ -30,15 +30,15 @@ namespace {
 using ::ink::AffineTransform;
 using ::ink::Angle;
 using ::ink::Intersects;
-using ::ink::ModeledShape;
+using ::ink::PartitionedMesh;
 using ::ink::Point;
 using ::ink::Quad;
 using ::ink::Rect;
 using ::ink::Segment;
 using ::ink::Triangle;
 
-ModeledShape* GetModeledShape(jlong raw_ptr_to_modeled_shape) {
-  return reinterpret_cast<ModeledShape*>(raw_ptr_to_modeled_shape);
+PartitionedMesh* GetPartitionedMesh(jlong raw_ptr_to_partitioned_mesh) {
+  return reinterpret_cast<PartitionedMesh*>(raw_ptr_to_partitioned_mesh);
 }
 }  // namespace
 
@@ -232,117 +232,129 @@ JNI_METHOD(geometry, Intersection, jboolean,
 }
 
 JNI_METHOD(geometry, Intersection, jboolean, nativeMeshVecIntersects)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_modeled_shape, jfloat vec_x,
- jfloat vec_y, jfloat vec_to_modeledShape_transform_a,
- jfloat vec_to_modeledShape_transform_b, jfloat vec_to_modeledShape_transform_c,
- jfloat vec_to_modeledShape_transform_d, jfloat vec_to_modeledShape_transform_e,
- jfloat vec_to_modeledShape_transform_f) {
+(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh, jfloat vec_x,
+ jfloat vec_y, jfloat vec_to_partitionedMesh_transform_a,
+ jfloat vec_to_partitionedMesh_transform_b,
+ jfloat vec_to_partitionedMesh_transform_c,
+ jfloat vec_to_partitionedMesh_transform_d,
+ jfloat vec_to_partitionedMesh_transform_e,
+ jfloat vec_to_partitionedMesh_transform_f) {
   Point point{vec_x, vec_y};
-  ModeledShape* modeled_shape = GetModeledShape(raw_ptr_to_modeled_shape);
+  PartitionedMesh* partitioned_mesh =
+      GetPartitionedMesh(raw_ptr_to_partitioned_mesh);
   AffineTransform transform(
-      vec_to_modeledShape_transform_a, vec_to_modeledShape_transform_b,
-      vec_to_modeledShape_transform_c, vec_to_modeledShape_transform_d,
-      vec_to_modeledShape_transform_e, vec_to_modeledShape_transform_f);
-  return Intersects(point, *modeled_shape, transform);
+      vec_to_partitionedMesh_transform_a, vec_to_partitionedMesh_transform_b,
+      vec_to_partitionedMesh_transform_c, vec_to_partitionedMesh_transform_d,
+      vec_to_partitionedMesh_transform_e, vec_to_partitionedMesh_transform_f);
+  return Intersects(point, *partitioned_mesh, transform);
 }
 
 JNI_METHOD(geometry, Intersection, jboolean, nativeMeshSegmentIntersects)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_modeled_shape,
+(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh,
  jfloat segment_start_x, jfloat segment_start_y, jfloat segment_end_x,
- jfloat segment_end_y, jfloat segment_to_modeledShape_transform_a,
- jfloat segment_to_modeledShape_transform_b,
- jfloat segment_to_modeledShape_transform_c,
- jfloat segment_to_modeledShape_transform_d,
- jfloat segment_to_modeledShape_transform_e,
- jfloat segment_to_modeledShape_transform_f) {
+ jfloat segment_end_y, jfloat segment_to_partitionedMesh_transform_a,
+ jfloat segment_to_partitionedMesh_transform_b,
+ jfloat segment_to_partitionedMesh_transform_c,
+ jfloat segment_to_partitionedMesh_transform_d,
+ jfloat segment_to_partitionedMesh_transform_e,
+ jfloat segment_to_partitionedMesh_transform_f) {
   Segment segment{{segment_start_x, segment_start_y},
                   {segment_end_x, segment_end_y}};
-  ModeledShape* modeled_shape = GetModeledShape(raw_ptr_to_modeled_shape);
-  AffineTransform transform(
-      segment_to_modeledShape_transform_a, segment_to_modeledShape_transform_b,
-      segment_to_modeledShape_transform_c, segment_to_modeledShape_transform_d,
-      segment_to_modeledShape_transform_e, segment_to_modeledShape_transform_f);
-  return Intersects(segment, *modeled_shape, transform);
+  PartitionedMesh* partitioned_mesh =
+      GetPartitionedMesh(raw_ptr_to_partitioned_mesh);
+  AffineTransform transform(segment_to_partitionedMesh_transform_a,
+                            segment_to_partitionedMesh_transform_b,
+                            segment_to_partitionedMesh_transform_c,
+                            segment_to_partitionedMesh_transform_d,
+                            segment_to_partitionedMesh_transform_e,
+                            segment_to_partitionedMesh_transform_f);
+  return Intersects(segment, *partitioned_mesh, transform);
 }
 
 JNI_METHOD(geometry, Intersection, jboolean, nativeMeshTriangleIntersects)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_modeled_shape,
+(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh,
  jfloat triangle_p0_x, jfloat triangle_p0_y, jfloat triangle_p1_x,
  jfloat triangle_p1_y, jfloat triangle_p2_x, jfloat triangle_p2_y,
- jfloat triangle_to_modeledShape_transform_a,
- jfloat triangle_to_modeledShape_transform_b,
- jfloat triangle_to_modeledShape_transform_c,
- jfloat triangle_to_modeledShape_transform_d,
- jfloat triangle_to_modeledShape_transform_e,
- jfloat triangle_to_modeledShape_transform_f) {
-  ModeledShape* modeled_shape = GetModeledShape(raw_ptr_to_modeled_shape);
+ jfloat triangle_to_partitionedMesh_transform_a,
+ jfloat triangle_to_partitionedMesh_transform_b,
+ jfloat triangle_to_partitionedMesh_transform_c,
+ jfloat triangle_to_partitionedMesh_transform_d,
+ jfloat triangle_to_partitionedMesh_transform_e,
+ jfloat triangle_to_partitionedMesh_transform_f) {
+  PartitionedMesh* partitioned_mesh =
+      GetPartitionedMesh(raw_ptr_to_partitioned_mesh);
   Triangle triangle{{triangle_p0_x, triangle_p0_y},
                     {triangle_p1_x, triangle_p1_y},
                     {triangle_p2_x, triangle_p2_y}};
-  AffineTransform transform(triangle_to_modeledShape_transform_a,
-                            triangle_to_modeledShape_transform_b,
-                            triangle_to_modeledShape_transform_c,
-                            triangle_to_modeledShape_transform_d,
-                            triangle_to_modeledShape_transform_e,
-                            triangle_to_modeledShape_transform_f);
-  return Intersects(triangle, *modeled_shape, transform);
+  AffineTransform transform(triangle_to_partitionedMesh_transform_a,
+                            triangle_to_partitionedMesh_transform_b,
+                            triangle_to_partitionedMesh_transform_c,
+                            triangle_to_partitionedMesh_transform_d,
+                            triangle_to_partitionedMesh_transform_e,
+                            triangle_to_partitionedMesh_transform_f);
+  return Intersects(triangle, *partitioned_mesh, transform);
 }
 
 JNI_METHOD(geometry, Intersection, jboolean, nativeMeshBoxIntersects)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_modeled_shape, jfloat box_x_min,
+(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh, jfloat box_x_min,
  jfloat box_y_min, jfloat box_x_max, jfloat box_y_max,
- jfloat box_to_modeledShape_transform_a, jfloat box_to_modeledShape_transform_b,
- jfloat box_to_modeledShape_transform_c, jfloat box_to_modeledShape_transform_d,
- jfloat box_to_modeledShape_transform_e,
- jfloat box_to_modeledShape_transform_f) {
-  ModeledShape* modeled_shape = GetModeledShape(raw_ptr_to_modeled_shape);
+ jfloat box_to_partitionedMesh_transform_a,
+ jfloat box_to_partitionedMesh_transform_b,
+ jfloat box_to_partitionedMesh_transform_c,
+ jfloat box_to_partitionedMesh_transform_d,
+ jfloat box_to_partitionedMesh_transform_e,
+ jfloat box_to_partitionedMesh_transform_f) {
+  PartitionedMesh* partitioned_mesh =
+      GetPartitionedMesh(raw_ptr_to_partitioned_mesh);
   Rect rect =
       Rect::FromTwoPoints({box_x_min, box_y_min}, {box_x_max, box_y_max});
   AffineTransform transform(
-      box_to_modeledShape_transform_a, box_to_modeledShape_transform_b,
-      box_to_modeledShape_transform_c, box_to_modeledShape_transform_d,
-      box_to_modeledShape_transform_e, box_to_modeledShape_transform_f);
-  return Intersects(rect, *modeled_shape, transform);
+      box_to_partitionedMesh_transform_a, box_to_partitionedMesh_transform_b,
+      box_to_partitionedMesh_transform_c, box_to_partitionedMesh_transform_d,
+      box_to_partitionedMesh_transform_e, box_to_partitionedMesh_transform_f);
+  return Intersects(rect, *partitioned_mesh, transform);
 }
 
 JNI_METHOD(geometry, Intersection, jboolean, nativeMeshParallelogramIntersects)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_modeled_shape,
+(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh,
  jfloat parallelogram_center_x, jfloat parallelogram_center_y,
  jfloat parallelogram_width, jfloat parallelogram_height,
  jfloat parallelogram_angle_radian, jfloat parallelogram_shear_factor,
- jfloat parallelogram_to_modeledShape_transform_a,
- jfloat parallelogram_to_modeledShape_transform_b,
- jfloat parallelogram_to_modeledShape_transform_c,
- jfloat parallelogram_to_modeledShape_transform_d,
- jfloat parallelogram_to_modeledShape_transform_e,
- jfloat parallelogram_to_modeledShape_transform_f) {
-  ModeledShape* modeled_shape = GetModeledShape(raw_ptr_to_modeled_shape);
+ jfloat parallelogram_to_partitionedMesh_transform_a,
+ jfloat parallelogram_to_partitionedMesh_transform_b,
+ jfloat parallelogram_to_partitionedMesh_transform_c,
+ jfloat parallelogram_to_partitionedMesh_transform_d,
+ jfloat parallelogram_to_partitionedMesh_transform_e,
+ jfloat parallelogram_to_partitionedMesh_transform_f) {
+  PartitionedMesh* partitioned_mesh =
+      GetPartitionedMesh(raw_ptr_to_partitioned_mesh);
   Quad quad = Quad::FromCenterDimensionsRotationAndShear(
       Point{parallelogram_center_x, parallelogram_center_y},
       parallelogram_width, parallelogram_height,
       Angle::Radians(parallelogram_angle_radian), parallelogram_shear_factor);
-  AffineTransform transform(parallelogram_to_modeledShape_transform_a,
-                            parallelogram_to_modeledShape_transform_b,
-                            parallelogram_to_modeledShape_transform_c,
-                            parallelogram_to_modeledShape_transform_d,
-                            parallelogram_to_modeledShape_transform_e,
-                            parallelogram_to_modeledShape_transform_f);
-  return Intersects(quad, *modeled_shape, transform);
+  AffineTransform transform(parallelogram_to_partitionedMesh_transform_a,
+                            parallelogram_to_partitionedMesh_transform_b,
+                            parallelogram_to_partitionedMesh_transform_c,
+                            parallelogram_to_partitionedMesh_transform_d,
+                            parallelogram_to_partitionedMesh_transform_e,
+                            parallelogram_to_partitionedMesh_transform_f);
+  return Intersects(quad, *partitioned_mesh, transform);
 }
 
-JNI_METHOD(geometry, Intersection, jboolean, nativeMeshModeledShapeIntersects)
-(JNIEnv* env, jclass clazz, jlong raw_pointer_to_this_modeled_shape,
- jlong raw_pointer_to_other_modeled_shape, jfloat this_to_common_transform_a,
+JNI_METHOD(geometry, Intersection, jboolean,
+           nativeMeshPartitionedMeshIntersects)
+(JNIEnv* env, jclass clazz, jlong raw_pointer_to_this_partitioned_mesh,
+ jlong raw_pointer_to_other_partitioned_mesh, jfloat this_to_common_transform_a,
  jfloat this_to_common_transform_b, jfloat this_to_common_transform_c,
  jfloat this_to_common_transform_d, jfloat this_to_common_transform_e,
  jfloat this_to_common_transform_f, jfloat other_to_common_transform_a,
  jfloat other_to_common_transform_b, jfloat other_to_common_transform_c,
  jfloat other_to_common_transform_d, jfloat other_to_common_transform_e,
  jfloat other_to_common_transform_f) {
-  ModeledShape* this_modeled_shape =
-      GetModeledShape(raw_pointer_to_this_modeled_shape);
-  ModeledShape* other_modeled_shape =
-      GetModeledShape(raw_pointer_to_other_modeled_shape);
+  PartitionedMesh* this_partitioned_mesh =
+      GetPartitionedMesh(raw_pointer_to_this_partitioned_mesh);
+  PartitionedMesh* other_partitioned_mesh =
+      GetPartitionedMesh(raw_pointer_to_other_partitioned_mesh);
   AffineTransform this_to_common_transform(
       this_to_common_transform_a, this_to_common_transform_b,
       this_to_common_transform_c, this_to_common_transform_d,
@@ -351,8 +363,8 @@ JNI_METHOD(geometry, Intersection, jboolean, nativeMeshModeledShapeIntersects)
       other_to_common_transform_a, other_to_common_transform_b,
       other_to_common_transform_c, other_to_common_transform_d,
       other_to_common_transform_e, other_to_common_transform_f);
-  return Intersects(*this_modeled_shape, this_to_common_transform,
-                    *other_modeled_shape, other_to_common_transform);
+  return Intersects(*this_partitioned_mesh, this_to_common_transform,
+                    *other_partitioned_mesh, other_to_common_transform);
 }
 
 }  // extern "C

@@ -39,7 +39,7 @@ cc_library(
     deps = [
         "//ink/brush",
         "//ink/brush/internal/jni:brush_jni_helper",
-        "//ink/geometry:modeled_shape",
+        "//ink/geometry:partitioned_mesh",
         "//ink/jni/internal:jni_defines",
         "//ink/strokes:stroke",
         "//ink/strokes/input:stroke_input_batch",

@@ -26,9 +26,9 @@ namespace geometry_internal {
 
 // These functions contain the logic for the public `Intersects` functions. The
 // logic has been extracted here to avoid a circular dependency between the
-// public `Intersects` functions and `ModeledShape`, as
-// `ModeledShape::VisitIntersectedTriangles` requires intersection, but we also
-// have `Intersects` functions that operate on `ModeledShape`.
+// public `Intersects` functions and `PartitionedMesh`, as
+// `PartitionedMesh::VisitIntersectedTriangles` requires intersection, but we
+// also have `Intersects` functions that operate on `PartitionedMesh`.
 
 bool IntersectsInternal(Point a, Point b);
 bool IntersectsInternal(Point a, const Segment& b);
