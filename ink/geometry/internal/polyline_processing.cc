@@ -62,6 +62,12 @@ PolylineData CreateNewPolylineData(absl::Span<const Point> points) {
   return polyline;
 }
 
+// function for use in rtree traversals.
+auto segment_bounds = [](SegmentBundle segment_data) {
+  return Rect::FromTwoPoints(segment_data.segment.start,
+                             segment_data.segment.end);
+};
+
 void FindFirstAndLastIntersections(
     ink::geometry_internal::StaticRTree<SegmentBundle> rtree,
     PolylineData& polyline) {
@@ -355,6 +361,53 @@ void FindBestEndpointConnections(
   if (polyline.connect_first || polyline.connect_last) {
     polyline.has_intersection = true;
   }
+}
+
+std::vector<Point> CreateNewPolylineFromPolylineData(
+    PolylineData& polyline, absl::Span<const Point> points) {
+  if (!polyline.has_intersection) {
+    return std::vector<Point>(points.begin(), points.end());
+  }
+
+  int front_trim_index =
+      polyline.connect_first ? 0 : polyline.first_intersection.index_int + 1;
+  int back_trim_index = polyline.connect_last
+                            ? points.size()
+                            : polyline.last_intersection.index_int + 1;
+
+  std::vector<Point> new_polyline;
+  new_polyline.reserve(back_trim_index - front_trim_index + 2);
+
+  if (polyline.new_first_point != points[front_trim_index] &&
+      polyline.has_intersection) {
+    new_polyline.push_back(polyline.new_first_point);
+  }
+  for (int i = front_trim_index; i < back_trim_index; ++i) {
+    new_polyline.push_back(points[i]);
+  }
+  if (polyline.new_last_point != new_polyline.back() &&
+      polyline.has_intersection) {
+    new_polyline.push_back(polyline.new_last_point);
+  }
+  return new_polyline;
+}
+
+std::vector<Point> ProcessPolylineForMeshCreation(
+    absl::Span<const Point> points, float min_walk_distance,
+    float max_connection_distance, float min_connection_ratio,
+    float min_trimming_ratio) {
+  PolylineData polyline = CreateNewPolylineData(points);
+
+  polyline.min_walk_distance = min_walk_distance;
+  polyline.max_connection_distance = max_connection_distance;
+  polyline.min_connection_ratio = min_connection_ratio;
+  polyline.min_trimming_ratio = min_trimming_ratio;
+
+  ink::geometry_internal::StaticRTree<SegmentBundle> rtree(polyline.segments,
+                                                           segment_bounds);
+  FindFirstAndLastIntersections(rtree, polyline);
+  FindBestEndpointConnections(rtree, polyline);
+  return CreateNewPolylineFromPolylineData(polyline, points);
 }
 
 }  // namespace ink::geometry_internal

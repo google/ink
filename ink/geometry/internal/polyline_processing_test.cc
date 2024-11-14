@@ -19,6 +19,12 @@ const float kMaxConnectionDistance = 1.1f;
 const float kMinConnectionRatio = 2.0f;
 const float kMinTrimmingRatio = 1.8f;
 
+MATCHER(PointsEq, "") {
+  const Point& p1 = std::get<0>(arg);
+  const Point& p2 = std::get<1>(arg);
+  return testing::ExplainMatchResult(PointEq(p1), p2, result_listener);
+}
+
 PolylineData CreateWalkingPolylineData() {
   std::vector<Point> walking_points = {
       Point{3, 3},   Point{3, 10}, Point{3, 20}, Point{10, 20},
@@ -640,10 +646,6 @@ TEST(PolylineProcessingTest,
                                Point{30, 20},  Point{20, 30}, Point{15, 25},
                                Point{10, 20},  Point{5, 15},  Point{5, 8},
                                Point{5, 3.2}};
-  std::vector<Point> expected_points = {
-      Point{5, 3.2}, Point{4.95, 3}, Point{11, 3},  Point{20, 10},
-      Point{30, 20}, Point{20, 30},  Point{15, 25}, Point{10, 20},
-      Point{5, 15},  Point{5, 8},    Point{5, 3.2}, Point{5, 3}};
 
   PolylineData polyline = CreatePolylineAndFindBestConnections(points);
 
@@ -662,10 +664,6 @@ TEST(PolylineProcessingTest,
                                Point{30, 20}, Point{20, 30}, Point{15, 25},
                                Point{10, 20}, Point{5, 15},  Point{5, 8},
                                Point{5, 2.95}};
-  std::vector<Point> expected_points = {
-      Point{5, 3},   Point{5.2, 3}, Point{11, 3},   Point{20, 10},
-      Point{30, 20}, Point{20, 30}, Point{15, 25},  Point{10, 20},
-      Point{5, 15},  Point{5, 8},   Point{5, 2.95}, Point{5.2, 3}};
 
   PolylineData polyline = CreatePolylineAndFindBestConnections(points);
 
@@ -676,6 +674,273 @@ TEST(PolylineProcessingTest,
 
   EXPECT_EQ(polyline.connect_last, true);
   EXPECT_THAT(polyline.new_last_point, PointEq(Point{5.2, 3}));
+}
+
+TEST(PolylineProcessingTest, ProcessPolylineForPerfectlyClosedLoop) {
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(
+          {Point{5, 3}, Point{5, 8}, Point{5, 15}, Point{10, 20}, Point{15, 25},
+           Point{20, 30}, Point{30, 20}, Point{20, 10}, Point{11, 3},
+           Point{5, 3}},
+          kMinWalkDistance, kMaxConnectionDistance, kMinConnectionRatio,
+          kMinTrimmingRatio),
+      testing::Pointwise(PointsEq(),
+                         {Point{5, 3}, Point{5, 8}, Point{5, 15}, Point{10, 20},
+                          Point{15, 25}, Point{20, 30}, Point{30, 20},
+                          Point{20, 10}, Point{11, 3}, Point{5, 3}}));
+}
+
+TEST(PolylineProcessingTest, ProcessPolylineWithTinyMaxConnectionDistance) {
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(
+          {Point{5, 3.1f}, Point{5, 8}, Point{5, 15}, Point{10, 20},
+           Point{15, 25}, Point{20, 30}, Point{30, 20}, Point{20, 10},
+           Point{11, 3}, Point{5.1f, 3}},
+          kMinWalkDistance, 0.1f, kMinConnectionRatio, kMinTrimmingRatio),
+      testing::Pointwise(
+          PointsEq(), {Point{5, 3.1f}, Point{5, 8}, Point{5, 15}, Point{10, 20},
+                       Point{15, 25}, Point{20, 30}, Point{30, 20},
+                       Point{20, 10}, Point{11, 3}, Point{5.1f, 3}}));
+}
+
+TEST(PolylineProcessingTest, ProcessPolylineWithLargeMaxConnectionDistances) {
+  std::vector<Point> points = {
+      Point{5, 7},   Point{5, 8},   Point{5, 15},  Point{10, 20}, Point{15, 25},
+      Point{20, 30}, Point{30, 20}, Point{20, 10}, Point{11, 3},  Point{1, 3}};
+
+  // This max connection distance is large enough that the first point is able
+  // to connect but small enough that the last point is not able to connect and
+  // is trimmed.
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(points, kMinWalkDistance, 4.5f,
+                                     kMinConnectionRatio, kMinTrimmingRatio),
+      testing::Pointwise(
+          PointsEq(),
+          {Point{5, 3}, Point{5, 7}, Point{5, 8}, Point{5, 15}, Point{10, 20},
+           Point{15, 25}, Point{20, 30}, Point{30, 20}, Point{20, 10},
+           Point{11, 3}, Point{5, 3}}));
+  // A very large max connection distance allows both ends of the polyline to
+  // connect with each other.
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(points, kMinWalkDistance, 400.0f,
+                                     kMinConnectionRatio, kMinTrimmingRatio),
+      testing::Pointwise(
+          PointsEq(),
+          {Point{5, 3}, Point{5, 7}, Point{5, 8}, Point{5, 15}, Point{10, 20},
+           Point{15, 25}, Point{20, 30}, Point{30, 20}, Point{20, 10},
+           Point{11, 3}, Point{1, 3}, Point{5, 7}}));
+}
+
+TEST(PolylineProcessingTest, ProcessPolylineWithDifferentTrimmingRatios) {
+  std::vector<Point> points = {
+      Point{6, 23}, Point{8, 21},  Point{11, 18}, Point{14, 15}, Point{18, 9},
+      Point{16, 3}, Point{10, 0},  Point{4, 3},   Point{2, 9},   Point{6, 15},
+      Point{9, 18}, Point{12, 21}, Point{14, 23}};
+  // A normal trimming ratio causes both ends of the polyline to be trimmed,
+  // even with a large max connection distance.
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(points, kMinWalkDistance, 1000.0f,
+                                     kMinConnectionRatio, kMinTrimmingRatio),
+      testing::Pointwise(
+          PointsEq(),
+          {Point{10, 19}, Point{11, 18}, Point{14, 15}, Point{18, 9},
+           Point{16, 3}, Point{10, 0}, Point{4, 3}, Point{2, 9}, Point{6, 15},
+           Point{9, 18}, Point{10, 19}}));
+  // a small trimming ratio allows both ends to connect with a large max
+  // connection distance.
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(points, kMinWalkDistance, 1000.0f,
+                                     kMinConnectionRatio, 0.1f),
+      testing::Pointwise(
+          PointsEq(), {Point{10, 19}, Point{6, 23}, Point{8, 21}, Point{11, 18},
+                       Point{14, 15}, Point{18, 9}, Point{16, 3}, Point{10, 0},
+                       Point{4, 3}, Point{2, 9}, Point{6, 15}, Point{9, 18},
+                       Point{12, 21}, Point{14, 23}, Point{10, 19}}));
+}
+
+TEST(PolylineProcessingTest, ProcessPolylineMinWalkingDistance) {
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(
+          {Point{2, 2}, Point{3, 2}, Point{4, 2}, Point{5, 2}, Point{6, 2},
+           Point{7, 2}, Point{8, 2}, Point{9, 2}},
+          5.0f, 1000.0f, .9f, kMinTrimmingRatio),
+      testing::Pointwise(
+          PointsEq(),
+          {Point{7, 2}, Point{2, 2}, Point{3, 2}, Point{4, 2}, Point{5, 2},
+           Point{6, 2}, Point{7, 2}, Point{8, 2}, Point{9, 2}, Point{4, 2}}));
+}
+
+TEST(PolylineProcessingTest, ProcessPolylineMinConnectionRatio) {
+  std::vector<Point> points = {
+      Point{20, 0}, Point{15, 0}, Point{10, 0}, Point{5, 0}, Point{0, 0},
+      Point{0, 1},  Point{0, 2},  Point{0, 3},  Point{0, 4}, Point{0, 5},
+      Point{0, 6},  Point{0, 7},  Point{0, 8},  Point{0, 9}, Point{0, 10},
+      Point{0, 11}, Point{0, 12}, Point{0, 13}, Point{0, 14}};
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(points, kMinWalkDistance, 1000.0f, 1.1f,
+                                     kMinTrimmingRatio),
+      testing::Pointwise(
+          PointsEq(),
+          {Point{0, 3},  Point{20, 0}, Point{15, 0}, Point{10, 0}, Point{5, 0},
+           Point{0, 0},  Point{0, 1},  Point{0, 2},  Point{0, 3},  Point{0, 4},
+           Point{0, 5},  Point{0, 6},  Point{0, 7},  Point{0, 8},  Point{0, 9},
+           Point{0, 10}, Point{0, 11}, Point{0, 12}, Point{0, 13}, Point{0, 14},
+           Point{5, 0}}));
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(points, kMinWalkDistance, 1000.0f, 1.3f,
+                                     kMinTrimmingRatio),
+      testing::Pointwise(
+          PointsEq(),
+          {Point{0, 9},  Point{20, 0}, Point{15, 0}, Point{10, 0}, Point{5, 0},
+           Point{0, 0},  Point{0, 1},  Point{0, 2},  Point{0, 3},  Point{0, 4},
+           Point{0, 5},  Point{0, 6},  Point{0, 7},  Point{0, 8},  Point{0, 9},
+           Point{0, 10}, Point{0, 11}, Point{0, 12}, Point{0, 13}, Point{0, 14},
+           Point{10, 0}}));
+}
+
+TEST(PolylineProcessingTest,
+     ProcessPolylineUpdatesFirstIntersectionWithSameIndexBetterConnection) {
+  EXPECT_THAT(ProcessPolylineForMeshCreation(
+                  {Point{40, 0}, Point{35, 5}, Point{30, 10}, Point{10, 30},
+                   Point{20, 30}, Point{10, 20}, Point{5, 15}, Point{10, 10},
+                   Point{19.5f, 19.5f}},
+                  kMinWalkDistance, kMaxConnectionDistance, kMinConnectionRatio,
+                  kMinTrimmingRatio),
+              testing::Pointwise(PointsEq(),
+                                 {Point{20, 20}, Point{10, 30}, Point{20, 30},
+                                  Point{10, 20}, Point{5, 15}, Point{10, 10},
+                                  Point{19.5f, 19.5f}, Point{20.0f, 20.0f}}));
+}
+
+TEST(PolylineProcessingTest,
+     ProcessPolylineUpdatesLastIntersectionWithSameIndexBetterConnection) {
+  EXPECT_THAT(ProcessPolylineForMeshCreation(
+                  {Point{19.5f, 19.5f}, Point{10, 10}, Point{5, 15},
+                   Point{10, 20}, Point{20, 30}, Point{10, 30}, Point{30, 10},
+                   Point{35, 5}, Point{40, 0}},
+                  kMinWalkDistance, kMaxConnectionDistance, kMinConnectionRatio,
+                  kMinTrimmingRatio),
+              testing::Pointwise(
+                  PointsEq(), {Point{20.0f, 20.0f}, Point{19.5f, 19.5f},
+                               Point{10, 10}, Point{5, 15}, Point{10, 20},
+                               Point{20, 30}, Point{10, 30}, Point{20, 20}}));
+}
+
+TEST(PolylineProcessingTest, ProcessPolylineForNearlyClosedLoop) {
+  EXPECT_THAT(ProcessPolylineForMeshCreation(
+                  {Point{5, 3.1f}, Point{5, 8}, Point{5, 15}, Point{10, 20},
+                   Point{15, 25}, Point{20, 30}, Point{30, 20}, Point{20, 10},
+                   Point{11, 3}, Point{5.1f, 3}},
+                  kMinWalkDistance, kMaxConnectionDistance, kMinConnectionRatio,
+                  kMinTrimmingRatio),
+              testing::Pointwise(
+                  PointsEq(), {Point{5.1f, 3}, Point{5, 3.1f}, Point{5, 8},
+                               Point{5, 15}, Point{10, 20}, Point{15, 25},
+                               Point{20, 30}, Point{30, 20}, Point{20, 10},
+                               Point{11, 3}, Point{5.1f, 3}, Point{5, 3.1f}}));
+}
+
+TEST(PolylineProcessingTest,
+     ProcessPolylineWithNoIntersectionsAndNoConnections) {
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation({Point{-1, 0}, Point{5, 1}, Point{10, 2},
+                                      Point{15, 4}, Point{20, 6}, Point{25, 9}},
+                                     kMinWalkDistance, kMaxConnectionDistance,
+                                     kMinConnectionRatio, kMinTrimmingRatio),
+      testing::Pointwise(PointsEq(),
+                         {Point{-1, 0}, Point{5, 1}, Point{10, 2}, Point{15, 4},
+                          Point{20, 6}, Point{25, 9}}));
+}
+
+TEST(PolylineProcessingTest,
+     ProcessPolylineWithOneIntersectionAndNoConnections) {
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(
+          {Point{6, 23}, Point{8, 21}, Point{10, 19}, Point{14, 15},
+           Point{18, 9}, Point{16, 3}, Point{10, 0}, Point{4, 3}, Point{2, 9},
+           Point{6, 15}, Point{10, 19}, Point{12, 21}, Point{14, 23}},
+          kMinWalkDistance, kMaxConnectionDistance, kMinConnectionRatio,
+          kMinTrimmingRatio),
+      testing::Pointwise(
+          PointsEq(), {Point{10, 19}, Point{14, 15}, Point{18, 9}, Point{16, 3},
+                       Point{10, 0}, Point{4, 3}, Point{2, 9}, Point{6, 15},
+                       Point{10, 19}}));
+}
+
+TEST(PolylineProcessingTest,
+     ProcessPolylineWithOneIntersectionConnectsBothPoints) {
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(
+          {Point{1, 9}, Point{-1, 13}, Point{1, 17}, Point{6, 19},
+           Point{14, 15}, Point{18, 9}, Point{16, 3}, Point{10, 0}, Point{4, 3},
+           Point{2, 9}, Point{6, 15}, Point{14, 19}, Point{19, 17},
+           Point{21, 13}, Point{19, 9}},
+          kMinWalkDistance, kMaxConnectionDistance, kMinConnectionRatio,
+          kMinTrimmingRatio),
+      testing::Pointwise(
+          PointsEq(),
+          {Point{2, 9}, Point{1, 9}, Point{-1, 13}, Point{1, 17}, Point{6, 19},
+           Point{14, 15}, Point{18, 9}, Point{16, 3}, Point{10, 0}, Point{4, 3},
+           Point{2, 9}, Point{6, 15}, Point{14, 19}, Point{19, 17},
+           Point{21, 13}, Point{19, 9}, Point{18, 9}}));
+}
+
+TEST(PolylineProcessingTest, ProcessPolylineConnectsFirstPointAndTrimsEnd) {
+  EXPECT_THAT(ProcessPolylineForMeshCreation(
+                  {Point{5, 3.2}, Point{5, 8}, Point{5, 15}, Point{10, 20},
+                   Point{15, 25}, Point{20, 30}, Point{30, 20}, Point{20, 10},
+                   Point{11, 3}, Point{1, 3}},
+                  kMinWalkDistance, kMaxConnectionDistance, kMinConnectionRatio,
+                  kMinTrimmingRatio),
+              testing::Pointwise(
+                  PointsEq(),
+                  {Point{5, 3}, Point{5, 3.2}, Point{5, 8}, Point{5, 15},
+                   Point{10, 20}, Point{15, 25}, Point{20, 30}, Point{30, 20},
+                   Point{20, 10}, Point{11, 3}, Point{5, 3}}));
+}
+
+TEST(PolylineProcessingTest, ProcessPolylineConnectsLastPointAndTrimsFront) {
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(
+          {Point{1, 3}, Point{11, 3}, Point{20, 10}, Point{30, 20},
+           Point{20, 30}, Point{15, 25}, Point{10, 20}, Point{5, 15},
+           Point{5, 8}, Point{5, 3.2}},
+          kMinWalkDistance, kMaxConnectionDistance, kMinConnectionRatio,
+          kMinTrimmingRatio),
+      testing::Pointwise(
+          PointsEq(), {Point{5, 3}, Point{11, 3}, Point{20, 10}, Point{30, 20},
+                       Point{20, 30}, Point{15, 25}, Point{10, 20},
+                       Point{5, 15}, Point{5, 8}, Point{5, 3.2}, Point{5, 3}}));
+}
+
+TEST(PolylineProcessingTest,
+     ProcessPolylineConnectsFrontToBackAndBackToClosestPoint) {
+  EXPECT_THAT(ProcessPolylineForMeshCreation(
+                  {Point{4.95, 3}, Point{11, 3}, Point{20, 10}, Point{30, 20},
+                   Point{20, 30}, Point{15, 25}, Point{10, 20}, Point{5, 15},
+                   Point{5, 8}, Point{5, 3.2}},
+                  kMinWalkDistance, kMaxConnectionDistance, kMinConnectionRatio,
+                  kMinTrimmingRatio),
+              testing::Pointwise(
+                  PointsEq(),
+                  {Point{5, 3.2}, Point{4.95, 3}, Point{11, 3}, Point{20, 10},
+                   Point{30, 20}, Point{20, 30}, Point{15, 25}, Point{10, 20},
+                   Point{5, 15}, Point{5, 8}, Point{5, 3.2}, Point{5, 3}}));
+}
+
+TEST(PolylineProcessingTest,
+     ProcessPolylineConnectsBacktoFrontAndFrontToClosestPoint) {
+  EXPECT_THAT(ProcessPolylineForMeshCreation(
+                  {Point{5.2, 3}, Point{11, 3}, Point{20, 10}, Point{30, 20},
+                   Point{20, 30}, Point{15, 25}, Point{10, 20}, Point{5, 15},
+                   Point{5, 8}, Point{5, 2.95}},
+                  kMinWalkDistance, kMaxConnectionDistance, kMinConnectionRatio,
+                  kMinTrimmingRatio),
+              testing::Pointwise(
+                  PointsEq(),
+                  {Point{5, 3}, Point{5.2, 3}, Point{11, 3}, Point{20, 10},
+                   Point{30, 20}, Point{20, 30}, Point{15, 25}, Point{10, 20},
+                   Point{5, 15}, Point{5, 8}, Point{5, 2.95}, Point{5.2, 3}}));
 }
 
 }  // namespace

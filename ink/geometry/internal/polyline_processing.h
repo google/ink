@@ -73,6 +73,43 @@ float WalkDistance(PolylineData& polyline, int index, float fractional_index,
 bool EndpointIsConnectable(PolylineData& polyline, float index,
                            float fractional_index, float straight_line_distance,
                            bool walk_backwards);
+
+// For a given polyline this algorithm aims to (1) identify and create any
+// connections that the user may have intended to make but did not fully connect
+// and (2) trim any extra end points that the user did not intend to be part of
+// the selected area. To do this, the algorithm completes 3 main tasks:
+//
+// 1.  Find the first and last intersections in the polyline.
+// 2.  Find the best connections for the first and last points of the polyline.
+// 3.  Construct a new polyline based on the intersections and connections
+//     found in step 1 and 2.
+//     3.1. If there are no intersections found or connections to be made, then
+//     the new polyline will be the same as the input polyline.
+//     3.2. For any endpoint that is not connectable, any points past the
+//     nearest intersection point will be trimmed off that end of the polyline.
+//     3.3. For any endpoint that is connectable, it will not be trimmed and an
+//     additional point will be added for the new connection.
+//
+// A key component to the algorithm is how it determines whether an endpoint is
+// connectable to another point along the polyline.
+// This determination is configurable with the following parameters:
+//
+// min_walk_distance: The minimum walking distance that a point must be from the
+//                    endpoint to be considered valid for connection.
+// max_connection_distance: The maximum straight line distance that can be
+//                          between the endpoint and any valid connection point.
+// min_connection_ratio: The “walking distance from endpoint to point” / “the
+//                       straight-line distance from endpoint to point” must be
+//                       greater than this value for any valid connection point.
+//                       This value must be >1 to have any effect.
+// min_trimming_ratio: The “walking distance from endpoint to the nearest
+//                     intersection point” / “the straight-line distance from
+//                     endpoint to point” must be greater than this value for
+//                     any valid connection point.
+std::vector<Point> ProcessPolylineForMeshCreation(
+    absl::Span<const Point> points, float min_walk_distance,
+    float max_connection_distance, float min_connection_ratio,
+    float min_trimming_ratio);
 }  // namespace ink::geometry_internal
 
 #endif  // INK_GEOMETRY_INTERNAL_POLYLINE_PROCESSING_H_
