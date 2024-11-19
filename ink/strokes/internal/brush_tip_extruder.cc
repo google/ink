@@ -411,17 +411,28 @@ void ExtrudeGeometry(const ExtrusionPoints& points,
   AffineTransform position_to_particle_surface_uv =
       ComputeParticleSurfaceUvTransform(tip_state);
 
+  auto compute_surface_uv =
+      [apply_particle_surface_uv,
+       &position_to_particle_surface_uv](Point p) -> Point {
+    // If we don't need surface UVs, we default to (0, 0).
+    if (!apply_particle_surface_uv) return {0, 0};
+
+    Point transformed = position_to_particle_surface_uv.Apply(p);
+
+    // Surface UVs must be lie in the interval [0, 1]; however, we may end up
+    // with values outside of that due to floating-point precision loss, so we
+    // clamp it to that interval.
+    return {std::clamp(transformed.x, 0.f, 1.f),
+            std::clamp(transformed.y, 0.f, 1.f)};
+  };
+
   for (Point point : points.left) {
     geometry.AppendLeftVertex(point, opacity_shift, hsl_shift,
-                              apply_particle_surface_uv
-                                  ? position_to_particle_surface_uv.Apply(point)
-                                  : Point{0, 0});
+                              compute_surface_uv(point));
   }
   for (Point point : points.right) {
-    geometry.AppendRightVertex(
-        point, opacity_shift, hsl_shift,
-        apply_particle_surface_uv ? position_to_particle_surface_uv.Apply(point)
-                                  : Point{0, 0});
+    geometry.AppendRightVertex(point, opacity_shift, hsl_shift,
+                               compute_surface_uv(point));
   }
   geometry.ProcessNewVertices(simplification_threshold, tip_state);
 }

@@ -962,5 +962,26 @@ TEST_F(BrushTipExtruderTest, TextureUVsAreNotSetForNonWindingTextureParticles) {
   }
 }
 
+TEST_F(BrushTipExtruderTest, WindingTextureParticleUVsAreClamped) {
+  BrushTipExtruder extruder;
+  extruder.StartStroke(kBrushEpsilon,
+                       /* is_winding_texture_particle_brush = */ true, mesh_);
+  extruder.ExtendStroke(
+      /* new_fixed_states = */ {{.position = {1669.30981, 761.19311},
+                                 .width = 109.525535,
+                                 .height = 109.525535,
+                                 .percent_radius = 0}},
+      /* volatile_states = */ {});
+
+  for (uint32_t i = 0; i < mesh_.VertexCount(); ++i) {
+    // Texture surface UV defaults to (0, 0) if not needed.
+    Point uv = StrokeVertex::GetSurfaceUvFromMesh(mesh_, i);
+    EXPECT_GE(uv.x, 0);
+    EXPECT_LE(uv.x, 1);
+    EXPECT_GE(uv.y, 0);
+    EXPECT_LE(uv.y, 1);
+  }
+}
+
 }  // namespace
 }  // namespace ink::strokes_internal
