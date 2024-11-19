@@ -958,7 +958,7 @@ TEST_F(BrushTipExtruderTest, TextureUVsAreNotSetForNonWindingTextureParticles) {
 
   for (uint32_t i = 0; i < mesh_.VertexCount(); ++i) {
     // Texture surface UV defaults to (0, 0) if not needed.
-    EXPECT_THAT(StrokeVertex::GetSurfaceUvFromMesh(mesh_, 0), PointEq({0, 0}));
+    EXPECT_THAT(StrokeVertex::GetSurfaceUvFromMesh(mesh_, i), PointEq({0, 0}));
   }
 }
 
