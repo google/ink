@@ -379,13 +379,14 @@ namespace {
 // `StrokeVertex::surface_uv`.
 AffineTransform ComputeParticleSurfaceUvTransform(
     const BrushTipState& tip_state) {
-  // TODO: b/373649423 - Handle other shape parameters on the tip state, e.g.
-  // rotation.
-  return AffineTransform::Scale(1.0f / tip_state.width,
+  // This transform takes tip size, position, and rotation into account, but
+  // deliberately ignores tip slant, pinch, and corner rounding.
+  return AffineTransform::Translate({0.5, 0.5}) *
+         AffineTransform::Scale(1.0f / tip_state.width,
                                 1.0f / tip_state.height) *
+         AffineTransform::Rotate(-tip_state.rotation) *
          AffineTransform::Translate(
-             {tip_state.width / 2 - tip_state.position.x,
-              tip_state.height / 2 - tip_state.position.y});
+             {-tip_state.position.x, -tip_state.position.y});
 }
 
 // Appends and processes new "left" and "right" vertices in `geometry`.

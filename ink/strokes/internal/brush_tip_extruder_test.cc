@@ -983,5 +983,34 @@ TEST_F(BrushTipExtruderTest, WindingTextureParticleUVsAreClamped) {
   }
 }
 
+TEST_F(BrushTipExtruderTest, TextureUVsFollowTipRotation) {
+  constexpr float kTol = 1e-5;
+
+  BrushTipExtruder extruder;
+  extruder.StartStroke(kBrushEpsilon,
+                       /* is_winding_texture_particle_brush = */ true, mesh_);
+  extruder.ExtendStroke(
+      /* new_fixed_states = */ {{.position = {5, 5},
+                                 .width = 2,
+                                 .height = 2,
+                                 .percent_radius = 0,
+                                 .rotation = kQuarterTurn}},
+      /* volatile_states = */ {});
+
+  ASSERT_EQ(mesh_.VertexCount(), 4);
+  EXPECT_THAT(mesh_.VertexPosition(0), PointEq({4, 6}));
+  EXPECT_THAT(StrokeVertex::GetSurfaceUvFromMesh(mesh_, 0),
+              PointNear({1, 1}, kTol));
+  EXPECT_THAT(mesh_.VertexPosition(1), PointEq({4, 4}));
+  EXPECT_THAT(StrokeVertex::GetSurfaceUvFromMesh(mesh_, 1),
+              PointNear({0, 1}, kTol));
+  EXPECT_THAT(mesh_.VertexPosition(2), PointEq({6, 4}));
+  EXPECT_THAT(StrokeVertex::GetSurfaceUvFromMesh(mesh_, 2),
+              PointNear({0, 0}, kTol));
+  EXPECT_THAT(mesh_.VertexPosition(3), PointEq({6, 6}));
+  EXPECT_THAT(StrokeVertex::GetSurfaceUvFromMesh(mesh_, 3),
+              PointNear({1, 0}, kTol));
+}
+
 }  // namespace
 }  // namespace ink::strokes_internal
