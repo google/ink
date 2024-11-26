@@ -93,19 +93,12 @@ absl::StatusOr<PartitionedMesh> PartitionedMesh::FromMutableMeshGroups(
     const MutableMesh& mesh = *group.mesh;
     absl::Span<const absl::Span<const uint32_t>> outlines = group.outlines;
 
-    all_partitioned_outlines.emplace_back(outlines.size());
+    all_partitioned_outlines.emplace_back();
     std::vector<std::vector<VertexIndexPair>>& group_partitioned_outlines =
         all_partitioned_outlines.back();
 
-    if (mesh.TriangleCount() == 0) {
-      return absl::InvalidArgumentError("Mesh contains no triangles");
-    }
     uint32_t n_vertices = mesh.VertexCount();
     for (uint32_t o_idx = 0; o_idx < outlines.size(); ++o_idx) {
-      if (outlines[o_idx].empty()) {
-        return absl::InvalidArgumentError(
-            absl::Substitute("Outline at index $0 contains no points", o_idx));
-      }
       for (uint32_t v_idx = 0; v_idx < outlines[o_idx].size(); ++v_idx) {
         if (outlines[o_idx][v_idx] >= n_vertices) {
           return absl::InvalidArgumentError(absl::Substitute(
@@ -156,8 +149,10 @@ absl::StatusOr<PartitionedMesh> PartitionedMesh::FromMutableMeshGroups(
       }
 
       for (size_t o_idx = 0; o_idx < outlines.size(); ++o_idx) {
+        if (outlines[o_idx].empty()) continue;
+        group_partitioned_outlines.emplace_back();
         std::vector<VertexIndexPair>& outline_index_pairs =
-            group_partitioned_outlines[o_idx];
+            group_partitioned_outlines.back();
         outline_index_pairs.reserve(outlines[o_idx].size());
         for (uint32_t index : outlines[o_idx]) {
           auto it = partition_map.find(index);

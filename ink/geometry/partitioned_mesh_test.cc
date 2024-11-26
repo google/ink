@@ -24,6 +24,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"
@@ -45,6 +46,7 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
 using ::testing::AllOf;
 using ::testing::AnyOf;
 using ::testing::ElementsAre;
@@ -291,12 +293,16 @@ TEST(PartitionedMeshTest, FromMutableMeshOmitAttribute) {
 }
 
 TEST(PartitionedMeshTest, FromMutableMeshEmptyMesh) {
+  // Construct a `PartitionedMesh` from an empty `MutableMesh`.
   MutableMesh mutable_mesh;
-
-  absl::Status no_triangles =
-      PartitionedMesh::FromMutableMesh(mutable_mesh).status();
-  EXPECT_EQ(no_triangles.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(no_triangles.message(), HasSubstr("contains no triangles"));
+  absl::StatusOr<PartitionedMesh> no_triangles =
+      PartitionedMesh::FromMutableMesh(mutable_mesh);
+  // This should result in a `PartitionedMesh` with one render group, which
+  // contains no meshes or outlines.
+  ASSERT_THAT(no_triangles, IsOk());
+  ASSERT_EQ(no_triangles->RenderGroupCount(), 1);
+  EXPECT_THAT(no_triangles->RenderGroupMeshes(0), IsEmpty());
+  EXPECT_EQ(no_triangles->OutlineCount(0), 0);
 }
 
 TEST(PartitionedMeshTest, FromMutableMeshPartitioningError) {
@@ -312,13 +318,18 @@ TEST(PartitionedMeshTest, FromMutableMeshPartitioningError) {
 }
 
 TEST(PartitionedMeshTest, FromMutableMeshOutlineIsEmpty) {
+  // Construct a `PartitionedMesh` from a non-empty `MutableMesh` and an empty
+  // outline.
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(10, MakeSinglePackedPositionFormat());
-
-  absl::Status no_points =
-      PartitionedMesh::FromMutableMesh(mutable_mesh, {{}}).status();
-  EXPECT_EQ(no_points.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(no_points.message(), HasSubstr("contains no points"));
+  absl::StatusOr<PartitionedMesh> empty_outline =
+      PartitionedMesh::FromMutableMesh(mutable_mesh, {{}});
+  // The mesh should be included in the `PartitionedMesh`, but the empty outline
+  // should get filtered out.
+  ASSERT_THAT(empty_outline, IsOk());
+  ASSERT_EQ(empty_outline->RenderGroupCount(), 1);
+  ASSERT_THAT(empty_outline->RenderGroupMeshes(0), SizeIs(1));
+  ASSERT_EQ(empty_outline->OutlineCount(0), 0);
 }
 
 TEST(PartitionedMeshTest, FromMutableMeshOutlineRefersToNonExistentVertex) {

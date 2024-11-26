@@ -48,9 +48,9 @@ namespace ink {
 // A triangulated shape, consisting of zero or more non-empty meshes, which may
 // be indexed for faster geometric queries. These meshes are divided among zero
 // or more "render groups"; all the meshes in a render group must have the same
-// format. This also optionally carries one or more "outlines", which are
-// (potentially incomplete) traversals of the vertices in the meshes, which
-// could be used e.g. for path-based rendering.
+// format. This also optionally carries zero or more non-empty "outlines", which
+// are (potentially incomplete) traversals of the vertices in the meshes, which
+// can be used e.g. for path-based rendering.
 //
 // The spatial index is lazily initialized on the first call that requires it,
 // as indicated in method comments. It may also be pre-emptively initialized via
@@ -117,7 +117,6 @@ class PartitionedMesh {
   // contain spans of indices into `mesh`, each describing an outline.
   // `packing_params`, if given, will be used instead of the default
   // MeshAttributeCodingParams. Returns an error if:
-  // - `mesh` is empty
   // - `mesh.AsMeshes()` fails.
   // - `outlines` contains any index >= `mesh.VertexCount()`
   // TODO: b/295166196 - Once `MutableMesh` always uses 16-bit indices, this can
@@ -132,7 +131,6 @@ class PartitionedMesh {
 
   // Constructs a `PartitionedMesh` with zero or more render groups. Returns an
   // error if:
-  // - Any group contains an empty mesh.
   // - `AsMeshes()` fails for any of the meshes.
   // - The total number of `Mesh` objects post-`AsMeshes()` across all groups is
   //   more than 65536 (2^16).
@@ -146,8 +144,9 @@ class PartitionedMesh {
   // - `meshes` contains more than 65536 (2^16) elements
   // - any element of `meshes` is empty
   // - any element of `meshes` has a different `MeshFormat` from the others
-  // - `outlines` contains any element that does not correspond to a
-  //    mesh or vertex.
+  // - Any outline is empty.
+  // - Any outline contains any element that does not correspond to a mesh or
+  //   vertex.
   static absl::StatusOr<PartitionedMesh> FromMeshes(
       absl::Span<const Mesh> meshes,
       absl::Span<const absl::Span<const VertexIndexPair>> outlines = {});
@@ -157,6 +156,7 @@ class PartitionedMesh {
   // - Any group contains a mesh that is empty.
   // - Any group contains two meshes with different `MeshFormat`s.
   // - The total number of meshes across all groups is more than 65536 (2^16).
+  // - Any outline is empty.
   // - Any outline contains any element that does not correspond to a mesh or
   //   vertex.
   static absl::StatusOr<PartitionedMesh> FromMeshGroups(
