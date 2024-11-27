@@ -80,6 +80,9 @@ class StrokeShapeBuilder {
   // The `current_elapsed_time` should be the duration from the start of the
   // stroke until "now". The `elapsed_time` of inputs may be "in the future"
   // relative to this duration.
+  //
+  // CHECK-fails if `FinishStrokeInputs()` has been called for this stroke and
+  // either `real_inputs` or `predicted_inputs` is non-empty.
   StrokeShapeUpdate ExtendStroke(const StrokeInputBatch& real_inputs,
                                  const StrokeInputBatch& predicted_inputs,
                                  Duration32 current_elapsed_time);
@@ -88,6 +91,10 @@ class StrokeShapeBuilder {
   // whose source values could continue to change with the further passage of
   // time (even in the absence of any new inputs).
   bool HasUnfinishedTimeBehaviors() const;
+
+  // Indicates that the inputs for the current stroke are finished. This method
+  // is idempotent.
+  void FinishStrokeInputs();
 
   const MutableMesh& GetMesh() const;
 
@@ -127,6 +134,10 @@ class StrokeShapeBuilder {
 
 inline StrokeShapeBuilder::StrokeShapeBuilder()
     : mesh_(StrokeVertex::FullMeshFormat()) {}
+
+inline void StrokeShapeBuilder::FinishStrokeInputs() {
+  input_modeler_.FinishStrokeInputs();
+}
 
 inline const MutableMesh& StrokeShapeBuilder::GetMesh() const { return mesh_; }
 
