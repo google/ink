@@ -110,6 +110,7 @@ cc_library(
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/strokes/input/internal:stroke_input_validation_helpers",
+        "//ink/strokes/internal:stroke_outline",
         "//ink/strokes/internal:stroke_shape_builder",
         "//ink/strokes/internal:stroke_shape_update",
         "//ink/strokes/internal:stroke_vertex",

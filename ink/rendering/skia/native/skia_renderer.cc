@@ -134,7 +134,7 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
 
     if (UsePathRendering(context, brush->GetCoats()[coat_index].paint)) {
       drawables.push_back(PathDrawable(
-          stroke.GetMesh(coat_index), stroke.GetIndexOutlines(coat_index),
+          stroke.GetMesh(coat_index), stroke.GetCoatOutlines(coat_index),
           brush->GetColor(), OpacityMultiplierForPath(*brush, coat_index)));
       continue;
     }

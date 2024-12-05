@@ -28,6 +28,7 @@
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/stroke_outline.h"
 #include "ink/strokes/internal/stroke_shape_builder.h"
 #include "ink/strokes/stroke.h"
 #include "ink/types/duration.h"
@@ -204,19 +205,21 @@ class InProgressStroke {
   // specified coat of paint.
   const Envelope& GetMeshBounds(uint32_t coat_index) const;
 
-  // Returns one or more spans of vertex indices, one for each of the stroke
-  // outlines for the specified coat of paint.
+  // Returns zero or more spans of vertex indices, one for each of the stroke
+  // outlines for the specified coat of paint. There will be at least one
+  // outline for each brush tip if the stroke is non-empty. Brushes that
+  // produce discontinuous strokes (e.g. particle effects) may have more than
+  // one outline per tip.
   //
   // Every returned index value can be used to get an outline position from the
   // `MutableMesh` returned by `GetMesh()`.
   //
   // For each non-empty span of indices, the first and last elements reference
-  // vertices at the end of the stroke. The indices traverse the mesh such that
-  // the outline has a negative winding number when viewed from the positive
-  // z-axis. I.e. the outline positions would be appear in clockwise order if
-  // the y-axis points up, and in counter-clockwise order if the y-axis points
-  // down.
-  absl::Span<const absl::Span<const uint32_t>> GetIndexOutlines(
+  // vertices at the end of the stroke outline. The indices traverse the mesh
+  // such that the outline has a negative winding number when viewed from the
+  // positive z-axis. That is, the outline positions are in clockwise order if
+  // the y-axis points up, counter-clockwise order if the y-axis points down.
+  absl::Span<const absl::Span<const uint32_t>> GetCoatOutlines(
       uint32_t coat_index) const;
 
   // Returns the bounding rectangle of mesh positions added, modified, or
@@ -305,9 +308,9 @@ inline const Envelope& InProgressStroke::GetMeshBounds(
 }
 
 inline absl::Span<const absl::Span<const uint32_t>>
-InProgressStroke::GetIndexOutlines(uint32_t coat_index) const {
+InProgressStroke::GetCoatOutlines(uint32_t coat_index) const {
   ABSL_CHECK_LT(coat_index, BrushCoatCount());
-  return shape_builders_[coat_index].GetIndexOutlines();
+  return shape_builders_[coat_index].GetOutlines();
 }
 
 inline const Envelope& InProgressStroke::GetUpdatedRegion() const {

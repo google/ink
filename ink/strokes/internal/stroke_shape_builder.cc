@@ -18,12 +18,14 @@
 #include <cstdint>
 
 #include "absl/log/absl_check.h"
+#include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/brush_tip_extruder.h"
 #include "ink/strokes/internal/brush_tip_modeler.h"
+#include "ink/strokes/internal/stroke_outline.h"
 #include "ink/strokes/internal/stroke_shape_update.h"
 #include "ink/types/duration.h"
 
@@ -49,24 +51,25 @@ void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
 
   mesh_bounds_.Reset();
 
-  const size_t num_tips = coat.tips.size();
+  tip_count_ = coat.tips.size();
   // TODO: b/285594469 - For now, a BrushFamily always has exactly one tip, but
   // we'll want to relax this restriction.
-  ABSL_CHECK_EQ(num_tips, 1u);
+  ABSL_CHECK_EQ(tip_count_, 1u);
 
-  // Initialize each brush tip's outline to empty.
-  outline_indices_.clear();
-  outline_indices_.resize(num_tips);
+  // Clear the outlines from the previous stroke and reserve space for one
+  // outline per tip.
+  outlines_.clear();
+  outlines_.reserve(tip_count_);
 
   // If necessary, expand the modeler/extruder vector to the number of brush
   // tips. In order to cache all the allocations within, we never shrink this
   // vector.
-  if (num_tips > tips_.size()) {
-    tips_.resize(num_tips);
+  if (tip_count_ > tips_.size()) {
+    tips_.resize(tip_count_);
   }
 
   bool is_winding_texture_brush = IsWindingTextureCoat(coat);
-  for (size_t i = 0; i < num_tips; ++i) {
+  for (size_t i = 0; i < tip_count_; ++i) {
     bool is_winding_texture_particle_brush =
         is_winding_texture_brush &&
         (coat.tips[i].particle_gap_distance_scale != 0 ||
@@ -88,14 +91,12 @@ StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
   StrokeShapeUpdate update;
   mesh_bounds_.Reset();
 
-  // `outline_indices_` always has exactly one element per brush tip, but
-  // `tips_` may have additional elements (for allocation caching reasons),
+  // `tips_` may also have additional elements (for allocation caching reasons),
   // which should be ignored for this brush.
-  const uint32_t num_tips = BrushTipCount();
-  ABSL_DCHECK_EQ(outline_indices_.size(), num_tips);
-  ABSL_DCHECK_GE(tips_.size(), num_tips);
+  ABSL_DCHECK_GE(tips_.size(), tip_count_);
 
-  for (uint32_t i = 0; i < num_tips; ++i) {
+  outlines_.clear();
+  for (uint32_t i = 0; i < tip_count_; ++i) {
     BrushTipModeler& tip_modeler = tips_[i].modeler;
     BrushTipExtruder& tip_extruder = tips_[i].extruder;
     tip_modeler.UpdateStroke(input_modeler_.GetState(),
@@ -103,7 +104,12 @@ StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
     update.Add(tip_extruder.ExtendStroke(tip_modeler.NewFixedTipStates(),
                                          tip_modeler.VolatileTipStates()));
     mesh_bounds_.Add(tip_extruder.GetBounds());
-    outline_indices_[i] = tip_extruder.GetOutlineIndices();
+    for (const StrokeOutline& outline : tip_extruder.GetOutlines()) {
+      const absl::Span<const uint32_t>& indices = outline.GetIndices();
+      if (!indices.empty()) {
+        outlines_.push_back(indices);
+      }
+    }
   }
 
   return update;
@@ -112,9 +118,8 @@ StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
 bool StrokeShapeBuilder::HasUnfinishedTimeBehaviors() const {
   // `tips_` may have additional elements (for allocation caching reasons),
   // which should be ignored for this brush.
-  const uint32_t num_tips = BrushTipCount();
-  ABSL_DCHECK_GE(tips_.size(), num_tips);
-  for (uint32_t i = 0; i < num_tips; ++i) {
+  ABSL_DCHECK_GE(tips_.size(), tip_count_);
+  for (uint32_t i = 0; i < tip_count_; ++i) {
     if (tips_[i].modeler.HasUnfinishedTimeBehaviors(
             input_modeler_.GetState())) {
       return true;

@@ -252,14 +252,14 @@ JNI_METHOD(strokes, InProgressStroke, jint, nativeGetOutlineCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index) {
   const InProgressStroke& in_progress_stroke =
       GetInProgressStrokeWrapper(native_pointer)->in_progress_stroke;
-  return in_progress_stroke.GetIndexOutlines(coat_index).size();
+  return in_progress_stroke.GetCoatOutlines(coat_index).size();
 }
 
 JNI_METHOD(strokes, InProgressStroke, jint, nativeGetOutlineVertexCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint outline_index) {
   return GetInProgressStrokeWrapper(native_pointer)
-      ->in_progress_stroke.GetIndexOutlines(coat_index)[outline_index]
+      ->in_progress_stroke.GetCoatOutlines(coat_index)[outline_index]
       .size();
 }
 
@@ -269,7 +269,7 @@ JNI_METHOD(strokes, InProgressStroke, void, nativeFillOutlinePosition)
   const InProgressStroke& in_progress_stroke =
       GetInProgressStrokeWrapper(native_pointer)->in_progress_stroke;
   absl::Span<const uint32_t> outline =
-      in_progress_stroke.GetIndexOutlines(coat_index)[outline_index];
+      in_progress_stroke.GetCoatOutlines(coat_index)[outline_index];
   // TODO: b/294561921 - Implement multiple meshes.
   Point position = in_progress_stroke.GetMesh(coat_index)
                        .VertexPosition(outline[outline_vertex_index]);
