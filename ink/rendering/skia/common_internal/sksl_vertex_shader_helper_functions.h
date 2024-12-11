@@ -78,7 +78,15 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
       float y = dot(rgb, float3(0.299,  0.587,  0.114));
       float i = dot(rgb, float3(0.596, -0.275, -0.321));
       float q = dot(rgb, float3(0.212, -0.523,  0.311));
-      float hueRadians = atan(q, i);
+
+      // When colorUnpremul.rgb is pure black, (y, i, q) == (0, 0, 0), and
+      // atan(0, 0) is undefined. To avoid that, we set hueRadians to 0 in that
+      // case. Generally we aim to avoid branching in the shader for
+      // performance, but in this case the branching is on a uniform value,
+      // which is not an issue for performance like branching on a vertex
+      // attribute value is.
+      float hueRadians = colorUnpremul.rgb == float3(0, 0, 0) ? 0 : atan(q, i);
+
       float chroma = sqrt(i * i + q * q);
 
       hueRadians -= hslShift.x * radians(360);
