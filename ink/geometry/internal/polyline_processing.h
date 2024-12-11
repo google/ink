@@ -47,7 +47,9 @@ struct PolylineData {
   bool connect_first = false;
   bool connect_last = false;
   bool has_intersection = false;
-  float min_walk_distance;
+  float max_straight_line_distance;
+  float total_walk_distance = 0.0f;
+  float min_walk_distance = 0.0f;
   float max_connection_distance;
   float min_connection_ratio;
   float min_trimming_ratio;

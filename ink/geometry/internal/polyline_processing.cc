@@ -15,6 +15,8 @@
 #include "ink/geometry/internal/polyline_processing.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include <limits>
 #include <optional>
 #include <utility>
@@ -23,6 +25,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/distance.h"
+#include "ink/geometry/envelope.h"
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/internal/static_rtree.h"
 #include "ink/geometry/point.h"
@@ -51,14 +54,36 @@ float WalkDistance(PolylineData& polyline, int index, float fractional_index,
   return total_distance;
 }
 
+float IntermediateWalkDistance(PolylineData& polyline, int start_index,
+                               int end_index) {
+  float total_distance = 0.0f;
+  for (int i = start_index + 1; i < end_index; ++i) {
+    total_distance += polyline.segments[i].length;
+  }
+  return total_distance;
+}
+
 PolylineData CreateNewPolylineData(absl::Span<const Point> points) {
   PolylineData polyline;
+
+  Point last_point = points[0];
+  int segment_count = 0;
   polyline.segments.reserve(points.size() - 1);
-  for (int i = 0; i < static_cast<int>(points.size()) - 1; ++i) {
-    polyline.segments.push_back(
-        SegmentBundle{Segment{points[i], points[i + 1]}, i,
-                      Distance(points[i], points[i + 1])});
+  for (int i = 1; i < static_cast<int>(points.size()); ++i) {
+    if (points[i] != last_point) {
+      float distance = Distance(last_point, points[i]);
+      polyline.total_walk_distance += distance;
+      polyline.segments.push_back(SegmentBundle{Segment{last_point, points[i]},
+                                                segment_count, distance});
+      ++segment_count;
+      last_point = points[i];
+    }
   }
+
+  Envelope envelope;
+  envelope.Add(points);
+  polyline.max_straight_line_distance =
+      std::hypot(envelope.AsRect()->Width(), envelope.AsRect()->Height());
   return polyline;
 }
 
@@ -83,17 +108,22 @@ void FindFirstAndLastIntersections(
         Rect::FromTwoPoints(current_segment_bundle.segment.start,
                             current_segment_bundle.segment.end),
         [&earliest_intersected_segment, &earliest_intersection_ratios,
-         &current_segment_bundle](SegmentBundle other_segment) {
+         &current_segment_bundle, &polyline](SegmentBundle other_segment) {
           // Only check segments that are after the next segment.
           if (other_segment.index > current_segment_bundle.index + 1) {
             if (std::optional<std::pair<float, float>> intersection_ratios =
                     SegmentIntersectionRatio(current_segment_bundle.segment,
                                              other_segment.segment);
                 intersection_ratios.has_value()) {
-              if (intersection_ratios->first <
-                  earliest_intersection_ratios.first) {
-                earliest_intersected_segment = other_segment;
-                earliest_intersection_ratios = *intersection_ratios;
+              if (IntermediateWalkDistance(polyline,
+                                           current_segment_bundle.index,
+                                           other_segment.index) >
+                  polyline.min_walk_distance / 2.0f) {
+                if (intersection_ratios->first <
+                    earliest_intersection_ratios.first) {
+                  earliest_intersected_segment = other_segment;
+                  earliest_intersection_ratios = *intersection_ratios;
+                }
               }
             }
           }
@@ -153,8 +183,12 @@ void FindFirstAndLastIntersections(
                     SegmentIntersectionRatio(current_segment_bundle.segment,
                                              other_segment.segment);
                 intersection_ratios.has_value()) {
-              if (intersection_ratios->first > largest_intersection_ratio) {
-                largest_intersection_ratio = intersection_ratios->first;
+              if (IntermediateWalkDistance(polyline, other_segment.index,
+                                           current_segment_bundle.index) >
+                  polyline.min_walk_distance / 2.0f) {
+                if (intersection_ratios->first > largest_intersection_ratio) {
+                  largest_intersection_ratio = intersection_ratios->first;
+                }
               }
             }
           }
@@ -283,6 +317,7 @@ void FindBestEndpointConnections(
           std::optional<float> connection_projection =
               current_segment.segment.Project(first_point);
           ABSL_CHECK(connection_projection.has_value());
+
           float clamped_projection =
               std::clamp(*connection_projection, 0.0f, 1.0f);
 
@@ -363,31 +398,35 @@ void FindBestEndpointConnections(
   }
 }
 
-std::vector<Point> CreateNewPolylineFromPolylineData(
-    PolylineData& polyline, absl::Span<const Point> points) {
-  if (!polyline.has_intersection) {
-    return std::vector<Point>(points.begin(), points.end());
-  }
-
-  int front_trim_index =
-      polyline.connect_first ? 0 : polyline.first_intersection.index_int + 1;
-  int back_trim_index = polyline.connect_last
-                            ? points.size()
-                            : polyline.last_intersection.index_int + 1;
-
+std::vector<Point> CreateNewPolylineFromPolylineData(PolylineData& polyline) {
   std::vector<Point> new_polyline;
-  new_polyline.reserve(back_trim_index - front_trim_index + 2);
 
-  if (polyline.new_first_point != points[front_trim_index] &&
-      polyline.has_intersection) {
-    new_polyline.push_back(polyline.new_first_point);
-  }
-  for (int i = front_trim_index; i < back_trim_index; ++i) {
-    new_polyline.push_back(points[i]);
-  }
-  if (polyline.new_last_point != new_polyline.back() &&
-      polyline.has_intersection) {
-    new_polyline.push_back(polyline.new_last_point);
+  if (polyline.has_intersection) {
+    int front_trim_index =
+        polyline.connect_first ? 0 : polyline.first_intersection.index_int + 1;
+    int back_trim_index = polyline.connect_last
+                              ? polyline.segments.size()
+                              : polyline.last_intersection.index_int + 1;
+    new_polyline.reserve(back_trim_index - front_trim_index + 3);
+    if (polyline.new_first_point !=
+        polyline.segments[front_trim_index].segment.start) {
+      new_polyline.push_back(polyline.new_first_point);
+    }
+    for (int i = front_trim_index; i < back_trim_index; ++i) {
+      new_polyline.push_back(polyline.segments[i].segment.start);
+    }
+    if (polyline.connect_last) {
+      new_polyline.push_back(polyline.segments.back().segment.end);
+    }
+    if (polyline.new_last_point != new_polyline.back()) {
+      new_polyline.push_back(polyline.new_last_point);
+    }
+  } else {
+    new_polyline.reserve(polyline.segments.size() + 1);
+    new_polyline.push_back(polyline.segments.front().segment.start);
+    for (size_t i = 0; i < polyline.segments.size(); ++i) {
+      new_polyline.push_back(polyline.segments[i].segment.end);
+    }
   }
   return new_polyline;
 }
@@ -406,8 +445,10 @@ std::vector<Point> ProcessPolylineForMeshCreation(
   ink::geometry_internal::StaticRTree<SegmentBundle> rtree(polyline.segments,
                                                            segment_bounds);
   FindFirstAndLastIntersections(rtree, polyline);
+
   FindBestEndpointConnections(rtree, polyline);
-  return CreateNewPolylineFromPolylineData(polyline, points);
+
+  return CreateNewPolylineFromPolylineData(polyline);
 }
 
 }  // namespace ink::geometry_internal
