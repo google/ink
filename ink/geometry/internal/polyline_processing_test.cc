@@ -39,8 +39,10 @@ auto segment_bounds = [](SegmentBundle segment_data) {
                              segment_data.segment.end);
 };
 
-PolylineData CreatePolylineAndFindIntersections(std::vector<Point> points) {
+PolylineData CreatePolylineAndFindIntersections(
+    std::vector<Point> points, float min_walk_distance = 0.0f) {
   PolylineData output_polyline = CreateNewPolylineData(points);
+  output_polyline.min_walk_distance = min_walk_distance;
   ink::geometry_internal::StaticRTree<SegmentBundle> rtree(
       output_polyline.segments, segment_bounds);
   FindFirstAndLastIntersections(rtree, output_polyline);
@@ -131,6 +133,61 @@ TEST(PolylineProcessingTest,
               SegmentEq(Segment{{5, 0}, {2, 0}}));
 }
 
+TEST(PolylineProcessingTest,
+     CreateNewPolylineDataDiscardsDuplicatePointsAtPolylineStart) {
+  std::vector<Point> points = {
+      Point{5, 3},   Point{5, 3},   Point{5, 3},   Point{5, 3},   Point{5, 3},
+      Point{5, 8},   Point{5, 15},  Point{10, 20}, Point{15, 25}, Point{20, 30},
+      Point{30, 20}, Point{20, 10}, Point{11, 3},  Point{5, 3}};
+  PolylineData polyline = CreateNewPolylineData(points);
+
+  EXPECT_EQ(polyline.segments.size(), 9);
+  EXPECT_THAT(polyline.segments.front().segment,
+              SegmentEq(Segment{{5, 3}, {5, 8}}));
+  EXPECT_THAT(polyline.segments.back().segment,
+              SegmentEq(Segment{{11, 3}, {5, 3}}));
+}
+
+TEST(PolylineProcessingTest,
+     CreateNewPolylineDataDiscardsDuplicatePointsAtPolylineEnd) {
+  std::vector<Point> points = {
+      Point{1, 9},  Point{-1, 13}, Point{1, 17},  Point{6, 19},  Point{14, 15},
+      Point{18, 9}, Point{16, 3},  Point{10, 0},  Point{4, 3},   Point{2, 9},
+      Point{6, 15}, Point{14, 19}, Point{19, 17}, Point{21, 13}, Point{19, 9},
+      Point{19, 9}, Point{19, 9},  Point{19, 9},  Point{19, 9},  Point{19, 9}};
+  PolylineData polyline = CreateNewPolylineData(points);
+
+  EXPECT_EQ(polyline.segments.size(), 14);
+  EXPECT_THAT(polyline.segments.front().segment,
+              SegmentEq(Segment{{1, 9}, {-1, 13}}));
+  EXPECT_THAT(polyline.segments.back().segment,
+              SegmentEq(Segment{{21, 13}, {19, 9}}));
+}
+
+TEST(PolylineProcessingTest,
+     CreateNewPolylineDataDiscardsDuplicatePointsInPolylineMiddle) {
+  std::vector<Point> points = {
+      Point{1, 9},   Point{-1, 13}, Point{1, 17},  Point{1, 17},  Point{1, 17},
+      Point{1, 17},  Point{6, 19},  Point{14, 15}, Point{18, 9},  Point{16, 3},
+      Point{10, 0},  Point{10, 0},  Point{10, 0},  Point{4, 3},   Point{2, 9},
+      Point{6, 15},  Point{6, 15},  Point{14, 19}, Point{19, 17}, Point{21, 13},
+      Point{21, 13}, Point{21, 13}, Point{21, 13}, Point{21, 13}, Point{21, 13},
+      Point{21, 13}, Point{19, 9}};
+  PolylineData polyline = CreateNewPolylineData(points);
+
+  EXPECT_EQ(polyline.segments.size(), 14);
+  EXPECT_THAT(polyline.segments[2].segment,
+              SegmentEq(Segment{{1, 17}, {6, 19}}));
+  EXPECT_THAT(polyline.segments[7].segment,
+              SegmentEq(Segment{{10, 0}, {4, 3}}));
+  EXPECT_THAT(polyline.segments[10].segment,
+              SegmentEq(Segment{{6, 15}, {14, 19}}));
+  EXPECT_THAT(polyline.segments[12].segment,
+              SegmentEq(Segment{{19, 17}, {21, 13}}));
+  EXPECT_THAT(polyline.segments[13].segment,
+              SegmentEq(Segment{{21, 13}, {19, 9}}));
+}
+
 TEST(PolylineProcessingTest, IntersectionsForPerfectlyClosedLoop) {
   std::vector<Point> points = {
       Point{5, 3},   Point{5, 8},   Point{5, 15},  Point{10, 20}, Point{15, 25},
@@ -204,6 +261,22 @@ TEST(PolylineProcessingTest,
   PolylineData polyline = CreatePolylineAndFindIntersections(points);
 
   EXPECT_EQ(polyline.has_intersection, false);
+}
+
+TEST(PolylineProcessingTest,
+     IntersectionsDiscardsIntersectionsWithTooShortWalkDistance) {
+  std::vector<Point> points = {
+      Point{19, 22}, Point{14, 19},     Point{10.05f, 17},
+      Point{14, 15}, Point{18, 9},      Point{16, 3},
+      Point{10, 0},  Point{9.9f, -.1f}, Point{10.1f, -.1f},
+      Point{10, 0},  Point{4, 3},       Point{2, 9},
+      Point{6, 15},  Point{9.95f, 17},  Point{6, 19},
+      Point{2, 21}};
+
+  PolylineData polyline_with_walk_distance =
+      CreatePolylineAndFindIntersections(points, 2.0f);
+
+  EXPECT_EQ(polyline_with_walk_distance.has_intersection, false);
 }
 
 TEST(PolylineProcessingTest,
@@ -868,9 +941,26 @@ TEST(PolylineProcessingTest,
 }
 
 TEST(PolylineProcessingTest,
+     ProcessPolylineWithOneValidIntersectionTrimsTwoInvalidIntersections) {
+  EXPECT_THAT(
+      ProcessPolylineForMeshCreation(
+          {Point{6, 23}, Point{6.2f, 23.1f}, Point{6.1f, 23.1f}, Point{8, 21},
+           Point{10, 19}, Point{14, 15}, Point{18, 9}, Point{16, 3},
+           Point{10, 0}, Point{4, 3}, Point{2, 9}, Point{6, 15}, Point{10, 19},
+           Point{11.9f, 21.2f}, Point{11.9f, 21.1f}, Point{14, 23}},
+          kMinWalkDistance, kMaxConnectionDistance, kMinConnectionRatio,
+          kMinTrimmingRatio),
+      testing::Pointwise(
+          PointsEq(), {Point{10, 19}, Point{14, 15}, Point{18, 9}, Point{16, 3},
+                       Point{10, 0}, Point{4, 3}, Point{2, 9}, Point{6, 15},
+                       Point{10, 19}}));
+}
+
+TEST(PolylineProcessingTest,
      ProcessPolylineWithOneIntersectionConnectsBothPoints) {
   EXPECT_THAT(
       ProcessPolylineForMeshCreation(
+
           {Point{1, 9}, Point{-1, 13}, Point{1, 17}, Point{6, 19},
            Point{14, 15}, Point{18, 9}, Point{16, 3}, Point{10, 0}, Point{4, 3},
            Point{2, 9}, Point{6, 15}, Point{14, 19}, Point{19, 17},

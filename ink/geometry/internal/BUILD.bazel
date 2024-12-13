@@ -153,6 +153,7 @@ cc_library(
         ":algorithms",
         ":static_rtree",
         "//ink/geometry:distance",
+        "//ink/geometry:envelope",
         "//ink/geometry:point",
         "//ink/geometry:rect",
         "//ink/geometry:segment",
