@@ -139,6 +139,16 @@ Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
 }
 
 Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
+    const BrushBehavior::NoiseNode& expected) {
+  return VariantWith<BrushBehavior::NoiseNode>(
+      AllOf(Field("seed", &BrushBehavior::NoiseNode::seed, Eq(expected.seed)),
+            Field("vary_over", &BrushBehavior::NoiseNode::vary_over,
+                  Eq(expected.vary_over)),
+            Field("base_period", &BrushBehavior::NoiseNode::base_period,
+                  FloatEq(expected.base_period))));
+}
+
+Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
     const BrushBehavior::FallbackFilterNode& expected) {
   return VariantWith<BrushBehavior::FallbackFilterNode>(Field(
       "is_fallback_for", &BrushBehavior::FallbackFilterNode::is_fallback_for,

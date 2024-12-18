@@ -318,6 +318,49 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::ConstantNode& node,
   context.stack.push_back(node.value);
 }
 
+void ProcessBehaviorNodeImpl(const NoiseNodeImplementation& node,
+                             const BehaviorNodeContext& context) {
+  float amount = 0.0f;
+  switch (node.vary_over) {
+    case BrushBehavior::DampingSource::kDistanceInCentimeters: {
+      PhysicalDistance period = PhysicalDistance::Centimeters(node.base_period);
+      float previous_traveled_distance =
+          context.previous_input_metrics.has_value()
+              ? context.previous_input_metrics->traveled_distance
+              : 0.0f;
+      PhysicalDistance traveled_distance_delta =
+          context.input_modeler_state.stroke_unit_length.has_value()
+              ? *context.input_modeler_state.stroke_unit_length *
+                    (context.current_input.traveled_distance -
+                     previous_traveled_distance)
+              : PhysicalDistance::Zero();
+      amount = traveled_distance_delta / period;
+    } break;
+    case BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize: {
+      float period = context.brush_size * node.base_period;
+      float previous_traveled_distance =
+          context.previous_input_metrics.has_value()
+              ? context.previous_input_metrics->traveled_distance
+              : 0.0f;
+      float traveled_distance_delta =
+          context.current_input.traveled_distance - previous_traveled_distance;
+      amount = traveled_distance_delta / period;
+    } break;
+    case BrushBehavior::DampingSource::kTimeInSeconds: {
+      Duration32 period = Duration32::Seconds(node.base_period);
+      Duration32 previous_elapsed_time =
+          context.previous_input_metrics.has_value()
+              ? context.previous_input_metrics->elapsed_time
+              : Duration32::Zero();
+      Duration32 elapsed_time_delta =
+          context.current_input.elapsed_time - previous_elapsed_time;
+      amount = elapsed_time_delta / period;
+    } break;
+  }
+  NoiseGenerator& generator = context.noise_generators[node.generator_index];
+  context.stack.push_back(generator.AdvanceBy(amount));
+}
+
 void ProcessBehaviorNodeImpl(const BrushBehavior::FallbackFilterNode& node,
                              const BehaviorNodeContext& context) {
   ABSL_DCHECK(!context.stack.empty());
