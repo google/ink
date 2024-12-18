@@ -20,6 +20,7 @@
 #include <cstddef>
 #include <limits>
 #include <optional>
+#include <random>
 #include <variant>
 #include <vector>
 
@@ -27,6 +28,7 @@
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_tip.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/point.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/easing_implementation.h"
@@ -45,9 +47,57 @@ inline constexpr float kNullBehaviorNodeValue =
 // Returns true if the given brush behavior node value is "null".
 inline bool IsNullBehaviorNodeValue(float value) { return std::isnan(value); }
 
+class NoiseGenerator {
+ public:
+  explicit NoiseGenerator(uint64 seed) {
+    std::seed_seq seq{seed};
+    rng_.seed(seq);
+    std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
+    prev_value_ = distribution(rng_);
+    next_value_ = distribution(rng_);
+  }
+
+  NoiseGenerator(const NoiseGenerator&) = default;
+  NoiseGenerator& operator=(const NoiseGenerator&) = default;
+  ~NoiseGenerator() = default;
+
+  float AdvanceBy(float amount) {
+    progress_ += amount;
+    if (progress_ >= 1.0f) {
+      std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
+      if (progress_ >= 2.0f) {
+        next_value_ = distribution(rng_);
+      }
+      prev_value_ = next_value_;
+      next_value_ = distribution(rng_);
+      float unused;
+      progress_ = std::modff(progress_, &unused);
+    }
+    return ::ink::geometry_internal::Lerp(
+        prev_value_, next_value_,
+        progress_ * progress_ * (3.0f - 2.0f * progress_));
+  }
+
+ private:
+  std::minstd_rand rng_;
+  float prev_value_;
+  float next_value_;
+  float progress_ = 0.f;
+};
+
+struct NoiseNodeImplementation {
+  // The index into `BehaviorNodeContext::*_noise_generators_` for the latest
+  // noise generator state of this noise node.
+  size_t generator_index;
+  // The below fields are copies of the same fields from the
+  // `BrushBehavior::NoiseNode` that this struct helps implement.
+  BrushBehavior::DampingSource vary_over;
+  float base_period;
+};
+
 struct DampingNodeImplementation {
-  // The index into `BehaviorNodeContext::damped_values` for the latest damped
-  // value of this damping node.
+  // The index into `BehaviorNodeContext::*_damped_values_` for the latest
+  // damped value of this damping node.
   size_t damping_index;
   // The below fields are copies of the same fields from the
   // `BrushBehavior::DampingNode` that this struct helps implement.
@@ -56,7 +106,7 @@ struct DampingNodeImplementation {
 };
 
 struct TargetNodeImplementation {
-  // The index into `BehaviorNodeContext::target_modifiers` for the latest
+  // The index into `BehaviorNodeContext::*_target_modifiers_` for the latest
   // modifier value of this target node.
   size_t target_index;
   // The below field is a copy of the same field from the
@@ -66,7 +116,7 @@ struct TargetNodeImplementation {
 
 using BehaviorNodeImplementation =
     std::variant<BrushBehavior::SourceNode, BrushBehavior::ConstantNode,
-                 BrushBehavior::FallbackFilterNode,
+                 NoiseNodeImplementation, BrushBehavior::FallbackFilterNode,
                  BrushBehavior::ToolTypeFilterNode, DampingNodeImplementation,
                  EasingImplementation, BrushBehavior::BinaryOpNode,
                  BrushBehavior::InterpolationNode, TargetNodeImplementation>;
@@ -82,6 +132,7 @@ struct BehaviorNodeContext {
   // any).
   std::optional<InputMetrics> previous_input_metrics;
   std::vector<float>& stack;
+  absl::Span<NoiseGenerator> noise_generators;
   absl::Span<float> damped_values;
   absl::Span<float> target_modifiers;
 };
