@@ -72,6 +72,17 @@ bool operator!=(const BrushBehavior::ConstantNode& lhs,
   return !(lhs == rhs);
 }
 
+bool operator==(const BrushBehavior::NoiseNode& lhs,
+                const BrushBehavior::NoiseNode& rhs) {
+  return lhs.seed == rhs.seed && lhs.vary_over == rhs.vary_over &&
+         lhs.base_period == rhs.base_period;
+}
+
+bool operator!=(const BrushBehavior::NoiseNode& lhs,
+                const BrushBehavior::NoiseNode& rhs) {
+  return !(lhs == rhs);
+}
+
 bool operator==(const BrushBehavior::FallbackFilterNode& lhs,
                 const BrushBehavior::FallbackFilterNode& rhs) {
   return lhs.is_fallback_for == rhs.is_fallback_for;
@@ -350,6 +361,7 @@ bool IsValidBehaviorInterpolation(BrushBehavior::Interpolation interpolation) {
 // Returns the number of input values that a given `Node` consumes.
 int NodeInputCount(const BrushBehavior::SourceNode& node) { return 0; }
 int NodeInputCount(const BrushBehavior::ConstantNode& node) { return 0; }
+int NodeInputCount(const BrushBehavior::NoiseNode& node) { return 0; }
 int NodeInputCount(const BrushBehavior::FallbackFilterNode& node) { return 1; }
 int NodeInputCount(const BrushBehavior::ToolTypeFilterNode& node) { return 1; }
 int NodeInputCount(const BrushBehavior::DampingNode& node) { return 1; }
@@ -401,6 +413,20 @@ absl::Status ValidateNode(const BrushBehavior::ConstantNode& node) {
   if (!std::isfinite(node.value)) {
     return absl::InvalidArgumentError(
         absl::StrCat("`ConstantNode::value` must be finite. Got ", node.value));
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidateNode(const BrushBehavior::NoiseNode& node) {
+  if (!IsValidBehaviorDampingSource(node.vary_over)) {
+    return absl::InvalidArgumentError(
+        absl::StrFormat("`NoiseNode::vary_over` holds non-enumerator value %d",
+                        static_cast<int>(node.vary_over)));
+  }
+  if (!std::isfinite(node.base_period) || node.base_period <= 0.f) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "`NoiseNode::base_period` must be finite and positive. Got ",
+        node.base_period));
   }
   return absl::OkStatus();
 }
@@ -732,6 +758,12 @@ std::string ToFormattedString(const BrushBehavior::SourceNode& node) {
 
 std::string ToFormattedString(const BrushBehavior::ConstantNode& node) {
   return absl::StrCat("ConstantNode{", node.value, "}");
+}
+
+std::string ToFormattedString(const BrushBehavior::NoiseNode& node) {
+  return absl::StrCat(
+      "NoiseNode{seed=0x", absl::Hex(node.seed, absl::kZeroPad8),
+      ", vary_over=", node.vary_over, ", base_period=", node.base_period, "}");
 }
 
 std::string ToFormattedString(const BrushBehavior::FallbackFilterNode& node) {

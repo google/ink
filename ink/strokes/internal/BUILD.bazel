@@ -109,6 +109,7 @@ cc_library(
     deps = [
         ":brush_tip_state",
         ":easing_implementation",
+        ":noise_generator",
         ":stroke_input_modeler",
         "//ink/brush:brush_behavior",
         "//ink/brush:brush_tip",
@@ -131,6 +132,7 @@ cc_test(
         ":brush_tip_modeler_helpers",
         ":brush_tip_state",
         ":easing_implementation",
+        ":noise_generator",
         ":stroke_input_modeler",
         ":type_matchers",
         "//ink/brush:brush_behavior",
@@ -215,6 +217,26 @@ cc_test(
         "//ink/brush:easing_function",
         "//ink/brush:fuzz_domains",
         "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_fuzztest//fuzztest",
+        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+    ],
+)
+
+cc_library(
+    name = "noise_generator",
+    srcs = ["noise_generator.cc"],
+    hdrs = ["noise_generator.h"],
+    deps = [
+        "//ink/geometry/internal:algorithms",
+        "@com_google_absl//absl/log:absl_check",
+    ],
+)
+
+cc_test(
+    name = "noise_generator_test",
+    srcs = ["noise_generator_test.cc"],
+    deps = [
+        ":noise_generator",
         "@com_google_fuzztest//fuzztest",
         "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
     ],

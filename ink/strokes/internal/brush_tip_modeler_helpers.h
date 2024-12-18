@@ -30,6 +30,7 @@
 #include "ink/geometry/point.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/easing_implementation.h"
+#include "ink/strokes/internal/noise_generator.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
 
 namespace ink::strokes_internal {
@@ -45,9 +46,19 @@ inline constexpr float kNullBehaviorNodeValue =
 // Returns true if the given brush behavior node value is "null".
 inline bool IsNullBehaviorNodeValue(float value) { return std::isnan(value); }
 
+struct NoiseNodeImplementation {
+  // The index into `BehaviorNodeContext::*_noise_generators_` for the latest
+  // noise generator state of this noise node.
+  size_t generator_index;
+  // The below fields are copies of the same fields from the
+  // `BrushBehavior::NoiseNode` that this struct helps implement.
+  BrushBehavior::DampingSource vary_over;
+  float base_period;
+};
+
 struct DampingNodeImplementation {
-  // The index into `BehaviorNodeContext::damped_values` for the latest damped
-  // value of this damping node.
+  // The index into `BehaviorNodeContext::*_damped_values_` for the latest
+  // damped value of this damping node.
   size_t damping_index;
   // The below fields are copies of the same fields from the
   // `BrushBehavior::DampingNode` that this struct helps implement.
@@ -56,7 +67,7 @@ struct DampingNodeImplementation {
 };
 
 struct TargetNodeImplementation {
-  // The index into `BehaviorNodeContext::target_modifiers` for the latest
+  // The index into `BehaviorNodeContext::*_target_modifiers_` for the latest
   // modifier value of this target node.
   size_t target_index;
   // The below field is a copy of the same field from the
@@ -66,7 +77,7 @@ struct TargetNodeImplementation {
 
 using BehaviorNodeImplementation =
     std::variant<BrushBehavior::SourceNode, BrushBehavior::ConstantNode,
-                 BrushBehavior::FallbackFilterNode,
+                 NoiseNodeImplementation, BrushBehavior::FallbackFilterNode,
                  BrushBehavior::ToolTypeFilterNode, DampingNodeImplementation,
                  EasingImplementation, BrushBehavior::BinaryOpNode,
                  BrushBehavior::InterpolationNode, TargetNodeImplementation>;
@@ -82,6 +93,7 @@ struct BehaviorNodeContext {
   // any).
   std::optional<InputMetrics> previous_input_metrics;
   std::vector<float>& stack;
+  absl::Span<NoiseGenerator> noise_generators;
   absl::Span<float> damped_values;
   absl::Span<float> target_modifiers;
 };

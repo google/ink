@@ -14,6 +14,7 @@
 
 #include <jni.h>
 
+#include <cstdint>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -74,6 +75,18 @@ JNI_METHOD_INNER(brush, BrushBehavior, ConstantNode, void,
       reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
   brush_behavior->nodes.push_back(ink::BrushBehavior::ConstantNode{
       .value = value,
+  });
+}
+
+JNI_METHOD_INNER(brush, BrushBehavior, NoiseNode, void, nativeAppendNoiseNode)
+(JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jint seed,
+ jint vary_over, jfloat base_period) {
+  auto* brush_behavior =
+      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
+  brush_behavior->nodes.push_back(ink::BrushBehavior::NoiseNode{
+      .seed = static_cast<uint32_t>(seed),
+      .vary_over = static_cast<ink::BrushBehavior::DampingSource>(vary_over),
+      .base_period = base_period,
   });
 }
 
