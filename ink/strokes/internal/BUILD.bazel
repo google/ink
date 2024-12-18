@@ -109,6 +109,7 @@ cc_library(
     deps = [
         ":brush_tip_state",
         ":easing_implementation",
+        ":noise_generator",
         ":stroke_input_modeler",
         "//ink/brush:brush_behavior",
         "//ink/brush:brush_tip",
@@ -131,6 +132,7 @@ cc_test(
         ":brush_tip_modeler_helpers",
         ":brush_tip_state",
         ":easing_implementation",
+        ":noise_generator",
         ":stroke_input_modeler",
         ":type_matchers",
         "//ink/brush:brush_behavior",

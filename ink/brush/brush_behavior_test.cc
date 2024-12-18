@@ -20,6 +20,7 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/strings/str_cat.h"
 #include "ink/brush/easing_function.h"
 #include "ink/brush/fuzz_domains.h"
@@ -28,6 +29,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::testing::HasSubstr;
 
 constexpr float kInfinity = std::numeric_limits<float>::infinity();
@@ -240,6 +243,15 @@ TEST(BrushBehaviorTest, StringifyConstantNode) {
             "ConstantNode{0.25}");
 }
 
+TEST(BrushBehaviorTest, StringifyNoiseNode) {
+  EXPECT_EQ(absl::StrCat(BrushBehavior::NoiseNode{
+                .seed = 0xEffaced,
+                .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+                .base_period = 0.25f}),
+            "NoiseNode{seed=0x0effaced, vary_over=kTimeInSeconds, "
+            "base_period=0.25}");
+}
+
 TEST(BrushBehaviorTest, StringifyFallbackFilterNode) {
   EXPECT_EQ(absl::StrCat(BrushBehavior::FallbackFilterNode{
                 BrushBehavior::OptionalInputProperty::kPressure}),
@@ -395,6 +407,34 @@ TEST(BrushBehaviorTest, ConstantNodeEqualAndNotEqual) {
   BrushBehavior::ConstantNode node = {.value = 42};
   EXPECT_EQ((BrushBehavior::ConstantNode{.value = 42}), node);
   EXPECT_NE((BrushBehavior::ConstantNode{.value = 37}), node);
+}
+
+TEST(BrushBehaviorTest, NoiseNodeEqualAndNotEqual) {
+  BrushBehavior::NoiseNode node = {
+      .seed = 12345,
+      .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+      .base_period = 0.25f};
+  EXPECT_EQ((BrushBehavior::NoiseNode{
+                .seed = 12345,
+                .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+                .base_period = 0.25f}),
+            node);
+  EXPECT_NE((BrushBehavior::NoiseNode{
+                .seed = 54321,  // different
+                .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+                .base_period = 0.25f}),
+            node);
+  EXPECT_NE(
+      (BrushBehavior::NoiseNode{.seed = 12345,
+                                .vary_over = BrushBehavior::DampingSource::
+                                    kDistanceInCentimeters,  // different
+                                .base_period = 0.25f}),
+      node);
+  EXPECT_NE((BrushBehavior::NoiseNode{
+                .seed = 12345,
+                .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+                .base_period = 0.75f}),  // different
+            node);
 }
 
 TEST(BrushBehaviorTest, FallbackFilterNodeEqualAndNotEqual) {
@@ -614,6 +654,40 @@ TEST(BrushBehaviorTest, ValidateConstantNode) {
       BrushBehavior::ConstantNode{kNan});
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("must be finite"));
+}
+
+TEST(BrushBehaviorTest, ValidateNoiseNode) {
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::NoiseNode{
+          .seed = 12345,
+          .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .base_period = 0.25,
+      }),
+      IsOk());
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::NoiseNode{
+          .seed = 12345,
+          .vary_over = static_cast<BrushBehavior::DampingSource>(123),
+          .base_period = 0.25,
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("non-enumerator value 123")));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::NoiseNode{
+          .seed = 12345,
+          .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .base_period = 0,
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("base_period` must be finite and positive")));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::NoiseNode{
+          .seed = 12345,
+          .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .base_period = kInfinity,
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("base_period` must be finite and positive")));
 }
 
 TEST(BrushBehaviorTest, ValidateFallbackFilterNode) {

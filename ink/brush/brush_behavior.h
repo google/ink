@@ -433,6 +433,19 @@ struct BrushBehavior {
     float value;
   };
 
+  // Value node for producing a continuous random noise function with values
+  // between 0 to 1.
+  // Inputs: 0
+  // Output: The current random value.
+  // To be valid:
+  //   - `vary_over` must be a valid `DampingSource` enumerator.
+  //   - `base_period` must be finite and strictly positive.
+  struct NoiseNode {
+    uint32_t seed;
+    DampingSource vary_over;
+    float base_period;
+  };
+
   //////////////////////////
   /// FILTER VALUE NODES ///
   //////////////////////////
@@ -530,9 +543,10 @@ struct BrushBehavior {
   // value, or a "target node" which consumes one or more input values and
   // applies some effect to the brush tip (but does not produce any output
   // value).
-  using Node = std::variant<SourceNode, ConstantNode, FallbackFilterNode,
-                            ToolTypeFilterNode, DampingNode, ResponseNode,
-                            BinaryOpNode, InterpolationNode, TargetNode>;
+  using Node =
+      std::variant<SourceNode, ConstantNode, NoiseNode, FallbackFilterNode,
+                   ToolTypeFilterNode, DampingNode, ResponseNode, BinaryOpNode,
+                   InterpolationNode, TargetNode>;
 
   std::vector<Node> nodes;
 };
@@ -551,6 +565,11 @@ bool operator==(const BrushBehavior::ConstantNode& lhs,
                 const BrushBehavior::ConstantNode& rhs);
 bool operator!=(const BrushBehavior::ConstantNode& lhs,
                 const BrushBehavior::ConstantNode& rhs);
+
+bool operator==(const BrushBehavior::NoiseNode& lhs,
+                const BrushBehavior::NoiseNode& rhs);
+bool operator!=(const BrushBehavior::NoiseNode& lhs,
+                const BrushBehavior::NoiseNode& rhs);
 
 bool operator==(const BrushBehavior::FallbackFilterNode& lhs,
                 const BrushBehavior::FallbackFilterNode& rhs);
