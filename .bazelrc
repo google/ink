@@ -9,7 +9,20 @@ common --enable_bzlmod
 try-import %workspace%/fuzztest.bazelrc
 
 # Android builds.
+build:android-x86 --extra_toolchains=@androidndk//:all
 build:android-x86 --platforms=//:android-x86
+
+build:android-x86_64 --extra_toolchains=@androidndk//:all
 build:android-x86_64 --platforms=//:android-x86_64
+
+build:android-armeabi-v7a --extra_toolchains=@androidndk//:all
 build:android-armeabi-v7a --platforms=//:android-arm
+
+build:android-arm64-v8a --extra_toolchains=@androidndk//:all
 build:android-arm64-v8a --platforms=//:android-arm64
+
+# Windows builds.
+build:win_clang --extra_toolchains=@local_config_cc//:cc-toolchain-x64_windows-clang-cl
+build:win_clang --extra_execution_platforms=//:x64_windows-clang-cl
+build:win_clang --compiler=clang-cl
+build:win_clang --cxxopt=/std:c++20
