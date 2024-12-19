@@ -7,21 +7,19 @@ jobs:
   bazel_test:
     strategy:
       matrix:
-        # TODO: b/365609306 - Enable macos-latest and windows-latest runners.
-        os: [ubuntu-latest]
+        # TODO: b/365609306 - Enable macos-latest runner.
+        os: [ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
 
-    # gmock wants libtinfo5 which is not preinstalled on the Ubuntu GitHub
-    # runners.  Install it first, but also delete the needrestart service so we
-    # don't restart the GitHub runner service which cancels our job.
-    - if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get autopurge -y needrestart
-        sudo apt-get install -y libtinfo5
+    - name: Test (Linux config)
+      if: runner.os != 'Windows'
+      run: bazel test --keep_going --test_output=errors //ink/...
 
-    - name: Test
-      run: bazel test --test_output=errors --keep_going ink/...
+    - name: Test (Windows config)
+      if: runner.os == 'Windows'
+      run: bazel test --config=win_clang  --keep_going --test_output=errors --keep_going //ink/...
+
