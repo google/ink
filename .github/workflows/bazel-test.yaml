@@ -15,13 +15,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # gmock wants libtinfo5 which is not preinstalled on the Ubuntu GitHub
-    # runners.  Install it first, but also delete the needrestart service so we
-    # don't restart the GitHub runner service which cancels our job.
+    # gmock wants libtinfo5 which is not preinstalled on the ubuntu-latest GitHub Actions runner
+    # (and as of the latest version, not available in the package manager).
     - if: matrix.os == 'ubuntu-latest'
       run: |
-        sudo apt-get autopurge -y needrestart
-        sudo apt-get install -y libtinfo5
+        wget https://mirrors.kernel.org/ubuntu/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_amd64.deb
+        echo "f04c382f877c9eab631818eadbfaa0c5 libtinfo5_6.3-2ubuntu0.1_amd64.deb" | md5sum -c --status
+        sudo dpkg -i libtinfo5_6.3-2ubuntu0.1_amd64.deb
 
     - name: Test
-      run: bazel test --test_output=errors --keep_going ink/...
+      run: bazel test --test_output=errors --keep_going //ink/...
