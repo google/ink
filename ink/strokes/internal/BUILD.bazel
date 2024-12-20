@@ -221,6 +221,26 @@ cc_test(
 )
 
 cc_library(
+    name = "noise_generator",
+    srcs = ["noise_generator.cc"],
+    hdrs = ["noise_generator.h"],
+    deps = [
+        "//ink/geometry/internal:algorithms",
+        "@com_google_absl//absl/log:absl_check",
+    ],
+)
+
+cc_test(
+    name = "noise_generator_test",
+    srcs = ["noise_generator_test.cc"],
+    deps = [
+        ":noise_generator",
+        "@com_google_fuzztest//fuzztest",
+        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+    ],
+)
+
+cc_library(
     name = "extrusion_points",
     hdrs = ["extrusion_points.h"],
     deps = ["//ink/geometry:point"],
