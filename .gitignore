@@ -4,3 +4,6 @@ MODULE.bazel.lock
 # Ignore all bazel-* symlinks.
 /bazel-*
 
+# Android NDK download dir
+/android-ndk
+

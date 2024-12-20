@@ -48,7 +48,10 @@ android_ndk_repository_extension = use_extension(
 )
 use_repo(android_ndk_repository_extension, "androidndk")
 
-register_toolchains("@androidndk//:all")
+# Allow configuring the Windows toolchain for Windows builds.
+
+cc_configure_extension = use_extension("@rules_cc//cc:extensions.bzl", "cc_configure_extension")
+use_repo(cc_configure_extension, "local_config_cc", "local_config_cc_toolchains")
 
 #################################################################################
 ## Direct dependencies
