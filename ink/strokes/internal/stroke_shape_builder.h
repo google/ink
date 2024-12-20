@@ -15,7 +15,6 @@
 #ifndef INK_STROKES_INTERNAL_STROKE_SHAPE_BUILDER_H_
 #define INK_STROKES_INTERNAL_STROKE_SHAPE_BUILDER_H_
 
-#include <cstddef>
 #include <cstdint>
 
 #include "absl/container/inlined_vector.h"
@@ -28,7 +27,6 @@
 #include "ink/strokes/internal/brush_tip_extruder.h"
 #include "ink/strokes/internal/brush_tip_modeler.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
-#include "ink/strokes/internal/stroke_outline.h"
 #include "ink/strokes/internal/stroke_shape_update.h"
 #include "ink/strokes/internal/stroke_vertex.h"
 #include "ink/types/duration.h"
@@ -96,11 +94,11 @@ class StrokeShapeBuilder {
   const Envelope& GetMeshBounds() const;
 
   // Returns spans of outline indices, one for each of the outlines generated
-  // for the brush coat. This returns zero or more outlines, all non-empty.
+  // for the stroke.
   //
   // The return value will be empty if no stroke has been started. See the
-  // public `InProgressStroke::GetCoatOutlines()` for more details.
-  absl::Span<const absl::Span<const uint32_t>> GetOutlines() const;
+  // public `InProgressStroke::GetIndexOutlines()` for more details.
+  absl::Span<const absl::Span<const uint32_t>> GetIndexOutlines() const;
 
  private:
   // Returns the number of brush tips being used to extrude the current shape.
@@ -110,24 +108,18 @@ class StrokeShapeBuilder {
   MutableMesh mesh_;
   Envelope mesh_bounds_;
 
-  // The outlines for the brush coat. The size of this is at least equal to the
-  // number of brush tips, but may be larger because particle brushes can have
-  // more than one outline per tip. The usual case is one tip and one outline
-  // per tip.
-  absl::InlinedVector<absl::Span<const uint32_t>, 1> outlines_;
+  // The outline for each brush tip. The size of this vector is always equal to
+  // the number of brush tips.
+  absl::InlinedVector<absl::Span<const uint32_t>, 1> outline_indices_;
 
   struct BrushTipModelerAndExtruder {
     BrushTipModeler modeler;
     BrushTipExtruder extruder;
   };
-
   // The modeler/extruder for each brush tip. In order to cache allocations, we
   // never shrink this vector; its size is always at least the number of brush
   // tips, but may be more if a previous brush had more tips.
   absl::InlinedVector<BrushTipModelerAndExtruder, 1> tips_;
-
-  // The actual number of brush tips, since tips_.size() may be larger.
-  uint32_t tip_count_ = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -143,11 +135,13 @@ inline const Envelope& StrokeShapeBuilder::GetMeshBounds() const {
 }
 
 inline absl::Span<const absl::Span<const uint32_t>>
-StrokeShapeBuilder::GetOutlines() const {
-  return outlines_;
+StrokeShapeBuilder::GetIndexOutlines() const {
+  return outline_indices_;
 }
 
-inline uint32_t StrokeShapeBuilder::BrushTipCount() const { return tip_count_; }
+inline uint32_t StrokeShapeBuilder::BrushTipCount() const {
+  return outline_indices_.size();
+}
 
 }  // namespace ink::strokes_internal
 

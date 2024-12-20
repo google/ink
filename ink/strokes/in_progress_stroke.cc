@@ -272,7 +272,7 @@ Stroke InProgressStroke::CopyToStroke(
 
     mesh_groups.push_back({
         .mesh = &GetMesh(coat_index),
-        .outlines = GetCoatOutlines(coat_index),
+        .outlines = GetIndexOutlines(coat_index),
         .omit_attributes = omit_attributes[coat_index],
         .packing_params = custom_packing_arrays[coat_index].Values(),
     });

@@ -86,8 +86,7 @@ TEST_F(BrushTipExtruderTest, StartStrokeEmptiesMeshBoundsAndOutline) {
   EXPECT_EQ(mesh_.VertexCount(), 0);
   EXPECT_EQ(mesh_.TriangleCount(), 0);
   EXPECT_TRUE(extruder.GetBounds().IsEmpty());
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), IsEmpty());
+  EXPECT_THAT(extruder.GetOutlineIndices(), IsEmpty());
 }
 
 TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithEmptyStates) {
@@ -103,8 +102,7 @@ TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithEmptyStates) {
   EXPECT_EQ(mesh_.VertexCount(), 0);
   EXPECT_EQ(mesh_.TriangleCount(), 0);
   EXPECT_TRUE(extruder.GetBounds().IsEmpty());
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), IsEmpty());
+  EXPECT_THAT(extruder.GetOutlineIndices(), IsEmpty());
 }
 
 TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithSingleFixedState) {
@@ -123,8 +121,7 @@ TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithSingleFixedState) {
   EXPECT_NE(mesh_.TriangleCount(), 0);
   EXPECT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(),
+  EXPECT_THAT(extruder.GetOutlineIndices(),
               ElementsAreArray({8, 6, 4, 2, 1, 0, 3, 5, 7, 9}));
 }
 
@@ -144,8 +141,7 @@ TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithSingleVolatileState) {
   EXPECT_NE(mesh_.TriangleCount(), 0);
   EXPECT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(),
+  EXPECT_THAT(extruder.GetOutlineIndices(),
               ElementsAreArray({8, 6, 4, 2, 1, 0, 3, 5, 7, 9}));
 }
 
@@ -165,9 +161,8 @@ TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithMultipleFixedStates) {
   EXPECT_NE(mesh_.TriangleCount(), 0);
   EXPECT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
   EXPECT_THAT(
-      extruder.GetOutlines()[0].GetIndices(),
+      extruder.GetOutlineIndices(),
       ElementsAreArray({14, 12, 10, 9, 8, 6, 4, 2, 1, 0, 3, 5, 7, 11, 13, 15}));
 }
 
@@ -187,9 +182,8 @@ TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithMultipleVolatileStates) {
   EXPECT_NE(mesh_.TriangleCount(), 0);
   EXPECT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
   EXPECT_THAT(
-      extruder.GetOutlines()[0].GetIndices(),
+      extruder.GetOutlineIndices(),
       ElementsAreArray({14, 12, 10, 6, 4, 2, 1, 0, 3, 5, 7, 8, 9, 11, 13, 15}));
 }
 
@@ -209,8 +203,7 @@ TEST_F(BrushTipExtruderTest, ExtendSingleFixedStateStroke) {
   ASSERT_NE(mesh_.TriangleCount(), 0);
   EXPECT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), Not(IsEmpty()));
+  ASSERT_THAT(extruder.GetOutlineIndices(), Not(IsEmpty()));
 
   update = extruder.ExtendStroke({MakeCircularTipState({-1, 0}, 1)}, {});
 
@@ -225,8 +218,7 @@ TEST_F(BrushTipExtruderTest, ExtendSingleFixedStateStroke) {
   EXPECT_NE(mesh_.TriangleCount(), 0);
   EXPECT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), Not(IsEmpty()));
+  EXPECT_THAT(extruder.GetOutlineIndices(), Not(IsEmpty()));
 }
 
 TEST_F(BrushTipExtruderTest, ExtendSingleVolatileStateStroke) {
@@ -245,8 +237,7 @@ TEST_F(BrushTipExtruderTest, ExtendSingleVolatileStateStroke) {
   ASSERT_NE(mesh_.TriangleCount(), 0);
   EXPECT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), Not(IsEmpty()));
+  ASSERT_THAT(extruder.GetOutlineIndices(), Not(IsEmpty()));
 
   update = extruder.ExtendStroke({MakeCircularTipState({-1, 0}, 1)}, {});
 
@@ -261,8 +252,7 @@ TEST_F(BrushTipExtruderTest, ExtendSingleVolatileStateStroke) {
   EXPECT_NE(mesh_.TriangleCount(), 0);
   EXPECT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), Not(IsEmpty()));
+  EXPECT_THAT(extruder.GetOutlineIndices(), Not(IsEmpty()));
 }
 
 TEST_F(BrushTipExtruderTest, ExtendManyFixedStateStroke) {
@@ -281,8 +271,7 @@ TEST_F(BrushTipExtruderTest, ExtendManyFixedStateStroke) {
   ASSERT_NE(mesh_.TriangleCount(), 0);
   ASSERT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), Not(IsEmpty()));
+  ASSERT_THAT(extruder.GetOutlineIndices(), Not(IsEmpty()));
 
   update =
       extruder.ExtendStroke(MakeUniformCircularTipStates({{3, 0}, {4, 3}}, 1),
@@ -299,8 +288,7 @@ TEST_F(BrushTipExtruderTest, ExtendManyFixedStateStroke) {
   EXPECT_NE(mesh_.TriangleCount(), 0);
   EXPECT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), Not(IsEmpty()));
+  EXPECT_THAT(extruder.GetOutlineIndices(), Not(IsEmpty()));
 }
 
 TEST_F(BrushTipExtruderTest, ExtendCoversRemovedPreviousVolatileGeometry) {
@@ -324,8 +312,7 @@ TEST_F(BrushTipExtruderTest, ExtendCoversRemovedPreviousVolatileGeometry) {
   ASSERT_NE(mesh_.TriangleCount(), 0);
   ASSERT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), Not(IsEmpty()));
+  EXPECT_THAT(extruder.GetOutlineIndices(), Not(IsEmpty()));
 
   update =
       extruder.ExtendStroke(MakeUniformCircularTipStates({{3, 1}, {3, 2}}, 1),
@@ -342,8 +329,7 @@ TEST_F(BrushTipExtruderTest, ExtendCoversRemovedPreviousVolatileGeometry) {
   EXPECT_NE(mesh_.TriangleCount(), 0);
   EXPECT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), Not(IsEmpty()));
+  EXPECT_THAT(extruder.GetOutlineIndices(), Not(IsEmpty()));
 
   // The vertices themselves should no longer include the positions of volatile
   // geometry.
@@ -368,8 +354,7 @@ TEST_F(BrushTipExtruderTest, EmptyExtendRemovesPreviousVolatileGeometry) {
   ASSERT_NE(mesh_.TriangleCount(), 0);
   ASSERT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), Not(IsEmpty()));
+  ASSERT_THAT(extruder.GetOutlineIndices(), Not(IsEmpty()));
 
   update = extruder.ExtendStroke({}, {});
 
@@ -383,8 +368,7 @@ TEST_F(BrushTipExtruderTest, EmptyExtendRemovesPreviousVolatileGeometry) {
   EXPECT_NE(mesh_.TriangleCount(), 0);
   EXPECT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), Not(IsEmpty()));
+  EXPECT_THAT(extruder.GetOutlineIndices(), Not(IsEmpty()));
 
   // The vertices themselves should no longer include the positions of volatile
   // geometry.
@@ -408,8 +392,7 @@ TEST_F(BrushTipExtruderTest, EmptyExtendClearsCompletelyVolatileStroke) {
   ASSERT_NE(mesh_.TriangleCount(), 0);
   ASSERT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), Not(IsEmpty()));
+  ASSERT_THAT(extruder.GetOutlineIndices(), Not(IsEmpty()));
 
   update = extruder.ExtendStroke({}, {});
   EXPECT_THAT(update.region.AsRect(),
@@ -419,8 +402,7 @@ TEST_F(BrushTipExtruderTest, EmptyExtendClearsCompletelyVolatileStroke) {
   EXPECT_EQ(mesh_.VertexCount(), 0);
   EXPECT_EQ(mesh_.TriangleCount(), 0);
   EXPECT_TRUE(extruder.GetBounds().IsEmpty());
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), IsEmpty());
+  EXPECT_THAT(extruder.GetOutlineIndices(), IsEmpty());
 }
 
 TEST_F(BrushTipExtruderTest, StartSecondStroke) {
@@ -440,8 +422,7 @@ TEST_F(BrushTipExtruderTest, StartSecondStroke) {
   ASSERT_NE(mesh_.TriangleCount(), 0);
   ASSERT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(),
+  ASSERT_THAT(extruder.GetOutlineIndices(),
               ElementsAreArray({12, 10, 8, 6, 4, 2, 1, 0, 3, 5, 7, 9, 11, 13}));
 
   extruder.StartStroke(kBrushEpsilon,
@@ -450,8 +431,7 @@ TEST_F(BrushTipExtruderTest, StartSecondStroke) {
   // Starting a new stroke should clear the geometry
   EXPECT_EQ(mesh_.VertexCount(), 0);
   EXPECT_EQ(mesh_.TriangleCount(), 0);
-  EXPECT_THAT(extruder.GetOutlines().size(), Eq(1));
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), IsEmpty());
+  EXPECT_THAT(extruder.GetOutlineIndices(), IsEmpty());
 
   update = extruder.ExtendStroke({MakeCircularTipState({10, 10}, 1)}, {});
 
@@ -464,8 +444,7 @@ TEST_F(BrushTipExtruderTest, StartSecondStroke) {
   EXPECT_NE(mesh_.TriangleCount(), 0);
   EXPECT_THAT(extruder.GetBounds().AsRect(),
               Optional(RectNear(*CalculateEnvelope(mesh_).AsRect(), 0.0001)));
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_THAT(extruder.GetOutlines()[0].GetIndices(), Not(IsEmpty()));
+  EXPECT_THAT(extruder.GetOutlineIndices(), Not(IsEmpty()));
 }
 
 TEST_F(BrushTipExtruderTest, WidthAndHeightLessThanEpsilonCreatesBreakPoint) {
@@ -551,15 +530,13 @@ TEST_F(BrushTipExtruderTest, RejectTipStateContainedInPrevious) {
       {MakeCircularTipState({0, 0}, 10), MakeCircularTipState({5, 0}, 10)}, {});
   uint32_t n_verts = mesh_.VertexCount();
   uint32_t n_tris = mesh_.TriangleCount();
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  uint32_t n_outline_indices = extruder.GetOutlines()[0].GetIndices().size();
+  uint32_t n_outline_indices = extruder.GetOutlineIndices().size();
 
   extruder.ExtendStroke({MakeCircularTipState({10, 0}, 1)}, {});
 
   EXPECT_EQ(mesh_.VertexCount(), n_verts);
   EXPECT_EQ(mesh_.TriangleCount(), n_tris);
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_EQ(extruder.GetOutlines()[0].GetIndices().size(), n_outline_indices);
+  EXPECT_EQ(extruder.GetOutlineIndices().size(), n_outline_indices);
   EXPECT_THAT(extruder.GetBounds(),
               EnvelopeEq(Rect::FromTwoPoints({-10, -10}, {15, 10})));
 }
@@ -574,18 +551,13 @@ TEST_F(BrushTipExtruderTest, DontRejectTipStateAfterBreakPoint) {
       {});
   uint32_t n_verts = mesh_.VertexCount();
   uint32_t n_tris = mesh_.TriangleCount();
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  uint32_t n_outline_indices_before_break =
-      extruder.GetOutlines()[0].GetIndices().size();
+  uint32_t n_outline_indices = extruder.GetOutlineIndices().size();
 
   extruder.ExtendStroke({MakeCircularTipState({20, 0}, 1)}, {});
 
   EXPECT_GT(mesh_.VertexCount(), n_verts);
   EXPECT_GT(mesh_.TriangleCount(), n_tris);
-  ASSERT_EQ(extruder.GetOutlines().size(), 2);
-  EXPECT_EQ(extruder.GetOutlines()[0].GetIndices().size(),
-            n_outline_indices_before_break);
-  EXPECT_GT(extruder.GetOutlines()[1].GetIndices().size(), 0);
+  EXPECT_GT(extruder.GetOutlineIndices().size(), n_outline_indices);
   EXPECT_THAT(
       extruder.GetBounds(),
       EnvelopeNear(Rect::FromTwoPoints({-10, -10}, {21, 10}), kBrushEpsilon));
@@ -605,8 +577,7 @@ TEST_F(BrushTipExtruderTest,
       {});
   uint32_t n_verts = mesh_.VertexCount();
   uint32_t n_tris = mesh_.TriangleCount();
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  uint32_t n_outline_indices = extruder.GetOutlines()[0].GetIndices().size();
+  uint32_t n_outline_indices = extruder.GetOutlineIndices().size();
 
   extruder.ExtendStroke({MakeSquareTipState({5, 0}, 8)}, {});
 
@@ -614,9 +585,7 @@ TEST_F(BrushTipExtruderTest,
   // square in it.
   EXPECT_EQ(mesh_.VertexCount(), n_verts + 4);
   EXPECT_EQ(mesh_.TriangleCount(), n_tris + 2);
-  ASSERT_EQ(extruder.GetOutlines().size(), 2);
-  EXPECT_EQ(extruder.GetOutlines()[0].GetIndices().size(), n_outline_indices);
-  EXPECT_EQ(extruder.GetOutlines()[1].GetIndices().size(), 4);
+  EXPECT_EQ(extruder.GetOutlineIndices().size(), n_outline_indices + 4);
   EXPECT_THAT(extruder.GetBounds(),
               EnvelopeEq(Rect::FromTwoPoints({-0.25, -4}, {9, 4})));
 }
@@ -634,15 +603,12 @@ TEST_F(BrushTipExtruderTest,
       {});
   uint32_t n_verts_before_break = mesh_.VertexCount();
   uint32_t n_tris_before_break = mesh_.TriangleCount();
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  uint32_t n_outline_indices_before_break =
-      extruder.GetOutlines()[0].GetIndices().size();
+  uint32_t n_outline_indices_before_break = extruder.GetOutlineIndices().size();
   extruder.ExtendStroke(
       {MakeSquareTipState({4, 0}, 0.5), MakeSquareTipState({5, 0.2}, 0.5)}, {});
   uint32_t n_verts_after_break = mesh_.VertexCount();
   uint32_t n_tris_after_break = mesh_.TriangleCount();
-  ASSERT_EQ(extruder.GetOutlines().size(), 2);
-  EXPECT_EQ(extruder.GetOutlines()[1].GetIndices().size(), 6);
+  uint32_t n_outline_indices_after_break = extruder.GetOutlineIndices().size();
 
   extruder.ExtendStroke({MakeSquareTipState({6, 0}, 5)}, {});
 
@@ -650,13 +616,11 @@ TEST_F(BrushTipExtruderTest,
   // with just the square in it.
   EXPECT_EQ(mesh_.VertexCount(), n_verts_before_break + 4);
   EXPECT_EQ(mesh_.TriangleCount(), n_tris_before_break + 2);
-  ASSERT_EQ(extruder.GetOutlines().size(), 2);
-  EXPECT_EQ(extruder.GetOutlines()[0].GetIndices().size(),
-            n_outline_indices_before_break);
-  EXPECT_EQ(extruder.GetOutlines()[1].GetIndices().size(), 4);
-
+  EXPECT_EQ(extruder.GetOutlineIndices().size(),
+            n_outline_indices_before_break + 4);
   EXPECT_NE(mesh_.VertexCount(), n_verts_after_break);
   EXPECT_NE(mesh_.TriangleCount(), n_tris_after_break);
+  EXPECT_NE(extruder.GetOutlineIndices().size(), n_outline_indices_after_break);
   EXPECT_THAT(extruder.GetBounds(),
               EnvelopeEq(Rect::FromTwoPoints({-0.25, -2.5}, {8.5, 2.5})));
 }
@@ -678,8 +642,7 @@ TEST_F(BrushTipExtruderTest, RestartPartitionIfWholeStrokeIsContained) {
   // the whole stroke so far; it should be just a single square now.
   EXPECT_EQ(mesh_.VertexCount(), 4);
   EXPECT_EQ(mesh_.TriangleCount(), 2);
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_EQ(extruder.GetOutlines()[0].GetIndices().size(), 4);
+  EXPECT_EQ(extruder.GetOutlineIndices().size(), 4);
   EXPECT_THAT(extruder.GetBounds(),
               EnvelopeEq(Rect::FromTwoPoints({-1, -4}, {7, 4})));
 }
@@ -699,8 +662,7 @@ TEST_F(BrushTipExtruderTest, RejectTipStateIfWeCannotConstrainIt) {
                         {});
   uint32_t n_verts = mesh_.VertexCount();
   uint32_t n_tris = mesh_.TriangleCount();
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  uint32_t n_outline_indices = extruder.GetOutlines()[0].GetIndices().size();
+  uint32_t n_outline_indices = extruder.GetOutlineIndices().size();
   auto expected_bounds = Rect::FromTwoPoints({-0.5, -1.5}, {2.5, 1.5});
   ASSERT_THAT(extruder.GetBounds(), EnvelopeEq(expected_bounds));
 
@@ -713,8 +675,7 @@ TEST_F(BrushTipExtruderTest, RejectTipStateIfWeCannotConstrainIt) {
 
   EXPECT_EQ(mesh_.VertexCount(), n_verts);
   EXPECT_EQ(mesh_.TriangleCount(), n_tris);
-  ASSERT_EQ(extruder.GetOutlines().size(), 1);
-  EXPECT_EQ(extruder.GetOutlines()[0].GetIndices().size(), n_outline_indices);
+  EXPECT_EQ(extruder.GetOutlineIndices().size(), n_outline_indices);
   EXPECT_THAT(extruder.GetBounds(), EnvelopeEq(expected_bounds));
 }
 

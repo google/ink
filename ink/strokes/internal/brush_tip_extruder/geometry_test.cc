@@ -1600,20 +1600,20 @@ TEST(GeometryTest, FirstMutatedIndexOffsets) {
   MeshData mesh_data;
   Geometry geometry(MakeView(mesh_data));
 
-  EXPECT_EQ(geometry.FirstMutatedLeftIndexOffsetInCurrentPartition(), 0);
-  EXPECT_EQ(geometry.FirstMutatedRightIndexOffsetInCurrentPartition(), 0);
+  EXPECT_EQ(geometry.FirstMutatedLeftIndexOffset(), 0);
+  EXPECT_EQ(geometry.FirstMutatedRightIndexOffset(), 0);
 
   geometry.AppendLeftVertex(Point{-1, 0});
   geometry.AppendRightVertex(Point{1, 0});
   geometry.ProcessNewVertices(0, PositionAndSizeToTipState({0, 0}, 1));
 
-  EXPECT_EQ(geometry.FirstMutatedLeftIndexOffsetInCurrentPartition(), 0);
-  EXPECT_EQ(geometry.FirstMutatedRightIndexOffsetInCurrentPartition(), 0);
+  EXPECT_EQ(geometry.FirstMutatedLeftIndexOffset(), 0);
+  EXPECT_EQ(geometry.FirstMutatedRightIndexOffset(), 0);
 
   // Resetting the mutation tracking should set all of the indices to clean.
   geometry.ResetMutationTracking();
-  EXPECT_EQ(geometry.FirstMutatedLeftIndexOffsetInCurrentPartition(), 1);
-  EXPECT_EQ(geometry.FirstMutatedRightIndexOffsetInCurrentPartition(), 1);
+  EXPECT_EQ(geometry.FirstMutatedLeftIndexOffset(), 1);
+  EXPECT_EQ(geometry.FirstMutatedRightIndexOffset(), 1);
 
   // Set a save point to check that mutation tracking takes it into account when
   // we revert.
@@ -1623,16 +1623,16 @@ TEST(GeometryTest, FirstMutatedIndexOffsets) {
   geometry.AppendRightVertex(Point{1, 1});
   geometry.ProcessNewVertices(0, PositionAndSizeToTipState({0, 1}, 1));
 
-  EXPECT_EQ(geometry.FirstMutatedLeftIndexOffsetInCurrentPartition(), 1);
-  EXPECT_EQ(geometry.FirstMutatedRightIndexOffsetInCurrentPartition(), 1);
+  EXPECT_EQ(geometry.FirstMutatedLeftIndexOffset(), 1);
+  EXPECT_EQ(geometry.FirstMutatedRightIndexOffset(), 1);
 
   geometry.ResetMutationTracking();
-  EXPECT_EQ(geometry.FirstMutatedLeftIndexOffsetInCurrentPartition(), 2);
-  EXPECT_EQ(geometry.FirstMutatedRightIndexOffsetInCurrentPartition(), 2);
+  EXPECT_EQ(geometry.FirstMutatedLeftIndexOffset(), 2);
+  EXPECT_EQ(geometry.FirstMutatedRightIndexOffset(), 2);
 
   geometry.RevertToSavePoint();
-  EXPECT_EQ(geometry.FirstMutatedLeftIndexOffsetInCurrentPartition(), 1);
-  EXPECT_EQ(geometry.FirstMutatedRightIndexOffsetInCurrentPartition(), 1);
+  EXPECT_EQ(geometry.FirstMutatedLeftIndexOffset(), 1);
+  EXPECT_EQ(geometry.FirstMutatedRightIndexOffset(), 1);
 }
 
 }  // namespace

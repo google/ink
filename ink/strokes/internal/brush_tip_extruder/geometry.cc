@@ -254,10 +254,9 @@ void Geometry::RevertToSavePoint() {
     std::swap(side.last_simplified_vertex_positions,
               side_state.last_simplified_vertex_positions);
   };
-  revert_side(left_side_, first_mutated_left_index_offset_in_current_partition_,
+  revert_side(left_side_, first_mutated_left_index_offset_,
               save_point_state_.left_side_state);
-  revert_side(right_side_,
-              first_mutated_right_index_offset_in_current_partition_,
+  revert_side(right_side_, first_mutated_right_index_offset_,
               save_point_state_.right_side_state);
   last_extrusion_break_ = save_point_state_.saved_last_extrusion_break;
 
@@ -279,10 +278,8 @@ void Geometry::ResetMutationTracking() {
   envelope_of_removed_geometry_.Reset();
   first_mutated_left_index_.reset();
   first_mutated_right_index_.reset();
-  first_mutated_left_index_offset_in_current_partition_ =
-      left_side_.indices.size();
-  first_mutated_right_index_offset_in_current_partition_ =
-      right_side_.indices.size();
+  first_mutated_left_index_offset_ = left_side_.indices.size();
+  first_mutated_right_index_offset_ = right_side_.indices.size();
 }
 
 namespace {
@@ -412,34 +409,19 @@ void Geometry::AddExtrusionBreak() {
                                    left_side_.indices.size());
 
   auto side_extrusion_break_info =
-      [](const Side& side) -> GeometryLastExtrusionBreakMetadata::SideInfo {
+      [](const Side& side) -> GeometryExtrusionBreak::SideInfo {
     return {
         .index_count = static_cast<uint32_t>(side.indices.size()),
         .intersection_discontinuity_count =
             static_cast<uint32_t>(side.intersection_discontinuities.size()),
     };
   };
+
   last_extrusion_break_ = {
-      .break_count = last_extrusion_break_.break_count + 1,
       .vertex_count = mesh_.VertexCount(),
       .triangle_count = mesh_.TriangleCount(),
       .left_side_info = side_extrusion_break_info(left_side_),
       .right_side_info = side_extrusion_break_info(right_side_),
-  };
-  first_mutated_left_index_offset_in_current_partition_ =
-      left_side_.indices.size();
-  first_mutated_right_index_offset_in_current_partition_ =
-      right_side_.indices.size();
-}
-
-uint32_t Geometry::ExtrusionBreakCount() const {
-  return last_extrusion_break_.break_count;
-}
-
-Geometry::IndexCounts Geometry::IndexCountsAtLastExtrusionBreak() const {
-  return {
-      .left = last_extrusion_break_.left_side_info.index_count,
-      .right = last_extrusion_break_.right_side_info.index_count,
   };
 }
 
@@ -449,8 +431,7 @@ void CaptureGeometrySinceLastExtrusionBreak(
     const MutableMeshView& mesh, absl::Span<const SideId> vertex_side_ids,
     absl::Span<const uint32_t> side_offsets,
     absl::Span<const uint32_t> opposite_side_offsets, const Side& left_side,
-    const Side& right_side,
-    const GeometryLastExtrusionBreakMetadata& last_extrusion_break,
+    const Side& right_side, const GeometryExtrusionBreak& last_extrusion_break,
     GeometrySavePointState& save_point_state) {
   ABSL_CHECK_LE(last_extrusion_break.vertex_count,
                 save_point_state.n_mesh_vertices);
@@ -476,22 +457,24 @@ void CaptureGeometrySinceLastExtrusionBreak(
         v_idx, opposite_side_offsets[v_idx]);
   }
 
-  using SideInfo = GeometryLastExtrusionBreakMetadata::SideInfo;
-  auto capture_side = [](const Side& side, const SideInfo& side_extrusion_break,
-                         GeometrySavePointState::SideState& side_save_state) {
-    ABSL_CHECK_LE(side_extrusion_break.index_count, side_save_state.n_indices);
+  auto capture_side =
+      [](const Side& side,
+         const GeometryExtrusionBreak::SideInfo& side_extrusion_break,
+         GeometrySavePointState::SideState& side_save_state) {
+        ABSL_CHECK_LE(side_extrusion_break.index_count,
+                      side_save_state.n_indices);
 
-    std::copy(side.indices.begin() + side_extrusion_break.index_count,
-              side.indices.begin() + side_save_state.n_indices,
-              std::back_inserter(side_save_state.saved_indices));
+        std::copy(side.indices.begin() + side_extrusion_break.index_count,
+                  side.indices.begin() + side_save_state.n_indices,
+                  std::back_inserter(side_save_state.saved_indices));
 
-    std::copy(
-        side.intersection_discontinuities.begin() +
-            side_extrusion_break.intersection_discontinuity_count,
-        side.intersection_discontinuities.begin() +
-            side_save_state.n_intersection_discontinuities,
-        std::back_inserter(side_save_state.saved_intersection_discontinuities));
-  };
+        std::copy(side.intersection_discontinuities.begin() +
+                      side_extrusion_break.intersection_discontinuity_count,
+                  side.intersection_discontinuities.begin() +
+                      side_save_state.n_intersection_discontinuities,
+                  std::back_inserter(
+                      side_save_state.saved_intersection_discontinuities));
+      };
   capture_side(left_side, last_extrusion_break.left_side_info,
                save_point_state.left_side_state);
   capture_side(right_side, last_extrusion_break.right_side_info,
@@ -530,12 +513,12 @@ void Geometry::ClearSinceLastExtrusionBreak() {
   envelope_of_removed_geometry_.Add(
       EnvelopeOfTriangles(mesh_, last_extrusion_break_.triangle_count));
 
-  using SideInfo = GeometryLastExtrusionBreakMetadata::SideInfo;
-  auto delete_side_geometry = [](const SideInfo& side_info, Side& side) {
-    side.indices.resize(side_info.index_count);
-    side.intersection_discontinuities.resize(
-        side_info.intersection_discontinuity_count);
-  };
+  auto delete_side_geometry =
+      [](const GeometryExtrusionBreak::SideInfo& side_info, Side& side) {
+        side.indices.resize(side_info.index_count);
+        side.intersection_discontinuities.resize(
+            side_info.intersection_discontinuity_count);
+      };
 
   delete_side_geometry(last_extrusion_break_.left_side_info, left_side_);
   delete_side_geometry(last_extrusion_break_.right_side_info, right_side_);
@@ -547,12 +530,10 @@ void Geometry::ClearSinceLastExtrusionBreak() {
   side_offsets_.resize(last_extrusion_break_.vertex_count);
   opposite_side_offsets_.resize(last_extrusion_break_.vertex_count);
 
-  first_mutated_left_index_offset_in_current_partition_ =
-      std::min<uint32_t>(first_mutated_left_index_offset_in_current_partition_,
-                         left_side_.indices.size());
-  first_mutated_right_index_offset_in_current_partition_ =
-      std::min<uint32_t>(first_mutated_right_index_offset_in_current_partition_,
-                         right_side_.indices.size());
+  first_mutated_left_index_offset_ = std::min<uint32_t>(
+      first_mutated_left_index_offset_, left_side_.indices.size());
+  first_mutated_right_index_offset_ = std::min<uint32_t>(
+      first_mutated_right_index_offset_, right_side_.indices.size());
 
   // Reset the partition states.
   SetExtrusionBreakPartitionOnSide(left_side_, mesh_.TriangleCount(),
