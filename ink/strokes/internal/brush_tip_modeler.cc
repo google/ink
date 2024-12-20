@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <optional>
 #include <variant>
@@ -295,6 +296,8 @@ void BrushTipModeler::StartStroke(absl::Nonnull<const BrushTip*> brush_tip,
   behaviors_depend_on_next_input_ = false;
 
   behavior_nodes_.clear();
+  current_noise_generators_.clear();
+  fixed_noise_generators_.clear();
   current_damped_values_.clear();
   fixed_damped_values_.clear();
   behavior_targets_.clear();
@@ -325,6 +328,19 @@ void BrushTipModeler::AppendBehaviorNode(
 void BrushTipModeler::AppendBehaviorNode(
     const BrushBehavior::ConstantNode& node) {
   behavior_nodes_.push_back(node);
+}
+
+void BrushTipModeler::AppendBehaviorNode(const BrushBehavior::NoiseNode& node) {
+  behavior_nodes_.push_back(NoiseNodeImplementation{
+      .generator_index = current_noise_generators_.size(),
+      .vary_over = node.vary_over,
+      .base_period = node.base_period,
+  });
+  // TODO: b/373649344 - Concatenate the 32-bit per-stroke seed (once that
+  // exists) with the 32-bit node seed to form the 64-bit noise generator seed.
+  uint64_t noise_seed = node.seed;
+  current_noise_generators_.emplace_back(noise_seed);
+  fixed_noise_generators_.push_back(current_noise_generators_.back());
 }
 
 void BrushTipModeler::AppendBehaviorNode(
@@ -398,6 +414,9 @@ void BrushTipModeler::UpdateStroke(
 
   InputMetrics max_fixed_metrics =
       CalculateMaxFixedInputMetrics(input_modeler_state, inputs);
+  ABSL_DCHECK_EQ(fixed_noise_generators_.size(),
+                 current_noise_generators_.size());
+  absl::c_copy(fixed_noise_generators_, current_noise_generators_.begin());
   ABSL_DCHECK_EQ(fixed_damped_values_.size(), current_damped_values_.size());
   absl::c_copy(fixed_damped_values_, current_damped_values_.begin());
   ABSL_DCHECK_EQ(fixed_target_modifiers_.size(),
@@ -440,6 +459,9 @@ void BrushTipModeler::UpdateStroke(
   // Save the necessary fixed properties:
   last_fixed_modeled_tip_state_metrics_ = last_modeled_tip_state_metrics;
   new_fixed_tip_state_count_ = saved_tip_states_.size();
+  ABSL_DCHECK_EQ(current_noise_generators_.size(),
+                 fixed_noise_generators_.size());
+  absl::c_copy(current_noise_generators_, fixed_noise_generators_.begin());
   ABSL_DCHECK_EQ(current_damped_values_.size(), fixed_damped_values_.size());
   absl::c_copy(current_damped_values_, fixed_damped_values_.begin());
   ABSL_DCHECK_EQ(current_target_modifiers_.size(),
@@ -579,6 +601,7 @@ void BrushTipModeler::AddNewTipState(
       .brush_size = brush_size_,
       .previous_input_metrics = previous_input_metrics,
       .stack = behavior_stack_,
+      .noise_generators = absl::MakeSpan(current_noise_generators_),
       .damped_values = absl::MakeSpan(current_damped_values_),
       .target_modifiers = absl::MakeSpan(current_target_modifiers_),
   };
