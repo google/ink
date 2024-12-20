@@ -25,20 +25,29 @@ http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "ht
 ## Toolchain setup
 #################################################################################
 
-# Configure and register the LLVM toolchain for host builds.
+bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "rules_cc", version = "0.0.16")
 bazel_dep(name = "toolchains_llvm", version = "1.2.0")
+
+# Configure and register the LLVM toolchain for host builds.
+
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
 llvm.toolchain(
     llvm_version = "16.0.0",
 )
 use_repo(llvm, "llvm_toolchain")
+
 register_toolchains("@llvm_toolchain//:all")
 
 # Configure and register the Android NDK toolchain for NDK builds.
 bazel_dep(name = "rules_android_ndk", version = "0.1.2")
-android_ndk_repository_extension = use_extension("@rules_android_ndk//:extension.bzl",
-                                                 "android_ndk_repository_extension")
+
+android_ndk_repository_extension = use_extension(
+    "@rules_android_ndk//:extension.bzl",
+    "android_ndk_repository_extension",
+)
 use_repo(android_ndk_repository_extension, "androidndk")
+
 register_toolchains("@androidndk//:all")
 
 #################################################################################
@@ -57,6 +66,7 @@ git_repository(
     remote = "https://github.com/google/ink-stroke-modeler.git",
 )
 
+bazel_dep(name = "rules_android", version = "0.6.0")
 bazel_dep(
     name = "rules_jni",
     version = "0.10.1",
@@ -73,6 +83,7 @@ SKIA_COMMIT = "515a23f3cbe1e2f54ffa6821e6da6f4891763f47"
 
 http_archive(
     name = "skia",
+    integrity = "sha256-xOKsNeZapFKLRPuo8N+s3mWSUqRfWxIzWZnxnNB4kMM=",
     strip_prefix = "skia-" + SKIA_COMMIT,
     url = "https://github.com/google/skia/archive/" + SKIA_COMMIT + ".zip",
 )
@@ -117,11 +128,9 @@ bazel_dep(
 # We can remove these when Skia has a MODULE.bazel file.
 # See: https://g-issues.skia.org/issues/367315534
 bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "rules_cc", version = "0.0.9")
-bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 
 # Silence warnings about duplicate Python toolchain registration by using a
 # newer version of rules_python.  We can remove this when any of our
 # dependencies use a sufficiently newer rules_python.
-bazel_dep(name = "rules_python", version = "0.37.1")
+bazel_dep(name = "rules_python", version = "0.40.0")
