@@ -204,18 +204,21 @@ class InProgressStroke {
   // specified coat of paint.
   const Envelope& GetMeshBounds(uint32_t coat_index) const;
 
-  // Returns one or more spans of vertex indices, one for each of the stroke
-  // outlines for the specified coat of paint.
+  // Returns zero or more non-empty spans of vertex indices, one for each of the
+  // stroke outlines for the specified coat of paint. There will be at least one
+  // outline for each brush tip if the stroke is non-empty. Stroke coats with
+  // discontinuous geometry will always have multiple outlines, but even
+  // continuous geometry may be drawn with multiple overlapping outlines when
+  // this improves rendering quality or performance.
   //
   // Every returned index value can be used to get an outline position from the
   // `MutableMesh` returned by `GetMesh()`.
   //
-  // For each non-empty span of indices, the first and last elements reference
-  // vertices at the end of the stroke. The indices traverse the mesh such that
-  // the outline has a negative winding number when viewed from the positive
-  // z-axis. I.e. the outline positions would be appear in clockwise order if
-  // the y-axis points up, and in counter-clockwise order if the y-axis points
-  // down.
+  // The first and last elements in each span reference the vertices at the end
+  // of the stroke outline. The indices traverse the mesh such that the outline
+  // has a negative winding number when viewed from the positive z-axis. That
+  // is, the outline positions are in clockwise order if the y-axis points up,
+  // counter-clockwise order if the y-axis points down.
   absl::Span<const absl::Span<const uint32_t>> GetIndexOutlines(
       uint32_t coat_index) const;
 

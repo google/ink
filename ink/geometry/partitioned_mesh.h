@@ -188,7 +188,9 @@ class PartitionedMesh {
   absl::Span<const Mesh> Meshes() const;
 
   // Returns the number of outlines (which may be zero) in render group
-  // `group_index`.
+  // `group_index`. Groups with discontinuous geometry will always have multiple
+  // outlines, but even continuous geometry may be drawn with multiple
+  // overlapping outlines when this improves rendering quality or performance.
   //
   // This method CHECK-fails if `group_index` >= `RenderGroupCount()`.
   uint32_t OutlineCount(uint32_t group_index) const;
