@@ -1033,5 +1033,155 @@ TEST(PolylineProcessingTest,
                    Point{5, 15}, Point{5, 8}, Point{5, 2.95}, Point{5.2, 3}}));
 }
 
+TEST(PolylineProcessingTest, CreateClosedShapeForPerfectlyClosedLoop) {
+  EXPECT_THAT(
+      CreateClosedShape({Point{5, 3}, Point{5, 8}, Point{5, 15}, Point{10, 20},
+                         Point{15, 25}, Point{20, 30}, Point{30, 20},
+                         Point{20, 10}, Point{11, 3}, Point{5, 3}}),
+      testing::Pointwise(PointsEq(),
+                         {Point{5, 3}, Point{5, 8}, Point{5, 15}, Point{10, 20},
+                          Point{15, 25}, Point{20, 30}, Point{30, 20},
+                          Point{20, 10}, Point{11, 3}, Point{5, 3}}));
+}
+
+TEST(PolylineProcessingTest,
+     CreateClosedShapeUpdatesFirstIntersectionWithSameIndexBetterConnection) {
+  EXPECT_THAT(
+      CreateClosedShape({Point{40, 0}, Point{35, 5}, Point{30, 10},
+                         Point{10, 30}, Point{20, 30}, Point{10, 20},
+                         Point{5, 15}, Point{10, 10}, Point{19.5f, 19.5f}}),
+      testing::Pointwise(PointsEq(),
+                         {Point{20, 20}, Point{10, 30}, Point{20, 30},
+                          Point{10, 20}, Point{5, 15}, Point{10, 10},
+                          Point{19.5f, 19.5f}, Point{20.0f, 20.0f}}));
+}
+
+TEST(PolylineProcessingTest,
+     CreateClosedShapeUpdatesLastIntersectionWithSameIndexBetterConnection) {
+  EXPECT_THAT(
+      CreateClosedShape({Point{19.5f, 19.5f}, Point{10, 10}, Point{5, 15},
+                         Point{10, 20}, Point{20, 30}, Point{10, 30},
+                         Point{30, 10}, Point{35, 5}, Point{40, 0}}),
+      testing::Pointwise(
+          PointsEq(), {Point{20.0f, 20.0f}, Point{19.5f, 19.5f}, Point{10, 10},
+                       Point{5, 15}, Point{10, 20}, Point{20, 30},
+                       Point{10, 30}, Point{20, 20}}));
+}
+
+TEST(PolylineProcessingTest, CreateClosedShapeForNearlyClosedLoop) {
+  EXPECT_THAT(CreateClosedShape({Point{5, 3.1f}, Point{5, 8}, Point{5, 15},
+                                 Point{10, 20}, Point{15, 25}, Point{20, 30},
+                                 Point{30, 20}, Point{20, 10}, Point{11, 3},
+                                 Point{5.1f, 3}}),
+              testing::Pointwise(
+                  PointsEq(), {Point{5.1f, 3}, Point{5, 3.1f}, Point{5, 8},
+                               Point{5, 15}, Point{10, 20}, Point{15, 25},
+                               Point{20, 30}, Point{30, 20}, Point{20, 10},
+                               Point{11, 3}, Point{5.1f, 3}, Point{5, 3.1f}}));
+}
+
+TEST(PolylineProcessingTest,
+     CreateClosedShapeWithNoIntersectionsAndNoConnections) {
+  EXPECT_THAT(CreateClosedShape({Point{-1, 0}, Point{5, 1}, Point{10, 2},
+                                 Point{15, 4}, Point{20, 6}, Point{25, 9}}),
+              testing::Pointwise(PointsEq(),
+                                 {Point{-1, 0}, Point{5, 1}, Point{10, 2},
+                                  Point{15, 4}, Point{20, 6}, Point{25, 9}}));
+}
+
+TEST(PolylineProcessingTest,
+     CreateClosedShapeWithOneIntersectionAndNoConnections) {
+  EXPECT_THAT(
+      CreateClosedShape({Point{6, 23}, Point{8, 21}, Point{10, 19},
+                         Point{14, 15}, Point{18, 9}, Point{16, 3},
+                         Point{10, 0}, Point{4, 3}, Point{2, 9}, Point{6, 15},
+                         Point{10, 19}, Point{12, 21}, Point{14, 23}}),
+      testing::Pointwise(
+          PointsEq(), {Point{10, 19}, Point{14, 15}, Point{18, 9}, Point{16, 3},
+                       Point{10, 0}, Point{4, 3}, Point{2, 9}, Point{6, 15},
+                       Point{10, 19}}));
+}
+
+TEST(PolylineProcessingTest,
+     CreateClosedShapeWithOneValidIntersectionTrimsTwoInvalidIntersections) {
+  EXPECT_THAT(
+      CreateClosedShape(
+          {Point{6, 23}, Point{6.2f, 23.1f}, Point{6.1f, 23.1f}, Point{8, 21},
+           Point{10, 19}, Point{14, 15}, Point{18, 9}, Point{16, 3},
+           Point{10, 0}, Point{4, 3}, Point{2, 9}, Point{6, 15}, Point{10, 19},
+           Point{11.9f, 21.2f}, Point{11.9f, 21.1f}, Point{14, 23}}),
+      testing::Pointwise(
+          PointsEq(), {Point{10, 19}, Point{14, 15}, Point{18, 9}, Point{16, 3},
+                       Point{10, 0}, Point{4, 3}, Point{2, 9}, Point{6, 15},
+                       Point{10, 19}}));
+}
+
+TEST(PolylineProcessingTest,
+     CreateClosedShapeWithOneIntersectionConnectsBothPoints) {
+  EXPECT_THAT(
+      CreateClosedShape(
+
+          {Point{1, 9}, Point{-1, 13}, Point{1, 17}, Point{6, 19},
+           Point{14, 15}, Point{18, 9}, Point{16, 3}, Point{10, 0}, Point{4, 3},
+           Point{2, 9}, Point{6, 15}, Point{14, 19}, Point{19, 17},
+           Point{21, 13}, Point{19, 9}}),
+      testing::Pointwise(
+          PointsEq(),
+          {Point{2, 9}, Point{1, 9}, Point{-1, 13}, Point{1, 17}, Point{6, 19},
+           Point{14, 15}, Point{18, 9}, Point{16, 3}, Point{10, 0}, Point{4, 3},
+           Point{2, 9}, Point{6, 15}, Point{14, 19}, Point{19, 17},
+           Point{21, 13}, Point{19, 9}, Point{18, 9}}));
+}
+
+TEST(PolylineProcessingTest, CreateClosedShapeConnectsFirstPointAndTrimsEnd) {
+  EXPECT_THAT(CreateClosedShape({Point{5, 3.2}, Point{5, 8}, Point{5, 15},
+                                 Point{10, 20}, Point{15, 25}, Point{20, 30},
+                                 Point{30, 20}, Point{20, 10}, Point{11, 3},
+                                 Point{1, 3}}),
+              testing::Pointwise(
+                  PointsEq(),
+                  {Point{5, 3}, Point{5, 3.2}, Point{5, 8}, Point{5, 15},
+                   Point{10, 20}, Point{15, 25}, Point{20, 30}, Point{30, 20},
+                   Point{20, 10}, Point{11, 3}, Point{5, 3}}));
+}
+
+TEST(PolylineProcessingTest, CreateClosedShapeConnectsLastPointAndTrimsFront) {
+  EXPECT_THAT(
+      CreateClosedShape({Point{1, 3}, Point{11, 3}, Point{20, 10},
+                         Point{30, 20}, Point{20, 30}, Point{15, 25},
+                         Point{10, 20}, Point{5, 15}, Point{5, 8},
+                         Point{5, 3.2}}),
+      testing::Pointwise(
+          PointsEq(), {Point{5, 3}, Point{11, 3}, Point{20, 10}, Point{30, 20},
+                       Point{20, 30}, Point{15, 25}, Point{10, 20},
+                       Point{5, 15}, Point{5, 8}, Point{5, 3.2}, Point{5, 3}}));
+}
+
+TEST(PolylineProcessingTest,
+     CreateClosedShapeConnectsFrontToBackAndBackToClosestPoint) {
+  EXPECT_THAT(CreateClosedShape({Point{4.95, 3}, Point{11, 3}, Point{20, 10},
+                                 Point{30, 20}, Point{20, 30}, Point{15, 25},
+                                 Point{10, 20}, Point{5, 15}, Point{5, 8},
+                                 Point{5, 3.2}}),
+              testing::Pointwise(
+                  PointsEq(),
+                  {Point{5, 3.2}, Point{4.95, 3}, Point{11, 3}, Point{20, 10},
+                   Point{30, 20}, Point{20, 30}, Point{15, 25}, Point{10, 20},
+                   Point{5, 15}, Point{5, 8}, Point{5, 3.2}, Point{5, 3}}));
+}
+
+TEST(PolylineProcessingTest,
+     CreateClosedShapeConnectsBacktoFrontAndFrontToClosestPoint) {
+  EXPECT_THAT(CreateClosedShape({Point{5.2, 3}, Point{11, 3}, Point{20, 10},
+                                 Point{30, 20}, Point{20, 30}, Point{15, 25},
+                                 Point{10, 20}, Point{5, 15}, Point{5, 8},
+                                 Point{5, 2.95}}),
+              testing::Pointwise(
+                  PointsEq(),
+                  {Point{5, 3}, Point{5.2, 3}, Point{11, 3}, Point{20, 10},
+                   Point{30, 20}, Point{20, 30}, Point{15, 25}, Point{10, 20},
+                   Point{5, 15}, Point{5, 8}, Point{5, 2.95}, Point{5.2, 3}}));
+}
+
 }  // namespace
 }  // namespace ink::geometry_internal

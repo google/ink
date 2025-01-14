@@ -112,6 +112,10 @@ std::vector<Point> ProcessPolylineForMeshCreation(
     absl::Span<const Point> points, float min_walk_distance,
     float max_connection_distance, float min_connection_ratio,
     float min_trimming_ratio);
+
+// A version of ProcessPolylineForMeshCreation thats uses default parameters
+// which have been tested to work well for most shapes.
+std::vector<Point> CreateClosedShape(absl::Span<const Point> points);
 }  // namespace ink::geometry_internal
 
 #endif  // INK_GEOMETRY_INTERNAL_POLYLINE_PROCESSING_H_

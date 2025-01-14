@@ -34,6 +34,13 @@
 
 namespace ink::geometry_internal {
 
+namespace {
+const float kTotalWalkDistanceToMinWalkDistanceRatio = 0.3f;
+const float kMaxStraightLineDistanceToMaxConnectionDistanceRatio = 0.1f;
+const float kMinConnectionRatio = 2.0f;
+const float kMinTrimmingRatio = 1.8f;
+}  // namespace
+
 float WalkDistance(PolylineData& polyline, int index, float fractional_index,
                    bool walk_backwards) {
   int start_idx;
@@ -71,19 +78,14 @@ PolylineData CreateNewPolylineData(absl::Span<const Point> points) {
   polyline.segments.reserve(points.size() - 1);
   for (int i = 1; i < static_cast<int>(points.size()); ++i) {
     if (points[i] != last_point) {
-      float distance = Distance(last_point, points[i]);
-      polyline.total_walk_distance += distance;
-      polyline.segments.push_back(SegmentBundle{Segment{last_point, points[i]},
-                                                segment_count, distance});
+      polyline.segments.push_back(
+          SegmentBundle{Segment{last_point, points[i]}, segment_count,
+                        Distance(last_point, points[i])});
       ++segment_count;
       last_point = points[i];
     }
   }
 
-  Envelope envelope;
-  envelope.Add(points);
-  polyline.max_straight_line_distance =
-      std::hypot(envelope.AsRect()->Width(), envelope.AsRect()->Height());
   return polyline;
 }
 
@@ -431,6 +433,15 @@ std::vector<Point> CreateNewPolylineFromPolylineData(PolylineData& polyline) {
   return new_polyline;
 }
 
+std::vector<Point> ProcessPolyline(PolylineData& polyline) {
+  ink::geometry_internal::StaticRTree<SegmentBundle> rtree(polyline.segments,
+                                                           segment_bounds);
+  FindFirstAndLastIntersections(rtree, polyline);
+  FindBestEndpointConnections(rtree, polyline);
+
+  return CreateNewPolylineFromPolylineData(polyline);
+}
+
 std::vector<Point> ProcessPolylineForMeshCreation(
     absl::Span<const Point> points, float min_walk_distance,
     float max_connection_distance, float min_connection_ratio,
@@ -442,13 +453,34 @@ std::vector<Point> ProcessPolylineForMeshCreation(
   polyline.min_connection_ratio = min_connection_ratio;
   polyline.min_trimming_ratio = min_trimming_ratio;
 
-  ink::geometry_internal::StaticRTree<SegmentBundle> rtree(polyline.segments,
-                                                           segment_bounds);
-  FindFirstAndLastIntersections(rtree, polyline);
+  return ProcessPolyline(polyline);
+}
 
-  FindBestEndpointConnections(rtree, polyline);
+std::vector<Point> CreateClosedShape(absl::Span<const Point> points) {
+  PolylineData polyline = CreateNewPolylineData(points);
 
-  return CreateNewPolylineFromPolylineData(polyline);
+  // Calculate the total walk distance of the polyline.
+  for (size_t i = 0; i < polyline.segments.size(); ++i) {
+    polyline.total_walk_distance += polyline.segments[i].length;
+  }
+
+  // Calculate the max straight line distance of the polyline. Computing the
+  // bounding box of the points and then taking the hypotenuse of that box
+  // guarantees that no two points are more than that distance apart.
+  Envelope envelope;
+  envelope.Add(points);
+  polyline.max_straight_line_distance =
+      std::hypot(envelope.AsRect()->Width(), envelope.AsRect()->Height());
+
+  polyline.min_walk_distance =
+      polyline.total_walk_distance * kTotalWalkDistanceToMinWalkDistanceRatio;
+  polyline.max_connection_distance =
+      polyline.max_straight_line_distance *
+      kMaxStraightLineDistanceToMaxConnectionDistanceRatio;
+  polyline.min_connection_ratio = kMinConnectionRatio;
+  polyline.min_trimming_ratio = kMinTrimmingRatio;
+
+  return ProcessPolyline(polyline);
 }
 
 }  // namespace ink::geometry_internal
