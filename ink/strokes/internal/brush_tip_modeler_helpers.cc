@@ -33,6 +33,7 @@
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/easing_implementation.h"
+#include "ink/strokes/internal/noise_generator.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/types/duration.h"
 #include "ink/types/physical_distance.h"
@@ -316,6 +317,50 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::SourceNode& node,
 void ProcessBehaviorNodeImpl(const BrushBehavior::ConstantNode& node,
                              const BehaviorNodeContext& context) {
   context.stack.push_back(node.value);
+}
+
+void ProcessBehaviorNodeImpl(const NoiseNodeImplementation& node,
+                             const BehaviorNodeContext& context) {
+  float advance_by = 0.0f;
+  switch (node.vary_over) {
+    case BrushBehavior::DampingSource::kDistanceInCentimeters: {
+      PhysicalDistance period = PhysicalDistance::Centimeters(node.base_period);
+      float previous_traveled_distance =
+          context.previous_input_metrics.has_value()
+              ? context.previous_input_metrics->traveled_distance
+              : 0.0f;
+      PhysicalDistance traveled_distance_delta =
+          context.input_modeler_state.stroke_unit_length.has_value()
+              ? *context.input_modeler_state.stroke_unit_length *
+                    (context.current_input.traveled_distance -
+                     previous_traveled_distance)
+              : PhysicalDistance::Zero();
+      advance_by = traveled_distance_delta / period;
+    } break;
+    case BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize: {
+      float period = context.brush_size * node.base_period;
+      float previous_traveled_distance =
+          context.previous_input_metrics.has_value()
+              ? context.previous_input_metrics->traveled_distance
+              : 0.0f;
+      float traveled_distance_delta =
+          context.current_input.traveled_distance - previous_traveled_distance;
+      advance_by = traveled_distance_delta / period;
+    } break;
+    case BrushBehavior::DampingSource::kTimeInSeconds: {
+      Duration32 period = Duration32::Seconds(node.base_period);
+      Duration32 previous_elapsed_time =
+          context.previous_input_metrics.has_value()
+              ? context.previous_input_metrics->elapsed_time
+              : Duration32::Zero();
+      Duration32 elapsed_time_delta =
+          context.current_input.elapsed_time - previous_elapsed_time;
+      advance_by = elapsed_time_delta / period;
+    } break;
+  }
+  NoiseGenerator& generator = context.noise_generators[node.generator_index];
+  generator.AdvanceInputBy(advance_by);
+  context.stack.push_back(generator.CurrentOutputValue());
 }
 
 void ProcessBehaviorNodeImpl(const BrushBehavior::FallbackFilterNode& node,

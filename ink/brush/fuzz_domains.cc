@@ -302,6 +302,12 @@ Domain<BrushBehavior::ConstantNode> ValidBrushBehaviorConstantNode() {
   return StructOf<BrushBehavior::ConstantNode>(Finite<float>());
 }
 
+Domain<BrushBehavior::NoiseNode> ValidBrushBehaviorNoiseNode() {
+  return StructOf<BrushBehavior::NoiseNode>(
+      Arbitrary<uint32_t>(), ArbitraryBrushBehaviorDampingSource(),
+      FinitePositiveFloat());
+}
+
 Domain<BrushBehavior::FallbackFilterNode>
 ValidBrushBehaviorFallbackFilterNode() {
   return StructOf<BrushBehavior::FallbackFilterNode>(
@@ -353,7 +359,8 @@ Domain<std::vector<BrushBehavior::Node>> ValidBrushBehaviorNodeLeaf() {
         return std::vector<BrushBehavior::Node>{node};
       },
       OneOf(BrushBehaviorNodeOf(ValidBrushBehaviorSourceNode()),
-            BrushBehaviorNodeOf(ValidBrushBehaviorConstantNode())));
+            BrushBehaviorNodeOf(ValidBrushBehaviorConstantNode()),
+            BrushBehaviorNodeOf(ValidBrushBehaviorNoiseNode())));
 }
 
 // A domain over all valid behavior node subtrees (i.e. with a value node at the
@@ -460,7 +467,7 @@ Domain<BrushBehavior> ValidBrushBehavior() {
 Domain<BrushBehavior::Node> ValidBrushBehaviorNode() {
   return VariantOf(
       ValidBrushBehaviorSourceNode(), ValidBrushBehaviorConstantNode(),
-      ValidBrushBehaviorFallbackFilterNode(),
+      ValidBrushBehaviorNoiseNode(), ValidBrushBehaviorFallbackFilterNode(),
       ValidBrushBehaviorToolTypeFilterNode(), ValidBrushBehaviorDampingNode(),
       ValidBrushBehaviorResponseNode(), ValidBrushBehaviorBinaryOpNode(),
       ValidBrushBehaviorInterpolationNode(), ValidBrushBehaviorTargetNode());

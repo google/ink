@@ -115,6 +115,7 @@ class BrushTipModeler {
   // Helper methods for the `std::visit` call in `StartStroke`.
   void AppendBehaviorNode(const BrushBehavior::SourceNode& node);
   void AppendBehaviorNode(const BrushBehavior::ConstantNode& node);
+  void AppendBehaviorNode(const BrushBehavior::NoiseNode& node);
   void AppendBehaviorNode(const BrushBehavior::FallbackFilterNode& node);
   void AppendBehaviorNode(const BrushBehavior::ToolTypeFilterNode& node);
   void AppendBehaviorNode(const BrushBehavior::DampingNode& node);
@@ -186,6 +187,9 @@ class BrushTipModeler {
 
   std::vector<BehaviorNodeImplementation> behavior_nodes_;
   std::vector<float> behavior_stack_;
+  // These next two vectors must always be the same size:
+  std::vector<NoiseGenerator> current_noise_generators_;
+  std::vector<NoiseGenerator> fixed_noise_generators_;
   // These next two vectors must always be the same size:
   std::vector<float> current_damped_values_;
   std::vector<float> fixed_damped_values_;

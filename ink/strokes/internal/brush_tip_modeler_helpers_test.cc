@@ -30,6 +30,7 @@
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/easing_implementation.h"
+#include "ink/strokes/internal/noise_generator.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/strokes/internal/type_matchers.h"
 #include "ink/types/duration.h"
@@ -40,6 +41,7 @@ namespace ink::strokes_internal {
 namespace {
 
 using ::testing::ElementsAre;
+using ::testing::FloatEq;
 using ::testing::FloatNear;
 using ::testing::IsEmpty;
 
@@ -844,6 +846,103 @@ TEST_F(ProcessBehaviorNodeTest, ConstantNode) {
   EXPECT_THAT(stack_, ElementsAre(0.75f));
   ProcessBehaviorNode(BrushBehavior::ConstantNode{.value = -0.5f}, context_);
   EXPECT_THAT(stack_, ElementsAre(0.75f, -0.5f));
+}
+
+TEST_F(ProcessBehaviorNodeTest, NoiseNodeDistanceInCentimeters) {
+  NoiseGenerator reference_generator(12345);
+  // Set the node up to use a copy of the reference generator.
+  std::vector<NoiseGenerator> generators = {reference_generator};
+  context_.noise_generators = absl::MakeSpan(generators);
+  input_modeler_state_.stroke_unit_length = PhysicalDistance::Centimeters(0.1);
+  context_.previous_input_metrics = InputMetrics{.traveled_distance = 0};
+  NoiseNodeImplementation noise_impl = {
+      .generator_index = 0,
+      .vary_over = BrushBehavior::DampingSource::kDistanceInCentimeters,
+      .base_period = 3.0,
+  };
+
+  // The noise node has a base period of 3cm, and we've set the length of one
+  // stroke unit to 0.1cm above, so the base period is 30 stroke units.  After a
+  // traveled distance equal to 75% of the base period (that is, 22.5 stroke
+  // units), we should get the same random output as the reference generator
+  // gives for an input of 0.75.
+  current_input_.traveled_distance = 22.5f;
+  ProcessBehaviorNode(noise_impl, context_);
+  reference_generator.AdvanceInputBy(0.75f);
+  EXPECT_THAT(stack_,
+              ElementsAre(FloatEq(reference_generator.CurrentOutputValue())));
+}
+
+TEST_F(ProcessBehaviorNodeTest,
+       NoiseNodeDistanceInCentimetersWithNoStrokeUnitLength) {
+  NoiseGenerator reference_generator(23456);
+  // Set the node up to use a copy of the reference generator.
+  std::vector<NoiseGenerator> generators = {reference_generator};
+  context_.noise_generators = absl::MakeSpan(generators);
+  input_modeler_state_.stroke_unit_length = std::nullopt;
+  context_.previous_input_metrics = InputMetrics{.traveled_distance = 0};
+  NoiseNodeImplementation noise_impl = {
+      .generator_index = 0,
+      .vary_over = BrushBehavior::DampingSource::kDistanceInCentimeters,
+      .base_period = 3.0,
+  };
+
+  // Since there's no mapping set between stroke units and physical units, the
+  // noise node should treat any stroke distance traveled as if no physical
+  // distance had been traveled. Thus, we should get the same random output as
+  // the reference generator gives for an input of 0.
+  current_input_.traveled_distance = 22.5f;
+  ProcessBehaviorNode(noise_impl, context_);
+  reference_generator.AdvanceInputBy(0.f);
+  EXPECT_THAT(stack_,
+              ElementsAre(FloatEq(reference_generator.CurrentOutputValue())));
+}
+
+TEST_F(ProcessBehaviorNodeTest, NoiseNodeDistanceInMultiplesOfBrushSize) {
+  NoiseGenerator reference_generator(34567);
+  // Set the node up to use a copy of the reference generator.
+  std::vector<NoiseGenerator> generators = {reference_generator};
+  context_.noise_generators = absl::MakeSpan(generators);
+  context_.brush_size = 10;
+  context_.previous_input_metrics = InputMetrics{.traveled_distance = 0};
+  NoiseNodeImplementation noise_impl = {
+      .generator_index = 0,
+      .vary_over =
+          BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize,
+      .base_period = 3.0,
+  };
+
+  // After a traveled distance equal to 75% of the base period, we should get
+  // the same random output as the reference generator gives for an input of
+  // 0.75.
+  current_input_.traveled_distance = 22.5f;
+  ProcessBehaviorNode(noise_impl, context_);
+  reference_generator.AdvanceInputBy(0.75f);
+  EXPECT_THAT(stack_,
+              ElementsAre(FloatEq(reference_generator.CurrentOutputValue())));
+}
+
+TEST_F(ProcessBehaviorNodeTest, NoiseNodeTimeInSeconds) {
+  NoiseGenerator reference_generator(45678);
+  // Set the node up to use a copy of the reference generator.
+  std::vector<NoiseGenerator> generators = {reference_generator};
+  context_.noise_generators = absl::MakeSpan(generators);
+  context_.previous_input_metrics = InputMetrics{
+      .elapsed_time = Duration32::Zero(),
+  };
+  NoiseNodeImplementation noise_impl = {
+      .generator_index = 0,
+      .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+      .base_period = 3.0,
+  };
+
+  // After an elapsed time equal to 75% of the base period, we should get the
+  // same random output as the reference generator gives for an input of 0.75.
+  current_input_.elapsed_time = Duration32::Seconds(2.25f);
+  ProcessBehaviorNode(noise_impl, context_);
+  reference_generator.AdvanceInputBy(0.75f);
+  EXPECT_THAT(stack_,
+              ElementsAre(FloatEq(reference_generator.CurrentOutputValue())));
 }
 
 TEST_F(ProcessBehaviorNodeTest, FallbackFilterNodePressure) {
