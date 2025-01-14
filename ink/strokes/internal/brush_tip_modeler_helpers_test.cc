@@ -775,6 +775,37 @@ TEST_F(ProcessBehaviorNodeTest,
   EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
 }
 
+TEST_F(ProcessBehaviorNodeTest,
+       SourceNodeDistanceRemainingAsFractionOfStrokeLength) {
+  BrushBehavior::SourceNode source_node = {
+      .source =
+          BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength,
+      .source_value_range = {0, 1},
+  };
+
+  current_input_.traveled_distance = 3.0f;
+  input_modeler_state_.complete_traveled_distance = 12.0f;
+  ProcessBehaviorNode(source_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(0.75f));
+}
+
+TEST_F(ProcessBehaviorNodeTest,
+       SourceNodeDistanceRemainingAsFractionOfStrokeLengthZeroLength) {
+  BrushBehavior::SourceNode source_node = {
+      .source =
+          BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength,
+      .source_value_range = {0, 1},
+  };
+
+  // If there is zero distance remaining out of total stroke length of zero,
+  // then the fraction of distance remaining isn't well-defined (0/0), so we
+  // arbitrarily define that as 0% distance remaining.
+  current_input_.traveled_distance = 0.0f;
+  input_modeler_state_.complete_traveled_distance = 0.0f;
+  ProcessBehaviorNode(source_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(0.0f));
+}
+
 TEST_F(ProcessBehaviorNodeTest, SourceNodeOutOfRangeClamp) {
   BrushBehavior::SourceNode source_node = {
       .source = BrushBehavior::Source::kNormalizedPressure,

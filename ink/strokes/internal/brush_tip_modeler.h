@@ -181,6 +181,7 @@ class BrushTipModeler {
   // time remaining that are affected by the tip's behaviors.
   float distance_remaining_behavior_upper_bound_ = 0;
   Duration32 time_remaining_behavior_upper_bound_ = Duration32::Zero();
+  float distance_fraction_behavior_upper_bound_ = 0;
   // Flag for whether the current `brush_tip_` has behaviors that depend on
   // properties of subsequent modeled inputs, like the travel direction.
   bool behaviors_depend_on_next_input_ = false;

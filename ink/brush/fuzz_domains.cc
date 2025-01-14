@@ -213,6 +213,7 @@ Domain<BrushBehavior::Source> ArbitraryBrushBehaviorSource() {
           kInputAccelerationForwardInCentimetersPerSecondSquared,
       BrushBehavior::Source::
           kInputAccelerationLateralInCentimetersPerSecondSquared,
+      BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength,
   });
 }
 // LINT.ThenChange(brush_behavior.h:source)

@@ -232,6 +232,11 @@ std::optional<float> GetSourceValue(
       return Vec::DotProduct(input.acceleration,
                              input.velocity.AsUnitVec().Orthogonal()) *
              input_modeler_state.stroke_unit_length->ToCentimeters();
+    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
+      return input_modeler_state.complete_traveled_distance == 0.0f
+                 ? 0.0f
+                 : 1.0f - input.traveled_distance /
+                              input_modeler_state.complete_traveled_distance;
   }
   return std::nullopt;
 }

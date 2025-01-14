@@ -139,6 +139,10 @@ TEST(BrushBehaviorTest, StringifySource) {
       absl::StrCat(BrushBehavior::Source::
                        kInputAccelerationLateralInCentimetersPerSecondSquared),
       "kInputAccelerationLateralInCentimetersPerSecondSquared");
+  EXPECT_EQ(
+      absl::StrCat(
+          BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength),
+      "kDistanceRemainingAsFractionOfStrokeLength");
   EXPECT_EQ(absl::StrCat(static_cast<BrushBehavior::Source>(123)),
             "Source(123)");
 }

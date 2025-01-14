@@ -661,6 +661,64 @@ TEST(BrushTipModelerTest, TipWithMultipleDistanceRemainingBehaviors) {
   EXPECT_EQ(modeler.VolatileTipStates().size(), 6);
 }
 
+TEST(BrushTipModelerTest, StartStrokeWithDistanceRemainingBehaviorsOver) {
+  BrushTipModeler modeler;
+  BrushTip brush_tip = {
+      .behaviors = {
+          BrushBehavior{{
+              BrushBehavior::SourceNode{
+                  .source = BrushBehavior::Source::
+                      kDistanceRemainingInMultiplesOfBrushSize,
+                  .source_value_range = {0, 1},
+              },
+              BrushBehavior::TargetNode{
+                  .target = BrushBehavior::Target::kWidthMultiplier,
+                  .target_modifier_range = {0.5, 1.5},
+              },
+          }},
+          BrushBehavior{{
+              BrushBehavior::SourceNode{
+                  .source = BrushBehavior::Source::
+                      kDistanceRemainingAsFractionOfStrokeLength,
+                  .source_value_range = {0, 0.5},
+              },
+              BrushBehavior::TargetNode{
+                  .target = BrushBehavior::Target::kHeightMultiplier,
+                  .target_modifier_range = {0.5, 1.5},
+              },
+          }},
+      }};
+  float brush_size = 3;
+  modeler.StartStroke(&brush_tip, brush_size);
+
+  std::vector<ModeledStrokeInput> inputs = {
+      {.position = {0, 0}, .traveled_distance = 0},
+      {.position = {0, 2}, .traveled_distance = 2},
+      {.position = {0, 4}, .traveled_distance = 4},
+      {.position = {0, 6}, .traveled_distance = 6},
+  };
+  StrokeInputModeler::State state = {.stable_input_count = inputs.size()};
+  modeler.UpdateStroke(state, inputs);
+
+  // The modeler should create 2 fixed and 2 volatile tip states, because:
+  //   * The `kDistanceRemainingInMultiplesOfBrushSize` behavior above keeps the
+  //     last `brush_size` = 3 units of the stroke length volatile.
+  //   * The `kDistanceRemainingAsFractionOfStrokeLength` behavior above keeps
+  //     the latter half of the stroke length volatile.
+  EXPECT_EQ(modeler.NewFixedTipStates().size(), 2);
+  EXPECT_EQ(modeler.VolatileTipStates().size(), 2);
+
+  // Start the stroke over, using the same inputs with a `BrushTip` with no
+  // behaviors.  This time, there should be no volatile tip states, because the
+  // distance-remaining behaviors are gone, and `StartStroke` should have reset
+  // the private `BrushTipModeler::*_upper_bound_` fields.
+  BrushTip no_behaviors;
+  modeler.StartStroke(&no_behaviors, brush_size);
+  modeler.UpdateStroke(state, inputs);
+  EXPECT_EQ(modeler.NewFixedTipStates().size(), 4);
+  EXPECT_EQ(modeler.VolatileTipStates().size(), 0);
+}
+
 TEST(BrushTipModelerTest, TipWithSecondsRemainingBehavior) {
   BrushTipModeler modeler;
   BrushTip brush_tip = {

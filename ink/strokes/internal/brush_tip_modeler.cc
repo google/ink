@@ -141,6 +141,7 @@ float DistanceRemainingUpperBound(const BrushBehavior::SourceNode& node,
         kInputAccelerationForwardInCentimetersPerSecondSquared:
     case BrushBehavior::Source::
         kInputAccelerationLateralInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
       return 0;
   }
   ABSL_LOG(FATAL)
@@ -199,6 +200,7 @@ Duration32 TimeRemainingUpperBound(const BrushBehavior::SourceNode& node) {
         kInputAccelerationForwardInCentimetersPerSecondSquared:
     case BrushBehavior::Source::
         kInputAccelerationLateralInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
       return Duration32::Zero();
   }
   ABSL_LOG(FATAL)
@@ -256,6 +258,7 @@ bool SourceDependsOnNextModeledInput(BrushBehavior::Source source) {
         kInputAccelerationForwardInCentimetersPerSecondSquared:
     case BrushBehavior::Source::
         kInputAccelerationLateralInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
       break;
   }
   return false;
@@ -289,9 +292,9 @@ void BrushTipModeler::StartStroke(absl::Nonnull<const BrushTip*> brush_tip,
   saved_tip_states_.clear();
   new_fixed_tip_state_count_ = 0;
 
-  // The following three fields will be updated by the `AppendBehaviorNode()`
-  // loop below.
+  // These fields will be updated by the `AppendBehaviorNode()` loop below.
   distance_remaining_behavior_upper_bound_ = 0;
+  distance_fraction_behavior_upper_bound_ = 0;
   time_remaining_behavior_upper_bound_ = Duration32::Zero();
   behaviors_depend_on_next_input_ = false;
 
@@ -319,6 +322,11 @@ void BrushTipModeler::AppendBehaviorNode(
                DistanceRemainingUpperBound(node, brush_size_));
   time_remaining_behavior_upper_bound_ = std::max(
       time_remaining_behavior_upper_bound_, TimeRemainingUpperBound(node));
+  if (node.source ==
+      BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength) {
+    distance_fraction_behavior_upper_bound_ = std::max(
+        distance_fraction_behavior_upper_bound_, SourceValueUpperBound(node));
+  }
   behavior_nodes_.push_back(node);
   if (SourceDependsOnNextModeledInput(node.source)) {
     behaviors_depend_on_next_input_ = true;
@@ -498,8 +506,11 @@ InputMetrics BrushTipModeler::CalculateMaxFixedInputMetrics(
   const ModeledStrokeInput& last_stable_input =
       inputs[input_modeler_state.stable_input_count - 1];
   return {
-      .traveled_distance = last_stable_input.traveled_distance -
-                           distance_remaining_behavior_upper_bound_,
+      .traveled_distance =
+          last_stable_input.traveled_distance -
+          std::max(distance_remaining_behavior_upper_bound_,
+                   distance_fraction_behavior_upper_bound_ *
+                       input_modeler_state.complete_traveled_distance),
       .elapsed_time =
           last_stable_input.elapsed_time - time_remaining_behavior_upper_bound_,
   };

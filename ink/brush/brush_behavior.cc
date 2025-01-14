@@ -215,6 +215,7 @@ bool IsValidBehaviorSource(BrushBehavior::Source source) {
         kInputAccelerationForwardInCentimetersPerSecondSquared:
     case BrushBehavior::Source::
         kInputAccelerationLateralInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
       return true;
   }
   return false;
@@ -276,6 +277,7 @@ absl::Status ValidateSourceAndOutOfRangeCombination(
         kInputAccelerationForwardInCentimetersPerSecondSquared:
     case BrushBehavior::Source::
         kInputAccelerationLateralInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
       break;
   }
   return absl::OkStatus();
@@ -618,6 +620,8 @@ std::string ToFormattedString(BrushBehavior::Source source) {
     case BrushBehavior::Source::
         kInputAccelerationLateralInCentimetersPerSecondSquared:
       return "kInputAccelerationLateralInCentimetersPerSecondSquared";
+    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
+      return "kDistanceRemainingAsFractionOfStrokeLength";
   }
   return absl::StrCat("Source(", static_cast<int>(source), ")");
 }

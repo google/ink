@@ -230,6 +230,10 @@ struct BrushBehavior {
     // Y-axis (and a negative value indicates acceleration along the negative
     // Y-axis).
     kInputAccelerationLateralInCentimetersPerSecondSquared,
+    // The distance left to be traveled from a given input to the current last
+    // input of the stroke, as a fraction of the current total length of the
+    // stroke. This value changes for each input as the stroke is drawn.
+    kDistanceRemainingAsFractionOfStrokeLength,
     // TODO: b/336565152 - Add kInputDistanceRemainingInCentimeters (this will
     // require some refactoring for the code that calculates
     // BrushTipModeler::distance_remaining_behavior_upper_bound_).
