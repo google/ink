@@ -39,10 +39,9 @@ using ::ink::StrokeInputBatch;
 
 extern "C" {
 
-JNI_METHOD(geometry, MeshCreationNative, jlong,
-           nativeCreateClosedShapeFromStokeInputBatch)
-(JNIEnv* env, jclass clazz, jlong stroke_input_batch_native_pointer,
- jclass immutable_vec_class) {
+JNI_METHOD(strokes, MeshCreationNative, jlong,
+           nativeCreateClosedShapeFromStrokeInputBatch)
+(JNIEnv* env, jclass clazz, jlong stroke_input_batch_native_pointer) {
   const auto* input = reinterpret_cast<const StrokeInputBatch*>(
       stroke_input_batch_native_pointer);
 
