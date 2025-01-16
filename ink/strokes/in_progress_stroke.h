@@ -219,7 +219,7 @@ class InProgressStroke {
   // has a negative winding number when viewed from the positive z-axis. That
   // is, the outline positions are in clockwise order if the y-axis points up,
   // counter-clockwise order if the y-axis points down.
-  absl::Span<const absl::Span<const uint32_t>> GetIndexOutlines(
+  absl::Span<const absl::Span<const uint32_t>> GetCoatOutlines(
       uint32_t coat_index) const;
 
   // Returns the bounding rectangle of mesh positions added, modified, or
@@ -308,9 +308,9 @@ inline const Envelope& InProgressStroke::GetMeshBounds(
 }
 
 inline absl::Span<const absl::Span<const uint32_t>>
-InProgressStroke::GetIndexOutlines(uint32_t coat_index) const {
+InProgressStroke::GetCoatOutlines(uint32_t coat_index) const {
   ABSL_CHECK_LT(coat_index, BrushCoatCount());
-  return shape_builders_[coat_index].GetIndexOutlines();
+  return shape_builders_[coat_index].GetOutlines();
 }
 
 inline const Envelope& InProgressStroke::GetUpdatedRegion() const {

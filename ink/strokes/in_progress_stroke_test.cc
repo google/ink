@@ -154,7 +154,7 @@ MATCHER_P3(UpdateShapeFailsAndDoesNotModifyStroke, current_elapsed_time,
     meshes_before_update.push_back(arg->GetMesh(i).Clone());
     bounds_before_update.push_back(arg->GetMeshBounds(i));
     std::vector<std::vector<uint32_t>> outlines;
-    for (absl::Span<const uint32_t> outline : arg->GetIndexOutlines(i)) {
+    for (absl::Span<const uint32_t> outline : arg->GetCoatOutlines(i)) {
       outlines.push_back(std::vector<uint32_t>(outline.begin(), outline.end()));
     }
     index_outlines_before_update.push_back(std::move(outlines));
@@ -186,7 +186,7 @@ MATCHER_P3(UpdateShapeFailsAndDoesNotModifyStroke, current_elapsed_time,
         !ExplainMatchResult(EnvelopeEq(bounds_before_update[i]),
                             arg->GetMeshBounds(i), result_listener) ||
         !ExplainMatchResult(ElementsAreArray(index_outlines_before_update[i]),
-                            arg->GetIndexOutlines(i), result_listener)) {
+                            arg->GetCoatOutlines(i), result_listener)) {
       return false;
     }
   }
@@ -263,7 +263,7 @@ TEST(InProgressStrokeTest, StartAfterConstruction) {
   EXPECT_EQ(stroke.GetMesh(0).VertexCount(), 0u);
   EXPECT_EQ(stroke.GetMesh(0).TriangleCount(), 0u);
   EXPECT_TRUE(stroke.GetMeshBounds(0).IsEmpty());
-  EXPECT_THAT(stroke.GetIndexOutlines(0), ElementsAre(IsEmpty()));
+  EXPECT_THAT(stroke.GetCoatOutlines(0), ElementsAre(IsEmpty()));
   EXPECT_TRUE(stroke.GetUpdatedRegion().IsEmpty());
   EXPECT_FALSE(stroke.InputsAreFinished());
   EXPECT_FALSE(stroke.NeedsUpdate());
@@ -338,7 +338,7 @@ TEST(InProgressStrokeTest, EmptyEnqueueInputsAndUpdateAfterStart) {
   EXPECT_EQ(stroke.GetMesh(0).VertexCount(), 0u);
   EXPECT_EQ(stroke.GetMesh(0).TriangleCount(), 0u);
   EXPECT_TRUE(stroke.GetMeshBounds(0).IsEmpty());
-  EXPECT_THAT(stroke.GetIndexOutlines(0), ElementsAre(IsEmpty()));
+  EXPECT_THAT(stroke.GetCoatOutlines(0), ElementsAre(IsEmpty()));
   EXPECT_TRUE(stroke.GetUpdatedRegion().IsEmpty());
   EXPECT_FALSE(stroke.NeedsUpdate());
 }
@@ -392,7 +392,7 @@ TEST(InProgressStrokeTest, NonEmptyInputs) {
               Optional(RectNear(*CalculateEnvelope(stroke.GetMesh(0)).AsRect(),
                                 0.0001)));
 
-  EXPECT_THAT(stroke.GetIndexOutlines(0), ElementsAre(Not(IsEmpty())));
+  EXPECT_THAT(stroke.GetCoatOutlines(0), ElementsAre(Not(IsEmpty())));
   EXPECT_THAT(stroke.GetUpdatedRegion().AsRect(),
               Optional(RectNear(
                   Rect::FromTwoPoints({-0.88, 0.13}, {4.90, 5.87}), 0.01)));
@@ -419,7 +419,7 @@ TEST(InProgressStrokeTest, NonEmptyInputs) {
               Optional(RectNear(*CalculateEnvelope(stroke.GetMesh(0)).AsRect(),
                                 0.0001)));
 
-  EXPECT_THAT(stroke.GetIndexOutlines(0), ElementsAre(Not(IsEmpty())));
+  EXPECT_THAT(stroke.GetCoatOutlines(0), ElementsAre(Not(IsEmpty())));
   EXPECT_THAT(stroke.GetUpdatedRegion().AsRect(),
               Optional(RectNear(
                   Rect::FromTwoPoints({-0.88, -2.88}, {5.88, 5.87}), 0.01)));
@@ -447,7 +447,7 @@ TEST(InProgressStrokeTest, ExtendWithEmptyPredictedButNonEmptyReal) {
       EnvelopeNear(CalculateEnvelope(stroke.GetMesh(0)).AsRect().value(),
                    0.0001));
 
-  EXPECT_THAT(stroke.GetIndexOutlines(0), ElementsAre(Not(IsEmpty())));
+  EXPECT_THAT(stroke.GetCoatOutlines(0), ElementsAre(Not(IsEmpty())));
   EXPECT_THAT(stroke.GetUpdatedRegion().AsRect(),
               Optional(RectNear(
                   Rect::FromTwoPoints({-0.88, 0.13}, {4.87, 3.87}), 0.01)));
@@ -470,7 +470,7 @@ TEST(InProgressStrokeTest, ExtendWithEmptyPredictedButNonEmptyReal) {
       EnvelopeNear(CalculateEnvelope(stroke.GetMesh(0)).AsRect().value(),
                    0.0001));
 
-  EXPECT_THAT(stroke.GetIndexOutlines(0), ElementsAre(Not(IsEmpty())));
+  EXPECT_THAT(stroke.GetCoatOutlines(0), ElementsAre(Not(IsEmpty())));
   EXPECT_THAT(stroke.GetUpdatedRegion().AsRect(),
               Optional(RectNear(
                   Rect::FromTwoPoints({-0.88, -1.87}, {4.90, 3.88}), 0.01)));
@@ -726,7 +726,7 @@ TEST(InProgressStrokeTest, StartAfterExtendingStroke) {
   ASSERT_NE(stroke.GetMesh(0).VertexCount(), 0u);
   ASSERT_NE(stroke.GetMesh(0).TriangleCount(), 0u);
   ASSERT_FALSE(stroke.GetMeshBounds(0).IsEmpty());
-  ASSERT_THAT(stroke.GetIndexOutlines(0), ElementsAre(Not(IsEmpty())));
+  ASSERT_THAT(stroke.GetCoatOutlines(0), ElementsAre(Not(IsEmpty())));
   ASSERT_FALSE(stroke.GetUpdatedRegion().IsEmpty());
 
   stroke.Start(replacement_brush);
@@ -737,7 +737,7 @@ TEST(InProgressStrokeTest, StartAfterExtendingStroke) {
   EXPECT_EQ(stroke.GetMesh(0).VertexCount(), 0u);
   EXPECT_EQ(stroke.GetMesh(0).TriangleCount(), 0u);
   EXPECT_TRUE(stroke.GetMeshBounds(0).IsEmpty());
-  EXPECT_THAT(stroke.GetIndexOutlines(0), ElementsAre(IsEmpty()));
+  EXPECT_THAT(stroke.GetCoatOutlines(0), ElementsAre(IsEmpty()));
   EXPECT_TRUE(stroke.GetUpdatedRegion().IsEmpty());
 }
 

@@ -97,8 +97,8 @@ class StrokeShapeBuilder {
   // for the stroke.
   //
   // The return value will be empty if no stroke has been started. See the
-  // public `InProgressStroke::GetIndexOutlines()` for more details.
-  absl::Span<const absl::Span<const uint32_t>> GetIndexOutlines() const;
+  // public `InProgressStroke::GetCoatOutlines()` for more details.
+  absl::Span<const absl::Span<const uint32_t>> GetOutlines() const;
 
  private:
   // Returns the number of brush tips being used to extrude the current shape.
@@ -135,7 +135,7 @@ inline const Envelope& StrokeShapeBuilder::GetMeshBounds() const {
 }
 
 inline absl::Span<const absl::Span<const uint32_t>>
-StrokeShapeBuilder::GetIndexOutlines() const {
+StrokeShapeBuilder::GetOutlines() const {
   return outline_indices_;
 }
 

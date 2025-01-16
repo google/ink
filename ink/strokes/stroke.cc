@@ -181,7 +181,7 @@ void Stroke::RegenerateShape() {
 
     shape_gen.mesh_groups.push_back({
         .mesh = &mesh,
-        .outlines = builder.GetIndexOutlines(),
+        .outlines = builder.GetOutlines(),
         .packing_params = shape_gen.custom_packing_arrays.back().Values(),
     });
   }
