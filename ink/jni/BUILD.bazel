@@ -1,4 +1,4 @@
-# Copyright 2024 Google LLC
+# Copyright 2024-2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ cc_binary(
         "//ink/color/internal/jni:native",
         "//ink/geometry/internal/jni:native",
         "//ink/rendering/skia/common_internal/jni:native",
+        "//ink/storage/internal/jni:native",
         "//ink/strokes/internal/jni:native",
     ],
 )

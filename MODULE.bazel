@@ -66,17 +66,18 @@ git_repository(
     remote = "https://github.com/google/ink-stroke-modeler.git",
 )
 
-bazel_dep(name = "rules_android", version = "0.6.0")
-bazel_dep(
-    name = "rules_jni",
-    version = "0.10.1",
-)
-
 git_repository(
     name = "libtess2",
     build_file = "third_party/libtess2/BUILD.bazel",
     commit = "fc52516467dfa124bdd967c15c7cf9faf02a34ca",
     remote = "https://github.com/memononen/libtess2.git",
+)
+
+bazel_dep(name = "protobuf", version = "29.3")
+bazel_dep(name = "rules_android", version = "0.6.0")
+bazel_dep(
+    name = "rules_jni",
+    version = "0.10.1",
 )
 
 SKIA_COMMIT = "515a23f3cbe1e2f54ffa6821e6da6f4891763f47"

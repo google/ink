@@ -50,3 +50,21 @@ cc_library(
         ],
     }),
 )
+
+cc_library(
+    name = "jni_proto_util",
+    srcs = ["jni_proto_util.cc"],
+    hdrs = ["jni_proto_util.h"],
+    deps = [
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@protobuf//:protobuf_lite",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+)
