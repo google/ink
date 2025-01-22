@@ -606,7 +606,7 @@ ValidBrushPaintTextureLayerWithMapping(BrushPaint::TextureMapping mapping) {
         FiniteAngle(),
         StructOf<Vec>(InRange<float>(0.f, size.x), InRange<float>(0.f, size.y)),
         StructOf<Vec>(InRange<float>(0.f, 1.f), InRange<float>(0.f, 1.f)),
-        FiniteAngle(), InRange(0.f, 1.f),
+        FiniteAngle(), InRange(0.f, 1.f), Positive<int>(),
         VectorOf(ValidBrushPaintTextureKeyframe()),
         ArbitraryBrushPaintBlendMode());
   };

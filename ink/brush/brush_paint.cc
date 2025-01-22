@@ -211,6 +211,12 @@ absl::Status ValidateBrushPaintTextureLayer(
         "Got %v",
         layer.opacity));
   }
+  if (layer.animation_frames <= 0) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("`BrushPaint::TextureLayer::animation_frames` must be "
+                     "strictly positive (use 1 to disable animation). Got ",
+                     layer.animation_frames));
+  }
   for (const BrushPaint::TextureKeyframe& keyframe : layer.keyframes) {
     if (auto status = ValidateBrushPaintTextureKeyframe(keyframe);
         !status.ok()) {

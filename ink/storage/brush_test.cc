@@ -449,6 +449,7 @@ TEST(BrushTest, EncodeBrushWithoutUri) {
             .wrap_y = BrushPaint::TextureWrap::kMirror,
             .size = {10, 15},
             .size_jitter = {3, 7},
+            .animation_frames = 2,
             .keyframes = {{.progress = 0.8f,
                            .size = std::optional<Vec>({10, 15}),
                            .opacity = std::optional<float>(0.6f)}},
@@ -500,6 +501,7 @@ TEST(BrushTest, EncodeBrushWithoutUri) {
   texture_layer_proto->set_offset_jitter_y(0.f);
   texture_layer_proto->set_rotation_jitter_in_radians(0.f);
   texture_layer_proto->set_opacity(1.f);
+  texture_layer_proto->set_animation_frames(2);
   proto::BrushPaint::TextureKeyframe* keyframe_proto =
       texture_layer_proto->add_keyframes();
   keyframe_proto->set_progress(0.8f);

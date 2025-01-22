@@ -228,7 +228,8 @@ struct BrushPaint {
     TextureWrap wrap_x = TextureWrap::kRepeat;
     TextureWrap wrap_y = TextureWrap::kRepeat;
 
-    // The size of the texture, specified in `size_unit`s.
+    // The size of (one animation frame of) the texture, specified in
+    // `size_unit`s.
     Vec size = {1, 1};
     // An offset into the texture, specified as fractions of the texture size.
     Vec offset = {0, 0};
@@ -248,6 +249,16 @@ struct BrushPaint {
     // Overall layer opacity.
     float opacity = 1;
 
+    // The number of animation frames in this texture. Must be strictly positive
+    // to be valid. If 1 (the default), then animation is effectively disabled.
+    // If greater than 1, then the texture image is treated as a vertical strip
+    // of this many frame images, in order from top to bottom.
+    int animation_frames = 1;
+
+    // Animation keyframes; currently unused.
+    //
+    // TODO: b/373649343 - Decide if/how this should coexist with
+    // `animation_frames` above.
     std::vector<TextureKeyframe> keyframes;
 
     // The rule by which the texture layers up to and including this one are

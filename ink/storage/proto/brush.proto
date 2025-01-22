@@ -217,6 +217,7 @@ message BrushPaint {
     optional Origin origin = 17 [default = ORIGIN_STROKE_SPACE_ORIGIN];
     optional Wrap wrap_x = 18 [default = WRAP_REPEAT];
     optional Wrap wrap_y = 19 [default = WRAP_REPEAT];
+    optional int32 animation_frames = 20 [default = 1];
   }
 
   repeated TextureLayer texture_layers = 1;

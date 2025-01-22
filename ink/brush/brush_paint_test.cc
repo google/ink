@@ -654,6 +654,19 @@ TEST(BrushPaintTest, InvalidTextureLayerTextureWrap) {
               HasSubstr("wrap_y` holds non-enumerator value"));
 }
 
+TEST(BrushPaintTest, InvalidTextureLayerAnimationFrames) {
+  EXPECT_THAT(
+      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
+          .color_texture_uri = CreateTestTextureUri(), .animation_frames = -1}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("animation_frames` must be strictly positive")));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
+          .color_texture_uri = CreateTestTextureUri(), .animation_frames = 0}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("animation_frames` must be strictly positive")));
+}
+
 TEST(BrushPaintTest, MismatchedTextureMappings) {
   EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
                   {{.color_texture_uri = CreateTestTextureUri(),

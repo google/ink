@@ -1177,6 +1177,7 @@ void EncodeBrushPaintTextureLayer(
   layer_proto_out.set_rotation_jitter_in_radians(
       layer.rotation_jitter.ValueInRadians());
   layer_proto_out.set_opacity(layer.opacity);
+  layer_proto_out.set_animation_frames(layer.animation_frames);
   for (const BrushPaint::TextureKeyframe& keyframe : layer.keyframes) {
     EncodeBrushPaintTextureKeyFrame(keyframe, *layer_proto_out.add_keyframes());
   }
@@ -1234,8 +1235,7 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
       .size_unit = *size_unit,
       .wrap_x = *wrap_x,
       .wrap_y = *wrap_y,
-      .size = {layer_proto.has_size_x() ? layer_proto.size_x() : 1.0f,
-               layer_proto.has_size_y() ? layer_proto.size_y() : 1.0f},
+      .size = {layer_proto.size_x(), layer_proto.size_y()},
       .offset = {layer_proto.offset_x(), layer_proto.offset_y()},
       .rotation = Angle::Radians(layer_proto.rotation_in_radians()),
       .size_jitter = {layer_proto.size_jitter_x(), layer_proto.size_jitter_y()},
@@ -1243,7 +1243,8 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
                         layer_proto.offset_jitter_y()},
       .rotation_jitter =
           Angle::Radians(layer_proto.rotation_jitter_in_radians()),
-      .opacity = layer_proto.has_opacity() ? layer_proto.opacity() : 1.0f,
+      .opacity = layer_proto.opacity(),
+      .animation_frames = layer_proto.animation_frames(),
       .keyframes = std::move(keyframes),
       .blend_mode = *blend_mode};
 }
