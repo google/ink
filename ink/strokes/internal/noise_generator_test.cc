@@ -40,13 +40,24 @@ TEST(NoiseGeneratorTest, RandomSequenceIsFixedForAGivenSeed) {
     generator.AdvanceInputBy(0.1);
   }
   std::vector<float> expected = {
-      0.933754683, 0.915264189, 0.865075827, 0.791113913, 0.701303065,
-      0.603567779, 0.505832434, 0.416021585, 0.342059731, 0.291871309,
-      0.273380876, 0.276017755, 0.283174962, 0.293722451, 0.306530118,
-      0.320467860, 0.334405601, 0.347213268, 0.357760727, 0.364917934,
-      0.367554814, 0.363935769, 0.354112744, 0.339636654, 0.322058588,
-      0.302929521, 0.283800423, 0.266222358, 0.251746297, 0.241923273};
+      0.323644608, 0.332764149, 0.357517153, 0.393995285, 0.438290149,
+      0.486493349, 0.534696579, 0.578991473, 0.615469575, 0.640222609,
+      0.649342120, 0.642169000, 0.622699142, 0.594006658, 0.559165835,
+      0.521250844, 0.483335823, 0.448494971, 0.419802576, 0.400332719,
+      0.393159628, 0.388005435, 0.374015540, 0.353398860, 0.328364313,
+      0.301120877, 0.273877412, 0.248842880, 0.228226215, 0.214236364};
   EXPECT_THAT(actual, Pointwise(FloatEq(), expected));
+}
+
+TEST(NoiseGeneratorTest, UsesAll64SeedBits) {
+  // Two different seed values should (in most cases, but in particular in this
+  // specific case) result in different values generated.  We shouldn't, for
+  // example, just ignore the top or bottom 32 out of 64 seed bits.
+  NoiseGenerator generator1(0x10000000DeadBeefLL);
+  NoiseGenerator generator2(0x20000000DeadBeefLL);
+  NoiseGenerator generator3(0x10000000DeadBeadLL);
+  EXPECT_NE(generator2.CurrentOutputValue(), generator1.CurrentOutputValue());
+  EXPECT_NE(generator3.CurrentOutputValue(), generator1.CurrentOutputValue());
 }
 
 // Tests that all values emitted from the NoiseGenerator are in [0, 1].
