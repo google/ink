@@ -21,6 +21,7 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/geometry/fuzz_domains.h"
@@ -36,6 +37,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
 using ::ink::proto::CodedMesh;
 using ::google::protobuf::TextFormat;
 using ::testing::ElementsAre;
@@ -61,12 +64,13 @@ TEST(MeshTest, EncodeEmptyMesh) {
 TEST(MeshTest, EncodeTriangleMesh) {
   // Start with a non-empty CodedMesh.
   CodedMesh coded_mesh;
-  ASSERT_TRUE(TextFormat::ParseFromString(R"pb(
-                                            triangle_index { deltas: [ 0 ] }
-                                            x_stroke_space { deltas: [ 17 ] }
-                                            y_stroke_space { deltas: [ 42 ] }
-                                          )pb",
-                                          &coded_mesh));
+  ASSERT_TRUE(
+      TextFormat::ParseFromString(R"pb(
+                                    triangle_index { deltas: [ 0 ] }
+                                    attribute_components { deltas: [ 17 ] }
+                                    attribute_components { deltas: [ 42 ] }
+                                  )pb",
+                                  &coded_mesh));
 
   std::vector<float> position_x = {1, 3, 5};
   std::vector<float> position_y = {2, 4, 6};
@@ -75,7 +79,9 @@ TEST(MeshTest, EncodeTriangleMesh) {
   absl::StatusOr<Mesh> mesh =
       Mesh::Create(MeshFormat(), {position_x, position_y}, triangles);
   ASSERT_EQ(mesh.status(), absl::OkStatus());
+
   EncodeMesh(*mesh, coded_mesh);
+  ASSERT_EQ(coded_mesh.attribute_components_size(), 2);
 
   {
     absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>> int_run =
@@ -86,7 +92,7 @@ TEST(MeshTest, EncodeTriangleMesh) {
   const float epsilon = 1e-3;
   {
     absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(coded_mesh.x_stroke_space());
+        DecodeFloatNumericRun(coded_mesh.attribute_components(0));
     ASSERT_EQ(float_run.status(), absl::OkStatus());
     EXPECT_THAT(*float_run,
                 ElementsAre(FloatNear(1, epsilon), FloatNear(3, epsilon),
@@ -94,7 +100,7 @@ TEST(MeshTest, EncodeTriangleMesh) {
   }
   {
     absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(coded_mesh.y_stroke_space());
+        DecodeFloatNumericRun(coded_mesh.attribute_components(1));
     ASSERT_EQ(float_run.status(), absl::OkStatus());
     EXPECT_THAT(*float_run,
                 ElementsAre(FloatNear(2, epsilon), FloatNear(4, epsilon),
@@ -139,8 +145,10 @@ TEST(MeshTest, EncodePackedTriangleMesh) {
   absl::StatusOr<Mesh> mesh =
       Mesh::Create(*format, {position_x, position_y}, triangles);
   ASSERT_EQ(mesh.status(), absl::OkStatus());
+
   CodedMesh coded_mesh;
   EncodeMesh(*mesh, coded_mesh);
+  ASSERT_EQ(coded_mesh.attribute_components_size(), 2);
 
   {
     absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>> int_run =
@@ -151,7 +159,7 @@ TEST(MeshTest, EncodePackedTriangleMesh) {
   const float epsilon = 1e-3;
   {
     absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(coded_mesh.x_stroke_space());
+        DecodeFloatNumericRun(coded_mesh.attribute_components(0));
     ASSERT_EQ(float_run.status(), absl::OkStatus());
     EXPECT_THAT(*float_run,
                 ElementsAre(FloatNear(1, epsilon), FloatNear(3, epsilon),
@@ -159,7 +167,7 @@ TEST(MeshTest, EncodePackedTriangleMesh) {
   }
   {
     absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(coded_mesh.y_stroke_space());
+        DecodeFloatNumericRun(coded_mesh.attribute_components(1));
     ASSERT_EQ(float_run.status(), absl::OkStatus());
     EXPECT_THAT(*float_run,
                 ElementsAre(FloatNear(2, epsilon), FloatNear(4, epsilon),
@@ -178,20 +186,58 @@ TEST(MeshTest, EncodeSingleVertexMesh) {
   // Encode the mesh.
   CodedMesh coded_mesh;
   EncodeMesh(*mesh, coded_mesh);
+  ASSERT_EQ(coded_mesh.attribute_components_size(), 2);
   // The CodedMesh should be valid even though the envelope of vertices is empty
   // (we should avoid calculating an infinite scale).
   {
     absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(coded_mesh.x_stroke_space());
+        DecodeFloatNumericRun(coded_mesh.attribute_components(0));
     ASSERT_EQ(float_run.status(), absl::OkStatus());
     EXPECT_THAT(*float_run, ElementsAre(-1.75f));
   }
   {
     absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(coded_mesh.y_stroke_space());
+        DecodeFloatNumericRun(coded_mesh.attribute_components(1));
     ASSERT_EQ(float_run.status(), absl::OkStatus());
     EXPECT_THAT(*float_run, ElementsAre(2.25f));
   }
+}
+
+TEST(MeshTest, EncodeAndDecodeMeshWithCustomFormat) {
+  // Create a mesh format with custom, non-position attributes.
+  absl::StatusOr<MeshFormat> format =
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           MeshFormat::AttributeId::kPosition},
+                          {MeshFormat::AttributeType::kFloat1Unpacked,
+                           MeshFormat::AttributeId::kCustom0}},
+                         MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  // Create a mesh using that format.
+  std::vector<float> position_x = {1, 3, 5};
+  std::vector<float> position_y = {2, 4, 6};
+  std::vector<float> custom_attr = {-1, 7, 3};
+  std::vector<uint32_t> triangles = {0, 1, 2};
+  absl::StatusOr<Mesh> mesh =
+      Mesh::Create(*format, {position_x, position_y, custom_attr}, triangles);
+  ASSERT_EQ(mesh.status(), absl::OkStatus());
+
+  // Encode the mesh and ensure that the custom attribute data is included.
+  CodedMesh coded_mesh;
+  EncodeMesh(*mesh, coded_mesh);
+  ASSERT_EQ(coded_mesh.attribute_components_size(), 3);
+  EXPECT_THAT(DecodeFloatNumericRun(coded_mesh.attribute_components(2)),
+              IsOkAndHolds(ElementsAre(-1, 7, 3)));
+
+  // Decode the coded mesh, and ensure that the format is the same and that the
+  // custom attribute data is still there.
+  absl::StatusOr<Mesh> decoded = DecodeMesh(coded_mesh);
+  ASSERT_THAT(decoded, IsOk());
+  ASSERT_THAT(decoded->Format(), MeshFormatEq(*format));
+  ASSERT_EQ(decoded->VertexCount(), 3);
+  EXPECT_EQ(decoded->FloatVertexAttribute(0, 1)[0], -1);
+  EXPECT_EQ(decoded->FloatVertexAttribute(1, 1)[0], 7);
+  EXPECT_EQ(decoded->FloatVertexAttribute(2, 1)[0], 3);
 }
 
 TEST(MeshTest, DecodeEmptyMesh) {

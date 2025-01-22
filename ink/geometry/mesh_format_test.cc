@@ -23,6 +23,7 @@
 #include "fuzztest/fuzztest.h"
 #include "absl/hash/hash_testing.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -31,6 +32,7 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
 using ::testing::ElementsAre;
 using ::testing::FieldsAre;
 using ::testing::HasSubstr;
@@ -303,6 +305,18 @@ TEST(MeshFormatTest, WithoutAttributesMissing) {
       format->WithoutAttributes({AttrId::kOpacityShift}).status();
   EXPECT_EQ(missing_attr_removed.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(missing_attr_removed.message(), HasSubstr("cannot remove"));
+}
+
+TEST(MeshFormatTest, TotalComponentCount) {
+  EXPECT_EQ(MeshFormat().TotalComponentCount(), 2);
+
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl},
+       {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
+       {AttrType::kFloat3PackedIn2Floats, AttrId::kCustom0}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+  EXPECT_EQ(format->TotalComponentCount(), 4 + 2 + 3);
 }
 
 TEST(MeshFormatTest, ComponentCount) {
