@@ -22,6 +22,7 @@
 #include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
@@ -62,6 +63,7 @@ bool IsValidVaryingType(MeshSpecificationData::VaryingType type) {
 
 bool IsValidUniformType(MeshSpecificationData::UniformType type) {
   switch (type) {
+    case MeshSpecificationData::UniformType::kFloat1:
     case MeshSpecificationData::UniformType::kFloat4:
     case MeshSpecificationData::UniformType::kInt:
       return true;
@@ -77,6 +79,7 @@ bool IsValidUniformId(MeshSpecificationData::UniformId id) {
     case MeshSpecificationData::UniformId::kSideDerivativeUnpackingTransform:
     case MeshSpecificationData::UniformId::kForwardDerivativeUnpackingTransform:
     case MeshSpecificationData::UniformId::kTextureMapping:
+    case MeshSpecificationData::UniformId::kTextureAnimationProgress:
       return true;
   }
   return false;
@@ -87,6 +90,7 @@ bool IsUnpackingTransformUniformId(MeshSpecificationData::UniformId id) {
     case MeshSpecificationData::UniformId::kObjectToCanvasLinearComponent:
     case MeshSpecificationData::UniformId::kBrushColor:
     case MeshSpecificationData::UniformId::kTextureMapping:
+    case MeshSpecificationData::UniformId::kTextureAnimationProgress:
       break;
     case MeshSpecificationData::UniformId::kPositionUnpackingTransform:
     case MeshSpecificationData::UniformId::kSideDerivativeUnpackingTransform:
@@ -202,6 +206,20 @@ TEST(MeshSpecificationDataTest, GetUniformName) {
       MeshSpecificationData::GetUniformName(
           MeshSpecificationData::UniformId::kPositionUnpackingTransform),
       Not(IsEmpty()));
+  EXPECT_THAT(
+      MeshSpecificationData::GetUniformName(
+          MeshSpecificationData::UniformId::kSideDerivativeUnpackingTransform),
+      Not(IsEmpty()));
+  EXPECT_THAT(MeshSpecificationData::GetUniformName(
+                  MeshSpecificationData::UniformId::
+                      kForwardDerivativeUnpackingTransform),
+              Not(IsEmpty()));
+  EXPECT_THAT(MeshSpecificationData::GetUniformName(
+                  MeshSpecificationData::UniformId::kTextureMapping),
+              Not(IsEmpty()));
+  EXPECT_THAT(MeshSpecificationData::GetUniformName(
+                  MeshSpecificationData::UniformId::kTextureAnimationProgress),
+              Not(IsEmpty()));
   EXPECT_THAT(MeshSpecificationData::GetUniformName(
                   static_cast<MeshSpecificationData::UniformId>(99)),
               IsEmpty());
