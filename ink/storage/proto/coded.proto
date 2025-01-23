@@ -119,6 +119,12 @@ message CodedMesh {
   // attribute) will be assumed by default.
   optional MeshFormat format = 9;
 
+  // Mesh attribute data, as described by the above MeshFormat. There should be
+  // exactly one CodedNumericRun for each component of each attribute in the
+  // format. Each of these CodedNumericRuns must have length equal to the number
+  // of vertices in the mesh.
+  repeated CodedNumericRun attribute_components = 10;
+
   // A list of vertex indices for mesh triangles.  The first three indices
   // indicate the vertices for the first triangle, then the next three for the
   // second triangle, and so on.  The length of this list must be a multiple of
@@ -140,21 +146,24 @@ message CodedMesh {
   // Typically, a CodedMesh will be stored along with a transformation matrix
   // that maps from the mesh's local coordinate space to the coordinate space of
   // its parent document or grouping.
-  optional CodedNumericRun x_stroke_space = 3;
-  optional CodedNumericRun y_stroke_space = 4;
+  //
+  // DEPRECATED: Use the attribute_components field instead. These fields will
+  // be ignored unless the attribute_components field is empty.
+  optional CodedNumericRun x_stroke_space = 3 [deprecated = true];
+  optional CodedNumericRun y_stroke_space = 4 [deprecated = true];
 
   // If the mesh is a solid color, these are omitted.  Otherwise, these store
   // per-vertex color shift data (not absolute color) that is interpreted by the
   // stroke's brush paint when rendering.  If present, each of these lists must
   // have the same length as the vertex lists above.
-  optional CodedNumericRun opacity_shift = 5;
-  optional CodedNumericRun color_shift_1 = 6;
-  optional CodedNumericRun color_shift_2 = 7;
-  optional CodedNumericRun color_shift_3 = 8;
-
-  // TODO: b/257503952 - Replace the above position/color fields with a more
-  // general `repeated CodedNumericRun attribute_components` field that will
-  // contain attribute data for all attributes described by the MeshFormat.
+  //
+  // DEPRECATED: Use the attribute_components field instead (along with a mesh
+  // format that includes color shift). These fields will be ignored unless the
+  // attribute_components field is empty.
+  optional CodedNumericRun opacity_shift = 5 [deprecated = true];
+  optional CodedNumericRun color_shift_1 = 6 [deprecated = true];
+  optional CodedNumericRun color_shift_2 = 7 [deprecated = true];
+  optional CodedNumericRun color_shift_3 = 8 [deprecated = true];
 }
 
 // A complete shape, consisting of potentially multiple meshes as well as
