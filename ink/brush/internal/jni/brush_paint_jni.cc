@@ -95,8 +95,8 @@ JNI_METHOD_INNER(brush, BrushPaint, TextureLayer, jlong,
                  nativeCreateTextureLayer)
 (JNIEnv* env, jobject thiz, jstring color_texture_uri, jfloat size_x,
  jfloat size_y, jfloat offset_x, jfloat offset_y, jfloat rotation_in_radians,
- jfloat opacity, jint size_unit, jint origin, jint mapping, jint wrap_x,
- jint wrap_y, jint blend_mode) {
+ jfloat opacity, jint animation_frames, jint size_unit, jint origin,
+ jint mapping, jint wrap_x, jint wrap_y, jint blend_mode) {
   auto uri = ink::Uri::Parse(
       ink::jni::JStringView(env, color_texture_uri).string_view());
   if (!uri.ok()) {
@@ -116,6 +116,7 @@ JNI_METHOD_INNER(brush, BrushPaint, TextureLayer, jlong,
           .offset = ink::Vec{offset_x, offset_y},
           .rotation = ink::Angle::Radians(rotation_in_radians),
           .opacity = opacity,
+          .animation_frames = animation_frames,
           .blend_mode = JIntToBlendMode(blend_mode),
       };
 
