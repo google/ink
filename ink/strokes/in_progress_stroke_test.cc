@@ -263,7 +263,7 @@ TEST(InProgressStrokeTest, StartAfterConstruction) {
   EXPECT_EQ(stroke.GetMesh(0).VertexCount(), 0u);
   EXPECT_EQ(stroke.GetMesh(0).TriangleCount(), 0u);
   EXPECT_TRUE(stroke.GetMeshBounds(0).IsEmpty());
-  EXPECT_THAT(stroke.GetCoatOutlines(0), ElementsAre(IsEmpty()));
+  EXPECT_THAT(stroke.GetCoatOutlines(0), IsEmpty());
   EXPECT_TRUE(stroke.GetUpdatedRegion().IsEmpty());
   EXPECT_FALSE(stroke.InputsAreFinished());
   EXPECT_FALSE(stroke.NeedsUpdate());
@@ -338,7 +338,7 @@ TEST(InProgressStrokeTest, EmptyEnqueueInputsAndUpdateAfterStart) {
   EXPECT_EQ(stroke.GetMesh(0).VertexCount(), 0u);
   EXPECT_EQ(stroke.GetMesh(0).TriangleCount(), 0u);
   EXPECT_TRUE(stroke.GetMeshBounds(0).IsEmpty());
-  EXPECT_THAT(stroke.GetCoatOutlines(0), ElementsAre(IsEmpty()));
+  EXPECT_THAT(stroke.GetCoatOutlines(0), IsEmpty());
   EXPECT_TRUE(stroke.GetUpdatedRegion().IsEmpty());
   EXPECT_FALSE(stroke.NeedsUpdate());
 }
@@ -737,7 +737,7 @@ TEST(InProgressStrokeTest, StartAfterExtendingStroke) {
   EXPECT_EQ(stroke.GetMesh(0).VertexCount(), 0u);
   EXPECT_EQ(stroke.GetMesh(0).TriangleCount(), 0u);
   EXPECT_TRUE(stroke.GetMeshBounds(0).IsEmpty());
-  EXPECT_THAT(stroke.GetCoatOutlines(0), ElementsAre(IsEmpty()));
+  EXPECT_THAT(stroke.GetCoatOutlines(0), IsEmpty());
   EXPECT_TRUE(stroke.GetUpdatedRegion().IsEmpty());
 }
 

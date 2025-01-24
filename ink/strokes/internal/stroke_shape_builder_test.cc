@@ -61,7 +61,7 @@ TEST(StrokeShapeBuilderTest, FirstStartStrokeHasEmptyMeshAndOutline) {
   EXPECT_EQ(builder.GetMesh().VertexCount(), 0);
   EXPECT_EQ(builder.GetMesh().TriangleCount(), 0);
   EXPECT_TRUE(builder.GetMeshBounds().IsEmpty());
-  EXPECT_THAT(builder.GetOutlines(), ElementsAre(IsEmpty()));
+  EXPECT_THAT(builder.GetOutlines(), IsEmpty());
 }
 
 TEST(StrokeShapeBuilderTest, EmptyExtendHasEmptyUpdateMeshAndOutline) {
@@ -78,7 +78,7 @@ TEST(StrokeShapeBuilderTest, EmptyExtendHasEmptyUpdateMeshAndOutline) {
   EXPECT_TRUE(update.region.IsEmpty());
   EXPECT_THAT(update.first_index_offset, Eq(std::nullopt));
   EXPECT_THAT(update.first_vertex_offset, Eq(std::nullopt));
-  EXPECT_THAT(builder.GetOutlines(), ElementsAre(IsEmpty()));
+  EXPECT_THAT(builder.GetOutlines(), IsEmpty());
 }
 
 TEST(StrokeShapeBuilderTest, NonEmptyExtend) {
@@ -153,7 +153,7 @@ TEST(StrokeShapeBuilderTest, StartAfterExtendEmptiesMeshAndOutline) {
   EXPECT_EQ(builder.GetMesh().VertexCount(), 0);
   EXPECT_EQ(builder.GetMesh().TriangleCount(), 0);
   EXPECT_TRUE(builder.GetMeshBounds().IsEmpty());
-  EXPECT_THAT(builder.GetOutlines(), ElementsAre(IsEmpty()));
+  EXPECT_THAT(builder.GetOutlines(), IsEmpty());
 }
 
 TEST(StrokeShapeBuilderTest, NonTexturedNonParticleBrushDoesNotHaveSurfaceUvs) {

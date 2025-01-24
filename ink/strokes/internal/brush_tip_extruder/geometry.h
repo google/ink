@@ -16,6 +16,7 @@
 #define INK_STROKES_INTERNAL_BRUSH_TIP_EXTRUDER_GEOMETRY_H_
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <vector>
@@ -41,9 +42,9 @@ namespace brush_tip_extruder_internal {
 
 enum class TextureCoordType { kTiling, kWinding };
 
-// Metadata about `Geometry` at an extrusion break. This marks a point that is
-// intended to be visually disconnected from preceding geometry.
-struct GeometryExtrusionBreak {
+// Metadata about `Geometry` at the last extrusion break, i.e. the point where
+// the current stroke outline began.
+struct GeometryLastExtrusionBreakMetadata {
   // Info about the break point for `Geometry::left_side_` and `::right_side_`.
   struct SideInfo {
     // The size of `Side::indices`.
@@ -51,6 +52,8 @@ struct GeometryExtrusionBreak {
     // The size of `Side::intersection_discontinuities`.
     uint32_t intersection_discontinuity_count = 0;
   };
+
+  uint32_t break_count = 0;
 
   // The numbers of vertices and triangles in `Geometry::mesh_`.
   uint32_t vertex_count = 0;
@@ -117,7 +120,7 @@ struct GeometrySavePointState {
       saved_triangle_indices;
   absl::flat_hash_map<IndexType, uint32_t> saved_opposite_side_offsets;
 
-  GeometryExtrusionBreak saved_last_extrusion_break;
+  GeometryLastExtrusionBreakMetadata saved_last_extrusion_break;
 
   SideState left_side_state;
   SideState right_side_state;
@@ -131,6 +134,12 @@ struct GeometrySavePointState {
 class Geometry {
  public:
   enum class IntersectionHandling { kEnabled, kDisabled };
+
+  // A size-type for outline indices.
+  struct IndexCounts {
+    size_t left = 0;
+    size_t right = 0;
+  };
 
   Geometry();
   explicit Geometry(const MutableMeshView& mesh);
@@ -155,9 +164,9 @@ class Geometry {
   void SetIntersectionHandling(IntersectionHandling intersection_handling);
 
   // The following return the offsets into `Side::indices` for the first new or
-  // modified index belonging to the left and right sides.
-  uint32_t FirstMutatedLeftIndexOffset() const;
-  uint32_t FirstMutatedRightIndexOffset() const;
+  // modified index in the last outline belonging to the left and right sides.
+  uint32_t FirstMutatedLeftIndexOffsetInCurrentPartition() const;
+  uint32_t FirstMutatedRightIndexOffsetInCurrentPartition() const;
 
   const MutableMeshView& GetMeshView() const;
 
@@ -238,6 +247,12 @@ class Geometry {
   // Clears geometry added since the last added extrusion break. See
   // also `AddExtrusionBreak`.
   void ClearSinceLastExtrusionBreak();
+
+  // Number of extrusion breaks.
+  uint32_t ExtrusionBreakCount() const;
+
+  // Counts of left and right indices at the last extrusion break.
+  IndexCounts IndexCountsAtLastExtrusionBreak() const;
 
   // Updates the derivative attribute properties inside the current mesh.
   //
@@ -570,8 +585,9 @@ class Geometry {
   // Assigns the value of a vertex in `mesh_`.
   //
   // This function also:
-  //   * Updates `first_mutated_left_offset_` or `first_mutated_right_offset_`
-  //     depending on the side to which `index` belongs.
+  //   * Updates `first_mutated_left_index_offset_in_current_partition_` or
+  //     `first_mutated_right_index_offset_in_current_partition_` depending on
+  //     the side to which `index` belongs.
   //   * If `update_envelope_of_removed_geometry` is true, adds the position of
   //     vertex had prior to this call to `envelope_of_removed_geometry_`.
   //   * If `update_save_state` is true and a save point is set, saves the
@@ -658,7 +674,7 @@ class Geometry {
   Side left_side_;
   Side right_side_;
 
-  GeometryExtrusionBreak last_extrusion_break_;
+  GeometryLastExtrusionBreakMetadata last_extrusion_break_;
 
   // Intermediate storage used by `SimplifyBufferedVertices()` and kept as a
   // member variable to reuse allocations.
@@ -679,9 +695,9 @@ class Geometry {
   std::optional<IndexType> first_mutated_right_index_;
 
   // The following members keep track of modifications to `left_side_.indices`
-  // and `right_side_.indices`.
-  uint32_t first_mutated_left_index_offset_ = 0;
-  uint32_t first_mutated_right_index_offset_ = 0;
+  // and `right_side_.indices` following the latest extrusion break.
+  uint32_t first_mutated_left_index_offset_in_current_partition_ = 0;
+  uint32_t first_mutated_right_index_offset_in_current_partition_ = 0;
 
   DerivativeCalculator derivative_calculator_;
 };
@@ -699,12 +715,14 @@ inline const Side& Geometry::LeftSide() const { return left_side_; }
 
 inline const Side& Geometry::RightSide() const { return right_side_; }
 
-inline uint32_t Geometry::FirstMutatedLeftIndexOffset() const {
-  return first_mutated_left_index_offset_;
+inline uint32_t Geometry::FirstMutatedLeftIndexOffsetInCurrentPartition()
+    const {
+  return first_mutated_left_index_offset_in_current_partition_;
 }
 
-inline uint32_t Geometry::FirstMutatedRightIndexOffset() const {
-  return first_mutated_right_index_offset_;
+inline uint32_t Geometry::FirstMutatedRightIndexOffsetInCurrentPartition()
+    const {
+  return first_mutated_right_index_offset_in_current_partition_;
 }
 
 }  // namespace brush_tip_extruder_internal

@@ -94,7 +94,7 @@ class StrokeShapeBuilder {
   const Envelope& GetMeshBounds() const;
 
   // Returns spans of outline indices, one for each of the outlines generated
-  // for the stroke.
+  // for the brush coat. This returns zero or more outlines, all non-empty.
   //
   // The return value will be empty if no stroke has been started. See the
   // public `InProgressStroke::GetCoatOutlines()` for more details.
@@ -108,18 +108,24 @@ class StrokeShapeBuilder {
   MutableMesh mesh_;
   Envelope mesh_bounds_;
 
-  // The outline for each brush tip. The size of this vector is always equal to
-  // the number of brush tips.
-  absl::InlinedVector<absl::Span<const uint32_t>, 1> outline_indices_;
+  // The outlines for the brush coat. The size of this is at least equal to the
+  // number of brush tips, but may be larger because particle brushes can have
+  // more than one outline per tip. The usual case is one tip and one outline
+  // per tip.
+  absl::InlinedVector<absl::Span<const uint32_t>, 1> outlines_;
 
   struct BrushTipModelerAndExtruder {
     BrushTipModeler modeler;
     BrushTipExtruder extruder;
   };
+
   // The modeler/extruder for each brush tip. In order to cache allocations, we
   // never shrink this vector; its size is always at least the number of brush
   // tips, but may be more if a previous brush had more tips.
   absl::InlinedVector<BrushTipModelerAndExtruder, 1> tips_;
+
+  // The actual number of brush tips, since tips_.size() may be larger.
+  uint32_t tip_count_ = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -136,12 +142,10 @@ inline const Envelope& StrokeShapeBuilder::GetMeshBounds() const {
 
 inline absl::Span<const absl::Span<const uint32_t>>
 StrokeShapeBuilder::GetOutlines() const {
-  return outline_indices_;
+  return outlines_;
 }
 
-inline uint32_t StrokeShapeBuilder::BrushTipCount() const {
-  return outline_indices_.size();
-}
+inline uint32_t StrokeShapeBuilder::BrushTipCount() const { return tip_count_; }
 
 }  // namespace ink::strokes_internal
 

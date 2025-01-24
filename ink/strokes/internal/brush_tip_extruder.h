@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/mutable_mesh.h"
@@ -96,15 +97,10 @@ class BrushTipExtruder {
   // Returns the bounding region of positions extruded into the current mesh.
   const Envelope& GetBounds() const;
 
-  // Returns the current outline indices.
-  //
-  // If the returned span is not empty, its first and last elements reference
-  // vertices at the end of the stroke. The indices traverse the mesh such that
-  // the outline has a negative winding number when viewed from the positive
-  // z-axis. I.e. the outline will be appear in clockwise orientation if the
-  // y-axis points up, and in counter-clockwise orientation if the y-axis points
-  // down.
-  absl::Span<const uint32_t> GetOutlineIndices() const;
+  // Returns the outlines for the current brush tip. This can include empty
+  // outlines. (In particular, we greedily allocate the first outline, so
+  // that is empty if the stroke is empty.)
+  absl::Span<const StrokeOutline> GetOutlines() const;
 
  private:
   // Data used to incrementally update the bounds of geometry extruded into the
@@ -154,6 +150,9 @@ class BrushTipExtruder {
 
   // Restores the saved state of the extruder.
   void Restore();
+
+  // Truncate outlines to match the current geometry.
+  void TruncateOutlines();
 
   // Clears the geometry, extrusions, and outline indices since the last break
   // in extrusion. This is either since the last explicitly added break-point,
@@ -220,7 +219,7 @@ class BrushTipExtruder {
   ExtrusionPoints current_extrusion_points_;
   brush_tip_extruder_internal::Geometry geometry_;
   Bounds bounds_;
-  StrokeOutline outline_;
+  absl::InlinedVector<StrokeOutline, 1> outlines_;
 };
 
 // ---------------------------------------------------------------------------
@@ -230,8 +229,8 @@ inline const Envelope& BrushTipExtruder::GetBounds() const {
   return bounds_.current;
 }
 
-inline absl::Span<const uint32_t> BrushTipExtruder::GetOutlineIndices() const {
-  return outline_.GetIndices();
+inline absl::Span<const StrokeOutline> BrushTipExtruder::GetOutlines() const {
+  return outlines_;
 }
 
 }  // namespace ink::strokes_internal
