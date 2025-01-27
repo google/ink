@@ -114,7 +114,10 @@ std::vector<Point> ProcessPolylineForMeshCreation(
     float min_trimming_ratio);
 
 // A version of ProcessPolylineForMeshCreation thats uses default parameters
-// which have been tested to work well for most shapes.
+// which have been tested to work well for most shapes. If there are fewer than
+// 3 input points, or if there are fewer than 3 points remaining after removing
+// points with the same (x,y) coordinates as the previous point, this function
+// will return the remaining points.
 std::vector<Point> CreateClosedShape(absl::Span<const Point> points);
 }  // namespace ink::geometry_internal
 

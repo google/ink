@@ -457,8 +457,17 @@ std::vector<Point> ProcessPolylineForMeshCreation(
 }
 
 std::vector<Point> CreateClosedShape(absl::Span<const Point> points) {
+  if (points.size() < 3) {
+    return std::vector<Point>(points.begin(), points.end());
+  }
   PolylineData polyline = CreateNewPolylineData(points);
-
+  if (polyline.segments.size() < 2) {
+    if (polyline.segments.size() == 1) {
+      return {polyline.segments.front().segment.start,
+              polyline.segments.front().segment.end};
+    }
+    return {points.front()};
+  }
   // Calculate the total walk distance of the polyline.
   for (size_t i = 0; i < polyline.segments.size(); ++i) {
     polyline.total_walk_distance += polyline.segments[i].length;

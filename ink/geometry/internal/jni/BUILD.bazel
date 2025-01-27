@@ -343,11 +343,13 @@ cc_library(
     deps = [
         ":vec_jni_helper",
         "//ink/geometry:mesh",
+        "//ink/geometry:mesh_format",
         "//ink/geometry:partitioned_mesh",
         "//ink/geometry:point",
         "//ink/geometry:tessellator",
         "//ink/geometry/internal:polyline_processing",
         "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_throw_util",
         "//ink/strokes/input:stroke_input_batch",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/types:span",
