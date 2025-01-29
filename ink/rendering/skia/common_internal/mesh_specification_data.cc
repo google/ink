@@ -47,6 +47,8 @@ constexpr absl::string_view kUniformSideDerivativeUnpackingTransformName =
 constexpr absl::string_view kUniformForwardDerivativeUnpackingTransformName =
     "uForwardUnpackingTransform";
 constexpr absl::string_view kTextureMappingName = "uTextureMapping";
+constexpr absl::string_view kTextureAnimationProgressName =
+    "uTextureAnimationProgress";
 
 // Shared fragment shader used for both InProgressStroke and Stroke.
 constexpr absl::string_view kFragmentMain = R"(
@@ -74,6 +76,8 @@ absl::string_view MeshSpecificationData::GetUniformName(UniformId uniform_id) {
       return kUniformForwardDerivativeUnpackingTransformName;
     case UniformId::kTextureMapping:
       return kTextureMappingName;
+    case UniformId::kTextureAnimationProgress:
+      return kTextureAnimationProgressName;
   }
   return "";
 }
@@ -95,6 +99,7 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
   static_assert(kObjectToCanvasLinearComponentName ==
                 "uObjectToCanvasLinearComponent");
   static_assert(kTextureMappingName == "uTextureMapping");
+  static_assert(kTextureAnimationProgressName == "uTextureAnimationProgress");
   // Do not use `layout(color)` for uBrushColor, as the color is being converted
   // into the shader color space manually rather than relying on the implicit
   // conversion of setColorUniform.
@@ -102,6 +107,7 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
       uniform float4 uObjectToCanvasLinearComponent;
       uniform float4 uBrushColor;
       uniform int uTextureMapping;
+      uniform float uTextureAnimationProgress;
 
       Varyings main(const Attributes attributes) {
         Varyings varyings;
@@ -121,7 +127,8 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
         varyings.color.rgb *= varyings.color.a;
 
         if (uTextureMapping == 1) {
-          varyings.textureCoords = attributes.surfaceUv;
+          varyings.textureCoords =
+              attributes.surfaceUv + vec2(0, uTextureAnimationProgress);
         } else {
           varyings.textureCoords = varyings.position;
         }
@@ -196,7 +203,9 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
                     .id = UniformId::kObjectToCanvasLinearComponent},
                    {.type = UniformType::kFloat4, .id = UniformId::kBrushColor},
                    {.type = UniformType::kInt,
-                    .id = UniformId::kTextureMapping}},
+                    .id = UniformId::kTextureMapping},
+                   {.type = UniformType::kFloat1,
+                    .id = UniformId::kTextureAnimationProgress}},
       .vertex_shader_source = absl::StrCat(
           kSkSLCommonShaderHelpers, kSkSLVertexShaderHelpers, kVertexMain),
       .fragment_shader_source = absl::StrCat(
@@ -432,6 +441,7 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
   static_assert(kUniformForwardDerivativeUnpackingTransformName ==
                 "uForwardUnpackingTransform");
   static_assert(kTextureMappingName == "uTextureMapping");
+  static_assert(kTextureAnimationProgressName == "uTextureAnimationProgress");
   // Do not use `layout(color)` for uBrushColor, as the color is being converted
   // into the shader color space manually rather than relying on the implicit
   // conversion of setColorUniform.
@@ -442,6 +452,7 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
       uniform float4 uSideUnpackingTransform;
       uniform float4 uForwardUnpackingTransform;
       uniform int uTextureMapping;
+      uniform float uTextureAnimationProgress;
 
       Varyings main(const Attributes attributes) {
         Varyings varyings;
@@ -473,7 +484,8 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
   static_assert(static_cast<int>(BrushPaint::TextureMapping::kWinding) == 1);
   constexpr absl::string_view kVertexMainTextureUvWithSurfaceUv = R"(
         if (uTextureMapping == 1) {
-          varyings.textureCoords = unpackSurfaceUv(attributes.surfaceUv);
+          varyings.textureCoords = unpackSurfaceUv(attributes.surfaceUv) +
+              vec2(0, uTextureAnimationProgress);
         } else {
           varyings.textureCoords = varyings.position;
         }
@@ -533,7 +545,9 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
            {.type = UniformType::kFloat4,
             .id = UniformId::kForwardDerivativeUnpackingTransform,
             .unpacking_attribute_index = attribute_indices.forward_derivative},
-           {.type = UniformType::kInt, .id = UniformId::kTextureMapping}},
+           {.type = UniformType::kInt, .id = UniformId::kTextureMapping},
+           {.type = UniformType::kFloat1,
+            .id = UniformId::kTextureAnimationProgress}},
       .vertex_shader_source = absl::StrCat(
           kSkSLCommonShaderHelpers, kSkSLVertexShaderHelpers, kVertexMainStart,
           types_and_offsets->hsl_shift.has_value()
