@@ -80,7 +80,8 @@ MATCHER_P(StrokeInputBatchEqMatcher, expected, "") {
     }
   }
 
-  return true;
+  return ExplainMatchResult(Eq(expected.GetNoiseSeed()), arg.GetNoiseSeed(),
+                            result_listener);
 }
 
 }  // namespace

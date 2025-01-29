@@ -117,6 +117,13 @@ STROKE_INPUT_BATCH_JNI_METHOD(jboolean, hasOrientation)
   return batch.HasOrientation();
 }
 
+STROKE_INPUT_BATCH_JNI_METHOD(jint, getNoiseSeed)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  const ink::StrokeInputBatch& batch =
+      ink::CastToStrokeInputBatch(native_pointer);
+  return batch.GetNoiseSeed();
+}
+
 // ************ Native Implementation of MutableStrokeInputBatch ************
 MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jstring, appendSingle)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint tool_type, jfloat x,
@@ -168,6 +175,13 @@ MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jlong, copy)
   ink::StrokeInputBatch* batch =
       ink::CastToMutableStrokeInputBatch(native_pointer);
   return reinterpret_cast<jlong>(new ink::StrokeInputBatch(*batch));
+}
+
+MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(void, setNoiseSeed)
+(JNIEnv* env, jobject thiz, jlong native_pointer, jint seed) {
+  ink::StrokeInputBatch* batch =
+      ink::CastToMutableStrokeInputBatch(native_pointer);
+  batch->SetNoiseSeed(seed);
 }
 
 }  // extern "C"

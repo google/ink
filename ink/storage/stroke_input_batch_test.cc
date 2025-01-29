@@ -219,6 +219,15 @@ TEST_F(StrokeInputBatchTest, EncodeEmptyInputs) {
   EXPECT_FALSE(input_proto.has_x_stroke_space());
 }
 
+TEST_F(StrokeInputBatchTest, EncodeEmptyInputsWithNoiseSeed) {
+  CodedStrokeInputBatch input_proto;
+  StrokeInputBatch empty_input_batch;
+  empty_input_batch.SetNoiseSeed(12345);
+  EncodeStrokeInputBatch(empty_input_batch, input_proto);
+  EXPECT_FALSE(input_proto.has_x_stroke_space());
+  EXPECT_EQ(input_proto.noise_seed(), 12345);
+}
+
 TEST_F(StrokeInputBatchTest, EncodeSingleInputPosition) {
   // Create a stroke with a single input point.
   absl::StatusOr<StrokeInputBatch> single_input_batch =
@@ -382,7 +391,10 @@ void StrokeInputBatchRoundTrip(const StrokeInputBatch& inputs) {
   absl::StatusOr<StrokeInputBatch> decoded = DecodeStrokeInputBatch(proto);
   ASSERT_EQ(decoded.status(), absl::OkStatus());
   // Because of quantization, the decoded batch is not guaranteed to exactly
-  // match the original.
+  // match the original.  However, some data should match exactly:
+  EXPECT_EQ(decoded->GetToolType(), inputs.GetToolType());
+  EXPECT_EQ(decoded->GetStrokeUnitLength(), inputs.GetStrokeUnitLength());
+  EXPECT_EQ(decoded->GetNoiseSeed(), inputs.GetNoiseSeed());
 }
 FUZZ_TEST(StrokeInputBatchFuzzTest, StrokeInputBatchRoundTrip)
     // TODO: b/349965543 - Currently, extreme input position values sometimes

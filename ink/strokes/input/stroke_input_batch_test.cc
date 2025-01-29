@@ -323,7 +323,7 @@ TEST(StrokeInputBatchTest, SetReplacingLastValueOfMany) {
 TEST(StrokeInputBatchTest, Clear) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> batch =
-      StrokeInputBatch::Create(input_vector);
+      StrokeInputBatch::Create(input_vector, /*noise_seed=*/12345);
   ASSERT_EQ(batch.status(), absl::OkStatus());
 
   ASSERT_FALSE(batch->IsEmpty());
@@ -332,6 +332,7 @@ TEST(StrokeInputBatchTest, Clear) {
   ASSERT_TRUE(batch->HasTilt());
   ASSERT_TRUE(batch->HasOrientation());
   ASSERT_EQ(batch->GetToolType(), StrokeInput::ToolType::kStylus);
+  EXPECT_EQ(batch->GetNoiseSeed(), 12345u);
 
   batch->Clear();
   // Batch should now be empty and the tool type should be unknown.
@@ -341,6 +342,7 @@ TEST(StrokeInputBatchTest, Clear) {
   ASSERT_FALSE(batch->HasTilt());
   ASSERT_FALSE(batch->HasOrientation());
   EXPECT_EQ(batch->GetToolType(), StrokeInput::ToolType::kUnknown);
+  EXPECT_EQ(batch->GetNoiseSeed(), 0u);
 }
 
 TEST(StrokeInputBatchTest, AppendAfterClear) {

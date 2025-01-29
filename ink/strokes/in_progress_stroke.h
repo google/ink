@@ -96,7 +96,7 @@ class InProgressStroke {
   // This includes clearing or resetting any existing inputs, mesh data, and
   // updated region. This method must be called at least once after construction
   // before starting to call `EnqueueInputs()` or `UpdateShape()`.
-  void Start(const Brush& brush);
+  void Start(const Brush& brush, uint32_t noise_seed = 0);
 
   // Enqueues the incremental `real_inputs` and sets the prediction to
   // `predicted_inputs`, overwriting any previous prediction. Queued inputs will

@@ -56,9 +56,10 @@ void InProgressStroke::Clear() {
   inputs_are_finished_ = true;
 }
 
-void InProgressStroke::Start(const Brush& brush) {
+void InProgressStroke::Start(const Brush& brush, uint32_t noise_seed) {
   Clear();
   brush_ = brush;
+  processed_inputs_.SetNoiseSeed(noise_seed);
   inputs_are_finished_ = false;
 
   absl::Span<const BrushCoat> coats = brush_->GetCoats();
@@ -72,7 +73,7 @@ void InProgressStroke::Start(const Brush& brush) {
   for (uint32_t i = 0; i < num_coats; ++i) {
     shape_builders_[i].StartStroke(brush_->GetFamily().GetInputModel(),
                                    coats[i], brush_->GetSize(),
-                                   brush_->GetEpsilon());
+                                   brush_->GetEpsilon(), noise_seed);
   }
 }
 

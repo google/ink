@@ -110,6 +110,10 @@ message CodedStrokeInputBatch {
   // A missing or zero value indicates that the relationship between stroke
   // space and physical space is unknown or ill-defined for this input batch.
   optional float stroke_unit_length_in_centimeters = 8;
+
+  // The seed value that should be used for seeding any noise generators for
+  // brush behaviors when a full stroke is regenerated with this input batch.
+  optional fixed32 noise_seed = 9;
 }
 
 // A 2D mesh; compressed lossily using delta coding.

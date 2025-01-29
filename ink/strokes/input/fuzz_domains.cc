@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -82,7 +83,7 @@ fuzztest::Domain<StrokeInputBatch> StrokeInputBatchWithPositionsAndMinSize(
       [](const std::vector<std::pair<Point, Duration32>>& xyts) {
         return fuzztest::Map(
             [xyts](StrokeInput::ToolType tool_type,
-                   PhysicalDistance stroke_unit_length,
+                   PhysicalDistance stroke_unit_length, uint32_t noise_seed,
                    const std::optional<std::vector<float>>& pressures,
                    const std::optional<std::vector<Angle>>& tilts,
                    const std::optional<std::vector<Angle>>& orientations) {
@@ -104,11 +105,12 @@ fuzztest::Domain<StrokeInputBatch> StrokeInputBatchWithPositionsAndMinSize(
                                        : StrokeInput::kNoOrientation,
                 });
               }
-              return StrokeInputBatch::Create(inputs).value();
+              return StrokeInputBatch::Create(inputs, noise_seed).value();
             },
             ArbitraryToolType(),
             fuzztest::OneOf(fuzztest::Just(StrokeInput::kNoStrokeUnitLength),
                             ValidStrokeUnitLength()),
+            fuzztest::Arbitrary<uint32_t>(),
             fuzztest::OptionalOf(
                 fuzztest::VectorOf(ValidPressure()).WithSize(xyts.size())),
             fuzztest::OptionalOf(

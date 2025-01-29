@@ -103,11 +103,12 @@ JNI_METHOD(strokes, InProgressStroke, void, nativeClear)
 
 // Starts the stroke with a brush.
 JNI_METHOD(strokes, InProgressStroke, void, nativeStart)
-(JNIEnv* env, jobject thiz, jlong native_pointer, jlong brush_native_pointer) {
+(JNIEnv* env, jobject thiz, jlong native_pointer, jlong brush_native_pointer,
+ jint noise_seed) {
   InProgressStroke& in_progress_stroke =
       GetInProgressStrokeWrapper(native_pointer)->in_progress_stroke;
   const Brush& brush = CastToBrush(brush_native_pointer);
-  in_progress_stroke.Start(brush);
+  in_progress_stroke.Start(brush, noise_seed);
 }
 
 JNI_METHOD(strokes, InProgressStroke, jstring, nativeEnqueueInputs)

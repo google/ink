@@ -43,7 +43,7 @@ bool IsWindingTextureCoat(const BrushCoat& coat) {
 
 void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
                                      const BrushCoat& coat, float brush_size,
-                                     float brush_epsilon) {
+                                     float brush_epsilon, uint32_t noise_seed) {
   // The `input_modeler_`, `tip_modeler_` and `tip_extruder_` CHECK-validate
   // `brush_tip` being not null, and `brush_size` and `brush_epsilon` being
   // greater than zero.
@@ -74,7 +74,7 @@ void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
         is_winding_texture_brush &&
         (coat.tips[i].particle_gap_distance_scale != 0 ||
          coat.tips[i].particle_gap_duration != Duration32::Zero());
-    tips_[i].modeler.StartStroke(&coat.tips[i], brush_size);
+    tips_[i].modeler.StartStroke(&coat.tips[i], brush_size, noise_seed);
     // TODO: b/285594469 - Once it's possible for there to be more than one tip,
     // this will need to be more careful about how the various extruders append
     // onto the same mesh.

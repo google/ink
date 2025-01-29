@@ -17,11 +17,13 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/substitute.h"
@@ -71,6 +73,7 @@ void StrokeInputBatch::Clear() {
   size_ = 0;
   tool_type_ = StrokeInput::ToolType::kUnknown;
   stroke_unit_length_ = StrokeInput::kNoStrokeUnitLength;
+  noise_seed_ = 0;
   has_pressure_ = false;
   has_tilt_ = false;
   has_orientation_ = false;
@@ -312,7 +315,7 @@ absl::Status StrokeInputBatch::Append(absl::Span<const StrokeInput> inputs) {
 }
 
 absl::StatusOr<StrokeInputBatch> StrokeInputBatch::Create(
-    absl::Span<const StrokeInput> inputs) {
+    absl::Span<const StrokeInput> inputs, uint32_t noise_seed) {
   StrokeInputBatch batch;
 
   if (!inputs.empty()) {
@@ -323,6 +326,7 @@ absl::StatusOr<StrokeInputBatch> StrokeInputBatch::Create(
     }
   }
 
+  batch.SetNoiseSeed(noise_seed);
   return batch;
 }
 

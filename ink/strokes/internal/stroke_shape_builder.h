@@ -68,8 +68,8 @@ class StrokeShapeBuilder {
   // For now, `coat` must contain exactly one brush tip.
   // TODO: b/285594469 - Lift this restriction.
   void StartStroke(const BrushFamily::InputModel& input_model,
-                   const BrushCoat& coat, float brush_size,
-                   float brush_epsilon);
+                   const BrushCoat& coat, float brush_size, float brush_epsilon,
+                   uint32_t noise_seed = 0);
 
   // Adds new incremental real and predicted inputs to the current stroke.
   //

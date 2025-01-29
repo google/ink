@@ -16,6 +16,7 @@
 #define INK_STROKES_INPUT_STROKE_INPUT_BATCH_H_
 
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 #include <limits>
 #include <optional>
@@ -73,7 +74,7 @@ class StrokeInputBatch {
 
   // Performs validation on `inputs` and returns the resulting batch or error.
   static absl::StatusOr<StrokeInputBatch> Create(
-      absl::Span<const StrokeInput> inputs);
+      absl::Span<const StrokeInput> inputs, uint32_t noise_seed = 0);
 
   StrokeInputBatch() = default;
   StrokeInputBatch(const StrokeInputBatch&) = default;
@@ -111,7 +112,9 @@ class StrokeInputBatch {
   // Returns an error and does not modify the batch if validation fails.
   absl::Status Append(const StrokeInput& input);
 
-  // Validates and appends a sequence of `inputs`.
+  // Validates and appends a sequence of `inputs`. This batch's per-stroke seed
+  // value is left unchanged, even when appending another batch with a different
+  // seed value.
   //
   // Returns an error and does not modify the batch if validation fails.
   absl::Status Append(absl::Span<const StrokeInput> inputs);
@@ -146,6 +149,16 @@ class StrokeInputBatch {
   bool HasPressure() const;
   bool HasTilt() const;
   bool HasOrientation() const;
+
+  // Returns the seed value that should be used for seeding any noise generators
+  // for brush behaviors when a full stroke is regenerated with this input
+  // batch. If no seed value has yet been set for this input batch, returns the
+  // default seed of zero.
+  uint32_t GetNoiseSeed() const;
+
+  // Sets the per-stroke seed value that should be used when regenerating a
+  // stroke from this input batch.
+  void SetNoiseSeed(uint32_t seed);
 
   // Which properties of the stroke should be preserved over transforms.
   enum class TransformInvariant {
@@ -222,6 +235,7 @@ class StrokeInputBatch {
   size_t size_ = 0;
   StrokeInput::ToolType tool_type_ = StrokeInput::ToolType::kUnknown;
   PhysicalDistance stroke_unit_length_ = StrokeInput::kNoStrokeUnitLength;
+  uint32_t noise_seed_ = 0;
   bool has_pressure_ = false;
   bool has_tilt_ = false;
   bool has_orientation_ = false;
@@ -306,6 +320,12 @@ inline std::optional<PhysicalDistance> StrokeInputBatch::GetStrokeUnitLength()
     const {
   if (!HasStrokeUnitLength()) return std::nullopt;
   return stroke_unit_length_;
+}
+
+inline uint32_t StrokeInputBatch::GetNoiseSeed() const { return noise_seed_; }
+
+inline void StrokeInputBatch::SetNoiseSeed(uint32_t seed) {
+  noise_seed_ = seed;
 }
 
 inline bool StrokeInputBatch::HasStrokeUnitLength() const {

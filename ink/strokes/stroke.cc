@@ -172,7 +172,8 @@ void Stroke::RegenerateShape() {
   for (size_t i = 0; i < num_coats; ++i) {
     StrokeShapeBuilder& builder = shape_gen.builders[i];
     builder.StartStroke(brush_.GetFamily().GetInputModel(), coats[i],
-                        brush_.GetSize(), brush_.GetEpsilon());
+                        brush_.GetSize(), brush_.GetEpsilon(),
+                        inputs_.GetNoiseSeed());
     builder.ExtendStroke(inputs_, StrokeInputBatch(), inputs_.GetDuration());
 
     const MutableMesh& mesh = builder.GetMesh();

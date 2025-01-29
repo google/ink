@@ -274,13 +274,14 @@ Duration32 TimeSinceLastInput(
 }  // namespace
 
 void BrushTipModeler::StartStroke(absl::Nonnull<const BrushTip*> brush_tip,
-                                  float brush_size) {
+                                  float brush_size, uint32_t noise_seed) {
   ABSL_CHECK_NE(brush_tip, nullptr);
   ABSL_CHECK(std::isfinite(brush_size));
   ABSL_CHECK_GT(brush_size, 0);
 
   brush_tip_ = brush_tip;
   brush_size_ = brush_size;
+  noise_seed_ = noise_seed;
 
   // These fields will be updated as the stroke progresses.
   input_index_for_next_fixed_state_ = 0;
@@ -344,10 +345,9 @@ void BrushTipModeler::AppendBehaviorNode(const BrushBehavior::NoiseNode& node) {
       .vary_over = node.vary_over,
       .base_period = node.base_period,
   });
-  // TODO: b/373649344 - Concatenate the 32-bit per-stroke seed (once that
-  // exists) with the 32-bit node seed to form the 64-bit noise generator seed.
-  uint64_t noise_seed = node.seed;
-  current_noise_generators_.emplace_back(noise_seed);
+  uint64_t combined_seed = (static_cast<uint64_t>(noise_seed_) << 32) |
+                           static_cast<uint64_t>(node.seed);
+  current_noise_generators_.emplace_back(combined_seed);
   fixed_noise_generators_.push_back(current_noise_generators_.back());
 }
 
