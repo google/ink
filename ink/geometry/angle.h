@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <string>
 
+#include "ink/geometry/internal/modulo.h"
 #include "ink/types/numbers.h"
 
 namespace ink {
@@ -195,6 +196,11 @@ inline Angle& operator*=(Angle& lhs, float rhs) {
 inline Angle& operator/=(Angle& lhs, float rhs) {
   lhs = lhs / rhs;
   return lhs;
+}
+
+inline Angle Angle::Normalized() const {
+  return Angle::Radians(geometry_internal::FloatModulo(
+      ValueInRadians(), static_cast<float>(2.0 * numbers::kPi)));
 }
 
 }  // namespace ink

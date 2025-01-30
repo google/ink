@@ -22,25 +22,6 @@
 
 namespace ink {
 
-Angle Angle::Normalized() const {
-  float radians =
-      std::fmod(ValueInRadians(), static_cast<float>(2.0 * numbers::kPi));
-  // fmod always matches the sign of the first argument, so fmod(angle, 2π)
-  // returns a value in the range (-2π, 2π).  We want [0, 2π), so wrap negative
-  // values back to positive.
-  if (radians < 0.f) {
-    radians += static_cast<float>(2.0 * numbers::kPi);
-    // If fmod returned a sufficiently small negative number, then adding 2π
-    // will give us a result exactly equal to 2π, due to float rounding.
-    // However, Angle::Normalized() promises to return a value strictly less
-    // than 2π, so we should normalize to zero in this case.
-    if (radians == static_cast<float>(2.0 * numbers::kPi)) {
-      radians = 0.f;
-    }
-  }
-  return Angle::Radians(radians);
-}
-
 Angle Angle::NormalizedAboutZero() const {
   float radians =
       std::fmod(ValueInRadians(), static_cast<float>(2.0 * numbers::kPi));

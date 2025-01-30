@@ -58,6 +58,7 @@ cc_library(
     hdrs = ["angle.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "//ink/geometry/internal:modulo",
         "//ink/types:numbers",
         "@com_google_absl//absl/strings:str_format",
     ],

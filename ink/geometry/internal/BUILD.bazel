@@ -134,6 +134,25 @@ cc_test(
 )
 
 cc_library(
+    name = "modulo",
+    srcs = ["modulo.cc"],
+    hdrs = ["modulo.h"],
+    deps = [
+        "@com_google_absl//absl/log:absl_check",
+    ],
+)
+
+cc_test(
+    name = "modulo_test",
+    srcs = ["modulo_test.cc"],
+    deps = [
+        ":modulo",
+        "@com_google_fuzztest//fuzztest",
+        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+    ],
+)
+
+cc_library(
     name = "circle",
     srcs = ["circle.cc"],
     hdrs = ["circle.h"],
