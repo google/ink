@@ -30,7 +30,6 @@ cc_library(
         ":parallelogram_jni",
         ":parallelogram_jni_helper",
         ":partitioned_mesh_jni",
-        ":polyline_processing_jni",
         ":rect_jni",
         ":rect_jni_helper",
         ":triangle_jni",
@@ -328,31 +327,6 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry:triangle",
         "//ink/jni/internal:jni_defines",
-    ] + select({
-        "@platforms//os:android": [],
-        "//conditions:default": [
-            "@rules_jni//jni",
-        ],
-    }),
-    alwayslink = 1,
-)
-
-cc_library(
-    name = "polyline_processing_jni",
-    srcs = ["polyline_processing_jni.cc"],
-    deps = [
-        ":vec_jni_helper",
-        "//ink/geometry:mesh",
-        "//ink/geometry:mesh_format",
-        "//ink/geometry:partitioned_mesh",
-        "//ink/geometry:point",
-        "//ink/geometry:tessellator",
-        "//ink/geometry/internal:polyline_processing",
-        "//ink/jni/internal:jni_defines",
-        "//ink/jni/internal:jni_throw_util",
-        "//ink/strokes/input:stroke_input_batch",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/types:span",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
