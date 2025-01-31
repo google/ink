@@ -210,10 +210,10 @@ class Geometry {
   // TODO: b/271837965 - Add parameters for winding texture coordinates.
   void AppendLeftVertex(Point position, float opacity_shift = 0,
                         const std::array<float, 3>& hsl_shift = {},
-                        Point surface_uv = {0, 0});
+                        Point surface_uv = {0, 0}, float animation_offset = 0);
   void AppendRightVertex(Point position, float opacity_shift = 0,
                          const std::array<float, 3>& hsl_shift = {},
-                         Point surface_uv = {0, 0});
+                         Point surface_uv = {0, 0}, float animation_offset = 0);
 
   // The following functions append the legacy vertex types to the appropriate
   // sides:

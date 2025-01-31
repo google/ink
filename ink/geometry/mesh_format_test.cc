@@ -68,6 +68,7 @@ TEST(MeshFormatTest, StringifyAttributeId) {
   EXPECT_EQ(absl::StrCat(AttrId::kForwardDerivative), "kForwardDerivative");
   EXPECT_EQ(absl::StrCat(AttrId::kForwardLabel), "kForwardLabel");
   EXPECT_EQ(absl::StrCat(AttrId::kSurfaceUv), "kSurfaceUv");
+  EXPECT_EQ(absl::StrCat(AttrId::kAnimationOffset), "kAnimationOffset");
   EXPECT_EQ(absl::StrCat(AttrId::kCustom0), "kCustom0");
   EXPECT_EQ(absl::StrCat(AttrId::kCustom1), "kCustom1");
   EXPECT_EQ(absl::StrCat(AttrId::kCustom2), "kCustom2");

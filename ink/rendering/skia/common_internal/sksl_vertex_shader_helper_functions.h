@@ -346,6 +346,11 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     float2 unpackSurfaceUv(const float2 unpackedValue) {
       return unpackedValue;
     }
+    float2 unpackSurfaceUv(const half3 packedValue) {
+      float mixedXY = 15.9375 * float(packedValue.y);
+      return float2(4080.0 * float(packedValue.x) + floor(mixedXY),
+                    4096.0 * fract(mixedXY) + 255.0 * float(packedValue.z));
+    }
     float2 unpackSurfaceUv(const half4 packedValue) {
       float mixedXY = 15.9375 * float(packedValue.y);
       return float2((4080.0 * float(packedValue.x) + floor(mixedXY)) / 4095.0,
@@ -356,6 +361,8 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
 )";
 // LINT.ThenChange(
 //     ../../../strokes/internal/stroke_vertex.cc:uv_packing)
+
+// TODO: b/373649230 - Add functions for unpacking animation offset values.
 
 }  // namespace ink::skia_common_internal
 
