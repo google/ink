@@ -27,6 +27,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/internal/modulo.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_packing_types.h"
 #include "ink/geometry/mutable_mesh.h"
@@ -36,6 +37,7 @@
 namespace ink::strokes_internal {
 namespace {
 
+using ::ink::geometry_internal::FloatModulo;
 using ::ink::geometry_internal::Lerp;
 using ::ink::geometry_internal::LinearMap;
 
@@ -113,6 +115,15 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
   // LINT.ThenChange(
   //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:uv_packing)
 
+  // Animation offsets are stored unpacked in the range [0, 1). Note that we
+  // divide by 2^N (= 256) here rather than 2^N - 1 (= 255), since a value of 1
+  // does not need to be representable.
+  // LINT.IfChange(anim_packing)
+  constexpr MeshAttributeCodingParams::ComponentCodingParams
+      kAnimationCodingParams8bit = {.scale = 1.f / 256};
+  // LINT.ThenChange(
+  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:anim_packing)
+
   switch (attribute.id) {
     case MeshFormat::AttributeId::kOpacityShift:
       if (attribute.type ==
@@ -142,6 +153,18 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
         return MeshAttributeCodingParams{
             .components = {kSurfaceUCodingParams12bit,
                            kSurfaceVCodingParams20bit}};
+      } else if (attribute.type == MeshFormat::AttributeType::
+                                       kFloat2PackedIn3UnsignedBytes_XY12) {
+        return MeshAttributeCodingParams{
+            .components = {kSurfaceUCodingParams12bit,
+                           kSurfaceUCodingParams12bit}};
+      }
+      break;
+    case MeshFormat::AttributeId::kAnimationOffset:
+      if (attribute.type ==
+          MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte) {
+        return MeshAttributeCodingParams{
+            .components = {kAnimationCodingParams8bit}};
       }
       break;
     default:
@@ -207,9 +230,17 @@ MeshFormat MakeValidatedFullFormat() {
               MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
               MeshFormat::AttributeId::kForwardLabel,
           },
+          // TODO: b/330511293 - Once we support winding textures on extruded
+          // (non-particle) `BrushCoat`s, we'll need to use a different format
+          // for those meshes, using `kFloat2PackedIn4UnsignedBytes_X12_Y20` for
+          // `kSurfaceUv`, and omitting the `kAnimationOffset` attribute.
           {
-              MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+              MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
               MeshFormat::AttributeId::kSurfaceUv,
+          },
+          {
+              MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+              MeshFormat::AttributeId::kAnimationOffset,
           },
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
@@ -257,6 +288,9 @@ StrokeVertex::FormatAttributeIndices StrokeVertex::FindAttributeIndices(
       case MeshFormat::AttributeId::kSurfaceUv:
         indices.surface_uv = index;
         break;
+      case MeshFormat::AttributeId::kAnimationOffset:
+        indices.animation_offset = index;
+        break;
       default:
         break;
     }
@@ -299,6 +333,11 @@ Point StrokeVertex::GetSurfaceUvFromMesh(const MutableMesh& mesh,
   return GetFromMesh(mesh, index).non_position_attributes.surface_uv;
 }
 
+float StrokeVertex::GetAnimationOffsetFromMesh(const MutableMesh& mesh,
+                                               uint32_t index) {
+  return GetFromMesh(mesh, index).non_position_attributes.animation_offset;
+}
+
 namespace {
 
 // TODO: b/306149329 - Investigate memcpy-ing the entire struct instead of
@@ -332,6 +371,9 @@ void SetNonPositionAttributes(
   mesh.SetFloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.surface_uv,
       {attributes.surface_uv.x, attributes.surface_uv.y});
+  mesh.SetFloatVertexAttribute(
+      index, StrokeVertex::kFullFormatAttributeIndices.animation_offset,
+      {attributes.animation_offset});
 }
 
 }  // namespace
@@ -397,7 +439,25 @@ void StrokeVertex::SetSurfaceUvInMesh(MutableMesh& mesh, uint32_t index,
       {uv.x, uv.y});
 }
 
+void StrokeVertex::SetAnimationOffsetInMesh(MutableMesh& mesh, uint32_t index,
+                                            float offset) {
+  ABSL_DCHECK(
+      MeshFormat::IsUnpackedEquivalent(mesh.Format(), FullMeshFormat()));
+  mesh.SetFloatVertexAttribute(
+      index, StrokeVertex::kFullFormatAttributeIndices.animation_offset,
+      {offset});
+}
+
 namespace {
+
+float BarycentricLerp(float a, float b, float c, const std::array<float, 3> t) {
+  return a * t[0] + b * t[1] + c * t[2];
+}
+
+Point BarycentricLerp(Point a, Point b, Point c, const std::array<float, 3> t) {
+  return Point{BarycentricLerp(a.x, b.x, c.x, t),
+               BarycentricLerp(a.y, b.y, c.y, t)};
+}
 
 StrokeVertex::Label LerpLabel(StrokeVertex::Label a, StrokeVertex::Label b,
                               float t) {
@@ -420,6 +480,17 @@ StrokeVertex::Label BarycentricLerpLabel(
   return StrokeVertex::kInteriorLabel;
 }
 
+float LerpAnimation(float a, float b, float t) {
+  if (a == b) return a;  // Short-circuit the common case.
+  return FloatModulo(Lerp(a, b, t), 1);
+}
+
+float BarycentricLerpAnimation(float a, float b, float c,
+                               const std::array<float, 3> t) {
+  if (a == b && a == c) return a;  // Short-circuit the common case.
+  return FloatModulo(BarycentricLerp(a, b, c, t), 1);
+}
+
 }  // namespace
 
 StrokeVertex::NonPositionAttributes Lerp(
@@ -433,6 +504,8 @@ StrokeVertex::NonPositionAttributes Lerp(
       .side_label = LerpLabel(a.side_label, b.side_label, t),
       .forward_label = LerpLabel(a.forward_label, b.forward_label, t),
       .surface_uv = Lerp(a.surface_uv, b.surface_uv, t),
+      .animation_offset =
+          LerpAnimation(a.animation_offset, b.animation_offset, t),
   };
 }
 
@@ -442,22 +515,20 @@ StrokeVertex::NonPositionAttributes BarycentricLerp(
     const StrokeVertex::NonPositionAttributes& c,
     const std::array<float, 3>& t) {
   return {
-      .opacity_shift = a.opacity_shift * t[0] + b.opacity_shift * t[1] +
-                       c.opacity_shift * t[2],
-      .hsl_shift = {a.hsl_shift[0] * t[0] + b.hsl_shift[0] * t[1] +
-                        c.hsl_shift[0] * t[2],
-                    a.hsl_shift[1] * t[0] + b.hsl_shift[1] * t[1] +
-                        c.hsl_shift[1] * t[2],
-                    a.hsl_shift[2] * t[0] + b.hsl_shift[2] * t[1] +
-                        c.hsl_shift[2] * t[2]},
+      .opacity_shift =
+          BarycentricLerp(a.opacity_shift, b.opacity_shift, c.opacity_shift, t),
+      .hsl_shift =
+          {BarycentricLerp(a.hsl_shift[0], b.hsl_shift[0], c.hsl_shift[0], t),
+           BarycentricLerp(a.hsl_shift[1], b.hsl_shift[1], c.hsl_shift[1], t),
+           BarycentricLerp(a.hsl_shift[2], b.hsl_shift[2], c.hsl_shift[2], t)},
       .side_label =
           BarycentricLerpLabel(a.side_label, b.side_label, c.side_label, t),
       .forward_label = BarycentricLerpLabel(a.forward_label, b.forward_label,
                                             c.forward_label, t),
-      .surface_uv = {a.surface_uv.x * t[0] + b.surface_uv.x * t[1] +
-                         c.surface_uv.x * t[2],
-                     a.surface_uv.y * t[0] + b.surface_uv.y * t[1] +
-                         c.surface_uv.y * t[2]},
+      .surface_uv =
+          BarycentricLerp(a.surface_uv, b.surface_uv, c.surface_uv, t),
+      .animation_offset = BarycentricLerpAnimation(
+          a.animation_offset, b.animation_offset, c.animation_offset, t),
   };
 }
 

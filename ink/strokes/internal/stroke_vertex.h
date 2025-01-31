@@ -133,6 +133,8 @@ struct StrokeVertex {
     Label forward_label = kInteriorLabel;
     // Texture UV coordinates for winding textures.
     Point surface_uv;
+    // Offset for texture animation progress, in the range [0, 1).
+    float animation_offset = 0;
   };
 
   // Indices into `MeshFormat::Attributes()` for each stroke vertex attribute.
@@ -147,6 +149,7 @@ struct StrokeVertex {
     int8_t forward_derivative = -1;
     int8_t forward_label = -1;
     int8_t surface_uv = -1;
+    int8_t animation_offset = -1;
   };
 
   // Finds and returns the indices into `format.Attributes()` for each of the
@@ -164,6 +167,7 @@ struct StrokeVertex {
       .forward_derivative = 5,
       .forward_label = 6,
       .surface_uv = 7,
+      .animation_offset = 8,
   };
 
   // The maximum number of `MeshFormat::Attribute`s that might be used by a
@@ -172,7 +176,7 @@ struct StrokeVertex {
   // "Attribute" refers to the term used for ink `Mesh` and `MutableMesh` in
   // this context, which need not map 1:1 to the GPU attributes used by
   // rendering APIs.
-  static constexpr int kMaxAttributeCount = 8;
+  static constexpr int kMaxAttributeCount = 9;
 
   using CustomPackingArray =
       SmallArray<std::optional<MeshAttributeCodingParams>, kMaxAttributeCount>;
@@ -206,6 +210,8 @@ struct StrokeVertex {
   static Label GetSideLabelFromMesh(const MutableMesh& mesh, uint32_t index);
   static Label GetForwardLabelFromMesh(const MutableMesh& mesh, uint32_t index);
   static Point GetSurfaceUvFromMesh(const MutableMesh& mesh, uint32_t index);
+  static float GetAnimationOffsetFromMesh(const MutableMesh& mesh,
+                                          uint32_t index);
   static void AppendToMesh(MutableMesh& mesh, const StrokeVertex& vertex);
   static void SetInMesh(MutableMesh& mesh, uint32_t index,
                         const StrokeVertex& vertex);
@@ -218,6 +224,8 @@ struct StrokeVertex {
   static void SetForwardLabelInMesh(MutableMesh& mesh, uint32_t index,
                                     Label label);
   static void SetSurfaceUvInMesh(MutableMesh& mesh, uint32_t index, Point uv);
+  static void SetAnimationOffsetInMesh(MutableMesh& mesh, uint32_t index,
+                                       float offset);
 
   Point position;
   NonPositionAttributes non_position_attributes;
@@ -274,7 +282,8 @@ inline bool operator==(const StrokeVertex::NonPositionAttributes& a,
          a.side_derivative == b.side_derivative &&
          a.side_label == b.side_label &&
          a.forward_derivative == b.forward_derivative &&
-         a.forward_label == b.forward_label && a.surface_uv == b.surface_uv;
+         a.forward_label == b.forward_label && a.surface_uv == b.surface_uv &&
+         a.animation_offset == b.animation_offset;
 }
 
 inline StrokeVertex::SideCategory StrokeVertex::Label::DecodeSideCategory()

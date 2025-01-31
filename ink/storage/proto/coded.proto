@@ -234,6 +234,7 @@ message MeshFormat {
     ATTR_ID_FORWARD_LABEL = 7;
     ATTR_ID_OPACITY_SHIFT = 8;
     ATTR_ID_SURFACE_UV = 9;
+    ATTR_ID_ANIMATION_OFFSET = 10;
     // Values 64-127 are reserved for custom attribute IDs.  (Note that keeping
     // enum values <= 127 ensures that they will require only one varint byte
     // each in a serialized proto.)

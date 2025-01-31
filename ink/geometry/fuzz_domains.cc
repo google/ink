@@ -53,6 +53,7 @@ fuzztest::Domain<MeshFormat::AttributeId> StandardAttributeId() {
       MeshFormat::AttributeId::kForwardDerivative,
       MeshFormat::AttributeId::kForwardLabel,
       MeshFormat::AttributeId::kSurfaceUv,
+      MeshFormat::AttributeId::kAnimationOffset,
   });
 }
 
