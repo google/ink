@@ -296,6 +296,7 @@ bool IsValidBehaviorTarget(BrushBehavior::Target target) {
     case BrushBehavior::Target::kPositionOffsetYInMultiplesOfBrushSize:
     case BrushBehavior::Target::kPositionOffsetForwardInMultiplesOfBrushSize:
     case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
+    case BrushBehavior::Target::kTextureAnimationProgressOffset:
     case BrushBehavior::Target::kHueOffsetInRadians:
     case BrushBehavior::Target::kSaturationMultiplier:
     case BrushBehavior::Target::kLuminosity:
@@ -650,6 +651,8 @@ std::string ToFormattedString(BrushBehavior::Target target) {
       return "kPositionOffsetForwardInMultiplesOfBrushSize";
     case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
       return "kPositionOffsetLateralInMultiplesOfBrushSize";
+    case BrushBehavior::Target::kTextureAnimationProgressOffset:
+      return "kTextureAnimationProgressOffset";
     case BrushBehavior::Target::kHueOffsetInRadians:
       return "kHueOffsetInRadians";
     case BrushBehavior::Target::kSaturationMultiplier:

@@ -293,6 +293,7 @@ message BrushBehavior {
     TARGET_POSITION_OFFSET_FORWARD_IN_MULTIPLES_OF_BRUSH_SIZE = 14;
     TARGET_POSITION_OFFSET_LATERAL_IN_MULTIPLES_OF_BRUSH_SIZE = 15;
     reserved 16;
+    TARGET_TEXTURE_ANIMATION_PROGRESS_OFFSET = 17;
   }
   // LINT.ThenChange(../../brush/brush_behavior.h:target)
 

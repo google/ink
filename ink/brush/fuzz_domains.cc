@@ -232,6 +232,7 @@ Domain<BrushBehavior::Target> ArbitraryBrushBehaviorTarget() {
       BrushBehavior::Target::kPositionOffsetYInMultiplesOfBrushSize,
       BrushBehavior::Target::kPositionOffsetForwardInMultiplesOfBrushSize,
       BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize,
+      BrushBehavior::Target::kTextureAnimationProgressOffset,
       BrushBehavior::Target::kHueOffsetInRadians,
       BrushBehavior::Target::kSaturationMultiplier,
       BrushBehavior::Target::kLuminosity,

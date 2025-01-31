@@ -389,6 +389,8 @@ proto::BrushBehavior::Target EncodeBrushBehaviorTarget(
     case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
       return proto::BrushBehavior::
           TARGET_POSITION_OFFSET_LATERAL_IN_MULTIPLES_OF_BRUSH_SIZE;
+    case BrushBehavior::Target::kTextureAnimationProgressOffset:
+      return proto::BrushBehavior::TARGET_TEXTURE_ANIMATION_PROGRESS_OFFSET;
     case BrushBehavior::Target::kHueOffsetInRadians:
       return proto::BrushBehavior::TARGET_HUE_OFFSET_IN_RADIANS;
     case BrushBehavior::Target::kSaturationMultiplier:
@@ -440,6 +442,8 @@ absl::StatusOr<BrushBehavior::Target> DecodeBrushBehaviorTarget(
         TARGET_POSITION_OFFSET_LATERAL_IN_MULTIPLES_OF_BRUSH_SIZE:
       return BrushBehavior::Target::
           kPositionOffsetLateralInMultiplesOfBrushSize;
+    case proto::BrushBehavior::TARGET_TEXTURE_ANIMATION_PROGRESS_OFFSET:
+      return BrushBehavior::Target::kTextureAnimationProgressOffset;
     default:
       return absl::InvalidArgumentError(absl::StrCat(
           "invalid ink.proto.BrushBehavior.Target value: ", target_proto));

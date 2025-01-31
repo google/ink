@@ -28,6 +28,7 @@
 #include "ink/brush/brush_tip.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/internal/modulo.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 #include "ink/strokes/input/stroke_input.h"
@@ -539,6 +540,7 @@ struct BrushTipStateModifiers {
   float corner_rounding_offset = 0;
   Angle rotation_offset;
   float pinch_offset = 0;
+  float texture_animation_progress_offset = 0;
   Angle hue_offset;
   float saturation_multiplier = 1;
   float luminosity = 0;
@@ -597,6 +599,9 @@ void ApplyModifierToTarget(float modifier, BrushBehavior::Target target,
                                            modifier * brush_size);
       }
       break;
+    case BrushBehavior::Target::kTextureAnimationProgressOffset:
+      tip_state_modifiers.texture_animation_progress_offset += modifier;
+      break;
     case BrushBehavior::Target::kHueOffsetInRadians:
       tip_state_modifiers.hue_offset += Angle::Radians(modifier);
       break;
@@ -636,6 +641,13 @@ void ApplyModifiersToTipState(const BrushTipStateModifiers& modifiers,
   if (modifiers.corner_rounding_offset != 0) {
     tip_state.percent_radius = std::clamp(
         tip_state.percent_radius + modifiers.corner_rounding_offset, 0.f, 1.f);
+  }
+  if (modifiers.texture_animation_progress_offset != 0) {
+    tip_state.texture_animation_progress_offset =
+        geometry_internal::FloatModulo(
+            tip_state.texture_animation_progress_offset +
+                modifiers.texture_animation_progress_offset,
+            1);
   }
   if (modifiers.hue_offset != Angle()) {
     tip_state.hue_offset_in_full_turns =

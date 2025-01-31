@@ -286,6 +286,12 @@ struct BrushBehavior {
     // Y-axis (and a negative value moves the brush tip center towards the
     // negative Y-axis).
     kPositionOffsetLateralInMultiplesOfBrushSize,
+    // Adds the target modifier to the initial texture animation progress value
+    // of the current particle (which is relevant only for strokes with an
+    // animated texture). The final progress offset is not clamped, but is
+    // effectively normalized (mod 1). If multiple behaviors have this target,
+    // they stack additively.
+    kTextureAnimationProgressOffset,
 
     // The following are targets for tip color adjustments, including opacity.
     // Renderers can apply them to the brush color when a stroke is drawn to

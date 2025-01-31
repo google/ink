@@ -388,6 +388,7 @@ AffineTransform ComputeParticleSurfaceUvTransform(
     const BrushTipState& tip_state) {
   // This transform takes tip size, position, and rotation into account, but
   // deliberately ignores tip slant, pinch, and corner rounding.
+  // TODO: b/373651450 - Use `tip_state.texture_animation_progress_offset` here.
   return AffineTransform::Translate({0.5, 0.5}) *
          AffineTransform::Scale(1.0f / tip_state.width,
                                 1.0f / tip_state.height) *

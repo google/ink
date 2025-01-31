@@ -1535,6 +1535,19 @@ TEST(CreateTipStateTest, WithBehaviorTargetingCornerRounding) {
                          {clamp_offset});
   EXPECT_FLOAT_EQ(state.percent_radius, /**clamped to 0*/ 0);
 }
+
+TEST(CreateTipStateTest, WithBehaviorTargetingTextureAnimationProgress) {
+  BrushTip brush_tip = MakeBaseBrushTip();
+  float brush_size = 2.5f;
+  float texture_animation_progress_offset = -3.25;
+  BrushTipState state =
+      CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+                     {BrushBehavior::Target::kTextureAnimationProgressOffset},
+                     {texture_animation_progress_offset});
+  // The final progress offset should be computed mod 1.
+  EXPECT_FLOAT_EQ(state.texture_animation_progress_offset, 0.75);
+}
+
 TEST(CreateTipStateTest, WithBehaviorTargetingHue) {
   BrushTip brush_tip = MakeBaseBrushTip();
   float brush_size = 2.5f;

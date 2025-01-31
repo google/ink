@@ -38,6 +38,10 @@ struct BrushTipState {
   // A unitless parameter in the range [0, 1] that controls the separation
   // between two of the brush tip shape's corners prior to applying `rotation`.
   float pinch;
+  // An offset to the initial texture animation progress value
+  // of the current particle (which is relevant only for strokes with an
+  // animated texture) in the range [0, 1).
+  float texture_animation_progress_offset = 0.f;
   // The hue angle offset, measured in full turns in the range [0, 1), to
   // add to the brush color at this tip position.
   float hue_offset_in_full_turns = 0.f;

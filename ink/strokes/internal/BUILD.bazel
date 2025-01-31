@@ -117,6 +117,7 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry:vec",
         "//ink/geometry/internal:algorithms",
+        "//ink/geometry/internal:modulo",
         "//ink/strokes/input:stroke_input",
         "//ink/types:duration",
         "//ink/types:physical_distance",
