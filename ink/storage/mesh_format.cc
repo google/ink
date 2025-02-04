@@ -121,6 +121,8 @@ proto::MeshFormat::AttributeId EncodeMeshAttributeId(
       return proto::MeshFormat::ATTR_ID_FORWARD_LABEL;
     case MeshFormat::AttributeId::kSurfaceUv:
       return proto::MeshFormat::ATTR_ID_SURFACE_UV;
+    case MeshFormat::AttributeId::kAnimationOffset:
+      return proto::MeshFormat::ATTR_ID_ANIMATION_OFFSET;
     case MeshFormat::AttributeId::kCustom0:
       return proto::MeshFormat::ATTR_ID_CUSTOM_0;
     case MeshFormat::AttributeId::kCustom1:
@@ -166,6 +168,8 @@ absl::StatusOr<MeshFormat::AttributeId> DecodeMeshAttributeId(
       return MeshFormat::AttributeId::kForwardLabel;
     case proto::MeshFormat::ATTR_ID_SURFACE_UV:
       return MeshFormat::AttributeId::kSurfaceUv;
+    case proto::MeshFormat::ATTR_ID_ANIMATION_OFFSET:
+      return MeshFormat::AttributeId::kAnimationOffset;
     case proto::MeshFormat::ATTR_ID_CUSTOM_0:
       return MeshFormat::AttributeId::kCustom0;
     case proto::MeshFormat::ATTR_ID_CUSTOM_1:

@@ -345,17 +345,77 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     R"(
     float2 unpackSurfaceUv(const float2 unpackedValue) {
       return unpackedValue;
-    }
+    })"
+    // The [0, 1] UV values can be packed into three bytes, using 12 bits each:
+    // UUUUUUUU UUUUVVVV VVVVVVVV. Each of those bytes is exposed to the shader
+    // as a [0, 1] half float, which makes the unpacking a bit confusing:
+    //   * The first step is to multiply the mixed middle half float by 15 and
+    //     15/16 = 15.9375, so that the upper four bits of the middle byte form
+    //     the integer part of `mixedUV` (0 to 15), and the lower four bits form
+    //     the fractional part (0/16 to 15/16).
+    //   * To get the 12 bits for U, we multiply the first half float by 0xff0 =
+    //     4080 and add the integer part of `mixedUV` (which ranges from 0x000
+    //     to 0x00f) to get a value that ranges from 0 to 0xfff = 4095. Finally,
+    //     we divide by 4095 to recover the [0, 1] U value.
+    //   * To get the 12 bits for V, we multiply the fractional part of
+    //     `mixedUV` (which ranges from 0/16 to 15/16) by 0x1000 = 4096 to get a
+    //     value that ranges from 0x000 to 0xf00, then add 0x0ff = 255 times the
+    //     last half float to get a sum that ranges from 0 to 0xfff =
+    //     4095. Finally, we divide by 4095 to recover the [0, 1] V value.
+    R"(
+    float2 unpackSurfaceUv(const half3 packedValue) {
+      float mixedUV = 15.9375 * float(packedValue.y);
+      return float2(
+          (4080.0 * float(packedValue.x) + floor(mixedUV)) / 4095.0,
+          (4096.0 * fract(mixedUV) + 255.0 * float(packedValue.z)) / 4095.0);
+    })"
+    // The [0, 1] UV values can instead be packed into four bytes, using 12 bits
+    // for U and 20 bits for V: UUUUUUUU UUUUVVVV VVVVVVVV VVVVVVVV. Each of
+    // those bytes is exposed to the shader as a [0, 1] half float, which makes
+    // the unpacking a bit confusing:
+    //   * The first step is to multiply the mixed second half float by 15 and
+    //     15/16 = 15.9375, so that the upper four bits of the second byte form
+    //     the integer part of `mixedUV` (0 to 15), and the lower four bits form
+    //     the fractional part (0/16 to 15/16).
+    //   * To get the 12 bits for U, we multiply the first half float by 0xff0 =
+    //     4080 and add the integer part of `mixedUV` (which ranges from 0x000
+    //     to 0x00f) to get a value that ranges from 0 to 0xfff = 4095. Finally,
+    //     we divide by 4095 to recover the [0, 1] U value.
+    //   * To get the 20 bits for V, we multiply the fractional part of
+    //     `mixedUV` (which ranges from 0/16 to 15/16) by 0x100000 = 1048576 to
+    //     get a value that ranges from 0x00000 to 0xf0000, then add 0x0ff00 =
+    //     65280 times the third half float and 0x000ff = 255 times the last
+    //     half float to get a sum that ranges from 0 to 0xfffff =
+    //     1048575. Finally, we divide by 1048575 to recover the [0, 1] V value.
+    R"(
     float2 unpackSurfaceUv(const half4 packedValue) {
       float mixedXY = 15.9375 * float(packedValue.y);
       return float2((4080.0 * float(packedValue.x) + floor(mixedXY)) / 4095.0,
                     (1048576.0 * fract(mixedXY) +
                      65280.0 * float(packedValue.z) +
                      255.0 * float(packedValue.w)) / 1048575.0);
-    }
-)";
-// LINT.ThenChange(
-//     ../../../strokes/internal/stroke_vertex.cc:uv_packing)
+    })"
+    // LINT.ThenChange(
+    //     ../../../strokes/internal/stroke_vertex.cc:uv_packing)
+
+    // Unpacks an animation offset value into a `float` from one of the
+    // supported "packed" types.
+    // LINT.IfChange(anim_packing)
+    R"(
+    float unpackAnimationOffset(const float unpackedValue) {
+      return unpackedValue;
+    })"
+    // A [0, 1) animation offset can be packed into one [0, 256) byte, where 0.0
+    // maps to 0 and 1.0 would map to 256. This [0, 255] byte is exposed to the
+    // shader as a [0, 1] half float. So to unpack, we multiply the [0, 1] half
+    // float by 255/256 to get our [0, 1) animation offset.
+    R"(
+    float unpackAnimationOffset(const half packedValue) {
+      return 255.0 * float(packedValue) / 256.0;
+    })"
+    // LINT.ThenChange(
+    //     ../../../strokes/internal/stroke_vertex.cc:uv_packing)
+    "";
 
 }  // namespace ink::skia_common_internal
 
