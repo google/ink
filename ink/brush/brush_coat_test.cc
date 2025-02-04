@@ -17,15 +17,14 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
-#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/fuzz_domains.h"
 #include "ink/geometry/mesh_format.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 namespace {
@@ -35,11 +34,7 @@ using ::testing::HasSubstr;
 using ::testing::Not;
 using ::testing::UnorderedElementsAre;
 
-Uri CreateTextureUri() {
-  auto uri = Uri::Parse("ink://ink/texture:test-paint");
-  ABSL_CHECK_OK(uri);
-  return *uri;
-}
+constexpr absl::string_view kTestTextureId = "test-paint";
 
 TEST(BrushCoatTest, Stringify) {
   EXPECT_EQ(absl::StrCat(BrushCoat{}),
@@ -65,14 +60,6 @@ TEST(BrushCoatTest, CoatWithInvalidTipIsInvalid) {
       BrushCoat{.tips = {BrushTip{.pinch = -1}}, .paint = BrushPaint{}});
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("pinch"));
-}
-
-TEST(BrushCoatTest, CoatWithInvalidPaintIsInvalid) {
-  absl::Status status = brush_internal::ValidateBrushCoat(BrushCoat{
-      .tips = {BrushTip{}},
-      .paint = BrushPaint{.texture_layers = {{.color_texture_uri = Uri()}}}});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("color_texture_uri"));
 }
 
 TEST(BrushCoatTest, CoatWithNoTipsIsInvalid) {
@@ -155,7 +142,7 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithColorShift) {
 TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutWindingTextures) {
   BrushPaint paint = {
       .texture_layers = {BrushPaint::TextureLayer{
-          .color_texture_uri = CreateTextureUri(),
+          .color_texture_id = std::string(kTestTextureId),
           .mapping = BrushPaint::TextureMapping::kTiling,
       }},
   };
@@ -167,7 +154,7 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutWindingTextures) {
 TEST(BrushCoatTest, GetRequiredAttributeIdsWithWindingTextures) {
   BrushPaint paint = {
       .texture_layers = {BrushPaint::TextureLayer{
-          .color_texture_uri = CreateTextureUri(),
+          .color_texture_id = std::string(kTestTextureId),
           .mapping = BrushPaint::TextureMapping::kWinding,
       }},
   };

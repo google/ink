@@ -19,23 +19,23 @@
 
 #include "absl/base/nullability.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "ink/rendering/bitmap.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 
-// Interface for loading texture bitmap data for texture URIs.
+// Interface for loading texture bitmap data for texture ids.
 class TextureBitmapStore {
  public:
   virtual ~TextureBitmapStore() = default;
 
-  // Retrieve a `Bitmap` for the given texture URI. This may be called
+  // Retrieve a `Bitmap` for the given texture id. This may be called
   // synchronously during rendering, so loading of texture files from disk and
   // decoding them into bitmap data should be done in advance. The result may be
   // cached by consumers, so this should return a deterministic result for a
   // given input.
   virtual absl::StatusOr<absl::Nonnull<std::shared_ptr<Bitmap>>>
-  GetTextureBitmap(const Uri& texture_uri) const = 0;
+  GetTextureBitmap(absl::string_view texture_id) const = 0;
 };
 
 }  // namespace ink

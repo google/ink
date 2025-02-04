@@ -45,7 +45,6 @@ namespace ink {
 //     and the optional <revision>:
 //       * <asset-type> must be one of the following strings:
 //           * "brush-family"
-//           * "texture"
 //       * <asset-name> must consist of lowercase alpha and hyphen.
 //       * <revision> must be a positive base-10 integer with no leading zeroes
 //         and at most nine digits (which guarantees that the value fits in a
@@ -59,9 +58,6 @@ class Uri {
     kUninitialized,
     // Asset-type "brush-family", for identifying a specific `BrushFamily`.
     kBrushFamily,
-    // Asset-type "texture", for identifying a specific
-    // `color_texture_uri` for a `TextureLayer`.
-    kTexture,
   };
 
   // Parses the provided `uri` into its parts.

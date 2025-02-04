@@ -48,7 +48,6 @@ namespace ink {
 namespace {
 
 using fuzztest::Arbitrary;
-using fuzztest::ArrayOf;
 using fuzztest::Domain;
 using fuzztest::ElementOf;
 using fuzztest::Filter;
@@ -518,16 +517,6 @@ Domain<Uri> ValidBrushFamilyUri() {
           "^(ink:|INK:)?(//[a-z-]+)?/(brush-family):[a-z-]+(:[1-9]{1,9})?"));
 }
 
-Domain<Uri> ValidColorTextureUri() {
-  return Map(
-      [](absl::string_view uri_string) {
-        absl::StatusOr<Uri> uri = Uri::Parse(uri_string);
-        ABSL_CHECK_OK(uri);
-        return *std::move(uri);
-      },
-      InRegexp("^(ink:|INK:)?(//[a-z-]+)?/(texture):[a-z-]+(:[1-9]{1,9})?"));
-}
-
 // LINT.IfChange(texture_size_unit)
 Domain<BrushPaint::TextureSizeUnit> ArbitraryBrushPaintTextureSizeUnit() {
   return ElementOf({
@@ -599,7 +588,7 @@ fuzztest::Domain<BrushPaint::TextureLayer>
 ValidBrushPaintTextureLayerWithMapping(BrushPaint::TextureMapping mapping) {
   auto texture_layer = [mapping](Vec size) {
     return StructOf<BrushPaint::TextureLayer>(
-        ValidColorTextureUri(), Just(mapping),
+        Arbitrary<std::string>(), Just(mapping),
         ArbitraryBrushPaintTextureOrigin(),
         ArbitraryBrushPaintTextureSizeUnit(), ArbitraryBrushPaintTextureWrap(),
         ArbitraryBrushPaintTextureWrap(), Just(size),

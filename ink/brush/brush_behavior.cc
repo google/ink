@@ -17,7 +17,6 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
-#include <optional>
 #include <string>
 #include <variant>
 
@@ -25,9 +24,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "absl/types/span.h"
 #include "ink/brush/easing_function.h"
-#include "ink/types/duration.h"
 
 namespace ink {
 

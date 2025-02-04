@@ -38,11 +38,8 @@ constexpr absl::StatusCode kInvalidArgument =
 TEST(UriTest, SupportsAbslHash) {
   std::vector<std::string> uri_strings = {
       "",
-      "ink://ink/texture:foo:1",
-      "ink://ink/texture:foo:2",
-      "ink://ink/texture:bar:1",
       "ink://ink/brush-family:foo:1",
-      "ink://baz/texture:foo:1",
+      "ink://baz/brush-family:foo:1",
   };
 
   std::vector<Uri> uris;
@@ -58,7 +55,6 @@ TEST(UriTest, SupportsAbslHash) {
 TEST(UriTest, StringifyAssetType) {
   EXPECT_EQ(absl::StrCat(Uri::AssetType::kUninitialized), "uninitialized");
   EXPECT_EQ(absl::StrCat(Uri::AssetType::kBrushFamily), "brush-family");
-  EXPECT_EQ(absl::StrCat(Uri::AssetType::kTexture), "texture");
   EXPECT_EQ(absl::StrCat(static_cast<Uri::AssetType>(42)), "AssetType(42)");
 }
 

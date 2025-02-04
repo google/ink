@@ -78,23 +78,23 @@ MATCHER_P(StepsParametersEqMatcher, expected,
       arg, result_listener);
 }
 
-Matcher<EasingFunction::Parameters> EasingFunctionParametersEq(
+[[maybe_unused]] Matcher<EasingFunction::Parameters> EasingFunctionParametersEq(
     EasingFunction::Predefined predefined) {
   return VariantWith<EasingFunction::Predefined>(Eq(predefined));
 }
 
-Matcher<EasingFunction::Parameters> EasingFunctionParametersEq(
+[[maybe_unused]] Matcher<EasingFunction::Parameters> EasingFunctionParametersEq(
     const EasingFunction::CubicBezier& bezier) {
   return VariantWith<EasingFunction::CubicBezier>(
       CubicBezierParametersEqMatcher(bezier));
 }
 
-Matcher<EasingFunction::Parameters> EasingFunctionParametersEq(
+[[maybe_unused]] Matcher<EasingFunction::Parameters> EasingFunctionParametersEq(
     const EasingFunction::Linear& linear) {
   return VariantWith<EasingFunction::Linear>(LinearParametersEqMatcher(linear));
 }
 
-Matcher<EasingFunction::Parameters> EasingFunctionParametersEq(
+[[maybe_unused]] Matcher<EasingFunction::Parameters> EasingFunctionParametersEq(
     const EasingFunction::Steps& steps) {
   return VariantWith<EasingFunction::Steps>(StepsParametersEqMatcher(steps));
 }
@@ -269,8 +269,8 @@ MATCHER_P(BrushPaintTextureLayerEqMatcher, expected,
                        " BrushPaintTextureLayer (expected: ",
                        ::testing::PrintToString(expected), ")")) {
   return ExplainMatchResult(
-      AllOf(Field(&BrushPaint::TextureLayer::color_texture_uri,
-                  Eq(expected.color_texture_uri)),
+      AllOf(Field(&BrushPaint::TextureLayer::color_texture_id,
+                  Eq(expected.color_texture_id)),
             Field(&BrushPaint::TextureLayer::mapping, Eq(expected.mapping)),
             Field(&BrushPaint::TextureLayer::origin, Eq(expected.origin)),
             Field(&BrushPaint::TextureLayer::size_unit, Eq(expected.size_unit)),
@@ -336,7 +336,7 @@ Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
   return VariantWith<BrushFamily::SpringModelV2>(_);  // no fields to match
 }
 
-Matcher<BrushFamily::InputModel> BrushFamilyInputModelEq(
+[[maybe_unused]] Matcher<BrushFamily::InputModel> BrushFamilyInputModelEq(
     const BrushFamily::InputModel& expected) {
   return std::visit(
       [](const auto& expected) {

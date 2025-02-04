@@ -1162,8 +1162,7 @@ absl::StatusOr<BrushPaint::TextureKeyframe> DecodeBrushPaintTextureKeyframe(
 void EncodeBrushPaintTextureLayer(
     const BrushPaint::TextureLayer& layer,
     proto::BrushPaint::TextureLayer& layer_proto_out) {
-  layer_proto_out.set_color_texture_uri(
-      layer.color_texture_uri.ToNormalizedString());
+  layer_proto_out.set_color_texture_id(layer.color_texture_id);
   layer_proto_out.set_size_unit(EncodeBrushPaintSizeUnit(layer.size_unit));
   layer_proto_out.set_wrap_x(EncodeBrushPaintWrap(layer.wrap_x));
   layer_proto_out.set_wrap_y(EncodeBrushPaintWrap(layer.wrap_y));
@@ -1190,14 +1189,6 @@ void EncodeBrushPaintTextureLayer(
 
 absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
     const proto::BrushPaint::TextureLayer& layer_proto) {
-  if (!layer_proto.has_color_texture_uri()) {
-    return absl::InvalidArgumentError(
-        "ink.proto.BrushPaint.TextureLayer must specify a texture URI.");
-  }
-  absl::StatusOr<Uri> uri = Uri::Parse(layer_proto.color_texture_uri());
-  if (!uri.ok()) {
-    return uri.status();
-  }
   auto mapping = DecodeBrushPaintTextureMapping(layer_proto.mapping());
   if (!mapping.ok()) {
     return mapping.status();
@@ -1233,7 +1224,7 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
     return blend_mode.status();
   }
   return BrushPaint::TextureLayer{
-      .color_texture_uri = *std::move(uri),
+      .color_texture_id = layer_proto.color_texture_id(),
       .mapping = *mapping,
       .origin = *origin,
       .size_unit = *size_unit,

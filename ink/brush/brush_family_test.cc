@@ -23,7 +23,6 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
-#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
@@ -59,6 +58,7 @@ constexpr float kNan = std::numeric_limits<float>::quiet_NaN();
 constexpr float kInfinity = std::numeric_limits<float>::infinity();
 constexpr absl::StatusCode kInvalidArgument =
     absl::StatusCode::kInvalidArgument;
+constexpr absl::string_view kTestTextureId = "test-paint";
 
 BrushTip CreatePressureTestTip() {
   return {
@@ -93,15 +93,9 @@ BrushTip CreatePressureTestTip() {
   };
 }
 
-Uri CreateTextureUri() {
-  auto uri = Uri::Parse("ink://ink/texture:test-paint");
-  ABSL_CHECK_OK(uri);
-  return *uri;
-}
-
 BrushPaint CreateTestPaint() {
   return {.texture_layers = {
-              {.color_texture_uri = CreateTextureUri(),
+              {.color_texture_id = std::string(kTestTextureId),
                .mapping = BrushPaint::TextureMapping::kWinding,
                .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                .size = {3, 5},
@@ -130,9 +124,9 @@ TEST(BrushFamilyTest, StringifyWithNoUri) {
             "BrushFamily(coats=[BrushCoat{tips=[BrushTip{scale=<3, 3>, "
             "corner_rounding=0, opacity_multiplier=0.7, "
             "particle_gap_distance_scale=0.1, particle_gap_duration=2s}], "
-            "paint=BrushPaint{texture_layers={TextureLayer{color_texture_uri=/"
-            "texture:test-paint, mapping=kWinding, origin=kStrokeSpaceOrigin, "
-            "size_unit=kBrushSize, wrap_x=kRepeat, "
+            "paint=BrushPaint{texture_layers={TextureLayer{color_texture_id="
+            "test-paint, mapping=kWinding, "
+            "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
             "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
             "opacity=1, keyframes={TextureKeyframe{progress=0.1, "
@@ -148,9 +142,9 @@ TEST(BrushFamilyTest, StringifyWithUri) {
   EXPECT_EQ(absl::StrCat(*family),
             "BrushFamily(coats=[BrushCoat{tips=[BrushTip{scale=<3, 3>, "
             "corner_rounding=0, opacity_multiplier=0.7}], "
-            "paint=BrushPaint{texture_layers={TextureLayer{color_texture_uri=/"
-            "texture:test-paint, mapping=kWinding, origin=kStrokeSpaceOrigin, "
-            "size_unit=kBrushSize, wrap_x=kRepeat, "
+            "paint=BrushPaint{texture_layers={TextureLayer{color_texture_id="
+            "test-paint, mapping=kWinding, "
+            "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
             "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
             "opacity=1, keyframes={TextureKeyframe{progress=0.1, "
@@ -212,14 +206,6 @@ TEST(BrushFamilyTest, CreateWithTooManyCoats) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(coats);
   EXPECT_EQ(family.status().code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(family.status().message(), HasSubstr("coats.size()"));
-}
-
-TEST(BrushFamilyTest, CreateWithInvalidUri) {
-  absl::StatusOr<Uri> uri = Uri::Parse("/texture:foobar");
-  ASSERT_THAT(uri, IsOk());
-  EXPECT_THAT(
-      BrushFamily::Create({CreateTestCoat()}, *uri),
-      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("asset-type")));
 }
 
 TEST(BrushFamilyTest, CreateWithInvalidTipScale) {
@@ -1055,7 +1041,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
             {.texture_layers =
-                 {{.color_texture_uri = CreateTextureUri(),
+                 {{.color_texture_id = std::string(kTestTextureId),
                    .mapping = static_cast<BrushPaint::TextureMapping>(-1),
                    .size = {1, 4}}}})
             .status();
@@ -1068,7 +1054,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .origin =
                                      static_cast<BrushPaint::TextureOrigin>(-1),
                                  .size = {1, 4}}}})
@@ -1083,7 +1070,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
             {.texture_layers =
-                 {{.color_texture_uri = CreateTextureUri(),
+                 {{.color_texture_id = std::string(kTestTextureId),
                    .size_unit = static_cast<BrushPaint::TextureSizeUnit>(-1),
                    .size = {1, 4}}}})
             .status();
@@ -1096,7 +1083,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {-1, 4}}}})
             .status();
     EXPECT_EQ(status.code(), kInvalidArgument);
@@ -1107,7 +1095,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {0, 4}}}})
             .status();
     EXPECT_EQ(status.code(), kInvalidArgument);
@@ -1118,7 +1107,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {3, kInfinity}}}})
             .status();
     EXPECT_EQ(status.code(), kInvalidArgument);
@@ -1129,7 +1119,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .offset = {kInfinity, 0.4}}}})
             .status();
@@ -1142,7 +1133,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .offset = {1, kNan}}}})
             .status();
@@ -1155,7 +1147,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .size_jitter = {-0.1, 0.4}}}})
             .status();
@@ -1168,7 +1161,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .size_jitter = {0.1, 4}}}})
             .status();
@@ -1181,7 +1175,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .offset = {0.8, 0.7},
                                  .offset_jitter = {-0.1, 0.4}}}})
@@ -1195,7 +1190,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .offset = {0.8, 0.7},
                                  .offset_jitter = {0.1, 4}}}})
@@ -1209,7 +1205,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .size_jitter = {-0.1, 0.4}}}})
             .status();
@@ -1222,7 +1219,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .opacity = -1}}})
             .status();
@@ -1235,7 +1233,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .opacity = -1}}})
             .status();
@@ -1248,7 +1247,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .opacity = 3}}})
             .status();
@@ -1261,7 +1261,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .keyframes = {{.progress = 3}}}}})
             .status();
@@ -1274,7 +1275,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .keyframes = {{.size = std::optional<Vec>(
                                                     {4, kInfinity})}}}}})
@@ -1288,10 +1290,10 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
-                                 .size = {1, 3},
-                                 .keyframes = {{.offset = std::optional<Vec>(
-                                                    {-2, 4})}}}}})
+            {.texture_layers =
+                 {{.color_texture_id = std::string(kTestTextureId),
+                   .size = {1, 3},
+                   .keyframes = {{.offset = std::optional<Vec>({-2, 4})}}}}})
             .status();
     EXPECT_EQ(status.code(), kInvalidArgument);
     EXPECT_THAT(status.message(),
@@ -1302,10 +1304,10 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
-                                 .size = {1, 3},
-                                 .keyframes = {{.rotation = Angle::Radians(
-                                                    kInfinity)}}}}})
+            {.texture_layers =
+                 {{.color_texture_id = std::string(kTestTextureId),
+                   .size = {1, 3},
+                   .keyframes = {{.rotation = Angle::Radians(kInfinity)}}}}})
             .status();
     EXPECT_EQ(status.code(), kInvalidArgument);
     EXPECT_THAT(status.message(),
@@ -1316,7 +1318,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .keyframes = {{.opacity = 3}}}}})
             .status();
@@ -1329,7 +1332,8 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = CreateTextureUri(),
+            {.texture_layers = {{.color_texture_id =
+                                     std::string(kTestTextureId),
                                  .size = {1, 4},
                                  .blend_mode =
                                      static_cast<BrushPaint::BlendMode>(-1)}}})
@@ -1337,19 +1341,6 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     EXPECT_EQ(status.code(), kInvalidArgument);
     EXPECT_THAT(status.message(),
                 HasSubstr("BrushPaint::texture_layers::blend_mode"));
-  }
-  // `TextureLayer::color_texture_uri` has wrong asset type
-  {
-    auto wrong_asset_type_uri = Uri::Parse("ink://ink/brush-family:test-paint");
-    absl::Status status =
-        BrushFamily::Create(
-            BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.color_texture_uri = *wrong_asset_type_uri,
-                                 .size = {1, 4}}}})
-            .status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(),
-                HasSubstr("BrushPaint::texture_layers::color_texture_uri"));
   }
 }
 

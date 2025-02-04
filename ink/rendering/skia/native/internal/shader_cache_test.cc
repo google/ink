@@ -22,7 +22,6 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/base/nullability.h"
-#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ink/brush/brush_paint.h"
@@ -34,7 +33,6 @@
 #include "ink/rendering/texture_bitmap_store.h"
 #include "ink/strokes/input/fuzz_domains.h"
 #include "ink/strokes/input/stroke_input_batch.h"
-#include "ink/types/uri.h"
 #include "include/core/SkAlphaType.h"
 #include "include/core/SkColorType.h"
 #include "include/core/SkImage.h"
@@ -49,21 +47,17 @@ using ::testing::HasSubstr;
 using ::testing::IsNull;
 using ::testing::NotNull;
 
-Uri TestTextureUri() {
-  absl::StatusOr<Uri> uri = Uri::Parse("//test/texture:foo");
-  ABSL_CHECK_OK(uri);
-  return *uri;
-}
+constexpr absl::string_view kTestTextureId = "test";
 
 // A TextureBitmapStore that always returns the same bitmap regardless of
-// the texture URI.
+// the texture id.
 class FakeBitmapStore : public TextureBitmapStore {
  public:
   explicit FakeBitmapStore(std::shared_ptr<Bitmap> bitmap)
       : bitmap_(std::move(bitmap)) {}
 
   absl::StatusOr<absl::Nonnull<std::shared_ptr<Bitmap>>> GetTextureBitmap(
-      const Uri& texture_uri) const override {
+      absl::string_view texture_id) const override {
     return bitmap_;
   }
 
@@ -82,7 +76,7 @@ TEST(ShaderCacheTest, GetShaderForEmptyBrushPaint) {
 TEST(ShaderCacheTest, TryGetTextureShaderWithoutTextureProvider) {
   ShaderCache cache(nullptr);
   absl::StatusOr<sk_sp<SkShader>> shader = cache.GetShaderForPaint(
-      BrushPaint{{{.color_texture_uri = TestTextureUri()}}}, 10,
+      BrushPaint{{{.color_texture_id = std::string(kTestTextureId)}}}, 10,
       StrokeInputBatch());
   EXPECT_EQ(shader.status().code(), absl::StatusCode::kFailedPrecondition);
   EXPECT_THAT(shader.status().message(),
@@ -96,7 +90,7 @@ TEST(ShaderCacheTest, GetShaderForTexturedBrushPaint) {
       std::vector<uint8_t>{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}));
   ShaderCache cache(&provider);
   absl::StatusOr<sk_sp<SkShader>> shader = cache.GetShaderForPaint(
-      BrushPaint{{{.color_texture_uri = TestTextureUri()}}}, 10,
+      BrushPaint{{{.color_texture_id = std::string(kTestTextureId)}}}, 10,
       StrokeInputBatch());
   ASSERT_EQ(shader.status(), absl::OkStatus());
   ASSERT_THAT(*shader, NotNull());

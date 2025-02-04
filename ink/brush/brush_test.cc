@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
 #include <utility>
 
 #include "gmock/gmock.h"
@@ -24,6 +25,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
@@ -32,8 +34,6 @@
 #include "ink/brush/type_matchers.h"
 #include "ink/color/color.h"
 #include "ink/geometry/angle.h"
-#include "ink/types/duration.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 namespace {
@@ -42,11 +42,7 @@ using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::Pointwise;
 
-Uri CreateTestTextureUri() {
-  auto uri = Uri::Parse("ink://ink/texture:test-texture");
-  ABSL_CHECK_OK(uri);
-  return *uri;
-}
+constexpr absl::string_view kTestTextureId = "test-texture";
 
 BrushFamily CreateTestFamily() {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
@@ -75,7 +71,7 @@ BrushFamily CreateTestFamily() {
               },
           }}},
       },
-      {.texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
+      {.texture_layers = {{.color_texture_id = std::string(kTestTextureId),
                            .mapping = BrushPaint::TextureMapping::kWinding,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
@@ -92,7 +88,7 @@ TEST(BrushTest, Stringify) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{
           .scale = {3, 3}, .corner_rounding = 0, .opacity_multiplier = 0.7},
-      {.texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
+      {.texture_layers = {{.color_texture_id = std::string(kTestTextureId),
                            .mapping = BrushPaint::TextureMapping::kWinding,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
@@ -110,10 +106,10 @@ TEST(BrushTest, Stringify) {
       "size=3, epsilon=0.1, "
       "family=BrushFamily(coats=[BrushCoat{tips=[BrushTip{scale=<3, 3>, "
       "corner_rounding=0, opacity_multiplier=0.7}], "
-      "paint=BrushPaint{texture_layers={TextureLayer{color_texture_uri=/"
-      "texture:test-texture, mapping=kWinding, origin=kStrokeSpaceOrigin, "
-      "size_unit=kBrushSize, wrap_x=kRepeat, wrap_y=kRepeat, "
-      "size=<3, 5>, offset=<0, 0>, rotation=0π, "
+      "paint=BrushPaint{texture_layers={TextureLayer{color_texture_id="
+      "test-texture, mapping=kWinding, "
+      "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
+      "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
       "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
       "opacity=1, keyframes={TextureKeyframe{progress=0.1, "
       "rotation=0.25π}}, blend_mode=kDstOut}}}}], "
@@ -240,7 +236,7 @@ TEST(BrushTest, SetNewFamily) {
 
   auto new_family = BrushFamily::Create(
       BrushTip{},
-      {.texture_layers = {{.color_texture_uri = CreateTestTextureUri(),
+      {.texture_layers = {{.color_texture_id = std::string(kTestTextureId),
                            .mapping = BrushPaint::TextureMapping::kWinding,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},

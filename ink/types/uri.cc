@@ -71,8 +71,6 @@ std::string ToFormattedString(Uri::AssetType asset_type) {
       return "uninitialized";
     case Uri::AssetType::kBrushFamily:
       return "brush-family";
-    case Uri::AssetType::kTexture:
-      return "texture";
   }
   return absl::StrCat("AssetType(", static_cast<int>(asset_type), ")");
 }
@@ -285,8 +283,6 @@ absl::StatusOr<Uri> Uri::Parse(absl::string_view uri) {
 
   if (asset_type_string == "brush-family") {
     validated_uri.asset_type_ = AssetType::kBrushFamily;
-  } else if (asset_type_string == "texture") {
-    validated_uri.asset_type_ = AssetType::kTexture;
   } else {
     return absl::InvalidArgumentError(absl::Substitute(
         "Invalid uri: Invalid asset-type: '$0'", asset_type_string));

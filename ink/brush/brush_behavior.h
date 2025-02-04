@@ -17,15 +17,12 @@
 
 #include <array>
 #include <cstdint>
-#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
 
 #include "absl/status/status.h"
-#include "absl/types/span.h"
 #include "ink/brush/easing_function.h"
-#include "ink/types/duration.h"
 
 namespace ink {
 

@@ -11,6 +11,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/color/color.h"
@@ -19,7 +20,6 @@
 #include "ink/rendering/bitmap.h"
 #include "ink/rendering/texture_bitmap_store.h"
 #include "ink/strokes/input/stroke_input_batch.h"
-#include "ink/types/uri.h"
 #include "include/core/SkAlphaType.h"
 #include "include/core/SkBitmap.h"
 #include "include/core/SkBlendMode.h"
@@ -242,7 +242,7 @@ absl::StatusOr<sk_sp<SkShader>> ShaderCache::GetShaderForLayer(
 absl::StatusOr<sk_sp<SkShader>> ShaderCache::CreateBaseShaderForLayer(
     const BrushPaint::TextureLayer& layer) {
   absl::StatusOr<sk_sp<SkImage>> image =
-      GetImageForTexture(layer.color_texture_uri);
+      GetImageForTexture(layer.color_texture_id);
   if (!image.ok()) return image.status();
   SkISize size = (*image)->dimensions();
   SkMatrix matrix = ToSkMatrix(
@@ -253,16 +253,16 @@ absl::StatusOr<sk_sp<SkShader>> ShaderCache::CreateBaseShaderForLayer(
 }
 
 absl::StatusOr<sk_sp<SkImage>> ShaderCache::GetImageForTexture(
-    const Uri& texture_uri) {
+    absl::string_view texture_id) {
   if (texture_provider_ == nullptr) {
     return absl::FailedPreconditionError(absl::StrCat(
         "`TextureBitmapStore` is null, but asked to render texture: ",
-        texture_uri));
+        texture_id));
   }
-  sk_sp<SkImage>& cached_image = texture_images_[texture_uri];
+  sk_sp<SkImage>& cached_image = texture_images_[texture_id];
   if (cached_image == nullptr) {
     absl::StatusOr<std::shared_ptr<Bitmap>> bitmap =
-        texture_provider_->GetTextureBitmap(texture_uri);
+        texture_provider_->GetTextureBitmap(texture_id);
     if (!bitmap.ok()) return bitmap.status();
     absl::StatusOr<sk_sp<SkImage>> image = CreateImageFromBitmap(**bitmap);
     if (!image.ok()) return image.status();

@@ -22,7 +22,6 @@
 #include "absl/status/status.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/vec.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 
@@ -219,8 +218,8 @@ struct BrushPaint {
   };
 
   struct TextureLayer {
-    // URI that will be used by renderers to retrieve the color texture.
-    Uri color_texture_uri;
+    // String id that will be used by renderers to retrieve the color texture.
+    std::string color_texture_id;
 
     TextureMapping mapping = TextureMapping::kTiling;
     TextureOrigin origin = TextureOrigin::kStrokeSpaceOrigin;
@@ -356,7 +355,7 @@ H AbslHashValue(H h, const BrushPaint::TextureKeyframe& keyframe) {
 
 template <typename H>
 H AbslHashValue(H h, const BrushPaint::TextureLayer& layer) {
-  return H::combine(std::move(h), layer.color_texture_uri, layer.mapping,
+  return H::combine(std::move(h), layer.color_texture_id, layer.mapping,
                     layer.origin, layer.size_unit, layer.wrap_x, layer.wrap_y,
                     layer.size, layer.offset, layer.rotation, layer.size_jitter,
                     layer.offset_jitter, layer.rotation_jitter, layer.opacity,

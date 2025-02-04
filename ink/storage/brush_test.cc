@@ -20,7 +20,6 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
-#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ink/brush/brush.h"
@@ -51,11 +50,7 @@ using ::testing::HasSubstr;
 using ::testing::IsNull;
 using ::testing::SizeIs;
 
-Uri CreateTestTextureUri() {
-  absl::StatusOr<Uri> uri = Uri::Parse("ink://ink/texture:test-texture");
-  ABSL_CHECK_OK(uri);
-  return *uri;
-}
+constexpr absl::string_view kTestTextureId = "test-texture";
 
 TEST(BrushTest, DecodeBrushProto) {
   proto::Brush brush_proto;
@@ -70,8 +65,7 @@ TEST(BrushTest, DecodeBrushProto) {
   proto::BrushPaint* paint_proto = coat_proto->mutable_paint();
   proto::BrushPaint::TextureLayer* texture_layer_proto =
       paint_proto->add_texture_layers();
-  texture_layer_proto->set_color_texture_uri(
-      CreateTestTextureUri().ToNormalizedString());
+  texture_layer_proto->set_color_texture_id(std::string(kTestTextureId));
   texture_layer_proto->set_mapping(
       proto::BrushPaint::TextureLayer::MAPPING_WINDING);
   texture_layer_proto->set_origin(
@@ -92,7 +86,7 @@ TEST(BrushTest, DecodeBrushProto) {
   absl::StatusOr<BrushFamily> expected_family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.5f},
       {.texture_layers = {
-           {.color_texture_uri = CreateTestTextureUri(),
+           {.color_texture_id = std::string(kTestTextureId),
             .mapping = BrushPaint::TextureMapping::kWinding,
             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
@@ -263,7 +257,7 @@ class RoundRectBrushProvider : public BrushProvider {
       return BrushFamily::Create(
           BrushTip{.corner_rounding = 0.25f},
           {.texture_layers =
-               {{.color_texture_uri = CreateTestTextureUri(),
+               {{.color_texture_id = std::string(kTestTextureId),
                  .mapping = BrushPaint::TextureMapping::kWinding,
                  .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
                  .size = {10, 15},
@@ -317,20 +311,16 @@ TEST(BrushTest, EmptyBrushPaintProtoDecodesToDefaultBrushPaint) {
 // This test ensures that we set correct proto field defaults when adding new
 // `BrushPaint::TextureLayer` struct fields, to avoid a repeat of b/337238252.
 TEST(BrushTest, MostlyEmptyTextureLayerProtoDecodesWithDefaultValues) {
-  // Create a `BrushPaint` proto containing a single, mostly-empty
-  // `TextureLayer` proto (the `color_texture_uri` field is required to be set).
-  Uri uri = CreateTestTextureUri();
   proto::BrushPaint paint_proto;
-  paint_proto.add_texture_layers()->set_color_texture_uri(
-      uri.ToNormalizedString());
   // The proto should decode successfully, and all the omitted proto fields
   // should be set to their default values in the `BrushPaint::TextureLayer`
   // struct.
+  paint_proto.add_texture_layers();
   absl::StatusOr<BrushPaint> brush_paint = DecodeBrushPaint(paint_proto);
   ASSERT_EQ(brush_paint.status(), absl::OkStatus());
-  EXPECT_THAT(brush_paint->texture_layers,
-              ElementsAre(BrushPaintTextureLayerEq(
-                  BrushPaint::TextureLayer{.color_texture_uri = uri})));
+  EXPECT_THAT(
+      brush_paint->texture_layers,
+      ElementsAre(BrushPaintTextureLayerEq(BrushPaint::TextureLayer{})));
 }
 
 TEST(BrushTest, DecodeBrushPaintWithInvalidTextureKeyframe) {
@@ -343,8 +333,7 @@ TEST(BrushTest, DecodeBrushPaintWithInvalidTextureKeyframe) {
         paint_proto->add_texture_layers();
     texture_layer_proto->set_size_unit(
         proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_SIZE);
-    texture_layer_proto->set_color_texture_uri(
-        CreateTestTextureUri().ToNormalizedString());
+    texture_layer_proto->set_color_texture_id(std::string(kTestTextureId));
     texture_layer_proto->set_origin(
         proto::BrushPaint::TextureLayer::ORIGIN_FIRST_STROKE_INPUT);
     texture_layer_proto->set_mapping(
@@ -369,8 +358,7 @@ TEST(BrushTest, DecodeBrushPaintWithInvalidTextureKeyframe) {
         paint_proto->add_texture_layers();
     texture_layer_proto->set_size_unit(
         proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_SIZE);
-    texture_layer_proto->set_color_texture_uri(
-        CreateTestTextureUri().ToNormalizedString());
+    texture_layer_proto->set_color_texture_id(std::string(kTestTextureId));
     texture_layer_proto->set_origin(
         proto::BrushPaint::TextureLayer::ORIGIN_FIRST_STROKE_INPUT);
     texture_layer_proto->set_mapping(
@@ -411,7 +399,7 @@ TEST(BrushTest, EncodeBrushWithUri) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.25f},
       {.texture_layers =
-           {{.color_texture_uri = CreateTestTextureUri(),
+           {{.color_texture_id = std::string(kTestTextureId),
              .mapping = BrushPaint::TextureMapping::kWinding,
              .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
              .size = {10, 15},
@@ -443,7 +431,7 @@ TEST(BrushTest, EncodeBrushWithoutUri) {
           .particle_gap_duration = Duration32::Seconds(2),
       },
       {.texture_layers = {
-           {.color_texture_uri = CreateTestTextureUri(),
+           {.color_texture_id = std::string(kTestTextureId),
             .mapping = BrushPaint::TextureMapping::kWinding,
             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
             .wrap_y = BrushPaint::TextureWrap::kMirror,
@@ -480,8 +468,7 @@ TEST(BrushTest, EncodeBrushWithoutUri) {
   proto::BrushPaint* brush_paint_proto = brush_coat_proto->mutable_paint();
   proto::BrushPaint::TextureLayer* texture_layer_proto =
       brush_paint_proto->add_texture_layers();
-  texture_layer_proto->set_color_texture_uri(
-      CreateTestTextureUri().ToNormalizedString());
+  texture_layer_proto->set_color_texture_id(std::string(kTestTextureId));
   texture_layer_proto->set_mapping(
       proto::BrushPaint::TextureLayer::MAPPING_WINDING);
   texture_layer_proto->set_origin(
@@ -519,7 +506,7 @@ TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.25f},
       {.texture_layers = {
-           {.color_texture_uri = CreateTestTextureUri(),
+           {.color_texture_id = std::string(kTestTextureId),
             .mapping = BrushPaint::TextureMapping::kWinding,
             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
             .size = {10, 15}}}});
@@ -542,7 +529,7 @@ TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
 TEST(BrushTest, EncodeBrushPaintWithInvalidTextureMapping) {
   BrushPaint paint;
   paint.texture_layers.push_back(
-      {.color_texture_uri = CreateTestTextureUri(),
+      {.color_texture_id = std::string(kTestTextureId),
        .mapping = static_cast<BrushPaint::TextureMapping>(99),
        .size = {10, 15}});
   proto::BrushPaint paint_proto;
@@ -556,7 +543,7 @@ TEST(BrushTest, EncodeBrushPaintWithInvalidTextureMapping) {
 TEST(BrushTest, EncodeBrushPaintWithInvalidTextureOrigin) {
   BrushPaint paint;
   paint.texture_layers.push_back(
-      {.color_texture_uri = CreateTestTextureUri(),
+      {.color_texture_id = std::string(kTestTextureId),
        .origin = static_cast<BrushPaint::TextureOrigin>(99),
        .size = {10, 15}});
   proto::BrushPaint paint_proto;

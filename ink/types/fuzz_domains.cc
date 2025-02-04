@@ -51,7 +51,7 @@ fuzztest::Domain<PhysicalDistance> FinitePositivePhysicalDistance() {
 fuzztest::Domain<std::string> ValidUriString() {
   return fuzztest::InRegexp(
       "^(ink:|INK:)?(//[a-z-]+)?/"
-      "(brush-family|texture):[a-z-]+(:[1-9]{1,9})?");
+      "brush-family:[a-z-]+(:[1-9]{1,9})?");
 }
 
 fuzztest::Domain<Uri> ArbitraryUri() {

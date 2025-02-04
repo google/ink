@@ -21,7 +21,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 namespace brush_internal {
@@ -134,12 +133,6 @@ absl::Status ValidateBrushPaintTextureKeyframe(
 
 absl::Status ValidateBrushPaintTextureLayer(
     const BrushPaint::TextureLayer& layer) {
-  if (layer.color_texture_uri.GetAssetType() != Uri::AssetType::kTexture) {
-    return absl::InvalidArgumentError(absl::StrFormat(
-        "`BrushPaint::texture_layers::color_texture_uri` must be "
-        "Uri::AssetType::kTexture. Got %d",
-        static_cast<int>(layer.color_texture_uri.GetAssetType())));
-  }
   if (!IsValidBrushPaintTextureMapping(layer.mapping)) {
     return absl::InvalidArgumentError(absl::StrFormat(
         "`BrushPaint::texture_layers::mapping` holds non-enumerator value %d",
@@ -354,7 +347,7 @@ std::string ToFormattedString(const BrushPaint::TextureKeyframe& keyframe) {
 
 std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
   return absl::StrCat(
-      "TextureLayer{color_texture_uri=", texture_layer.color_texture_uri,
+      "TextureLayer{color_texture_id=", texture_layer.color_texture_id,
       ", mapping=", ToFormattedString(texture_layer.mapping),
       ", origin=", ToFormattedString(texture_layer.origin),
       ", size_unit=", ToFormattedString(texture_layer.size_unit),
@@ -389,7 +382,7 @@ bool operator==(const BrushPaint::TextureKeyframe& lhs,
 
 bool operator==(const BrushPaint::TextureLayer& lhs,
                 const BrushPaint::TextureLayer& rhs) {
-  return lhs.color_texture_uri == rhs.color_texture_uri &&
+  return lhs.color_texture_id == rhs.color_texture_id &&
          lhs.mapping == rhs.mapping && lhs.origin == rhs.origin &&
          lhs.size_unit == rhs.size_unit && lhs.wrap_x == rhs.wrap_x &&
          lhs.wrap_y == rhs.wrap_y && lhs.size == rhs.size &&
