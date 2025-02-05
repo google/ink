@@ -659,6 +659,17 @@ TEST(BrushPaintTest, MismatchedTextureMappings) {
                        HasSubstr("TextureLayer::mapping` must be the same")));
 }
 
+TEST(BrushPaintTest, MismatchedAnimationFrames) {
+  EXPECT_THAT(
+      brush_internal::ValidateBrushPaint(
+          BrushPaint{{{.color_texture_id = std::string(kTestTextureId),
+                       .animation_frames = 12},
+                      {.color_texture_id = std::string(kTestTextureId),
+                       .animation_frames = 8}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("TextureLayer::animation_frames` must be the same")));
+}
+
 void CanValidateAnyValidBrushPaint(const BrushPaint& paint) {
   EXPECT_THAT(brush_internal::ValidateBrushPaint(paint), IsOk());
 }

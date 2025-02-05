@@ -231,11 +231,18 @@ absl::Status ValidateBrushPaint(const BrushPaint& paint) {
       return status;
     }
   }
-  // TODO: b/375203215 - Remove the below check once we are able to mix
-  // rendering tiling and winding textures in a single `BrushPaint`.
   if (!paint.texture_layers.empty()) {
+    int first_animation_frames = paint.texture_layers[0].animation_frames;
     BrushPaint::TextureMapping first_mapping = paint.texture_layers[0].mapping;
     for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
+      if (layer.animation_frames != first_animation_frames) {
+        return absl::InvalidArgumentError(absl::StrCat(
+            "`BrushPaint::TextureLayer::animation_frames` must be the same for "
+            "all texture layers. Got `",
+            first_animation_frames, "` and `", layer.animation_frames, "`"));
+      }
+      // TODO: b/375203215 - Remove the below check once we are able to mix
+      // rendering tiling and winding textures in a single `BrushPaint`.
       if (layer.mapping != first_mapping) {
         return absl::InvalidArgumentError(
             absl::StrCat("`BrushPaint::TextureLayer::mapping` must be the same "

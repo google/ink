@@ -517,6 +517,8 @@ Domain<Uri> ValidBrushFamilyUri() {
           "^(ink:|INK:)?(//[a-z-]+)?/(brush-family):[a-z-]+(:[1-9]{1,9})?"));
 }
 
+namespace {
+
 // LINT.IfChange(texture_size_unit)
 Domain<BrushPaint::TextureSizeUnit> ArbitraryBrushPaintTextureSizeUnit() {
   return ElementOf({
@@ -585,8 +587,9 @@ Domain<BrushPaint::TextureKeyframe> ValidBrushPaintTextureKeyframe() {
 }
 
 fuzztest::Domain<BrushPaint::TextureLayer>
-ValidBrushPaintTextureLayerWithMapping(BrushPaint::TextureMapping mapping) {
-  auto texture_layer = [mapping](Vec size) {
+ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
+    BrushPaint::TextureMapping mapping, int animation_frames) {
+  auto texture_layer = [mapping, animation_frames](Vec size) {
     return StructOf<BrushPaint::TextureLayer>(
         Arbitrary<std::string>(), Just(mapping),
         ArbitraryBrushPaintTextureOrigin(),
@@ -596,7 +599,7 @@ ValidBrushPaintTextureLayerWithMapping(BrushPaint::TextureMapping mapping) {
         FiniteAngle(),
         StructOf<Vec>(InRange<float>(0.f, size.x), InRange<float>(0.f, size.y)),
         StructOf<Vec>(InRange<float>(0.f, 1.f), InRange<float>(0.f, 1.f)),
-        FiniteAngle(), InRange(0.f, 1.f), Positive<int>(),
+        FiniteAngle(), InRange(0.f, 1.f), Just(animation_frames),
         VectorOf(ValidBrushPaintTextureKeyframe()),
         ArbitraryBrushPaintBlendMode());
   };
@@ -604,13 +607,16 @@ ValidBrushPaintTextureLayerWithMapping(BrushPaint::TextureMapping mapping) {
                  StructOf<Vec>(FinitePositiveFloat(), FinitePositiveFloat()));
 }
 
+}  // namespace
+
 fuzztest::Domain<BrushPaint> ValidBrushPaint() {
   return FlatMap(
-      [](BrushPaint::TextureMapping mapping) {
+      [](BrushPaint::TextureMapping mapping, int animation_frames) {
         return fuzztest::StructOf<BrushPaint>(
-            VectorOf(ValidBrushPaintTextureLayerWithMapping(mapping)));
+            VectorOf(ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
+                mapping, animation_frames)));
       },
-      ArbitraryBrushPaintTextureMapping());
+      ArbitraryBrushPaintTextureMapping(), Positive<int>());
 }
 
 Domain<BrushTip> ValidBrushTip() {
