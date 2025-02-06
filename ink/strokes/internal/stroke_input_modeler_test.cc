@@ -383,12 +383,12 @@ TEST(StrokeInputModelerTest, StartClearsAfterExtending) {
   EXPECT_EQ(modeler.GetState().real_input_count, 0);
 }
 
-TEST(StrokeInputModelerTest, LargeBrushEpsilonIsRespected) {
+TEST(StrokeInputModelerTest, LargeBrushEpsilonIsRespectedWithSpringModelV1) {
   std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
 
   StrokeInputModeler modeler;
   float brush_epsilon = 3;
-  modeler.StartStroke(BrushFamily::DefaultInputModel(), brush_epsilon);
+  modeler.StartStroke(BrushFamily::SpringModelV1{}, brush_epsilon);
 
   modeler.ExtendStroke(input_batches[0], input_batches[1], Duration32::Zero());
   modeler.ExtendStroke(input_batches[1], input_batches[2], Duration32::Zero());
@@ -465,12 +465,12 @@ TEST(StrokeInputModelerTest, LargeBrushEpsilonIsRespected) {
               PositionsAreSeparatedByAtLeast(brush_epsilon));
 }
 
-TEST(StrokeInputModelerTest, LargeBrushEpsilonIsRespectedWithSpringModelV2) {
+TEST(StrokeInputModelerTest, LargeBrushEpsilonIsRespected) {
   std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
 
   StrokeInputModeler modeler;
   float brush_epsilon = 3;
-  modeler.StartStroke(BrushFamily::SpringModelV2{}, brush_epsilon);
+  modeler.StartStroke(BrushFamily::DefaultInputModel(), brush_epsilon);
 
   modeler.ExtendStroke(input_batches[0], input_batches[1], Duration32::Zero());
   modeler.ExtendStroke(input_batches[1], input_batches[2], Duration32::Zero());

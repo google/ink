@@ -453,7 +453,7 @@ TEST(BrushTest, EncodeBrushWithoutUri) {
   brush_proto.set_epsilon_stroke_space(1.1);
   EncodeColor(Color::Green(), *brush_proto.mutable_color());
   proto::BrushFamily* brush_family_proto = brush_proto.mutable_brush_family();
-  brush_family_proto->mutable_input_model()->mutable_spring_model_v1();
+  brush_family_proto->mutable_input_model()->mutable_spring_model_v2();
   proto::BrushCoat* brush_coat_proto = brush_family_proto->add_coats();
   proto::BrushTip* brush_tip_proto = brush_coat_proto->add_tips();
   brush_tip_proto->set_scale_x(1.f);
