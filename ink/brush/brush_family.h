@@ -95,12 +95,14 @@ class BrushFamily {
   //    - offset_jitter must be in interval [0, 1].
   //    - rotation jitter must be a finite.
   //    - opacity must be in interval [0, 1].
+  //    - animation_frames must be greater than 0.
   //    - For each TextureKeyframe the following must hold:
   //      ~ progress has to be in interval [0, 1].
   //      ~ size components, if present, must be finite and greater than 0.
   //      ~ offset components, if present, must be in interval [0, 1].
   //      ~ rotation, if present, must finite.
   //      ~ opacity, if present, must be in interval [0, 1].
+  //  * All texture layers must have the same animation_frames value.
   //  * For now, all texture layers must use the same `TextureMapping` value.
   //    TODO: b/375203215 - Relax this requirement once we are able to mix
   //    rendering tiling and winding textures in a single `BrushPaint`.
