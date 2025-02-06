@@ -352,7 +352,7 @@ MATCHER_P(BrushFamilyEqMatcher, expected,
   return ExplainMatchResult(
       AllOf(Property(&BrushFamily::GetCoats,
                      Pointwise(BrushCoatEq(), expected.GetCoats())),
-            Property(&BrushFamily::GetUri, Eq(expected.GetUri())),
+            Property(&BrushFamily::GetId, Eq(expected.GetId())),
             Property(&BrushFamily::GetInputModel,
                      BrushFamilyInputModelEq(expected.GetInputModel()))),
       arg, result_listener);

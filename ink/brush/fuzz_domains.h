@@ -25,7 +25,6 @@
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/easing_function.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 
@@ -49,9 +48,6 @@ fuzztest::Domain<BrushFamily> BrushFamilyWithoutUri();
 
 // The domain of all valid brush family input models.
 fuzztest::Domain<BrushFamily::InputModel> ValidBrushFamilyInputModel();
-
-// The domain of all valid brush family URIs.
-fuzztest::Domain<Uri> ValidBrushFamilyUri();
 
 // The domain of all valid brush paints.
 fuzztest::Domain<BrushPaint> ValidBrushPaint();
