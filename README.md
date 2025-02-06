@@ -50,9 +50,9 @@ need to include the parts of the library that you need.
 ```
 
 *   `color`: color spaces, encoding, and format conversion.
-*   `types`: utility types; time, units, constants, small arrays, URIs.
+*   `types`: utility types; time, units, constants, small arrays.
 *   `geometry`: geometric types (point, segment, triangle, rect, quad), meshes,
-    transforms, utility functons, and algorithms (intersection, envelope).
+    transforms, utility functions, and algorithms (intersection, envelope).
 *   `strokes`: the primary `Stroke` data type and `InProgressStroke` builder.
 *   `rendering`: rendering utilities for strokes. Currently only has support for
     android.graphics.Mesh based rendering.

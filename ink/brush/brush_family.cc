@@ -30,7 +30,6 @@
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 
@@ -47,49 +46,20 @@ uint32_t BrushFamily::MaxBrushCoats() {
   return 10;
 }
 
-BrushFamily::BrushFamily(std::vector<BrushCoat> coats, std::optional<Uri> uri,
-                         const InputModel& input_model)
-    : coats_(std::move(coats)),
-      uri_(std::move(uri)),
-      input_model_(input_model) {}
-
-absl::StatusOr<BrushFamily> BrushFamily::Create(
-    absl::Span<const BrushCoat> coats, absl::string_view uri_string,
-    const InputModel& input_model) {
-  if (uri_string.empty()) {
-    return BrushFamily::Create(coats, std::nullopt, input_model);
-  }
-  absl::StatusOr<Uri> uri = Uri::Parse(uri_string);
-  if (!uri.ok()) {
-    return uri.status();
-  }
-  return BrushFamily::Create(coats, *uri, input_model);
-}
+BrushFamily::BrushFamily(absl::Span<const BrushCoat> coats,
+                         absl::string_view id, const InputModel& input_model)
+    : coats_(coats.begin(), coats.end()), id_(id), input_model_(input_model) {}
 
 absl::StatusOr<BrushFamily> BrushFamily::Create(const BrushTip& tip,
                                                 const BrushPaint& paint,
-                                                absl::string_view uri_string,
+                                                absl::string_view id,
                                                 const InputModel& input_model) {
   BrushCoat coat = {.tips = {tip}, .paint = paint};
-  return BrushFamily::Create(absl::MakeConstSpan(&coat, 1), uri_string,
-                             input_model);
+  return BrushFamily::Create(absl::MakeConstSpan(&coat, 1), id, input_model);
 }
-
-namespace {
-
-absl::Status ValidateBrushUri(const Uri& uri) {
-  if (uri.GetAssetType() != Uri::AssetType::kBrushFamily) {
-    return absl::InvalidArgumentError(absl::StrFormat(
-        "URI asset-type for a `BrushFamily` must be '%v'. Got '%v'",
-        Uri::AssetType::kBrushFamily, uri.GetAssetType()));
-  }
-  return absl::OkStatus();
-}
-
-}  // namespace
 
 absl::StatusOr<BrushFamily> BrushFamily::Create(
-    absl::Span<const BrushCoat> coats, std::optional<Uri> uri,
+    absl::Span<const BrushCoat> coats, absl::string_view id,
     const InputModel& input_model) {
   if (coats.size() > MaxBrushCoats()) {
     return absl::InvalidArgumentError(
@@ -102,29 +72,14 @@ absl::StatusOr<BrushFamily> BrushFamily::Create(
       return status;
     }
   }
-  if (uri.has_value()) {
-    if (absl::Status status = ValidateBrushUri(*uri); !status.ok()) {
-      return status;
-    }
-  }
-  return BrushFamily(std::vector<BrushCoat>(coats.begin(), coats.end()),
-                     std::move(uri), input_model);
-}
-
-absl::StatusOr<BrushFamily> BrushFamily::Create(const BrushTip& tip,
-                                                const BrushPaint& paint,
-                                                std::optional<Uri> uri,
-                                                const InputModel& input_model) {
-  BrushCoat coat = {.tips = {tip}, .paint = paint};
-  return BrushFamily::Create(absl::MakeConstSpan(&coat, 1), std::move(uri),
-                             input_model);
+  return BrushFamily(coats, id, input_model);
 }
 
 std::string BrushFamily::ToFormattedString() const {
   std::string formatted =
       absl::StrCat("BrushFamily(coats=[", absl::StrJoin(coats_, ", "), "]");
-  if (uri_.has_value()) {
-    absl::StrAppend(&formatted, ", uri='", *uri_, "'");
+  if (!id_.empty()) {
+    absl::StrAppend(&formatted, ", id='", id_, "'");
   }
   formatted.push_back(')');
   return formatted;

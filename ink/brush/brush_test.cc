@@ -96,7 +96,7 @@ TEST(BrushTest, Stringify) {
                            .keyframes = {{.progress = 0.1,
                                           .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kDstOut}}},
-      "/brush-family:big-square");
+      "big-square");
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Blue(), 3, .1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -113,7 +113,7 @@ TEST(BrushTest, Stringify) {
       "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
       "opacity=1, keyframes={TextureKeyframe{progress=0.1, "
       "rotation=0.25π}}, blend_mode=kDstOut}}}}], "
-      "uri='/brush-family:big-square'))");
+      "id='big-square'))");
 }
 
 TEST(BrushTest, Create) {
