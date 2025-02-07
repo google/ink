@@ -33,13 +33,11 @@
 #include "ink/brush/type_matchers.h"
 #include "ink/color/color.h"
 #include "ink/geometry/vec.h"
-#include "ink/storage/brush_provider.h"
 #include "ink/storage/color.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/coded.pb.h"
 #include "ink/storage/proto_matchers.h"
 #include "ink/types/duration.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 namespace {
@@ -65,7 +63,7 @@ TEST(BrushTest, DecodeBrushProto) {
   proto::BrushPaint* paint_proto = coat_proto->mutable_paint();
   proto::BrushPaint::TextureLayer* texture_layer_proto =
       paint_proto->add_texture_layers();
-  texture_layer_proto->set_color_texture_id(std::string(kTestTextureId));
+  texture_layer_proto->set_client_color_texture_id(std::string(kTestTextureId));
   texture_layer_proto->set_mapping(
       proto::BrushPaint::TextureLayer::MAPPING_WINDING);
   texture_layer_proto->set_origin(
@@ -86,7 +84,7 @@ TEST(BrushTest, DecodeBrushProto) {
   absl::StatusOr<BrushFamily> expected_family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.5f},
       {.texture_layers = {
-           {.color_texture_id = std::string(kTestTextureId),
+           {.client_color_texture_id = std::string(kTestTextureId),
             .mapping = BrushPaint::TextureMapping::kWinding,
             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
@@ -103,33 +101,6 @@ TEST(BrushTest, DecodeBrushProto) {
   absl::StatusOr<Brush> brush = DecodeBrush(brush_proto);
   ASSERT_EQ(brush.status(), absl::OkStatus());
   EXPECT_THAT(*brush, BrushEq(*expected_brush));
-}
-
-TEST(BrushTest, DecodeBrushWithStockMarkerUri) {
-  proto::Brush brush_proto;
-  brush_proto.set_size_stroke_space(20);
-  brush_proto.set_epsilon_stroke_space(0.3);
-  brush_proto.set_brush_family_uri("/brush-family:marker");
-  EncodeColor(Color::Green(), *brush_proto.mutable_color());
-
-  absl::StatusOr<Brush> brush = DecodeBrush(brush_proto);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
-  EXPECT_THAT(
-      brush->GetFamily().GetCoats(),
-      ElementsAre(Field(&BrushCoat::tips,
-                        ElementsAre(Field(&BrushTip::corner_rounding, 1.0f)))));
-}
-
-TEST(BrushTest, DecodeBrushWithStockInkpenUri) {
-  proto::Brush brush_proto;
-  brush_proto.set_size_stroke_space(20);
-  brush_proto.set_epsilon_stroke_space(0.3);
-  brush_proto.set_brush_family_uri("/brush-family:inkpen");
-  EncodeColor(Color::Green(), *brush_proto.mutable_color());
-
-  ASSERT_EQ(absl::OkStatus(), DecodeBrush(brush_proto).status());
-  // TODO: b/293305476 - Add some expectations if/when the "inkpen" stock brush
-  // is actually defined.
 }
 
 TEST(BrushTest, DecodeBrushWithInvalidBrushSize) {
@@ -154,29 +125,6 @@ TEST(BrushTest, DecodeBrushWithInvalidBrushEpsilon) {
   absl::Status invalid_epsilon = DecodeBrush(brush_proto).status();
   EXPECT_EQ(invalid_epsilon.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(invalid_epsilon.message(), HasSubstr("epsilon"));
-}
-
-TEST(BrushTest, DecodeBrushWithNoBrushFamily) {
-  proto::Brush brush_proto;
-  brush_proto.set_size_stroke_space(20);
-  brush_proto.set_epsilon_stroke_space(0.1);
-  EncodeColor(Color::Green(), *brush_proto.mutable_color());
-
-  absl::Status invalid_family = DecodeBrush(brush_proto).status();
-  EXPECT_EQ(invalid_family.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(invalid_family.message(), HasSubstr("brush family"));
-}
-
-TEST(BrushTest, DecodeBrushWithInvalidBrushFamilyUri) {
-  proto::Brush brush_proto;
-  brush_proto.set_size_stroke_space(20);
-  brush_proto.set_epsilon_stroke_space(0.3);
-  brush_proto.set_brush_family_uri("alsdkjflaskjdflaskjdf");
-  EncodeColor(Color::Green(), *brush_proto.mutable_color());
-
-  absl::Status invalid_uri = DecodeBrush(brush_proto).status();
-  EXPECT_EQ(invalid_uri.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(invalid_uri.message(), HasSubstr("Invalid uri"));
 }
 
 // This test ensures that we set correct proto field defaults when adding new
@@ -249,56 +197,6 @@ TEST(BrushTest, DecodeBrushBehaviorSourceNodeWithUnspecifiedOutOfRange) {
               HasSubstr("invalid ink.proto.BrushBehavior.OutOfRange value"));
 }
 
-class RoundRectBrushProvider : public BrushProvider {
- protected:
-  absl::StatusOr<BrushFamily> GetClientBrushFamily(
-      const Uri& uri) const override {
-    if (uri.GetRegName() == "test" && uri.GetAssetName() == "round-rect") {
-      return BrushFamily::Create(
-          BrushTip{.corner_rounding = 0.25f},
-          {.texture_layers =
-               {{.color_texture_id = std::string(kTestTextureId),
-                 .mapping = BrushPaint::TextureMapping::kWinding,
-                 .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
-                 .size = {10, 15},
-                 .keyframes = {{.progress = 0.8f,
-                                .size = std::optional<Vec>({10, 15}),
-                                .opacity = std::optional<float>(0.6f)}},
-                 .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
-          "//test/brush-family:round-rect");
-    }
-    return BrushProvider::GetClientBrushFamily(uri);
-  }
-};
-
-TEST(BrushTest, DecodeBrushWithClientProvidedBrushUri) {
-  proto::Brush brush_proto;
-  brush_proto.set_size_stroke_space(20);
-  brush_proto.set_epsilon_stroke_space(0.3);
-  brush_proto.set_brush_family_uri("//test/brush-family:round-rect");
-  EncodeColor(Color::Green(), *brush_proto.mutable_color());
-
-  absl::StatusOr<Brush> brush =
-      DecodeBrush(brush_proto, RoundRectBrushProvider());
-  ASSERT_EQ(brush.status(), absl::OkStatus());
-  EXPECT_THAT(brush->GetFamily().GetCoats(),
-              ElementsAre(Field(
-                  &BrushCoat::tips,
-                  ElementsAre(Field(&BrushTip::corner_rounding, 0.25f)))));
-}
-
-TEST(BrushTest, DecodeBrushWithUnprovidedBrushFamilyUri) {
-  proto::Brush brush_proto;
-  brush_proto.set_size_stroke_space(20);
-  brush_proto.set_epsilon_stroke_space(0.3);
-  brush_proto.set_brush_family_uri("//test/brush-family:does-not-exist");
-  EncodeColor(Color::Green(), *brush_proto.mutable_color());
-
-  absl::Status missing_uri =
-      DecodeBrush(brush_proto, RoundRectBrushProvider()).status();
-  EXPECT_EQ(missing_uri.code(), absl::StatusCode::kNotFound);
-}
-
 // This test ensures that we set correct proto field defaults when adding new
 // BrushPaint struct fields, to avoid a repeat of b/337238252.
 TEST(BrushTest, EmptyBrushPaintProtoDecodesToDefaultBrushPaint) {
@@ -333,7 +231,8 @@ TEST(BrushTest, DecodeBrushPaintWithInvalidTextureKeyframe) {
         paint_proto->add_texture_layers();
     texture_layer_proto->set_size_unit(
         proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_SIZE);
-    texture_layer_proto->set_color_texture_id(std::string(kTestTextureId));
+    texture_layer_proto->set_client_color_texture_id(
+        std::string(kTestTextureId));
     texture_layer_proto->set_origin(
         proto::BrushPaint::TextureLayer::ORIGIN_FIRST_STROKE_INPUT);
     texture_layer_proto->set_mapping(
@@ -358,7 +257,8 @@ TEST(BrushTest, DecodeBrushPaintWithInvalidTextureKeyframe) {
         paint_proto->add_texture_layers();
     texture_layer_proto->set_size_unit(
         proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_SIZE);
-    texture_layer_proto->set_color_texture_id(std::string(kTestTextureId));
+    texture_layer_proto->set_client_color_texture_id(
+        std::string(kTestTextureId));
     texture_layer_proto->set_origin(
         proto::BrushPaint::TextureLayer::ORIGIN_FIRST_STROKE_INPUT);
     texture_layer_proto->set_mapping(
@@ -395,34 +295,7 @@ void DecodeBrushTipDoesNotCrashOnArbitraryInput(
 }
 FUZZ_TEST(BrushTest, DecodeBrushTipDoesNotCrashOnArbitraryInput);
 
-TEST(BrushTest, EncodeBrushWithUri) {
-  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
-      BrushTip{.corner_rounding = 0.25f},
-      {.texture_layers =
-           {{.color_texture_id = std::string(kTestTextureId),
-             .mapping = BrushPaint::TextureMapping::kWinding,
-             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
-             .size = {10, 15},
-             .keyframes = {{.progress = 0.8f,
-                            .size = std::optional<Vec>({10, 15}),
-                            .opacity = std::optional<float>(0.6f)}}}}},
-      "//ink/brush-family:marker");
-  ASSERT_EQ(family.status(), absl::OkStatus());
-  absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
-  proto::Brush brush_proto_out;
-  EncodeBrush(*brush, brush_proto_out);
-
-  proto::Brush brush_proto;
-  brush_proto.set_size_stroke_space(10);
-  brush_proto.set_epsilon_stroke_space(1.1);
-  EncodeColor(Color::Green(), *brush_proto.mutable_color());
-  brush_proto.set_brush_family_uri("/brush-family:marker");
-
-  EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto));
-}
-
-TEST(BrushTest, EncodeBrushWithoutUri) {
+TEST(BrushTest, EncodeBrush) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{
           .corner_rounding = 0.25f,
@@ -431,7 +304,7 @@ TEST(BrushTest, EncodeBrushWithoutUri) {
           .particle_gap_duration = Duration32::Seconds(2),
       },
       {.texture_layers = {
-           {.color_texture_id = std::string(kTestTextureId),
+           {.client_color_texture_id = std::string(kTestTextureId),
             .mapping = BrushPaint::TextureMapping::kWinding,
             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
             .wrap_y = BrushPaint::TextureWrap::kMirror,
@@ -468,7 +341,7 @@ TEST(BrushTest, EncodeBrushWithoutUri) {
   proto::BrushPaint* brush_paint_proto = brush_coat_proto->mutable_paint();
   proto::BrushPaint::TextureLayer* texture_layer_proto =
       brush_paint_proto->add_texture_layers();
-  texture_layer_proto->set_color_texture_id(std::string(kTestTextureId));
+  texture_layer_proto->set_client_color_texture_id(std::string(kTestTextureId));
   texture_layer_proto->set_mapping(
       proto::BrushPaint::TextureLayer::MAPPING_WINDING);
   texture_layer_proto->set_origin(
@@ -502,34 +375,34 @@ TEST(BrushTest, EncodeBrushWithoutUri) {
 }
 
 TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
-  // Create a brush family with no URI.
+  // Create a brush family with no ID.
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.25f},
       {.texture_layers = {
-           {.color_texture_id = std::string(kTestTextureId),
+           {.client_color_texture_id = std::string(kTestTextureId),
             .mapping = BrushPaint::TextureMapping::kWinding,
             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
             .size = {10, 15}}}});
   ASSERT_EQ(family.status(), absl::OkStatus());
-  // Initialize the proto with a non-empty URI, and a different brush tip.
+  // Initialize the proto with a non-empty ID, and a different brush tip.
   proto::BrushFamily family_proto_out;
   family_proto_out.add_coats()->add_tips()->set_corner_rounding(1.0f);
-  family_proto_out.set_uri("/brush-family:marker");
+  family_proto_out.set_client_brush_family_id("marker");
 
   EncodeBrushFamily(*family, family_proto_out);
 
-  // After encoding, the old tip proto should be replaced, and the old URI
+  // After encoding, the old tip proto should be replaced, and the old ID
   // should get cleared.
   ASSERT_EQ(family_proto_out.coats_size(), 1u);
   ASSERT_EQ(family_proto_out.coats(0).tips_size(), 1u);
   EXPECT_EQ(family_proto_out.coats(0).tips(0).corner_rounding(), 0.25f);
-  EXPECT_FALSE(family_proto_out.has_uri());
+  EXPECT_FALSE(family_proto_out.has_client_brush_family_id());
 }
 
 TEST(BrushTest, EncodeBrushPaintWithInvalidTextureMapping) {
   BrushPaint paint;
   paint.texture_layers.push_back(
-      {.color_texture_id = std::string(kTestTextureId),
+      {.client_color_texture_id = std::string(kTestTextureId),
        .mapping = static_cast<BrushPaint::TextureMapping>(99),
        .size = {10, 15}});
   proto::BrushPaint paint_proto;
@@ -543,7 +416,7 @@ TEST(BrushTest, EncodeBrushPaintWithInvalidTextureMapping) {
 TEST(BrushTest, EncodeBrushPaintWithInvalidTextureOrigin) {
   BrushPaint paint;
   paint.texture_layers.push_back(
-      {.color_texture_id = std::string(kTestTextureId),
+      {.client_color_texture_id = std::string(kTestTextureId),
        .origin = static_cast<BrushPaint::TextureOrigin>(99),
        .size = {10, 15}});
   proto::BrushPaint paint_proto;
@@ -643,10 +516,6 @@ TEST(BrushTest, EncodeBrushBehaviorDampingNodeWithInvalidDampingSource) {
   EXPECT_EQ(node_proto.damping_node().damping_gap(), 1.0f);
 }
 
-// Round-tripping can only be guaranteed in general for brushes that don't have
-// a brush family URI; if there's a URI, then only the URI is encoded (instead
-// of the whole brush family), and then decoding is dependent on the
-// `BrushProvider` implementation.
 void EncodeDecodeBrushRoundTrip(const Brush& brush_in) {
   proto::Brush brush_proto_in;
   EncodeBrush(brush_in, brush_proto_in);
@@ -659,7 +528,7 @@ void EncodeDecodeBrushRoundTrip(const Brush& brush_in) {
   EncodeBrush(*brush_out, brush_proto_out);
   EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto_in));
 }
-FUZZ_TEST(BrushTest, EncodeDecodeBrushRoundTrip).WithDomains(BrushWithoutUri());
+FUZZ_TEST(BrushTest, EncodeDecodeBrushRoundTrip).WithDomains(ArbitraryBrush());
 
 void EncodeDecodeBrushFamilyRoundTrip(const BrushFamily& family_in) {
   proto::BrushFamily family_proto_in;

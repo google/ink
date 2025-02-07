@@ -90,14 +90,14 @@ JNI_METHOD(brush, BrushPaint, void, nativeFreeBrushPaint)
 // long.
 JNI_METHOD_INNER(brush, BrushPaint, TextureLayer, jlong,
                  nativeCreateTextureLayer)
-(JNIEnv* env, jobject thiz, jstring color_texture_id, jfloat size_x,
+(JNIEnv* env, jobject thiz, jstring client_color_texture_id, jfloat size_x,
  jfloat size_y, jfloat offset_x, jfloat offset_y, jfloat rotation_in_radians,
  jfloat opacity, jint animation_frames, jint size_unit, jint origin,
  jint mapping, jint wrap_x, jint wrap_y, jint blend_mode) {
   ink::BrushPaint::TextureLayer* texture_layer =
       new ink::BrushPaint::TextureLayer{
-          .color_texture_id =
-              ink::jni::JStringToStdString(env, color_texture_id),
+          .client_color_texture_id =
+              ink::jni::JStringToStdString(env, client_color_texture_id),
           .mapping = JIntToMapping(mapping),
           .origin = JIntToOrigin(origin),
           .size_unit = JIntToSizeUnit(size_unit),

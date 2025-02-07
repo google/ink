@@ -33,7 +33,6 @@
 #include "ink/rendering/texture_bitmap_store.h"
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/stroke.h"
-#include "ink/types/uri.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkMesh.h"
 #include "include/gpu/ganesh/GrDirectContext.h"

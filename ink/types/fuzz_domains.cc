@@ -14,16 +14,9 @@
 
 #include "ink/types/fuzz_domains.h"
 
-#include <string>
-#include <utility>
-
 #include "fuzztest/fuzztest.h"
-#include "absl/log/absl_check.h"
-#include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
 #include "ink/types/duration.h"
 #include "ink/types/physical_distance.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 
@@ -46,22 +39,6 @@ fuzztest::Domain<PhysicalDistance> FinitePositivePhysicalDistance() {
   return fuzztest::Filter(&PhysicalDistance::IsFinite,
                           fuzztest::Map(&PhysicalDistance::Centimeters,
                                         fuzztest::Positive<float>()));
-}
-
-fuzztest::Domain<std::string> ValidUriString() {
-  return fuzztest::InRegexp(
-      "^(ink:|INK:)?(//[a-z-]+)?/"
-      "brush-family:[a-z-]+(:[1-9]{1,9})?");
-}
-
-fuzztest::Domain<Uri> ArbitraryUri() {
-  return fuzztest::Map(
-      [](absl::string_view uri_string) {
-        absl::StatusOr<Uri> uri = Uri::Parse(uri_string);
-        ABSL_CHECK_OK(uri);
-        return *std::move(uri);
-      },
-      ValidUriString());
 }
 
 }  // namespace ink

@@ -354,7 +354,8 @@ std::string ToFormattedString(const BrushPaint::TextureKeyframe& keyframe) {
 
 std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
   return absl::StrCat(
-      "TextureLayer{color_texture_id=", texture_layer.color_texture_id,
+      "TextureLayer{",
+      "client_color_texture_id=", texture_layer.client_color_texture_id,
       ", mapping=", ToFormattedString(texture_layer.mapping),
       ", origin=", ToFormattedString(texture_layer.origin),
       ", size_unit=", ToFormattedString(texture_layer.size_unit),
@@ -389,7 +390,7 @@ bool operator==(const BrushPaint::TextureKeyframe& lhs,
 
 bool operator==(const BrushPaint::TextureLayer& lhs,
                 const BrushPaint::TextureLayer& rhs) {
-  return lhs.color_texture_id == rhs.color_texture_id &&
+  return lhs.client_color_texture_id == rhs.client_color_texture_id &&
          lhs.mapping == rhs.mapping && lhs.origin == rhs.origin &&
          lhs.size_unit == rhs.size_unit && lhs.wrap_x == rhs.wrap_x &&
          lhs.wrap_y == rhs.wrap_y && lhs.size == rhs.size &&
