@@ -38,11 +38,6 @@ namespace ink {
 // management APIs. Aside from being checked for valid formatting and being
 // forwarded on copy or move, the URI will not*** be used by Ink APIs that
 // consume a `BrushFamily`.
-//
-// *** During the implementation phase of `BrushTip` and `BrushPaint`, the URI
-// will be inspected by stroke mesh creation to enable a set of stock Ink
-// brushes. This behavior will be replaced when a helper library is able to fill
-// out the specification of the stock brushes using the new tip and paint types.
 class BrushFamily {
  public:
   // LINT.IfChange(input_model_types)
