@@ -22,7 +22,6 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
-#include "ink/storage/brush_provider.h"
 #include "ink/storage/proto/brush.pb.h"
 
 namespace ink {
@@ -43,9 +42,7 @@ void EncodeBrushBehaviorNode(const BrushBehavior::Node& node,
 
 // Decodes the proto into a brush object. Returns an error if the proto is
 // invalid.
-absl::StatusOr<Brush> DecodeBrush(
-    const proto::Brush& brush_proto,
-    const BrushProvider& brush_provider = BrushProvider());
+absl::StatusOr<Brush> DecodeBrush(const proto::Brush& brush_proto);
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto);
 // For the below decoding functions, note that only minimal validation is done

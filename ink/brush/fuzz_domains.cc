@@ -19,14 +19,12 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
-#include <optional>
 #include <utility>
 #include <vector>
 
 #include "fuzztest/fuzztest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
@@ -42,7 +40,6 @@
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 #include "ink/types/fuzz_domains.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 namespace {
@@ -54,7 +51,6 @@ using fuzztest::Filter;
 using fuzztest::Finite;
 using fuzztest::FlatMap;
 using fuzztest::InRange;
-using fuzztest::InRegexp;
 using fuzztest::Just;
 using fuzztest::Map;
 using fuzztest::NonNegative;
@@ -449,18 +445,6 @@ Domain<Brush> ArbitraryBrush() {
       PairOfFinitePositiveAscendingFloats());
 }
 
-Domain<Brush> BrushWithoutUri() {
-  return Map(
-      [](const BrushFamily& family, const Color& color,
-         std::pair<float, float> size_and_epsilon) {
-        return Brush::Create(family, color, size_and_epsilon.first,
-                             size_and_epsilon.second)
-            .value();
-      },
-      BrushFamilyWithoutUri(), ArbitraryColor(),
-      PairOfFinitePositiveAscendingFloats());
-}
-
 Domain<BrushBehavior> ValidBrushBehavior() {
   return StructOf<BrushBehavior>(ValidBrushBehaviorNodeForest());
 }
@@ -483,38 +467,17 @@ Domain<BrushCoat> ValidBrushCoat() {
 
 Domain<BrushFamily> ArbitraryBrushFamily() {
   return Map(
-      [](absl::Span<const BrushCoat> coats, const std::optional<Uri>& uri,
+      [](absl::Span<const BrushCoat> coats, const std::string id,
          const BrushFamily::InputModel& input_model) {
-        return BrushFamily::Create(coats, uri, input_model).value();
+        return BrushFamily::Create(coats, id, input_model).value();
       },
       VectorOf(ValidBrushCoat()).WithMaxSize(BrushFamily::MaxBrushCoats()),
-      OptionalOf(ValidBrushFamilyUri()), ValidBrushFamilyInputModel());
-}
-
-Domain<BrushFamily> BrushFamilyWithoutUri() {
-  return Map(
-      [](absl::Span<const BrushCoat> coats,
-         const BrushFamily::InputModel& input_model) {
-        return BrushFamily::Create(coats, std::nullopt, input_model).value();
-      },
-      VectorOf(ValidBrushCoat()).WithMaxSize(BrushFamily::MaxBrushCoats()),
-      ValidBrushFamilyInputModel());
+      Arbitrary<std::string>(), ValidBrushFamilyInputModel());
 }
 
 Domain<BrushFamily::InputModel> ValidBrushFamilyInputModel() {
   return VariantOf(StructOf<BrushFamily::SpringModelV1>(),
                    StructOf<BrushFamily::SpringModelV2>());
-}
-
-Domain<Uri> ValidBrushFamilyUri() {
-  return Map(
-      [](absl::string_view uri_string) {
-        absl::StatusOr<Uri> uri = Uri::Parse(uri_string);
-        ABSL_CHECK_OK(uri);
-        return *std::move(uri);
-      },
-      InRegexp(
-          "^(ink:|INK:)?(//[a-z-]+)?/(brush-family):[a-z-]+(:[1-9]{1,9})?"));
 }
 
 namespace {

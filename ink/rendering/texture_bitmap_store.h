@@ -24,7 +24,9 @@
 
 namespace ink {
 
-// Interface for loading texture bitmap data for texture ids.
+// Interface for loading texture bitmap data for texture ids. Implementations
+// of this define the mapping between the texture IDs used by a client and the
+// corresponding bitmap data.
 class TextureBitmapStore {
  public:
   virtual ~TextureBitmapStore() = default;

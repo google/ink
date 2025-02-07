@@ -70,14 +70,14 @@ Brush CreateRectangularTestBrush() {
           .corner_rounding = 0,
           .rotation = kFullTurn / 8,
       },
-      {.texture_layers = {{.color_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .size = {3, 5},
-                           .size_jitter = {0.1, 2},
-                           .keyframes = {{.progress = 0.1,
-                                          .rotation = kFullTurn / 8}},
-                           .blend_mode = BrushPaint::BlendMode::kSrcIn}}},
+      {.texture_layers =
+           {{.client_color_texture_id = std::string(kTestTextureId),
+             .mapping = BrushPaint::TextureMapping::kWinding,
+             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
+             .size = {3, 5},
+             .size_jitter = {0.1, 2},
+             .keyframes = {{.progress = 0.1, .rotation = kFullTurn / 8}},
+             .blend_mode = BrushPaint::BlendMode::kSrcIn}}},
       "//test/brush-family:awesome-rectangular-brush");
   ABSL_CHECK_OK(family);
   Color color;
@@ -94,13 +94,13 @@ Brush CreateCircularTestBrush() {
           .scale = {0.75, 0.75},
           .corner_rounding = 1,
       },
-      {.texture_layers = {{.color_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .size = {3, 5},
-                           .keyframes = {{.progress = 0.1,
-                                          .rotation = kFullTurn / 8}},
-                           .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
+      {.texture_layers =
+           {{.client_color_texture_id = std::string(kTestTextureId),
+             .mapping = BrushPaint::TextureMapping::kWinding,
+             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
+             .size = {3, 5},
+             .keyframes = {{.progress = 0.1, .rotation = kFullTurn / 8}},
+             .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
       "//test/brush-family:awesome-circular-brush");
   ABSL_CHECK_OK(family);
   Color color;

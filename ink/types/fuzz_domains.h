@@ -20,7 +20,6 @@
 #include "fuzztest/fuzztest.h"
 #include "ink/types/duration.h"
 #include "ink/types/physical_distance.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 
@@ -34,11 +33,6 @@ fuzztest::Domain<Duration32> FiniteNonNegativeDuration32();
 fuzztest::Domain<PhysicalDistance> ArbitraryPhysicalDistance();
 // The domain of all physical distances that are finite and strictly positive.
 fuzztest::Domain<PhysicalDistance> FinitePositivePhysicalDistance();
-
-// The domain of all valid Ink URI strings.
-fuzztest::Domain<std::string> ValidUriString();
-// The domain of all possible Ink URIs.
-fuzztest::Domain<Uri> ArbitraryUri();
 
 }  // namespace ink
 

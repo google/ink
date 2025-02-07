@@ -63,26 +63,20 @@ message Brush {
   optional float epsilon_stroke_space = 3;
 
   // The `BrushFamily` specifies the `BrushTip` and the `BrushPaint` for a given
-  // `brush` and can be specified directly or via its `uri`. If only the `uri`
-  // is given, the client application is repsonsible for constructing a full
-  // `BrushFamily` from the `uri`.
+  // `brush`.
   //
   // Updating the family will result in regenerating the stroke mesh if the
   // `BrushTip` has changed, but not if only the paint has changed.
   //
   // Client apps will typically want to provide a "brush picker" UI that
   // effectively allows the user to update this field.
-  oneof family {
-    BrushFamily brush_family = 4;
-    string brush_family_uri = 5;
-  }
+  optional BrushFamily brush_family = 4;
+  reserved 5;  // was brush_family_uri
 }
 
 // Specifies a list of `BrushCoat`s that determine the stroke shape and dynamic
 // input response and the shading of the stroke geometry. The `BrushFamily` can
-// optionally be identified by setting a non-empty `uri`.
-//
-// See ../../brush/brush_family.h for details of the URI handling.
+// optionally be identified by setting a non-empty `client_brush_family_id`.
 message BrushFamily {
   message SpringModelV1 {}
   message SpringModelV2 {}
@@ -100,7 +94,9 @@ message BrushFamily {
   // instead.
   reserved 1 to 2;
 
-  optional string uri = 3;
+  // The ID for this brush family specified by the client that originally
+  // created it. The meaning of this ID is determined by that client.
+  optional string client_brush_family_id = 3;
 
   optional InputModel input_model = 5;
 }
@@ -198,7 +194,7 @@ message BrushPaint {
     }
     // LINT.ThenChange(../../brush/brush_paint.h:blend_mode)
 
-    optional string color_texture_id = 1;
+    optional string client_color_texture_id = 1;
     optional float size_x = 2 [default = 1];
     optional float size_y = 3 [default = 1];
     optional SizeUnit size_unit = 4 [default = SIZE_UNIT_STROKE_COORDINATES];

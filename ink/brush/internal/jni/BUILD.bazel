@@ -90,7 +90,6 @@ cc_library(
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_string_util",
         "//ink/jni/internal:jni_throw_util",
-        "//ink/types:uri",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings:string_view",
     ] + select({
