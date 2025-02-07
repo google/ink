@@ -142,7 +142,7 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithColorShift) {
 TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutWindingTextures) {
   BrushPaint paint = {
       .texture_layers = {BrushPaint::TextureLayer{
-          .color_texture_id = std::string(kTestTextureId),
+          .client_color_texture_id = std::string(kTestTextureId),
           .mapping = BrushPaint::TextureMapping::kTiling,
       }},
   };
@@ -154,7 +154,7 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutWindingTextures) {
 TEST(BrushCoatTest, GetRequiredAttributeIdsWithWindingTextures) {
   BrushPaint paint = {
       .texture_layers = {BrushPaint::TextureLayer{
-          .color_texture_id = std::string(kTestTextureId),
+          .client_color_texture_id = std::string(kTestTextureId),
           .mapping = BrushPaint::TextureMapping::kWinding,
       }},
   };

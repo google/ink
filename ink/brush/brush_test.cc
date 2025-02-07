@@ -71,14 +71,14 @@ BrushFamily CreateTestFamily() {
               },
           }}},
       },
-      {.texture_layers = {{.color_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .size = {3, 5},
-                           .size_jitter = {0.1, 2},
-                           .keyframes = {{.progress = 0.1,
-                                          .rotation = kFullTurn / 8}},
-                           .blend_mode = BrushPaint::BlendMode::kDstIn}}},
+      {.texture_layers =
+           {{.client_color_texture_id = std::string(kTestTextureId),
+             .mapping = BrushPaint::TextureMapping::kWinding,
+             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
+             .size = {3, 5},
+             .size_jitter = {0.1, 2},
+             .keyframes = {{.progress = 0.1, .rotation = kFullTurn / 8}},
+             .blend_mode = BrushPaint::BlendMode::kDstIn}}},
       "/brush-family:test-family");
   ABSL_CHECK_OK(family);
   return *family;
@@ -88,15 +88,15 @@ TEST(BrushTest, Stringify) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{
           .scale = {3, 3}, .corner_rounding = 0, .opacity_multiplier = 0.7},
-      {.texture_layers = {{.color_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .size = {3, 5},
-                           .size_jitter = {0.1, 2},
-                           .keyframes = {{.progress = 0.1,
-                                          .rotation = kFullTurn / 8}},
-                           .blend_mode = BrushPaint::BlendMode::kDstOut}}},
-      "/brush-family:big-square");
+      {.texture_layers =
+           {{.client_color_texture_id = std::string(kTestTextureId),
+             .mapping = BrushPaint::TextureMapping::kWinding,
+             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
+             .size = {3, 5},
+             .size_jitter = {0.1, 2},
+             .keyframes = {{.progress = 0.1, .rotation = kFullTurn / 8}},
+             .blend_mode = BrushPaint::BlendMode::kDstOut}}},
+      "big-square");
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Blue(), 3, .1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -106,14 +106,14 @@ TEST(BrushTest, Stringify) {
       "size=3, epsilon=0.1, "
       "family=BrushFamily(coats=[BrushCoat{tips=[BrushTip{scale=<3, 3>, "
       "corner_rounding=0, opacity_multiplier=0.7}], "
-      "paint=BrushPaint{texture_layers={TextureLayer{color_texture_id="
+      "paint=BrushPaint{texture_layers={TextureLayer{client_color_texture_id="
       "test-texture, mapping=kWinding, "
       "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
       "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
       "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
       "opacity=1, keyframes={TextureKeyframe{progress=0.1, "
       "rotation=0.25π}}, blend_mode=kDstOut}}}}], "
-      "uri='/brush-family:big-square'))");
+      "client_brush_family_id='big-square'))");
 }
 
 TEST(BrushTest, Create) {
@@ -236,14 +236,14 @@ TEST(BrushTest, SetNewFamily) {
 
   auto new_family = BrushFamily::Create(
       BrushTip{},
-      {.texture_layers = {{.color_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .size = {3, 5},
-                           .size_jitter = {0.1, 2},
-                           .keyframes = {{.progress = 0.1,
-                                          .rotation = kFullTurn / 8}},
-                           .blend_mode = BrushPaint::BlendMode::kDstIn}}},
+      {.texture_layers =
+           {{.client_color_texture_id = std::string(kTestTextureId),
+             .mapping = BrushPaint::TextureMapping::kWinding,
+             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
+             .size = {3, 5},
+             .size_jitter = {0.1, 2},
+             .keyframes = {{.progress = 0.1, .rotation = kFullTurn / 8}},
+             .blend_mode = BrushPaint::BlendMode::kDstIn}}},
       "/brush-family:new-test-family");
   ASSERT_EQ(absl::OkStatus(), new_family.status());
 

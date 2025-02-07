@@ -32,8 +32,8 @@ extern "C" {
 
 // Construct a native BrushFamily and return a pointer to it as a long.
 JNI_METHOD(brush, BrushFamily, jlong, nativeCreateBrushFamily)
-(JNIEnv* env, jobject thiz, jlongArray coat_native_pointer_array, jstring j_uri,
- jboolean use_spring_model_v2) {
+(JNIEnv* env, jobject thiz, jlongArray coat_native_pointer_array,
+ jstring client_brush_family_id, jboolean use_spring_model_v2) {
   std::vector<ink::BrushCoat> coats;
   const jsize num_coats = env->GetArrayLength(coat_native_pointer_array);
   coats.reserve(num_coats);
@@ -51,7 +51,8 @@ JNI_METHOD(brush, BrushFamily, jlong, nativeCreateBrushFamily)
   }
 
   absl::StatusOr<ink::BrushFamily> brush_family = ink::BrushFamily::Create(
-      coats, ink::jni::JStringView(env, j_uri).string_view(), input_model);
+      coats, ink::jni::JStringView(env, client_brush_family_id).string_view(),
+      input_model);
   if (!brush_family.ok()) {
     ink::jni::ThrowExceptionFromStatus(env, brush_family.status());
     return -1;  // Unused return value.

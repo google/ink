@@ -16,7 +16,6 @@
 #define INK_STROKES_BRUSH_BRUSH_FAMILY_H_
 
 #include <cstdint>
-#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -27,17 +26,12 @@
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 
-// A `BrushFamily` combines one or more `BrushCoat`s and an optional URI to
-// describe a family of brushes.
-//
-// The URI exists for the convenience of higher level serialization and asset
-// management APIs. Aside from being checked for valid formatting and being
-// forwarded on copy or move, the URI will not*** be used by Ink APIs that
-// consume a `BrushFamily`.
+// A `BrushFamily` combines one or more `BrushCoat`s with an optional
+// client-specified string ID, which exists for the convenience of higher level
+// serialization and asset management APIs.
 class BrushFamily {
  public:
   // LINT.IfChange(input_model_types)
@@ -66,11 +60,10 @@ class BrushFamily {
   // to have. Note that this limit may increase in the future.
   static uint32_t MaxBrushCoats();
 
-  // Creates a `BrushFamily` with the given `tips`, `paint`, and an optional
-  // `uri`.
+  // Creates a `BrushFamily` with the given `tips`, `paint`, and optional
+  // string `client_brush_family_id`.
   //
-  // Performs validation of the `tips`, `paint`, and the `uri` if present.
-  // Returns an error if argument validation fails.
+  // Performs validation of the `tips` and `paint`.
   //
   // For a tip to be valid the following must hold:
   //   * Every numeric, `Angle` or `Duration32` property must be finite and
@@ -81,7 +74,6 @@ class BrushFamily {
   //
   // For a brush paint to be valid the following must hold:
   //  * For each texture_layer the following must hold:
-  //    - The color texture URI must be a texture asset type.
   //    - size components must be finite and greater than 0.
   //    - offset components must be in interval [0, 1].
   //    - rotation component must be finite.
@@ -103,35 +95,16 @@ class BrushFamily {
   //    rendering tiling and winding textures in a single `BrushPaint`.
   //  * Every enum property must be equal to one of the named enumerators for
   //    that property's type.
-  //
-  // For a non-nullopt URI to be valid the following must hold:
-  //   * The asset type must be "brush-family".
-  //
-  // If the `BrushFamily` has a URI set, other Ink code will implicitly assume
-  // that (1) the tip/paint data is canonical for that URI, and (2) the client
-  // application has a `BrushProvider` implementation that can map from that URI
-  // to the canonical tip/paint data. In particular, when serializing brush data
-  // to proto, if a URI is set, then only the URI will be stored, and the
-  // tip/paint data will be omitted.
   static absl::StatusOr<BrushFamily> Create(
       const BrushTip& tip, const BrushPaint& paint,
-      std::optional<Uri> uri = std::nullopt,
+      absl::string_view client_brush_family_id = "",
       const InputModel& input_model = DefaultInputModel());
   static absl::StatusOr<BrushFamily> Create(
-      absl::Span<const BrushCoat> coats, std::optional<Uri> uri = std::nullopt,
-      const InputModel& input_model = DefaultInputModel());
-  // Same as above, except that the URI is parsed from the given URI string (and
-  // an error is returned if the URI string fails to parse). An empty URI string
-  // is treated as a nullopt URI.
-  static absl::StatusOr<BrushFamily> Create(
-      const BrushTip& tip, const BrushPaint& paint,
-      absl::string_view uri_string,
-      const InputModel& input_model = DefaultInputModel());
-  static absl::StatusOr<BrushFamily> Create(
-      absl::Span<const BrushCoat> coats, absl::string_view uri_string,
+      absl::Span<const BrushCoat> coats,
+      absl::string_view client_brush_family_id = "",
       const InputModel& input_model = DefaultInputModel());
 
-  // Constructs a brush-family with default tip and paint, and no URI.
+  // Constructs a brush-family with default tip and paint and empty ID.
   BrushFamily() = default;
 
   BrushFamily(const BrushFamily&) = default;
@@ -140,8 +113,14 @@ class BrushFamily {
   BrushFamily& operator=(BrushFamily&&) = default;
 
   absl::Span<const BrushCoat> GetCoats() const;
-  const std::optional<Uri>& GetUri() const;
   const InputModel& GetInputModel() const;
+
+  // Returns the ID for this brush family specified by the client that
+  // originally created it, or an empty string if no ID was specified. This is
+  // considered when comparing `BrushFaily` objects for equality, but it is
+  // not assumed that two `BrushFamily` objects with the same IDs are
+  // equivalent, and the ID is not otherwise used internally by Ink.
+  const std::string& GetClientBrushFamilyId() const;
 
   template <typename Sink>
   friend void AbslStringify(Sink& sink, const BrushFamily& family) {
@@ -149,14 +128,15 @@ class BrushFamily {
   }
 
  private:
-  BrushFamily(std::vector<BrushCoat> coats, std::optional<Uri> uri,
+  BrushFamily(absl::Span<const BrushCoat> coats,
+              absl::string_view client_brush_family_id,
               const InputModel& input_model);
 
   // Implementation helper for AbslStringify.
   std::string ToFormattedString() const;
 
   std::vector<BrushCoat> coats_ = {BrushCoat{.tips = {BrushTip{}}}};
-  std::optional<Uri> uri_;
+  std::string client_brush_family_id_;
   InputModel input_model_;
 };
 
@@ -167,7 +147,9 @@ inline absl::Span<const BrushCoat> BrushFamily::GetCoats() const {
   return coats_;
 }
 
-inline const std::optional<Uri>& BrushFamily::GetUri() const { return uri_; }
+inline const std::string& BrushFamily::GetClientBrushFamilyId() const {
+  return client_brush_family_id_;
+}
 
 inline const BrushFamily::InputModel& BrushFamily::GetInputModel() const {
   return input_model_;

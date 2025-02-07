@@ -269,8 +269,8 @@ MATCHER_P(BrushPaintTextureLayerEqMatcher, expected,
                        " BrushPaintTextureLayer (expected: ",
                        ::testing::PrintToString(expected), ")")) {
   return ExplainMatchResult(
-      AllOf(Field(&BrushPaint::TextureLayer::color_texture_id,
-                  Eq(expected.color_texture_id)),
+      AllOf(Field(&BrushPaint::TextureLayer::client_color_texture_id,
+                  Eq(expected.client_color_texture_id)),
             Field(&BrushPaint::TextureLayer::mapping, Eq(expected.mapping)),
             Field(&BrushPaint::TextureLayer::origin, Eq(expected.origin)),
             Field(&BrushPaint::TextureLayer::size_unit, Eq(expected.size_unit)),
@@ -352,7 +352,8 @@ MATCHER_P(BrushFamilyEqMatcher, expected,
   return ExplainMatchResult(
       AllOf(Property(&BrushFamily::GetCoats,
                      Pointwise(BrushCoatEq(), expected.GetCoats())),
-            Property(&BrushFamily::GetUri, Eq(expected.GetUri())),
+            Property(&BrushFamily::GetClientBrushFamilyId,
+                     Eq(expected.GetClientBrushFamilyId())),
             Property(&BrushFamily::GetInputModel,
                      BrushFamilyInputModelEq(expected.GetInputModel()))),
       arg, result_listener);

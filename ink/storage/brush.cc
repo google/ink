@@ -31,16 +31,13 @@
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/easing_function.h"
-#include "ink/color/color.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
-#include "ink/storage/brush_provider.h"
 #include "ink/storage/color.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/coded.pb.h"
 #include "ink/types/duration.h"
-#include "ink/types/uri.h"
 
 namespace ink {
 namespace {
@@ -1162,7 +1159,7 @@ absl::StatusOr<BrushPaint::TextureKeyframe> DecodeBrushPaintTextureKeyframe(
 void EncodeBrushPaintTextureLayer(
     const BrushPaint::TextureLayer& layer,
     proto::BrushPaint::TextureLayer& layer_proto_out) {
-  layer_proto_out.set_color_texture_id(layer.color_texture_id);
+  layer_proto_out.set_client_color_texture_id(layer.client_color_texture_id);
   layer_proto_out.set_size_unit(EncodeBrushPaintSizeUnit(layer.size_unit));
   layer_proto_out.set_wrap_x(EncodeBrushPaintWrap(layer.wrap_x));
   layer_proto_out.set_wrap_y(EncodeBrushPaintWrap(layer.wrap_y));
@@ -1224,7 +1221,7 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
     return blend_mode.status();
   }
   return BrushPaint::TextureLayer{
-      .color_texture_id = layer_proto.color_texture_id(),
+      .client_color_texture_id = layer_proto.client_color_texture_id(),
       .mapping = *mapping,
       .origin = *origin,
       .size_unit = *size_unit,
@@ -1452,10 +1449,11 @@ void EncodeBrushFamily(const BrushFamily& family,
     EncodeBrushCoat(coat, *family_proto_out.add_coats());
   }
 
-  if (const std::optional<Uri>& uri = family.GetUri()) {
-    family_proto_out.set_uri(uri->ToNormalizedString());
+  if (family.GetClientBrushFamilyId().empty()) {
+    family_proto_out.clear_client_brush_family_id();
   } else {
-    family_proto_out.clear_uri();
+    family_proto_out.set_client_brush_family_id(
+        family.GetClientBrushFamilyId());
   }
 
   EncodeBrushFamilyInputModel(family.GetInputModel(),
@@ -1481,7 +1479,8 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
   }
   if (!input_model.ok()) return input_model.status();
 
-  return BrushFamily::Create(absl::MakeConstSpan(coats), family_proto.uri(),
+  return BrushFamily::Create(absl::MakeConstSpan(coats),
+                             family_proto.client_brush_family_id(),
                              *input_model);
 }
 
@@ -1489,44 +1488,18 @@ void EncodeBrush(const Brush& brush, proto::Brush& brush_proto_out) {
   EncodeColor(brush.GetColor(), *brush_proto_out.mutable_color());
   brush_proto_out.set_size_stroke_space(brush.GetSize());
   brush_proto_out.set_epsilon_stroke_space(brush.GetEpsilon());
-
-  const BrushFamily& family = brush.GetFamily();
-  if (const std::optional<Uri>& uri = family.GetUri()) {
-    brush_proto_out.set_brush_family_uri(uri->ToNormalizedString());
-  } else {
-    EncodeBrushFamily(family, *brush_proto_out.mutable_brush_family());
-  }
+  EncodeBrushFamily(brush.GetFamily(), *brush_proto_out.mutable_brush_family());
 }
 
-absl::StatusOr<Brush> DecodeBrush(const proto::Brush& brush_proto,
-                                  const BrushProvider& brush_provider) {
-  BrushFamily brush_family;
-  switch (brush_proto.family_case()) {
-    case proto::Brush::FAMILY_NOT_SET:
-      return absl::InvalidArgumentError(
-          "ink.proto.Brush must specify a brush family");
-    case proto::Brush::kBrushFamily: {
-      auto result = DecodeBrushFamily(brush_proto.brush_family());
-      if (!result.ok()) {
-        return result.status();
-      }
-      brush_family = *std::move(result);
-    } break;
-    case proto::Brush::kBrushFamilyUri: {
-      absl::StatusOr<Uri> uri = Uri::Parse(brush_proto.brush_family_uri());
-      if (!uri.ok()) {
-        return uri.status();
-      }
-      auto result = brush_provider.GetBrushFamily(*std::move(uri));
-      if (!result.ok()) {
-        return result.status();
-      }
-      brush_family = *std::move(result);
-    } break;
+absl::StatusOr<Brush> DecodeBrush(const proto::Brush& brush_proto) {
+  absl::StatusOr<BrushFamily> brush_family =
+      DecodeBrushFamily(brush_proto.brush_family());
+  if (!brush_family.ok()) {
+    return brush_family.status();
   }
-  const Color color = DecodeColor(brush_proto.color());
-  return Brush::Create(brush_family, color, brush_proto.size_stroke_space(),
-                       brush_proto.epsilon_stroke_space());
+  return Brush::Create(
+      *std::move(brush_family), DecodeColor(brush_proto.color()),
+      brush_proto.size_stroke_space(), brush_proto.epsilon_stroke_space());
 }
 
 }  // namespace ink
