@@ -180,7 +180,7 @@ TEST(PartitionedMeshTest, DecodeEmptyCodedModeledShape) {
 
 TEST(PartitionedMeshTest, EncodePartitionedMeshWithOneTriangleMesh) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
@@ -201,7 +201,7 @@ TEST(PartitionedMeshTest, EncodePartitionedMeshWithOneTriangleMesh) {
   ASSERT_EQ(shape_proto.group_formats_size(), 1u);
   EXPECT_THAT(
       shape_proto.group_formats(0).attribute_types(),
-      ElementsAre(proto::MeshFormat::ATTR_TYPE_FLOAT_2_PACKED_IN_1_FLOAT));
+      ElementsAre(proto::MeshFormat::ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT));
   ASSERT_EQ(shape_proto.meshes_size(), 1);
   ASSERT_EQ(shape_proto.outlines_size(), 1);
   absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
@@ -215,7 +215,7 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithOneTriangleMesh) {
   ASSERT_TRUE(TextFormat::ParseFromString(
       R"pb(
         group_formats {
-          attribute_types: [ ATTR_TYPE_FLOAT_2_PACKED_IN_1_FLOAT ]
+          attribute_types: [ ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT ]
           attribute_ids: [ ATTR_ID_POSITION ]
         }
         group_first_mesh_indices: [ 0 ]
@@ -236,7 +236,7 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithOneTriangleMesh) {
   const MeshFormat& format = shape->RenderGroupFormat(0);
   ASSERT_THAT(format.Attributes(), SizeIs(1));
   EXPECT_EQ(format.Attributes()[0].type,
-            MeshFormat::AttributeType::kFloat2PackedIn1Float);
+            MeshFormat::AttributeType::kFloat2PackedInOneFloat);
   ASSERT_THAT(shape->Meshes(), SizeIs(1));
   EXPECT_EQ(shape->Meshes()[0].VertexCount(), 3);
   EXPECT_EQ(shape->Meshes()[0].TriangleCount(), 1);
@@ -357,11 +357,11 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoGroups) {
         outlines { deltas: [ 0, 1, 1 ] }
         outlines { deltas: [ 0, 2, -1 ] }
         group_formats {
-          attribute_types: [ ATTR_TYPE_FLOAT_2_PACKED_IN_1_FLOAT ]
+          attribute_types: [ ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT ]
           attribute_ids: [ ATTR_ID_POSITION ]
         }
         group_formats {
-          attribute_types: [ ATTR_TYPE_FLOAT_2_UNPACKED ]
+          attribute_types: [ ATTR_TYPE_FLOAT2_UNPACKED ]
           attribute_ids: [ ATTR_ID_POSITION ]
         }
         group_first_mesh_indices: [ 0, 1 ]
@@ -375,7 +375,7 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoGroups) {
   ASSERT_EQ(shape->RenderGroupCount(), 2u);
   ASSERT_THAT(shape->RenderGroupFormat(0).Attributes(), SizeIs(1));
   EXPECT_EQ(shape->RenderGroupFormat(0).Attributes()[0].type,
-            MeshFormat::AttributeType::kFloat2PackedIn1Float);
+            MeshFormat::AttributeType::kFloat2PackedInOneFloat);
   ASSERT_THAT(shape->RenderGroupFormat(1).Attributes(), SizeIs(1));
   EXPECT_EQ(shape->RenderGroupFormat(1).Attributes()[0].type,
             MeshFormat::AttributeType::kFloat2Unpacked);

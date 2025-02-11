@@ -239,7 +239,7 @@ TEST(MeshSpecificationDataTest, CreateFromFullMeshFormatIsOk) {
 TEST(MeshSpecificationDataTest, CreateFromUnpackedStrokeFormat) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {
-          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
            MeshFormat::AttributeId::kPosition},
           {MeshFormat::AttributeType::kFloat1Unpacked,
            MeshFormat::AttributeId::kOpacityShift},
@@ -285,19 +285,19 @@ TEST(MeshSpecificationDataTest, CreateFromStrokeFormatWithNoAnimationOffset) {
   // (non-particle) stroke).
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {
-          {MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
+          {MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
            MeshFormat::AttributeId::kPosition},
-          {MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+          {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
            MeshFormat::AttributeId::kOpacityShift},
-          {MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
+          {MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
            MeshFormat::AttributeId::kSideDerivative},
-          {MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+          {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
            MeshFormat::AttributeId::kSideLabel},
-          {MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
+          {MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
            MeshFormat::AttributeId::kForwardDerivative},
-          {MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+          {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
            MeshFormat::AttributeId::kForwardLabel},
-          {MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+          {MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
            MeshFormat::AttributeId::kSurfaceUv},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
@@ -329,13 +329,13 @@ TEST(MeshSpecificationDataTest,
      CreateFromNonInProgressStrokeFormatReturnsError) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {
-          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
            MeshFormat::AttributeId::kPosition},
           {MeshFormat::AttributeType::kFloat3Unpacked,
            MeshFormat::AttributeId::kCustom0},
           {MeshFormat::AttributeType::kFloat3Unpacked,
            MeshFormat::AttributeId::kColorShiftHsl},
-          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
            MeshFormat::AttributeId::kSideDerivative},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
@@ -551,7 +551,7 @@ TEST(MeshSpecificationDataTest,
             MakeFormatWithModifiedType(
                 types_and_ids,
                 StrokeVertex::kFullFormatAttributeIndices.hsl_shift,
-                MeshFormat::AttributeType::kFloat3PackedIn1Float))
+                MeshFormat::AttributeType::kFloat3PackedInOneFloat))
             .status();
     EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
@@ -563,7 +563,7 @@ TEST(MeshSpecificationDataTest,
             MakeFormatWithModifiedType(
                 types_and_ids,
                 StrokeVertex::kFullFormatAttributeIndices.side_derivative,
-                MeshFormat::AttributeType::kFloat3PackedIn1Float))
+                MeshFormat::AttributeType::kFloat3PackedInOneFloat))
             .status();
     EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
@@ -575,7 +575,7 @@ TEST(MeshSpecificationDataTest,
             MakeFormatWithModifiedType(
                 types_and_ids,
                 StrokeVertex::kFullFormatAttributeIndices.side_label,
-                MeshFormat::AttributeType::kFloat2PackedIn1Float))
+                MeshFormat::AttributeType::kFloat2PackedInOneFloat))
             .status();
     EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
@@ -587,7 +587,7 @@ TEST(MeshSpecificationDataTest,
             MakeFormatWithModifiedType(
                 types_and_ids,
                 StrokeVertex::kFullFormatAttributeIndices.forward_derivative,
-                MeshFormat::AttributeType::kFloat3PackedIn1Float))
+                MeshFormat::AttributeType::kFloat3PackedInOneFloat))
             .status();
     EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
@@ -599,7 +599,7 @@ TEST(MeshSpecificationDataTest,
             MakeFormatWithModifiedType(
                 types_and_ids,
                 StrokeVertex::kFullFormatAttributeIndices.forward_label,
-                MeshFormat::AttributeType::kFloat2PackedIn1Float))
+                MeshFormat::AttributeType::kFloat2PackedInOneFloat))
             .status();
     EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
@@ -611,7 +611,7 @@ TEST(MeshSpecificationDataTest,
             MakeFormatWithModifiedType(
                 types_and_ids,
                 StrokeVertex::kFullFormatAttributeIndices.surface_uv,
-                MeshFormat::AttributeType::kFloat3PackedIn1Float))
+                MeshFormat::AttributeType::kFloat3PackedInOneFloat))
             .status();
     EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));

@@ -24,7 +24,7 @@
 
 namespace ink {
 
-// Creates a `MeshFormat` with a single `kFloat2PackedIn1Float` attribute, and
+// Creates a `MeshFormat` with a single `kFloat2PackedInOneFloat` attribute, and
 // `k32BitUnpacked16BitPacked` index format.
 MeshFormat MakeSinglePackedPositionFormat();
 

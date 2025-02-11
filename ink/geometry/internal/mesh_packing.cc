@@ -97,27 +97,27 @@ bool UnpackedFloatValuesAreRepresentable(
   return true;
 }
 
-void PackFloat1PackedIn1UnsignedByte(
+void PackFloat1PackedInOneUnsignedByte(
     const MeshAttributeCodingParams& packing_params,
     const SmallArray<float, 4>& unpacked_value,
     absl::Span<std::byte> packed_bytes) {
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte)
+                  MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte)
                   .value_or(SmallArray<uint8_t, 4>({0})) ==
               (SmallArray<uint8_t, 4>({8})));
   packed_bytes[0] = static_cast<std::byte>(
       PackSingleFloat(packing_params.components[0], unpacked_value[0]));
 }
 
-void PackFloat2PackedIn1Float(const MeshAttributeCodingParams& packing_params,
-                              const SmallArray<float, 4>& unpacked_value,
-                              absl::Span<std::byte> packed_bytes) {
+void PackFloat2PackedInOneFloat(const MeshAttributeCodingParams& packing_params,
+                                const SmallArray<float, 4>& unpacked_value,
+                                absl::Span<std::byte> packed_bytes) {
   uint32_t packed0 =
       PackSingleFloat(packing_params.components[0], unpacked_value[0]);
   uint32_t packed1 =
       PackSingleFloat(packing_params.components[1], unpacked_value[1]);
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat2PackedIn1Float)
+                  MeshFormat::AttributeType::kFloat2PackedInOneFloat)
                   .value_or(SmallArray<uint8_t, 4>({0, 0})) ==
               (SmallArray<uint8_t, 4>({12, 12})));
   float packed_float = {static_cast<float>(packed0 << 12 | packed1)};
@@ -125,7 +125,7 @@ void PackFloat2PackedIn1Float(const MeshAttributeCodingParams& packing_params,
   std::memcpy(packed_bytes.data(), &packed_float, sizeof(float));
 }
 
-void PackFloat2PackedIn3UnsignedBytes_XY12(
+void PackFloat2PackedInThreeUnsignedBytes_XY12(
     const MeshAttributeCodingParams& packing_params,
     const SmallArray<float, 4>& unpacked_value,
     absl::Span<std::byte> packed_bytes) {
@@ -133,17 +133,18 @@ void PackFloat2PackedIn3UnsignedBytes_XY12(
       PackSingleFloat(packing_params.components[0], unpacked_value[0]);
   uint32_t packed1 =
       PackSingleFloat(packing_params.components[1], unpacked_value[1]);
-  ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12)
-                  .value_or(SmallArray<uint8_t, 4>({0, 0})) ==
-              (SmallArray<uint8_t, 4>({12, 12})));
+  ABSL_DCHECK(
+      MeshFormat::PackedBitsPerComponent(
+          MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12)
+          .value_or(SmallArray<uint8_t, 4>({0, 0})) ==
+      (SmallArray<uint8_t, 4>({12, 12})));
   packed_bytes[0] = static_cast<std::byte>(packed0 >> 4);
   packed_bytes[1] =
       static_cast<std::byte>(((packed0 & 0xF) << 4) + (packed1 >> 8));
   packed_bytes[2] = static_cast<std::byte>(packed1 & 0xFF);
 }
 
-void PackFloat3PackedIn4UnsignedBytes_XYZ10(
+void PackFloat3PackedInFourUnsignedBytes_XYZ10(
     const MeshAttributeCodingParams& packing_params,
     const SmallArray<float, 4>& unpacked_value,
     absl::Span<std::byte> packed_bytes) {
@@ -155,7 +156,7 @@ void PackFloat3PackedIn4UnsignedBytes_XYZ10(
       PackSingleFloat(packing_params.components[2], unpacked_value[2]);
   ABSL_DCHECK(
       MeshFormat::PackedBitsPerComponent(
-          MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10)
+          MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10)
           .value_or(SmallArray<uint8_t, 4>({0, 0, 0})) ==
       (SmallArray<uint8_t, 4>({10, 10, 10})));
   packed_bytes[0] = static_cast<std::byte>(packed0 >> 2);
@@ -166,7 +167,7 @@ void PackFloat3PackedIn4UnsignedBytes_XYZ10(
   packed_bytes[3] = static_cast<std::byte>((packed2 & 0x3F) << 2);
 }
 
-void PackFloat2PackedIn4UnsignedBytes_X12_Y20(
+void PackFloat2PackedInFourUnsignedBytes_X12_Y20(
     const MeshAttributeCodingParams& packing_params,
     const SmallArray<float, 4>& unpacked_value,
     absl::Span<std::byte> packed_bytes) {
@@ -176,7 +177,7 @@ void PackFloat2PackedIn4UnsignedBytes_X12_Y20(
       PackSingleFloat(packing_params.components[1], unpacked_value[1]);
   ABSL_DCHECK(
       MeshFormat::PackedBitsPerComponent(
-          MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20)
+          MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20)
           .value_or(SmallArray<uint8_t, 4>({0, 0})) ==
       (SmallArray<uint8_t, 4>({12, 20})));
   packed_bytes[0] = static_cast<std::byte>(packed0 >> 4);
@@ -186,9 +187,9 @@ void PackFloat2PackedIn4UnsignedBytes_X12_Y20(
   packed_bytes[3] = static_cast<std::byte>(packed1 & 0xFF);
 }
 
-void PackFloat3PackedIn1Float(const MeshAttributeCodingParams& packing_params,
-                              const SmallArray<float, 4>& unpacked_value,
-                              absl::Span<std::byte> packed_bytes) {
+void PackFloat3PackedInOneFloat(const MeshAttributeCodingParams& packing_params,
+                                const SmallArray<float, 4>& unpacked_value,
+                                absl::Span<std::byte> packed_bytes) {
   uint32_t packed0 =
       PackSingleFloat(packing_params.components[0], unpacked_value[0]);
   uint32_t packed1 =
@@ -196,7 +197,7 @@ void PackFloat3PackedIn1Float(const MeshAttributeCodingParams& packing_params,
   uint32_t packed2 =
       PackSingleFloat(packing_params.components[2], unpacked_value[2]);
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat3PackedIn1Float)
+                  MeshFormat::AttributeType::kFloat3PackedInOneFloat)
                   .value_or(SmallArray<uint8_t, 4>({0, 0, 0})) ==
               (SmallArray<uint8_t, 4>({8, 8, 8})));
   float packed_float = {
@@ -205,9 +206,10 @@ void PackFloat3PackedIn1Float(const MeshAttributeCodingParams& packing_params,
   std::memcpy(packed_bytes.data(), &packed_float, sizeof(float));
 }
 
-void PackFloat3PackedIn2Floats(const MeshAttributeCodingParams& packing_params,
-                               const SmallArray<float, 4>& unpacked_value,
-                               absl::Span<std::byte> packed_bytes) {
+void PackFloat3PackedInTwoFloats(
+    const MeshAttributeCodingParams& packing_params,
+    const SmallArray<float, 4>& unpacked_value,
+    absl::Span<std::byte> packed_bytes) {
   uint32_t packed0 =
       PackSingleFloat(packing_params.components[0], unpacked_value[0]);
   uint32_t packed1 =
@@ -215,7 +217,7 @@ void PackFloat3PackedIn2Floats(const MeshAttributeCodingParams& packing_params,
   uint32_t packed2 =
       PackSingleFloat(packing_params.components[2], unpacked_value[2]);
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat3PackedIn2Floats)
+                  MeshFormat::AttributeType::kFloat3PackedInTwoFloats)
                   .value_or(SmallArray<uint8_t, 4>({0, 0, 0})) ==
               (SmallArray<uint8_t, 4>({16, 16, 16})));
   std::array<float, 2> floats = {
@@ -225,9 +227,9 @@ void PackFloat3PackedIn2Floats(const MeshAttributeCodingParams& packing_params,
   std::memcpy(packed_bytes.data(), floats.data(), sizeof(float) * 2);
 }
 
-void PackFloat4PackedIn1Float(const MeshAttributeCodingParams& packing_params,
-                              const SmallArray<float, 4>& unpacked_value,
-                              absl::Span<std::byte> packed_bytes) {
+void PackFloat4PackedInOneFloat(const MeshAttributeCodingParams& packing_params,
+                                const SmallArray<float, 4>& unpacked_value,
+                                absl::Span<std::byte> packed_bytes) {
   uint32_t packed0 =
       PackSingleFloat(packing_params.components[0], unpacked_value[0]);
   uint32_t packed1 =
@@ -237,7 +239,7 @@ void PackFloat4PackedIn1Float(const MeshAttributeCodingParams& packing_params,
   uint32_t packed3 =
       PackSingleFloat(packing_params.components[3], unpacked_value[3]);
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat4PackedIn1Float)
+                  MeshFormat::AttributeType::kFloat4PackedInOneFloat)
                   .value_or(SmallArray<uint8_t, 4>({0, 0, 0, 0})) ==
               (SmallArray<uint8_t, 4>({6, 6, 6, 6})));
   float packed_float = {static_cast<float>(packed0 << 18 | packed1 << 12 |
@@ -246,9 +248,10 @@ void PackFloat4PackedIn1Float(const MeshAttributeCodingParams& packing_params,
   std::memcpy(packed_bytes.data(), &packed_float, sizeof(float));
 }
 
-void PackFloat4PackedIn2Floats(const MeshAttributeCodingParams& packing_params,
-                               const SmallArray<float, 4>& unpacked_value,
-                               absl::Span<std::byte> packed_bytes) {
+void PackFloat4PackedInTwoFloats(
+    const MeshAttributeCodingParams& packing_params,
+    const SmallArray<float, 4>& unpacked_value,
+    absl::Span<std::byte> packed_bytes) {
   uint32_t packed0 =
       PackSingleFloat(packing_params.components[0], unpacked_value[0]);
   uint32_t packed1 =
@@ -258,7 +261,7 @@ void PackFloat4PackedIn2Floats(const MeshAttributeCodingParams& packing_params,
   uint32_t packed3 =
       PackSingleFloat(packing_params.components[3], unpacked_value[3]);
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat4PackedIn2Floats)
+                  MeshFormat::AttributeType::kFloat4PackedInTwoFloats)
                   .value_or(SmallArray<uint8_t, 4>({0, 0, 0, 0})) ==
               (SmallArray<uint8_t, 4>({12, 12, 12, 12})));
   std::array<float, 2> floats = {static_cast<float>(packed0 << 12 | packed1),
@@ -267,9 +270,10 @@ void PackFloat4PackedIn2Floats(const MeshAttributeCodingParams& packing_params,
   std::memcpy(packed_bytes.data(), floats.data(), sizeof(float) * 2);
 }
 
-void PackFloat4PackedIn3Floats(const MeshAttributeCodingParams& packing_params,
-                               const SmallArray<float, 4>& unpacked_value,
-                               absl::Span<std::byte> packed_bytes) {
+void PackFloat4PackedInThreeFloats(
+    const MeshAttributeCodingParams& packing_params,
+    const SmallArray<float, 4>& unpacked_value,
+    absl::Span<std::byte> packed_bytes) {
   uint32_t packed0 =
       PackSingleFloat(packing_params.components[0], unpacked_value[0]);
   uint32_t packed1 =
@@ -279,7 +283,7 @@ void PackFloat4PackedIn3Floats(const MeshAttributeCodingParams& packing_params,
   uint32_t packed3 =
       PackSingleFloat(packing_params.components[3], unpacked_value[3]);
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat4PackedIn3Floats)
+                  MeshFormat::AttributeType::kFloat4PackedInThreeFloats)
                   .value_or(SmallArray<uint8_t, 4>({0, 0, 0, 0})) ==
               (SmallArray<uint8_t, 4>({18, 18, 18, 18})));
   std::array<float, 3> floats = {
@@ -318,39 +322,40 @@ void PackAttribute(MeshFormat::AttributeType type,
       std::memcpy(packed_bytes.data(), unpacked_value.Values().data(),
                   sizeof(float) * unpacked_value.Size());
       break;
-    case MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte:
-      PackFloat1PackedIn1UnsignedByte(packing_params, unpacked_value,
-                                      packed_bytes);
+    case MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte:
+      PackFloat1PackedInOneUnsignedByte(packing_params, unpacked_value,
+                                        packed_bytes);
       break;
-    case MeshFormat::AttributeType::kFloat2PackedIn1Float:
-      PackFloat2PackedIn1Float(packing_params, unpacked_value, packed_bytes);
+    case MeshFormat::AttributeType::kFloat2PackedInOneFloat:
+      PackFloat2PackedInOneFloat(packing_params, unpacked_value, packed_bytes);
       break;
-    case MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12:
-      PackFloat2PackedIn3UnsignedBytes_XY12(packing_params, unpacked_value,
-                                            packed_bytes);
+    case MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12:
+      PackFloat2PackedInThreeUnsignedBytes_XY12(packing_params, unpacked_value,
+                                                packed_bytes);
       break;
-    case MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20:
-      PackFloat2PackedIn4UnsignedBytes_X12_Y20(packing_params, unpacked_value,
-                                               packed_bytes);
+    case MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20:
+      PackFloat2PackedInFourUnsignedBytes_X12_Y20(packing_params,
+                                                  unpacked_value, packed_bytes);
       break;
-    case MeshFormat::AttributeType::kFloat3PackedIn1Float:
-      PackFloat3PackedIn1Float(packing_params, unpacked_value, packed_bytes);
+    case MeshFormat::AttributeType::kFloat3PackedInOneFloat:
+      PackFloat3PackedInOneFloat(packing_params, unpacked_value, packed_bytes);
       break;
-    case MeshFormat::AttributeType::kFloat3PackedIn2Floats:
-      PackFloat3PackedIn2Floats(packing_params, unpacked_value, packed_bytes);
+    case MeshFormat::AttributeType::kFloat3PackedInTwoFloats:
+      PackFloat3PackedInTwoFloats(packing_params, unpacked_value, packed_bytes);
       break;
-    case MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
-      PackFloat3PackedIn4UnsignedBytes_XYZ10(packing_params, unpacked_value,
-                                             packed_bytes);
+    case MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10:
+      PackFloat3PackedInFourUnsignedBytes_XYZ10(packing_params, unpacked_value,
+                                                packed_bytes);
       break;
-    case MeshFormat::AttributeType::kFloat4PackedIn1Float:
-      PackFloat4PackedIn1Float(packing_params, unpacked_value, packed_bytes);
+    case MeshFormat::AttributeType::kFloat4PackedInOneFloat:
+      PackFloat4PackedInOneFloat(packing_params, unpacked_value, packed_bytes);
       break;
-    case MeshFormat::AttributeType::kFloat4PackedIn2Floats:
-      PackFloat4PackedIn2Floats(packing_params, unpacked_value, packed_bytes);
+    case MeshFormat::AttributeType::kFloat4PackedInTwoFloats:
+      PackFloat4PackedInTwoFloats(packing_params, unpacked_value, packed_bytes);
       break;
-    case MeshFormat::AttributeType::kFloat4PackedIn3Floats:
-      PackFloat4PackedIn3Floats(packing_params, unpacked_value, packed_bytes);
+    case MeshFormat::AttributeType::kFloat4PackedInThreeFloats:
+      PackFloat4PackedInThreeFloats(packing_params, unpacked_value,
+                                    packed_bytes);
       break;
   }
 }
@@ -418,20 +423,21 @@ SmallArray<float, 4> UnpackFloatsFromFloat4Unpacked(
   return unpacked_floats;
 }
 
-SmallArray<uint32_t, 4> UnpackIntegersFromFloat1PackedIn1UnsignedByte(
+SmallArray<uint32_t, 4> UnpackIntegersFromFloat1PackedInOneUnsignedByte(
     absl::Span<const std::byte> packed_value) {
-  ABSL_DCHECK_EQ(packed_value.size(),
-                 MeshFormat::PackedAttributeSize(
-                     MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte));
+  ABSL_DCHECK_EQ(
+      packed_value.size(),
+      MeshFormat::PackedAttributeSize(
+          MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte));
 
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte)
+                  MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte)
                   .value_or(SmallArray<uint8_t, 4>({0})) ==
               (SmallArray<uint8_t, 4>({8})));
   return {static_cast<uint32_t>(packed_value[0])};
 }
 
-SmallArray<uint32_t, 4> UnpackIntegersFromFloat2PackedIn1Float(
+SmallArray<uint32_t, 4> UnpackIntegersFromFloat2PackedInOneFloat(
     absl::Span<const std::byte> packed_value) {
   ABSL_DCHECK_EQ(packed_value.size(), sizeof(float));
   float packed_float;
@@ -441,18 +447,18 @@ SmallArray<uint32_t, 4> UnpackIntegersFromFloat2PackedIn1Float(
   uint32_t packed1 = (static_cast<uint32_t>(packed_float) & 0x000FFF);
 
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat2PackedIn1Float)
+                  MeshFormat::AttributeType::kFloat2PackedInOneFloat)
                   .value_or(SmallArray<uint8_t, 4>({0, 0})) ==
               (SmallArray<uint8_t, 4>({12, 12})));
   return {packed0, packed1};
 }
 
-SmallArray<uint32_t, 4> UnpackIntegersFromFloat2PackedIn3UnsignedBytes_XY12(
+SmallArray<uint32_t, 4> UnpackIntegersFromFloat2PackedInThreeUnsignedBytes_XY12(
     absl::Span<const std::byte> packed_value) {
   ABSL_DCHECK_EQ(
       packed_value.size(),
       MeshFormat::PackedAttributeSize(
-          MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12));
+          MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12));
 
   uint32_t packed0 = (static_cast<uint32_t>(packed_value[0]) << 4) +
                      (static_cast<uint32_t>(packed_value[1]) >> 4);
@@ -460,19 +466,20 @@ SmallArray<uint32_t, 4> UnpackIntegersFromFloat2PackedIn3UnsignedBytes_XY12(
   uint32_t packed1 = ((static_cast<uint32_t>(packed_value[1]) & 0x0F) << 8) +
                      (static_cast<uint32_t>(packed_value[2]));
 
-  ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12)
-                  .value_or(SmallArray<uint8_t, 4>({0, 0})) ==
-              (SmallArray<uint8_t, 4>({12, 12})));
+  ABSL_DCHECK(
+      MeshFormat::PackedBitsPerComponent(
+          MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12)
+          .value_or(SmallArray<uint8_t, 4>({0, 0})) ==
+      (SmallArray<uint8_t, 4>({12, 12})));
   return {packed0, packed1};
 }
 
-SmallArray<uint32_t, 4> UnpackIntegersFromFloat3PackedIn4UnsignedBytes_XYZ10(
+SmallArray<uint32_t, 4> UnpackIntegersFromFloat3PackedInFourUnsignedBytes_XYZ10(
     absl::Span<const std::byte> packed_value) {
   ABSL_DCHECK_EQ(
       packed_value.size(),
       MeshFormat::PackedAttributeSize(
-          MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10));
+          MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10));
 
   uint32_t packed0 = (static_cast<uint32_t>(packed_value[0]) << 2) +
                      (static_cast<uint32_t>(packed_value[1]) >> 6);
@@ -485,18 +492,19 @@ SmallArray<uint32_t, 4> UnpackIntegersFromFloat3PackedIn4UnsignedBytes_XYZ10(
 
   ABSL_DCHECK(
       MeshFormat::PackedBitsPerComponent(
-          MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10)
+          MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10)
           .value_or(SmallArray<uint8_t, 4>({0, 0, 0})) ==
       (SmallArray<uint8_t, 4>({10, 10, 10})));
   return {packed0, packed1, packed2};
 }
 
-SmallArray<uint32_t, 4> UnpackIntegersFromFloat2PackedIn4UnsignedBytes_X12_Y20(
+SmallArray<uint32_t, 4>
+UnpackIntegersFromFloat2PackedInFourUnsignedBytes_X12_Y20(
     absl::Span<const std::byte> packed_value) {
   ABSL_DCHECK_EQ(
       packed_value.size(),
       MeshFormat::PackedAttributeSize(
-          MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20));
+          MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20));
 
   uint32_t packed0 = (static_cast<uint32_t>(packed_value[0]) << 4) +
                      (static_cast<uint32_t>(packed_value[1]) >> 4);
@@ -507,13 +515,13 @@ SmallArray<uint32_t, 4> UnpackIntegersFromFloat2PackedIn4UnsignedBytes_X12_Y20(
 
   ABSL_DCHECK(
       MeshFormat::PackedBitsPerComponent(
-          MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20)
+          MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20)
           .value_or(SmallArray<uint8_t, 4>({0, 0})) ==
       (SmallArray<uint8_t, 4>({12, 20})));
   return {packed0, packed1};
 }
 
-SmallArray<uint32_t, 4> UnpackIntegersFromFloat3PackedIn1Float(
+SmallArray<uint32_t, 4> UnpackIntegersFromFloat3PackedInOneFloat(
     absl::Span<const std::byte> packed_value) {
   ABSL_DCHECK_EQ(packed_value.size(), sizeof(float));
   float packed_float;
@@ -524,13 +532,13 @@ SmallArray<uint32_t, 4> UnpackIntegersFromFloat3PackedIn1Float(
   uint32_t packed2 = (static_cast<uint32_t>(packed_float) & 0x0000FF);
 
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat3PackedIn1Float)
+                  MeshFormat::AttributeType::kFloat3PackedInOneFloat)
                   .value_or(SmallArray<uint8_t, 4>({0, 0, 0})) ==
               (SmallArray<uint8_t, 4>({8, 8, 8})));
   return {packed0, packed1, packed2};
 }
 
-SmallArray<uint32_t, 4> UnpackIntegersFromFloat3PackedIn2Floats(
+SmallArray<uint32_t, 4> UnpackIntegersFromFloat3PackedInTwoFloats(
     absl::Span<const std::byte> packed_value) {
   ABSL_DCHECK_EQ(packed_value.size(), sizeof(float) * 2);
   std::array<float, 2> packed_floats;
@@ -541,13 +549,13 @@ SmallArray<uint32_t, 4> UnpackIntegersFromFloat3PackedIn2Floats(
                      (static_cast<uint32_t>(packed_floats[1]) & 0xFF0000) >> 16;
   uint32_t packed2 = (static_cast<uint32_t>(packed_floats[1]) & 0x00FFFF);
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat3PackedIn2Floats)
+                  MeshFormat::AttributeType::kFloat3PackedInTwoFloats)
                   .value_or(SmallArray<uint8_t, 4>({0, 0, 0})) ==
               (SmallArray<uint8_t, 4>({16, 16, 16})));
   return {packed0, packed1, packed2};
 }
 
-SmallArray<uint32_t, 4> UnpackIntegersFromFloat4PackedIn1Float(
+SmallArray<uint32_t, 4> UnpackIntegersFromFloat4PackedInOneFloat(
     absl::Span<const std::byte> packed_value) {
   ABSL_DCHECK_EQ(packed_value.size(), sizeof(float));
   float packed_float;
@@ -558,13 +566,13 @@ SmallArray<uint32_t, 4> UnpackIntegersFromFloat4PackedIn1Float(
   uint32_t packed2 = (static_cast<uint32_t>(packed_float) & 0x000FC0) >> 6;
   uint32_t packed3 = (static_cast<uint32_t>(packed_float) & 0x00003F);
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat4PackedIn1Float)
+                  MeshFormat::AttributeType::kFloat4PackedInOneFloat)
                   .value_or(SmallArray<uint8_t, 4>({0, 0, 0, 0})) ==
               (SmallArray<uint8_t, 4>({6, 6, 6, 6})));
   return {packed0, packed1, packed2, packed3};
 }
 
-SmallArray<uint32_t, 4> UnpackIntegersFromFloat4PackedIn2Floats(
+SmallArray<uint32_t, 4> UnpackIntegersFromFloat4PackedInTwoFloats(
     absl::Span<const std::byte> packed_value) {
   ABSL_DCHECK_EQ(packed_value.size(), sizeof(float) * 2);
   std::array<float, 2> packed_floats;
@@ -575,13 +583,13 @@ SmallArray<uint32_t, 4> UnpackIntegersFromFloat4PackedIn2Floats(
   uint32_t packed2 = (static_cast<uint32_t>(packed_floats[1]) & 0xFFF000) >> 12;
   uint32_t packed3 = (static_cast<uint32_t>(packed_floats[1]) & 0x000FFF);
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat4PackedIn2Floats)
+                  MeshFormat::AttributeType::kFloat4PackedInTwoFloats)
                   .value_or(SmallArray<uint8_t, 4>({0, 0, 0, 0})) ==
               (SmallArray<uint8_t, 4>({12, 12, 12, 12})));
   return {packed0, packed1, packed2, packed3};
 }
 
-SmallArray<uint32_t, 4> UnpackIntegersFromFloat4PackedIn3Floats(
+SmallArray<uint32_t, 4> UnpackIntegersFromFloat4PackedInThreeFloats(
     absl::Span<const std::byte> packed_value) {
   ABSL_DCHECK_EQ(packed_value.size(), sizeof(float) * 3);
   std::array<float, 3> packed_floats;
@@ -595,7 +603,7 @@ SmallArray<uint32_t, 4> UnpackIntegersFromFloat4PackedIn3Floats(
                      (static_cast<uint32_t>(packed_floats[2]) & 0xFC0000) >> 18;
   uint32_t packed3 = (static_cast<uint32_t>(packed_floats[2]) & 0x03FFFF);
   ABSL_DCHECK(MeshFormat::PackedBitsPerComponent(
-                  MeshFormat::AttributeType::kFloat4PackedIn3Floats)
+                  MeshFormat::AttributeType::kFloat4PackedInThreeFloats)
                   .value_or(SmallArray<uint8_t, 4>({0, 0, 0, 0})) ==
               (SmallArray<uint8_t, 4>({18, 18, 18, 18})));
   return {packed0, packed1, packed2, packed3};
@@ -637,27 +645,29 @@ SmallArray<uint32_t, 4> UnpackIntegersFromPackedAttribute(
   ABSL_DCHECK(PackedFloatValuesAreRepresentable(type, packed_value))
       << "Cannot unpack: Unrepresentable value found";
   switch (type) {
-    case MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte:
-      return UnpackIntegersFromFloat1PackedIn1UnsignedByte(packed_value);
-    case MeshFormat::AttributeType::kFloat2PackedIn1Float:
-      return UnpackIntegersFromFloat2PackedIn1Float(packed_value);
-    case MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12:
-      return UnpackIntegersFromFloat2PackedIn3UnsignedBytes_XY12(packed_value);
-    case MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20:
-      return UnpackIntegersFromFloat2PackedIn4UnsignedBytes_X12_Y20(
+    case MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte:
+      return UnpackIntegersFromFloat1PackedInOneUnsignedByte(packed_value);
+    case MeshFormat::AttributeType::kFloat2PackedInOneFloat:
+      return UnpackIntegersFromFloat2PackedInOneFloat(packed_value);
+    case MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12:
+      return UnpackIntegersFromFloat2PackedInThreeUnsignedBytes_XY12(
           packed_value);
-    case MeshFormat::AttributeType::kFloat3PackedIn1Float:
-      return UnpackIntegersFromFloat3PackedIn1Float(packed_value);
-    case MeshFormat::AttributeType::kFloat3PackedIn2Floats:
-      return UnpackIntegersFromFloat3PackedIn2Floats(packed_value);
-    case MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
-      return UnpackIntegersFromFloat3PackedIn4UnsignedBytes_XYZ10(packed_value);
-    case MeshFormat::AttributeType::kFloat4PackedIn1Float:
-      return UnpackIntegersFromFloat4PackedIn1Float(packed_value);
-    case MeshFormat::AttributeType::kFloat4PackedIn2Floats:
-      return UnpackIntegersFromFloat4PackedIn2Floats(packed_value);
-    case MeshFormat::AttributeType::kFloat4PackedIn3Floats:
-      return UnpackIntegersFromFloat4PackedIn3Floats(packed_value);
+    case MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20:
+      return UnpackIntegersFromFloat2PackedInFourUnsignedBytes_X12_Y20(
+          packed_value);
+    case MeshFormat::AttributeType::kFloat3PackedInOneFloat:
+      return UnpackIntegersFromFloat3PackedInOneFloat(packed_value);
+    case MeshFormat::AttributeType::kFloat3PackedInTwoFloats:
+      return UnpackIntegersFromFloat3PackedInTwoFloats(packed_value);
+    case MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10:
+      return UnpackIntegersFromFloat3PackedInFourUnsignedBytes_XYZ10(
+          packed_value);
+    case MeshFormat::AttributeType::kFloat4PackedInOneFloat:
+      return UnpackIntegersFromFloat4PackedInOneFloat(packed_value);
+    case MeshFormat::AttributeType::kFloat4PackedInTwoFloats:
+      return UnpackIntegersFromFloat4PackedInTwoFloats(packed_value);
+    case MeshFormat::AttributeType::kFloat4PackedInThreeFloats:
+      return UnpackIntegersFromFloat4PackedInThreeFloats(packed_value);
     case MeshFormat::AttributeType::kFloat1Unpacked:
     case MeshFormat::AttributeType::kFloat2Unpacked:
     case MeshFormat::AttributeType::kFloat3Unpacked:
@@ -678,16 +688,16 @@ SmallArray<float, 4> ReadFloatsFromUnpackedAttribute(
       return UnpackFloatsFromFloat3Unpacked(packed_value);
     case MeshFormat::AttributeType::kFloat4Unpacked:
       return UnpackFloatsFromFloat4Unpacked(packed_value);
-    case MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte:
-    case MeshFormat::AttributeType::kFloat2PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12:
-    case MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20:
-    case MeshFormat::AttributeType::kFloat3PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat3PackedIn2Floats:
-    case MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
-    case MeshFormat::AttributeType::kFloat4PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat4PackedIn2Floats:
-    case MeshFormat::AttributeType::kFloat4PackedIn3Floats:
+    case MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte:
+    case MeshFormat::AttributeType::kFloat2PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12:
+    case MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20:
+    case MeshFormat::AttributeType::kFloat3PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat3PackedInTwoFloats:
+    case MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10:
+    case MeshFormat::AttributeType::kFloat4PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat4PackedInTwoFloats:
+    case MeshFormat::AttributeType::kFloat4PackedInThreeFloats:
       break;
   }
   ABSL_LOG(FATAL) << "Packed AttributeType: " << static_cast<uint8_t>(type);
@@ -753,26 +763,26 @@ SmallArray<float, 4> ReadUnpackedFloatAttributeFromByteArray(
                    attr.unpacked_offset];
   switch (attr.type) {
     case MeshFormat::AttributeType::kFloat1Unpacked:
-    case MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte:
+    case MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte:
       return {UnalignedLoadFloat(src)};
     case MeshFormat::AttributeType::kFloat2Unpacked:
-    case MeshFormat::AttributeType::kFloat2PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12:
-    case MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20:
+    case MeshFormat::AttributeType::kFloat2PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12:
+    case MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20:
       return {UnalignedLoadFloat(src), UnalignedLoadFloat(src + sizeof(float))};
     case MeshFormat::AttributeType::kFloat3Unpacked:
-    case MeshFormat::AttributeType::kFloat3PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat3PackedIn2Floats:
-    case MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
+    case MeshFormat::AttributeType::kFloat3PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat3PackedInTwoFloats:
+    case MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10:
       return {
           UnalignedLoadFloat(src),
           UnalignedLoadFloat(src + sizeof(float)),
           UnalignedLoadFloat(src + 2 * sizeof(float)),
       };
     case MeshFormat::AttributeType::kFloat4Unpacked:
-    case MeshFormat::AttributeType::kFloat4PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat4PackedIn2Floats:
-    case MeshFormat::AttributeType::kFloat4PackedIn3Floats:
+    case MeshFormat::AttributeType::kFloat4PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat4PackedInTwoFloats:
+    case MeshFormat::AttributeType::kFloat4PackedInThreeFloats:
       return {
           UnalignedLoadFloat(src),
           UnalignedLoadFloat(src + sizeof(float)),

@@ -51,7 +51,7 @@ class Mesh {
   // `vertex_attributes` should contain one span for each component of the
   // attributes on the vertex, in order, and `triangle_indices` should contain
   // the vertex indices that make up each triangle. E.g., if the vertex has two
-  // attributes of types `kFloat2Unpacked` and `kFloat4PackedIn2Floats`, the
+  // attributes of types `kFloat2Unpacked` and `kFloat4PackedInTwoFloats`, the
   // first two spans are used to populate the components of the first attribute,
   // and the third through sixth spans are used to populate the components of
   // the second attribute.

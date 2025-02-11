@@ -99,25 +99,25 @@ void MutableMesh::SetFloatVertexAttribute(uint32_t vertex_index,
   const float* src = value.Values().data();
   switch (attr.type) {
     case MeshFormat::AttributeType::kFloat1Unpacked:
-    case MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte:
+    case MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte:
       std::memcpy(dst, src, sizeof(float));
       break;
     case MeshFormat::AttributeType::kFloat2Unpacked:
-    case MeshFormat::AttributeType::kFloat2PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12:
-    case MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20:
+    case MeshFormat::AttributeType::kFloat2PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12:
+    case MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20:
       std::memcpy(dst, src, 2 * sizeof(float));
       break;
     case MeshFormat::AttributeType::kFloat3Unpacked:
-    case MeshFormat::AttributeType::kFloat3PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat3PackedIn2Floats:
-    case MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
+    case MeshFormat::AttributeType::kFloat3PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat3PackedInTwoFloats:
+    case MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10:
       std::memcpy(dst, src, 3 * sizeof(float));
       break;
     case MeshFormat::AttributeType::kFloat4Unpacked:
-    case MeshFormat::AttributeType::kFloat4PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat4PackedIn2Floats:
-    case MeshFormat::AttributeType::kFloat4PackedIn3Floats:
+    case MeshFormat::AttributeType::kFloat4PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat4PackedInTwoFloats:
+    case MeshFormat::AttributeType::kFloat4PackedInThreeFloats:
       std::memcpy(dst, src, 4 * sizeof(float));
       break;
   }

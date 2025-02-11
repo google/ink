@@ -170,7 +170,7 @@ TEST(PartitionedMeshTest, FromMutableMeshWithOutlines) {
 
 TEST(PartitionedMeshTest, FromMutableMeshWithPackingParams) {
   MeshFormat packed_format =
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition}},
                           MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   MutableMesh mutable_mesh = MakeStraightLineMutableMesh(2, packed_format);
@@ -262,9 +262,9 @@ TEST(PartitionedMeshTest, FromMutableMeshThatRequiresPartitioningWithOutlines) {
 
 TEST(PartitionedMeshTest, FromMutableMeshOmitAttribute) {
   absl::StatusOr<MeshFormat> original_format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedIn2Floats,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedInTwoFloats,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_EQ(original_format.status(), absl::OkStatus());
@@ -274,7 +274,7 @@ TEST(PartitionedMeshTest, FromMutableMeshOmitAttribute) {
   mutable_mesh.AppendVertex({0, 3});
   mutable_mesh.AppendTriangleIndices({0, 1, 2});
   absl::StatusOr<MeshFormat> expected_format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_EQ(expected_format.status(), absl::OkStatus());

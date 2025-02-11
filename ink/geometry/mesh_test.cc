@@ -102,11 +102,11 @@ TEST(MeshTest, CreateWithDefaultFormat) {
 
 TEST(MeshTest, CreateWithCustomFormat) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedIn2Floats,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedInTwoFloats,
                            MeshFormat::AttributeId::kCustom0},
-                          {MeshFormat::AttributeType::kFloat4PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
@@ -209,11 +209,11 @@ TEST(MeshTest, CreateEmptyMeshWithDefaultFormat) {
 
 TEST(MeshTest, CreateEmptyMeshWithCustomFormat) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedIn2Floats,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedInTwoFloats,
                            MeshFormat::AttributeId::kCustom0},
-                          {MeshFormat::AttributeType::kFloat4PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
@@ -299,10 +299,10 @@ TEST(MeshTest, CreateWithMultipleTriangles) {
 TEST(MeshTest, CreateWithAllPackingParams) {
   absl::StatusOr<Mesh> m = Mesh::Create(
       *MeshFormat::Create(
-          {{AttrType::kFloat3PackedIn2Floats,
+          {{AttrType::kFloat3PackedInTwoFloats,
             MeshFormat::AttributeId::kCustom0},
-           {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl},
-           {AttrType::kFloat2PackedIn1Float, AttrId::kPosition}},
+           {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition}},
           MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
       // Custom attribute
       {{-200, 100, 500},
@@ -367,10 +367,10 @@ TEST(MeshTest, CreateWithAllPackingParams) {
 TEST(MeshTest, CreateWithSomePackingParams) {
   absl::StatusOr<Mesh> m = Mesh::Create(
       *MeshFormat::Create(
-          {{AttrType::kFloat3PackedIn2Floats,
+          {{AttrType::kFloat3PackedInTwoFloats,
             MeshFormat::AttributeId::kCustom0},
-           {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl},
-           {AttrType::kFloat2PackedIn1Float, AttrId::kPosition}},
+           {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition}},
           MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
       // Custom Attribute
       {{-200, 100, 500},
@@ -462,9 +462,9 @@ TEST(MeshTest, RawVertexDataDefaultFormat) {
 
 TEST(MeshTest, RawVertexDataCustomFormat) {
   absl::StatusOr<Mesh> m = Mesh::Create(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition}},
                           MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
       {// Color
@@ -589,7 +589,7 @@ TEST(MeshTest, CreatonErrorNanValue) {
 TEST(MeshTest, CreationErrorRangeLargerThanFloatMax) {
   absl::Status range_too_large =
       Mesh::Create(*MeshFormat::Create(
-                       {{MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                       {{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                          MeshFormat::AttributeId::kPosition}},
                        MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
                    {// Position
@@ -663,7 +663,7 @@ TEST(MeshTest, CreationErrorPackingParamsForUnpackedType) {
       Mesh::Create(
           *MeshFormat::Create(
               {{AttrType::kFloat1Unpacked, MeshFormat::AttributeId::kCustom0},
-               {AttrType::kFloat2PackedIn1Float, AttrId::kPosition}},
+               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition}},
               MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
           {// Custom attribute
            {-200, 100, 500},
@@ -762,11 +762,11 @@ TEST(MeshTest, CloneDefaultConstructedMesh) {
 
 TEST(MeshTest, CloneNonDefaultEmptyMesh) {
   absl::StatusOr<Mesh> original = Mesh::Create(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedIn2Floats,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedInTwoFloats,
                             MeshFormat::AttributeId::kCustom0},
-                           {MeshFormat::AttributeType::kFloat4PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition}},
                           MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
       {{}, {}, {}, {}, {}, {}, {}, {}, {}}, {});
@@ -800,11 +800,11 @@ TEST(MeshTest, CloneNonDefaultEmptyMesh) {
 
 TEST(MeshTest, CloneNonEmptyMesh) {
   absl::StatusOr<Mesh> original = Mesh::Create(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedIn2Floats,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedInTwoFloats,
                             MeshFormat::AttributeId::kCustom0},
-                           {MeshFormat::AttributeType::kFloat4PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition}},
                           MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
       {// Custom attribute

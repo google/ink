@@ -81,23 +81,23 @@ class MeshFormat {
     kFloat1Unpacked,
     // One float, packed into 1 unsigned byte.
     // [0] : 0xFF
-    kFloat1PackedIn1UnsignedByte,
+    kFloat1PackedInOneUnsignedByte,
     // Two floats, stored unchanged and losslessly, even in a packed mesh.
     kFloat2Unpacked,
     // Two floats, packed into the mantissa of a single float, using 12 bits
     // each. The values are stored in the following bits of the mantissa:
     // [0] : 0xFFF000
     // [1] : 0x000FFF
-    kFloat2PackedIn1Float,
+    kFloat2PackedInOneFloat,
     // Two floats, packed into 3 unsigned bytes, using 12 bits each.
     // [0] : 0xFF, 0xF0, 0x00
     // [1] : 0x00, 0x0F, 0xFF
-    kFloat2PackedIn3UnsignedBytes_XY12,
+    kFloat2PackedInThreeUnsignedBytes_XY12,
     // Two floats, packed into 4 unsigned bytes, using 12 bits for the first and
     // 20 bits for the second.
     // [0] : 0xFF, 0xF0, 0x00, 0x00
     // [1] : 0x00, 0x0F, 0xFF, 0xFF
-    kFloat2PackedIn4UnsignedBytes_X12_Y20,
+    kFloat2PackedInFourUnsignedBytes_X12_Y20,
     // Three floats, stored unchanged and losslessly, even in a packed mesh.
     kFloat3Unpacked,
     // Three floats, packed into the mantissa of a single float, using 8 bits
@@ -105,13 +105,13 @@ class MeshFormat {
     // [0] : 0xFF0000
     // [1] : 0x00FF00
     // [2] : 0x0000FF
-    kFloat3PackedIn1Float,
+    kFloat3PackedInOneFloat,
     // Three floats, packed into the mantissa of two floats, using 16 bits
     // each. The values are stored in the following bits of the mantissa:
     // [0] : 0xFFFF00, 0x000000
     // [1] : 0x0000FF, 0xFF0000
     // [2] : 0x000000, 0x00FFFF
-    kFloat3PackedIn2Floats,
+    kFloat3PackedInTwoFloats,
     // Three floats, packed into 4 unsigned bytes, using 10 bits each for the
     // first, second, and third floats.
     // [0] : 0xFF, 0xC0, 0x00, 0x00
@@ -120,7 +120,7 @@ class MeshFormat {
     // There will be two bits leftover which can be found at the end of the 4th
     // byte. The leftover bits will be set to 0 during packing and ignored
     // during unpacking.
-    kFloat3PackedIn4UnsignedBytes_XYZ10,
+    kFloat3PackedInFourUnsignedBytes_XYZ10,
     // Four floats, stored unchanged and losslessly, even in a packed mesh.
     kFloat4Unpacked,
     // Four floats, packed into the mantissa of a single float, using 6 bits
@@ -129,21 +129,21 @@ class MeshFormat {
     // [1] : 0x03F000
     // [2] : 0x000FC0
     // [3] : 0x00003F
-    kFloat4PackedIn1Float,
+    kFloat4PackedInOneFloat,
     // Four floats, packed into the mantissa of two floats, using 12 bits
     // each. The values are stored in the following bits of the mantissa:
     // [0] : 0xFFF000, 0x000000
     // [1] : 0x000FFF, 0x000000
     // [2] : 0x000000, 0xFFF000
     // [3] : 0x000000, 0x000FFF
-    kFloat4PackedIn2Floats,
+    kFloat4PackedInTwoFloats,
     // Four floats, packed into the mantissa of three floats, using 18 bits
     // each. The values are stored in the following bits of the mantissa:
     // [0] : 0xFFFFC0, 0x000000, 0x000000
     // [1] : 0x00003F, 0xFFF000, 0x000000
     // [2] : 0x000000, 0x000FFF, 0xFC0000
     // [3] : 0x000000, 0x000000, 0x03FFFF
-    kFloat4PackedIn3Floats,
+    kFloat4PackedInThreeFloats,
   };
   // LINT.ThenChange(
   //   fuzz_domains.cc:attribute_types,

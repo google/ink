@@ -100,7 +100,7 @@ void EncodeUnpackedMeshPositions(const Mesh& mesh, CodedMesh& coded_mesh) {
   ABSL_CHECK(position_bounds.has_value());  // we know mesh is non-empty
   absl::StatusOr<MeshAttributeCodingParams> position_coding_params =
       mesh_internal::ComputeCodingParams(
-          MeshFormat::AttributeType::kFloat2PackedIn1Float, *position_bounds);
+          MeshFormat::AttributeType::kFloat2PackedInOneFloat, *position_bounds);
   ABSL_CHECK_OK(position_coding_params);  // Mesh type guarantees valid bounds
   InitCodedMeshPositions(vertex_count, *position_coding_params, coded_mesh);
 

@@ -86,9 +86,9 @@ TEST(MutableMeshTest, DefaultCtor) {
 
 TEST(MutableMeshTest, ConstructWithFormat) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat1Unpacked,
                            MeshFormat::AttributeId::kCustom0}},
@@ -105,9 +105,9 @@ TEST(MutableMeshTest, ConstructWithFormat) {
 
 TEST(MutableMeshTest, AppendVertex) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -124,9 +124,9 @@ TEST(MutableMeshTest, AppendVertex) {
 
 TEST(MutableMeshTest, AppendMultipleVertices) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -172,9 +172,9 @@ FUZZ_TEST(MutableMeshTest, CanStorePositionsInAnyMeshFormat)
 
 TEST(MutableMeshTest, CloneEmptyMesh) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat1Unpacked,
                            MeshFormat::AttributeId::kCustom0}},
@@ -192,9 +192,9 @@ TEST(MutableMeshTest, CloneEmptyMesh) {
 
 TEST(MutableMeshTest, ClonedEmptyMeshModificationsAreUnique) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -219,9 +219,9 @@ TEST(MutableMeshTest, ClonedEmptyMeshModificationsAreUnique) {
 
 TEST(MutableMeshTest, CloneNonEmptyMesh) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -254,9 +254,9 @@ TEST(MutableMeshTest, CloneNonEmptyMesh) {
 
 TEST(MutableMeshTest, ClonedNonEmptyMeshModificationsAreUnique) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -286,9 +286,9 @@ TEST(MutableMeshTest, ClonedNonEmptyMeshModificationsAreUnique) {
 
 TEST(MutableMeshTest, ClearEmptyMesh) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat1Unpacked,
                            MeshFormat::AttributeId::kCustom0}},
@@ -303,9 +303,9 @@ TEST(MutableMeshTest, ClearEmptyMesh) {
 
 TEST(MutableMeshTest, ClearNonEmptyMesh) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat1Unpacked,
                            MeshFormat::AttributeId::kCustom0}},
@@ -326,9 +326,9 @@ TEST(MutableMeshTest, ClearNonEmptyMesh) {
 
 TEST(MutableMeshTest, ResetEmptyMesh) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat1Unpacked,
                            MeshFormat::AttributeId::kCustom0}},
@@ -345,9 +345,9 @@ TEST(MutableMeshTest, ResetEmptyMesh) {
 
 TEST(MutableMeshTest, ResetNonEmptyMesh) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat1Unpacked,
                            MeshFormat::AttributeId::kCustom0}},
@@ -369,9 +369,9 @@ TEST(MutableMeshTest, ResetNonEmptyMesh) {
 
 TEST(MutableMeshTest, SetVertexPosition) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -390,9 +390,9 @@ TEST(MutableMeshTest, SetVertexPosition) {
 
 TEST(MutableMeshTest, SetFloatVertexAttribute) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -410,9 +410,9 @@ TEST(MutableMeshTest, SetFloatVertexAttribute) {
 
 TEST(MutableMeshTest, SetFloatVertexAttributeBytePacked) {
   MutableMesh m(*MeshFormat::Create(
-      {{MeshFormat::AttributeType::kFloat2PackedIn1Float,
+      {{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
         MeshFormat::AttributeId::kPosition},
-       {MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+       {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
         MeshFormat::AttributeId::kCustom0}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked));
 
@@ -428,7 +428,7 @@ TEST(MutableMeshTest, VertexAccessorsAlternateFormat) {
   absl::StatusOr<MeshFormat> format =
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2Unpacked,
                            MeshFormat::AttributeId::kPosition},
-                          {MeshFormat::AttributeType::kFloat3PackedIn2Floats,
+                          {MeshFormat::AttributeType::kFloat3PackedInTwoFloats,
                            MeshFormat::AttributeId::kTexture}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
@@ -443,9 +443,9 @@ TEST(MutableMeshTest, VertexAccessorsAlternateFormat) {
 
 TEST(MutableMeshTest, AppendTriangleIndices) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -459,9 +459,9 @@ TEST(MutableMeshTest, AppendTriangleIndices) {
 
 TEST(MutableMeshTest, AppendMultipleTriangles) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -481,9 +481,9 @@ TEST(MutableMeshTest, AppendMultipleTriangles) {
 
 TEST(MutableMeshTest, SetTriangleIndices) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -500,9 +500,9 @@ TEST(MutableMeshTest, SetTriangleIndices) {
 
 TEST(MutableMeshTest, InsertTriangleIndices) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -522,9 +522,9 @@ TEST(MutableMeshTest, InsertTriangleIndices) {
 
 TEST(MutableMeshTest, InsertTriangleIndicesAtEnd) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -542,9 +542,9 @@ TEST(MutableMeshTest, InsertTriangleIndicesAtEnd) {
 
 TEST(MutableMeshTest, ResizeEnlargingMesh) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -578,9 +578,9 @@ TEST(MutableMeshTest, ResizeEnlargingMesh) {
 
 TEST(MutableMeshTest, ResizeShrinkingMesh) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -612,9 +612,9 @@ TEST(MutableMeshTest, ResizeShrinkingMesh) {
 
 TEST(MutableMeshTest, ValidateTrianglesValidCase) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -635,9 +635,9 @@ TEST(MutableMeshTest, ValidateTrianglesValidCase) {
 
 TEST(MutableMeshTest, ValidateTrianglesNonExistentVertex) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -660,9 +660,9 @@ TEST(MutableMeshTest, ValidateTrianglesNonExistentVertex) {
 
 TEST(MutableMeshTest, ValidateTrianglesAllowsTrianglesWithNegativeArea) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -683,9 +683,9 @@ TEST(MutableMeshTest, ValidateTrianglesAllowsTrianglesWithNegativeArea) {
 
 TEST(MutableMeshTest, ValidateTrianglesRepeatedVertex) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -709,9 +709,9 @@ TEST(MutableMeshTest, ValidateTrianglesRepeatedVertex) {
 
 TEST(MutableMeshTest, ValidateTrianglesDoesNotDetectExtraVertices) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -733,9 +733,9 @@ TEST(MutableMeshTest, ValidateTrianglesDoesNotDetectExtraVertices) {
 
 TEST(MutableMeshTest, GetTriangle) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -808,9 +808,9 @@ TEST(MutableMeshTest, RawVertexDataWhenNonEmpty) {
 
 TEST(MutableMeshTest, RawVertexDataWhenNonEmptyWithDifferentFormat) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -854,9 +854,9 @@ TEST(MutableMeshTest, RawIndexDataWhenNonEmpty) {
 
 TEST(MutableMeshTest, RawIndexDataWhenNonEmptyWithDifferentFormat) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -901,9 +901,9 @@ TEST(MutableMeshTest, FromMeshDefaultFormat) {
 
 TEST(MutableMeshTest, FromMeshCustomFormat) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat1Unpacked,
                            MeshFormat::AttributeId::kCustom0}},
@@ -988,9 +988,9 @@ TEST(MutableMeshTest, AsMeshesEmpty) {
 TEST(MutableMeshtest, AsMeshesEmptyWithFormat) {
   auto empty_meshes =
       MutableMesh(*MeshFormat::Create(
-                      {{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+                      {{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                         MeshFormat::AttributeId::kColorShiftHsl},
-                       {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                       {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                         MeshFormat::AttributeId::kPosition},
                        {MeshFormat::AttributeType::kFloat1Unpacked,
                         MeshFormat::AttributeId::kCustom0}},
@@ -1033,9 +1033,9 @@ TEST(MutableMeshTest, AsMeshesDefaultFormat) {
 
 TEST(MutableMeshTest, AsMeshesCustomFormat) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat1Unpacked,
                            MeshFormat::AttributeId::kCustom0}},
@@ -1220,9 +1220,9 @@ TEST(MutableMeshTest, AsMeshes16BitMultiplePartitionsPreservesMinimumBounds) {
 
 TEST(MutableMeshTest, AsMeshesWithCustomPackingParams) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat1Unpacked,
                            MeshFormat::AttributeId::kCustom0}},
@@ -1299,9 +1299,9 @@ TEST(MutableMeshTest, AsMeshesWithCustomPackingParams) {
 TEST(MutableMeshTest,
      AsMeshesWithCustomPackingParamsUsingDefaultForPackedType) {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat1Unpacked,
                            MeshFormat::AttributeId::kCustom0}},
@@ -1408,9 +1408,9 @@ TEST(MutableMeshTest, AsMeshesAllowsTrianglesWithNegativeArea) {
 
 TEST(MutableMeshTest, AsMeshesRejectsNonFiniteValues) {
   MutableMesh baseline(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -1466,9 +1466,9 @@ TEST(MutableMeshTest, AsMeshesRejectsNonFiniteValues) {
 
 TEST(MutableMeshTest, AsMeshesFailsWrongNumberOfPackingParams) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -1504,9 +1504,9 @@ TEST(MutableMeshTest, AsMeshesFailsWrongNumberOfPackingParams) {
 
 TEST(MutableMeshTest, AsMeshesFailsPackingParamsForUnpackedType) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -1543,9 +1543,9 @@ TEST(MutableMeshTest, AsMeshesFailsPackingParamsForUnpackedType) {
 
 TEST(MutableMeshTest, AsMeshesFailsInvalidPackingParams) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -1606,9 +1606,9 @@ TEST(MutableMeshTest, AsMeshesFailsInvalidPackingParams) {
 TEST(MutableMeshTest,
      AsMeshesFailsPackingParamsCannotRepresentAttributeValues) {
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -1882,9 +1882,9 @@ TEST(MutableMeshTest,
 
 TEST(MutableMeshTest, AsMeshesOmitAttribute) {
   absl::StatusOr<MeshFormat> original_format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedIn2Floats,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedInTwoFloats,
                            MeshFormat::AttributeId::kColorShiftHsl},
-                          {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_EQ(original_format.status(), absl::OkStatus());
@@ -1902,7 +1902,7 @@ TEST(MutableMeshTest, AsMeshesOmitAttribute) {
   const Mesh& mesh = (*meshes)[0];
 
   absl::StatusOr<MeshFormat> expected_format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_EQ(expected_format.status(), absl::OkStatus());
@@ -1966,16 +1966,16 @@ void AsMeshesDoesNotFailForValidMutableMesh(const MutableMesh& mutable_mesh) {
 }
 FUZZ_TEST(MutableMeshTest, AsMeshesDoesNotFailForValidMutableMesh)
     .WithDomains(ValidPackableNonEmptyPositionOnlyMutableMesh(
-        MeshFormat::AttributeType::kFloat2PackedIn1Float));
+        MeshFormat::AttributeType::kFloat2PackedInOneFloat));
 
 TEST(MutableMeshDeathTest, VertexIndexOutOfBounds) {
   // There is no EXPECT_DEBUG_DEATH_IF_SUPPORTED, so we only run these when
   // compiled in debug mode.
 #ifndef NDEBUG
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -1998,9 +1998,9 @@ TEST(MutableMeshDeathTest, AttributeIndexOutOfBounds) {
   // compiled in debug mode.
 #ifndef NDEBUG
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -2021,9 +2021,9 @@ TEST(MutableMeshDeathTest, WrongNumberOfComponentsForAttribute) {
   // compiled in debug mode.
 #ifndef NDEBUG
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -2043,9 +2043,9 @@ TEST(MutableMeshDeathTest, TriangleIndexOutOfBounds) {
   // compiled in debug mode.
 #ifndef NDEBUG
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -2072,9 +2072,9 @@ TEST(MutableMeshDeathTest, TriangleVertexIndexNotRepresentable) {
 #ifndef NDEBUG
   std::array<uint32_t, 3> bad_indices{1, 65536, 2};
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},
@@ -2094,9 +2094,9 @@ TEST(MutableMeshDeathTest, TriangleVertexIndexOutOfBounds) {
   // compiled in debug mode.
 #ifndef NDEBUG
   MutableMesh m(
-      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedIn1Float,
+      *MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
                             MeshFormat::AttributeId::kColorShiftHsl},
-                           {MeshFormat::AttributeType::kFloat2PackedIn1Float,
+                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                             MeshFormat::AttributeId::kPosition},
                            {MeshFormat::AttributeType::kFloat1Unpacked,
                             MeshFormat::AttributeId::kCustom0}},

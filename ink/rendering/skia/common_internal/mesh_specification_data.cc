@@ -213,13 +213,14 @@ namespace {
 std::optional<MeshSpecificationData::AttributeType>
 FindTypeForPositionAndOpacityShift(MeshFormat::AttributeType position_type,
                                    MeshFormat::AttributeType opacity_type) {
-  if (position_type == MeshFormat::AttributeType::kFloat2PackedIn1Float &&
+  if (position_type == MeshFormat::AttributeType::kFloat2PackedInOneFloat &&
       opacity_type == MeshFormat::AttributeType::kFloat1Unpacked) {
     return MeshSpecificationData::AttributeType::kFloat2;
   }
   if (position_type ==
-          MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12 &&
-      opacity_type == MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte) {
+          MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12 &&
+      opacity_type ==
+          MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte) {
     return MeshSpecificationData::AttributeType::kUByte4;
   }
   return std::nullopt;
@@ -233,7 +234,7 @@ std::optional<MeshSpecificationData::AttributeType> FindTypeForHslShift(
     return MeshSpecificationData::AttributeType::kFloat3;
   }
   if (hsl_shift_type ==
-      MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10) {
+      MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10) {
     return MeshSpecificationData::AttributeType::kUByte4;
   }
   return std::nullopt;
@@ -249,8 +250,8 @@ FindTypeForDerivativeAndLabel(MeshFormat::AttributeType derivative_type,
     return MeshSpecificationData::AttributeType::kFloat3;
   }
   if (derivative_type ==
-          MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12 &&
-      label_type == MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte) {
+          MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12 &&
+      label_type == MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte) {
     return MeshSpecificationData::AttributeType::kUByte4;
   }
   return std::nullopt;
@@ -267,13 +268,13 @@ FindTypeForSurfaceUvAndAnimationOffset(
     return MeshSpecificationData::AttributeType::kFloat3;
   }
   if (surface_uv_type ==
-          MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12 &&
+          MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12 &&
       animation_offset_type ==
-          MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte) {
+          MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte) {
     return MeshSpecificationData::AttributeType::kUByte4;
   }
   if (surface_uv_type ==
-          MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20 &&
+          MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20 &&
       animation_offset_type == std::nullopt) {
     return MeshSpecificationData::AttributeType::kUByte4;
   }

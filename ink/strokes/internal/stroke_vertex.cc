@@ -127,14 +127,14 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
   switch (attribute.id) {
     case MeshFormat::AttributeId::kOpacityShift:
       if (attribute.type ==
-          MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte) {
+          MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte) {
         return MeshAttributeCodingParams{
             .components = {kOpacityCodingParams8bit}};
       }
       break;
     case MeshFormat::AttributeId::kColorShiftHsl:
       if (attribute.type ==
-          MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10) {
+          MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10) {
         return MeshAttributeCodingParams{.components = {kHslCodingParams10bit,
                                                         kHslCodingParams10bit,
                                                         kHslCodingParams10bit}};
@@ -143,18 +143,18 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
     case MeshFormat::AttributeId::kSideLabel:
     case MeshFormat::AttributeId::kForwardLabel:
       if (attribute.type ==
-          MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte) {
+          MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte) {
         return MeshAttributeCodingParams{.components = {kLabelCodingParams}};
       }
       break;
     case MeshFormat::AttributeId::kSurfaceUv:
       if (attribute.type ==
-          MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20) {
+          MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20) {
         return MeshAttributeCodingParams{
             .components = {kSurfaceUCodingParams12bit,
                            kSurfaceVCodingParams20bit}};
       } else if (attribute.type == MeshFormat::AttributeType::
-                                       kFloat2PackedIn3UnsignedBytes_XY12) {
+                                       kFloat2PackedInThreeUnsignedBytes_XY12) {
         return MeshAttributeCodingParams{
             .components = {kSurfaceUCodingParams12bit,
                            kSurfaceVCodingParams12bit}};
@@ -162,7 +162,7 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
       break;
     case MeshFormat::AttributeId::kAnimationOffset:
       if (attribute.type ==
-          MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte) {
+          MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte) {
         return MeshAttributeCodingParams{
             .components = {kAnimationCodingParams8bit}};
       }
@@ -203,43 +203,43 @@ MeshFormat MakeValidatedFullFormat() {
   auto format = MeshFormat::Create(
       {
           {
-              MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
+              MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
               MeshFormat::AttributeId::kPosition,
           },
           {
-              MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+              MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
               MeshFormat::AttributeId::kOpacityShift,
           },
           {
-              MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+              MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10,
               MeshFormat::AttributeId::kColorShiftHsl,
           },
           {
-              MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
+              MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
               MeshFormat::AttributeId::kSideDerivative,
           },
           {
-              MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+              MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
               MeshFormat::AttributeId::kSideLabel,
           },
           {
-              MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
+              MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
               MeshFormat::AttributeId::kForwardDerivative,
           },
           {
-              MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+              MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
               MeshFormat::AttributeId::kForwardLabel,
           },
           // TODO: b/330511293 - Once we support winding textures on extruded
           // (non-particle) `BrushCoat`s, we'll need to use a different format
-          // for those meshes, using `kFloat2PackedIn4UnsignedBytes_X12_Y20` for
-          // `kSurfaceUv`, and omitting the `kAnimationOffset` attribute.
+          // for those meshes, using `kFloat2PackedInFourUnsignedBytes_X12_Y20`
+          // for `kSurfaceUv`, and omitting the `kAnimationOffset` attribute.
           {
-              MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
+              MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
               MeshFormat::AttributeId::kSurfaceUv,
           },
           {
-              MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+              MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
               MeshFormat::AttributeId::kAnimationOffset,
           },
       },

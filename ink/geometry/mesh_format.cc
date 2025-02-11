@@ -40,19 +40,19 @@ namespace {
 bool IsValidAttributeType(MeshFormat::AttributeType type) {
   switch (type) {
     case MeshFormat::AttributeType::kFloat1Unpacked:
-    case MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte:
+    case MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte:
     case MeshFormat::AttributeType::kFloat2Unpacked:
-    case MeshFormat::AttributeType::kFloat2PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12:
-    case MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20:
+    case MeshFormat::AttributeType::kFloat2PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12:
+    case MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20:
     case MeshFormat::AttributeType::kFloat3Unpacked:
-    case MeshFormat::AttributeType::kFloat3PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat3PackedIn2Floats:
-    case MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
+    case MeshFormat::AttributeType::kFloat3PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat3PackedInTwoFloats:
+    case MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10:
     case MeshFormat::AttributeType::kFloat4Unpacked:
-    case MeshFormat::AttributeType::kFloat4PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat4PackedIn2Floats:
-    case MeshFormat::AttributeType::kFloat4PackedIn3Floats:
+    case MeshFormat::AttributeType::kFloat4PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat4PackedInTwoFloats:
+    case MeshFormat::AttributeType::kFloat4PackedInThreeFloats:
       return true;
   }
   return false;
@@ -185,22 +185,22 @@ absl::StatusOr<MeshFormat> MeshFormat::WithoutAttributes(
 uint8_t MeshFormat::ComponentCount(AttributeType type) {
   switch (type) {
     case AttributeType::kFloat1Unpacked:
-    case AttributeType::kFloat1PackedIn1UnsignedByte:
+    case AttributeType::kFloat1PackedInOneUnsignedByte:
       return 1;
     case AttributeType::kFloat2Unpacked:
-    case AttributeType::kFloat2PackedIn1Float:
-    case AttributeType::kFloat2PackedIn3UnsignedBytes_XY12:
-    case AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20:
+    case AttributeType::kFloat2PackedInOneFloat:
+    case AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12:
+    case AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20:
       return 2;
     case AttributeType::kFloat3Unpacked:
-    case AttributeType::kFloat3PackedIn1Float:
-    case AttributeType::kFloat3PackedIn2Floats:
-    case AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
+    case AttributeType::kFloat3PackedInOneFloat:
+    case AttributeType::kFloat3PackedInTwoFloats:
+    case AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10:
       return 3;
     case AttributeType::kFloat4Unpacked:
-    case AttributeType::kFloat4PackedIn1Float:
-    case AttributeType::kFloat4PackedIn2Floats:
-    case AttributeType::kFloat4PackedIn3Floats:
+    case AttributeType::kFloat4PackedInOneFloat:
+    case AttributeType::kFloat4PackedInTwoFloats:
+    case AttributeType::kFloat4PackedInThreeFloats:
       return 4;
   }
   ABSL_LOG(FATAL) << "Unrecognized AttributeType " << static_cast<int>(type);
@@ -214,24 +214,24 @@ std::optional<SmallArray<uint8_t, 4>> MeshFormat::PackedBitsPerComponent(
     case AttributeType::kFloat3Unpacked:
     case AttributeType::kFloat4Unpacked:
       return std::nullopt;
-    case AttributeType::kFloat1PackedIn1UnsignedByte:
+    case AttributeType::kFloat1PackedInOneUnsignedByte:
       return SmallArray<uint8_t, 4>({8});
-    case AttributeType::kFloat2PackedIn1Float:
-    case AttributeType::kFloat2PackedIn3UnsignedBytes_XY12:
+    case AttributeType::kFloat2PackedInOneFloat:
+    case AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12:
       return SmallArray<uint8_t, 4>({12, 12});
-    case AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20:
+    case AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20:
       return SmallArray<uint8_t, 4>({12, 20});
-    case AttributeType::kFloat4PackedIn2Floats:
+    case AttributeType::kFloat4PackedInTwoFloats:
       return SmallArray<uint8_t, 4>({12, 12, 12, 12});
-    case AttributeType::kFloat3PackedIn1Float:
+    case AttributeType::kFloat3PackedInOneFloat:
       return SmallArray<uint8_t, 4>({8, 8, 8});
-    case AttributeType::kFloat3PackedIn2Floats:
+    case AttributeType::kFloat3PackedInTwoFloats:
       return SmallArray<uint8_t, 4>({16, 16, 16});
-    case AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
+    case AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10:
       return SmallArray<uint8_t, 4>({10, 10, 10});
-    case AttributeType::kFloat4PackedIn1Float:
+    case AttributeType::kFloat4PackedInOneFloat:
       return SmallArray<uint8_t, 4>({6, 6, 6, 6});
-    case AttributeType::kFloat4PackedIn3Floats:
+    case AttributeType::kFloat4PackedInThreeFloats:
       return SmallArray<uint8_t, 4>({18, 18, 18, 18});
   }
   ABSL_LOG(FATAL) << "Unrecognized AttributeType " << static_cast<int>(type);
@@ -243,21 +243,21 @@ uint8_t MeshFormat::UnpackedAttributeSize(AttributeType type) {
 
 bool MeshFormat::IsPackedAsFloat(AttributeType type) {
   switch (type) {
-    case MeshFormat::AttributeType::kFloat2PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat3PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat3PackedIn2Floats:
-    case MeshFormat::AttributeType::kFloat4PackedIn1Float:
-    case MeshFormat::AttributeType::kFloat4PackedIn2Floats:
-    case MeshFormat::AttributeType::kFloat4PackedIn3Floats:
+    case MeshFormat::AttributeType::kFloat2PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat3PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat3PackedInTwoFloats:
+    case MeshFormat::AttributeType::kFloat4PackedInOneFloat:
+    case MeshFormat::AttributeType::kFloat4PackedInTwoFloats:
+    case MeshFormat::AttributeType::kFloat4PackedInThreeFloats:
       return true;
     case MeshFormat::AttributeType::kFloat1Unpacked:
     case MeshFormat::AttributeType::kFloat2Unpacked:
     case MeshFormat::AttributeType::kFloat3Unpacked:
     case MeshFormat::AttributeType::kFloat4Unpacked:
-    case MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte:
-    case MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12:
-    case MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20:
-    case MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
+    case MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte:
+    case MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12:
+    case MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20:
+    case MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10:
       return false;
   }
   ABSL_LOG(FATAL) << "Unrecognized AttributeType " << static_cast<int>(type);
@@ -265,23 +265,23 @@ bool MeshFormat::IsPackedAsFloat(AttributeType type) {
 
 uint8_t MeshFormat::PackedAttributeSize(AttributeType type) {
   switch (type) {
-    case MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte:
+    case MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte:
       return 1;
-    case AttributeType::kFloat2PackedIn3UnsignedBytes_XY12:
+    case AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12:
       return 3;
     case AttributeType::kFloat1Unpacked:
-    case AttributeType::kFloat2PackedIn1Float:
-    case AttributeType::kFloat3PackedIn1Float:
-    case AttributeType::kFloat4PackedIn1Float:
-    case AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20:
-    case AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
+    case AttributeType::kFloat2PackedInOneFloat:
+    case AttributeType::kFloat3PackedInOneFloat:
+    case AttributeType::kFloat4PackedInOneFloat:
+    case AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20:
+    case AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10:
       return 4;
     case AttributeType::kFloat2Unpacked:
-    case AttributeType::kFloat3PackedIn2Floats:
-    case AttributeType::kFloat4PackedIn2Floats:
+    case AttributeType::kFloat3PackedInTwoFloats:
+    case AttributeType::kFloat4PackedInTwoFloats:
       return 8;
     case AttributeType::kFloat3Unpacked:
-    case AttributeType::kFloat4PackedIn3Floats:
+    case AttributeType::kFloat4PackedInThreeFloats:
       return 12;
     case AttributeType::kFloat4Unpacked:
       return 16;
@@ -392,32 +392,32 @@ std::string ToFormattedString(MeshFormat::AttributeType type) {
   switch (type) {
     case MeshFormat::AttributeType::kFloat1Unpacked:
       return "kFloat1Unpacked";
-    case MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte:
-      return "kFloat1PackedIn1UnsignedByte";
+    case MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte:
+      return "kFloat1PackedInOneUnsignedByte";
     case MeshFormat::AttributeType::kFloat2Unpacked:
       return "kFloat2Unpacked";
-    case MeshFormat::AttributeType::kFloat2PackedIn1Float:
-      return "kFloat2PackedIn1Float";
-    case MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12:
-      return "kFloat2PackedIn3UnsignedBytes_XY12";
-    case MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20:
-      return "kFloat2PackedIn4UnsignedBytes_X12_Y20";
+    case MeshFormat::AttributeType::kFloat2PackedInOneFloat:
+      return "kFloat2PackedInOneFloat";
+    case MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12:
+      return "kFloat2PackedInThreeUnsignedBytes_XY12";
+    case MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20:
+      return "kFloat2PackedInFourUnsignedBytes_X12_Y20";
     case MeshFormat::AttributeType::kFloat3Unpacked:
       return "kFloat3Unpacked";
-    case MeshFormat::AttributeType::kFloat3PackedIn1Float:
-      return "kFloat3PackedIn1Float";
-    case MeshFormat::AttributeType::kFloat3PackedIn2Floats:
-      return "kFloat3PackedIn2Floats";
-    case MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
-      return "kFloat3PackedIn4UnsignedBytes_XYZ10";
+    case MeshFormat::AttributeType::kFloat3PackedInOneFloat:
+      return "kFloat3PackedInOneFloat";
+    case MeshFormat::AttributeType::kFloat3PackedInTwoFloats:
+      return "kFloat3PackedInTwoFloats";
+    case MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10:
+      return "kFloat3PackedInFourUnsignedBytes_XYZ10";
     case MeshFormat::AttributeType::kFloat4Unpacked:
       return "kFloat4Unpacked";
-    case MeshFormat::AttributeType::kFloat4PackedIn1Float:
-      return "kFloat4PackedIn1Float";
-    case MeshFormat::AttributeType::kFloat4PackedIn2Floats:
-      return "kFloat4PackedIn2Floats";
-    case MeshFormat::AttributeType::kFloat4PackedIn3Floats:
-      return "kFloat4PackedIn3Floats";
+    case MeshFormat::AttributeType::kFloat4PackedInOneFloat:
+      return "kFloat4PackedInOneFloat";
+    case MeshFormat::AttributeType::kFloat4PackedInTwoFloats:
+      return "kFloat4PackedInTwoFloats";
+    case MeshFormat::AttributeType::kFloat4PackedInThreeFloats:
+      return "kFloat4PackedInThreeFloats";
   }
   return absl::StrCat("Invalid(", static_cast<int>(type), ")");
 }

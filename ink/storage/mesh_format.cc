@@ -32,33 +32,33 @@ proto::MeshFormat::AttributeType EncodeMeshAttributeType(
     MeshFormat::AttributeType type) {
   switch (type) {
     case MeshFormat::AttributeType::kFloat1Unpacked:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_1_UNPACKED;
-    case MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_1_PACKED_IN_1_BYTE;
+      return proto::MeshFormat::ATTR_TYPE_FLOAT1_UNPACKED;
+    case MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte:
+      return proto::MeshFormat::ATTR_TYPE_FLOAT1_PACKED_IN_ONE_BYTE;
     case MeshFormat::AttributeType::kFloat2Unpacked:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_2_UNPACKED;
-    case MeshFormat::AttributeType::kFloat2PackedIn1Float:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_2_PACKED_IN_1_FLOAT;
-    case MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_2_PACKED_IN_3_BYTES_XY12;
-    case MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_2_PACKED_IN_4_BYTES_X12_Y20;
+      return proto::MeshFormat::ATTR_TYPE_FLOAT2_UNPACKED;
+    case MeshFormat::AttributeType::kFloat2PackedInOneFloat:
+      return proto::MeshFormat::ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT;
+    case MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12:
+      return proto::MeshFormat::ATTR_TYPE_FLOAT2_PACKED_IN_THREE_BYTES_XY12;
+    case MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20:
+      return proto::MeshFormat::ATTR_TYPE_FLOAT2_PACKED_IN_FOUR_BYTES_X12_Y20;
     case MeshFormat::AttributeType::kFloat3Unpacked:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_3_UNPACKED;
-    case MeshFormat::AttributeType::kFloat3PackedIn1Float:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_3_PACKED_IN_1_FLOAT;
-    case MeshFormat::AttributeType::kFloat3PackedIn2Floats:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_3_PACKED_IN_2_FLOATS;
-    case MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_3_PACKED_IN_4_BYTES_XYZ10;
+      return proto::MeshFormat::ATTR_TYPE_FLOAT3_UNPACKED;
+    case MeshFormat::AttributeType::kFloat3PackedInOneFloat:
+      return proto::MeshFormat::ATTR_TYPE_FLOAT3_PACKED_IN_ONE_FLOAT;
+    case MeshFormat::AttributeType::kFloat3PackedInTwoFloats:
+      return proto::MeshFormat::ATTR_TYPE_FLOAT3_PACKED_IN_TWO_FLOATS;
+    case MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10:
+      return proto::MeshFormat::ATTR_TYPE_FLOAT3_PACKED_IN_FOUR_BYTES_XYZ10;
     case MeshFormat::AttributeType::kFloat4Unpacked:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_4_UNPACKED;
-    case MeshFormat::AttributeType::kFloat4PackedIn1Float:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_4_PACKED_IN_1_FLOAT;
-    case MeshFormat::AttributeType::kFloat4PackedIn2Floats:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_4_PACKED_IN_2_FLOATS;
-    case MeshFormat::AttributeType::kFloat4PackedIn3Floats:
-      return proto::MeshFormat::ATTR_TYPE_FLOAT_4_PACKED_IN_3_FLOATS;
+      return proto::MeshFormat::ATTR_TYPE_FLOAT4_UNPACKED;
+    case MeshFormat::AttributeType::kFloat4PackedInOneFloat:
+      return proto::MeshFormat::ATTR_TYPE_FLOAT4_PACKED_IN_ONE_FLOAT;
+    case MeshFormat::AttributeType::kFloat4PackedInTwoFloats:
+      return proto::MeshFormat::ATTR_TYPE_FLOAT4_PACKED_IN_TWO_FLOATS;
+    case MeshFormat::AttributeType::kFloat4PackedInThreeFloats:
+      return proto::MeshFormat::ATTR_TYPE_FLOAT4_PACKED_IN_THREE_FLOATS;
   }
   ABSL_LOG(FATAL) << "Invalid AttributeType value: " << static_cast<int>(type);
 }
@@ -66,34 +66,35 @@ proto::MeshFormat::AttributeType EncodeMeshAttributeType(
 absl::StatusOr<MeshFormat::AttributeType> DecodeMeshAttributeType(
     proto::MeshFormat::AttributeType type_proto) {
   switch (type_proto) {
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_1_UNPACKED:
+    case proto::MeshFormat::ATTR_TYPE_FLOAT1_UNPACKED:
       return MeshFormat::AttributeType::kFloat1Unpacked;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_1_PACKED_IN_1_BYTE:
-      return MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_2_UNPACKED:
+    case proto::MeshFormat::ATTR_TYPE_FLOAT1_PACKED_IN_ONE_BYTE:
+      return MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte;
+    case proto::MeshFormat::ATTR_TYPE_FLOAT2_UNPACKED:
       return MeshFormat::AttributeType::kFloat2Unpacked;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_2_PACKED_IN_1_FLOAT:
-      return MeshFormat::AttributeType::kFloat2PackedIn1Float;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_2_PACKED_IN_3_BYTES_XY12:
-      return MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_2_PACKED_IN_4_BYTES_X12_Y20:
-      return MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_3_UNPACKED:
+    case proto::MeshFormat::ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT:
+      return MeshFormat::AttributeType::kFloat2PackedInOneFloat;
+    case proto::MeshFormat::ATTR_TYPE_FLOAT2_PACKED_IN_THREE_BYTES_XY12:
+      return MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12;
+    case proto::MeshFormat::ATTR_TYPE_FLOAT2_PACKED_IN_FOUR_BYTES_X12_Y20:
+      return MeshFormat::AttributeType::
+          kFloat2PackedInFourUnsignedBytes_X12_Y20;
+    case proto::MeshFormat::ATTR_TYPE_FLOAT3_UNPACKED:
       return MeshFormat::AttributeType::kFloat3Unpacked;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_3_PACKED_IN_1_FLOAT:
-      return MeshFormat::AttributeType::kFloat3PackedIn1Float;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_3_PACKED_IN_2_FLOATS:
-      return MeshFormat::AttributeType::kFloat3PackedIn2Floats;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_3_PACKED_IN_4_BYTES_XYZ10:
-      return MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_4_UNPACKED:
+    case proto::MeshFormat::ATTR_TYPE_FLOAT3_PACKED_IN_ONE_FLOAT:
+      return MeshFormat::AttributeType::kFloat3PackedInOneFloat;
+    case proto::MeshFormat::ATTR_TYPE_FLOAT3_PACKED_IN_TWO_FLOATS:
+      return MeshFormat::AttributeType::kFloat3PackedInTwoFloats;
+    case proto::MeshFormat::ATTR_TYPE_FLOAT3_PACKED_IN_FOUR_BYTES_XYZ10:
+      return MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10;
+    case proto::MeshFormat::ATTR_TYPE_FLOAT4_UNPACKED:
       return MeshFormat::AttributeType::kFloat4Unpacked;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_4_PACKED_IN_1_FLOAT:
-      return MeshFormat::AttributeType::kFloat4PackedIn1Float;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_4_PACKED_IN_2_FLOATS:
-      return MeshFormat::AttributeType::kFloat4PackedIn2Floats;
-    case proto::MeshFormat::ATTR_TYPE_FLOAT_4_PACKED_IN_3_FLOATS:
-      return MeshFormat::AttributeType::kFloat4PackedIn3Floats;
+    case proto::MeshFormat::ATTR_TYPE_FLOAT4_PACKED_IN_ONE_FLOAT:
+      return MeshFormat::AttributeType::kFloat4PackedInOneFloat;
+    case proto::MeshFormat::ATTR_TYPE_FLOAT4_PACKED_IN_TWO_FLOATS:
+      return MeshFormat::AttributeType::kFloat4PackedInTwoFloats;
+    case proto::MeshFormat::ATTR_TYPE_FLOAT4_PACKED_IN_THREE_FLOATS:
+      return MeshFormat::AttributeType::kFloat4PackedInThreeFloats;
     default:
       return absl::InvalidArgumentError(absl::StrCat(
           "invalid ink.proto.MeshFormat.AttributeType value: ", type_proto));
@@ -124,25 +125,25 @@ proto::MeshFormat::AttributeId EncodeMeshAttributeId(
     case MeshFormat::AttributeId::kAnimationOffset:
       return proto::MeshFormat::ATTR_ID_ANIMATION_OFFSET;
     case MeshFormat::AttributeId::kCustom0:
-      return proto::MeshFormat::ATTR_ID_CUSTOM_0;
+      return proto::MeshFormat::ATTR_ID_CUSTOM0;
     case MeshFormat::AttributeId::kCustom1:
-      return proto::MeshFormat::ATTR_ID_CUSTOM_1;
+      return proto::MeshFormat::ATTR_ID_CUSTOM1;
     case MeshFormat::AttributeId::kCustom2:
-      return proto::MeshFormat::ATTR_ID_CUSTOM_2;
+      return proto::MeshFormat::ATTR_ID_CUSTOM2;
     case MeshFormat::AttributeId::kCustom3:
-      return proto::MeshFormat::ATTR_ID_CUSTOM_3;
+      return proto::MeshFormat::ATTR_ID_CUSTOM3;
     case MeshFormat::AttributeId::kCustom4:
-      return proto::MeshFormat::ATTR_ID_CUSTOM_4;
+      return proto::MeshFormat::ATTR_ID_CUSTOM4;
     case MeshFormat::AttributeId::kCustom5:
-      return proto::MeshFormat::ATTR_ID_CUSTOM_5;
+      return proto::MeshFormat::ATTR_ID_CUSTOM5;
     case MeshFormat::AttributeId::kCustom6:
-      return proto::MeshFormat::ATTR_ID_CUSTOM_6;
+      return proto::MeshFormat::ATTR_ID_CUSTOM6;
     case MeshFormat::AttributeId::kCustom7:
-      return proto::MeshFormat::ATTR_ID_CUSTOM_7;
+      return proto::MeshFormat::ATTR_ID_CUSTOM7;
     case MeshFormat::AttributeId::kCustom8:
-      return proto::MeshFormat::ATTR_ID_CUSTOM_8;
+      return proto::MeshFormat::ATTR_ID_CUSTOM8;
     case MeshFormat::AttributeId::kCustom9:
-      return proto::MeshFormat::ATTR_ID_CUSTOM_9;
+      return proto::MeshFormat::ATTR_ID_CUSTOM9;
   }
   ABSL_LOG(FATAL) << "Invalid AttributeId value: " << static_cast<int>(id);
 }
@@ -170,25 +171,25 @@ absl::StatusOr<MeshFormat::AttributeId> DecodeMeshAttributeId(
       return MeshFormat::AttributeId::kSurfaceUv;
     case proto::MeshFormat::ATTR_ID_ANIMATION_OFFSET:
       return MeshFormat::AttributeId::kAnimationOffset;
-    case proto::MeshFormat::ATTR_ID_CUSTOM_0:
+    case proto::MeshFormat::ATTR_ID_CUSTOM0:
       return MeshFormat::AttributeId::kCustom0;
-    case proto::MeshFormat::ATTR_ID_CUSTOM_1:
+    case proto::MeshFormat::ATTR_ID_CUSTOM1:
       return MeshFormat::AttributeId::kCustom1;
-    case proto::MeshFormat::ATTR_ID_CUSTOM_2:
+    case proto::MeshFormat::ATTR_ID_CUSTOM2:
       return MeshFormat::AttributeId::kCustom2;
-    case proto::MeshFormat::ATTR_ID_CUSTOM_3:
+    case proto::MeshFormat::ATTR_ID_CUSTOM3:
       return MeshFormat::AttributeId::kCustom3;
-    case proto::MeshFormat::ATTR_ID_CUSTOM_4:
+    case proto::MeshFormat::ATTR_ID_CUSTOM4:
       return MeshFormat::AttributeId::kCustom4;
-    case proto::MeshFormat::ATTR_ID_CUSTOM_5:
+    case proto::MeshFormat::ATTR_ID_CUSTOM5:
       return MeshFormat::AttributeId::kCustom5;
-    case proto::MeshFormat::ATTR_ID_CUSTOM_6:
+    case proto::MeshFormat::ATTR_ID_CUSTOM6:
       return MeshFormat::AttributeId::kCustom6;
-    case proto::MeshFormat::ATTR_ID_CUSTOM_7:
+    case proto::MeshFormat::ATTR_ID_CUSTOM7:
       return MeshFormat::AttributeId::kCustom7;
-    case proto::MeshFormat::ATTR_ID_CUSTOM_8:
+    case proto::MeshFormat::ATTR_ID_CUSTOM8:
       return MeshFormat::AttributeId::kCustom8;
-    case proto::MeshFormat::ATTR_ID_CUSTOM_9:
+    case proto::MeshFormat::ATTR_ID_CUSTOM9:
       return MeshFormat::AttributeId::kCustom9;
     default:
       return absl::InvalidArgumentError(absl::StrCat(

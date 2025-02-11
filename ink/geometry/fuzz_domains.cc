@@ -109,25 +109,25 @@ fuzztest::Domain<Angle> NormalizedAngle() {
 fuzztest::Domain<MeshFormat::AttributeType> ArbitraryMeshAttributeType() {
   return fuzztest::ElementOf({
       MeshFormat::AttributeType::kFloat1Unpacked,
-      MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+      MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
       MeshFormat::AttributeType::kFloat2Unpacked,
-      MeshFormat::AttributeType::kFloat2PackedIn1Float,
-      MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
-      MeshFormat::AttributeType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      MeshFormat::AttributeType::kFloat2PackedInOneFloat,
+      MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
+      MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
       MeshFormat::AttributeType::kFloat3Unpacked,
-      MeshFormat::AttributeType::kFloat3PackedIn1Float,
-      MeshFormat::AttributeType::kFloat3PackedIn2Floats,
-      MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+      MeshFormat::AttributeType::kFloat3PackedInOneFloat,
+      MeshFormat::AttributeType::kFloat3PackedInTwoFloats,
+      MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10,
       MeshFormat::AttributeType::kFloat4Unpacked,
-      MeshFormat::AttributeType::kFloat4PackedIn1Float,
-      MeshFormat::AttributeType::kFloat4PackedIn2Floats,
-      MeshFormat::AttributeType::kFloat4PackedIn3Floats,
+      MeshFormat::AttributeType::kFloat4PackedInOneFloat,
+      MeshFormat::AttributeType::kFloat4PackedInTwoFloats,
+      MeshFormat::AttributeType::kFloat4PackedInThreeFloats,
   });
 }
 fuzztest::Domain<MeshFormat::AttributeType> PositionMeshAttributeType() {
   return fuzztest::ElementOf({
       MeshFormat::AttributeType::kFloat2Unpacked,
-      MeshFormat::AttributeType::kFloat2PackedIn1Float,
+      MeshFormat::AttributeType::kFloat2PackedInOneFloat,
   });
 }
 // LINT.ThenChange(mesh_format.h:attribute_types)

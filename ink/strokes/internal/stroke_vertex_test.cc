@@ -129,11 +129,11 @@ TEST(StrokeVertexLabelTest, NegativeMarginIsEquivalentToZero) {
 TEST(StrokeVertexTest,
      MakeCustomPackingArrayReturnsNulloptForPositionAndDerivatives) {
   auto mesh_format = MeshFormat::Create(
-      {{MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
+      {{MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
         MeshFormat::AttributeId::kPosition},
-       {MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
+       {MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
         MeshFormat::AttributeId::kSideDerivative},
-       {MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
+       {MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
         MeshFormat::AttributeId::kForwardDerivative}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(mesh_format.status(), absl::OkStatus());
@@ -149,13 +149,13 @@ TEST(StrokeVertexTest,
   auto mesh_format = MeshFormat::Create(
       {{MeshFormat::AttributeType::kFloat2Unpacked,
         MeshFormat::AttributeId::kPosition},
-       {MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+       {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
         MeshFormat::AttributeId::kOpacityShift},
-       {MeshFormat::AttributeType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+       {MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10,
         MeshFormat::AttributeId::kColorShiftHsl},
-       {MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+       {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
         MeshFormat::AttributeId::kSideLabel},
-       {MeshFormat::AttributeType::kFloat1PackedIn1UnsignedByte,
+       {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
         MeshFormat::AttributeId::kForwardLabel}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(mesh_format.status(), absl::OkStatus());
@@ -187,7 +187,7 @@ TEST(StrokeVertexTest, MakeCustomPackingArraySkipsMatchingAttributes) {
         MeshFormat::AttributeId::kColorShiftHsl},
        {MeshFormat::AttributeType::kFloat2Unpacked,
         MeshFormat::AttributeId::kSideDerivative},
-       {MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12,
+       {MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
         MeshFormat::AttributeId::kForwardDerivative}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(mesh_format.status(), absl::OkStatus());

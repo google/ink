@@ -32,7 +32,7 @@ namespace ink {
 
 MeshFormat MakeSinglePackedPositionFormat() {
   auto format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ABSL_CHECK_OK(format);

@@ -108,7 +108,7 @@ TEST(MeshTest, EncodeTriangleMeshOmittingFormat) {
   ASSERT_TRUE(TextFormat::ParseFromString(
       R"pb(
         format {
-          attribute_types: [ ATTR_TYPE_FLOAT_2_PACKED_IN_1_FLOAT ]
+          attribute_types: [ ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT ]
           attribute_ids: [ ATTR_ID_POSITION ]
         }
       )pb",
@@ -132,7 +132,7 @@ TEST(MeshTest, EncodePackedTriangleMesh) {
   std::vector<uint32_t> triangles = {0, 1, 2};
 
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());

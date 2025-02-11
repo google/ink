@@ -127,11 +127,11 @@ TEST(MeshTestHelpersTest, MakeStraightLineMutableMeshWithFourTriangles) {
 }
 
 TEST(MeshTestHelpersTest, MakeStraightLineMutableMeshWithAlternateFormat) {
-  absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{AttrType::kFloat1Unpacked, AttrId::kOpacityShift},
-                          {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-                          {AttrType::kFloat3PackedIn2Floats, AttrId::kCustom0}},
-                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kOpacityShift},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
 
   MutableMesh m = MakeStraightLineMutableMesh(2, *format);
@@ -230,11 +230,11 @@ TEST(MeshTestHelpersTest, MakeCoiledRingMutableMeshWrapsAroundAndOverlaps) {
 }
 
 TEST(MeshTestHelpersTest, MakeCoiledRingMutableMeshWithAlternateFormat) {
-  absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{AttrType::kFloat1Unpacked, AttrId::kOpacityShift},
-                          {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-                          {AttrType::kFloat3PackedIn2Floats, AttrId::kCustom0}},
-                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kOpacityShift},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
 
   MutableMesh m = MakeCoiledRingMutableMesh(12, 3, *format);
@@ -351,11 +351,11 @@ TEST(MeshTestHelpersTest, MakeStarMutableMeshWithFivePoints) {
 }
 
 TEST(MeshTestHelpersTest, MakeStarMutableMeshWithAlternateFormat) {
-  absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{AttrType::kFloat1Unpacked, AttrId::kOpacityShift},
-                          {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-                          {AttrType::kFloat3PackedIn2Floats, AttrId::kCustom0}},
-                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kOpacityShift},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
 
   MutableMesh m = MakeStarMutableMesh(10, *format);

@@ -225,7 +225,7 @@ struct MeshFormatAndSpecification {
 
 MeshFormatAndSpecification MakePackedPositionMeshFormatAndSpecification() {
   absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedIn1Float,
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ABSL_CHECK_OK(format);

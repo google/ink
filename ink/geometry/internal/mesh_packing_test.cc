@@ -154,20 +154,20 @@ TEST(MeshPackingTest, Float2Unpacked) {
       ElementsAre(20, 112));
 }
 
-TEST(MeshPackingTest, Float2PackedIn1Float) {
+TEST(MeshPackingTest, Float2PackedInOneFloat) {
   EXPECT_THAT(PackAttributeAndGetAsFloatArray(
-                  AttrType::kFloat2PackedIn1Float,
+                  AttrType::kFloat2PackedInOneFloat,
                   {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                   {200.1, 400.9})
                   .Values(),
               ElementsAre(819601));
   EXPECT_THAT(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {819601})
           .Values(),
       ElementsAre(200, 401));
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat2PackedIn1Float,
+  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat2PackedInOneFloat,
                                               {{{.offset = -500, .scale = 4},
                                                 {.offset = -500, .scale = 4}}},
                                               {-498.1, 2001})
@@ -175,34 +175,34 @@ TEST(MeshPackingTest, Float2PackedIn1Float) {
               ElementsAre(625));
   EXPECT_THAT(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = -500, .scale = 4}, {.offset = -500, .scale = 4}}}, {625})
           .Values(),
       ElementsAre(-500, 2000));
 }
 
-TEST(MeshPackingTest, Float2PackedIn3UnsignedBytes_XY12) {
+TEST(MeshPackingTest, Float2PackedInThreeUnsignedBytes_XY12) {
   std::vector<std::byte> byte_vector_1 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {555.1, 962.9});
   // 555: 0010 - 0010 - 1011: 2 - 2 - B
   // 963: 0011 - 1100 - 0011: 3 - C - 3
   EXPECT_THAT(byte_vector_1,
               ElementsAre(std::byte(0x22), std::byte(0xB3), std::byte(0xC3)));
   EXPECT_THAT(
-      UnpackAttribute(AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      UnpackAttribute(AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
                       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_1))
           .Values(),
       ElementsAre(555, 963));
 
   std::vector<std::byte> byte_vector_2 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
       {{{.offset = -500, .scale = 4}, {.offset = -500, .scale = 4}}},
       {-359.1, 3500.1});
   EXPECT_THAT(byte_vector_2,
               ElementsAre(std::byte(0x02), std::byte(0x33), std::byte(0xE8)));
-  EXPECT_THAT(UnpackAttribute(AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+  EXPECT_THAT(UnpackAttribute(AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
                               {{{.offset = -500, .scale = 4},
                                 {.offset = -500, .scale = 4}}},
                               byte_vector_2)
@@ -210,9 +210,9 @@ TEST(MeshPackingTest, Float2PackedIn3UnsignedBytes_XY12) {
               ElementsAre(-360, 3500));
 }
 
-TEST(MeshPackingTest, Float2PackedIn4UnsignedBytes_X12_Y20) {
+TEST(MeshPackingTest, Float2PackedInFourUnsignedBytes_X12_Y20) {
   std::vector<std::byte> byte_vector_1 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
       {1385.1, 750749.9});
   // 1385:   0101 - 0110 - 1001              : 5 - 6 - 9
@@ -220,46 +220,47 @@ TEST(MeshPackingTest, Float2PackedIn4UnsignedBytes_X12_Y20) {
   EXPECT_THAT(byte_vector_1, ElementsAre(std::byte(0x56), std::byte(0x9B),
                                          std::byte(0x74), std::byte(0x9E)));
   EXPECT_THAT(
-      UnpackAttribute(AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      UnpackAttribute(AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
                       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_1))
           .Values(),
       ElementsAre(1385, 750750));
 
   std::vector<std::byte> byte_vector_2 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
       {{{.offset = -500, .scale = 4}, {.offset = -500, .scale = 4}}},
       {-59.9, 4012012.1});
   EXPECT_THAT(byte_vector_2, ElementsAre(std::byte(0x06), std::byte(0xEF),
                                          std::byte(0x4E), std::byte(0x78)));
-  EXPECT_THAT(UnpackAttribute(AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
-                              {{{.offset = -500, .scale = 4},
-                                {.offset = -500, .scale = 4}}},
-                              byte_vector_2)
-                  .Values(),
-              ElementsAre(-60, 4012012));
+  EXPECT_THAT(
+      UnpackAttribute(
+          AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
+          {{{.offset = -500, .scale = 4}, {.offset = -500, .scale = 4}}},
+          byte_vector_2)
+          .Values(),
+      ElementsAre(-60, 4012012));
 }
 
-TEST(MeshPackingTest, Float1PackedIn1UnsignedByte) {
+TEST(MeshPackingTest, Float1PackedInOneUnsignedByte) {
   std::vector<std::byte> byte_vector_1 =
-      PackAttributeAndGetAsByteVector(AttrType::kFloat1PackedIn1UnsignedByte,
+      PackAttributeAndGetAsByteVector(AttrType::kFloat1PackedInOneUnsignedByte,
                                       {{{.offset = 0, .scale = 1}}}, {234.1});
   // 234.1 is rounded to become 234.
   // 234 translated into bits is 1110 1010.
   // 1110 1010 translated into hexadecimal is E A.
 
   EXPECT_THAT(byte_vector_1, ElementsAre(std::byte(0xEA)));
-  EXPECT_THAT(UnpackAttribute(AttrType::kFloat1PackedIn1UnsignedByte,
+  EXPECT_THAT(UnpackAttribute(AttrType::kFloat1PackedInOneUnsignedByte,
                               {{{.offset = 0, .scale = 1}}},
                               absl::MakeSpan(byte_vector_1))
                   .Values(),
               ElementsAre(234));
 
   std::vector<std::byte> byte_vector_2 =
-      PackAttributeAndGetAsByteVector(AttrType::kFloat1PackedIn1UnsignedByte,
+      PackAttributeAndGetAsByteVector(AttrType::kFloat1PackedInOneUnsignedByte,
                                       {{{.offset = -90, .scale = 3}}}, {509.9});
   EXPECT_THAT(byte_vector_2, ElementsAre(std::byte(0xC8)));
-  EXPECT_THAT(UnpackAttribute(AttrType::kFloat1PackedIn1UnsignedByte,
+  EXPECT_THAT(UnpackAttribute(AttrType::kFloat1PackedInOneUnsignedByte,
                               {{{.offset = -90, .scale = 3}}}, byte_vector_2)
                   .Values(),
               ElementsAre(510));
@@ -282,15 +283,15 @@ TEST(MeshPackingTest, Float3Unpacked) {
               ElementsAre(6, 8, 10));
 }
 
-TEST(MeshPackingTest, Float3PackedIn1Float) {
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn1Float,
+TEST(MeshPackingTest, Float3PackedInOneFloat) {
+  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInOneFloat,
                                               {{{.offset = 0, .scale = 1},
                                                 {.offset = 0, .scale = 1},
                                                 {.offset = 0, .scale = 1}}},
                                               {49.9, 100.4, 150})
                   .Values(),
               ElementsAre(3302550));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn1Float,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInOneFloat,
                                             {{{.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1}}},
@@ -298,14 +299,14 @@ TEST(MeshPackingTest, Float3PackedIn1Float) {
                   .Values(),
               ElementsAre(50, 100, 150));
   EXPECT_THAT(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn1Float,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInOneFloat,
                                       {{{.offset = -10, .scale = 0.125},
                                         {.offset = -10, .scale = 0.125},
                                         {.offset = -10, .scale = 0.125}}},
                                       {-9.2, 19.1, 0})
           .Values(),
       ElementsAre(452944));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn1Float,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInOneFloat,
                                             {{{.offset = -10, .scale = 0.125},
                                               {.offset = -10, .scale = 0.125},
                                               {.offset = -10, .scale = 0.125}}},
@@ -314,29 +315,31 @@ TEST(MeshPackingTest, Float3PackedIn1Float) {
               ElementsAre(-9.25, 19.125, 0));
 }
 
-TEST(MeshPackingTest, Float3PackedIn2Floats) {
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn2Floats,
-                                              {{{.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1}}},
-                                              {50.1, 10000, 300.6})
-                  .Values(),
-              ElementsAre(12839, 1048877));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn2Floats,
+TEST(MeshPackingTest, Float3PackedInTwoFloats) {
+  EXPECT_THAT(
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInTwoFloats,
+                                      {{{.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1}}},
+                                      {50.1, 10000, 300.6})
+          .Values(),
+      ElementsAre(12839, 1048877));
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInTwoFloats,
                                             {{{.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1}}},
                                             {12839, 1048877})
                   .Values(),
               ElementsAre(50, 10000, 301));
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn2Floats,
-                                              {{{.offset = 2000, .scale = 4},
-                                                {.offset = 2000, .scale = 4},
-                                                {.offset = 2000, .scale = 4}}},
-                                              {3000, 200000, 50000})
-                  .Values(),
-              ElementsAre(64193, 6041312));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn2Floats,
+  EXPECT_THAT(
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInTwoFloats,
+                                      {{{.offset = 2000, .scale = 4},
+                                        {.offset = 2000, .scale = 4},
+                                        {.offset = 2000, .scale = 4}}},
+                                      {3000, 200000, 50000})
+          .Values(),
+      ElementsAre(64193, 6041312));
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInTwoFloats,
                                             {{{.offset = 2000, .scale = 4},
                                               {.offset = 2000, .scale = 4},
                                               {.offset = 2000, .scale = 4}}},
@@ -345,9 +348,9 @@ TEST(MeshPackingTest, Float3PackedIn2Floats) {
               ElementsAre(3000, 200000, 50000));
 }
 
-TEST(MeshPackingTest, Float3PackedIn4UnsignedBytes_XYZ10) {
+TEST(MeshPackingTest, Float3PackedInFourUnsignedBytes_XYZ10) {
   std::vector<std::byte> byte_vector_1 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+      AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
       {{{.offset = 0, .scale = 1},
         {.offset = 0, .scale = 1},
         {.offset = 0, .scale = 1}}},
@@ -358,7 +361,7 @@ TEST(MeshPackingTest, Float3PackedIn4UnsignedBytes_XYZ10) {
   //           888:   1101 1110 00:    D - E - 0
   EXPECT_THAT(byte_vector_1, ElementsAre(std::byte(0x64), std::byte(0x51),
                                          std::byte(0x3D), std::byte(0xE0)));
-  EXPECT_THAT(UnpackAttribute(AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+  EXPECT_THAT(UnpackAttribute(AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
                               {{{.offset = 0, .scale = 1},
                                 {.offset = 0, .scale = 1},
                                 {.offset = 0, .scale = 1}}},
@@ -367,7 +370,7 @@ TEST(MeshPackingTest, Float3PackedIn4UnsignedBytes_XYZ10) {
               ElementsAre(401, 275, 888));
 
   std::vector<std::byte> byte_vector_2 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+      AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
       {{{.offset = -50, .scale = 2},
         {.offset = -50, .scale = 2},
         {.offset = -50, .scale = 2}}},
@@ -382,7 +385,7 @@ TEST(MeshPackingTest, Float3PackedIn4UnsignedBytes_XYZ10) {
   //            900:   1110 0001 00:    E - 1 - 0
   EXPECT_THAT(byte_vector_2, ElementsAre(std::byte(0x25), std::byte(0x9F),
                                          std::byte(0x4E), std::byte(0x10)));
-  EXPECT_THAT(UnpackAttribute(AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+  EXPECT_THAT(UnpackAttribute(AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
                               {{{.offset = -50, .scale = 2},
                                 {.offset = -50, .scale = 2},
                                 {.offset = -50, .scale = 2}}},
@@ -410,8 +413,8 @@ TEST(MeshPackingTest, Float4Unpacked) {
               ElementsAre(-5, 10, -15, 20));
 }
 
-TEST(MeshPackingTest, Float4PackedIn1Float) {
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn1Float,
+TEST(MeshPackingTest, Float4PackedInOneFloat) {
+  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInOneFloat,
                                               {{{.offset = 0, .scale = 1},
                                                 {.offset = 0, .scale = 1},
                                                 {.offset = 0, .scale = 1},
@@ -419,7 +422,7 @@ TEST(MeshPackingTest, Float4PackedIn1Float) {
                                               {1.1, 53, 12.7, 41})
                   .Values(),
               ElementsAre(480105));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn1Float,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInOneFloat,
                                             {{{.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
@@ -427,7 +430,7 @@ TEST(MeshPackingTest, Float4PackedIn1Float) {
                                             {480105})
                   .Values(),
               ElementsAre(1, 53, 13, 41));
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn1Float,
+  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInOneFloat,
                                               {{{.offset = -12, .scale = 0.5},
                                                 {.offset = -12, .scale = 0.5},
                                                 {.offset = -12, .scale = 0.5},
@@ -435,7 +438,7 @@ TEST(MeshPackingTest, Float4PackedIn1Float) {
                                               {-9.6, 4.8, 11.3, 19.1})
                   .Values(),
               ElementsAre(1453054));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn1Float,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInOneFloat,
                                             {{{.offset = -12, .scale = 0.5},
                                               {.offset = -12, .scale = 0.5},
                                               {.offset = -12, .scale = 0.5},
@@ -445,16 +448,17 @@ TEST(MeshPackingTest, Float4PackedIn1Float) {
               ElementsAre(-9.5, 5, 11.5, 19));
 }
 
-TEST(MeshPackingTest, Float4PackedIn2Floats) {
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn2Floats,
-                                              {{{.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1}}},
-                                              {250.1, 790.6, 500, 1023})
-                  .Values(),
-              ElementsAre(1024791, 2049023));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn2Floats,
+TEST(MeshPackingTest, Float4PackedInTwoFloats) {
+  EXPECT_THAT(
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInTwoFloats,
+                                      {{{.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1}}},
+                                      {250.1, 790.6, 500, 1023})
+          .Values(),
+      ElementsAre(1024791, 2049023));
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInTwoFloats,
                                             {{{.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
@@ -462,15 +466,16 @@ TEST(MeshPackingTest, Float4PackedIn2Floats) {
                                             {1024791, 2049023})
                   .Values(),
               ElementsAre(250, 791, 500, 1023));
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn2Floats,
-                                              {{{.offset = 5000, .scale = 8},
-                                                {.offset = 5000, .scale = 8},
-                                                {.offset = 5000, .scale = 8},
-                                                {.offset = 5000, .scale = 8}}},
-                                              {6001, 11007, 20000.9, 16000})
-                  .Values(),
-              ElementsAre(512751, 7681375));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn2Floats,
+  EXPECT_THAT(
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInTwoFloats,
+                                      {{{.offset = 5000, .scale = 8},
+                                        {.offset = 5000, .scale = 8},
+                                        {.offset = 5000, .scale = 8},
+                                        {.offset = 5000, .scale = 8}}},
+                                      {6001, 11007, 20000.9, 16000})
+          .Values(),
+      ElementsAre(512751, 7681375));
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInTwoFloats,
                                             {{{.offset = 5000, .scale = 8},
                                               {.offset = 5000, .scale = 8},
                                               {.offset = 5000, .scale = 8},
@@ -480,25 +485,27 @@ TEST(MeshPackingTest, Float4PackedIn2Floats) {
               ElementsAre(6000, 11008, 20000, 16000));
 }
 
-TEST(MeshPackingTest, Float4PackedIn3Floats) {
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn3Floats,
-                                              {{{.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1}}},
-                                              {100, 1000, 10000, 100000})
-                  .Values(),
-              ElementsAre(6400, 4096156, 4294304));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn3Floats,
-                                            {{{.offset = 0, .scale = 1},
-                                              {.offset = 0, .scale = 1},
-                                              {.offset = 0, .scale = 1},
-                                              {.offset = 0, .scale = 1}}},
-                                            {6400, 4096156, 4294304})
-                  .Values(),
-              ElementsAre(100, 1000, 10000, 100000));
+TEST(MeshPackingTest, Float4PackedInThreeFloats) {
   EXPECT_THAT(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn3Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInThreeFloats,
+                                      {{{.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1}}},
+                                      {100, 1000, 10000, 100000})
+          .Values(),
+      ElementsAre(6400, 4096156, 4294304));
+  EXPECT_THAT(
+      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInThreeFloats,
+                                    {{{.offset = 0, .scale = 1},
+                                      {.offset = 0, .scale = 1},
+                                      {.offset = 0, .scale = 1},
+                                      {.offset = 0, .scale = 1}}},
+                                    {6400, 4096156, 4294304})
+          .Values(),
+      ElementsAre(100, 1000, 10000, 100000));
+  EXPECT_THAT(
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInThreeFloats,
                                       {{{.offset = 5, .scale = 1. / 32},
                                         {.offset = 5, .scale = 1. / 32},
                                         {.offset = 5, .scale = 1. / 32},
@@ -506,24 +513,25 @@ TEST(MeshPackingTest, Float4PackedIn3Floats) {
                                       {100, 5000, 415.16, 1987})
           .Values(),
       ElementsAre(194599, 393421, 1374144));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn3Floats,
-                                            {{{.offset = 5, .scale = 1. / 32},
-                                              {.offset = 5, .scale = 1. / 32},
-                                              {.offset = 5, .scale = 1. / 32},
-                                              {.offset = 5, .scale = 1. / 32}}},
-                                            {194599, 393421, 1374144})
-                  .Values(),
-              ElementsAre(100, 5000, 415.15625, 1987));
+  EXPECT_THAT(
+      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInThreeFloats,
+                                    {{{.offset = 5, .scale = 1. / 32},
+                                      {.offset = 5, .scale = 1. / 32},
+                                      {.offset = 5, .scale = 1. / 32},
+                                      {.offset = 5, .scale = 1. / 32}}},
+                                    {194599, 393421, 1374144})
+          .Values(),
+      ElementsAre(100, 5000, 415.15625, 1987));
 }
 
 TEST(MeshPackingTest, DifferentOffsetAndScalePerComponent) {
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat2PackedIn1Float,
+  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat2PackedInOneFloat,
                                               {{{.offset = -100, .scale = 2},
                                                 {.offset = 200, .scale = .5}}},
                                               {5000, 1000})
                   .Values(),
               ElementsAre(10446400));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat2PackedIn1Float,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat2PackedInOneFloat,
                                             {{{.offset = -100, .scale = 2},
                                               {.offset = 200, .scale = .5}}},
                                             {10446400})
@@ -531,41 +539,41 @@ TEST(MeshPackingTest, DifferentOffsetAndScalePerComponent) {
               ElementsAre(5000, 1000));
 
   std::vector<std::byte> byte_vector_xy12 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
       {{{.offset = -200, .scale = 5}, {.offset = 50, .scale = .1}}},
       {2305, 170});
   EXPECT_THAT(byte_vector_xy12,
               ElementsAre(std::byte(0x1F), std::byte(0x54), std::byte(0xB0)));
   EXPECT_THAT(UnpackAttribute(
-                  AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+                  AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
                   {{{.offset = -200, .scale = 5}, {.offset = 50, .scale = .1}}},
                   byte_vector_xy12)
                   .Values(),
               ElementsAre(2305, 170));
 
   std::vector<std::byte> byte_vector_x12_y20 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
       {{{.offset = -200, .scale = 5}, {.offset = -50, .scale = 2}}},
       {2305, 500050});
   EXPECT_THAT(byte_vector_x12_y20,
               ElementsAre(std::byte(0x1F), std::byte(0x53), std::byte(0xD0),
                           std::byte(0xC2)));
   EXPECT_THAT(UnpackAttribute(
-                  AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+                  AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
                   {{{.offset = -200, .scale = 5}, {.offset = -50, .scale = 2}}},
                   byte_vector_x12_y20)
                   .Values(),
               ElementsAre(2305, 500050));
 
   EXPECT_THAT(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn1Float,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInOneFloat,
                                       {{{.offset = 100, .scale = 1},
                                         {.offset = -400, .scale = 4},
                                         {.offset = -30, .scale = 0.25}}},
                                       {300, 500, 15})
           .Values(),
       ElementsAre(13164980));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn1Float,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInOneFloat,
                                             {{{.offset = 100, .scale = 1},
                                               {.offset = -400, .scale = 4},
                                               {.offset = -30, .scale = 0.25}}},
@@ -573,14 +581,14 @@ TEST(MeshPackingTest, DifferentOffsetAndScalePerComponent) {
                   .Values(),
               ElementsAre(300, 500, 15));
   EXPECT_THAT(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn2Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInTwoFloats,
                                       {{{.offset = -50000, .scale = 2},
                                         {.offset = 10000, .scale = .5},
                                         {.offset = -200, .scale = .125}}},
                                       {-30000, 20000, 0})
           .Values(),
       ElementsAre(2560078, 2098752));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn2Floats,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInTwoFloats,
                                             {{{.offset = -50000, .scale = 2},
                                               {.offset = 10000, .scale = .5},
                                               {.offset = -200, .scale = .125}}},
@@ -589,14 +597,14 @@ TEST(MeshPackingTest, DifferentOffsetAndScalePerComponent) {
               ElementsAre(-30000, 20000, 0));
 
   std::vector<std::byte> byte_vector_xyz10 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+      AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
       {{{.offset = -50, .scale = 2},
         {.offset = 100, .scale = .1},
         {.offset = 400, .scale = 4}}},
       {250, 150, 4000});
   EXPECT_THAT(byte_vector_xyz10, ElementsAre(std::byte(0x25), std::byte(0x9F),
                                              std::byte(0x4E), std::byte(0x10)));
-  EXPECT_THAT(UnpackAttribute(AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+  EXPECT_THAT(UnpackAttribute(AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
                               {{{.offset = -50, .scale = 2},
                                 {.offset = 100, .scale = .1},
                                 {.offset = 400, .scale = 4}}},
@@ -605,7 +613,7 @@ TEST(MeshPackingTest, DifferentOffsetAndScalePerComponent) {
               ElementsAre(250, 150, 4000));
 
   EXPECT_THAT(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn1Float,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInOneFloat,
                                       {{{.offset = 10, .scale = 1},
                                         {.offset = -200, .scale = 8},
                                         {.offset = -10, .scale = 0.5},
@@ -613,7 +621,7 @@ TEST(MeshPackingTest, DifferentOffsetAndScalePerComponent) {
                                       {50, 72, 5, 25})
           .Values(),
       ElementsAre(10626984));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn1Float,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInOneFloat,
                                             {{{.offset = 10, .scale = 1},
                                               {.offset = -200, .scale = 8},
                                               {.offset = -10, .scale = 0.5},
@@ -622,7 +630,7 @@ TEST(MeshPackingTest, DifferentOffsetAndScalePerComponent) {
                   .Values(),
               ElementsAre(50, 72, 5, 25));
   EXPECT_THAT(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn2Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInTwoFloats,
                                       {{{.offset = 100, .scale = 1},
                                         {.offset = 200, .scale = 0.5},
                                         {.offset = 300, .scale = 2},
@@ -630,7 +638,7 @@ TEST(MeshPackingTest, DifferentOffsetAndScalePerComponent) {
                                       {4000, 500, 1000, 700})
           .Values(),
       ElementsAre(15975000, 1434800));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn2Floats,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInTwoFloats,
                                             {{{.offset = 100, .scale = 1},
                                               {.offset = 200, .scale = 0.5},
                                               {.offset = 300, .scale = 2},
@@ -639,7 +647,7 @@ TEST(MeshPackingTest, DifferentOffsetAndScalePerComponent) {
                   .Values(),
               ElementsAre(4000, 500, 1000, 700));
   EXPECT_THAT(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn3Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInThreeFloats,
                                       {{{.offset = -8000, .scale = 0.0625},
                                         {.offset = -10000, .scale = 0.125},
                                         {.offset = -20000, .scale = 0.25},
@@ -648,7 +656,7 @@ TEST(MeshPackingTest, DifferentOffsetAndScalePerComponent) {
           .Values(),
       ElementsAre(8204307, 12944687, 2221842));
   EXPECT_THAT(
-      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn3Floats,
+      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInThreeFloats,
                                     {{{.offset = -8000, .scale = 0.0625},
                                       {.offset = -10000, .scale = 0.125},
                                       {.offset = -20000, .scale = 0.25},
@@ -712,70 +720,71 @@ TEST(MeshPackingTest, UnpackedFormatsIgnoreOffsetAndScale) {
 
 TEST(MeshPackingTest, MinimumRepresentableValues) {
   std::vector<std::byte> byte_vector_1 =
-      PackAttributeAndGetAsByteVector(AttrType::kFloat1PackedIn1UnsignedByte,
+      PackAttributeAndGetAsByteVector(AttrType::kFloat1PackedInOneUnsignedByte,
                                       {{{.offset = 0, .scale = 1}}}, {0});
   EXPECT_THAT(byte_vector_1, ElementsAre(std::byte(0x00)));
-  EXPECT_THAT(UnpackAttribute(AttrType::kFloat1PackedIn1UnsignedByte,
+  EXPECT_THAT(UnpackAttribute(AttrType::kFloat1PackedInOneUnsignedByte,
                               {{{.offset = 0, .scale = 1}}},
                               absl::MakeSpan(byte_vector_1))
                   .Values(),
               ElementsAre(0));
   EXPECT_THAT(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {0, 0})
           .Values(),
       ElementsAre(0));
   EXPECT_THAT(UnpackAttributeFromFloatArray(
-                  AttrType::kFloat2PackedIn1Float,
+                  AttrType::kFloat2PackedInOneFloat,
                   {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {0})
                   .Values(),
               ElementsAre(0, 0));
   std::vector<std::byte> byte_vector_xy12 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {0, 0});
   EXPECT_THAT(byte_vector_xy12,
               ElementsAre(std::byte(0x00), std::byte(0x00), std::byte(0x00)));
   EXPECT_THAT(
-      UnpackAttribute(AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      UnpackAttribute(AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
                       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_xy12))
           .Values(),
       ElementsAre(0, 0));
   std::vector<std::byte> byte_vector_x12_y20 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {0, 0});
   EXPECT_THAT(byte_vector_x12_y20,
               ElementsAre(std::byte(0x00), std::byte(0x00), std::byte(0x00),
                           std::byte(0x00)));
   EXPECT_THAT(
-      UnpackAttribute(AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      UnpackAttribute(AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
                       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_x12_y20))
           .Values(),
       ElementsAre(0, 0));
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn1Float,
+  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInOneFloat,
                                               {{{.offset = 0, .scale = 1},
                                                 {.offset = 0, .scale = 1},
                                                 {.offset = 0, .scale = 1}}},
                                               {0, 0, 0})
                   .Values(),
               ElementsAre(0));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn1Float,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInOneFloat,
                                             {{{.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1}}},
                                             {0})
                   .Values(),
               ElementsAre(0, 0, 0));
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn2Floats,
-                                              {{{.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1}}},
-                                              {0, 0, 0})
-                  .Values(),
-              ElementsAre(0, 0));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn2Floats,
+  EXPECT_THAT(
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInTwoFloats,
+                                      {{{.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1}}},
+                                      {0, 0, 0})
+          .Values(),
+      ElementsAre(0, 0));
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInTwoFloats,
                                             {{{.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1}}},
@@ -783,21 +792,21 @@ TEST(MeshPackingTest, MinimumRepresentableValues) {
                   .Values(),
               ElementsAre(0, 0, 0));
   std::vector<std::byte> byte_vector_xyz10 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+      AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
       {{{.offset = 0, .scale = 1},
         {.offset = 0, .scale = 1},
         {.offset = 0, .scale = 1}}},
       {0, 0, 0});
   EXPECT_THAT(byte_vector_xyz10, ElementsAre(std::byte(0x00), std::byte(0x00),
                                              std::byte(0x00), std::byte(0x00)));
-  EXPECT_THAT(UnpackAttribute(AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+  EXPECT_THAT(UnpackAttribute(AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
                               {{{.offset = 0, .scale = 1},
                                 {.offset = 0, .scale = 1},
                                 {.offset = 0, .scale = 1}}},
                               absl::MakeSpan(byte_vector_xyz10))
                   .Values(),
               ElementsAre(0, 0, 0));
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn1Float,
+  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInOneFloat,
                                               {{{.offset = 0, .scale = 1},
                                                 {.offset = 0, .scale = 1},
                                                 {.offset = 0, .scale = 1},
@@ -805,7 +814,7 @@ TEST(MeshPackingTest, MinimumRepresentableValues) {
                                               {0, 0, 0, 0})
                   .Values(),
               ElementsAre(0));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn1Float,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInOneFloat,
                                             {{{.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
@@ -813,15 +822,16 @@ TEST(MeshPackingTest, MinimumRepresentableValues) {
                                             {0})
                   .Values(),
               ElementsAre(0, 0, 0, 0));
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn2Floats,
-                                              {{{.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1}}},
-                                              {0, 0, 0, 0})
-                  .Values(),
-              ElementsAre(0, 0));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn2Floats,
+  EXPECT_THAT(
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInTwoFloats,
+                                      {{{.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1}}},
+                                      {0, 0, 0, 0})
+          .Values(),
+      ElementsAre(0, 0));
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInTwoFloats,
                                             {{{.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
@@ -829,93 +839,96 @@ TEST(MeshPackingTest, MinimumRepresentableValues) {
                                             {0, 0})
                   .Values(),
               ElementsAre(0, 0, 0, 0));
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn3Floats,
-                                              {{{.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1}}},
-                                              {0, 0, 0, 0})
-                  .Values(),
-              ElementsAre(0, 0, 0));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn3Floats,
-                                            {{{.offset = 0, .scale = 1},
-                                              {.offset = 0, .scale = 1},
-                                              {.offset = 0, .scale = 1},
-                                              {.offset = 0, .scale = 1}}},
-                                            {0, 0, 0})
-                  .Values(),
-              ElementsAre(0, 0, 0, 0));
+  EXPECT_THAT(
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInThreeFloats,
+                                      {{{.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1}}},
+                                      {0, 0, 0, 0})
+          .Values(),
+      ElementsAre(0, 0, 0));
+  EXPECT_THAT(
+      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInThreeFloats,
+                                    {{{.offset = 0, .scale = 1},
+                                      {.offset = 0, .scale = 1},
+                                      {.offset = 0, .scale = 1},
+                                      {.offset = 0, .scale = 1}}},
+                                    {0, 0, 0})
+          .Values(),
+      ElementsAre(0, 0, 0, 0));
 }
 
 TEST(MeshPackingTest, MaximumRepresentableValues) {
   std::vector<std::byte> byte_vector_1 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat1PackedIn1UnsignedByte, {{{.offset = 0, .scale = 1}}},
+      AttrType::kFloat1PackedInOneUnsignedByte, {{{.offset = 0, .scale = 1}}},
       {kMax8Bit});
   EXPECT_THAT(byte_vector_1, ElementsAre(std::byte(0xFF)));
-  EXPECT_THAT(UnpackAttribute(AttrType::kFloat1PackedIn1UnsignedByte,
+  EXPECT_THAT(UnpackAttribute(AttrType::kFloat1PackedInOneUnsignedByte,
                               {{{.offset = 0, .scale = 1}}},
                               absl::MakeSpan(byte_vector_1))
                   .Values(),
               ElementsAre(kMax8Bit));
   EXPECT_THAT(PackAttributeAndGetAsFloatArray(
-                  AttrType::kFloat2PackedIn1Float,
+                  AttrType::kFloat2PackedInOneFloat,
                   {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                   {kMax12Bit, kMax12Bit})
                   .Values(),
               ElementsAre(kMax24Bit));
   EXPECT_THAT(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {kMax24Bit})
           .Values(),
       ElementsAre(kMax12Bit, kMax12Bit));
   std::vector<std::byte> byte_vector_xy12 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
       {kMax12Bit, kMax12Bit});
   EXPECT_THAT(byte_vector_xy12,
               ElementsAre(std::byte(0xFF), std::byte(0xFF), std::byte(0xFF)));
   EXPECT_THAT(
-      UnpackAttribute(AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      UnpackAttribute(AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
                       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_xy12))
           .Values(),
       ElementsAre(kMax12Bit, kMax12Bit));
   std::vector<std::byte> byte_vector_x12_y20 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
       {kMax12Bit, kMax20Bit});
   EXPECT_THAT(byte_vector_x12_y20,
               ElementsAre(std::byte(0xFF), std::byte(0xFF), std::byte(0xFF),
                           std::byte(0xFF)));
   EXPECT_THAT(
-      UnpackAttribute(AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      UnpackAttribute(AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
                       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_x12_y20))
           .Values(),
       ElementsAre(kMax12Bit, kMax20Bit));
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn1Float,
+  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInOneFloat,
                                               {{{.offset = 0, .scale = 1},
                                                 {.offset = 0, .scale = 1},
                                                 {.offset = 0, .scale = 1}}},
                                               {kMax8Bit, kMax8Bit, kMax8Bit})
                   .Values(),
               ElementsAre(kMax24Bit));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn1Float,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInOneFloat,
                                             {{{.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1}}},
                                             {kMax24Bit})
                   .Values(),
               ElementsAre(kMax8Bit, kMax8Bit, kMax8Bit));
-  EXPECT_THAT(PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn2Floats,
-                                              {{{.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1},
-                                                {.offset = 0, .scale = 1}}},
-                                              {kMax16Bit, kMax16Bit, kMax16Bit})
-                  .Values(),
-              ElementsAre(kMax24Bit, kMax24Bit));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn2Floats,
+  EXPECT_THAT(
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInTwoFloats,
+                                      {{{.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1},
+                                        {.offset = 0, .scale = 1}}},
+                                      {kMax16Bit, kMax16Bit, kMax16Bit})
+          .Values(),
+      ElementsAre(kMax24Bit, kMax24Bit));
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInTwoFloats,
                                             {{{.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1}}},
@@ -923,14 +936,14 @@ TEST(MeshPackingTest, MaximumRepresentableValues) {
                   .Values(),
               ElementsAre(kMax16Bit, kMax16Bit, kMax16Bit));
   std::vector<std::byte> byte_vector_xyz10 = PackAttributeAndGetAsByteVector(
-      AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+      AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
       {{{.offset = 0, .scale = 1},
         {.offset = 0, .scale = 1},
         {.offset = 0, .scale = 1}}},
       {kMax10Bit, kMax10Bit, kMax10Bit});
   EXPECT_THAT(byte_vector_xyz10, ElementsAre(std::byte(0xFF), std::byte(0xFF),
                                              std::byte(0xFF), std::byte(0xFC)));
-  EXPECT_THAT(UnpackAttribute(AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+  EXPECT_THAT(UnpackAttribute(AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
                               {{{.offset = 0, .scale = 1},
                                 {.offset = 0, .scale = 1},
                                 {.offset = 0, .scale = 1}}},
@@ -938,7 +951,7 @@ TEST(MeshPackingTest, MaximumRepresentableValues) {
                   .Values(),
               ElementsAre(kMax10Bit, kMax10Bit, kMax10Bit));
   EXPECT_THAT(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn1Float,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInOneFloat,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
@@ -946,7 +959,7 @@ TEST(MeshPackingTest, MaximumRepresentableValues) {
                                       {kMax6Bit, kMax6Bit, kMax6Bit, kMax6Bit})
           .Values(),
       ElementsAre(kMax24Bit));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn1Float,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInOneFloat,
                                             {{{.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
@@ -955,7 +968,7 @@ TEST(MeshPackingTest, MaximumRepresentableValues) {
                   .Values(),
               ElementsAre(kMax6Bit, kMax6Bit, kMax6Bit, kMax6Bit));
   EXPECT_THAT(PackAttributeAndGetAsFloatArray(
-                  AttrType::kFloat4PackedIn2Floats,
+                  AttrType::kFloat4PackedInTwoFloats,
                   {{{.offset = 0, .scale = 1},
                     {.offset = 0, .scale = 1},
                     {.offset = 0, .scale = 1},
@@ -963,7 +976,7 @@ TEST(MeshPackingTest, MaximumRepresentableValues) {
                   {kMax12Bit, kMax12Bit, kMax12Bit, kMax12Bit})
                   .Values(),
               ElementsAre(kMax24Bit, kMax24Bit));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn2Floats,
+  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInTwoFloats,
                                             {{{.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
                                               {.offset = 0, .scale = 1},
@@ -972,7 +985,7 @@ TEST(MeshPackingTest, MaximumRepresentableValues) {
                   .Values(),
               ElementsAre(kMax12Bit, kMax12Bit, kMax12Bit, kMax12Bit));
   EXPECT_THAT(PackAttributeAndGetAsFloatArray(
-                  AttrType::kFloat4PackedIn3Floats,
+                  AttrType::kFloat4PackedInThreeFloats,
                   {{{.offset = 0, .scale = 1},
                     {.offset = 0, .scale = 1},
                     {.offset = 0, .scale = 1},
@@ -980,14 +993,15 @@ TEST(MeshPackingTest, MaximumRepresentableValues) {
                   {kMax18Bit, kMax18Bit, kMax18Bit, kMax18Bit})
                   .Values(),
               ElementsAre(kMax24Bit, kMax24Bit, kMax24Bit));
-  EXPECT_THAT(UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn3Floats,
-                                            {{{.offset = 0, .scale = 1},
-                                              {.offset = 0, .scale = 1},
-                                              {.offset = 0, .scale = 1},
-                                              {.offset = 0, .scale = 1}}},
-                                            {kMax24Bit, kMax24Bit, kMax24Bit})
-                  .Values(),
-              ElementsAre(kMax18Bit, kMax18Bit, kMax18Bit, kMax18Bit));
+  EXPECT_THAT(
+      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInThreeFloats,
+                                    {{{.offset = 0, .scale = 1},
+                                      {.offset = 0, .scale = 1},
+                                      {.offset = 0, .scale = 1},
+                                      {.offset = 0, .scale = 1}}},
+                                    {kMax24Bit, kMax24Bit, kMax24Bit})
+          .Values(),
+      ElementsAre(kMax18Bit, kMax18Bit, kMax18Bit, kMax18Bit));
 }
 
 TEST(MeshPackingDeathTest, CannotPackWrongNumberOfComponents) {
@@ -999,7 +1013,7 @@ TEST(MeshPackingDeathTest, CannotPackWrongNumberOfComponents) {
                                       {{{.offset = 0, .scale = 1}}}, {1, 2}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsByteVector(AttrType::kFloat1PackedIn1UnsignedByte,
+      PackAttributeAndGetAsByteVector(AttrType::kFloat1PackedInOneUnsignedByte,
                                       {{{.offset = 0, .scale = 1}}}, {1, 2}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
@@ -1009,17 +1023,17 @@ TEST(MeshPackingDeathTest, CannotPackWrongNumberOfComponents) {
       "");
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {1}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsByteVector(
-          AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+          AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {1}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsByteVector(
-          AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+          AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {1}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
@@ -1030,26 +1044,27 @@ TEST(MeshPackingDeathTest, CannotPackWrongNumberOfComponents) {
                                       {1}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn1Float,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInOneFloat,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1}}},
                                       {1}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn2Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInTwoFloats,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1}}},
                                       {1}),
       "");
-  EXPECT_DEATH_IF_SUPPORTED(PackAttributeAndGetAsByteVector(
-                                AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
-                                {{{.offset = 0, .scale = 1},
-                                  {.offset = 0, .scale = 1},
-                                  {.offset = 0, .scale = 1}}},
-                                {1}),
-                            "");
+  EXPECT_DEATH_IF_SUPPORTED(
+      PackAttributeAndGetAsByteVector(
+          AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
+          {{{.offset = 0, .scale = 1},
+            {.offset = 0, .scale = 1},
+            {.offset = 0, .scale = 1}}},
+          {1}),
+      "");
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(AttrType::kFloat4Unpacked,
                                       {{{.offset = 0, .scale = 1},
@@ -1058,7 +1073,7 @@ TEST(MeshPackingDeathTest, CannotPackWrongNumberOfComponents) {
                                       {1}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn1Float,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInOneFloat,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
@@ -1066,7 +1081,7 @@ TEST(MeshPackingDeathTest, CannotPackWrongNumberOfComponents) {
                                       {1}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn2Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInTwoFloats,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
@@ -1074,7 +1089,7 @@ TEST(MeshPackingDeathTest, CannotPackWrongNumberOfComponents) {
                                       {1}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn3Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInThreeFloats,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
@@ -1090,98 +1105,98 @@ TEST(MeshPackingDeathTest, CannotPackUnrepresentableValues) {
   // There is no EXPECT_DEBUG_DEATH_IF_SUPPORTED, so we only run these when
   // compiled in debug mode.
 #ifndef NDEBUG
-  std::vector<std::byte> byte_vector_1(
-      MeshFormat::PackedAttributeSize(AttrType::kFloat1PackedIn1UnsignedByte));
+  std::vector<std::byte> byte_vector_1(MeshFormat::PackedAttributeSize(
+      AttrType::kFloat1PackedInOneUnsignedByte));
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttribute(AttrType::kFloat1PackedIn1UnsignedByte,
+      PackAttribute(AttrType::kFloat1PackedInOneUnsignedByte,
                     {{{.offset = 0, .scale = 1}}}, {256},
                     absl::MakeSpan(byte_vector_1)),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttribute(AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      PackAttribute(AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
                     {{{.offset = 0, .scale = 1}}}, {-1},
                     absl::MakeSpan(byte_vector_1)),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {0, 4096}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {-1, 0}),
       "");
   std::vector<std::byte> byte_vector_xy12(MeshFormat::PackedAttributeSize(
-      AttrType::kFloat2PackedIn3UnsignedBytes_XY12));
+      AttrType::kFloat2PackedInThreeUnsignedBytes_XY12));
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttribute(AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      PackAttribute(AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
                     {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                     {0, 4096}, absl::MakeSpan(byte_vector_xy12)),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttribute(AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      PackAttribute(AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
                     {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                     {-1, 0}, absl::MakeSpan(byte_vector_xy12)),
       "");
   std::vector<std::byte> byte_vector_x12_y20(MeshFormat::PackedAttributeSize(
-      AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20));
+      AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20));
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttribute(AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      PackAttribute(AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
                     {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                     {kMax12Bit + 1, 0}, absl::MakeSpan(byte_vector_x12_y20)),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttribute(AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      PackAttribute(AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
                     {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                     {0, kMax20Bit + 1}, absl::MakeSpan(byte_vector_x12_y20)),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn1Float,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInOneFloat,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1}}},
                                       {256, 0, 0}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn1Float,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInOneFloat,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1}}},
                                       {0, 0, -1}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn2Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInTwoFloats,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1}}},
                                       {0, 65536, 0}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn2Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInTwoFloats,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1}}},
                                       {-1, 0, 0}),
       "");
   std::vector<std::byte> byte_vector_xyz10(MeshFormat::PackedAttributeSize(
-      AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10));
+      AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10));
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttribute(AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+      PackAttribute(AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
                     {{{.offset = 0, .scale = 1},
                       {.offset = 0, .scale = 1},
                       {.offset = 0, .scale = 1}}},
                     {0, kMax10Bit + 1, 0}, absl::MakeSpan(byte_vector_xyz10)),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttribute(AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+      PackAttribute(AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
                     {{{.offset = 0, .scale = 1},
                       {.offset = 0, .scale = 1},
                       {.offset = 0, .scale = 1}}},
                     {0, 0, -1}, absl::MakeSpan(byte_vector_xyz10)),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn1Float,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInOneFloat,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
@@ -1189,7 +1204,7 @@ TEST(MeshPackingDeathTest, CannotPackUnrepresentableValues) {
                                       {0, 0, 0, 64}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn1Float,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInOneFloat,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
@@ -1197,7 +1212,7 @@ TEST(MeshPackingDeathTest, CannotPackUnrepresentableValues) {
                                       {0, -1, 0, 0}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn2Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInTwoFloats,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
@@ -1205,7 +1220,7 @@ TEST(MeshPackingDeathTest, CannotPackUnrepresentableValues) {
                                       {4096, 0, 0, 0}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn2Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInTwoFloats,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
@@ -1213,7 +1228,7 @@ TEST(MeshPackingDeathTest, CannotPackUnrepresentableValues) {
                                       {0, 0, -1, 0}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn3Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInThreeFloats,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
@@ -1221,7 +1236,7 @@ TEST(MeshPackingDeathTest, CannotPackUnrepresentableValues) {
                                       {0, 262144, 0, 0}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn3Floats,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInThreeFloats,
                                       {{{.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
                                         {.offset = 0, .scale = 1},
@@ -1243,7 +1258,7 @@ TEST(MeshPackingDeathTest, CannotUnpackWrongNumberOfComponents) {
       "");
   std::vector<std::byte> byte_vector_1(2);
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttribute(AttrType::kFloat1PackedIn1UnsignedByte,
+      UnpackAttribute(AttrType::kFloat1PackedInOneUnsignedByte,
                       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_1)),
       "");
@@ -1254,18 +1269,18 @@ TEST(MeshPackingDeathTest, CannotUnpackWrongNumberOfComponents) {
       "");
   EXPECT_DEATH_IF_SUPPORTED(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {1, 2}),
       "");
   std::vector<std::byte> byte_vector_xy12(4);
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttribute(AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      UnpackAttribute(AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
                       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_xy12)),
       "");
   std::vector<std::byte> byte_vector_x12_y20(5);
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttribute(AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      UnpackAttribute(AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
                       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_x12_y20)),
       "");
@@ -1277,14 +1292,14 @@ TEST(MeshPackingDeathTest, CannotUnpackWrongNumberOfComponents) {
                                     {1}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn1Float,
+      UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInOneFloat,
                                     {{{.offset = 0, .scale = 1},
                                       {.offset = 0, .scale = 1},
                                       {.offset = 0, .scale = 1}}},
                                     {1, 2}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn2Floats,
+      UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInTwoFloats,
                                     {{{.offset = 0, .scale = 1},
                                       {.offset = 0, .scale = 1},
                                       {.offset = 0, .scale = 1}}},
@@ -1292,7 +1307,7 @@ TEST(MeshPackingDeathTest, CannotUnpackWrongNumberOfComponents) {
       "");
   std::vector<std::byte> byte_vector_xyz10(3);
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttribute(AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+      UnpackAttribute(AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
                       {{{.offset = 0, .scale = 1},
                         {.offset = 0, .scale = 1},
                         {.offset = 0, .scale = 1}}},
@@ -1307,7 +1322,7 @@ TEST(MeshPackingDeathTest, CannotUnpackWrongNumberOfComponents) {
                                     {1}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn1Float,
+      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInOneFloat,
                                     {{{.offset = 0, .scale = 1},
                                       {.offset = 0, .scale = 1},
                                       {.offset = 0, .scale = 1},
@@ -1315,7 +1330,7 @@ TEST(MeshPackingDeathTest, CannotUnpackWrongNumberOfComponents) {
                                     {1, 2}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn2Floats,
+      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInTwoFloats,
                                     {{{.offset = 0, .scale = 1},
                                       {.offset = 0, .scale = 1},
                                       {.offset = 0, .scale = 1},
@@ -1323,7 +1338,7 @@ TEST(MeshPackingDeathTest, CannotUnpackWrongNumberOfComponents) {
                                     {1}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn3Floats,
+      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInThreeFloats,
                                     {{{.offset = 0, .scale = 1},
                                       {.offset = 0, .scale = 1},
                                       {.offset = 0, .scale = 1},
@@ -1341,12 +1356,12 @@ TEST(MeshPackingDeathTest, CannotUnpackUnrepresentableValues) {
 #ifndef NDEBUG
   EXPECT_DEATH_IF_SUPPORTED(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {-1}),
       "Cannot unpack: Unrepresentable value found");
   EXPECT_DEATH_IF_SUPPORTED(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {1e8}),
       "Cannot unpack: Unrepresentable value found");
 #else
@@ -1360,12 +1375,12 @@ TEST(MeshPackingDeathTest, CannotPackNonFiniteValues) {
 #ifndef NDEBUG
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {-kInf, 0}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {kNaN, 0}),
       "");
 #else
@@ -1379,12 +1394,12 @@ TEST(MeshPackingDeathTest, CannotUnpackNonFiniteValues) {
 #ifndef NDEBUG
   EXPECT_DEATH_IF_SUPPORTED(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {kInf}),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {kNaN}),
       "");
 #else
@@ -1398,48 +1413,50 @@ TEST(MeshPackingDeathTest, CannotPackWrongNumberOfPackingParams) {
 #ifndef NDEBUG
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsByteVector(
-          AttrType::kFloat1PackedIn1UnsignedByte,
+          AttrType::kFloat1PackedInOneUnsignedByte,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {1}),
       "Invalid packing params");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat2PackedIn1Float,
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat2PackedInOneFloat,
                                       {{{.offset = 0, .scale = 1}}}, {1, 1}),
       "Invalid packing params");
-  EXPECT_DEATH_IF_SUPPORTED(PackAttributeAndGetAsByteVector(
-                                AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
-                                {{{.offset = 0, .scale = 1}}}, {1, 1}),
-                            "Invalid packing params");
-  EXPECT_DEATH_IF_SUPPORTED(PackAttributeAndGetAsByteVector(
-                                AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
-                                {{{.offset = 0, .scale = 1}}}, {1, 1}),
-                            "Invalid packing params");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedIn1Float,
+      PackAttributeAndGetAsByteVector(
+          AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+          {{{.offset = 0, .scale = 1}}}, {1, 1}),
+      "Invalid packing params");
+  EXPECT_DEATH_IF_SUPPORTED(
+      PackAttributeAndGetAsByteVector(
+          AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
+          {{{.offset = 0, .scale = 1}}}, {1, 1}),
+      "Invalid packing params");
+  EXPECT_DEATH_IF_SUPPORTED(
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat3PackedInOneFloat,
                                       {{{.offset = 0, .scale = 1}}}, {1, 1, 1}),
       "Invalid packing params");
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat3PackedIn2Floats,
+          AttrType::kFloat3PackedInTwoFloats,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {1, 1, 1}),
       "Invalid packing params");
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsByteVector(
-          AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+          AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {1, 1, 1}),
       "Invalid packing params");
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat4PackedIn1Float,
+          AttrType::kFloat4PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
           {1, 1, 1, 1}),
       "Invalid packing params");
   EXPECT_DEATH_IF_SUPPORTED(PackAttributeAndGetAsFloatArray(
-                                AttrType::kFloat4PackedIn2Floats,
+                                AttrType::kFloat4PackedInTwoFloats,
                                 {{{.offset = 0, .scale = 1}}}, {1, 1, 1, 1}),
                             "Invalid packing params");
   EXPECT_DEATH_IF_SUPPORTED(
-      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedIn3Floats, {{}},
-                                      {1, 1, 1, 1}),
+      PackAttributeAndGetAsFloatArray(AttrType::kFloat4PackedInThreeFloats,
+                                      {{}}, {1, 1, 1, 1}),
       "Invalid packing params");
 #else
   GTEST_SKIP() << "This tests behavior that is disabled in opt builds.";
@@ -1451,58 +1468,58 @@ TEST(MeshPackingDeathTest, CannotUnpackWrongNumberOfUnpackingParams) {
   // compiled in debug mode.
 #ifndef NDEBUG
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttributeFromFloatArray(AttrType::kFloat2PackedIn1Float,
+      UnpackAttributeFromFloatArray(AttrType::kFloat2PackedInOneFloat,
                                     {{{.offset = 0, .scale = 1}}}, {1, 1}),
       "Invalid unpacking params");
-  std::vector<std::byte> byte_vector_1(
-      MeshFormat::PackedAttributeSize(AttrType::kFloat1PackedIn1UnsignedByte));
+  std::vector<std::byte> byte_vector_1(MeshFormat::PackedAttributeSize(
+      AttrType::kFloat1PackedInOneUnsignedByte));
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttribute(AttrType::kFloat1PackedIn1UnsignedByte,
+      UnpackAttribute(AttrType::kFloat1PackedInOneUnsignedByte,
                       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_1)),
       "Invalid unpacking params");
   std::vector<std::byte> byte_vector_xy12(MeshFormat::PackedAttributeSize(
-      AttrType::kFloat2PackedIn3UnsignedBytes_XY12));
+      AttrType::kFloat2PackedInThreeUnsignedBytes_XY12));
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttribute(AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      UnpackAttribute(AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
                       {{{.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_xy12)),
       "Invalid unpacking params");
   std::vector<std::byte> byte_vector_x12_y20(MeshFormat::PackedAttributeSize(
-      AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20));
+      AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20));
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttribute(AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      UnpackAttribute(AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
                       {{{.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_x12_y20)),
       "Invalid unpacking params");
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttributeFromFloatArray(AttrType::kFloat3PackedIn1Float,
+      UnpackAttributeFromFloatArray(AttrType::kFloat3PackedInOneFloat,
                                     {{{.offset = 0, .scale = 1}}}, {1, 1, 1}),
       "Invalid unpacking params");
   EXPECT_DEATH_IF_SUPPORTED(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat3PackedIn2Floats,
+          AttrType::kFloat3PackedInTwoFloats,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}, {1, 1, 1}),
       "Invalid unpacking params");
   std::vector<std::byte> byte_vector_xyz10(MeshFormat::PackedAttributeSize(
-      AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10));
+      AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10));
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttribute(AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+      UnpackAttribute(AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
                       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
                       absl::MakeSpan(byte_vector_xyz10)),
       "Invalid unpacking params");
   EXPECT_DEATH_IF_SUPPORTED(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat4PackedIn1Float,
+          AttrType::kFloat4PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}},
           {1, 1, 1, 1}),
       "Invalid unpacking params");
   EXPECT_DEATH_IF_SUPPORTED(UnpackAttributeFromFloatArray(
-                                AttrType::kFloat4PackedIn2Floats,
+                                AttrType::kFloat4PackedInTwoFloats,
                                 {{{.offset = 0, .scale = 1}}}, {1, 1, 1, 1}),
                             "Invalid unpacking params");
   EXPECT_DEATH_IF_SUPPORTED(
-      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedIn3Floats, {{}},
+      UnpackAttributeFromFloatArray(AttrType::kFloat4PackedInThreeFloats, {{}},
                                     {1, 1, 1, 1}),
       "Invalid unpacking params");
 #else
@@ -1516,22 +1533,22 @@ TEST(MeshPackingDeathTest, CannotHaveNonFiniteOffset) {
 #ifndef NDEBUG
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = kInf, .scale = 1}, {.offset = 0, .scale = 1}}}, {0, 0}),
       "Invalid packing params");
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = kNaN, .scale = 1}}}, {0, 0}),
       "Invalid packing params");
   EXPECT_DEATH_IF_SUPPORTED(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = -kInf, .scale = 1}}}, {0}),
       "Invalid unpacking params");
   EXPECT_DEATH_IF_SUPPORTED(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = kNaN, .scale = 1}, {.offset = 0, .scale = 1}}}, {0}),
       "Invalid unpacking params");
 #else
@@ -1545,12 +1562,12 @@ TEST(MeshPackingDeathTest, CannotHaveNegativeScale) {
 #ifndef NDEBUG
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = -1}}}, {0, 0}),
       "Invalid packing params");
   EXPECT_DEATH_IF_SUPPORTED(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = -1}, {.offset = 0, .scale = 1}}}, {0}),
       "Invalid unpacking params");
 #else
@@ -1564,22 +1581,22 @@ TEST(MeshPackingDeathTest, CannotHaveNonFiniteScale) {
 #ifndef NDEBUG
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = -kInf}}}, {0, 0}),
       "Invalid packing params");
   EXPECT_DEATH_IF_SUPPORTED(
       PackAttributeAndGetAsFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = kNaN}, {.offset = 0, .scale = 1}}}, {0, 0}),
       "Invalid packing params");
   EXPECT_DEATH_IF_SUPPORTED(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = kInf}, {.offset = 0, .scale = kInf}}}, {0}),
       "Invalid unpacking params");
   EXPECT_DEATH_IF_SUPPORTED(
       UnpackAttributeFromFloatArray(
-          AttrType::kFloat2PackedIn1Float,
+          AttrType::kFloat2PackedInOneFloat,
           {{{.offset = 0, .scale = kNaN}, {.offset = 0, .scale = kNaN}}}, {0}),
       "Invalid unpacking params");
 #else
@@ -1664,8 +1681,8 @@ TEST(MeshPackingTest, ReadUnpackedFloatAttributeFromByteArrayDefaultFormat) {
 TEST(MeshPackingTest, ReadUnpackedFloatAttributeFromByteArrayCustomFormat) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-       {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-       {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
   std::vector<std::byte> bytes =
@@ -1791,9 +1808,9 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat1Unpacked) {
               MeshAttributeCodingParamsEq({{{.offset = 0, .scale = 1}}}));
 }
 
-TEST(MeshPackingTest, ComputeCodingParamskFloat1PackedIn1UnsignedByte) {
+TEST(MeshPackingTest, ComputeCodingParamskFloat1PackedInOneUnsignedByte) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
-      ComputeCodingParams(AttrType::kFloat1PackedIn1UnsignedByte,
+      ComputeCodingParams(AttrType::kFloat1PackedInOneUnsignedByte,
                           {.minimum = {2}, .maximum = {10}});
   ASSERT_EQ(coding_params.status(), absl::OkStatus());
   EXPECT_THAT(*coding_params, MeshAttributeCodingParamsEq(
@@ -1809,18 +1826,9 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat2Unpacked) {
                   {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}));
 }
 
-TEST(MeshPackingTest, ComputeCodingParamskFloat2PackedIn1Float) {
-  absl::StatusOr<MeshAttributeCodingParams> coding_params = ComputeCodingParams(
-      AttrType::kFloat2PackedIn1Float, {.minimum = {0, 1}, .maximum = {5, 10}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
-  EXPECT_THAT(*coding_params, MeshAttributeCodingParamsEq(
-                                  {{{.offset = 0, .scale = 5.f / kMax12Bit},
-                                    {.offset = 1, .scale = 9.f / kMax12Bit}}}));
-}
-
-TEST(MeshPackingTest, ComputeCodingParamskFloat2PackedIn3UnsignedBytes_XY12) {
+TEST(MeshPackingTest, ComputeCodingParamskFloat2PackedInOneFloat) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
-      ComputeCodingParams(AttrType::kFloat2PackedIn3UnsignedBytes_XY12,
+      ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                           {.minimum = {0, 1}, .maximum = {5, 10}});
   ASSERT_EQ(coding_params.status(), absl::OkStatus());
   EXPECT_THAT(*coding_params, MeshAttributeCodingParamsEq(
@@ -1829,9 +1837,20 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat2PackedIn3UnsignedBytes_XY12) {
 }
 
 TEST(MeshPackingTest,
-     ComputeCodingParamskFloat2PackedIn4UnsignedBytes_X12_Y20) {
+     ComputeCodingParamskFloat2PackedInThreeUnsignedBytes_XY12) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
-      ComputeCodingParams(AttrType::kFloat2PackedIn4UnsignedBytes_X12_Y20,
+      ComputeCodingParams(AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+                          {.minimum = {0, 1}, .maximum = {5, 10}});
+  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  EXPECT_THAT(*coding_params, MeshAttributeCodingParamsEq(
+                                  {{{.offset = 0, .scale = 5.f / kMax12Bit},
+                                    {.offset = 1, .scale = 9.f / kMax12Bit}}}));
+}
+
+TEST(MeshPackingTest,
+     ComputeCodingParamskFloat2PackedInFourUnsignedBytes_X12_Y20) {
+  absl::StatusOr<MeshAttributeCodingParams> coding_params =
+      ComputeCodingParams(AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
                           {.minimum = {2, 5}, .maximum = {10, 21}});
   ASSERT_EQ(coding_params.status(), absl::OkStatus());
   EXPECT_THAT(*coding_params,
@@ -1850,9 +1869,9 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat3Unpacked) {
                                             {.offset = 0, .scale = 1}}}));
 }
 
-TEST(MeshPackingTest, ComputeCodingParamskFloat3PackedIn1Float) {
+TEST(MeshPackingTest, ComputeCodingParamskFloat3PackedInOneFloat) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
-      ComputeCodingParams(AttrType::kFloat3PackedIn1Float,
+      ComputeCodingParams(AttrType::kFloat3PackedInOneFloat,
                           {.minimum = {4, 5, 6}, .maximum = {5, 10, 15}});
   ASSERT_EQ(coding_params.status(), absl::OkStatus());
   EXPECT_THAT(*coding_params, MeshAttributeCodingParamsEq(
@@ -1861,9 +1880,9 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat3PackedIn1Float) {
                                     {.offset = 6, .scale = 9.f / kMax8Bit}}}));
 }
 
-TEST(MeshPackingTest, ComputeCodingParamskFloat3PackedIn2Floats) {
+TEST(MeshPackingTest, ComputeCodingParamskFloat3PackedInTwoFloats) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
-      ComputeCodingParams(AttrType::kFloat3PackedIn2Floats,
+      ComputeCodingParams(AttrType::kFloat3PackedInTwoFloats,
                           {.minimum = {-4, -8, -4}, .maximum = {20, 30, 10}});
   ASSERT_EQ(coding_params.status(), absl::OkStatus());
   EXPECT_THAT(*coding_params,
@@ -1873,9 +1892,10 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat3PackedIn2Floats) {
                     {.offset = -4, .scale = 14.f / kMax16Bit}}}));
 }
 
-TEST(MeshPackingTest, ComputeCodingParamskFloat3PackedIn4UnsignedBytes_XYZ10) {
+TEST(MeshPackingTest,
+     ComputeCodingParamskFloat3PackedInFourUnsignedBytes_XYZ10) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
-      ComputeCodingParams(AttrType::kFloat3PackedIn4UnsignedBytes_XYZ10,
+      ComputeCodingParams(AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
                           {.minimum = {12, -21, -13}, .maximum = {28, 4, 37}});
   ASSERT_EQ(coding_params.status(), absl::OkStatus());
   EXPECT_THAT(*coding_params,
@@ -1897,9 +1917,9 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat4Unpacked) {
                                             {.offset = 0, .scale = 1}}}));
 }
 
-TEST(MeshPackingTest, ComputeCodingParamskFloat4PackedIn1Float) {
+TEST(MeshPackingTest, ComputeCodingParamskFloat4PackedInOneFloat) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
-      ComputeCodingParams(AttrType::kFloat4PackedIn1Float,
+      ComputeCodingParams(AttrType::kFloat4PackedInOneFloat,
                           {.minimum = {-1, 1, -3, 3}, .maximum = {1, 2, 3, 5}});
   ASSERT_EQ(coding_params.status(), absl::OkStatus());
   EXPECT_THAT(*coding_params, MeshAttributeCodingParamsEq(
@@ -1909,9 +1929,9 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat4PackedIn1Float) {
                                     {.offset = 3, .scale = 2.f / kMax6Bit}}}));
 }
 
-TEST(MeshPackingTest, ComputeCodingParamskFloat4PackedIn2Floats) {
+TEST(MeshPackingTest, ComputeCodingParamskFloat4PackedInTwoFloats) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params = ComputeCodingParams(
-      AttrType::kFloat4PackedIn2Floats,
+      AttrType::kFloat4PackedInTwoFloats,
       {.minimum = {100, 200, 300, 400}, .maximum = {900, 400, 310, 500}});
   ASSERT_EQ(coding_params.status(), absl::OkStatus());
   EXPECT_THAT(*coding_params,
@@ -1922,9 +1942,9 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat4PackedIn2Floats) {
                     {.offset = 400, .scale = 100.f / kMax12Bit}}}));
 }
 
-TEST(MeshPackingTest, ComputeCodingParamskFloat4PackedIn3Floats) {
+TEST(MeshPackingTest, ComputeCodingParamskFloat4PackedInThreeFloats) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params = ComputeCodingParams(
-      AttrType::kFloat4PackedIn3Floats,
+      AttrType::kFloat4PackedInThreeFloats,
       {.minimum = {0.1, -0.5, 1.3, -2.9}, .maximum = {0.2, -0.1, 1.5, -2.7}});
   ASSERT_EQ(coding_params.status(), absl::OkStatus());
   EXPECT_THAT(*coding_params,
@@ -1937,7 +1957,7 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat4PackedIn3Floats) {
 
 TEST(MeshPackingTest, ComputeCodingParamsHandlesMinAndMaxBeingTheSame) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
-      ComputeCodingParams(AttrType::kFloat2PackedIn1Float,
+      ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                           {.minimum = {10, 20}, .maximum = {10, 20}});
   ASSERT_EQ(coding_params.status(), absl::OkStatus());
   EXPECT_THAT(*coding_params,
@@ -1947,7 +1967,7 @@ TEST(MeshPackingTest, ComputeCodingParamsHandlesMinAndMaxBeingTheSame) {
 
 TEST(MeshPackingTest, ComputeCodingParamsRangeIsLargerThanFloatMax) {
   absl::Status status =
-      ComputeCodingParams(AttrType::kFloat2PackedIn1Float,
+      ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                           {.minimum = {10, -3e38}, .maximum = {10, 3e38}})
           .status();
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
@@ -1959,8 +1979,8 @@ TEST(MeshPackingTest, ComputeCodingParamsArray) {
       ComputeCodingParamsArray(
           *MeshFormat::Create(
               {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-               {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
               MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
           {{.minimum = {-3}, .maximum = {500}},
            {.minimum = {-50, 5}, .maximum = {100, 10}},
@@ -1986,8 +2006,8 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayWithCustomParams) {
       ComputeCodingParamsArray(
           *MeshFormat::Create(
               {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-               {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
               MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
           {{.minimum = {-3}, .maximum = {500}},
            {.minimum = {-50, 5}, .maximum = {100, 10}},
@@ -2019,8 +2039,8 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayWrongNumberOfBounds) {
       ComputeCodingParamsArray(
           *MeshFormat::Create(
               {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-               {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
               MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
           {{.minimum = {-3}, .maximum = {500}},
            {.minimum = {-50, 5}, .maximum = {100, 10}}})
@@ -2034,8 +2054,8 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayWrongNumberOfCustomParams) {
       ComputeCodingParamsArray(
           *MeshFormat::Create(
               {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-               {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
               MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
           {{.minimum = {-3}, .maximum = {500}},
            {.minimum = {-50, 5}, .maximum = {100, 10}},
@@ -2055,8 +2075,8 @@ TEST(MeshPackingTest,
       ComputeCodingParamsArray(
           *MeshFormat::Create(
               {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-               {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
               MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
           {{.minimum = {-3}, .maximum = {500}},
            {.minimum = {-50, 5}, .maximum = {100, 10}},
@@ -2079,8 +2099,8 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayCustomParamsIsInvalid) {
         ComputeCodingParamsArray(
             *MeshFormat::Create(
                 {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-                 {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-                 {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+                 {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+                 {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
                 MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
             {{.minimum = {-3}, .maximum = {500}},
              {.minimum = {-50, 5}, .maximum = {100, 10}},
@@ -2102,8 +2122,8 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayCustomParamsIsInvalid) {
         ComputeCodingParamsArray(
             *MeshFormat::Create(
                 {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-                 {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-                 {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+                 {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+                 {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
                 MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
             {{.minimum = {-3}, .maximum = {500}},
              {.minimum = {-50, 5}, .maximum = {100, 10}},
@@ -2130,8 +2150,8 @@ TEST(MeshPackingTest,
         ComputeCodingParamsArray(
             *MeshFormat::Create(
                 {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-                 {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-                 {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+                 {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+                 {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
                 MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
             {{.minimum = {-3}, .maximum = {500}},
              {.minimum = {-50, 5}, .maximum = {100, 10}},
@@ -2154,8 +2174,8 @@ TEST(MeshPackingTest,
         ComputeCodingParamsArray(
             *MeshFormat::Create(
                 {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-                 {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-                 {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+                 {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+                 {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
                 MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
             {{.minimum = {-3}, .maximum = {500}},
              {.minimum = {-50, 5}, .maximum = {100, 10}},
@@ -2180,8 +2200,8 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayPercolatesErrors) {
       ComputeCodingParamsArray(
           *MeshFormat::Create(
               {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-               {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
               MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
           {{.minimum = {-3}, .maximum = {500}},
            {.minimum = {-3e38, 5}, .maximum = {3e38, 10}},
@@ -2215,8 +2235,8 @@ TEST(MeshPackingTest, CopyAndPackPartitionVerticesDefaultFormat) {
 TEST(MeshPackingTest, CopyAndPackPartitionVerticesCustomFormat) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-       {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-       {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
   std::vector<std::byte> bytes =
@@ -2242,14 +2262,14 @@ TEST(MeshPackingTest, CopyAndPackPartitionVerticesCustomFormat) {
   }
   {
     absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
-        ComputeCodingParams(AttrType::kFloat2PackedIn1Float,
+        ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                             {.minimum = {-50, -200}, .maximum = {200, 100}});
     ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
     unpacking_params_array[1] = *unpacking_params;
   }
   {
     absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
-        ComputeCodingParams(AttrType::kFloat4PackedIn1Float,
+        ComputeCodingParams(AttrType::kFloat4PackedInOneFloat,
                             {.minimum = {0, 0, 0, 0}, .maximum = {1, 1, 1, 1}});
     ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
     unpacking_params_array[2] = *unpacking_params;
@@ -2296,8 +2316,8 @@ TEST(MeshPackingTest,
      CopyAndPackPartitionVerticesCustomFormatWithCorrectedPositions) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-       {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-       {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
   std::vector<std::byte> bytes =
@@ -2324,14 +2344,14 @@ TEST(MeshPackingTest,
   }
   {
     absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
-        ComputeCodingParams(AttrType::kFloat2PackedIn1Float,
+        ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                             {.minimum = {-50, -200}, .maximum = {200, 100}});
     ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
     unpacking_params_array[1] = *unpacking_params;
   }
   {
     absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
-        ComputeCodingParams(AttrType::kFloat4PackedIn1Float,
+        ComputeCodingParams(AttrType::kFloat4PackedInOneFloat,
                             {.minimum = {0, 0, 0, 0}, .maximum = {1, 1, 1, 1}});
     ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
     unpacking_params_array[2] = *unpacking_params;
@@ -2426,8 +2446,8 @@ TEST(MeshPackingDeathTest,
           0, 0, bytes,
           *MeshFormat::Create(
               {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-               {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
               MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)),
       "");
 #else
@@ -2451,8 +2471,8 @@ TEST(MeshPackingDeathTest,
           2, 0, bytes,
           *MeshFormat::Create(
               {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-               {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
               MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)),
       "");
 #else
@@ -2476,8 +2496,8 @@ TEST(MeshPackingDeathTest,
           0, 3, bytes,
           *MeshFormat::Create(
               {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedIn1Float, AttrId::kPosition},
-               {AttrType::kFloat4PackedIn1Float, AttrId::kColorShiftHsl}},
+               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
               MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)),
       "");
 #else
@@ -2502,12 +2522,12 @@ TEST(MeshPackingDeathTest,
 
 TEST(MeshPackingTestDeathTest, ComputeCodingParamsMinOrMaxIsWrongSize) {
   EXPECT_DEATH_IF_SUPPORTED(
-      ComputeCodingParams(AttrType::kFloat2PackedIn1Float,
+      ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                           {.minimum = {1}, .maximum = {1, 1}})
           .IgnoreError(),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      ComputeCodingParams(AttrType::kFloat2PackedIn1Float,
+      ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                           {.minimum = {1, 1}, .maximum = {1, 1, 1}})
           .IgnoreError(),
       "");
@@ -2515,12 +2535,12 @@ TEST(MeshPackingTestDeathTest, ComputeCodingParamsMinOrMaxIsWrongSize) {
 
 TEST(MeshPackingTestDeathTest, ComputeCodingParamsMaxIsLessThanMin) {
   EXPECT_DEATH_IF_SUPPORTED(
-      ComputeCodingParams(AttrType::kFloat2PackedIn1Float,
+      ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                           {.minimum = {2, 3}, .maximum = {1, 4}})
           .IgnoreError(),
       "");
   EXPECT_DEATH_IF_SUPPORTED(
-      ComputeCodingParams(AttrType::kFloat2PackedIn1Float,
+      ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                           {.minimum = {1, 1}, .maximum = {2, 0}})
           .IgnoreError(),
       "");
@@ -2613,9 +2633,9 @@ TEST(MeshPackingDeathTest,
 #ifndef NDEBUG
   // We use a custom format because the default format uses kFloat2Unpacked, and
   // unpacked attributes ignore the content of the unpacking params.
-  absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{AttrType::kFloat2PackedIn1Float, AttrId::kPosition}},
-                         MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition}},
+      MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
   std::vector<std::byte> bytes = AsByteVector<float>({0, 1,  //
                                                       2, 3,  //
@@ -2623,7 +2643,7 @@ TEST(MeshPackingDeathTest,
                                                       6, 7});
   CodingParamsArray unpacking_params_array(1);
   absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
-      ComputeCodingParams(AttrType::kFloat3PackedIn1Float,
+      ComputeCodingParams(AttrType::kFloat3PackedInOneFloat,
                           {.minimum = {0, 0, 0}, .maximum = {1, 1, 1}});
   ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
   unpacking_params_array[0] = *unpacking_params;

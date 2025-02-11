@@ -256,7 +256,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     // 16-bit floats, each in the range [0, 1].
 
     // Unpacks a `float2` that was packed into a single `float` according to
-    // `MeshFormat::AttributeType::kFloat2PackedIn1Float`. The components of
+    // `MeshFormat::AttributeType::kFloat2PackedInOneFloat`. The components of
     // `unpackingTransform` are expected to be:
     //     {x-offset, x-scale, y-offset, y-scale}
     R"(
@@ -268,7 +268,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
 
     // Unpacks a `float2` that was packed into three unsigned bytes according to
-    // `MeshFormat::AttributeType::kFloat2PackedIn3UnsignedBytes_XY12`. The
+    // `MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12`. The
     // components of `unpackingTransform` are expected to be:
     //     {x-offset, x-scale, y-offset, y-scale}
     R"(
