@@ -7,7 +7,6 @@ jobs:
   bazel_test:
     strategy:
       matrix:
-        # TODO: b/365609306 - Enable macos-latest and windows-latest runners.
         os: [ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
@@ -17,11 +16,24 @@ jobs:
 
     # gmock wants libtinfo5 which is not preinstalled on the ubuntu-latest GitHub Actions runner
     # (and as of the latest version, not available in the package manager).
-    - if: matrix.os == 'ubuntu-latest'
+    - name: Install libtinfo5
+      if: matrix.os == 'ubuntu-latest'
       run: |
         wget https://mirrors.kernel.org/ubuntu/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_amd64.deb
         echo "f04c382f877c9eab631818eadbfaa0c5 libtinfo5_6.3-2ubuntu0.1_amd64.deb" | md5sum -c --status
         sudo dpkg -i libtinfo5_6.3-2ubuntu0.1_amd64.deb
+
+    - name: Cache Bazel repository cache
+      if: matrix.os == 'ubuntu-latest'
+      # Cache the Bazel repository cache based on
+      # https://github.com/actions/cache/blob/main/examples.md#---bazel
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/bazel
+        key: ${{ runner.os }}-bazel-${{ hashFiles('.bazelrc', 'MODULE.bazel') }}
+        restore-keys: |
+          ${{ runner.os }}-bazel-
 
     - name: Test
       run: bazel test --test_output=errors --keep_going //ink/...
