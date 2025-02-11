@@ -447,6 +447,38 @@ absl::StatusOr<BrushBehavior::Target> DecodeBrushBehaviorTarget(
   }
 }
 
+proto::BrushBehavior::PolarTarget EncodeBrushBehaviorPolarTarget(
+    BrushBehavior::PolarTarget target) {
+  switch (target) {
+    case BrushBehavior::PolarTarget::
+        kPositionOffsetAbsoluteInRadiansAndMultiplesOfBrushSize:
+      return proto::BrushBehavior::
+          POLAR_POSITION_OFFSET_ABSOLUTE_IN_RADIANS_AND_MULTIPLES_OF_BRUSH_SIZE;
+    case BrushBehavior::PolarTarget::
+        kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize:
+      return proto::BrushBehavior::
+          POLAR_POSITION_OFFSET_RELATIVE_IN_RADIANS_AND_MULTIPLES_OF_BRUSH_SIZE;
+  }
+  return proto::BrushBehavior::POLAR_UNSPECIFIED;
+}
+
+absl::StatusOr<BrushBehavior::PolarTarget> DecodeBrushBehaviorPolarTarget(
+    proto::BrushBehavior::PolarTarget target_proto) {
+  switch (target_proto) {
+    case proto::BrushBehavior::
+        POLAR_POSITION_OFFSET_ABSOLUTE_IN_RADIANS_AND_MULTIPLES_OF_BRUSH_SIZE:
+      return BrushBehavior::PolarTarget::
+          kPositionOffsetAbsoluteInRadiansAndMultiplesOfBrushSize;
+    case proto::BrushBehavior::
+        POLAR_POSITION_OFFSET_RELATIVE_IN_RADIANS_AND_MULTIPLES_OF_BRUSH_SIZE:
+      return BrushBehavior::PolarTarget::
+          kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize;
+    default:
+      return absl::InvalidArgumentError(absl::StrCat(
+          "invalid ink.proto.BrushBehavior.PolarTarget value: ", target_proto));
+  }
+}
+
 proto::BrushBehavior::OutOfRange EncodeBrushBehaviorOutOfRange(
     BrushBehavior::OutOfRange out_of_range) {
   switch (out_of_range) {
@@ -777,6 +809,17 @@ void EncodeBrushBehaviorNode(const BrushBehavior::TargetNode& node,
       node.target_modifier_range[1]);
 }
 
+void EncodeBrushBehaviorNode(const BrushBehavior::PolarTargetNode& node,
+                             proto::BrushBehavior::Node& node_proto_out) {
+  proto::BrushBehavior::PolarTargetNode* target_node_proto =
+      node_proto_out.mutable_polar_target_node();
+  target_node_proto->set_target(EncodeBrushBehaviorPolarTarget(node.target));
+  target_node_proto->set_angle_range_start(node.angle_range[0]);
+  target_node_proto->set_angle_range_end(node.angle_range[1]);
+  target_node_proto->set_magnitude_range_start(node.magnitude_range[0]);
+  target_node_proto->set_magnitude_range_end(node.magnitude_range[1]);
+}
+
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorSourceNode(
     const proto::BrushBehavior::SourceNode& node_proto) {
   absl::StatusOr<BrushBehavior::Source> source =
@@ -901,6 +944,21 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorTargetNode(
       .target = *target,
       .target_modifier_range = {node_proto.target_modifier_range_start(),
                                 node_proto.target_modifier_range_end()},
+  };
+}
+
+absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorPolarTargetNode(
+    const proto::BrushBehavior::PolarTargetNode& node_proto) {
+  absl::StatusOr<BrushBehavior::PolarTarget> target =
+      DecodeBrushBehaviorPolarTarget(node_proto.target());
+  if (!target.ok()) return target.status();
+
+  return BrushBehavior::PolarTargetNode{
+      .target = *target,
+      .angle_range = {node_proto.angle_range_start(),
+                      node_proto.angle_range_end()},
+      .magnitude_range = {node_proto.magnitude_range_start(),
+                          node_proto.magnitude_range_end()},
   };
 }
 
@@ -1314,6 +1372,8 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNode(
           node_proto.interpolation_node());
     case proto::BrushBehavior::Node::kTargetNode:
       return DecodeBrushBehaviorTargetNode(node_proto.target_node());
+    case proto::BrushBehavior::Node::kPolarTargetNode:
+      return DecodeBrushBehaviorPolarTargetNode(node_proto.polar_target_node());
     case proto::BrushBehavior::Node::NODE_NOT_SET:
       break;
   }

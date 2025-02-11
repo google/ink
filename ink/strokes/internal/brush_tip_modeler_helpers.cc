@@ -520,6 +520,25 @@ void ProcessBehaviorNodeImpl(const TargetNodeImplementation& node,
       Lerp(node.target_modifier_range[0], node.target_modifier_range[1], input);
 }
 
+void ProcessBehaviorNodeImpl(const PolarTargetNodeImplementation& node,
+                             const BehaviorNodeContext& context) {
+  ABSL_DCHECK_GE(context.stack.size(), 2);
+  float magnitude_input = context.stack.back();
+  context.stack.pop_back();
+  float angle_input = context.stack.back();
+  context.stack.pop_back();
+  if (IsNullBehaviorNodeValue(angle_input) ||
+      IsNullBehaviorNodeValue(magnitude_input)) {
+    return;
+  }
+  Vec modifier = Vec::FromDirectionAndMagnitude(
+      Angle::Radians(
+          Lerp(node.angle_range[0], node.angle_range[1], angle_input)),
+      Lerp(node.magnitude_range[0], node.magnitude_range[1], magnitude_input));
+  context.target_modifiers[node.target_x_index] = modifier.x;
+  context.target_modifiers[node.target_y_index] = modifier.y;
+}
+
 }  // namespace
 
 void ProcessBehaviorNode(const BehaviorNodeImplementation& node,

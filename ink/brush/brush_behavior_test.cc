@@ -188,6 +188,19 @@ TEST(BrushBehaviorTest, StringifyTarget) {
   EXPECT_EQ(absl::StrCat(static_cast<BrushBehavior::Target>(91)), "Target(91)");
 }
 
+TEST(BrushBehaviorTest, StringifyPolarTarget) {
+  EXPECT_EQ(
+      absl::StrCat(BrushBehavior::PolarTarget::
+                       kPositionOffsetAbsoluteInRadiansAndMultiplesOfBrushSize),
+      "kPositionOffsetAbsoluteInRadiansAndMultiplesOfBrushSize");
+  EXPECT_EQ(
+      absl::StrCat(BrushBehavior::PolarTarget::
+                       kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize),
+      "kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize");
+  EXPECT_EQ(absl::StrCat(static_cast<BrushBehavior::PolarTarget>(91)),
+            "PolarTarget(91)");
+}
+
 TEST(BrushBehaviorTest, StringifyOutOfRange) {
   EXPECT_EQ(absl::StrCat(BrushBehavior::OutOfRange::kClamp), "kClamp");
   EXPECT_EQ(absl::StrCat(BrushBehavior::OutOfRange::kRepeat), "kRepeat");
@@ -327,6 +340,18 @@ TEST(BrushBehaviorTest, StringifyTargetNode) {
             }),
             "TargetNode{target=kSizeMultiplier, "
             "target_modifier_range={0.5, 1.5}}");
+}
+
+TEST(BrushBehaviorTest, StringifyPolarTargetNode) {
+  EXPECT_EQ(absl::StrCat(BrushBehavior::PolarTargetNode{
+                .target = BrushBehavior::PolarTarget::
+                    kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
+                .angle_range = {0.5, 1.5},
+                .magnitude_range = {0, 2},
+            }),
+            "PolarTargetNode{target="
+            "kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize, "
+            "angle_range={0.5, 1.5}, magnitude_range={0, 2}}");
 }
 
 TEST(BrushBehaviorTest, StringifyBrushBehavior) {
@@ -556,6 +581,43 @@ TEST(BrushBehaviorTest, TargetNodeEqualAndNotEqual) {
   EXPECT_NE((BrushBehavior::TargetNode{
                 .target = BrushBehavior::Target::kSizeMultiplier,
                 .target_modifier_range = {0.5, 2.0},  // different
+            }),
+            node);
+}
+
+TEST(BrushBehaviorTest, PolarTargetNodeEqualAndNotEqual) {
+  BrushBehavior::PolarTargetNode node = {
+      .target = BrushBehavior::PolarTarget::
+          kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
+      .angle_range = {0.5, 1.5},
+      .magnitude_range = {0, 2},
+  };
+  EXPECT_EQ((BrushBehavior::PolarTargetNode{
+                .target = BrushBehavior::PolarTarget::
+                    kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
+                .angle_range = {0.5, 1.5},
+                .magnitude_range = {0, 2},
+            }),
+            node);
+  EXPECT_NE((BrushBehavior::PolarTargetNode{
+                .target = BrushBehavior::PolarTarget::  // different
+                kPositionOffsetAbsoluteInRadiansAndMultiplesOfBrushSize,
+                .angle_range = {0.5, 1.5},
+                .magnitude_range = {0, 2},
+            }),
+            node);
+  EXPECT_NE((BrushBehavior::PolarTargetNode{
+                .target = BrushBehavior::PolarTarget::
+                    kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
+                .angle_range = {0, 1.5},  // different
+                .magnitude_range = {0, 2},
+            }),
+            node);
+  EXPECT_NE((BrushBehavior::PolarTargetNode{
+                .target = BrushBehavior::PolarTarget::
+                    kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
+                .angle_range = {0.5, 1.5},
+                .magnitude_range = {0, 3},  // different
             }),
             node);
 }
@@ -844,6 +906,65 @@ TEST(BrushBehaviorTest, ValidateTargetNode) {
       status.message(),
       HasSubstr(
           "target_modifier_range` must hold 2 finite and distinct values"));
+}
+
+TEST(BrushBehaviorTest, ValidatePolarTargetNode) {
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::PolarTargetNode{
+          .target = BrushBehavior::PolarTarget::
+              kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
+          .angle_range = {0, 2},
+          .magnitude_range = {1, 3},
+      }),
+      IsOk());
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::PolarTargetNode{
+          .target = static_cast<BrushBehavior::PolarTarget>(123),
+          .angle_range = {0, 2},
+          .magnitude_range = {1, 3},
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("non-enumerator value 123")));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::PolarTargetNode{
+          .target = BrushBehavior::PolarTarget::
+              kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
+          .angle_range = {0, kInfinity},
+          .magnitude_range = {1, 3},
+      }),
+      StatusIs(
+          absl::StatusCode::kInvalidArgument,
+          HasSubstr("angle_range` must hold 2 finite and distinct values")));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::PolarTargetNode{
+          .target = BrushBehavior::PolarTarget::
+              kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
+          .angle_range = {2, 2},
+          .magnitude_range = {1, 3},
+      }),
+      StatusIs(
+          absl::StatusCode::kInvalidArgument,
+          HasSubstr("angle_range` must hold 2 finite and distinct values")));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::PolarTargetNode{
+          .target = BrushBehavior::PolarTarget::
+              kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
+          .angle_range = {0, 2},
+          .magnitude_range = {1, kInfinity},
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr(
+                   "magnitude_range` must hold 2 finite and distinct values")));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::PolarTargetNode{
+          .target = BrushBehavior::PolarTarget::
+              kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
+          .angle_range = {0, 2},
+          .magnitude_range = {3, 3},
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr(
+                   "magnitude_range` must hold 2 finite and distinct values")));
 }
 
 TEST(BrushBehaviorTest, ValidateBrushBehavior) {

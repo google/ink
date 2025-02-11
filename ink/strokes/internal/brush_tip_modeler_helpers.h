@@ -75,12 +75,24 @@ struct TargetNodeImplementation {
   std::array<float, 2> target_modifier_range;
 };
 
+struct PolarTargetNodeImplementation {
+  // The indices into `BehaviorNodeContext::target_modifiers` for the latest X/Y
+  // modifier values of this target node.
+  size_t target_x_index;
+  size_t target_y_index;
+  // The below fields are copies of the same fields from the
+  // `BrushBehavior::PolarTargetNode` that this struct helps implement.
+  std::array<float, 2> angle_range;
+  std::array<float, 2> magnitude_range;
+};
+
 using BehaviorNodeImplementation =
     std::variant<BrushBehavior::SourceNode, BrushBehavior::ConstantNode,
                  NoiseNodeImplementation, BrushBehavior::FallbackFilterNode,
                  BrushBehavior::ToolTypeFilterNode, DampingNodeImplementation,
                  EasingImplementation, BrushBehavior::BinaryOpNode,
-                 BrushBehavior::InterpolationNode, TargetNodeImplementation>;
+                 BrushBehavior::InterpolationNode, TargetNodeImplementation,
+                 PolarTargetNodeImplementation>;
 
 // Holds references to stroke data needed by `ProcessBehaviorNode()`, as well as
 // references to mutable state that that function will need to update.

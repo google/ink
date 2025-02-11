@@ -236,6 +236,17 @@ Domain<BrushBehavior::Target> ArbitraryBrushBehaviorTarget() {
 }
 // LINT.ThenChange(brush_behavior.h:target)
 
+// LINT.IfChange(polar_target)
+Domain<BrushBehavior::PolarTarget> ArbitraryBrushBehaviorPolarTarget() {
+  return ElementOf({
+      BrushBehavior::PolarTarget::
+          kPositionOffsetAbsoluteInRadiansAndMultiplesOfBrushSize,
+      BrushBehavior::PolarTarget::
+          kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
+  });
+}
+// LINT.ThenChange(brush_behavior.h:polar_target)
+
 // LINT.IfChange(predefined)
 Domain<EasingFunction::Predefined> ArbitraryEasingFunctionPredefined() {
   return ElementOf({
@@ -341,6 +352,12 @@ Domain<BrushBehavior::TargetNode> ValidBrushBehaviorTargetNode() {
                                              ArrayOfTwoFiniteDistinctFloats());
 }
 
+Domain<BrushBehavior::PolarTargetNode> ValidBrushBehaviorPolarTargetNode() {
+  return StructOf<BrushBehavior::PolarTargetNode>(
+      ArbitraryBrushBehaviorPolarTarget(), ArrayOfTwoFiniteDistinctFloats(),
+      ArrayOfTwoFiniteDistinctFloats());
+}
+
 // Casts a domain over a specific node type (e.g. `SourceNode`) into a domain
 // over `Node`.
 template <typename T>
@@ -402,23 +419,38 @@ ValidBrushBehaviorNodeSubtreeWithMaxDepth(int max_depth) {
           smaller_subtree, smaller_subtree, ValidBrushBehaviorBinaryOpNode()));
 }
 
-// A domain over all valid behavior node trees (i.e. with a target node at the
+// A domain over all valid behavior node trees (i.e. with a terminal node at the
 // root).
 Domain<std::vector<BrushBehavior::Node>> ValidBrushBehaviorNodeTree() {
-  return Map(
-      [](const std::vector<BrushBehavior::Node>& input,
-         const BrushBehavior::TargetNode& node) {
-        std::vector<BrushBehavior::Node> result = input;
-        result.push_back(node);
-        return result;
-      },
-      // Arbitrarily limit the tree depth to prevent resource exhaustion.
-      ValidBrushBehaviorNodeSubtreeWithMaxDepth(5),
-      ValidBrushBehaviorTargetNode());
+  return OneOf(
+      Map(
+          [](const std::vector<BrushBehavior::Node>& input,
+             const BrushBehavior::TargetNode& node) {
+            std::vector<BrushBehavior::Node> result = input;
+            result.push_back(node);
+            return result;
+          },
+          // Arbitrarily limit the tree depth to prevent resource exhaustion.
+          ValidBrushBehaviorNodeSubtreeWithMaxDepth(5),
+          ValidBrushBehaviorTargetNode()),
+      Map(
+          [](const std::vector<BrushBehavior::Node>& angle_input,
+             const std::vector<BrushBehavior::Node>& magnitude_input,
+             const BrushBehavior::PolarTargetNode& node) {
+            std::vector<BrushBehavior::Node> result = angle_input;
+            result.insert(result.end(), magnitude_input.begin(),
+                          magnitude_input.end());
+            result.push_back(node);
+            return result;
+          },
+          // Arbitrarily limit the tree depth to prevent resource exhaustion.
+          ValidBrushBehaviorNodeSubtreeWithMaxDepth(5),
+          ValidBrushBehaviorNodeSubtreeWithMaxDepth(5),
+          ValidBrushBehaviorPolarTargetNode()));
 }
 
 // A domain over all valid behavior node forests (i.e. containing zero or more
-// complete trees, each with a target node at the root).
+// complete trees, each with a terminal node at the root).
 Domain<std::vector<BrushBehavior::Node>> ValidBrushBehaviorNodeForest() {
   return Map(
       [](const std::vector<std::vector<BrushBehavior::Node>>& trees) {
@@ -455,7 +487,8 @@ Domain<BrushBehavior::Node> ValidBrushBehaviorNode() {
       ValidBrushBehaviorNoiseNode(), ValidBrushBehaviorFallbackFilterNode(),
       ValidBrushBehaviorToolTypeFilterNode(), ValidBrushBehaviorDampingNode(),
       ValidBrushBehaviorResponseNode(), ValidBrushBehaviorBinaryOpNode(),
-      ValidBrushBehaviorInterpolationNode(), ValidBrushBehaviorTargetNode());
+      ValidBrushBehaviorInterpolationNode(), ValidBrushBehaviorTargetNode(),
+      ValidBrushBehaviorPolarTargetNode());
 }
 
 Domain<BrushCoat> ValidBrushCoat() {

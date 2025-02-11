@@ -54,7 +54,7 @@ JNI_METHOD(brush, BrushBehavior, void, nativeFreeBrushBehavior)
 
 JNI_METHOD_INNER(brush, BrushBehavior, SourceNode, void, nativeAppendSourceNode)
 (JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jint source,
- jfloat source_value_lower_bound, jfloat source_value_upper_bound,
+ jfloat source_value_start, jfloat source_value_end,
  jint source_out_of_range_behavior) {
   auto* brush_behavior =
       reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
@@ -63,8 +63,7 @@ JNI_METHOD_INNER(brush, BrushBehavior, SourceNode, void, nativeAppendSourceNode)
       .source_out_of_range_behavior =
           static_cast<ink::BrushBehavior::OutOfRange>(
               source_out_of_range_behavior),
-      .source_value_range = {source_value_lower_bound,
-                             source_value_upper_bound},
+      .source_value_range = {source_value_start, source_value_end},
   });
 }
 
@@ -214,13 +213,26 @@ JNI_METHOD_INNER(brush, BrushBehavior, InterpolationNode, void,
 
 JNI_METHOD_INNER(brush, BrushBehavior, TargetNode, void, nativeAppendTargetNode)
 (JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jint target,
- jfloat target_modifier_lower_bound, jfloat target_modifier_upper_bound) {
+ jfloat target_modifier_start, jfloat target_modifier_end) {
   auto* brush_behavior =
       reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
   brush_behavior->nodes.push_back(ink::BrushBehavior::TargetNode{
       .target = static_cast<ink::BrushBehavior::Target>(target),
-      .target_modifier_range = {target_modifier_lower_bound,
-                                target_modifier_upper_bound},
+      .target_modifier_range = {target_modifier_start, target_modifier_end},
+  });
+}
+
+JNI_METHOD_INNER(brush, BrushBehavior, PolarTargetNode, void,
+                 nativeAppendPolarTargetNode)
+(JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jint polar_target,
+ jfloat angle_range_start, jfloat angle_range_end, jfloat magnitude_range_start,
+ jfloat magnitude_range_end) {
+  auto* brush_behavior =
+      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
+  brush_behavior->nodes.push_back(ink::BrushBehavior::PolarTargetNode{
+      .target = static_cast<ink::BrushBehavior::PolarTarget>(polar_target),
+      .angle_range = {angle_range_start, angle_range_end},
+      .magnitude_range = {magnitude_range_start, magnitude_range_end},
   });
 }
 

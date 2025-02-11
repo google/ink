@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <utility>
 #include <variant>
 
 #include "absl/algorithm/container.h"
@@ -38,6 +39,24 @@
 
 namespace ink::strokes_internal {
 namespace {
+
+std::pair<BrushBehavior::Target, BrushBehavior::Target> PolarTargetXyPair(
+    BrushBehavior::PolarTarget polar_target) {
+  switch (polar_target) {
+    case BrushBehavior::PolarTarget::
+        kPositionOffsetAbsoluteInRadiansAndMultiplesOfBrushSize:
+      return {BrushBehavior::Target::kPositionOffsetXInMultiplesOfBrushSize,
+              BrushBehavior::Target::kPositionOffsetYInMultiplesOfBrushSize};
+    case BrushBehavior::PolarTarget::
+        kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize:
+      return {
+          BrushBehavior::Target::kPositionOffsetForwardInMultiplesOfBrushSize,
+          BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize};
+  }
+  ABSL_LOG(FATAL)
+      << "`polar_target` should not be able to have non-enumerator value: "
+      << static_cast<int>(polar_target);
+}
 
 float InitialTargetModifierValue(BrushBehavior::Target target) {
   switch (target) {
@@ -398,6 +417,25 @@ void BrushTipModeler::AppendBehaviorNode(
   float initial_modifier = InitialTargetModifierValue(node.target);
   current_target_modifiers_.push_back(initial_modifier);
   fixed_target_modifiers_.push_back(initial_modifier);
+}
+
+void BrushTipModeler::AppendBehaviorNode(
+    const BrushBehavior::PolarTargetNode& node) {
+  auto [target_x, target_y] = PolarTargetXyPair(node.target);
+  behavior_nodes_.push_back(PolarTargetNodeImplementation{
+      .target_x_index = behavior_targets_.size(),
+      .target_y_index = behavior_targets_.size() + 1,
+      .angle_range = node.angle_range,
+      .magnitude_range = node.magnitude_range,
+  });
+  behavior_targets_.push_back(target_x);
+  behavior_targets_.push_back(target_y);
+  float initial_modifier_x = InitialTargetModifierValue(target_x);
+  float initial_modifier_y = InitialTargetModifierValue(target_y);
+  current_target_modifiers_.push_back(initial_modifier_x);
+  current_target_modifiers_.push_back(initial_modifier_y);
+  fixed_target_modifiers_.push_back(initial_modifier_x);
+  fixed_target_modifiers_.push_back(initial_modifier_y);
 }
 
 namespace {

@@ -202,6 +202,17 @@ Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
             ContainerEq(expected.target_modifier_range))));
 }
 
+Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
+    const BrushBehavior::PolarTargetNode& expected) {
+  return VariantWith<BrushBehavior::PolarTargetNode>(AllOf(
+      Field("target", &BrushBehavior::PolarTargetNode::target,
+            Eq(expected.target)),
+      Field("angle_range", &BrushBehavior::PolarTargetNode::angle_range,
+            ContainerEq(expected.angle_range)),
+      Field("magnitude_range", &BrushBehavior::PolarTargetNode::magnitude_range,
+            ContainerEq(expected.magnitude_range))));
+}
+
 MATCHER(BrushBehaviorNodePointwiseEqMatcher, "") {
   return ExplainMatchResult(BrushBehaviorNodeEq(std::get<1>(arg)),
                             std::get<0>(arg), result_listener);

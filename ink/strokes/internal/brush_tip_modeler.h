@@ -125,6 +125,7 @@ class BrushTipModeler {
   void AppendBehaviorNode(const BrushBehavior::BinaryOpNode& node);
   void AppendBehaviorNode(const BrushBehavior::InterpolationNode& node);
   void AppendBehaviorNode(const BrushBehavior::TargetNode& node);
+  void AppendBehaviorNode(const BrushBehavior::PolarTargetNode& node);
 
   // Returns the maximum values of distance traveled and time elapsed for
   // modeled inputs that can be used to generate fixed tip states.

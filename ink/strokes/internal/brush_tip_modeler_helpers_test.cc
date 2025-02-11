@@ -1347,6 +1347,40 @@ TEST_F(ProcessBehaviorNodeTest, TargetNode) {
   EXPECT_THAT(target_modifiers, ElementsAre(1.25f));
 }
 
+TEST_F(ProcessBehaviorNodeTest, PolarTargetNode) {
+  std::vector<float> target_modifiers = {1.0f, 2.0f};
+  context_.target_modifiers = absl::MakeSpan(target_modifiers);
+  PolarTargetNodeImplementation polar_target_impl = {
+      .target_x_index = 0,
+      .target_y_index = 1,
+      .angle_range = {0.0f, kHalfTurn.ValueInRadians()},
+      .magnitude_range = {0.0f, 10.0f},
+  };
+
+  stack_.push_back(0.5f);   // angle input
+  stack_.push_back(0.75f);  // magnitude input
+  ProcessBehaviorNode(polar_target_impl, context_);
+  EXPECT_THAT(stack_, IsEmpty());
+  EXPECT_THAT(target_modifiers,
+              ElementsAre(FloatNear(0.0f, 1e-5), FloatNear(7.5f, 1e-5)));
+
+  // The target modifiers will remain unchanged when either input value is null.
+  stack_.push_back(kNullBehaviorNodeValue);  // angle input
+  stack_.push_back(0.25f);                   // magnitude input
+  ProcessBehaviorNode(polar_target_impl, context_);
+  EXPECT_THAT(stack_, IsEmpty());
+  EXPECT_THAT(target_modifiers,
+              ElementsAre(FloatNear(0.0f, 1e-5), FloatNear(7.5f, 1e-5)));
+
+  // The target modifiers will remain unchanged when either input value is null.
+  stack_.push_back(0.25f);                   // angle input
+  stack_.push_back(kNullBehaviorNodeValue);  // magnitude input
+  ProcessBehaviorNode(polar_target_impl, context_);
+  EXPECT_THAT(stack_, IsEmpty());
+  EXPECT_THAT(target_modifiers,
+              ElementsAre(FloatNear(0.0f, 1e-5), FloatNear(7.5f, 1e-5)));
+}
+
 TEST(CreateTipStateTest, HasPassedInPosition) {
   EXPECT_THAT(CreateTipState({0, 0}, Angle(), BrushTip{}, 1.f, {}, {}).position,
               PointEq({0, 0}));
