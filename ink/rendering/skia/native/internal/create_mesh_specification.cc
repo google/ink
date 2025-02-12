@@ -110,6 +110,8 @@ ToSkiaVaryings(
 SkMeshSpecification::Uniform::Type ToSkiaUniformType(
     MeshSpecificationData::UniformType type) {
   switch (type) {
+    case MeshSpecificationData::UniformType::kFloat:
+      return SkMeshSpecification::Uniform::Type::kFloat;
     case MeshSpecificationData::UniformType::kFloat4:
       return SkMeshSpecification::Uniform::Type::kFloat4;
     case MeshSpecificationData::UniformType::kInt:

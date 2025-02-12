@@ -246,6 +246,32 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
       return sideOutset + (1.0 - commonForwardMagnitude) * forwardOutset;
     })"
 
+    // Calculates the texture UV coordinates that should be used for a
+    // particular vertex of a winding-textured mesh.
+    //   * `surfaceUv` is the unpacked surface UV mesh attribute at this vertex,
+    //     where U measures lateral position across the stroke or particle, and
+    //     V measures forward position along the stroke or particle.
+    //   * `particleAnimationOffset` is the unpacked per-particle animation
+    //     progress offset at this vertex, from [0, 1).
+    //   * `textureAnimationProgress` is the animation progress value for the
+    //     entire mesh, from [0, 1].
+    //   * `numTextureAnimationFrames` is the number of animation frames in the
+    //     texture, and must be at least 1. If greater than 1, then the texture
+    //     is assumed to be an atlas that is divided vertically (along its V
+    //     dimension) into this many equal-sized frames.
+    R"(
+    float2 calculateWindingTextureUv(
+        const float2 surfaceUv,
+        const float particleAnimationOffset,
+        const float textureAnimationProgress,
+        const int numTextureAnimationFrames) {
+      float progress =
+          fract(textureAnimationProgress + particleAnimationOffset);
+      float numFrames = float(numTextureAnimationFrames);
+      return vec2(surfaceUv.x,
+                  (surfaceUv.y + floor(progress * numFrames)) / numFrames);
+    })"
+
     // ------------------------------------------------------------------------
     // Reused unpacking functions for specific `MeshFormat::AttributeType`
     //
