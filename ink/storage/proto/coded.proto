@@ -149,9 +149,12 @@ message CodedMesh {
 
   reserved 5 to 8;  // Were legacy unused fields for color shift data.
 
-  // TODO: b/257503952 - Add a field to contain attribute data for all
-  // attributes described by the MeshFormat:
-  // repeated CodedNumericRun attribute_components
+  // Mesh attribute data for non-position attributes in this mesh's
+  // format. There should be exactly one CodedNumericRun for each component of
+  // each non-position attribute in the format, in the order that those
+  // attributes appear in the format. Each of these CodedNumericRuns must have
+  // length equal to the number of vertices in the mesh.
+  repeated CodedNumericRun other_attribute_components = 10;
 }
 
 // A complete shape, consisting of potentially multiple meshes as well as

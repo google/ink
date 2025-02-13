@@ -861,6 +861,14 @@ absl::StatusOr<MeshAttributeCodingParams> ComputeCodingParams(
             n_components, {.offset = 0, .scale = 1})};
   }
 
+  return ComputeCodingParamsForBitSizes(*bits_per_component, bounds);
+}
+
+absl::StatusOr<MeshAttributeCodingParams> ComputeCodingParamsForBitSizes(
+    SmallArray<uint8_t, 4> bits_per_component,
+    const MeshAttributeBounds& bounds) {
+  uint8_t n_components = bits_per_component.Size();
+
   // Consistency check -- should be guaranteed by the logic in `Mesh` and
   // `MutableMesh`.
   ABSL_CHECK_EQ(bounds.minimum.Size(), n_components);
@@ -871,7 +879,7 @@ absl::StatusOr<MeshAttributeCodingParams> ComputeCodingParams(
 
   SmallArray<uint32_t, 4> max_values(n_components);
   for (int i = 0; i < n_components; ++i) {
-    max_values[i] = MaxValueForBits(bits_per_component.value()[i]);
+    max_values[i] = MaxValueForBits(bits_per_component[i]);
   }
 
   for (int i = 0; i < n_components; ++i) {

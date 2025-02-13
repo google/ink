@@ -241,6 +241,13 @@ class MeshFormat {
     return attributes_.Values();
   }
 
+  // Returns the total number of attribute components in this mesh format
+  // (i.e. the sum of `MeshFormat::ComponentCount(attr.type)` across all of this
+  // format's attributes). This will always be at least 2, since every
+  // `MeshFormat` is guaranteed to contain a `kPosition` attribute with exactly
+  // two components.
+  uint8_t TotalComponentCount() const;
+
   // Returns the index of the attribute that's used as a vertex's position.
   uint8_t PositionAttributeIndex() const { return position_attribute_index_; }
 

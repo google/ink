@@ -182,6 +182,14 @@ absl::StatusOr<MeshFormat> MeshFormat::WithoutAttributes(
   return MeshFormat::Create(new_attributes, GetIndexFormat());
 }
 
+uint8_t MeshFormat::TotalComponentCount() const {
+  uint8_t total = 0;
+  for (Attribute attribute : Attributes()) {
+    total += ComponentCount(attribute.type);
+  }
+  return total;
+}
+
 uint8_t MeshFormat::ComponentCount(AttributeType type) {
   switch (type) {
     case AttributeType::kFloat1Unpacked:

@@ -185,6 +185,9 @@ absl::InlinedVector<PartitionInfo, 1> PartitionTriangles(
 // values exceeds the maximum float value.
 absl::StatusOr<MeshAttributeCodingParams> ComputeCodingParams(
     MeshFormat::AttributeType type, const MeshAttributeBounds& bounds);
+absl::StatusOr<MeshAttributeCodingParams> ComputeCodingParamsForBitSizes(
+    SmallArray<uint8_t, 4> bits_per_component,
+    const MeshAttributeBounds& bounds);
 
 // Returns a `CodingParamsArray` constructed by calling `ComputeCodingParams`
 // for each attribute in `format` and element in `bounds`.
