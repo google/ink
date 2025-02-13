@@ -27,7 +27,7 @@
 extern "C" {
 
 // Construct a native Brush and return a pointer to it as a long.
-JNI_METHOD(brush, Brush, jlong, nativeCreateBrush)
+JNI_METHOD(brush, BrushNative, jlong, create)
 (JNIEnv* env, jobject thiz, jlong family_native_pointer, jfloat color_red,
  jfloat color_green, jfloat color_blue, jfloat color_alpha, jint color_space_id,
  jfloat size, jfloat epsilon) {
@@ -47,8 +47,48 @@ JNI_METHOD(brush, Brush, jlong, nativeCreateBrush)
   return reinterpret_cast<jlong>(new ink::Brush(*std::move(brush)));
 }
 
-JNI_METHOD(brush, Brush, void, nativeFreeBrush)
+JNI_METHOD(brush, BrushNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   delete reinterpret_cast<ink::Brush*>(native_pointer);
+}
+
+JNI_METHOD(brush, BrushNative, jint, getColorSpaceId)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  const ink::Brush& brush = ink::CastToBrush(native_pointer);
+  return static_cast<int>(brush.GetColor().GetColorSpace());
+}
+
+JNI_METHOD(brush, BrushNative, jfloatArray, getColorRgba)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  const ink::Brush& brush = ink::CastToBrush(native_pointer);
+  jfloatArray result = env->NewFloatArray(4);
+  if (result == nullptr) {
+    env->ThrowNew(env->FindClass("java/lang/OutOfMemoryError"),
+                  "Failed to allocate float array for color");
+    return nullptr;
+  }
+  ink::Color::RgbaFloat rgba =
+      brush.GetColor().AsFloat(ink::Color::Format::kLinear);
+  jfloat elements[4] = {rgba.r, rgba.g, rgba.b, rgba.a};
+  env->SetFloatArrayRegion(result, 0, 4, elements);
+  return result;
+}
+
+JNI_METHOD(brush, BrushNative, jfloat, getSize)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  const ink::Brush& brush = ink::CastToBrush(native_pointer);
+  return brush.GetSize();
+}
+
+JNI_METHOD(brush, BrushNative, jfloat, getEpsilon)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  const ink::Brush& brush = ink::CastToBrush(native_pointer);
+  return brush.GetEpsilon();
+}
+
+JNI_METHOD(brush, BrushNative, jlong, getFamilyPointerOwnedByBrush)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  const ink::Brush& brush = ink::CastToBrush(native_pointer);
+  return reinterpret_cast<jlong>(&brush.GetFamily());
 }
 }
