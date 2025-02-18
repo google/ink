@@ -86,6 +86,14 @@ struct MeshSpecificationData {
     // tiling and winding textures in a single `BrushPaint`.
     kTextureMapping = 5,
     // The current progress, a float in [0, 1], of the texture animation.
+    //
+    // We must pass both animation progress and number of frames to the shader,
+    // rather than computing a frame index from these on the CPU and passing
+    // only that. Why? Each particle in a stroke can have a different progress
+    // offset, and these offsets are not quantized to animation frame
+    // boundaries. Therefore the conversion to frame indices depends on both the
+    // stroke-wide progress and the per-particle offset, the latter of which is
+    // only available in the vertex shader.
     kTextureAnimationProgress = 6,
     // The number of frames in the texture animation.
     kNumTextureAnimationFrames = 7,
