@@ -27,7 +27,7 @@ using ::ink::Triangle;
 
 extern "C" {
 
-JNI_METHOD(geometry, TriangleNative, jboolean, nativeContains)
+JNI_METHOD(geometry, TriangleNative, jboolean, contains)
 (JNIEnv* env, jclass clazz, jfloat triangle_p0_x, jfloat triangle_p0_y,
  jfloat triangle_p1_x, jfloat triangle_p1_y, jfloat triangle_p2_x,
  jfloat triangle_p2_y, jfloat point_x, jfloat point_y) {

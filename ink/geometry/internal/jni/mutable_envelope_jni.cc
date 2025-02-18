@@ -51,7 +51,7 @@ Envelope BuildEnvelopeFromBounds(jboolean envelope_has_bounds,
 
 extern "C" {
 
-JNI_METHOD(geometry, BoxAccumulatorNative, void, nativeAddSegment)
+JNI_METHOD(geometry, BoxAccumulatorNative, void, addSegment)
 (JNIEnv* env, jclass clazz, jboolean envelope_has_bounds,
  jfloat envelope_bounds_x_min, jfloat envelope_bounds_y_min,
  jfloat envelope_bounds_x_max, jfloat envelope_bounds_y_max,
@@ -66,7 +66,7 @@ JNI_METHOD(geometry, BoxAccumulatorNative, void, nativeAddSegment)
   FillJMutableEnvelope(env, envelope, output);
 }
 
-JNI_METHOD(geometry, BoxAccumulatorNative, void, nativeAddTriangle)
+JNI_METHOD(geometry, BoxAccumulatorNative, void, addTriangle)
 (JNIEnv* env, jclass clazz, jboolean envelope_has_bounds,
  jfloat envelope_bounds_x_min, jfloat envelope_bounds_y_min,
  jfloat envelope_bounds_x_max, jfloat envelope_bounds_y_max,
@@ -83,7 +83,7 @@ JNI_METHOD(geometry, BoxAccumulatorNative, void, nativeAddTriangle)
   FillJMutableEnvelope(env, envelope, output);
 }
 
-JNI_METHOD(geometry, BoxAccumulatorNative, void, nativeAddParallelogram)
+JNI_METHOD(geometry, BoxAccumulatorNative, void, addParallelogram)
 (JNIEnv* env, jclass clazz, jboolean envelope_has_bounds,
  jfloat envelope_bounds_x_min, jfloat envelope_bounds_y_min,
  jfloat envelope_bounds_x_max, jfloat envelope_bounds_y_max,
@@ -100,7 +100,7 @@ JNI_METHOD(geometry, BoxAccumulatorNative, void, nativeAddParallelogram)
   FillJMutableEnvelope(env, envelope, output);
 }
 
-JNI_METHOD(geometry, BoxAccumulatorNative, void, nativeAddPoint)
+JNI_METHOD(geometry, BoxAccumulatorNative, void, addPoint)
 (JNIEnv* env, jclass clazz, jboolean envelope_has_bounds,
  jfloat envelope_bounds_x_min, jfloat envelope_bounds_y_min,
  jfloat envelope_bounds_x_max, jfloat envelope_bounds_y_max, jfloat point_x,
@@ -113,7 +113,7 @@ JNI_METHOD(geometry, BoxAccumulatorNative, void, nativeAddPoint)
   FillJMutableEnvelope(env, envelope, output);
 }
 
-JNI_METHOD(geometry, BoxAccumulatorNative, void, nativeAddOptionalBox)
+JNI_METHOD(geometry, BoxAccumulatorNative, void, addOptionalBox)
 (JNIEnv* env, jclass clazz, jboolean envelope_has_bounds,
  jfloat envelope_bounds_x_min, jfloat envelope_bounds_y_min,
  jfloat envelope_bounds_x_max, jfloat envelope_bounds_y_max,

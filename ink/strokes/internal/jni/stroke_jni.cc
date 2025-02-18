@@ -43,7 +43,7 @@ const Stroke* GetStroke(jlong raw_ptr_to_stroke) {
 
 extern "C" {
 
-JNI_METHOD(strokes, StrokeJni, jlong, createWithBrushAndInputs)
+JNI_METHOD(strokes, StrokeNative, jlong, createWithBrushAndInputs)
 (JNIEnv* env, jclass clazz, jlong brush_native_pointer,
  jlong inputs_native_pointer) {
   auto batch = reinterpret_cast<StrokeInputBatch*>(inputs_native_pointer);
@@ -51,7 +51,7 @@ JNI_METHOD(strokes, StrokeJni, jlong, createWithBrushAndInputs)
   return reinterpret_cast<jlong>(new Stroke(brush, *batch));
 }
 
-JNI_METHOD(strokes, StrokeJni, jlong, createWithBrushInputsAndShape)
+JNI_METHOD(strokes, StrokeNative, jlong, createWithBrushInputsAndShape)
 (JNIEnv* env, jclass clazz, jlong brush_native_pointer,
  jlong inputs_native_pointer, jlong partitioned_mesh_native_pointer) {
   const ink::Brush& brush = CastToBrush(brush_native_pointer);
@@ -66,7 +66,7 @@ JNI_METHOD(strokes, StrokeJni, jlong, createWithBrushInputsAndShape)
 // the raw pointer to this copy, so that it can be wrapped by a JVM
 // `StrokeInputBatch`, which is responsible for freeing the copy when it is
 // garbage collected and finalized.
-JNI_METHOD(strokes, StrokeJni, jlong, allocShallowCopyOfInputs)
+JNI_METHOD(strokes, StrokeNative, jlong, allocShallowCopyOfInputs)
 (JNIEnv* env, jclass clazz, jlong raw_ptr_to_stroke) {
   const Stroke* stroke = GetStroke(raw_ptr_to_stroke);
   const StrokeInputBatch& stroke_batch = stroke->GetInputs();
@@ -79,7 +79,7 @@ JNI_METHOD(strokes, StrokeJni, jlong, allocShallowCopyOfInputs)
 // pointer to this copy, so that it can be wrapped by a JVM `PartitionedMesh`,
 // which is responsible for freeing the copy when it is garbage collected and
 // finalized.
-JNI_METHOD(strokes, StrokeJni, jlong, allocShallowCopyOfShape)
+JNI_METHOD(strokes, StrokeNative, jlong, allocShallowCopyOfShape)
 (JNIEnv* env, jclass clazz, jlong raw_ptr_to_stroke) {
   const Stroke* stroke = GetStroke(raw_ptr_to_stroke);
   const PartitionedMesh& stroke_shape = stroke->GetShape();
@@ -88,7 +88,7 @@ JNI_METHOD(strokes, StrokeJni, jlong, allocShallowCopyOfShape)
 }
 
 // Free the given `Stroke`.
-JNI_METHOD(strokes, StrokeJni, void, free)
+JNI_METHOD(strokes, StrokeNative, void, free)
 (JNIEnv* env, jclass clazz, jlong raw_ptr_to_stroke) {
   delete GetStroke(raw_ptr_to_stroke);
 }

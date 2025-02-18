@@ -42,8 +42,7 @@ extern "C" {
 // which can be passed in as either a direct `ByteBuffer` or as an array of
 // bytes. This returns the address of a heap-allocated `StrokeInputBatch`, which
 // must later be freed by the caller.
-JNI_METHOD(storage, StrokeInputBatchSerializationJni, jlong,
-           nativeNewStrokeInputBatchFromProto)
+JNI_METHOD(storage, StrokeInputBatchSerializationNative, jlong, newFromProto)
 (JNIEnv* env, jclass klass, jobject input_direct_byte_buffer,
  jbyteArray input_bytes, jint input_offset, jint input_length,
  jboolean throw_on_parse_error) {
@@ -66,8 +65,7 @@ JNI_METHOD(storage, StrokeInputBatchSerializationJni, jlong,
   return reinterpret_cast<jlong>(new StrokeInputBatch(*std::move(input)));
 }
 
-JNI_METHOD(storage, StrokeInputBatchSerializationJni, jbyteArray,
-           nativeSerializeStrokeInputBatch)
+JNI_METHOD(storage, StrokeInputBatchSerializationNative, jbyteArray, serialize)
 (JNIEnv* env, jclass klass, jlong stroke_input_batch_native_pointer) {
   const auto* input = reinterpret_cast<const StrokeInputBatch*>(
       stroke_input_batch_native_pointer);
