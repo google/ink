@@ -23,8 +23,6 @@
 #include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
-#include "ink/brush/brush_paint.h"
-#include "ink/brush/brush_tip.h"
 #include "ink/color/color.h"
 
 namespace ink {

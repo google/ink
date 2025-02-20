@@ -1520,9 +1520,10 @@ void EncodeBrushFamily(const BrushFamily& family,
                               *family_proto_out.mutable_input_model());
 }
 
-absl::StatusOr<BrushFamily> DecodeBrushFamily(
+absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
     const proto::BrushFamily& family_proto) {
   std::vector<BrushCoat> coats;
+
   coats.reserve(family_proto.coats_size());
   for (const proto::BrushCoat& coat_proto : family_proto.coats()) {
     absl::StatusOr<BrushCoat> coat = DecodeBrushCoat(coat_proto);
@@ -1531,15 +1532,26 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
     }
     coats.push_back(*std::move(coat));
   }
+  return std::move(coats);
+}
+
+absl::StatusOr<BrushFamily> DecodeBrushFamily(
+    const proto::BrushFamily& family_proto) {
+  absl::StatusOr<std::vector<BrushCoat>> coats =
+      DecodeBrushFamilyCoats(family_proto);
+  if (!coats.ok()) {
+    return coats.status();
+  }
 
   absl::StatusOr<BrushFamily::InputModel> input_model =
       BrushFamily::SpringModelV1{};
   if (family_proto.has_input_model()) {
     input_model = DecodeBrushFamilyInputModel(family_proto.input_model());
   }
-  if (!input_model.ok()) return input_model.status();
-
-  return BrushFamily::Create(absl::MakeConstSpan(coats),
+  if (!input_model.ok()) {
+    return input_model.status();
+  }
+  return BrushFamily::Create(absl::MakeConstSpan(*coats),
                              family_proto.client_brush_family_id(),
                              *input_model);
 }
