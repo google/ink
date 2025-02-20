@@ -46,8 +46,6 @@ cc_library(
     deps = [
         ":brush_coat",
         ":brush_family",
-        ":brush_paint",
-        ":brush_tip",
         "//ink/color",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
