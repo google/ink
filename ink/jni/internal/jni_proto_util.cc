@@ -26,16 +26,18 @@
 namespace ink {
 namespace jni {
 
-absl::Status ParseProto(JNIEnv* env, jbyteArray serialized_proto,
-                        google::protobuf::MessageLite& dest) {
-  return ParseProto(env, serialized_proto, 0,
-                    env->GetArrayLength(serialized_proto), dest);
+absl::Status ParseProtoFromByteArray(JNIEnv* env, jbyteArray serialized_proto,
+                                     google::protobuf::MessageLite& dest) {
+  return ParseProtoFromByteArray(env, serialized_proto, 0,
+                                 env->GetArrayLength(serialized_proto), dest);
 }
 
-absl::Status ParseProto(JNIEnv* env, jbyteArray serialized_proto, jint offset,
-                        jint size, google::protobuf::MessageLite& dest) {
+absl::Status ParseProtoFromByteArray(JNIEnv* env, jbyteArray serialized_proto,
+                                     jint offset, jint size,
+                                     google::protobuf::MessageLite& dest) {
   // TODO(b/290213178): See how often this copies using the isCopy pointer
   //   argument, and consider using critical arrays to minimize copying.
+  ABSL_CHECK(serialized_proto != nullptr);
   jbyte* bytes = env->GetByteArrayElements(serialized_proto, nullptr);
   ABSL_CHECK(bytes);
   bool success = dest.ParseFromArray(bytes + offset, size);
@@ -51,8 +53,9 @@ absl::Status ParseProtoFromBuffer(JNIEnv* env,
                                   jobject serialized_proto_direct_buffer,
                                   jint offset, jint size,
                                   google::protobuf::MessageLite& dest) {
+  ABSL_CHECK(serialized_proto_direct_buffer != nullptr);
   void* addr = env->GetDirectBufferAddress(serialized_proto_direct_buffer);
-  ABSL_CHECK(addr);
+  ABSL_CHECK(addr != nullptr);
   // Cannot do arithmetic on void* due to unknown size of elements, so
   // explicitly cast to clarify that the offset (and size) are in bytes.
   jbyte* bytes = static_cast<jbyte*>(addr);
@@ -62,6 +65,20 @@ absl::Status ParseProtoFromBuffer(JNIEnv* env,
         "Failed to parse ", dest.GetTypeName(), " proto from direct buffer."));
   }
   return absl::OkStatus();
+}
+
+absl::Status ParseProtoFromEither(JNIEnv* env,
+                                  jobject serialized_proto_direct_buffer,
+                                  jbyteArray serialized_proto_array,
+                                  jint offset, jint size,
+                                  google::protobuf::MessageLite& dest) {
+  if (serialized_proto_direct_buffer != nullptr) {
+    return ParseProtoFromBuffer(env, serialized_proto_direct_buffer, offset,
+                                size, dest);
+  } else {
+    return ParseProtoFromByteArray(env, serialized_proto_array, offset, size,
+                                   dest);
+  }
 }
 
 jbyteArray SerializeProto(JNIEnv* env, const google::protobuf::MessageLite& src) {
