@@ -1533,7 +1533,7 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
   }
 
   absl::StatusOr<BrushFamily::InputModel> input_model =
-      BrushFamily::DefaultInputModel();
+      BrushFamily::SpringModelV1{};
   if (family_proto.has_input_model()) {
     input_model = DecodeBrushFamilyInputModel(family_proto.input_model());
   }

@@ -332,6 +332,7 @@ cc_test(
         "//ink/storage/proto:coded_cc_proto",
         "//ink/types:duration",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_matchers",
         "@com_google_absl//absl/status:statusor",
         "@com_google_fuzztest//fuzztest",
         "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
