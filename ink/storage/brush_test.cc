@@ -21,6 +21,7 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
@@ -42,8 +43,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
 using ::testing::ElementsAre;
-using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::IsNull;
 using ::testing::SizeIs;
@@ -56,6 +57,7 @@ TEST(BrushTest, DecodeBrushProto) {
   brush_proto.set_epsilon_stroke_space(1.1);
   EncodeColor(Color::Green(), *brush_proto.mutable_color());
   proto::BrushFamily* family_proto = brush_proto.mutable_brush_family();
+  family_proto->mutable_input_model()->mutable_spring_model_v2();
   proto::BrushCoat* coat_proto = family_proto->add_coats();
   proto::BrushTip* tip_proto = coat_proto->add_tips();
   tip_proto->set_corner_rounding(0.5f);
@@ -397,6 +399,15 @@ TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
   ASSERT_EQ(family_proto_out.coats(0).tips_size(), 1u);
   EXPECT_EQ(family_proto_out.coats(0).tips(0).corner_rounding(), 0.25f);
   EXPECT_FALSE(family_proto_out.has_client_brush_family_id());
+}
+
+TEST(BrushTest, DecodeBrushFamilyWithNoInputModel) {
+  proto::BrushFamily family_proto;
+  family_proto.add_coats()->add_tips();
+  absl::StatusOr<BrushFamily> family = DecodeBrushFamily(family_proto);
+  ASSERT_THAT(family, IsOk());
+  EXPECT_TRUE(std::holds_alternative<BrushFamily::SpringModelV1>(
+      family->GetInputModel()));
 }
 
 TEST(BrushTest, EncodeBrushPaintWithInvalidTextureMapping) {
