@@ -16,7 +16,7 @@
 
 #include <utility>
 
-#include "absl/log/absl_check.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_proto_util.h"
@@ -27,9 +27,10 @@
 
 namespace {
 
+using ::ink::DecodeStrokeInputBatch;
+using ::ink::EncodeStrokeInputBatch;
 using ::ink::StrokeInputBatch;
-using ::ink::jni::ParseProto;
-using ::ink::jni::ParseProtoFromBuffer;
+using ::ink::jni::ParseProtoFromEither;
 using ::ink::jni::SerializeProto;
 using ::ink::jni::ThrowExceptionFromStatus;
 using ::ink::proto::CodedStrokeInputBatch;
@@ -46,18 +47,15 @@ JNI_METHOD(storage, StrokeInputBatchSerializationNative, jlong, newFromProto)
 (JNIEnv* env, jclass klass, jobject input_direct_byte_buffer,
  jbyteArray input_bytes, jint input_offset, jint input_length,
  jboolean throw_on_parse_error) {
-  ink::proto::CodedStrokeInputBatch coded_input;
-  if (input_direct_byte_buffer != nullptr) {
-    ABSL_CHECK_OK(ParseProtoFromBuffer(env, input_direct_byte_buffer,
-                                       input_offset, input_length,
-                                       coded_input));
-  } else {
-    ABSL_CHECK(input_bytes);
-    ABSL_CHECK_OK(
-        ParseProto(env, input_bytes, input_offset, input_length, coded_input));
+  CodedStrokeInputBatch coded_input;
+  if (absl::Status status =
+          ParseProtoFromEither(env, input_direct_byte_buffer, input_bytes,
+                               input_offset, input_length, coded_input);
+      !status.ok()) {
+    if (throw_on_parse_error) ThrowExceptionFromStatus(env, status);
+    return 0;
   }
-  absl::StatusOr<StrokeInputBatch> input =
-      ink::DecodeStrokeInputBatch(coded_input);
+  absl::StatusOr<StrokeInputBatch> input = DecodeStrokeInputBatch(coded_input);
   if (!input.ok()) {
     if (throw_on_parse_error) ThrowExceptionFromStatus(env, input.status());
     return 0;
@@ -70,7 +68,7 @@ JNI_METHOD(storage, StrokeInputBatchSerializationNative, jbyteArray, serialize)
   const auto* input = reinterpret_cast<const StrokeInputBatch*>(
       stroke_input_batch_native_pointer);
   CodedStrokeInputBatch coded_input;
-  ink::EncodeStrokeInputBatch(*input, coded_input);
+  EncodeStrokeInputBatch(*input, coded_input);
   return SerializeProto(env, coded_input);
 }
 
