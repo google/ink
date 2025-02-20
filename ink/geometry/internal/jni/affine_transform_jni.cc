@@ -32,7 +32,7 @@ extern "C" {
 
 JNI_METHOD(geometry_internal, AffineTransformNative, jobject,
            createFromApplyParallelogram)
-(JNIEnv* env, jclass clazz, jfloat affine_transform_A,
+(JNIEnv* env, jobject object, jfloat affine_transform_A,
  jfloat affine_transform_B, jfloat affine_transform_C,
  jfloat affine_transform_D, jfloat affine_transform_E,
  jfloat affine_transform_F, jfloat quad_center_x, jfloat quad_center_y,
@@ -52,7 +52,7 @@ JNI_METHOD(geometry_internal, AffineTransformNative, jobject,
 
 JNI_METHOD(geometry_internal, AffineTransformNative, void,
            populateFromApplyParallelogram)
-(JNIEnv* env, jclass clazz, jfloat affine_transform_A,
+(JNIEnv* env, jobject object, jfloat affine_transform_A,
  jfloat affine_transform_B, jfloat affine_transform_C,
  jfloat affine_transform_D, jfloat affine_transform_E,
  jfloat affine_transform_F, jfloat quad_center_x, jfloat quad_center_y,

@@ -43,7 +43,7 @@ extern "C" {
 
 JNI_METHOD(strokes, MeshCreationNative, jlong,
            createClosedShapeFromStrokeInputBatch)
-(JNIEnv* env, jclass clazz, jlong stroke_input_batch_native_pointer) {
+(JNIEnv* env, jobject object, jlong stroke_input_batch_native_pointer) {
   const auto* input = reinterpret_cast<const StrokeInputBatch*>(
       stroke_input_batch_native_pointer);
 

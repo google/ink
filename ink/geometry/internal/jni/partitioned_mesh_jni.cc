@@ -51,13 +51,13 @@ extern "C" {
 
 // Free the given `PartitionedMesh`.
 JNI_METHOD(geometry, PartitionedMeshNative, void, free)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh) {
   delete GetPartitionedMesh(raw_ptr_to_partitioned_mesh);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jlongArray,
            getNativeAddressesOfMeshes)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh,
  jint group_index) {
   absl::Span<const Mesh> meshes =
       GetPartitionedMesh(raw_ptr_to_partitioned_mesh)
@@ -77,12 +77,12 @@ JNI_METHOD(geometry, PartitionedMeshNative, jlongArray,
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jint, getRenderGroupCount)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh) {
   return GetPartitionedMesh(raw_ptr_to_partitioned_mesh)->RenderGroupCount();
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jlong, getRenderGroupFormat)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh,
  jint group_index) {
   const PartitionedMesh* partitioned_mesh =
       GetPartitionedMesh(raw_ptr_to_partitioned_mesh);
@@ -92,15 +92,15 @@ JNI_METHOD(geometry, PartitionedMeshNative, jlong, getRenderGroupFormat)
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jint, getOutlineCount)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh,
  jint group_index) {
   return GetPartitionedMesh(raw_ptr_to_partitioned_mesh)
       ->OutlineCount(group_index);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jint, getOutlineVertexCount)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh, jint group_index,
- jint outline_index) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh,
+ jint group_index, jint outline_index) {
   const PartitionedMesh* partitioned_mesh =
       GetPartitionedMesh(raw_ptr_to_partitioned_mesh);
   return partitioned_mesh->Outline(group_index, outline_index).size();
@@ -108,8 +108,8 @@ JNI_METHOD(geometry, PartitionedMeshNative, jint, getOutlineVertexCount)
 
 JNI_METHOD(geometry, PartitionedMeshNative, void,
            fillOutlineMeshIndexAndMeshVertexIndex)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh, jint group_index,
- jint outline_index, jint outline_vertex_index,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh,
+ jint group_index, jint outline_index, jint outline_vertex_index,
  jintArray out_mesh_index_and_mesh_vertex_index) {
   const PartitionedMesh* partitioned_mesh =
       GetPartitionedMesh(raw_ptr_to_partitioned_mesh);
@@ -124,14 +124,14 @@ JNI_METHOD(geometry, PartitionedMeshNative, void,
 
 // Allocate an empty `PartitionedMesh` and return a pointer to it.
 JNI_METHOD(geometry, PartitionedMeshNative, jlong, alloc)
-(JNIEnv* env, jclass clazz) {
+(JNIEnv* env, jobject object) {
   auto partitioned_mesh = std::make_unique<PartitionedMesh>();
   return reinterpret_cast<jlong>(partitioned_mesh.release());
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
            partitionedMeshTriangleCoverage)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh,
  jfloat triangle_p0_x, jfloat triangle_p0_y, jfloat triangle_p1_x,
  jfloat triangle_p1_y, jfloat triangle_p2_x, jfloat triangle_p2_y,
  jfloat triangle_to_partitionedMesh_transform_a,
@@ -155,7 +155,7 @@ JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jfloat, partitionedMeshBoxCoverage)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh,
  jfloat rect_x_min, jfloat rect_y_min, jfloat rect_x_max, jfloat rect_y_max,
  jfloat rect_to_partitionedMesh_transform_a,
  jfloat rect_to_partitionedMesh_transform_b,
@@ -176,7 +176,7 @@ JNI_METHOD(geometry, PartitionedMeshNative, jfloat, partitionedMeshBoxCoverage)
 
 JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
            partitionedMeshParallelogramCoverage)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh,
  jfloat quad_center_x, jfloat quad_center_y, jfloat quad_width,
  jfloat quad_height, jfloat quad_angle_radian, jfloat quad_shear_factor,
  jfloat quad_to_partitionedMesh_transform_a,
@@ -199,7 +199,7 @@ JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
 
 JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
            partitionedMeshPartitionedMeshCoverage)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_this_partitioned_mesh,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_this_partitioned_mesh,
  jlong raw_ptr_to_other_partitioned_mesh, jfloat other_to_this_transform_a,
  jfloat other_to_this_transform_b, jfloat other_to_this_transform_c,
  jfloat other_to_this_transform_d, jfloat other_to_this_transform_e,
@@ -217,7 +217,7 @@ JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
 
 JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
            partitionedMeshTriangleCoverageIsGreaterThan)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh,
  jfloat triangle_p0_x, jfloat triangle_p0_y, jfloat triangle_p1_x,
  jfloat triangle_p1_y, jfloat triangle_p2_x, jfloat triangle_p2_y,
  jfloat coverage_threshold, jfloat triangle_to_partitionedMesh_transform_a,
@@ -243,7 +243,7 @@ JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
 
 JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
            partitionedMeshBoxCoverageIsGreaterThan)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh,
  jfloat rect_x_min, jfloat rect_y_min, jfloat rect_x_max, jfloat rect_y_max,
  jfloat coverage_threshold, jfloat rect_to_partitionedMesh_transform_a,
  jfloat rect_to_partitionedMesh_transform_b,
@@ -265,7 +265,7 @@ JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
 
 JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
            partitionedMeshParallelogramCoverageIsGreaterThan)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_partitioned_mesh,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_partitioned_mesh,
  jfloat quad_center_x, jfloat quad_center_y, jfloat quad_width,
  jfloat quad_height, jfloat quad_angle_radian, jfloat quad_shear_factor,
  jfloat coverage_threshold, jfloat quad_to_partitionedMesh_transform_a,
@@ -289,7 +289,7 @@ JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
 
 JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
            partitionedMeshPartitionedMeshCoverageIsGreaterThan)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_this_partitioned_mesh,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_this_partitioned_mesh,
  jlong raw_ptr_to_other_partitioned_mesh, jfloat coverage_threshold,
  jfloat other_to_this_transform_a, jfloat other_to_this_transform_b,
  jfloat other_to_this_transform_c, jfloat other_to_this_transform_d,
@@ -307,14 +307,14 @@ JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, void, initializeSpatialIndex)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_this_partitioned_mesh) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_this_partitioned_mesh) {
   PartitionedMesh* this_partitioned_mesh =
       GetPartitionedMesh(raw_ptr_to_this_partitioned_mesh);
   this_partitioned_mesh->InitializeSpatialIndex();
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jboolean, isSpatialIndexInitialized)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_this_partitioned_mesh) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_this_partitioned_mesh) {
   const PartitionedMesh* this_partitioned_mesh =
       GetPartitionedMesh(raw_ptr_to_this_partitioned_mesh);
   return this_partitioned_mesh->IsSpatialIndexInitialized();

@@ -20,13 +20,13 @@
 extern "C" {
 
 JNI_METHOD(geometry, Angle, jfloat, nativeNormalized)
-(JNIEnv* env, jclass clazz, jfloat angle_radians) {
+(JNIEnv* env, jobject object, jfloat angle_radians) {
   ink::Angle angle = ink::Angle::Radians(angle_radians);
   return angle.Normalized().ValueInRadians();
 }
 
 JNI_METHOD(geometry, Angle, jfloat, nativeNormalizedAboutZero)
-(JNIEnv* env, jclass clazz, jfloat angle_radians) {
+(JNIEnv* env, jobject object, jfloat angle_radians) {
   ink::Angle angle = ink::Angle::Radians(angle_radians);
   return angle.NormalizedAboutZero().ValueInRadians();
 }

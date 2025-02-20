@@ -48,7 +48,7 @@ extern "C" {
 
 JNI_METHOD(rendering_android_canvas_internal, CanvasMeshRenderer, void,
            fillSkiaMeshSpecData)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh_format, jboolean packed,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh_format, jboolean packed,
  jintArray attribute_types_out, jintArray attribute_offsets_out,
  jobjectArray attribute_names_out, jintArray vertex_stride_out,
  jintArray varying_types_out, jobjectArray varying_names_out,
@@ -138,7 +138,7 @@ JNI_METHOD(rendering_android_canvas_internal, CanvasMeshRenderer, void,
 // it can be used with `raw_ptr_to_mesh_format`.
 JNI_METHOD(rendering_android_canvas_internal, CanvasMeshRenderer, jboolean,
            nativeIsMeshFormatRenderable)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh_format, jboolean packed) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh_format, jboolean packed) {
   return GetMeshSpecificationData(raw_ptr_to_mesh_format, packed).ok();
 }
 

@@ -52,7 +52,7 @@ extern "C" {
 
 // Free the given `Mesh`.
 JNI_METHOD(geometry, MeshNative, void, freeNative)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh) {
   delete GetMesh(raw_ptr_to_mesh);
 }
 
@@ -60,7 +60,7 @@ JNI_METHOD(geometry, MeshNative, void, freeNative)
 // `ink::Mesh::RawVertexData`. It will be writeable, so be sure to only expose a
 // read-only wrapper of it.
 JNI_METHOD(geometry, MeshNative, jobject, createRawVertexBuffer)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_shared_ptr_mesh) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_shared_ptr_mesh) {
   const Mesh* mesh = GetMesh(raw_ptr_to_shared_ptr_mesh);
   const absl::Span<const std::byte> raw_vertex_data = mesh->RawVertexData();
   if (raw_vertex_data.data() == nullptr) return nullptr;
@@ -73,13 +73,13 @@ JNI_METHOD(geometry, MeshNative, jobject, createRawVertexBuffer)
 
 // Return the number of bytes per vertex in `createRawVertexBuffer`.
 JNI_METHOD(geometry, MeshNative, jint, getVertexStride)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh) {
   return GetMesh(raw_ptr_to_mesh)->VertexStride();
 }
 
 // Return the number of vertices in the mesh.
 JNI_METHOD(geometry, MeshNative, jint, getVertexCount)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh) {
   return GetMesh(raw_ptr_to_mesh)->VertexCount();
 }
 
@@ -88,7 +88,7 @@ JNI_METHOD(geometry, MeshNative, jint, getVertexCount)
 // read-only wrapper of it. The raw data is stored in `uint16_t`s (two bytes per
 // element), so it can be treated as a `ShortBuffer`.
 JNI_METHOD(geometry, MeshNative, jobject, createRawTriangleIndexBuffer)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh) {
   const Mesh* mesh = GetMesh(raw_ptr_to_mesh);
   // `Mesh`'s indices should always be two bytes each.
   ABSL_CHECK_EQ(mesh->IndexStride(), 2);
@@ -105,23 +105,23 @@ JNI_METHOD(geometry, MeshNative, jobject, createRawTriangleIndexBuffer)
 
 // Return the number of triangles represented in `createRawTriangleIndexBuffer`.
 JNI_METHOD(geometry, MeshNative, jint, getTriangleCount)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh) {
   return GetMesh(raw_ptr_to_mesh)->TriangleCount();
 }
 
 JNI_METHOD(geometry, MeshNative, jint, getAttributeCount)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh) {
   return GetMesh(raw_ptr_to_mesh)->Format().Attributes().size();
 }
 
 JNI_METHOD(geometry, MeshNative, void, fillBounds)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh, jobject mutable_envelope) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh, jobject mutable_envelope) {
   const Mesh* mesh = GetMesh(raw_ptr_to_mesh);
   ink::FillJMutableEnvelope(env, mesh->Bounds(), mutable_envelope);
 }
 
 JNI_METHOD(geometry, MeshNative, jint, fillAttributeUnpackingParams)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh, jint attribute_index,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh, jint attribute_index,
  jfloatArray offsets, jfloatArray scales) {
   const Mesh* mesh = GetMesh(raw_ptr_to_mesh);
   absl::Span<const ink::MeshAttributeCodingParams::ComponentCodingParams>
@@ -141,14 +141,14 @@ JNI_METHOD(geometry, MeshNative, jint, fillAttributeUnpackingParams)
 
 // Return a newly allocated copy of the given `Mesh`'s `MeshFormat`.
 JNI_METHOD(geometry, MeshNative, jlong, allocCopyOfFormat)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh) {
+(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh) {
   auto copied_format =
       std::make_unique<MeshFormat>(GetMesh(raw_ptr_to_mesh)->Format());
   return reinterpret_cast<jlong>(copied_format.release());
 }
 
 JNI_METHOD(geometry, MeshNative, void, fillPosition)
-(JNIEnv* env, jclass clazz, jlong raw_ptr_to_mesh, jint vertex_index,
+(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh, jint vertex_index,
  jobject mutable_vec) {
   const Mesh* mesh = GetMesh(raw_ptr_to_mesh);
   Point p = mesh->VertexPosition(vertex_index);
@@ -157,6 +157,6 @@ JNI_METHOD(geometry, MeshNative, void, fillPosition)
 
 // Create a newly allocated empty `Mesh`.
 JNI_METHOD(geometry, MeshNative, jlong, allocNativeNewEmptyMesh)
-(JNIEnv* env, jclass clazz) { return reinterpret_cast<jlong>(new Mesh); }
+(JNIEnv* env, jobject object) { return reinterpret_cast<jlong>(new Mesh); }
 
 }  // extern "C"
