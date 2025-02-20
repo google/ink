@@ -23,18 +23,29 @@
 namespace ink {
 namespace jni {
 
+// Attempts to parse a serialized proto from either a direct java.nio.ByteBuffer
+// or a jbyteArray, one of which must be non-null. If the proto doesn't parse,
+// returns a non-OK absl::Status. `offset` is the starting point of the data
+// within the `serialized_proto` array, and `size` is how far beyond `offset`
+// the data continues.
+absl::Status ParseProtoFromEither(JNIEnv* env,
+                                  jobject serialized_proto_direct_buffer,
+                                  jbyteArray serialized_proto_array,
+                                  jint offset, jint size,
+                                  google::protobuf::MessageLite& dest);
+
 // Attempts to parse a serialized proto. If the proto doesn't parse, returns
 // a non-OK absl::Status.
-[[nodiscard]] absl::Status ParseProto(JNIEnv* env, jbyteArray serialized_proto,
-                                      google::protobuf::MessageLite& dest);
+absl::Status ParseProtoFromByteArray(JNIEnv* env, jbyteArray serialized_proto,
+                                     google::protobuf::MessageLite& dest);
 
 // Attempts to parse a serialized proto. If the proto doesn't parse, returns
 // a non-OK absl::Status. `offset` is the starting point of the data within the
 // `serialized_proto` array, and `size` is how far beyond `offset` the data
 // continues.
-[[nodiscard]] absl::Status ParseProto(JNIEnv* env, jbyteArray serialized_proto,
-                                      jint offset, jint size,
-                                      google::protobuf::MessageLite& dest);
+absl::Status ParseProtoFromByteArray(JNIEnv* env, jbyteArray serialized_proto,
+                                     jint offset, jint size,
+                                     google::protobuf::MessageLite& dest);
 
 // Attempts to parse a serialized proto from a direct java.nio.ByteBuffer. If
 // the proto doesn't parse, returns a non-OK absl::Status. `offset` is the
@@ -42,9 +53,10 @@ namespace jni {
 // is how far beyond `offset` the data continues.
 // Note: This has a different name than `ParseProto`, as jbyteArray is a type of
 // jobject so the two definitions would clash rather than serve as overloads.
-[[nodiscard]] absl::Status ParseProtoFromBuffer(
-    JNIEnv* env, jobject serialized_proto_direct_buffer, jint offset, jint size,
-    google::protobuf::MessageLite& dest);
+absl::Status ParseProtoFromBuffer(JNIEnv* env,
+                                  jobject serialized_proto_direct_buffer,
+                                  jint offset, jint size,
+                                  google::protobuf::MessageLite& dest);
 
 // Serializes a proto into a newly-allocated Java byte array.
 [[nodiscard]] jbyteArray SerializeProto(JNIEnv* env,
