@@ -14,7 +14,6 @@
 
 #include <jni.h>
 
-#include <string>
 #include <utility>
 #include <vector>
 
