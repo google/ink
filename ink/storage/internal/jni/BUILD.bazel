@@ -63,8 +63,11 @@ cc_library(
         "//ink/brush:brush_tip",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_proto_util",
+        "//ink/jni/internal:jni_throw_util",
         "//ink/storage:brush",
         "//ink/storage/proto:brush_cc_proto",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
