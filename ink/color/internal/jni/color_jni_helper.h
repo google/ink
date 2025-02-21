@@ -19,7 +19,7 @@
 
 #include "ink/color/color_space.h"
 
-namespace ink {
+namespace ink::jni {
 
 // Color space ID constants.
 //
@@ -28,7 +28,9 @@ constexpr jint kJniColorSpaceIdSrgb = 0;
 constexpr jint kJniColorSpaceIdDisplayP3 = 1;
 
 ColorSpace JIntToColorSpace(jint color_space_id);
+jint ColorSpaceToJInt(ColorSpace color_space);
+bool ColorSpaceIsSupportedInJetpack(ColorSpace color_space);
 
-}  // namespace ink
+}  // namespace ink::jni
 
 #endif  // INK_COLOR_INTERNAL_JNI_COLOR_JNI_HELPER_H_

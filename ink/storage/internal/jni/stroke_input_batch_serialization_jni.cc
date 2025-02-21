@@ -44,13 +44,11 @@ extern "C" {
 // bytes. This returns the address of a heap-allocated `StrokeInputBatch`, which
 // must later be freed by the caller.
 JNI_METHOD(storage, StrokeInputBatchSerializationNative, jlong, newFromProto)
-(JNIEnv* env, jclass klass, jobject input_direct_byte_buffer,
- jbyteArray input_bytes, jint input_offset, jint input_length,
- jboolean throw_on_parse_error) {
+(JNIEnv* env, jclass klass, jobject direct_byte_buffer, jbyteArray byte_array,
+ jint offset, jint length, jboolean throw_on_parse_error) {
   CodedStrokeInputBatch coded_input;
-  if (absl::Status status =
-          ParseProtoFromEither(env, input_direct_byte_buffer, input_bytes,
-                               input_offset, input_length, coded_input);
+  if (absl::Status status = ParseProtoFromEither(
+          env, direct_byte_buffer, byte_array, offset, length, coded_input);
       !status.ok()) {
     if (throw_on_parse_error) ThrowExceptionFromStatus(env, status);
     return 0;

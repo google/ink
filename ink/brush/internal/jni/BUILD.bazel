@@ -156,9 +156,11 @@ cc_library(
         "//ink/brush",
         "//ink/brush:brush_family",
         "//ink/color",
+        "//ink/color:color_space",
         "//ink/color/internal/jni:color_jni_helper",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_throw_util",
+        "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [

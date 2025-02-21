@@ -17,7 +17,7 @@
 #include "absl/log/absl_check.h"
 #include "ink/color/color_space.h"
 
-namespace ink {
+namespace ink::jni {
 
 ColorSpace JIntToColorSpace(jint color_space_id) {
   switch (color_space_id) {
@@ -27,8 +27,28 @@ ColorSpace JIntToColorSpace(jint color_space_id) {
       return ColorSpace::kDisplayP3;
     default:
       ABSL_CHECK(false) << "Unknown color space id: " << color_space_id;
-      break;
   }
 }
 
-}  // namespace ink
+jint ColorSpaceToJInt(ColorSpace color_space) {
+  switch (color_space) {
+    case ColorSpace::kSrgb:
+      return kJniColorSpaceIdSrgb;
+    case ColorSpace::kDisplayP3:
+      return kJniColorSpaceIdDisplayP3;
+  }
+  ABSL_CHECK(false) << "Unknown color space: " << color_space;
+}
+
+bool ColorSpaceIsSupportedInJetpack(ColorSpace color_space) {
+  // Currently this is defensive coding, all of the color spaces supported in
+  // Ink C++ code are also supported in the Color class used in Jetpack.
+  switch (color_space) {
+    case ColorSpace::kSrgb:
+    case ColorSpace::kDisplayP3:
+      return true;
+  }
+  return false;
+}
+
+}  // namespace ink::jni
