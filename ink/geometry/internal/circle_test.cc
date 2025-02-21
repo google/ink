@@ -33,7 +33,6 @@ namespace {
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::ExplainMatchResult;
-using ::testing::FloatEq;
 using ::testing::FloatNear;
 
 // Matcher for checking that every `Point` in the `arg` array lies on the
