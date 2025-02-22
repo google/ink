@@ -14,7 +14,6 @@
 
 #include "ink/brush/easing_function.h"
 
-#include <cmath>
 #include <limits>
 
 #include "gmock/gmock.h"
