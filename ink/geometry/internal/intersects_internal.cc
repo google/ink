@@ -15,7 +15,6 @@
 #include "ink/geometry/internal/intersects_internal.h"
 
 #include <optional>
-#include <utility>
 
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
