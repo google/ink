@@ -14,8 +14,8 @@
 
 #include <jni.h>
 
-#include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "absl/log/absl_check.h"
@@ -28,20 +28,31 @@
 #include "ink/jni/internal/jni_string_util.h"
 #include "ink/jni/internal/jni_throw_util.h"
 
+namespace {
+
+using ::ink::BrushCoat;
+using ::ink::BrushFamily;
+using ::ink::CastToBrushCoat;
+using ::ink::CastToBrushFamily;
+using ::ink::jni::JStringView;
+using ::ink::jni::ThrowExceptionFromStatus;
+
+}  // namespace
+
 extern "C" {
 
 // Construct a native BrushFamily and return a pointer to it as a long.
-JNI_METHOD(brush, BrushFamily, jlong, nativeCreateBrushFamily)
-(JNIEnv* env, jobject thiz, jlongArray coat_native_pointer_array,
+JNI_METHOD(brush, BrushFamilyNative, jlong, create)
+(JNIEnv* env, jobject object, jlongArray coat_native_pointer_array,
  jstring client_brush_family_id, jboolean use_spring_model_v2) {
-  std::vector<ink::BrushCoat> coats;
+  std::vector<BrushCoat> coats;
   const jsize num_coats = env->GetArrayLength(coat_native_pointer_array);
   coats.reserve(num_coats);
   jlong* coat_pointers =
       env->GetLongArrayElements(coat_native_pointer_array, nullptr);
   ABSL_CHECK(coat_pointers);
   for (jsize i = 0; i < num_coats; ++i) {
-    coats.push_back(ink::CastToBrushCoat(coat_pointers[i]));
+    coats.push_back(CastToBrushCoat(coat_pointers[i]));
   }
   env->ReleaseLongArrayElements(coat_native_pointer_array, coat_pointers, 0);
 
@@ -51,10 +62,10 @@ JNI_METHOD(brush, BrushFamily, jlong, nativeCreateBrushFamily)
   }
 
   absl::StatusOr<ink::BrushFamily> brush_family = ink::BrushFamily::Create(
-      coats, ink::jni::JStringView(env, client_brush_family_id).string_view(),
+      coats, JStringView(env, client_brush_family_id).string_view(),
       input_model);
   if (!brush_family.ok()) {
-    ink::jni::ThrowExceptionFromStatus(env, brush_family.status());
+    ThrowExceptionFromStatus(env, brush_family.status());
     return -1;  // Unused return value.
   }
 
@@ -62,9 +73,22 @@ JNI_METHOD(brush, BrushFamily, jlong, nativeCreateBrushFamily)
       new ink::BrushFamily(*std::move(brush_family)));
 }
 
-JNI_METHOD(brush, BrushFamily, void, nativeFreeBrushFamily)
-(JNIEnv* env, jobject thiz, jlong native_pointer) {
-  delete reinterpret_cast<ink::BrushFamily*>(native_pointer);
+JNI_METHOD(brush, BrushFamilyNative, void, free)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  delete reinterpret_cast<BrushFamily*>(native_pointer);
+}
+
+JNI_METHOD(brush, BrushFamilyNative, jstring, getClientBrushFamilyId)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
+  return env->NewStringUTF(brush_family.GetClientBrushFamilyId().c_str());
+}
+
+JNI_METHOD(brush, BrushFamilyNative, jboolean, usesSpringModelV2)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
+  return std::holds_alternative<BrushFamily::SpringModelV2>(
+      brush_family.GetInputModel());
 }
 
 }  // extern "C"

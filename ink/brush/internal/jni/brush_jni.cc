@@ -104,4 +104,10 @@ JNI_METHOD(brush, BrushNative, jfloat, getEpsilon)
   const Brush& brush = CastToBrush(native_pointer);
   return brush.GetEpsilon();
 }
+
+JNI_METHOD(brush, BrushNative, jlong, newCopyOfBrushFamily)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  const Brush& brush = CastToBrush(native_pointer);
+  return reinterpret_cast<jlong>(new BrushFamily(brush.GetFamily()));
+}
 }
