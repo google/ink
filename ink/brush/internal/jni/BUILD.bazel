@@ -71,6 +71,7 @@ cc_library(
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_throw_util",
         "//ink/types:duration",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
     ] + select({
         "@platforms//os:android": [],
@@ -92,6 +93,7 @@ cc_library(
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_string_util",
         "//ink/jni/internal:jni_throw_util",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings:string_view",
     ] + select({

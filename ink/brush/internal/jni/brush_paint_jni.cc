@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,8 +14,10 @@
 
 #include <jni.h>
 
+#include <utility>
 #include <vector>
 
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/geometry/angle.h"
@@ -46,37 +48,38 @@ ink::BrushPaint::BlendMode JIntToBlendMode(jint val) {
   return static_cast<ink::BrushPaint::BlendMode>(val);
 }
 
+using ink::BrushPaint;
+using ink::brush_internal::ValidateBrushPaint;
+
 }  // namespace
 
 extern "C" {
 
 // Construct a native BrushPaint and return a pointer to it as a long.
 JNI_METHOD(brush, BrushPaint, jlong, nativeCreateBrushPaint)
-(JNIEnv* env, jobject thiz, jint texture_layers_count) {
-  std::vector<ink::BrushPaint::TextureLayer> texture_layers;
+(JNIEnv* env, jobject thiz, jlongArray texture_layer_native_pointers_array) {
+  std::vector<BrushPaint::TextureLayer> texture_layers;
+  ABSL_CHECK(texture_layer_native_pointers_array != nullptr);
+  const jsize texture_layers_count =
+      env->GetArrayLength(texture_layer_native_pointers_array);
   texture_layers.reserve(texture_layers_count);
-  return reinterpret_cast<jlong>(
-      new ink::BrushPaint{.texture_layers = texture_layers});
-}
-
-// Appends a texture layer to a *mutable* C++ BrushPaint object as referenced by
-// `native_pointer`. Only call this method within kotlin init{} scope so to keep
-// this BrushPaint object immutable after construction and equivalent across
-// Kotlin and C++.
-JNI_METHOD(brush, BrushPaint, void, nativeAppendTextureLayer)
-(JNIEnv* env, jobject thiz, jlong native_pointer, jlong texture_layer_pointer) {
-  // Intentionally non-const casting to BrushPaint in this rare native method
-  // called during kotlin init scope.
-  auto* brush_paint = reinterpret_cast<ink::BrushPaint*>(native_pointer);
-  const ink::BrushPaint::TextureLayer texture_layer =
-      *reinterpret_cast<ink::BrushPaint::TextureLayer*>(texture_layer_pointer);
-  brush_paint->texture_layers.push_back(texture_layer);
-  absl::Status status = ink::brush_internal::ValidateBrushPaint(*brush_paint);
-
-  if (!status.ok()) {
-    ink::jni::ThrowExceptionFromStatus(env, status);
-    return;
+  jlong* texture_layer_native_pointers =
+      env->GetLongArrayElements(texture_layer_native_pointers_array, nullptr);
+  ABSL_CHECK(texture_layer_native_pointers != nullptr);
+  for (int i = 0; i < texture_layers_count; ++i) {
+    texture_layers.push_back(*reinterpret_cast<BrushPaint::TextureLayer*>(
+        texture_layer_native_pointers[i]));
   }
+  env->ReleaseLongArrayElements(
+      texture_layer_native_pointers_array, texture_layer_native_pointers,
+      // No need to copy back the array, which is not modified.
+      JNI_ABORT);
+  BrushPaint brush_paint{.texture_layers = std::move(texture_layers)};
+  if (absl::Status status = ValidateBrushPaint(brush_paint); !status.ok()) {
+    ink::jni::ThrowExceptionFromStatus(env, status);
+    return 0;
+  }
+  return reinterpret_cast<jlong>(new ink::BrushPaint(std::move(brush_paint)));
 }
 
 JNI_METHOD(brush, BrushPaint, void, nativeFreeBrushPaint)

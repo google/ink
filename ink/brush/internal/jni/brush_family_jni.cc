@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,11 +50,14 @@ JNI_METHOD(brush, BrushFamilyNative, jlong, create)
   coats.reserve(num_coats);
   jlong* coat_pointers =
       env->GetLongArrayElements(coat_native_pointer_array, nullptr);
-  ABSL_CHECK(coat_pointers);
+  ABSL_CHECK(coat_pointers != nullptr);
   for (jsize i = 0; i < num_coats; ++i) {
     coats.push_back(CastToBrushCoat(coat_pointers[i]));
   }
-  env->ReleaseLongArrayElements(coat_native_pointer_array, coat_pointers, 0);
+  env->ReleaseLongArrayElements(
+      coat_native_pointer_array, coat_pointers,
+      // No need to copy back the array, which is not modified.
+      JNI_ABORT);
 
   ink::BrushFamily::InputModel input_model = ink::BrushFamily::SpringModelV1();
   if (use_spring_model_v2) {

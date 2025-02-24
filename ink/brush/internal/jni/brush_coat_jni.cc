@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,11 +35,14 @@ JNI_METHOD(brush, BrushCoat, jlong, nativeCreateBrushCoat)
   tips.reserve(num_tips);
   jlong* tip_pointers =
       env->GetLongArrayElements(tip_native_pointer_array, nullptr);
-  ABSL_CHECK(tip_pointers);
+  ABSL_CHECK(tip_pointers != nullptr);
   for (jsize i = 0; i < num_tips; ++i) {
     tips.push_back(ink::CastToBrushTip(tip_pointers[i]));
   }
-  env->ReleaseLongArrayElements(tip_native_pointer_array, tip_pointers, 0);
+  env->ReleaseLongArrayElements(
+      tip_native_pointer_array, tip_pointers,
+      // No need to copy back the array, which is not modified.
+      JNI_ABORT);
 
   const ink::BrushPaint& paint = ink::CastToBrushPaint(paint_native_pointer);
 
