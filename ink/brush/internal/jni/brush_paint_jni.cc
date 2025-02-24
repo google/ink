@@ -28,35 +28,40 @@
 
 namespace {
 
-ink::BrushPaint::TextureSizeUnit JIntToSizeUnit(jint val) {
-  return static_cast<ink::BrushPaint::TextureSizeUnit>(val);
-}
-
-ink::BrushPaint::TextureOrigin JIntToOrigin(jint val) {
-  return static_cast<ink::BrushPaint::TextureOrigin>(val);
-}
-
-ink::BrushPaint::TextureMapping JIntToMapping(jint val) {
-  return static_cast<ink::BrushPaint::TextureMapping>(val);
-}
-
-ink::BrushPaint::TextureWrap JIntToWrap(jint val) {
-  return static_cast<ink::BrushPaint::TextureWrap>(val);
-}
-
-ink::BrushPaint::BlendMode JIntToBlendMode(jint val) {
-  return static_cast<ink::BrushPaint::BlendMode>(val);
-}
-
+using ink::Angle;
 using ink::BrushPaint;
+using ink::Vec;
 using ink::brush_internal::ValidateBrushPaint;
+using ink::brush_internal::ValidateBrushPaintTextureLayer;
+using ink::jni::JStringToStdString;
+using ink::jni::ThrowExceptionFromStatus;
+
+BrushPaint::TextureSizeUnit JIntToSizeUnit(jint val) {
+  return static_cast<BrushPaint::TextureSizeUnit>(val);
+}
+
+BrushPaint::TextureOrigin JIntToOrigin(jint val) {
+  return static_cast<BrushPaint::TextureOrigin>(val);
+}
+
+BrushPaint::TextureMapping JIntToMapping(jint val) {
+  return static_cast<BrushPaint::TextureMapping>(val);
+}
+
+BrushPaint::TextureWrap JIntToWrap(jint val) {
+  return static_cast<BrushPaint::TextureWrap>(val);
+}
+
+BrushPaint::BlendMode JIntToBlendMode(jint val) {
+  return static_cast<BrushPaint::BlendMode>(val);
+}
 
 }  // namespace
 
 extern "C" {
 
 // Construct a native BrushPaint and return a pointer to it as a long.
-JNI_METHOD(brush, BrushPaint, jlong, nativeCreateBrushPaint)
+JNI_METHOD(brush, BrushPaintNative, jlong, create)
 (JNIEnv* env, jobject thiz, jlongArray texture_layer_native_pointers_array) {
   std::vector<BrushPaint::TextureLayer> texture_layers;
   ABSL_CHECK(texture_layer_native_pointers_array != nullptr);
@@ -76,15 +81,15 @@ JNI_METHOD(brush, BrushPaint, jlong, nativeCreateBrushPaint)
       JNI_ABORT);
   BrushPaint brush_paint{.texture_layers = std::move(texture_layers)};
   if (absl::Status status = ValidateBrushPaint(brush_paint); !status.ok()) {
-    ink::jni::ThrowExceptionFromStatus(env, status);
+    ThrowExceptionFromStatus(env, status);
     return 0;
   }
-  return reinterpret_cast<jlong>(new ink::BrushPaint(std::move(brush_paint)));
+  return reinterpret_cast<jlong>(new BrushPaint(std::move(brush_paint)));
 }
 
-JNI_METHOD(brush, BrushPaint, void, nativeFreeBrushPaint)
+JNI_METHOD(brush, BrushPaintNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  delete reinterpret_cast<ink::BrushPaint*>(native_pointer);
+  delete reinterpret_cast<BrushPaint*>(native_pointer);
 }
 
 // ************ Native Implementation of BrushPaint TextureLayer ************
@@ -97,37 +102,35 @@ JNI_METHOD_INNER(brush, BrushPaint, TextureLayer, jlong,
  jfloat size_y, jfloat offset_x, jfloat offset_y, jfloat rotation_in_radians,
  jfloat opacity, jint animation_frames, jint size_unit, jint origin,
  jint mapping, jint wrap_x, jint wrap_y, jint blend_mode) {
-  ink::BrushPaint::TextureLayer* texture_layer =
-      new ink::BrushPaint::TextureLayer{
-          .client_color_texture_id =
-              ink::jni::JStringToStdString(env, client_color_texture_id),
-          .mapping = JIntToMapping(mapping),
-          .origin = JIntToOrigin(origin),
-          .size_unit = JIntToSizeUnit(size_unit),
-          .wrap_x = JIntToWrap(wrap_x),
-          .wrap_y = JIntToWrap(wrap_y),
-          .size = ink::Vec{size_x, size_y},
-          .offset = ink::Vec{offset_x, offset_y},
-          .rotation = ink::Angle::Radians(rotation_in_radians),
-          .opacity = opacity,
-          .animation_frames = animation_frames,
-          .blend_mode = JIntToBlendMode(blend_mode),
-      };
+  BrushPaint::TextureLayer* texture_layer = new BrushPaint::TextureLayer{
+      .client_color_texture_id =
+          JStringToStdString(env, client_color_texture_id),
+      .mapping = JIntToMapping(mapping),
+      .origin = JIntToOrigin(origin),
+      .size_unit = JIntToSizeUnit(size_unit),
+      .wrap_x = JIntToWrap(wrap_x),
+      .wrap_y = JIntToWrap(wrap_y),
+      .size = Vec{size_x, size_y},
+      .offset = Vec{offset_x, offset_y},
+      .rotation = Angle::Radians(rotation_in_radians),
+      .opacity = opacity,
+      .animation_frames = animation_frames,
+      .blend_mode = JIntToBlendMode(blend_mode),
+  };
 
-  absl::Status status =
-      ink::brush_internal::ValidateBrushPaintTextureLayer(*texture_layer);
+  absl::Status status = ValidateBrushPaintTextureLayer(*texture_layer);
 
   if (!status.ok()) {
-    ink::jni::ThrowExceptionFromStatus(env, status);
+    ThrowExceptionFromStatus(env, status);
     // delete texture_layer;
     return -1;
   }
   return reinterpret_cast<jlong>(texture_layer);
 }
 
-JNI_METHOD_INNER(brush, BrushPaint, TextureLayer, void, nativeFreeTextureLayer)
+JNI_METHOD_INNER(brush, BrushPaint, TextureLayer, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  delete reinterpret_cast<ink::BrushPaint::TextureLayer*>(native_pointer);
+  delete reinterpret_cast<BrushPaint::TextureLayer*>(native_pointer);
 }
 
 }  // extern "C"
