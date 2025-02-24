@@ -50,11 +50,14 @@ JNI_METHOD(brush, BrushFamilyNative, jlong, create)
   coats.reserve(num_coats);
   jlong* coat_pointers =
       env->GetLongArrayElements(coat_native_pointer_array, nullptr);
-  ABSL_CHECK(coat_pointers);
+  ABSL_CHECK(coat_pointers != nullptr);
   for (jsize i = 0; i < num_coats; ++i) {
     coats.push_back(CastToBrushCoat(coat_pointers[i]));
   }
-  env->ReleaseLongArrayElements(coat_native_pointer_array, coat_pointers, 0);
+  env->ReleaseLongArrayElements(
+      coat_native_pointer_array, coat_pointers,
+      // No need to copy back the array, which is not modified.
+      JNI_ABORT);
 
   ink::BrushFamily::InputModel input_model = ink::BrushFamily::SpringModelV1();
   if (use_spring_model_v2) {
@@ -89,6 +92,18 @@ JNI_METHOD(brush, BrushFamilyNative, jboolean, usesSpringModelV2)
   const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
   return std::holds_alternative<BrushFamily::SpringModelV2>(
       brush_family.GetInputModel());
+}
+
+JNI_METHOD(brush, BrushFamilyNative, jlong, getBrushCoatCount)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
+  return brush_family.GetCoats().size();
+}
+
+JNI_METHOD(brush, BrushFamilyNative, jlong, newCopyOfBrushCoat)
+(JNIEnv* env, jobject object, jlong native_pointer, jint index) {
+  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
+  return reinterpret_cast<jlong>(new BrushCoat(brush_family.GetCoats()[index]));
 }
 
 }  // extern "C"
