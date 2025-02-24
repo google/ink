@@ -27,7 +27,7 @@
 extern "C" {
 
 // Construct a native BrushCoat and return a pointer to it as a long.
-JNI_METHOD(brush, BrushCoat, jlong, nativeCreateBrushCoat)
+JNI_METHOD(brush, BrushCoatNative, jlong, create)
 (JNIEnv* env, jobject thiz, jlongArray tip_native_pointer_array,
  jlong paint_native_pointer) {
   std::vector<ink::BrushTip> tips;
@@ -35,11 +35,14 @@ JNI_METHOD(brush, BrushCoat, jlong, nativeCreateBrushCoat)
   tips.reserve(num_tips);
   jlong* tip_pointers =
       env->GetLongArrayElements(tip_native_pointer_array, nullptr);
-  ABSL_CHECK(tip_pointers);
+  ABSL_CHECK(tip_pointers != nullptr);
   for (jsize i = 0; i < num_tips; ++i) {
     tips.push_back(ink::CastToBrushTip(tip_pointers[i]));
   }
-  env->ReleaseLongArrayElements(tip_native_pointer_array, tip_pointers, 0);
+  env->ReleaseLongArrayElements(
+      tip_native_pointer_array, tip_pointers,
+      // No need to copy back the array, which is not modified.
+      JNI_ABORT);
 
   const ink::BrushPaint& paint = ink::CastToBrushPaint(paint_native_pointer);
 
@@ -49,7 +52,7 @@ JNI_METHOD(brush, BrushCoat, jlong, nativeCreateBrushCoat)
   });
 }
 
-JNI_METHOD(brush, BrushCoat, void, nativeFreeBrushCoat)
+JNI_METHOD(brush, BrushCoatNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   delete reinterpret_cast<ink::BrushCoat*>(native_pointer);
 }

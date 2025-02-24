@@ -17,8 +17,6 @@
 
 #include <jni.h>
 
-#include <string>
-
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_coat.h"
