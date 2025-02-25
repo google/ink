@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,11 +30,11 @@ namespace {
 
 using ::ink::Brush;
 using ::ink::BrushFamily;
-using ::ink::CastToBrush;
-using ::ink::CastToBrushFamily;
 using ::ink::Color;
 using ::ink::ColorSpace;
 using ::ink::Color::Format::kGammaEncoded;
+using ::ink::jni::CastToBrush;
+using ::ink::jni::CastToBrushFamily;
 using ::ink::jni::ColorSpaceIsSupportedInJetpack;
 using ::ink::jni::ColorSpaceToJInt;
 using ::ink::jni::JIntToColorSpace;

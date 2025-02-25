@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,30 +23,29 @@
 #include "ink/types/duration.h"
 #include "ink/types/physical_distance.h"
 
-namespace ink {
+namespace ink::jni {
 
-// Convert an int to an ink::StrokeInput::ToolType enum.
+// Convert an int to an StrokeInput::ToolType enum.
 //
 // This should match the enum in InputToolType.kt.
 StrokeInput::ToolType JIntToToolType(jint val) {
-  return static_cast<ink::StrokeInput::ToolType>(val);
+  return static_cast<StrokeInput::ToolType>(val);
 }
 
 jint ToolTypeToJInt(StrokeInput::ToolType type) {
   switch (type) {
-    case ink::StrokeInput::ToolType::kMouse:
+    case StrokeInput::ToolType::kMouse:
       return 1;
-    case ink::StrokeInput::ToolType::kTouch:
+    case StrokeInput::ToolType::kTouch:
       return 2;
-    case ink::StrokeInput::ToolType::kStylus:
+    case StrokeInput::ToolType::kStylus:
       return 3;
     default:
       return 0;
   }
 }
 
-ink::StrokeInput::ToolType JObjectToToolType(JNIEnv* env,
-                                             jobject j_inputtooltype) {
+StrokeInput::ToolType JObjectToToolType(JNIEnv* env, jobject j_inputtooltype) {
   jclass inputtooltype_class = env->GetObjectClass(j_inputtooltype);
   ABSL_CHECK(inputtooltype_class) << "InputToolType class not found.";
   jfieldID inputtooltype_value_fieldID =
@@ -98,7 +97,7 @@ void UpdateJObjectInput(JNIEnv* env, const StrokeInput& input_in,
   ABSL_CHECK(!env->ExceptionCheck()) << "StrokeInput.update method failed.";
 }
 
-ink::StrokeInput JObjectToStrokeInput(JNIEnv* env, jobject j_input) {
+StrokeInput JObjectToStrokeInput(JNIEnv* env, jobject j_input) {
   jclass strokeinput_class = env->GetObjectClass(j_input);
   ABSL_CHECK(strokeinput_class) << "StrokeInput class not found.";
 
@@ -111,8 +110,7 @@ ink::StrokeInput JObjectToStrokeInput(JNIEnv* env, jobject j_input) {
       env->CallObjectMethod(j_input, strokeinput_tooltype_methodID);
   ABSL_CHECK(j_inputtooltype) << "StrokeInput.getToolType method failed.";
 
-  ink::StrokeInput::ToolType tool_type =
-      JObjectToToolType(env, j_inputtooltype);
+  StrokeInput::ToolType tool_type = JObjectToToolType(env, j_inputtooltype);
 
   jmethodID strokeinput_x_methodID =
       env->GetMethodID(strokeinput_class, "getX", "()F");
@@ -176,14 +174,14 @@ ink::StrokeInput JObjectToStrokeInput(JNIEnv* env, jobject j_input) {
   ABSL_CHECK(!env->ExceptionCheck())
       << "StrokeInput.getPressure method failed.";
 
-  return ink::StrokeInput{
+  return StrokeInput{
       .tool_type = tool_type,
       .position = {j_x, j_y},
       .elapsed_time = Duration32::Millis(j_elapsedTimeMillis),
       .stroke_unit_length = PhysicalDistance::Centimeters(j_strokeUnitLengthCm),
       .pressure = j_pressure,
-      .tilt = ink::Angle::Radians(j_tiltRadians),
-      .orientation = ink::Angle::Radians(j_orientationRadians)};
+      .tilt = Angle::Radians(j_tiltRadians),
+      .orientation = Angle::Radians(j_orientationRadians)};
 }
 
-}  // namespace ink
+}  // namespace ink::jni
