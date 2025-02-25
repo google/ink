@@ -15,225 +15,216 @@
 #include <jni.h>
 
 #include <cstdint>
-#include <optional>
 #include <utility>
 #include <vector>
 
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/easing_function.h"
+#include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/geometry/point.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_throw_util.h"
-#include "ink/types/duration.h"
+
+namespace {
+
+using ink::BrushBehavior;
+using ink::EasingFunction;
+using ink::Point;
+using ink::brush_internal::ValidateBrushBehavior;
+using ink::jni::CastToBrushBehaviorNode;
+using ink::jni::ThrowExceptionFromStatus;
+
+}  // namespace
 
 extern "C" {
 
-JNI_METHOD(brush, BrushBehavior, jlong, nativeCreateEmptyBrushBehavior)
-(JNIEnv* env, jobject thiz) {
-  return reinterpret_cast<jlong>(new ink::BrushBehavior{});
-}
-
-JNI_METHOD(brush, BrushBehavior, jlong, nativeValidateOrDeleteAndThrow)
-(JNIEnv* env, jobject thiz, jlong native_pointer) {
-  auto* brush_behavior = reinterpret_cast<ink::BrushBehavior*>(native_pointer);
-  absl::Status status =
-      ink::brush_internal::ValidateBrushBehavior(*brush_behavior);
-  if (!status.ok()) {
-    delete brush_behavior;
-    ink::jni::ThrowExceptionFromStatus(env, status);
-    return 0;  // unused return value
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createFromOrderedNodes)
+(JNIEnv* env, jobject thiz, jlongArray node_native_pointer_array) {
+  std::vector<BrushBehavior::Node> nodes;
+  const jsize num_nodes = env->GetArrayLength(node_native_pointer_array);
+  nodes.reserve(num_nodes);
+  jlong* node_pointers =
+      env->GetLongArrayElements(node_native_pointer_array, nullptr);
+  ABSL_CHECK(node_pointers != nullptr);
+  for (jsize i = 0; i < num_nodes; ++i) {
+    nodes.push_back(CastToBrushBehaviorNode(node_pointers[i]));
   }
-  return native_pointer;
+  env->ReleaseLongArrayElements(
+      node_native_pointer_array, node_pointers,
+      // No need to copy back the array, which is not modified.
+      JNI_ABORT);
+  BrushBehavior behavior{.nodes = std::move(nodes)};
+  if (absl::Status status = ValidateBrushBehavior(behavior); !status.ok()) {
+    ThrowExceptionFromStatus(env, status);
+    return 0;
+  }
+  return reinterpret_cast<jlong>(new BrushBehavior(std::move(behavior)));
 }
 
-JNI_METHOD(brush, BrushBehavior, void, nativeFreeBrushBehavior)
+JNI_METHOD(brush, BrushBehaviorNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  delete reinterpret_cast<ink::BrushBehavior*>(native_pointer);
+  delete reinterpret_cast<BrushBehavior*>(native_pointer);
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, SourceNode, void, nativeAppendSourceNode)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jint source,
- jfloat source_value_start, jfloat source_value_end,
- jint source_out_of_range_behavior) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::SourceNode{
-      .source = static_cast<ink::BrushBehavior::Source>(source),
-      .source_out_of_range_behavior =
-          static_cast<ink::BrushBehavior::OutOfRange>(
-              source_out_of_range_behavior),
-      .source_value_range = {source_value_start, source_value_end},
-  });
+// Functions for dealing with BrushBehavior::Nodes. Note that on the C++ side,
+// BrushBehavior::Node is a variant, so all of the native pointers are pointers
+// to the same type (the variant BrushBehavior::Node).
+
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createSourceNode)
+(JNIEnv* env, jobject thiz, jint source, jfloat source_value_start,
+ jfloat source_value_end, jint source_out_of_range_behavior) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::SourceNode{
+          .source = static_cast<BrushBehavior::Source>(source),
+          .source_out_of_range_behavior =
+              static_cast<BrushBehavior::OutOfRange>(
+                  source_out_of_range_behavior),
+          .source_value_range = {source_value_start, source_value_end},
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, ConstantNode, void,
-                 nativeAppendConstantNode)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jfloat value) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::ConstantNode{
-      .value = value,
-  });
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createConstantNode)
+(JNIEnv* env, jobject thiz, jfloat value) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::ConstantNode{
+          .value = value,
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, NoiseNode, void, nativeAppendNoiseNode)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jint seed,
- jint vary_over, jfloat base_period) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::NoiseNode{
-      .seed = static_cast<uint32_t>(seed),
-      .vary_over = static_cast<ink::BrushBehavior::DampingSource>(vary_over),
-      .base_period = base_period,
-  });
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createNoiseNode)
+(JNIEnv* env, jobject thiz, jint seed, jint vary_over, jfloat base_period) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::NoiseNode{
+          .seed = static_cast<uint32_t>(seed),
+          .vary_over = static_cast<BrushBehavior::DampingSource>(vary_over),
+          .base_period = base_period,
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, FallbackFilterNode, void,
-                 nativeAppendFallbackFilterNode)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer,
- jint is_fallback_for) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::FallbackFilterNode{
-      .is_fallback_for = static_cast<ink::BrushBehavior::OptionalInputProperty>(
-          is_fallback_for),
-  });
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createFallbackFilterNode)
+(JNIEnv* env, jobject thiz, jint is_fallback_for) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::FallbackFilterNode{
+          .is_fallback_for = static_cast<BrushBehavior::OptionalInputProperty>(
+              is_fallback_for),
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, ToolTypeFilterNode, void,
-                 nativeAppendToolTypeFilterNode)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer,
- jboolean mouse_enabled, jboolean touch_enabled, jboolean stylus_enabled,
- jboolean unknown_enabled) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::ToolTypeFilterNode{
-      .enabled_tool_types = {.unknown = unknown_enabled ? true : false,
-                             .mouse = mouse_enabled ? true : false,
-                             .touch = touch_enabled ? true : false,
-                             .stylus = stylus_enabled ? true : false},
-  });
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createToolTypeFilterNode)
+(JNIEnv* env, jobject thiz, jboolean mouse_enabled, jboolean touch_enabled,
+ jboolean stylus_enabled, jboolean unknown_enabled) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::ToolTypeFilterNode{
+          .enabled_tool_types = {.unknown = unknown_enabled ? true : false,
+                                 .mouse = mouse_enabled ? true : false,
+                                 .touch = touch_enabled ? true : false,
+                                 .stylus = stylus_enabled ? true : false},
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, DampingNode, void,
-                 nativeAppendDampingNode)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jint damping_source,
- jfloat damping_gap) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::DampingNode{
-      .damping_source =
-          static_cast<ink::BrushBehavior::DampingSource>(damping_source),
-      .damping_gap = damping_gap,
-  });
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createDampingNode)
+(JNIEnv* env, jobject thiz, jint damping_source, jfloat damping_gap) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::DampingNode{
+          .damping_source =
+              static_cast<BrushBehavior::DampingSource>(damping_source),
+          .damping_gap = damping_gap,
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, ResponseNode, void,
-                 nativeAppendResponseNodePredefined)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer,
- jint predefined_response_curve) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::ResponseNode{
-      .response_curve = {static_cast<ink::EasingFunction::Predefined>(
-          predefined_response_curve)},
-  });
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createResponseNodePredefined)
+(JNIEnv* env, jobject thiz, jint predefined_response_curve) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::ResponseNode{
+          .response_curve = {static_cast<EasingFunction::Predefined>(
+              predefined_response_curve)},
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, ResponseNode, void,
-                 nativeAppendResponseNodeCubicBezier)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jfloat x1, jfloat y1,
- jfloat x2, jfloat y2) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::ResponseNode{
-      .response_curve = {ink::EasingFunction::CubicBezier{
-          .x1 = x1, .y1 = y1, .x2 = x2, .y2 = y2}},
-  });
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createResponseNodeCubicBezier)
+(JNIEnv* env, jobject thiz, jfloat x1, jfloat y1, jfloat x2, jfloat y2) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::ResponseNode{
+          .response_curve = {EasingFunction::CubicBezier{
+              .x1 = x1, .y1 = y1, .x2 = x2, .y2 = y2}},
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, ResponseNode, void,
-                 nativeAppendResponseNodeSteps)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jint step_count,
- jint step_position) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::ResponseNode{
-      .response_curve = {ink::EasingFunction::Steps{
-          .step_count = step_count,
-          .step_position =
-              static_cast<ink::EasingFunction::StepPosition>(step_position),
-      }},
-  });
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createResponseNodeSteps)
+(JNIEnv* env, jobject thiz, jint step_count, jint step_position) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::ResponseNode{
+          .response_curve = {EasingFunction::Steps{
+              .step_count = step_count,
+              .step_position =
+                  static_cast<EasingFunction::StepPosition>(step_position),
+          }},
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, ResponseNode, void,
-                 nativeAppendResponseNodeLinear)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer,
- jfloatArray points_array) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createResponseNodeLinear)
+(JNIEnv* env, jobject thiz, jfloatArray points_array) {
   jsize num_points = env->GetArrayLength(points_array) / 2;
   jfloat* points_elements = env->GetFloatArrayElements(points_array, nullptr);
-  std::vector<ink::Point> points_vector;
+  std::vector<Point> points_vector;
   points_vector.reserve(num_points);
   for (int i = 0; i < num_points; ++i) {
     float x = points_elements[2 * i];
     float y = points_elements[2 * i + 1];
-    points_vector.push_back(ink::Point{x, y});
+    points_vector.push_back(Point{x, y});
   }
   env->ReleaseFloatArrayElements(points_array, points_elements, 0);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::ResponseNode{
-      .response_curve = {ink::EasingFunction::Linear{
-          .points = std::move(points_vector)}},
-  });
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::ResponseNode{
+          .response_curve = {EasingFunction::Linear{
+              .points = std::move(points_vector)}},
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, BinaryOpNode, void,
-                 nativeAppendBinaryOpNode)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jint operation) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::BinaryOpNode{
-      .operation = static_cast<ink::BrushBehavior::BinaryOp>(operation),
-  });
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createBinaryOpNode)
+(JNIEnv* env, jobject thiz, jint operation) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::BinaryOpNode{
+          .operation = static_cast<BrushBehavior::BinaryOp>(operation),
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, InterpolationNode, void,
-                 nativeAppendInterpolationNode)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jint interpolation) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::InterpolationNode{
-      .interpolation =
-          static_cast<ink::BrushBehavior::Interpolation>(interpolation),
-  });
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createInterpolationNode)
+(JNIEnv* env, jobject thiz, jint interpolation) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::InterpolationNode{
+          .interpolation =
+              static_cast<BrushBehavior::Interpolation>(interpolation),
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, TargetNode, void, nativeAppendTargetNode)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jint target,
- jfloat target_modifier_start, jfloat target_modifier_end) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::TargetNode{
-      .target = static_cast<ink::BrushBehavior::Target>(target),
-      .target_modifier_range = {target_modifier_start, target_modifier_end},
-  });
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createTargetNode)
+(JNIEnv* env, jobject thiz, jint target, jfloat target_modifier_start,
+ jfloat target_modifier_end) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::TargetNode{
+          .target = static_cast<BrushBehavior::Target>(target),
+          .target_modifier_range = {target_modifier_start, target_modifier_end},
+      }));
 }
 
-JNI_METHOD_INNER(brush, BrushBehavior, PolarTargetNode, void,
-                 nativeAppendPolarTargetNode)
-(JNIEnv* env, jobject thiz, jlong native_behavior_pointer, jint polar_target,
- jfloat angle_range_start, jfloat angle_range_end, jfloat magnitude_range_start,
+JNI_METHOD(brush, BrushBehaviorNative, jlong, createPolarTargetNode)
+(JNIEnv* env, jobject thiz, jint polar_target, jfloat angle_range_start,
+ jfloat angle_range_end, jfloat magnitude_range_start,
  jfloat magnitude_range_end) {
-  auto* brush_behavior =
-      reinterpret_cast<ink::BrushBehavior*>(native_behavior_pointer);
-  brush_behavior->nodes.push_back(ink::BrushBehavior::PolarTargetNode{
-      .target = static_cast<ink::BrushBehavior::PolarTarget>(polar_target),
-      .angle_range = {angle_range_start, angle_range_end},
-      .magnitude_range = {magnitude_range_start, magnitude_range_end},
-  });
+  return reinterpret_cast<jlong>(
+      new BrushBehavior::Node(BrushBehavior::PolarTargetNode{
+          .target = static_cast<BrushBehavior::PolarTarget>(polar_target),
+          .angle_range = {angle_range_start, angle_range_end},
+          .magnitude_range = {magnitude_range_start, magnitude_range_end},
+      }));
+}
+
+JNI_METHOD(brush, BrushBehaviorNative, void, freeNode)
+(JNIEnv* env, jobject thiz, jlong node_native_pointer) {
+  delete reinterpret_cast<BrushBehavior::Node*>(node_native_pointer);
 }
 
 }  // extern "C"

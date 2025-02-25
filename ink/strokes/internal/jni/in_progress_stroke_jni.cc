@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,9 +43,6 @@
 namespace {
 
 using ::ink::Brush;
-using ::ink::CastToBrush;
-using ::ink::CastToMutableStrokeInputBatch;
-using ::ink::CastToStrokeInputBatch;
 using ::ink::Duration32;
 using ::ink::Envelope;
 using ::ink::FillJMutableEnvelope;
@@ -56,6 +53,10 @@ using ::ink::Point;
 using ::ink::Stroke;
 using ::ink::StrokeInput;
 using ::ink::StrokeInputBatch;
+using ::ink::jni::CastToBrush;
+using ::ink::jni::CastToMutableStrokeInputBatch;
+using ::ink::jni::CastToStrokeInputBatch;
+using ::ink::jni::UpdateJObjectInput;
 
 // Associates an `InProgressStroke` with a cached triangle index buffer instance
 // that is used for converting 32-bit indices to 16-bit indices, without needing
