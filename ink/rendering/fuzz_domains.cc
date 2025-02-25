@@ -19,9 +19,7 @@ using ::fuzztest::Domain;
 using ::fuzztest::ElementOf;
 using ::fuzztest::FlatMap;
 using ::fuzztest::InRange;
-using ::fuzztest::Just;
 using ::fuzztest::Map;
-using ::fuzztest::StructOf;
 using ::fuzztest::VectorOf;
 
 // LINT.IfChange(pixel_format)
