@@ -40,6 +40,7 @@ cc_library(
     name = "brush_behavior_jni",
     srcs = ["brush_behavior_jni.cc"],
     deps = [
+        ":brush_jni_helper",
         "//ink/brush",
         "//ink/brush:brush_behavior",
         "//ink/brush:easing_function",
@@ -63,6 +64,7 @@ cc_library(
     srcs = ["brush_tip_jni.cc"],
     deps = [
         ":brush_behavior_jni",
+        ":brush_jni_helper",
         "//ink/brush",
         "//ink/brush:brush_behavior",
         "//ink/brush:brush_tip",
