@@ -32,8 +32,8 @@ namespace {
 
 using ::ink::BrushCoat;
 using ::ink::BrushFamily;
-using ::ink::CastToBrushCoat;
-using ::ink::CastToBrushFamily;
+using ::ink::jni::CastToBrushCoat;
+using ::ink::jni::CastToBrushFamily;
 using ::ink::jni::JStringView;
 using ::ink::jni::ThrowExceptionFromStatus;
 
@@ -92,6 +92,18 @@ JNI_METHOD(brush, BrushFamilyNative, jboolean, usesSpringModelV2)
   const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
   return std::holds_alternative<BrushFamily::SpringModelV2>(
       brush_family.GetInputModel());
+}
+
+JNI_METHOD(brush, BrushFamilyNative, jlong, getBrushCoatCount)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
+  return brush_family.GetCoats().size();
+}
+
+JNI_METHOD(brush, BrushFamilyNative, jlong, newCopyOfBrushCoat)
+(JNIEnv* env, jobject object, jlong native_pointer, jint index) {
+  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
+  return reinterpret_cast<jlong>(new BrushCoat(brush_family.GetCoats()[index]));
 }
 
 }  // extern "C"

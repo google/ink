@@ -225,12 +225,7 @@ absl::Status ValidateBrushPaintTextureLayer(
   return absl::OkStatus();
 }
 
-absl::Status ValidateBrushPaint(const BrushPaint& paint) {
-  for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
-    if (auto status = ValidateBrushPaintTextureLayer(layer); !status.ok()) {
-      return status;
-    }
-  }
+absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
   if (!paint.texture_layers.empty()) {
     int first_animation_frames = paint.texture_layers[0].animation_frames;
     BrushPaint::TextureMapping first_mapping = paint.texture_layers[0].mapping;
@@ -250,6 +245,19 @@ absl::Status ValidateBrushPaint(const BrushPaint& paint) {
                          first_mapping, "` and `", layer.mapping, "`"));
       }
     }
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidateBrushPaint(const BrushPaint& paint) {
+  for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
+    if (absl::Status status = ValidateBrushPaintTextureLayer(layer);
+        !status.ok()) {
+      return status;
+    }
+  }
+  if (absl::Status status = ValidateBrushPaintTopLevel(paint); !status.ok()) {
+    return status;
   }
   return absl::OkStatus();
 }

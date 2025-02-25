@@ -291,6 +291,9 @@ namespace brush_internal {
 // Determines whether the given `BrushPaint` struct is valid to be used in a
 // `BrushFamily`, and returns an error if not.
 absl::Status ValidateBrushPaint(const BrushPaint& paint);
+// Determines whether the given `BrushPaint` struct is valid to be used in a
+// `BrushFamily` assuming that the `BrushPaint::TextureLayer`s are valid.
+absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint);
 // Determines whether the given `BrushPaint::TextureLayer` struct is valid to be
 // used in a `BrushPaint`, and returns an error if not.
 absl::Status ValidateBrushPaintTextureLayer(
