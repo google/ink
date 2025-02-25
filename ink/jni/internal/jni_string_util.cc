@@ -16,6 +16,8 @@
 
 #include <jni.h>
 
+#include "absl/strings/string_view.h"
+
 namespace ink {
 namespace jni {
 
