@@ -31,7 +31,7 @@
 namespace ink {
 
 BrushFamily::InputModel BrushFamily::DefaultInputModel() {
-  return SpringModelV2{};
+  return SpringModel{};
 }
 
 uint32_t BrushFamily::MaxBrushCoats() {

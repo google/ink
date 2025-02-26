@@ -36,19 +36,17 @@ class BrushFamily {
  public:
   // LINT.IfChange(input_model_types)
 
-  // The legacy spring-based input modeler, provided for backwards compatibility
-  // with existing Ink clients.
-  struct SpringModelV1 {};
-
-  // The newer (and recommended) spring-based input modeler.
-  struct SpringModelV2 {};
+  // Spring-based input modeler. Stored in the `InputModel` variant below to
+  // allow future input models to be added without changing the shape of
+  // existing strokes.
+  struct SpringModel {};
 
   // Specifies a model for turning a sequence of raw hardware inputs (e.g. from
   // a stylus, touchscreen, or mouse) into a sequence of smoothed, modeled
   // inputs. Raw hardware inputs tend to be noisy, and must be smoothed before
   // being passed into a brush's behaviors and extruded into a mesh in order to
   // get a good-looking stroke.
-  using InputModel = std::variant<SpringModelV1, SpringModelV2>;
+  using InputModel = std::variant<SpringModel>;
 
   // Returns the default `InputModel` that will be used by
   // `BrushFamily::Create()` when none is specified.

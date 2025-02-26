@@ -78,14 +78,14 @@ message Brush {
 // input response and the shading of the stroke geometry. The `BrushFamily` can
 // optionally be identified by setting a non-empty `client_brush_family_id`.
 message BrushFamily {
-  message SpringModelV1 {}
-  message SpringModelV2 {}
+  message SpringModel {}
 
   message InputModel {
     oneof input_model {
-      SpringModelV1 spring_model_v1 = 1;
-      SpringModelV2 spring_model_v2 = 2;
+      SpringModel spring_model = 2;
     }
+    // Was legacy InputModel type, reserved needs to be outside oneof
+    reserved 1;
   }
 
   repeated BrushCoat coats = 4;

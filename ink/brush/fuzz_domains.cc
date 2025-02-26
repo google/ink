@@ -509,8 +509,7 @@ Domain<BrushFamily> ArbitraryBrushFamily() {
 }
 
 Domain<BrushFamily::InputModel> ValidBrushFamilyInputModel() {
-  return VariantOf(StructOf<BrushFamily::SpringModelV1>(),
-                   StructOf<BrushFamily::SpringModelV2>());
+  return VariantOf(StructOf<BrushFamily::SpringModel>());
 }
 
 namespace {

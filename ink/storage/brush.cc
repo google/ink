@@ -1300,15 +1300,9 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
 }
 
 void EncodeBrushFamilyInputModel(
-    const BrushFamily::SpringModelV1& model,
+    const BrushFamily::SpringModel& model,
     proto::BrushFamily::InputModel& model_proto_out) {
-  model_proto_out.mutable_spring_model_v1();  // no fields to set
-}
-
-void EncodeBrushFamilyInputModel(
-    const BrushFamily::SpringModelV2& model,
-    proto::BrushFamily::InputModel& model_proto_out) {
-  model_proto_out.mutable_spring_model_v2();  // no fields to set
+  model_proto_out.mutable_spring_model();  // no fields to set
 }
 
 void EncodeBrushFamilyInputModel(
@@ -1324,10 +1318,8 @@ void EncodeBrushFamilyInputModel(
 absl::StatusOr<BrushFamily::InputModel> DecodeBrushFamilyInputModel(
     const proto::BrushFamily::InputModel& model_proto) {
   switch (model_proto.input_model_case()) {
-    case proto::BrushFamily::InputModel::kSpringModelV1:
-      return BrushFamily::SpringModelV1{};
-    case proto::BrushFamily::InputModel::kSpringModelV2:
-      return BrushFamily::SpringModelV2{};
+    case proto::BrushFamily::InputModel::kSpringModel:
+      return BrushFamily::SpringModel{};
     case proto::BrushFamily::InputModel::INPUT_MODEL_NOT_SET:
       break;
   }
@@ -1544,7 +1536,7 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
   }
 
   absl::StatusOr<BrushFamily::InputModel> input_model =
-      BrushFamily::SpringModelV1{};
+      BrushFamily::SpringModel{};
   if (family_proto.has_input_model()) {
     input_model = DecodeBrushFamilyInputModel(family_proto.input_model());
   }

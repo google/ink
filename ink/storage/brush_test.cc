@@ -57,7 +57,7 @@ TEST(BrushTest, DecodeBrushProto) {
   brush_proto.set_epsilon_stroke_space(1.1);
   EncodeColor(Color::Green(), *brush_proto.mutable_color());
   proto::BrushFamily* family_proto = brush_proto.mutable_brush_family();
-  family_proto->mutable_input_model()->mutable_spring_model_v2();
+  family_proto->mutable_input_model()->mutable_spring_model();
   proto::BrushCoat* coat_proto = family_proto->add_coats();
   proto::BrushTip* tip_proto = coat_proto->add_tips();
   tip_proto->set_corner_rounding(0.5f);
@@ -328,7 +328,7 @@ TEST(BrushTest, EncodeBrush) {
   brush_proto.set_epsilon_stroke_space(1.1);
   EncodeColor(Color::Green(), *brush_proto.mutable_color());
   proto::BrushFamily* brush_family_proto = brush_proto.mutable_brush_family();
-  brush_family_proto->mutable_input_model()->mutable_spring_model_v2();
+  brush_family_proto->mutable_input_model()->mutable_spring_model();
   proto::BrushCoat* brush_coat_proto = brush_family_proto->add_coats();
   proto::BrushTip* brush_tip_proto = brush_coat_proto->add_tips();
   brush_tip_proto->set_scale_x(1.f);
@@ -406,7 +406,7 @@ TEST(BrushTest, DecodeBrushFamilyWithNoInputModel) {
   family_proto.add_coats()->add_tips();
   absl::StatusOr<BrushFamily> family = DecodeBrushFamily(family_proto);
   ASSERT_THAT(family, IsOk());
-  EXPECT_TRUE(std::holds_alternative<BrushFamily::SpringModelV1>(
+  EXPECT_TRUE(std::holds_alternative<BrushFamily::SpringModel>(
       family->GetInputModel()));
 }
 

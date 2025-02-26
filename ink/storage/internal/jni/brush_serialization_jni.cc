@@ -47,14 +47,6 @@ using ::ink::jni::ParseProtoFromEither;
 using ::ink::jni::SerializeProto;
 using ::ink::jni::ThrowExceptionFromStatus;
 
-void UpgradeSpringModelV1(ink::proto::BrushFamily* family_proto) {
-  if (!family_proto->has_input_model() ||
-      family_proto->input_model().has_spring_model_v1()) {
-    // This will clear the other members of the oneof if set.
-    family_proto->mutable_input_model()->mutable_spring_model_v2();
-  }
-}
-
 }  // namespace
 
 extern "C" {
@@ -106,7 +98,7 @@ JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushPaint)
 JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFromProto)
 (JNIEnv* env, jobject object, jobject brush_direct_byte_buffer,
  jbyteArray brush_byte_array, jint offset, jint length,
- jboolean throw_on_parse_error, jboolean allow_spring_model_v1) {
+ jboolean throw_on_parse_error) {
   ink::proto::Brush brush_proto;
   if (absl::Status status =
           ParseProtoFromEither(env, brush_direct_byte_buffer, brush_byte_array,
@@ -116,9 +108,6 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFromProto)
       ThrowExceptionFromStatus(env, status);
     }
     return 0;
-  }
-  if (!allow_spring_model_v1) {
-    UpgradeSpringModelV1(brush_proto.mutable_brush_family());
   }
   absl::StatusOr<Brush> brush = DecodeBrush(brush_proto);
   if (!brush.ok()) {
@@ -133,7 +122,7 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFromProto)
 JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFamilyFromProto)
 (JNIEnv* env, jobject object, jobject brush_family_direct_byte_buffer,
  jbyteArray brush_family_byte_array, jint offset, jint length,
- jboolean throw_on_parse_error, jboolean allow_spring_model_v1) {
+ jboolean throw_on_parse_error) {
   ink::proto::BrushFamily brush_family_proto;
   if (absl::Status status = ParseProtoFromEither(
           env, brush_family_direct_byte_buffer, brush_family_byte_array, offset,
@@ -143,9 +132,6 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFamilyFromProto)
       ThrowExceptionFromStatus(env, status);
     }
     return 0;
-  }
-  if (!allow_spring_model_v1) {
-    UpgradeSpringModelV1(&brush_family_proto);
   }
   absl::StatusOr<BrushFamily> brush_family =
       DecodeBrushFamily(brush_family_proto);

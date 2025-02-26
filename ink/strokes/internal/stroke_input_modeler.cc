@@ -80,7 +80,7 @@ MakeLoopContractionMitigationParameters(
       // NOLINTNEXTLINE(whitespace/line_length)
       -> stroke_model::PositionModelerParams::LoopContractionMitigationParameters {
         using ModelType = std::decay_t<decltype(input_model)>;
-        if constexpr (std::is_same_v<ModelType, BrushFamily::SpringModelV2>) {
+        if constexpr (std::is_same_v<ModelType, BrushFamily::SpringModel>) {
           // Without the stroke unit length, we cannot determine the speed of
           // the stroke inputs, so we cannot enable loop mitigation.
           if (!stroke_unit_length.has_value()) {
@@ -102,9 +102,6 @@ MakeLoopContractionMitigationParameters(
                   kDefaultLoopMitigationMinSpeedSamplingWindow,
               .min_discrete_speed_samples =
                   kDefaultLoopMitigationMinDiscreteSpeedSamples};
-        } else if constexpr (std::is_same_v<ModelType,
-                                            BrushFamily::SpringModelV1>) {
-          return {.is_enabled = false};
         }
       },
       input_model);
@@ -115,14 +112,10 @@ stroke_model::StylusStateModelerParams MakeStylusStateModelerParams(
   return std::visit(
       [](auto&& input_model) -> stroke_model::StylusStateModelerParams {
         using ModelType = std::decay_t<decltype(input_model)>;
-        if constexpr (std::is_same_v<ModelType, BrushFamily::SpringModelV2>) {
+        if constexpr (std::is_same_v<ModelType, BrushFamily::SpringModel>) {
           return {.use_stroke_normal_projection = true,
                   .min_input_samples = 8,
                   .min_sample_duration = stroke_model::Duration(0.04)};
-        } else if constexpr (std::is_same_v<ModelType,
-                                            BrushFamily::SpringModelV1>) {
-          return {.max_input_samples = 10,
-                  .use_stroke_normal_projection = false};
         }
       },
       input_model);
