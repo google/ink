@@ -26,12 +26,7 @@ cc_library(
         ":mesh_creation_jni",
         ":stroke_input_batch_jni",
         ":stroke_jni",
-        "//ink/brush/internal/jni:brush_behavior_jni",
-        "//ink/brush/internal/jni:brush_coat_jni",
-        "//ink/brush/internal/jni:brush_family_jni",
-        "//ink/brush/internal/jni:brush_jni",
-        "//ink/brush/internal/jni:brush_paint_jni",
-        "//ink/brush/internal/jni:brush_tip_jni",
+        "//ink/brush/internal/jni:native",
     ],
     alwayslink = 1,
 )

@@ -19,6 +19,20 @@ package(
 )
 
 cc_library(
+    name = "native",
+    deps = [
+        ":brush_behavior_jni",
+        ":brush_coat_jni",
+        ":brush_family_jni",
+        ":brush_jni",
+        ":brush_paint_jni",
+        ":brush_tip_jni",
+        ":easing_function_jni",
+    ],
+    alwayslink = 1,
+)
+
+cc_library(
     name = "brush_jni_helper",
     hdrs = ["brush_jni_helper.h"],
     deps = [
@@ -28,6 +42,7 @@ cc_library(
         "//ink/brush:brush_family",
         "//ink/brush:brush_paint",
         "//ink/brush:brush_tip",
+        "//ink/brush:easing_function",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -164,6 +179,26 @@ cc_library(
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_throw_util",
         "@com_google_absl//absl/log:absl_check",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "easing_function_jni",
+    srcs = ["easing_function_jni.cc"],
+    deps = [
+        ":brush_jni_helper",
+        "//ink/brush:easing_function",
+        "//ink/geometry:point",
+        "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_throw_util",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [

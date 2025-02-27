@@ -23,6 +23,7 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/easing_function.h"
 
 namespace ink::jni {
 
@@ -71,6 +72,14 @@ inline const BrushTip& CastToBrushTip(jlong brush_tip_native_pointer) {
 inline const BrushBehavior& CastToBrushBehavior(
     jlong brush_behavior_native_pointer) {
   return *reinterpret_cast<BrushBehavior*>(brush_behavior_native_pointer);
+}
+
+// Casts a Kotlin EasingFunction.nativePointer to a C++ EasingFunction. The
+// returned EasingFunction is a const ref as the Kotlin EasingFunction is
+// immutable.
+inline const EasingFunction& CastToEasingFunction(
+    jlong easing_function_native_pointer) {
+  return *reinterpret_cast<EasingFunction*>(easing_function_native_pointer);
 }
 
 }  // namespace ink::jni
