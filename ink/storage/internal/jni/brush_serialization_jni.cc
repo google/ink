@@ -39,6 +39,7 @@ using ::ink::BrushTip;
 using ::ink::DecodeBrush;
 using ::ink::DecodeBrushCoat;
 using ::ink::DecodeBrushFamily;
+using ::ink::DecodeBrushPaint;
 using ::ink::DecodeBrushTip;
 using ::ink::EncodeBrush;
 using ::ink::EncodeBrushCoat;
@@ -192,6 +193,30 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushTipFromProto)
     return 0;
   }
   return reinterpret_cast<jlong>(new BrushTip(*std::move(brush_tip)));
+}
+
+JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushPaintFromProto)
+(JNIEnv* env, jobject object, jobject brush_paint_direct_byte_buffer,
+ jbyteArray brush_paint_byte_array, jint offset, jint length,
+ jboolean throw_on_parse_error) {
+  ink::proto::BrushPaint brush_paint_proto;
+  if (absl::Status status = ParseProtoFromEither(
+          env, brush_paint_direct_byte_buffer, brush_paint_byte_array, offset,
+          length, brush_paint_proto);
+      !status.ok()) {
+    if (throw_on_parse_error) {
+      ThrowExceptionFromStatus(env, status);
+    }
+    return 0;
+  }
+  absl::StatusOr<BrushPaint> brush_paint = DecodeBrushPaint(brush_paint_proto);
+  if (!brush_paint.ok()) {
+    if (throw_on_parse_error) {
+      ThrowExceptionFromStatus(env, brush_paint.status());
+    }
+    return 0;
+  }
+  return reinterpret_cast<jlong>(new BrushPaint(*std::move(brush_paint)));
 }
 
 }  // extern "C"

@@ -79,4 +79,10 @@ JNI_METHOD(brush, BrushCoatNative, jlong, newCopyOfBrushTip)
   return reinterpret_cast<jlong>(new BrushTip(coat.tips[tip_index]));
 }
 
+JNI_METHOD(brush, BrushCoatNative, jlong, newCopyOfBrushPaint)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  const BrushCoat& coat = CastToBrushCoat(native_pointer);
+  return reinterpret_cast<jlong>(new BrushPaint(coat.paint));
+}
+
 }  // extern "C"
