@@ -83,4 +83,16 @@ JNI_METHOD(brush, BrushFamilyNative, jstring, getClientBrushFamilyId)
   return env->NewStringUTF(brush_family.GetClientBrushFamilyId().c_str());
 }
 
+JNI_METHOD(brush, BrushFamilyNative, jlong, getBrushCoatCount)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
+  return brush_family.GetCoats().size();
+}
+
+JNI_METHOD(brush, BrushFamilyNative, jlong, newCopyOfBrushCoat)
+(JNIEnv* env, jobject object, jlong native_pointer, jint index) {
+  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
+  return reinterpret_cast<jlong>(new BrushCoat(brush_family.GetCoats()[index]));
+}
+
 }  // extern "C"

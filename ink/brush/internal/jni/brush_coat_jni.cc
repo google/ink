@@ -27,7 +27,7 @@
 extern "C" {
 
 // Construct a native BrushCoat and return a pointer to it as a long.
-JNI_METHOD(brush, BrushCoat, jlong, nativeCreateBrushCoat)
+JNI_METHOD(brush, BrushCoatNative, jlong, create)
 (JNIEnv* env, jobject thiz, jlongArray tip_native_pointer_array,
  jlong paint_native_pointer) {
   std::vector<ink::BrushTip> tips;
@@ -52,7 +52,7 @@ JNI_METHOD(brush, BrushCoat, jlong, nativeCreateBrushCoat)
   });
 }
 
-JNI_METHOD(brush, BrushCoat, void, nativeFreeBrushCoat)
+JNI_METHOD(brush, BrushCoatNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   delete reinterpret_cast<ink::BrushCoat*>(native_pointer);
 }
