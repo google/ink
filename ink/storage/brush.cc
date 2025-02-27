@@ -1278,7 +1278,7 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
   if (!blend_mode.ok()) {
     return blend_mode.status();
   }
-  return BrushPaint::TextureLayer{
+  BrushPaint::TextureLayer texture_layer{
       .client_color_texture_id = layer_proto.client_color_texture_id(),
       .mapping = *mapping,
       .origin = *origin,
@@ -1297,6 +1297,12 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
       .animation_frames = layer_proto.animation_frames(),
       .keyframes = std::move(keyframes),
       .blend_mode = *blend_mode};
+  if (absl::Status status =
+          brush_internal::ValidateBrushPaintTextureLayer(texture_layer);
+      !status.ok()) {
+    return status;
+  }
+  return std::move(texture_layer);
 }
 
 void EncodeBrushFamilyInputModel(
@@ -1396,7 +1402,12 @@ absl::StatusOr<BrushPaint> DecodeBrushPaint(
     }
     layers.push_back(*std::move(layer));
   }
-  return BrushPaint{.texture_layers = std::move(layers)};
+  BrushPaint paint{.texture_layers = std::move(layers)};
+  if (absl::Status status = brush_internal::ValidateBrushPaintTopLevel(paint);
+      !status.ok()) {
+    return status;
+  }
+  return std::move(paint);
 }
 
 void EncodeBrushTip(const BrushTip& tip, proto::BrushTip& tip_proto_out) {
@@ -1459,6 +1470,10 @@ absl::StatusOr<BrushTip> DecodeBrushTip(const proto::BrushTip& tip_proto) {
     tip.particle_gap_duration =
         Duration32::Seconds(tip_proto.particle_gap_duration_seconds());
   }
+  if (absl::Status status = brush_internal::ValidateBrushTip(tip);
+      !status.ok()) {
+    return status;
+  }
   return tip;
 }
 
@@ -1487,7 +1502,8 @@ absl::StatusOr<BrushCoat> DecodeBrushCoat(const proto::BrushCoat& coat_proto) {
   if (!paint.ok()) {
     return paint.status();
   }
-
+  // There's no further validation to be done here if the paint and tips are
+  // valid.
   return BrushCoat{.tips = std::move(tips), .paint = *std::move(paint)};
 }
 
@@ -1543,6 +1559,7 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
   if (!input_model.ok()) {
     return input_model.status();
   }
+  // BrushFamily::Create() validates the BrushFamily.
   return BrushFamily::Create(absl::MakeConstSpan(*coats),
                              family_proto.client_brush_family_id(),
                              *input_model);
@@ -1561,6 +1578,7 @@ absl::StatusOr<Brush> DecodeBrush(const proto::Brush& brush_proto) {
   if (!brush_family.ok()) {
     return brush_family.status();
   }
+  // Brush::Create() validates the brush.
   return Brush::Create(
       *std::move(brush_family), DecodeColor(brush_proto.color()),
       brush_proto.size_stroke_space(), brush_proto.epsilon_stroke_space());

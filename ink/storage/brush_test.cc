@@ -44,6 +44,7 @@ namespace ink {
 namespace {
 
 using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 using ::testing::IsNull;
@@ -278,6 +279,26 @@ TEST(BrushTest, DecodeBrushPaintWithInvalidTextureKeyframe) {
               absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(missing_offset_component.message(), HasSubstr("offset_x"));
   }
+}
+
+TEST(BrushTest, DecodeBrushPaintWithInconsistentAnimationFrames) {
+  // The proto is valid, as are the individual texture layers, but the top-level
+  // BrushPaint fails validation.
+  proto::BrushPaint paint_proto;
+  proto::BrushPaint::TextureLayer* texture_layer1 =
+      paint_proto.add_texture_layers();
+  texture_layer1->set_size_x(10);
+  texture_layer1->set_size_y(15);
+  texture_layer1->set_animation_frames(1);
+  proto::BrushPaint::TextureLayer* texture_layer2 =
+      paint_proto.add_texture_layers();
+  texture_layer2->set_size_x(10);
+  texture_layer2->set_size_y(15);
+  texture_layer2->set_animation_frames(2);
+  EXPECT_THAT(DecodeBrushPaint(paint_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("`BrushPaint::TextureLayer::animation_frames` "
+                                 "must be the same")));
 }
 
 void DecodeBrushDoesNotCrashOnArbitraryInput(const proto::Brush& brush_proto) {

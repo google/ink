@@ -50,6 +50,15 @@ inline const BrushPaint& CastToBrushPaint(jlong brush_paint_native_pointer) {
   return *reinterpret_cast<BrushPaint*>(brush_paint_native_pointer);
 }
 
+// Casts a Kotlin BrushBehavior.nativePointer to a C++ BrushPaint::TextureLayer.
+// The returned TextureLayer is a const ref as the Kotlin BrushPaint is
+// immutable.
+inline const BrushPaint::TextureLayer& CastToTextureLayer(
+    jlong texture_layer_native_pointer) {
+  return *reinterpret_cast<BrushPaint::TextureLayer*>(
+      texture_layer_native_pointer);
+}
+
 // Casts a Kotlin BrushTip.nativePointer to a C++ BrushTip. The returned
 // BrushTip is a const ref as the Kotlin BrushTip is immutable.
 inline const BrushTip& CastToBrushTip(jlong brush_tip_native_pointer) {
