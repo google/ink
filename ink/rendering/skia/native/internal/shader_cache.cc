@@ -242,7 +242,7 @@ absl::StatusOr<sk_sp<SkShader>> ShaderCache::GetShaderForLayer(
 absl::StatusOr<sk_sp<SkShader>> ShaderCache::CreateBaseShaderForLayer(
     const BrushPaint::TextureLayer& layer) {
   absl::StatusOr<sk_sp<SkImage>> image =
-      GetImageForTexture(layer.client_color_texture_id);
+      GetImageForTexture(layer.client_texture_id);
   if (!image.ok()) return image.status();
   SkISize size = (*image)->dimensions();
   SkMatrix matrix = ToSkMatrix(

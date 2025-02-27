@@ -115,13 +115,12 @@ JNI_METHOD(brush, BrushPaintNative, jlong, newCopyOfTextureLayer)
 // Constructs a native BrushPaint TextureLayer and returns a pointer to it as a
 // long.
 JNI_METHOD(brush, TextureLayerNative, jlong, create)
-(JNIEnv* env, jobject thiz, jstring client_color_texture_id, jfloat size_x,
+(JNIEnv* env, jobject thiz, jstring client_texture_id, jfloat size_x,
  jfloat size_y, jfloat offset_x, jfloat offset_y, jfloat rotation_in_radians,
  jfloat opacity, jint animation_frames, jint size_unit, jint origin,
  jint mapping, jint wrap_x, jint wrap_y, jint blend_mode) {
   BrushPaint::TextureLayer texture_layer{
-      .client_color_texture_id =
-          JStringToStdString(env, client_color_texture_id),
+      .client_texture_id = JStringToStdString(env, client_texture_id),
       .mapping = JIntToMapping(mapping),
       .origin = JIntToOrigin(origin),
       .size_unit = JIntToSizeUnit(size_unit),
@@ -148,11 +147,11 @@ JNI_METHOD(brush, TextureLayerNative, void, free)
   delete reinterpret_cast<BrushPaint::TextureLayer*>(native_pointer);
 }
 
-JNI_METHOD(brush, TextureLayerNative, jstring, getClientColorTextureId)
+JNI_METHOD(brush, TextureLayerNative, jstring, getClientTextureId)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   const BrushPaint::TextureLayer& texture_layer =
       CastToTextureLayer(native_pointer);
-  return env->NewStringUTF(texture_layer.client_color_texture_id.c_str());
+  return env->NewStringUTF(texture_layer.client_texture_id.c_str());
 }
 
 JNI_METHOD(brush, TextureLayerNative, jfloat, getSizeX)

@@ -90,7 +90,7 @@ BrushTip CreatePressureTestTip() {
 
 BrushPaint CreateTestPaint() {
   return {.texture_layers = {
-              {.client_color_texture_id = std::string(kTestTextureId),
+              {.client_texture_id = std::string(kTestTextureId),
                .mapping = BrushPaint::TextureMapping::kWinding,
                .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                .size = {3, 5},
@@ -120,7 +120,7 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
             "corner_rounding=0, opacity_multiplier=0.7, "
             "particle_gap_distance_scale=0.1, particle_gap_duration=2s}], "
             "paint=BrushPaint{texture_layers={TextureLayer{"
-            "client_color_texture_id=test-paint, mapping=kWinding, "
+            "client_texture_id=test-paint, mapping=kWinding, "
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
             "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
@@ -134,18 +134,17 @@ TEST(BrushFamilyTest, StringifyWithId) {
           .scale = {3, 3}, .corner_rounding = 0, .opacity_multiplier = 0.7},
       CreateTestPaint(), "big-square");
   ASSERT_EQ(family.status(), absl::OkStatus());
-  EXPECT_EQ(
-      absl::StrCat(*family),
-      "BrushFamily(coats=[BrushCoat{tips=[BrushTip{scale=<3, 3>, "
-      "corner_rounding=0, opacity_multiplier=0.7}], "
-      "paint=BrushPaint{texture_layers={TextureLayer{client_color_texture_id="
-      "test-paint, mapping=kWinding, "
-      "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
-      "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
-      "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
-      "opacity=1, keyframes={TextureKeyframe{progress=0.1, "
-      "rotation=0.25π}}, blend_mode=kDstIn}}}}], "
-      "client_brush_family_id='big-square')");
+  EXPECT_EQ(absl::StrCat(*family),
+            "BrushFamily(coats=[BrushCoat{tips=[BrushTip{scale=<3, 3>, "
+            "corner_rounding=0, opacity_multiplier=0.7}], "
+            "paint=BrushPaint{texture_layers={TextureLayer{client_texture_id="
+            "test-paint, mapping=kWinding, "
+            "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
+            "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
+            "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
+            "opacity=1, keyframes={TextureKeyframe{progress=0.1, "
+            "rotation=0.25π}}, blend_mode=kDstIn}}}}], "
+            "client_brush_family_id='big-square')");
 }
 
 TEST(BrushFamilyTest, CreateWithoutId) {
@@ -968,7 +967,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
             {.texture_layers =
-                 {{.client_color_texture_id = std::string(kTestTextureId),
+                 {{.client_texture_id = std::string(kTestTextureId),
                    .mapping = static_cast<BrushPaint::TextureMapping>(-1),
                    .size = {1, 4}}}})
             .status();
@@ -981,7 +980,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .origin =
                                      static_cast<BrushPaint::TextureOrigin>(-1),
@@ -997,7 +996,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
             {.texture_layers =
-                 {{.client_color_texture_id = std::string(kTestTextureId),
+                 {{.client_texture_id = std::string(kTestTextureId),
                    .size_unit = static_cast<BrushPaint::TextureSizeUnit>(-1),
                    .size = {1, 4}}}})
             .status();
@@ -1010,7 +1009,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {-1, 4}}}})
             .status();
@@ -1022,7 +1021,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {0, 4}}}})
             .status();
@@ -1034,7 +1033,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {3, kInfinity}}}})
             .status();
@@ -1046,7 +1045,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .offset = {kInfinity, 0.4}}}})
@@ -1060,7 +1059,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .offset = {1, kNan}}}})
@@ -1074,7 +1073,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .size_jitter = {-0.1, 0.4}}}})
@@ -1088,7 +1087,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .size_jitter = {0.1, 4}}}})
@@ -1102,7 +1101,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .offset = {0.8, 0.7},
@@ -1117,7 +1116,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .offset = {0.8, 0.7},
@@ -1132,7 +1131,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .size_jitter = {-0.1, 0.4}}}})
@@ -1146,7 +1145,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .opacity = -1}}})
@@ -1160,7 +1159,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .opacity = -1}}})
@@ -1174,7 +1173,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .opacity = 3}}})
@@ -1188,7 +1187,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .keyframes = {{.progress = 3}}}}})
@@ -1202,7 +1201,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .keyframes = {{.size = std::optional<Vec>(
@@ -1218,7 +1217,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
             {.texture_layers =
-                 {{.client_color_texture_id = std::string(kTestTextureId),
+                 {{.client_texture_id = std::string(kTestTextureId),
                    .size = {1, 3},
                    .keyframes = {{.offset = std::optional<Vec>({-2, 4})}}}}})
             .status();
@@ -1232,7 +1231,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
             {.texture_layers =
-                 {{.client_color_texture_id = std::string(kTestTextureId),
+                 {{.client_texture_id = std::string(kTestTextureId),
                    .size = {1, 3},
                    .keyframes = {{.rotation = Angle::Radians(kInfinity)}}}}})
             .status();
@@ -1245,7 +1244,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 3},
                                  .keyframes = {{.opacity = 3}}}}})
@@ -1259,7 +1258,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     absl::Status status =
         BrushFamily::Create(
             BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_color_texture_id =
+            {.texture_layers = {{.client_texture_id =
                                      std::string(kTestTextureId),
                                  .size = {1, 4},
                                  .blend_mode =

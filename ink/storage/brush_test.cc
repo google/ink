@@ -66,7 +66,7 @@ TEST(BrushTest, DecodeBrushProto) {
   proto::BrushPaint* paint_proto = coat_proto->mutable_paint();
   proto::BrushPaint::TextureLayer* texture_layer_proto =
       paint_proto->add_texture_layers();
-  texture_layer_proto->set_client_color_texture_id(std::string(kTestTextureId));
+  texture_layer_proto->set_client_texture_id(std::string(kTestTextureId));
   texture_layer_proto->set_mapping(
       proto::BrushPaint::TextureLayer::MAPPING_WINDING);
   texture_layer_proto->set_origin(
@@ -87,7 +87,7 @@ TEST(BrushTest, DecodeBrushProto) {
   absl::StatusOr<BrushFamily> expected_family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.5f},
       {.texture_layers = {
-           {.client_color_texture_id = std::string(kTestTextureId),
+           {.client_texture_id = std::string(kTestTextureId),
             .mapping = BrushPaint::TextureMapping::kWinding,
             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
@@ -234,8 +234,7 @@ TEST(BrushTest, DecodeBrushPaintWithInvalidTextureKeyframe) {
         paint_proto->add_texture_layers();
     texture_layer_proto->set_size_unit(
         proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_SIZE);
-    texture_layer_proto->set_client_color_texture_id(
-        std::string(kTestTextureId));
+    texture_layer_proto->set_client_texture_id(std::string(kTestTextureId));
     texture_layer_proto->set_origin(
         proto::BrushPaint::TextureLayer::ORIGIN_FIRST_STROKE_INPUT);
     texture_layer_proto->set_mapping(
@@ -260,8 +259,7 @@ TEST(BrushTest, DecodeBrushPaintWithInvalidTextureKeyframe) {
         paint_proto->add_texture_layers();
     texture_layer_proto->set_size_unit(
         proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_SIZE);
-    texture_layer_proto->set_client_color_texture_id(
-        std::string(kTestTextureId));
+    texture_layer_proto->set_client_texture_id(std::string(kTestTextureId));
     texture_layer_proto->set_origin(
         proto::BrushPaint::TextureLayer::ORIGIN_FIRST_STROKE_INPUT);
     texture_layer_proto->set_mapping(
@@ -327,7 +325,7 @@ TEST(BrushTest, EncodeBrush) {
           .particle_gap_duration = Duration32::Seconds(2),
       },
       {.texture_layers = {
-           {.client_color_texture_id = std::string(kTestTextureId),
+           {.client_texture_id = std::string(kTestTextureId),
             .mapping = BrushPaint::TextureMapping::kWinding,
             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
             .wrap_y = BrushPaint::TextureWrap::kMirror,
@@ -364,7 +362,7 @@ TEST(BrushTest, EncodeBrush) {
   proto::BrushPaint* brush_paint_proto = brush_coat_proto->mutable_paint();
   proto::BrushPaint::TextureLayer* texture_layer_proto =
       brush_paint_proto->add_texture_layers();
-  texture_layer_proto->set_client_color_texture_id(std::string(kTestTextureId));
+  texture_layer_proto->set_client_texture_id(std::string(kTestTextureId));
   texture_layer_proto->set_mapping(
       proto::BrushPaint::TextureLayer::MAPPING_WINDING);
   texture_layer_proto->set_origin(
@@ -402,7 +400,7 @@ TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.25f},
       {.texture_layers = {
-           {.client_color_texture_id = std::string(kTestTextureId),
+           {.client_texture_id = std::string(kTestTextureId),
             .mapping = BrushPaint::TextureMapping::kWinding,
             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
             .size = {10, 15}}}});
@@ -434,7 +432,7 @@ TEST(BrushTest, DecodeBrushFamilyWithNoInputModel) {
 TEST(BrushTest, EncodeBrushPaintWithInvalidTextureMapping) {
   BrushPaint paint;
   paint.texture_layers.push_back(
-      {.client_color_texture_id = std::string(kTestTextureId),
+      {.client_texture_id = std::string(kTestTextureId),
        .mapping = static_cast<BrushPaint::TextureMapping>(99),
        .size = {10, 15}});
   proto::BrushPaint paint_proto;
@@ -448,7 +446,7 @@ TEST(BrushTest, EncodeBrushPaintWithInvalidTextureMapping) {
 TEST(BrushTest, EncodeBrushPaintWithInvalidTextureOrigin) {
   BrushPaint paint;
   paint.texture_layers.push_back(
-      {.client_color_texture_id = std::string(kTestTextureId),
+      {.client_texture_id = std::string(kTestTextureId),
        .origin = static_cast<BrushPaint::TextureOrigin>(99),
        .size = {10, 15}});
   proto::BrushPaint paint_proto;

@@ -219,7 +219,7 @@ struct BrushPaint {
 
   struct TextureLayer {
     // String id that will be used by renderers to retrieve the color texture.
-    std::string client_color_texture_id;
+    std::string client_texture_id;
 
     TextureMapping mapping = TextureMapping::kTiling;
     TextureOrigin origin = TextureOrigin::kStrokeSpaceOrigin;
@@ -358,7 +358,7 @@ H AbslHashValue(H h, const BrushPaint::TextureKeyframe& keyframe) {
 
 template <typename H>
 H AbslHashValue(H h, const BrushPaint::TextureLayer& layer) {
-  return H::combine(std::move(h), layer.client_color_texture_id, layer.mapping,
+  return H::combine(std::move(h), layer.client_texture_id, layer.mapping,
                     layer.origin, layer.size_unit, layer.wrap_x, layer.wrap_y,
                     layer.size, layer.offset, layer.rotation, layer.size_jitter,
                     layer.offset_jitter, layer.rotation_jitter, layer.opacity,

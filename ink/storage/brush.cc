@@ -1217,7 +1217,7 @@ absl::StatusOr<BrushPaint::TextureKeyframe> DecodeBrushPaintTextureKeyframe(
 void EncodeBrushPaintTextureLayer(
     const BrushPaint::TextureLayer& layer,
     proto::BrushPaint::TextureLayer& layer_proto_out) {
-  layer_proto_out.set_client_color_texture_id(layer.client_color_texture_id);
+  layer_proto_out.set_client_texture_id(layer.client_texture_id);
   layer_proto_out.set_size_unit(EncodeBrushPaintSizeUnit(layer.size_unit));
   layer_proto_out.set_wrap_x(EncodeBrushPaintWrap(layer.wrap_x));
   layer_proto_out.set_wrap_y(EncodeBrushPaintWrap(layer.wrap_y));
@@ -1279,7 +1279,7 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
     return blend_mode.status();
   }
   BrushPaint::TextureLayer texture_layer{
-      .client_color_texture_id = layer_proto.client_color_texture_id(),
+      .client_texture_id = layer_proto.client_texture_id(),
       .mapping = *mapping,
       .origin = *origin,
       .size_unit = *size_unit,

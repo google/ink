@@ -280,8 +280,8 @@ MATCHER_P(BrushPaintTextureLayerEqMatcher, expected,
                        " BrushPaintTextureLayer (expected: ",
                        ::testing::PrintToString(expected), ")")) {
   return ExplainMatchResult(
-      AllOf(Field(&BrushPaint::TextureLayer::client_color_texture_id,
-                  Eq(expected.client_color_texture_id)),
+      AllOf(Field(&BrushPaint::TextureLayer::client_texture_id,
+                  Eq(expected.client_texture_id)),
             Field(&BrushPaint::TextureLayer::mapping, Eq(expected.mapping)),
             Field(&BrushPaint::TextureLayer::origin, Eq(expected.origin)),
             Field(&BrushPaint::TextureLayer::size_unit, Eq(expected.size_unit)),

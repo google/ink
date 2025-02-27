@@ -194,7 +194,7 @@ message BrushPaint {
     }
     // LINT.ThenChange(../../brush/brush_paint.h:blend_mode)
 
-    optional string client_color_texture_id = 1;
+    optional string client_texture_id = 1;
     optional float size_x = 2 [default = 1];
     optional float size_y = 3 [default = 1];
     optional SizeUnit size_unit = 4 [default = SIZE_UNIT_STROKE_COORDINATES];
