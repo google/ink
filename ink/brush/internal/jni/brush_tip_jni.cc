@@ -21,6 +21,7 @@
 #include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/vec.h"
 #include "ink/jni/internal/jni_defines.h"
@@ -31,6 +32,7 @@ namespace {
 
 using ::ink::BrushBehavior;
 using ::ink::BrushTip;
+using ::ink::CastToBrushTip;
 using ::ink::Duration32;
 using ::ink::brush_internal::ValidateBrushTip;
 using ::ink::jni::ThrowExceptionFromStatus;
@@ -41,7 +43,7 @@ extern "C" {
 
 // Constructs a native BrushTip and returns a pointer to it as a long. Throws an
 // exception if the BrushTip validation fails.
-JNI_METHOD(brush, BrushTip, jlong, nativeCreateBrushTip)
+JNI_METHOD(brush, BrushTipNative, jlong, create)
 (JNIEnv* env, jobject thiz, jfloat scale_x, jfloat scale_y,
  jfloat corner_rounding, jfloat slant_radians, jfloat pinch,
  jfloat rotation_radians, jfloat opacity_multiplier,
@@ -78,8 +80,53 @@ JNI_METHOD(brush, BrushTip, jlong, nativeCreateBrushTip)
   return reinterpret_cast<jlong>(new ink::BrushTip(std::move(tip)));
 }
 
-JNI_METHOD(brush, BrushTip, void, nativeFreeBrushTip)
+JNI_METHOD(brush, BrushTipNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   delete reinterpret_cast<ink::BrushTip*>(native_pointer);
+}
+
+JNI_METHOD(brush, BrushTipNative, jfloat, getScaleX)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return CastToBrushTip(native_pointer).scale.x;
+}
+
+JNI_METHOD(brush, BrushTipNative, jfloat, getScaleY)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return CastToBrushTip(native_pointer).scale.y;
+}
+
+JNI_METHOD(brush, BrushTipNative, jfloat, getCornerRounding)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return CastToBrushTip(native_pointer).corner_rounding;
+}
+
+JNI_METHOD(brush, BrushTipNative, jfloat, getSlantRadians)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return CastToBrushTip(native_pointer).slant.ValueInRadians();
+}
+
+JNI_METHOD(brush, BrushTipNative, jfloat, getPinch)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return CastToBrushTip(native_pointer).pinch;
+}
+
+JNI_METHOD(brush, BrushTipNative, jfloat, getRotationRadians)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return CastToBrushTip(native_pointer).rotation.ValueInRadians();
+}
+
+JNI_METHOD(brush, BrushTipNative, jfloat, getOpacityMultiplier)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return CastToBrushTip(native_pointer).opacity_multiplier;
+}
+
+JNI_METHOD(brush, BrushTipNative, jfloat, getParticleGapDistanceScale)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return CastToBrushTip(native_pointer).particle_gap_distance_scale;
+}
+
+JNI_METHOD(brush, BrushTipNative, jlong, getParticleGapDurationMillis)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return CastToBrushTip(native_pointer).particle_gap_duration.ToMillis();
 }
 }

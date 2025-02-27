@@ -39,6 +39,7 @@ using ::ink::BrushTip;
 using ::ink::DecodeBrush;
 using ::ink::DecodeBrushCoat;
 using ::ink::DecodeBrushFamily;
+using ::ink::DecodeBrushTip;
 using ::ink::EncodeBrush;
 using ::ink::EncodeBrushCoat;
 using ::ink::EncodeBrushFamily;
@@ -167,6 +168,30 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushCoatFromProto)
     return 0;
   }
   return reinterpret_cast<jlong>(new BrushCoat(*std::move(brush_coat)));
+}
+
+JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushTipFromProto)
+(JNIEnv* env, jobject object, jobject brush_tip_direct_byte_buffer,
+ jbyteArray brush_tip_byte_array, jint offset, jint length,
+ jboolean throw_on_parse_error) {
+  ink::proto::BrushTip brush_tip_proto;
+  if (absl::Status status = ParseProtoFromEither(
+          env, brush_tip_direct_byte_buffer, brush_tip_byte_array, offset,
+          length, brush_tip_proto);
+      !status.ok()) {
+    if (throw_on_parse_error) {
+      ThrowExceptionFromStatus(env, status);
+    }
+    return 0;
+  }
+  absl::StatusOr<BrushTip> brush_tip = DecodeBrushTip(brush_tip_proto);
+  if (!brush_tip.ok()) {
+    if (throw_on_parse_error) {
+      ThrowExceptionFromStatus(env, brush_tip.status());
+    }
+    return 0;
+  }
+  return reinterpret_cast<jlong>(new BrushTip(*std::move(brush_tip)));
 }
 
 }  // extern "C"

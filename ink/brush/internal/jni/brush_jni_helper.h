@@ -27,44 +27,43 @@
 namespace ink {
 
 // Casts a Kotlin Brush.nativePointer to a C++ Brush. The returned
-// Brush is a const ref as the kotlin Brush is immutable.
-inline const ink::Brush& CastToBrush(jlong brush_native_pointer) {
-  return *reinterpret_cast<ink::Brush*>(brush_native_pointer);
+// Brush is a const ref as the Kotlin Brush is immutable.
+inline const Brush& CastToBrush(jlong brush_native_pointer) {
+  return *reinterpret_cast<Brush*>(brush_native_pointer);
 }
 
 // Casts a Kotlin BrushFamily.nativePointer to a C++ BrushFamily. The returned
-// BrushFamily is a const ref as the kotlin BrushFamily is immutable.
-inline const ink::BrushFamily& CastToBrushFamily(
-    jlong brush_family_native_pointer) {
-  return *reinterpret_cast<ink::BrushFamily*>(brush_family_native_pointer);
+// BrushFamily is a const ref as the Kotlin BrushFamily is immutable.
+inline const BrushFamily& CastToBrushFamily(jlong brush_family_native_pointer) {
+  return *reinterpret_cast<BrushFamily*>(brush_family_native_pointer);
 }
 
 // Casts a Kotlin BrushCoat.nativePointer to a C++ BrushCoat. The returned
-// BrushCoat is a const ref as the kotlin BrushCoat is immutable.
-inline const ink::BrushCoat& CastToBrushCoat(jlong brush_coat_native_pointer) {
-  return *reinterpret_cast<ink::BrushCoat*>(brush_coat_native_pointer);
+// BrushCoat is a const ref as the Kotlin BrushCoat is immutable.
+inline const BrushCoat& CastToBrushCoat(jlong brush_coat_native_pointer) {
+  return *reinterpret_cast<BrushCoat*>(brush_coat_native_pointer);
 }
 
 // Casts a Kotlin BrushPaint.nativePointer to a C++ BrushPaint. The returned
-// BrushPaint is a const ref as the kotlin BrushPaint is immutable.
-inline const ink::BrushPaint& CastToBrushPaint(
-    jlong brush_paint_native_pointer) {
-  return *reinterpret_cast<ink::BrushPaint*>(brush_paint_native_pointer);
+// BrushPaint is a const ref as the Kotlin BrushPaint is immutable.
+inline const BrushPaint& CastToBrushPaint(jlong brush_paint_native_pointer) {
+  return *reinterpret_cast<BrushPaint*>(brush_paint_native_pointer);
 }
 
 // Casts a Kotlin BrushTip.nativePointer to a C++ BrushTip. The returned
-// BrushTip is a const ref as the kotlin BrushTip is immutable.
-inline const ink::BrushTip& CastToBrushTip(jlong brush_tip_native_pointer) {
-  return *reinterpret_cast<ink::BrushTip*>(brush_tip_native_pointer);
+// BrushTip is a const ref as the Kotlin BrushTip is immutable.
+inline const BrushTip& CastToBrushTip(jlong brush_tip_native_pointer) {
+  return *reinterpret_cast<BrushTip*>(brush_tip_native_pointer);
 }
 
 // Casts a Kotlin BrushBehavior.nativePointer to a C++ BrushBehavior. The
-// returned BrushBehavior is a const ref as the kotlin BrushBehavior is
+// returned BrushBehavior is a const ref as the Kotlin BrushBehavior is
 // immutable.
-inline const ink::BrushBehavior& CastToBrushBehavior(
+inline const BrushBehavior& CastToBrushBehavior(
     jlong brush_behavior_native_pointer) {
-  return *reinterpret_cast<ink::BrushBehavior*>(brush_behavior_native_pointer);
+  return *reinterpret_cast<BrushBehavior*>(brush_behavior_native_pointer);
 }
 
 }  // namespace ink
+
 #endif  // INK_STROKES_BRUSH_INTERNAL_JNI_BRUSH_JNI_HELPER_H_
