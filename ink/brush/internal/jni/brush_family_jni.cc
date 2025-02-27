@@ -32,8 +32,8 @@ namespace {
 
 using ::ink::BrushCoat;
 using ::ink::BrushFamily;
-using ::ink::CastToBrushCoat;
-using ::ink::CastToBrushFamily;
+using ::ink::jni::CastToBrushCoat;
+using ::ink::jni::CastToBrushFamily;
 using ::ink::jni::JStringView;
 using ::ink::jni::ThrowExceptionFromStatus;
 

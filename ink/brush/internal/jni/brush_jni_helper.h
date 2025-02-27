@@ -24,7 +24,7 @@
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
 
-namespace ink {
+namespace ink::jni {
 
 // Casts a Kotlin Brush.nativePointer to a C++ Brush. The returned
 // Brush is a const ref as the Kotlin Brush is immutable.
@@ -64,6 +64,6 @@ inline const BrushBehavior& CastToBrushBehavior(
   return *reinterpret_cast<BrushBehavior*>(brush_behavior_native_pointer);
 }
 
-}  // namespace ink
+}  // namespace ink::jni
 
 #endif  // INK_STROKES_BRUSH_INTERNAL_JNI_BRUSH_JNI_HELPER_H_

@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,10 +24,11 @@
 
 namespace {
 
-using ::ink::CastToBrush;
+using ::ink::Brush;
 using ::ink::PartitionedMesh;
 using ::ink::Stroke;
 using ::ink::StrokeInputBatch;
+using ::ink::jni::CastToBrush;
 
 // Cast the raw pointer to a **const** `Stroke` pointer. Note that `StrokeV2`
 // is **immutable** in Kotlin/Java, so none of the operations here should
@@ -47,14 +48,14 @@ JNI_METHOD(strokes, StrokeNative, jlong, createWithBrushAndInputs)
 (JNIEnv* env, jobject object, jlong brush_native_pointer,
  jlong inputs_native_pointer) {
   auto batch = reinterpret_cast<StrokeInputBatch*>(inputs_native_pointer);
-  const ink::Brush& brush = CastToBrush(brush_native_pointer);
+  const Brush& brush = CastToBrush(brush_native_pointer);
   return reinterpret_cast<jlong>(new Stroke(brush, *batch));
 }
 
 JNI_METHOD(strokes, StrokeNative, jlong, createWithBrushInputsAndShape)
 (JNIEnv* env, jobject object, jlong brush_native_pointer,
  jlong inputs_native_pointer, jlong partitioned_mesh_native_pointer) {
-  const ink::Brush& brush = CastToBrush(brush_native_pointer);
+  const Brush& brush = CastToBrush(brush_native_pointer);
   auto batch = reinterpret_cast<StrokeInputBatch*>(inputs_native_pointer);
   auto shape =
       reinterpret_cast<PartitionedMesh*>(partitioned_mesh_native_pointer);

@@ -32,9 +32,9 @@ namespace {
 
 using ::ink::BrushBehavior;
 using ::ink::BrushTip;
-using ::ink::CastToBrushTip;
 using ::ink::Duration32;
 using ::ink::brush_internal::ValidateBrushTip;
+using ::ink::jni::CastToBrushTip;
 using ::ink::jni::ThrowExceptionFromStatus;
 
 }  // namespace

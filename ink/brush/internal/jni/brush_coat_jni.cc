@@ -29,9 +29,9 @@ namespace {
 using ::ink::BrushCoat;
 using ::ink::BrushPaint;
 using ::ink::BrushTip;
-using ::ink::CastToBrushCoat;
-using ::ink::CastToBrushPaint;
-using ::ink::CastToBrushTip;
+using ::ink::jni::CastToBrushCoat;
+using ::ink::jni::CastToBrushPaint;
+using ::ink::jni::CastToBrushTip;
 
 }  // namespace
 
