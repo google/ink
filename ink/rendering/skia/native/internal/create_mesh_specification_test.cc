@@ -21,6 +21,7 @@
 #include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/rendering/skia/common_internal/mesh_specification_data.h"
 #include "ink/strokes/internal/stroke_vertex.h"
