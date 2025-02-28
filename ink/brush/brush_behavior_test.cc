@@ -24,7 +24,6 @@
 #include "absl/strings/str_cat.h"
 #include "ink/brush/easing_function.h"
 #include "ink/brush/fuzz_domains.h"
-#include "ink/types/duration.h"
 
 namespace ink {
 namespace {
@@ -32,6 +31,7 @@ namespace {
 using ::absl_testing::IsOk;
 using ::absl_testing::StatusIs;
 using ::testing::HasSubstr;
+using ::testing::Not;
 
 constexpr float kInfinity = std::numeric_limits<float>::infinity();
 constexpr float kNan = std::numeric_limits<float>::quiet_NaN();
@@ -787,16 +787,16 @@ TEST(BrushBehaviorTest, ValidateFallbackFilterNode) {
 }
 
 TEST(BrushBehaviorTest, ValidateToolTypeFilterNode) {
-  EXPECT_EQ(brush_internal::ValidateBrushBehaviorNode(
-                BrushBehavior::ToolTypeFilterNode{
-                    BrushBehavior::EnabledToolTypes{.mouse = true}}),
-            absl::OkStatus());
+  EXPECT_THAT(brush_internal::ValidateBrushBehaviorNode(
+                  BrushBehavior::ToolTypeFilterNode{
+                      BrushBehavior::EnabledToolTypes{.mouse = true}}),
+              IsOk());
 
-  absl::Status status = brush_internal::ValidateBrushBehaviorNode(
-      BrushBehavior::ToolTypeFilterNode{BrushBehavior::EnabledToolTypes{}});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("must contain at least one true value"));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(
+          BrushBehavior::ToolTypeFilterNode{BrushBehavior::EnabledToolTypes{}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("must enable at least one tool type")));
 }
 
 TEST(BrushBehaviorTest, ValidateDampingNode) {
@@ -968,9 +968,18 @@ TEST(BrushBehaviorTest, ValidatePolarTargetNode) {
 }
 
 TEST(BrushBehaviorTest, ValidateBrushBehavior) {
-  EXPECT_EQ(brush_internal::ValidateBrushBehavior(BrushBehavior{}),
-            absl::OkStatus());
-  EXPECT_EQ(
+  EXPECT_THAT(brush_internal::ValidateBrushBehavior(BrushBehavior{}), IsOk());
+  BrushBehavior has_invalid_node = {{
+      BrushBehavior::ConstantNode{0},
+      BrushBehavior::TargetNode{
+          .target = BrushBehavior::Target::kSizeMultiplier,
+          .target_modifier_range = {1, 1},
+      },
+  }};
+  EXPECT_THAT(brush_internal::ValidateBrushBehavior(has_invalid_node),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("target_modifier_range")));
+  EXPECT_THAT(
       brush_internal::ValidateBrushBehavior(BrushBehavior{{
           BrushBehavior::SourceNode{
               .source = BrushBehavior::Source::kNormalizedPressure,
@@ -990,20 +999,74 @@ TEST(BrushBehaviorTest, ValidateBrushBehavior) {
               .target_modifier_range = {1, 2},
           },
       }}),
-      absl::OkStatus());
+      IsOk());
 
-  absl::Status status = brush_internal::ValidateBrushBehavior(BrushBehavior{{
-      BrushBehavior::ResponseNode{EasingFunction::Predefined::kEaseOut},
-  }});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("Insufficient inputs"));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehavior(BrushBehavior{{
+          BrushBehavior::ResponseNode{EasingFunction::Predefined::kEaseOut},
+      }}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("Insufficient inputs")));
 
-  status = brush_internal::ValidateBrushBehavior(BrushBehavior{{
+  EXPECT_THAT(brush_internal::ValidateBrushBehavior(BrushBehavior{{
+                  BrushBehavior::ConstantNode{0},
+                  BrushBehavior::ConstantNode{1},
+              }}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("there were 2 values remaining")));
+}
+
+TEST(BrushBehaviorTest, ValidateBrushBehaviorTopLevel) {
+  EXPECT_THAT(brush_internal::ValidateBrushBehaviorTopLevel(BrushBehavior{}),
+              IsOk());
+  BrushBehavior has_invalid_node = {{
       BrushBehavior::ConstantNode{0},
-      BrushBehavior::ConstantNode{1},
-  }});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("there were 2 values remaining"));
+      BrushBehavior::TargetNode{
+          .target = BrushBehavior::Target::kSizeMultiplier,
+          .target_modifier_range = {1, 1},
+      },
+  }};
+  EXPECT_THAT(brush_internal::ValidateBrushBehaviorTopLevel(has_invalid_node),
+              IsOk());
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(has_invalid_node.nodes[1]),
+      Not(IsOk()));
+
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorTopLevel(BrushBehavior{{
+          BrushBehavior::SourceNode{
+              .source = BrushBehavior::Source::kNormalizedPressure,
+              .source_value_range = {0.5, 0.75},
+          },
+          BrushBehavior::ToolTypeFilterNode{{.stylus = true}},
+          BrushBehavior::FallbackFilterNode{
+              BrushBehavior::OptionalInputProperty::kTilt},
+          BrushBehavior::DampingNode{
+              .damping_source = BrushBehavior::DampingSource::kTimeInSeconds,
+              .damping_gap = 0.25,
+          },
+          BrushBehavior::ConstantNode{0.75},
+          BrushBehavior::BinaryOpNode{BrushBehavior::BinaryOp::kProduct},
+          BrushBehavior::TargetNode{
+              .target = BrushBehavior::Target::kSizeMultiplier,
+              .target_modifier_range = {1, 2},
+          },
+      }}),
+      IsOk());
+
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorTopLevel(BrushBehavior{{
+          BrushBehavior::ResponseNode{EasingFunction::Predefined::kEaseOut},
+      }}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("Insufficient inputs")));
+
+  EXPECT_THAT(brush_internal::ValidateBrushBehaviorTopLevel(BrushBehavior{{
+                  BrushBehavior::ConstantNode{0},
+                  BrushBehavior::ConstantNode{1},
+              }}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("there were 2 values remaining")));
 }
 
 void CanValidateValidBrushBehavior(const BrushBehavior& behavior) {

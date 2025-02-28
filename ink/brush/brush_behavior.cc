@@ -467,8 +467,8 @@ absl::Status ValidateNode(const BrushBehavior::FallbackFilterNode& node) {
 absl::Status ValidateNode(const BrushBehavior::ToolTypeFilterNode& node) {
   if (!node.enabled_tool_types.HasAnyTypes()) {
     return absl::InvalidArgumentError(
-        "`BrushBehavior::enabled_tool_types` must contain at least one true "
-        "value.");
+        "`BrushBehavior::enabled_tool_types` must enable at least one tool "
+        "type.");
   }
   return absl::OkStatus();
 }
@@ -552,12 +552,10 @@ absl::Status ValidateBrushBehaviorNode(const BrushBehavior::Node& node) {
   return std::visit([](const auto& node) { return ValidateNode(node); }, node);
 }
 
-absl::Status ValidateBrushBehavior(const BrushBehavior& behavior) {
+absl::Status ValidateBrushBehaviorTopLevel(const BrushBehavior& behavior) {
   int stack_depth = 0;
   for (size_t i = 0; i < behavior.nodes.size(); ++i) {
     const BrushBehavior::Node& node = behavior.nodes[i];
-    absl::Status status = ValidateBrushBehaviorNode(node);
-    if (!status.ok()) return status;
     int input_count = NodeInputCount(node);
     if (stack_depth < input_count) {
       return absl::InvalidArgumentError(
@@ -573,6 +571,20 @@ absl::Status ValidateBrushBehavior(const BrushBehavior& behavior) {
         absl::StrCat("A `BrushBehavior::Node` list must consume all generated "
                      "values, but there were ",
                      stack_depth, " values remaining."));
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidateBrushBehavior(const BrushBehavior& behavior) {
+  for (size_t i = 0; i < behavior.nodes.size(); ++i) {
+    if (absl::Status status = ValidateBrushBehaviorNode(behavior.nodes[i]);
+        !status.ok()) {
+      return status;
+    }
+  }
+  if (absl::Status status = ValidateBrushBehaviorTopLevel(behavior);
+      !status.ok()) {
+    return status;
   }
   return absl::OkStatus();
 }

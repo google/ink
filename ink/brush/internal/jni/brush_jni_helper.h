@@ -74,6 +74,14 @@ inline const BrushBehavior& CastToBrushBehavior(
   return *reinterpret_cast<BrushBehavior*>(brush_behavior_native_pointer);
 }
 
+// Casts a Kotlin BrushBehavior.Node.nativePointer to a C++ BrushBehavior::Node.
+// The returned Node is a const ref as the Kotlin BrushBehavior is
+// immutable.
+inline const BrushBehavior::Node& CastToBrushBehaviorNode(
+    jlong node_native_pointer) {
+  return *reinterpret_cast<BrushBehavior::Node*>(node_native_pointer);
+}
+
 // Casts a Kotlin EasingFunction.nativePointer to a C++ EasingFunction. The
 // returned EasingFunction is a const ref as the Kotlin EasingFunction is
 // immutable.

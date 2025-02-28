@@ -667,8 +667,15 @@ bool operator!=(const BrushBehavior& lhs, const BrushBehavior& rhs);
 namespace brush_internal {
 
 // Determines whether the given BrushBehavior struct is valid to be used in a
-// BrushFamily, and returns an error if not.
+// BrushFamily, and returns an error if not. Validates both the top-level
+// structure and the individual nodes.
 absl::Status ValidateBrushBehavior(const BrushBehavior& behavior);
+
+// Validates the top-level structure of a BrushBehavior, but not the individual
+// nodes. This can be used to validate a BrushBehavior if the nodes are already
+// validated.
+absl::Status ValidateBrushBehaviorTopLevel(const BrushBehavior& behavior);
+
 absl::Status ValidateBrushBehaviorNode(const BrushBehavior::Node& node);
 
 std::string ToFormattedString(BrushBehavior::Source source);

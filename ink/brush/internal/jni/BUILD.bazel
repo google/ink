@@ -55,10 +55,9 @@ cc_library(
     name = "brush_behavior_jni",
     srcs = ["brush_behavior_jni.cc"],
     deps = [
+        ":brush_jni_helper",
         "//ink/brush",
         "//ink/brush:brush_behavior",
-        "//ink/brush:easing_function",
-        "//ink/geometry:point",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_throw_util",
         "//ink/types:duration",
