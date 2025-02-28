@@ -26,7 +26,7 @@ http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "ht
 #################################################################################
 
 bazel_dep(name = "platforms", version = "0.0.10")
-bazel_dep(name = "rules_cc", version = "0.0.16")
+bazel_dep(name = "rules_cc", version = "0.0.17")
 bazel_dep(name = "toolchains_llvm", version = "1.2.0")
 
 # Configure and register the LLVM toolchain for host builds.
