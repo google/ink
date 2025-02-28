@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "absl/log/absl_check.h"
+#include "absl/status/statusor.h"
 #include "benchmark/benchmark.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
