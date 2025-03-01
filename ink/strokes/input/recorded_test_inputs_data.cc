@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "absl/log/absl_check.h"
+#include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
