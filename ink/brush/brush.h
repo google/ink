@@ -54,7 +54,7 @@ class Brush {
   // value or if `size` is smaller than `epsilon`.
   static absl::StatusOr<Brush> Create(const BrushFamily& family,
                                       const Color& color, float size,
-                                      float epsilon);
+                                      float epsilon = 0.1f);
 
   // Constructs a brush with a default `BrushFamily` and placeholder color, size
   // and epsilon values.
