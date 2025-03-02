@@ -129,4 +129,15 @@ JNI_METHOD(brush, BrushTipNative, jlong, getParticleGapDurationMillis)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return CastToBrushTip(native_pointer).particle_gap_duration.ToMillis();
 }
+
+JNI_METHOD(brush, BrushTipNative, jint, getBehaviorCount)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return CastToBrushTip(native_pointer).behaviors.size();
+}
+
+JNI_METHOD(brush, BrushTipNative, jlong, newCopyOfBrushBehavior)
+(JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
+  return reinterpret_cast<jlong>(
+      new BrushBehavior(CastToBrushTip(native_pointer).behaviors[index]));
+}
 }
