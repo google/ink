@@ -15,6 +15,7 @@
 #include <jni.h>
 
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "absl/log/absl_check.h"
@@ -44,6 +45,25 @@ jlong ValidateAndHoistEasingFunctionOrThrow(
   return reinterpret_cast<jlong>(
       new EasingFunction(std::move(easing_function)));
 }
+
+// Helper type for visitor pattern. This is a quick way of constructing a
+// visitor instance with overloaded operator() from an initializer list of
+// lambdas. An advantage of using this approach with visitor is that the
+// compiler will check that the overloads are exhaustive.
+template <class... Ts>
+struct overloads : Ts... {
+  using Ts::operator()...;
+};
+
+// Type-deduction guide required for overloads{...} to work properly as a
+// constructor in some C++ versions.
+template <class... Ts>
+overloads(Ts...) -> overloads<Ts...>;
+
+static constexpr int kPredefined = 0;
+static constexpr int kCubicBezier = 1;
+static constexpr int kLinear = 2;
+static constexpr int kSteps = 3;
 
 }  // namespace
 
@@ -93,6 +113,18 @@ JNI_METHOD(brush, EasingFunctionNative, jlong, createLinear)
 JNI_METHOD(brush, EasingFunctionNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   delete reinterpret_cast<EasingFunction*>(native_pointer);
+}
+
+JNI_METHOD(brush, EasingFunctionNative, jlong, getParametersType)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  constexpr auto visitor = overloads{
+      [](const EasingFunction::Predefined&) { return kPredefined; },
+      [](const EasingFunction::CubicBezier&) { return kCubicBezier; },
+      [](const EasingFunction::Steps&) { return kSteps; },
+      [](const EasingFunction::Linear&) { return kLinear; },
+  };
+  return static_cast<jint>(
+      std::visit(visitor, CastToEasingFunction(native_pointer).parameters));
 }
 
 JNI_METHOD(brush, EasingFunctionNative, jint, getPredefinedValueInt)

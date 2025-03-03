@@ -16,11 +16,13 @@
 
 #include <cstdint>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
+#include "ink/brush/easing_function.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_throw_util.h"
@@ -28,8 +30,10 @@
 namespace {
 
 using ink::BrushBehavior;
+using ink::EasingFunction;
 using ink::brush_internal::ValidateBrushBehaviorNode;
 using ink::brush_internal::ValidateBrushBehaviorTopLevel;
+using ink::jni::CastToBrushBehavior;
 using ink::jni::CastToBrushBehaviorNode;
 using ink::jni::CastToEasingFunction;
 using ink::jni::ThrowExceptionFromStatus;
@@ -41,6 +45,32 @@ jlong ValidateAndHoistNodeOrThrow(BrushBehavior::Node node, JNIEnv* env) {
   }
   return reinterpret_cast<jlong>(new BrushBehavior::Node(std::move(node)));
 }
+
+// Helper type for visitor pattern. This is a quick way of constructing a
+// visitor instance with overloaded operator() from an initializer list of
+// lambdas. An advantage of using this approach with visitor is that the
+// compiler will check that the overloads are exhaustive.
+template <class... Ts>
+struct overloads : Ts... {
+  using Ts::operator()...;
+};
+
+// Type-deduction guide required for overloads{...} to work properly as a
+// constructor in some C++ versions.
+template <class... Ts>
+overloads(Ts...) -> overloads<Ts...>;
+
+static constexpr int kSourceNode = 0;
+static constexpr int kConstantNode = 1;
+static constexpr int kNoiseNode = 2;
+static constexpr int kFallbackFilterNode = 3;
+static constexpr int kToolTypeFilterNode = 4;
+static constexpr int kDampingNode = 5;
+static constexpr int kResponseNode = 6;
+static constexpr int kBinaryOpNode = 7;
+static constexpr int kInterpolationNode = 8;
+static constexpr int kTargetNode = 9;
+static constexpr int kPolarTargetNode = 10;
 
 }  // namespace
 
@@ -73,6 +103,17 @@ JNI_METHOD(brush, BrushBehaviorNative, jlong, createFromOrderedNodes)
 JNI_METHOD(brush, BrushBehaviorNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   delete reinterpret_cast<BrushBehavior*>(native_pointer);
+}
+
+JNI_METHOD(brush, BrushBehaviorNative, jint, getNodeCount)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return CastToBrushBehavior(native_pointer).nodes.size();
+}
+
+JNI_METHOD(brush, BrushBehaviorNative, jlong, newCopyOfNode)
+(JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
+  return reinterpret_cast<jlong>(new BrushBehavior::Node(
+      CastToBrushBehavior(native_pointer).nodes[index]));
 }
 
 // Functions for dealing with BrushBehavior::Nodes. Note that on the C++ side,
@@ -202,6 +243,29 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, void, free)
   delete reinterpret_cast<BrushBehavior::Node*>(node_native_pointer);
 }
 
+JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getNodeType)
+(JNIEnv* env, jobject thiz, jlong node_native_pointer) {
+  constexpr auto visitor = overloads{
+      [](const BrushBehavior::SourceNode&) { return kSourceNode; },
+      [](const BrushBehavior::ConstantNode&) { return kConstantNode; },
+      [](const BrushBehavior::NoiseNode&) { return kNoiseNode; },
+      [](const BrushBehavior::FallbackFilterNode&) {
+        return kFallbackFilterNode;
+      },
+      [](const BrushBehavior::ToolTypeFilterNode&) {
+        return kToolTypeFilterNode;
+      },
+      [](const BrushBehavior::DampingNode&) { return kDampingNode; },
+      [](const BrushBehavior::ResponseNode&) { return kResponseNode; },
+      [](const BrushBehavior::BinaryOpNode&) { return kBinaryOpNode; },
+      [](const BrushBehavior::InterpolationNode&) {
+        return kInterpolationNode;
+      },
+      [](const BrushBehavior::TargetNode&) { return kTargetNode; },
+      [](const BrushBehavior::PolarTargetNode&) { return kPolarTargetNode; }};
+  return std::visit(visitor, CastToBrushBehaviorNode(node_native_pointer));
+}
+
 // SourceNode accessors:
 
 JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getSourceInt)
@@ -324,8 +388,16 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getDampingGap)
       .damping_gap;
 }
 
-// ResponseNode does not have any accessors currently. That only holds
-// EasingFunction, which has its own Kotlin wrapper.
+// ResponseNode accessors:
+
+JNI_METHOD(brush, BrushBehaviorNodeNative, jlong,
+           newCopyOfResponseEasingFunction)
+(JNIEnv* env, jobject thiz, jlong node_native_pointer) {
+  return reinterpret_cast<jlong>(
+      new EasingFunction(std::get<BrushBehavior::ResponseNode>(
+                             CastToBrushBehaviorNode(node_native_pointer))
+                             .response_curve));
+}
 
 // BinaryOpNode accessors:
 
