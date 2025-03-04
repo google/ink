@@ -171,7 +171,7 @@ MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(void, clear)
   batch->Clear();
 }
 
-MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jlong, copy)
+MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jlong, newCopy)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   StrokeInputBatch* batch = CastToMutableStrokeInputBatch(native_pointer);
   return reinterpret_cast<jlong>(new StrokeInputBatch(*batch));

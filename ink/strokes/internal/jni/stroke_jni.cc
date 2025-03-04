@@ -30,14 +30,14 @@ using ::ink::Stroke;
 using ::ink::StrokeInputBatch;
 using ::ink::jni::CastToBrush;
 
-// Cast the raw pointer to a **const** `Stroke` pointer. Note that `StrokeV2`
+// Cast the raw pointer to a **const** `Stroke` pointer. Note that `Stroke`
 // is **immutable** in Kotlin/Java, so none of the operations here should
 // modify a C++ `Stroke`. Instead, writes must happen in a copied `Stroke`
 // object, and the raw pointer to that copied object should be returned to the
-// Kotlin/Java layer to be wrapped in a new Kotlin `StrokeV2`.
-const Stroke* GetStroke(jlong raw_ptr_to_stroke) {
-  ABSL_CHECK_NE(raw_ptr_to_stroke, 0);
-  return reinterpret_cast<Stroke*>(raw_ptr_to_stroke);
+// Kotlin/Java layer to be wrapped in a new Kotlin `Stroke`.
+const Stroke* GetStroke(jlong native_pointer_to_stroke) {
+  ABSL_CHECK_NE(native_pointer_to_stroke, 0);
+  return reinterpret_cast<Stroke*>(native_pointer_to_stroke);
 }
 
 }  // namespace
@@ -67,12 +67,11 @@ JNI_METHOD(strokes, StrokeNative, jlong, createWithBrushInputsAndShape)
 // the raw pointer to this copy, so that it can be wrapped by a JVM
 // `StrokeInputBatch`, which is responsible for freeing the copy when it is
 // garbage collected and finalized.
-JNI_METHOD(strokes, StrokeNative, jlong, allocShallowCopyOfInputs)
-(JNIEnv* env, jobject object, jlong raw_ptr_to_stroke) {
-  const Stroke* stroke = GetStroke(raw_ptr_to_stroke);
+JNI_METHOD(strokes, StrokeNative, jlong, newShallowCopyOfInputs)
+(JNIEnv* env, jobject object, jlong native_pointer_to_stroke) {
+  const Stroke* stroke = GetStroke(native_pointer_to_stroke);
   const StrokeInputBatch& stroke_batch = stroke->GetInputs();
-  StrokeInputBatch* shallow_copy = new StrokeInputBatch(stroke_batch);
-  return reinterpret_cast<jlong>(shallow_copy);
+  return reinterpret_cast<jlong>(new StrokeInputBatch(stroke_batch));
 }
 
 // Make a heap-allocated shallow (doesn't replicate all the individual meshes)
@@ -80,9 +79,9 @@ JNI_METHOD(strokes, StrokeNative, jlong, allocShallowCopyOfInputs)
 // pointer to this copy, so that it can be wrapped by a JVM `PartitionedMesh`,
 // which is responsible for freeing the copy when it is garbage collected and
 // finalized.
-JNI_METHOD(strokes, StrokeNative, jlong, allocShallowCopyOfShape)
-(JNIEnv* env, jobject object, jlong raw_ptr_to_stroke) {
-  const Stroke* stroke = GetStroke(raw_ptr_to_stroke);
+JNI_METHOD(strokes, StrokeNative, jlong, newShallowCopyOfShape)
+(JNIEnv* env, jobject object, jlong native_pointer_to_stroke) {
+  const Stroke* stroke = GetStroke(native_pointer_to_stroke);
   const PartitionedMesh& stroke_shape = stroke->GetShape();
   PartitionedMesh* shallow_copy = new PartitionedMesh(stroke_shape);
   return reinterpret_cast<jlong>(shallow_copy);
@@ -90,8 +89,8 @@ JNI_METHOD(strokes, StrokeNative, jlong, allocShallowCopyOfShape)
 
 // Free the given `Stroke`.
 JNI_METHOD(strokes, StrokeNative, void, free)
-(JNIEnv* env, jobject object, jlong raw_ptr_to_stroke) {
-  delete GetStroke(raw_ptr_to_stroke);
+(JNIEnv* env, jobject object, jlong native_pointer_to_stroke) {
+  delete GetStroke(native_pointer_to_stroke);
 }
 
 }  // extern "C"
