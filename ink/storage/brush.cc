@@ -1492,33 +1492,22 @@ absl::StatusOr<BrushTip> DecodeBrushTip(const proto::BrushTip& tip_proto) {
 }
 
 void EncodeBrushCoat(const BrushCoat& coat, proto::BrushCoat& coat_proto_out) {
-  coat_proto_out.mutable_tips()->Clear();
-  coat_proto_out.mutable_tips()->Reserve(coat.tips.size());
-  for (const BrushTip& tip : coat.tips) {
-    EncodeBrushTip(tip, *coat_proto_out.add_tips());
-  }
-
+  EncodeBrushTip(coat.tip, *coat_proto_out.mutable_tip());
   EncodeBrushPaint(coat.paint, *coat_proto_out.mutable_paint());
 }
 
 absl::StatusOr<BrushCoat> DecodeBrushCoat(const proto::BrushCoat& coat_proto) {
-  std::vector<BrushTip> tips;
-  tips.reserve(coat_proto.tips_size());
-  for (const proto::BrushTip& tip_proto : coat_proto.tips()) {
-    absl::StatusOr<BrushTip> tip = DecodeBrushTip(tip_proto);
-    if (!tip.ok()) {
-      return tip.status();
-    }
-    tips.push_back(*std::move(tip));
+  absl::StatusOr<BrushTip> tip = DecodeBrushTip(coat_proto.tip());
+  if (!tip.ok()) {
+    return tip.status();
   }
-
   absl::StatusOr<BrushPaint> paint = DecodeBrushPaint(coat_proto.paint());
   if (!paint.ok()) {
     return paint.status();
   }
-  // There's no further validation to be done here if the paint and tips are
+  // There's no further validation to be done here if the paint and tip are
   // valid.
-  return BrushCoat{.tips = std::move(tips), .paint = *std::move(paint)};
+  return BrushCoat{.tip = *std::move(tip), .paint = *std::move(paint)};
 }
 
 void EncodeBrushFamily(const BrushFamily& family,

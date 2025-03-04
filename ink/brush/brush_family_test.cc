@@ -101,7 +101,7 @@ BrushPaint CreateTestPaint() {
 
 BrushCoat CreateTestCoat() {
   return {
-      .tips = {CreatePressureTestTip()},
+      .tip = CreatePressureTestTip(),
       .paint = CreateTestPaint(),
   };
 }
@@ -116,9 +116,9 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
       CreateTestPaint());
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_EQ(absl::StrCat(*family),
-            "BrushFamily(coats=[BrushCoat{tips=[BrushTip{scale=<3, 3>, "
+            "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
             "corner_rounding=0, opacity_multiplier=0.7, "
-            "particle_gap_distance_scale=0.1, particle_gap_duration=2s}], "
+            "particle_gap_distance_scale=0.1, particle_gap_duration=2s}, "
             "paint=BrushPaint{texture_layers={TextureLayer{"
             "client_texture_id=test-paint, mapping=kWinding, "
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
@@ -135,8 +135,8 @@ TEST(BrushFamilyTest, StringifyWithId) {
       CreateTestPaint(), "big-square");
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_EQ(absl::StrCat(*family),
-            "BrushFamily(coats=[BrushCoat{tips=[BrushTip{scale=<3, 3>, "
-            "corner_rounding=0, opacity_multiplier=0.7}], "
+            "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
+            "corner_rounding=0, opacity_multiplier=0.7}, "
             "paint=BrushPaint{texture_layers={TextureLayer{client_texture_id="
             "test-paint, mapping=kWinding, "
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
@@ -901,7 +901,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBehaviorFallbackSource) {
 TEST(BrushFamilyTest, DefaultConstruction) {
   BrushFamily family;
   EXPECT_THAT(family.GetCoats(),
-              ElementsAre(BrushCoatEq(BrushCoat{.tips = {BrushTip{}}})));
+              ElementsAre(BrushCoatEq(BrushCoat{.tip = BrushTip{}})));
   EXPECT_THAT(family.GetClientBrushFamilyId(), IsEmpty());
 }
 

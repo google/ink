@@ -105,7 +105,7 @@ message BrushFamily {
 // and the tip(s) used to apply that paint.  For details, see
 // ../../brush/brush_coat.h
 message BrushCoat {
-  repeated BrushTip tips = 1;
+  optional BrushTip tip = 1;
   optional BrushPaint paint = 2;
 }
 
