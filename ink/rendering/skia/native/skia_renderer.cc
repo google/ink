@@ -92,7 +92,7 @@ bool UsePathRendering(GrDirectContext* context, const BrushPaint&) {
 // TODO: b/285594469 - Add a brush tip index parameter once a valid `BrushCoat`
 // has something other than exactly one `BrushTip`.
 float OpacityMultiplierForPath(const Brush& brush, uint32_t coat_index) {
-  return brush.GetCoats()[coat_index].tips.front().opacity_multiplier;
+  return brush.GetCoats()[coat_index].tip.opacity_multiplier;
 }
 
 // Returns the `TextureMapping` used by the given `BrushPaint`. Right now, we

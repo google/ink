@@ -326,8 +326,7 @@ MATCHER_P(BrushCoatEqMatcher, expected,
                        " BrushCoat (expected: ",
                        ::testing::PrintToString(expected), ")")) {
   return ExplainMatchResult(
-      AllOf(Field("tips", &BrushCoat::tips,
-                  Pointwise(BrushTipEq(), expected.tips)),
+      AllOf(Field("tip", &BrushCoat::tip, BrushTipEq(expected.tip)),
             Field("paint", &BrushCoat::paint, BrushPaintEq(expected.paint))),
       arg, result_listener);
 }

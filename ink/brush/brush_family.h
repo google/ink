@@ -133,7 +133,7 @@ class BrushFamily {
   // Implementation helper for AbslStringify.
   std::string ToFormattedString() const;
 
-  std::vector<BrushCoat> coats_ = {BrushCoat{.tips = {BrushTip{}}}};
+  std::vector<BrushCoat> coats_ = {BrushCoat{.tip = BrushTip{}}};
   std::string client_brush_family_id_;
   InputModel input_model_;
 };

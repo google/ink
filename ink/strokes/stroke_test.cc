@@ -580,7 +580,7 @@ TEST(StrokeTest, GetInputDuration) {
 }
 
 TEST(StrokeDeathTest, ConstructFromMismatchedShapeAndBrush) {
-  BrushCoat coat = BrushCoat{.tips = {BrushTip()}};
+  BrushCoat coat = BrushCoat{.tip = BrushTip()};
   absl::StatusOr<BrushFamily> family = BrushFamily::Create({coat, coat});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::White(), 10, 0.1);
