@@ -156,6 +156,20 @@ TEST(BrushTest, DecodeEmptyBrushBehaviorNode) {
               HasSubstr("ink.proto.BrushBehavior.Node must specify a node"));
 }
 
+TEST(BrushTest, DecodeInvalidBrushBehaviorNode) {
+  // The proto is fine, but the struct fails validation.
+  proto::BrushBehavior::Node node;
+  proto::BrushBehavior::SourceNode* source_node = node.mutable_source_node();
+  source_node->set_source(proto::BrushBehavior::SOURCE_NORMALIZED_PRESSURE);
+  source_node->set_source_out_of_range_behavior(
+      proto::BrushBehavior::OUT_OF_RANGE_CLAMP);
+  source_node->set_source_value_range_start(0);
+  source_node->set_source_value_range_end(0);
+  EXPECT_THAT(DecodeBrushBehaviorNode(node).status(),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("source_value_range")));
+}
+
 TEST(BrushTest, DecodeBrushBehaviorBinaryOpNodeWithUnspecifiedBinaryOp) {
   proto::BrushBehavior::Node node;
   node.mutable_binary_op_node()->set_operation(

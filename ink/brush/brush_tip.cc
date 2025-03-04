@@ -24,6 +24,7 @@
 #include "absl/strings/str_join.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/vec.h"
 #include "ink/types/duration.h"
 
 namespace ink {

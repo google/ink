@@ -45,11 +45,6 @@ void EncodeBrushBehaviorNode(const BrushBehavior::Node& node,
 absl::StatusOr<Brush> DecodeBrush(const proto::Brush& brush_proto);
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto);
-// For the below decoding functions, note that only minimal validation is done
-// on the proto.  Decoding is only *guaranteed* to succeed if the decoded struct
-// would be valid to construct a BrushFamily with, but decoding *may* still
-// succeed even in cases where trying to put the decoded struct into a
-// BrushFamily would return an error.
 absl::StatusOr<BrushCoat> DecodeBrushCoat(const proto::BrushCoat& coat_proto);
 absl::StatusOr<BrushPaint> DecodeBrushPaint(
     const proto::BrushPaint& paint_proto);

@@ -1344,7 +1344,7 @@ void EncodeBrushBehaviorNode(const BrushBehavior::Node& node,
       node);
 }
 
-absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNode(
+absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNodeUnvalidated(
     const proto::BrushBehavior::Node& node_proto) {
   switch (node_proto.node_case()) {
     case proto::BrushBehavior::Node::kSourceNode:
@@ -1377,6 +1377,20 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNode(
   }
   return absl::InvalidArgumentError(
       "ink.proto.BrushBehavior.Node must specify a node");
+}
+
+absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNode(
+    const proto::BrushBehavior::Node& node_proto) {
+  absl::StatusOr<BrushBehavior::Node> node =
+      DecodeBrushBehaviorNodeUnvalidated(node_proto);
+  if (!node.ok()) {
+    return node.status();
+  }
+  if (absl::Status status = brush_internal::ValidateBrushBehaviorNode(*node);
+      !status.ok()) {
+    return status;
+  }
+  return *node;
 }
 
 void EncodeBrushPaint(const BrushPaint& paint,
