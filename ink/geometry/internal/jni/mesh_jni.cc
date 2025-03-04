@@ -15,7 +15,6 @@
 #include <jni.h>
 
 #include <cstddef>
-#include <memory>
 
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
@@ -51,7 +50,7 @@ Mesh* GetMesh(jlong raw_ptr_to_mesh) {
 extern "C" {
 
 // Free the given `Mesh`.
-JNI_METHOD(geometry, MeshNative, void, freeNative)
+JNI_METHOD(geometry, MeshNative, void, free)
 (JNIEnv* env, jobject object, jlong raw_ptr_to_mesh) {
   delete GetMesh(raw_ptr_to_mesh);
 }
@@ -91,7 +90,7 @@ JNI_METHOD(geometry, MeshNative, jobject, createRawTriangleIndexBuffer)
 (JNIEnv* env, jobject object, jlong raw_ptr_to_mesh) {
   const Mesh* mesh = GetMesh(raw_ptr_to_mesh);
   // `Mesh`'s indices should always be two bytes each.
-  ABSL_CHECK_EQ(mesh->IndexStride(), 2);
+  ABSL_CHECK_EQ(mesh->IndexStride(), 2u);
   const absl::Span<const std::byte> raw_triangle_index_data =
       mesh->RawIndexData();
   if (raw_triangle_index_data.data() == nullptr) return nullptr;
@@ -127,10 +126,11 @@ JNI_METHOD(geometry, MeshNative, jint, fillAttributeUnpackingParams)
   absl::Span<const ink::MeshAttributeCodingParams::ComponentCodingParams>
       coding_params = mesh->VertexAttributeUnpackingParams(attribute_index)
                           .components.Values();
-  ABSL_CHECK_LE(coding_params.size(), kMaxAttributeUnpackingParamComponents);
+  ABSL_CHECK_LE(coding_params.size(),
+                static_cast<size_t>(kMaxAttributeUnpackingParamComponents));
   jfloat offset_values[kMaxAttributeUnpackingParamComponents];
   jfloat scale_values[kMaxAttributeUnpackingParamComponents];
-  for (int i = 0; i < coding_params.size(); ++i) {
+  for (size_t i = 0; i < coding_params.size(); ++i) {
     offset_values[i] = coding_params[i].offset;
     scale_values[i] = coding_params[i].scale;
   }
@@ -140,11 +140,10 @@ JNI_METHOD(geometry, MeshNative, jint, fillAttributeUnpackingParams)
 }
 
 // Return a newly allocated copy of the given `Mesh`'s `MeshFormat`.
-JNI_METHOD(geometry, MeshNative, jlong, allocCopyOfFormat)
+JNI_METHOD(geometry, MeshNative, jlong, newCopyOfFormat)
 (JNIEnv* env, jobject object, jlong raw_ptr_to_mesh) {
-  auto copied_format =
-      std::make_unique<MeshFormat>(GetMesh(raw_ptr_to_mesh)->Format());
-  return reinterpret_cast<jlong>(copied_format.release());
+  return reinterpret_cast<jlong>(
+      new MeshFormat(GetMesh(raw_ptr_to_mesh)->Format()));
 }
 
 JNI_METHOD(geometry, MeshNative, void, fillPosition)
@@ -156,7 +155,7 @@ JNI_METHOD(geometry, MeshNative, void, fillPosition)
 }
 
 // Create a newly allocated empty `Mesh`.
-JNI_METHOD(geometry, MeshNative, jlong, allocNativeNewEmptyMesh)
-(JNIEnv* env, jobject object) { return reinterpret_cast<jlong>(new Mesh); }
+JNI_METHOD(geometry, MeshNative, jlong, createEmpty)
+(JNIEnv* env, jobject object) { return reinterpret_cast<jlong>(new Mesh()); }
 
 }  // extern "C"

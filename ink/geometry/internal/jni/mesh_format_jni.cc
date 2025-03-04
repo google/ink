@@ -29,21 +29,21 @@ MeshFormat* GetMeshFormat(jlong raw_ptr) {
 
 extern "C" {
 
-JNI_METHOD(geometry, MeshFormat, jboolean, nativeIsPackedEquivalent)
-(JNIEnv* env, jobject obj, jlong first_raw_ptr, jlong second_raw_ptr) {
-  const MeshFormat* first = GetMeshFormat(first_raw_ptr);
-  const MeshFormat* second = GetMeshFormat(second_raw_ptr);
+JNI_METHOD(geometry, MeshFormatNative, jboolean, isPackedEquivalent)
+(JNIEnv* env, jobject obj, jlong native_pointer, jlong other_native_pointer) {
+  const MeshFormat* first = GetMeshFormat(native_pointer);
+  const MeshFormat* second = GetMeshFormat(other_native_pointer);
   return MeshFormat::IsPackedEquivalent(*first, *second);
 }
 
-JNI_METHOD(geometry, MeshFormat, jboolean, nativeIsUnpackedEquivalent)
-(JNIEnv* env, jobject obj, jlong first_raw_ptr, jlong second_raw_ptr) {
-  const MeshFormat* first = GetMeshFormat(first_raw_ptr);
-  const MeshFormat* second = GetMeshFormat(second_raw_ptr);
+JNI_METHOD(geometry, MeshFormatNative, jboolean, isUnpackedEquivalent)
+(JNIEnv* env, jobject obj, jlong native_pointer, jlong other_native_pointer) {
+  const MeshFormat* first = GetMeshFormat(native_pointer);
+  const MeshFormat* second = GetMeshFormat(other_native_pointer);
   return MeshFormat::IsUnpackedEquivalent(*first, *second);
 }
 
-JNI_METHOD(geometry, MeshFormat, void, nativeFree)
+JNI_METHOD(geometry, MeshFormatNative, void, free)
 (JNIEnv* env, jobject obj, jlong raw_ptr) { delete GetMeshFormat(raw_ptr); }
 
 }  // extern "C"
