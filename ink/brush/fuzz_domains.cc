@@ -492,10 +492,7 @@ Domain<BrushBehavior::Node> ValidBrushBehaviorNode() {
 }
 
 Domain<BrushCoat> ValidBrushCoat() {
-  return StructOf<BrushCoat>(
-      // TODO: b/285594469 - Once `BrushCoat` permits more than one tip per
-      // coat, generate coats with other numbers of tips.
-      VectorOf(ValidBrushTip()).WithSize(1), ValidBrushPaint());
+  return StructOf<BrushCoat>(ValidBrushTip(), ValidBrushPaint());
 }
 
 Domain<BrushFamily> ArbitraryBrushFamily() {

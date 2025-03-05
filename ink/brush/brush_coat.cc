@@ -20,6 +20,7 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_paint.h"
@@ -51,19 +52,8 @@ bool BrushTipUsesColorShift(const BrushTip& tip) {
 }  // namespace
 
 absl::Status ValidateBrushCoat(const BrushCoat& coat) {
-  if (coat.tips.empty()) {
-    return absl::InvalidArgumentError(
-        "A BrushCoat must have at least one BrushTip");
-  }
-  // TODO: b/285594469 - Relax this restriction.
-  if (coat.tips.size() > 1) {
-    return absl::InvalidArgumentError(
-        "For now, a BrushCoat can only have one BrushTip (b/285594469)");
-  }
-  for (const BrushTip& tip : coat.tips) {
-    if (absl::Status status = ValidateBrushTip(tip); !status.ok()) {
-      return status;
-    }
+  if (absl::Status status = ValidateBrushTip(coat.tip); !status.ok()) {
+    return status;
   }
   if (absl::Status status = ValidateBrushPaint(coat.paint); !status.ok()) {
     return status;
@@ -88,11 +78,8 @@ std::vector<MeshFormat::AttributeId> GetRequiredAttributeIds(
       MeshFormat::AttributeId::kOpacityShift,
   };
 
-  for (const BrushTip& tip : coat.tips) {
-    if (BrushTipUsesColorShift(tip)) {
-      ids.push_back(MeshFormat::AttributeId::kColorShiftHsl);
-      break;
-    }
+  if (BrushTipUsesColorShift(coat.tip)) {
+    ids.push_back(MeshFormat::AttributeId::kColorShiftHsl);
   }
 
   for (const BrushPaint::TextureLayer& layer : coat.paint.texture_layers) {
@@ -106,8 +93,7 @@ std::vector<MeshFormat::AttributeId> GetRequiredAttributeIds(
 }
 
 std::string ToFormattedString(const BrushCoat& coat) {
-  return absl::StrCat("BrushCoat{tips=[", absl::StrJoin(coat.tips, ", "),
-                      "], paint=", coat.paint, "}");
+  return absl::StrFormat("BrushCoat{tip=%v, paint=%v}", coat.tip, coat.paint);
 }
 
 }  // namespace brush_internal

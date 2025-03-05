@@ -50,37 +50,16 @@ void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
   input_modeler_.StartStroke(input_model, brush_epsilon);
 
   mesh_bounds_.Reset();
-
-  tip_count_ = coat.tips.size();
-  // TODO: b/285594469 - For now, a BrushFamily always has exactly one tip, but
-  // we'll want to relax this restriction.
-  ABSL_CHECK_EQ(tip_count_, 1u);
-
-  // Clear the outlines from the previous stroke and reserve space for one
-  // outline per tip.
   outlines_.clear();
-  outlines_.reserve(tip_count_);
-
-  // If necessary, expand the modeler/extruder vector to the number of brush
-  // tips. In order to cache all the allocations within, we never shrink this
-  // vector.
-  if (tip_count_ > tips_.size()) {
-    tips_.resize(tip_count_);
-  }
 
   bool is_winding_texture_brush = IsWindingTextureCoat(coat);
-  for (size_t i = 0; i < tip_count_; ++i) {
-    bool is_winding_texture_particle_brush =
-        is_winding_texture_brush &&
-        (coat.tips[i].particle_gap_distance_scale != 0 ||
-         coat.tips[i].particle_gap_duration != Duration32::Zero());
-    tips_[i].modeler.StartStroke(&coat.tips[i], brush_size, noise_seed);
-    // TODO: b/285594469 - Once it's possible for there to be more than one tip,
-    // this will need to be more careful about how the various extruders append
-    // onto the same mesh.
-    tips_[i].extruder.StartStroke(brush_epsilon,
-                                  is_winding_texture_particle_brush, mesh_);
-  }
+  bool is_winding_texture_particle_brush =
+      is_winding_texture_brush &&
+      (coat.tip.particle_gap_distance_scale != 0 ||
+       coat.tip.particle_gap_duration != Duration32::Zero());
+  tip_.modeler.StartStroke(&coat.tip, brush_size, noise_seed);
+  tip_.extruder.StartStroke(brush_epsilon, is_winding_texture_particle_brush,
+                            mesh_);
 }
 
 StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
@@ -91,24 +70,18 @@ StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
   StrokeShapeUpdate update;
   mesh_bounds_.Reset();
 
-  // `tips_` may also have additional elements (for allocation caching reasons),
-  // which should be ignored for this brush.
-  ABSL_DCHECK_GE(tips_.size(), tip_count_);
-
   outlines_.clear();
-  for (uint32_t i = 0; i < tip_count_; ++i) {
-    BrushTipModeler& tip_modeler = tips_[i].modeler;
-    BrushTipExtruder& tip_extruder = tips_[i].extruder;
-    tip_modeler.UpdateStroke(input_modeler_.GetState(),
-                             input_modeler_.GetModeledInputs());
-    update.Add(tip_extruder.ExtendStroke(tip_modeler.NewFixedTipStates(),
-                                         tip_modeler.VolatileTipStates()));
-    mesh_bounds_.Add(tip_extruder.GetBounds());
-    for (const StrokeOutline& outline : tip_extruder.GetOutlines()) {
-      const absl::Span<const uint32_t>& indices = outline.GetIndices();
-      if (!indices.empty()) {
-        outlines_.push_back(indices);
-      }
+  BrushTipModeler& tip_modeler = tip_.modeler;
+  BrushTipExtruder& tip_extruder = tip_.extruder;
+  tip_modeler.UpdateStroke(input_modeler_.GetState(),
+                           input_modeler_.GetModeledInputs());
+  update.Add(tip_extruder.ExtendStroke(tip_modeler.NewFixedTipStates(),
+                                       tip_modeler.VolatileTipStates()));
+  mesh_bounds_.Add(tip_extruder.GetBounds());
+  for (const StrokeOutline& outline : tip_extruder.GetOutlines()) {
+    const absl::Span<const uint32_t>& indices = outline.GetIndices();
+    if (!indices.empty()) {
+      outlines_.push_back(indices);
     }
   }
 
@@ -116,16 +89,7 @@ StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
 }
 
 bool StrokeShapeBuilder::HasUnfinishedTimeBehaviors() const {
-  // `tips_` may have additional elements (for allocation caching reasons),
-  // which should be ignored for this brush.
-  ABSL_DCHECK_GE(tips_.size(), tip_count_);
-  for (uint32_t i = 0; i < tip_count_; ++i) {
-    if (tips_[i].modeler.HasUnfinishedTimeBehaviors(
-            input_modeler_.GetState())) {
-      return true;
-    }
-  }
-  return false;
+  return tip_.modeler.HasUnfinishedTimeBehaviors(input_modeler_.GetState());
 }
 
 }  // namespace ink::strokes_internal
