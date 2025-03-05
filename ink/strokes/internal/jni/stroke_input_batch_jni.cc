@@ -49,13 +49,12 @@ using ::ink::jni::UpdateJObjectInput;
 extern "C" {
 
 // ******** Native Implementation of Immutable/Mutable StrokeInputBatch ********
-STROKE_INPUT_BATCH_JNI_METHOD(jlong, createNativePeer)
+STROKE_INPUT_BATCH_JNI_METHOD(jlong, create)
 (JNIEnv* env, jobject thiz) {
-  auto* batch = new StrokeInputBatch();
-  return reinterpret_cast<jlong>(batch);
+  return reinterpret_cast<jlong>(new StrokeInputBatch());
 }
 
-STROKE_INPUT_BATCH_JNI_METHOD(void, freeNativePeer)
+STROKE_INPUT_BATCH_JNI_METHOD(void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   ABSL_CHECK_NE(native_pointer, 0)
       << "Invalid native pointer for StrokeInputBatch.";
@@ -171,7 +170,7 @@ MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(void, clear)
   batch->Clear();
 }
 
-MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jlong, copy)
+MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jlong, newCopy)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   StrokeInputBatch* batch = CastToMutableStrokeInputBatch(native_pointer);
   return reinterpret_cast<jlong>(new StrokeInputBatch(*batch));

@@ -95,10 +95,7 @@ JNI_METHOD(strokes, MeshCreationNative, jlong,
   if (!ink::jni::CheckOkOrThrow(env, partitioned_mesh.status())) {
     return 0;
   }
-
-  auto partitioned_mesh_ptr =
-      std::make_unique<PartitionedMesh>(partitioned_mesh.value());
-  return reinterpret_cast<jlong>(partitioned_mesh_ptr.release());
+  return reinterpret_cast<jlong>(new PartitionedMesh(*partitioned_mesh));
 }
 
 }  // extern "C
