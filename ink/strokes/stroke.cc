@@ -45,7 +45,7 @@ bool BrushCoatTipsAreEqual(absl::Span<const BrushCoat> coats1,
     return false;
   }
   for (size_t i = 0; i < coats1.size(); ++i) {
-    if (coats1[i].tips != coats2[i].tips) {
+    if (coats1[i].tip != coats2[i].tip) {
       return false;
     }
   }

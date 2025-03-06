@@ -60,7 +60,7 @@ TEST(BrushTest, DecodeBrushProto) {
   proto::BrushFamily* family_proto = brush_proto.mutable_brush_family();
   family_proto->mutable_input_model()->mutable_spring_model();
   proto::BrushCoat* coat_proto = family_proto->add_coats();
-  proto::BrushTip* tip_proto = coat_proto->add_tips();
+  proto::BrushTip* tip_proto = coat_proto->mutable_tip();
   tip_proto->set_corner_rounding(0.5f);
   tip_proto->set_opacity_multiplier(1.0f);
   proto::BrushPaint* paint_proto = coat_proto->mutable_paint();
@@ -111,7 +111,7 @@ TEST(BrushTest, DecodeBrushWithInvalidBrushSize) {
   brush_proto.set_size_stroke_space(-8);
   brush_proto.set_epsilon_stroke_space(1.1);
   EncodeColor(Color::Green(), *brush_proto.mutable_color());
-  brush_proto.mutable_brush_family()->add_coats()->add_tips();
+  brush_proto.mutable_brush_family()->add_coats()->mutable_tip();
 
   absl::Status invalid_size = DecodeBrush(brush_proto).status();
   EXPECT_EQ(invalid_size.code(), absl::StatusCode::kInvalidArgument);
@@ -123,7 +123,7 @@ TEST(BrushTest, DecodeBrushWithInvalidBrushEpsilon) {
   brush_proto.set_size_stroke_space(20);
   brush_proto.set_epsilon_stroke_space(-1.1);
   EncodeColor(Color::Green(), *brush_proto.mutable_color());
-  brush_proto.mutable_brush_family()->add_coats()->add_tips();
+  brush_proto.mutable_brush_family()->add_coats()->mutable_tip();
 
   absl::Status invalid_epsilon = DecodeBrush(brush_proto).status();
   EXPECT_EQ(invalid_epsilon.code(), absl::StatusCode::kInvalidArgument);
@@ -363,7 +363,7 @@ TEST(BrushTest, EncodeBrush) {
   proto::BrushFamily* brush_family_proto = brush_proto.mutable_brush_family();
   brush_family_proto->mutable_input_model()->mutable_spring_model();
   proto::BrushCoat* brush_coat_proto = brush_family_proto->add_coats();
-  proto::BrushTip* brush_tip_proto = brush_coat_proto->add_tips();
+  proto::BrushTip* brush_tip_proto = brush_coat_proto->mutable_tip();
   brush_tip_proto->set_scale_x(1.f);
   brush_tip_proto->set_scale_y(1.f);
   brush_tip_proto->set_corner_rounding(0.25f);
@@ -421,7 +421,7 @@ TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
   ASSERT_EQ(family.status(), absl::OkStatus());
   // Initialize the proto with a non-empty ID, and a different brush tip.
   proto::BrushFamily family_proto_out;
-  family_proto_out.add_coats()->add_tips()->set_corner_rounding(1.0f);
+  family_proto_out.add_coats()->mutable_tip()->set_corner_rounding(1.0f);
   family_proto_out.set_client_brush_family_id("marker");
 
   EncodeBrushFamily(*family, family_proto_out);
@@ -429,14 +429,13 @@ TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
   // After encoding, the old tip proto should be replaced, and the old ID
   // should get cleared.
   ASSERT_EQ(family_proto_out.coats_size(), 1u);
-  ASSERT_EQ(family_proto_out.coats(0).tips_size(), 1u);
-  EXPECT_EQ(family_proto_out.coats(0).tips(0).corner_rounding(), 0.25f);
+  EXPECT_EQ(family_proto_out.coats(0).tip().corner_rounding(), 0.25f);
   EXPECT_FALSE(family_proto_out.has_client_brush_family_id());
 }
 
 TEST(BrushTest, DecodeBrushFamilyWithNoInputModel) {
   proto::BrushFamily family_proto;
-  family_proto.add_coats()->add_tips();
+  family_proto.add_coats()->mutable_tip();
   absl::StatusOr<BrushFamily> family = DecodeBrushFamily(family_proto);
   ASSERT_THAT(family, IsOk());
   EXPECT_TRUE(std::holds_alternative<BrushFamily::SpringModel>(

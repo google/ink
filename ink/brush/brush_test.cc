@@ -104,8 +104,8 @@ TEST(BrushTest, Stringify) {
       absl::StrCat(*brush),
       "Brush(color=Color({0.000000, 0.000000, 1.000000, 1.000000}, sRGB), "
       "size=3, epsilon=0.1, "
-      "family=BrushFamily(coats=[BrushCoat{tips=[BrushTip{scale=<3, 3>, "
-      "corner_rounding=0, opacity_multiplier=0.7}], "
+      "family=BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
+      "corner_rounding=0, opacity_multiplier=0.7}, "
       "paint=BrushPaint{texture_layers={TextureLayer{client_texture_id="
       "test-texture, mapping=kWinding, "
       "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "

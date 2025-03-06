@@ -37,47 +37,22 @@ using ::testing::UnorderedElementsAre;
 constexpr absl::string_view kTestTextureId = "test-paint";
 
 TEST(BrushCoatTest, Stringify) {
-  EXPECT_EQ(absl::StrCat(BrushCoat{}),
-            "BrushCoat{tips=[], paint=BrushPaint{texture_layers={}}}");
-  EXPECT_EQ(absl::StrCat(BrushCoat{.tips = {BrushTip{}}}),
-            "BrushCoat{tips=[BrushTip{scale=<1, 1>, corner_rounding=1}], "
-            "paint=BrushPaint{texture_layers={}}}");
-  EXPECT_EQ(absl::StrCat(BrushCoat{.tips = {BrushTip{.corner_rounding = 0},
-                                            BrushTip{.corner_rounding = 1}}}),
-            "BrushCoat{tips=[BrushTip{scale=<1, 1>, corner_rounding=0}, "
-            "BrushTip{scale=<1, 1>, corner_rounding=1}], "
+  EXPECT_EQ(absl::StrCat(BrushCoat{.tip = BrushTip{}}),
+            "BrushCoat{tip=BrushTip{scale=<1, 1>, corner_rounding=1}, "
             "paint=BrushPaint{texture_layers={}}}");
 }
 
 TEST(BrushCoatTest, CoatWithDefaultTipAndPaintIsValid) {
   absl::Status status = brush_internal::ValidateBrushCoat(
-      BrushCoat{.tips = {BrushTip{}}, .paint = BrushPaint{}});
+      BrushCoat{.tip = BrushTip{}, .paint = BrushPaint{}});
   EXPECT_EQ(status, absl::OkStatus());
 }
 
 TEST(BrushCoatTest, CoatWithInvalidTipIsInvalid) {
   absl::Status status = brush_internal::ValidateBrushCoat(
-      BrushCoat{.tips = {BrushTip{.pinch = -1}}, .paint = BrushPaint{}});
+      BrushCoat{.tip = BrushTip{.pinch = -1}, .paint = BrushPaint{}});
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("pinch"));
-}
-
-TEST(BrushCoatTest, CoatWithNoTipsIsInvalid) {
-  absl::Status status = brush_internal::ValidateBrushCoat(BrushCoat{});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("must have at least one BrushTip"));
-}
-
-TEST(BrushCoatTest, CoatWithTooManyTipsIsInvalid) {
-  BrushCoat coat;
-  // TODO: b/285594469 - For now, two tips is all it takes to be too many. Once
-  // multi-tip `BrushCoat` support is implemented, we'll still want some kind of
-  // cap on the number of tips.
-  for (int i = 0; i < 2; ++i) {
-    coat.tips.push_back(BrushTip{});
-  }
-  absl::Status status = brush_internal::ValidateBrushCoat(coat);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
 }
 
 void CanValidateValidBrushCoat(const BrushCoat& coat) {
@@ -109,7 +84,7 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutColorShift) {
           },
       }}},
   };
-  BrushCoat coat = {.tips = {tip}};
+  BrushCoat coat = {.tip = tip};
   EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
               Not(Contains(MeshFormat::AttributeId::kColorShiftHsl)));
 }
@@ -133,7 +108,7 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithColorShift) {
             },
         }}},
     };
-    BrushCoat coat = {.tips = {tip}};
+    BrushCoat coat = {.tip = tip};
     EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
                 Contains(MeshFormat::AttributeId::kColorShiftHsl));
   }
@@ -146,7 +121,7 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutWindingTextures) {
           .mapping = BrushPaint::TextureMapping::kTiling,
       }},
   };
-  BrushCoat coat = {.tips = {BrushTip()}, .paint = paint};
+  BrushCoat coat = {.tip = BrushTip(), .paint = paint};
   EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
               Not(Contains(MeshFormat::AttributeId::kSurfaceUv)));
 }
@@ -158,7 +133,7 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithWindingTextures) {
           .mapping = BrushPaint::TextureMapping::kWinding,
       }},
   };
-  BrushCoat coat = {.tips = {BrushTip()}, .paint = paint};
+  BrushCoat coat = {.tip = BrushTip(), .paint = paint};
   EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
               Contains(MeshFormat::AttributeId::kSurfaceUv));
 }

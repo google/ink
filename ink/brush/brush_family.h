@@ -58,10 +58,10 @@ class BrushFamily {
   // to have. Note that this limit may increase in the future.
   static uint32_t MaxBrushCoats();
 
-  // Creates a `BrushFamily` with the given `tips`, `paint`, and optional
+  // Creates a `BrushFamily` with the given `tip`, `paint`, and optional
   // string `client_brush_family_id`.
   //
-  // Performs validation of the `tips` and `paint`.
+  // Performs validation of the `tip` and `paint`.
   //
   // For a tip to be valid the following must hold:
   //   * Every numeric, `Angle` or `Duration32` property must be finite and
@@ -133,7 +133,7 @@ class BrushFamily {
   // Implementation helper for AbslStringify.
   std::string ToFormattedString() const;
 
-  std::vector<BrushCoat> coats_ = {BrushCoat{.tips = {BrushTip{}}}};
+  std::vector<BrushCoat> coats_ = {BrushCoat{.tip = BrushTip{}}};
   std::string client_brush_family_id_;
   InputModel input_model_;
 };

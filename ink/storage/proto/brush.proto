@@ -90,7 +90,7 @@ message BrushFamily {
 
   repeated BrushCoat coats = 4;
 
-  // Was `tips` and `paint`, use `coats[0].tips` and `coats[0].paint`
+  // Was `tip` and `paint`, use `coats[0].tip` and `coats[0].paint`
   // instead.
   reserved 1 to 2;
 
@@ -102,10 +102,10 @@ message BrushFamily {
 }
 
 // Specifies one coat of paint applied by a brush, including the paint itself,
-// and the tip(s) used to apply that paint.  For details, see
+// and the tip used to apply that paint.  For details, see
 // ../../brush/brush_coat.h
 message BrushCoat {
-  repeated BrushTip tips = 1;
+  optional BrushTip tip = 1;
   optional BrushPaint paint = 2;
 }
 

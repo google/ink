@@ -26,25 +26,13 @@
 namespace ink {
 
 // A `BrushCoat` represents one coat of paint applied by a brush. It includes a
-// single `BrushPaint`, as well as one (TODO: b/285594469 - or more) `BrushTip`s
-// used to apply that paint. Multiple `BrushCoats` can be combined within a
-// single brush; when a stroke drawn by a multi-coat brush is rendered, each
-// coat of paint will be drawn entirely atop the previous coat, even if the
-// stroke crosses over itself, as though each coat were painted in its entirety
-// one at a time.
-//
-// For a `BrushCoat` struct to be valid, the following must hold:
-//   * There is at least one tip.
-//   * There is at most one tip (TODO: b/285594469 - Relax this restriction).
-//   * Each tip struct, and the paint struct, are themselves valid.
+// `BrushPaint` and a `BrushTip` used to apply that paint. Multiple `BrushCoats`
+// can be combined within a single brush; when a stroke drawn by a multi-coat
+// brush is rendered, each coat of paint will be drawn entirely atop the
+// previous coat, even if the stroke crosses over itself, as though each coat
+// were painted in its entirety one at a time.
 struct BrushCoat {
-  // The tip(s) used to apply the paint.
-  //
-  // For now, there must be exactly one tip.
-  // TODO: b/285594469 - Relax this restriction.
-  std::vector<BrushTip> tips;
-
-  // The paint to be applied in this coat.
+  BrushTip tip;
   BrushPaint paint;
 };
 
