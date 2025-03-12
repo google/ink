@@ -701,3 +701,20 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+# Separate target because the fuzz-test currently fails extremely easily, thus want to make it
+# available for fuzzing infrastructure without blocking presubmit CI.
+cc_test(
+    name = "tessellator_fuzz_test",
+    srcs = ["tessellator_fuzz_test.cc"],
+    tags = [
+        "manual",
+    ],
+    deps = [
+        ":fuzz_domains",
+        ":point",
+        ":tessellator",
+        "@com_google_fuzztest//fuzztest",
+        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+    ],
+)
