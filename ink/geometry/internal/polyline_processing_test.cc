@@ -4,6 +4,8 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "fuzztest/fuzztest.h"
+#include "ink/geometry/fuzz_domains.h"
 #include "ink/geometry/internal/static_rtree.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
@@ -1181,6 +1183,18 @@ TEST(PolylineProcessingTest,
                   {Point{5, 3}, Point{5.2, 3}, Point{11, 3}, Point{20, 10},
                    Point{30, 20}, Point{20, 30}, Point{15, 25}, Point{10, 20},
                    Point{5, 15}, Point{5, 8}, Point{5, 2.95}, Point{5.2, 3}}));
+}
+
+void CreateClosedShapeDoesNotCrash(const std::vector<Point>& polyline) {
+  CreateClosedShape(polyline);
+}
+FUZZ_TEST(PolylineProcessingFuzzTest, CreateClosedShapeDoesNotCrash)
+    .WithDomains(fuzztest::VectorOf(FinitePoint()));
+
+TEST(PolylineProcessingFuzzTest,
+     CreateClosedShapeDoesNotCrashOnInfiniteMaxConnectionDistance) {
+  CreateClosedShapeDoesNotCrash({Point{3.40282347e+38f, 0.f}, Point{-0.f, 0.f},
+                                 Point{-3.40282347e+38f, 0.379977018f}});
 }
 
 }  // namespace

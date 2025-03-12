@@ -333,7 +333,8 @@ void FindBestEndpointConnections(
         return true;
       });
 
-  if (best_first_point_connection_length <= polyline.max_connection_distance) {
+  if (best_first_point_connection_length <= polyline.max_connection_distance &&
+      !std::isinf(best_first_point_connection_length)) {
     polyline.connect_first = true;
     polyline.new_first_point =
         polyline.segments[best_first_point_connection.index_int].segment.Lerp(
@@ -372,7 +373,8 @@ void FindBestEndpointConnections(
         return true;
       });
 
-  if (best_last_point_connection_length <= polyline.max_connection_distance) {
+  if (best_last_point_connection_length <= polyline.max_connection_distance &&
+      !std::isinf(best_last_point_connection_length)) {
     polyline.connect_last = true;
     polyline.new_last_point =
         polyline.segments[best_last_point_connection.index_int].segment.Lerp(
