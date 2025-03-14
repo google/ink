@@ -69,54 +69,58 @@ void StrokeInputModeler::StartStroke(const BrushFamily::InputModel& input_model,
 
 namespace {
 
+using stroke_model::PositionModelerParams;
+using stroke_model::StylusStateModelerParams;
+
 // LINT.IfChange(input_model_types)
 
-stroke_model::PositionModelerParams::LoopContractionMitigationParameters
+PositionModelerParams::LoopContractionMitigationParameters
+LoopContractionParams(const BrushFamily::SpringModel& spring_model,
+                      std::optional<PhysicalDistance> stroke_unit_length) {
+  // Without the stroke unit length, we cannot determine the speed of
+  // the stroke inputs, so we cannot enable loop mitigation.
+  if (!stroke_unit_length.has_value()) {
+    return {.is_enabled = false};
+  }
+  return {
+      .is_enabled = true,
+      .speed_lower_bound = kDefaultLoopMitigationSpeedLowerBoundInCmPerSec /
+                           stroke_unit_length->ToCentimeters(),
+      .speed_upper_bound = kDefaultLoopMitigationSpeedUpperBoundInCmPerSec /
+                           stroke_unit_length->ToCentimeters(),
+      .interpolation_strength_at_speed_lower_bound =
+          kDefaultLoopMitigationInterpolationStrengthAtSpeedLowerBound,
+      .interpolation_strength_at_speed_upper_bound =
+          kDefaultLoopMitigationInterpolationStrengthAtSpeedUpperBound,
+      .min_speed_sampling_window = kDefaultLoopMitigationMinSpeedSamplingWindow,
+      .min_discrete_speed_samples =
+          kDefaultLoopMitigationMinDiscreteSpeedSamples,
+  };
+}
+
+PositionModelerParams::LoopContractionMitigationParameters
 MakeLoopContractionMitigationParameters(
     const BrushFamily::InputModel& input_model,
     std::optional<PhysicalDistance> stroke_unit_length) {
   return std::visit(
-      [stroke_unit_length](auto&& input_model)
-      // NOLINTNEXTLINE(whitespace/line_length)
-      -> stroke_model::PositionModelerParams::LoopContractionMitigationParameters {
-        using ModelType = std::decay_t<decltype(input_model)>;
-        if constexpr (std::is_same_v<ModelType, BrushFamily::SpringModel>) {
-          // Without the stroke unit length, we cannot determine the speed of
-          // the stroke inputs, so we cannot enable loop mitigation.
-          if (!stroke_unit_length.has_value()) {
-            return {.is_enabled = false};
-          }
-          return {
-              .is_enabled = true,
-              .speed_lower_bound =
-                  kDefaultLoopMitigationSpeedLowerBoundInCmPerSec /
-                  stroke_unit_length->ToCentimeters(),
-              .speed_upper_bound =
-                  kDefaultLoopMitigationSpeedUpperBoundInCmPerSec /
-                  stroke_unit_length->ToCentimeters(),
-              .interpolation_strength_at_speed_lower_bound =
-                  kDefaultLoopMitigationInterpolationStrengthAtSpeedLowerBound,
-              .interpolation_strength_at_speed_upper_bound =
-                  kDefaultLoopMitigationInterpolationStrengthAtSpeedUpperBound,
-              .min_speed_sampling_window =
-                  kDefaultLoopMitigationMinSpeedSamplingWindow,
-              .min_discrete_speed_samples =
-                  kDefaultLoopMitigationMinDiscreteSpeedSamples};
-        }
+      [stroke_unit_length](auto&& input_model) {
+        return LoopContractionParams(input_model, stroke_unit_length);
       },
       input_model);
 }
 
-stroke_model::StylusStateModelerParams MakeStylusStateModelerParams(
+StylusStateModelerParams StylusModelerParams(
+    const BrushFamily::SpringModel& spring_model) {
+  return {.use_stroke_normal_projection = true,
+          .min_input_samples = 8,
+          .min_sample_duration = stroke_model::Duration(0.04)};
+}
+
+StylusStateModelerParams MakeStylusStateModelerParams(
     const BrushFamily::InputModel& input_model) {
   return std::visit(
       [](auto&& input_model) -> stroke_model::StylusStateModelerParams {
-        using ModelType = std::decay_t<decltype(input_model)>;
-        if constexpr (std::is_same_v<ModelType, BrushFamily::SpringModel>) {
-          return {.use_stroke_normal_projection = true,
-                  .min_input_samples = 8,
-                  .min_sample_duration = stroke_model::Duration(0.04)};
-        }
+        return StylusModelerParams(input_model);
       },
       input_model);
 }
