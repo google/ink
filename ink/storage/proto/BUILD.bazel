@@ -40,6 +40,12 @@ proto_library(
     srcs = ["coded.proto"],
 )
 
+proto_library(
+    name = "bitmap_proto",
+    srcs = ["bitmap.proto"],
+    deps = [":color_proto"],
+)
+
 cc_proto_library(
     name = "color_cc_proto",
     deps = [":color_proto"],
@@ -53,4 +59,9 @@ cc_proto_library(
 cc_proto_library(
     name = "coded_cc_proto",
     deps = [":coded_proto"],
+)
+
+cc_proto_library(
+    name = "bitmap_cc_proto",
+    deps = [":bitmap_proto"],
 )
