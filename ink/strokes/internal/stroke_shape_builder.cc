@@ -14,10 +14,8 @@
 
 #include "ink/strokes/internal/stroke_shape_builder.h"
 
-#include <cstddef>
 #include <cstdint>
 
-#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
