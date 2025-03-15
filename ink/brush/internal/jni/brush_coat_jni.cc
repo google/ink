@@ -14,10 +14,6 @@
 
 #include <jni.h>
 
-#include <utility>
-#include <vector>
-
-#include "absl/log/absl_check.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
