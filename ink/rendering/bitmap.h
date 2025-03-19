@@ -16,7 +16,6 @@
 #define INK_RENDERING_BITMAP_H_
 
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -43,7 +42,8 @@ class Bitmap {
   enum class PixelFormat {
     kRgba8888,
   };
-  // LINT.ThenChange(fuzz_domains.h:pixel_format)
+  // LINT.ThenChange(fuzz_domains.h:pixel_format,
+  // ../storage/proto/bitmap.proto:pixel_format)
 
   int width() const { return width_; }
   int height() const { return height_; }
@@ -51,6 +51,7 @@ class Bitmap {
   Color::Format color_format() const { return color_format_; }
   ColorSpace color_space() const { return color_space_; }
 
+  // Returns a span of the pixel data in row-major order.
   virtual absl::Span<const uint8_t> GetPixelData() const = 0;
 
  protected:

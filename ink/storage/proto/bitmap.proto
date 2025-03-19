@@ -1,0 +1,56 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Proto definitions for Bitmap and related messages for use in Ink Strokes API.
+
+syntax = "proto2";
+
+package ink.proto;
+
+import "ink/storage/proto/color.proto";
+
+option java_package = "com.google.ink.proto";
+option java_outer_classname = "BitmapProto";
+option objc_class_prefix = "INKPB";
+
+// Stores raw bitmap data in a platform- and renderer-independent form as a
+// pixel array, each pixel an RGBA color tuple, with gamma-encoded,
+// non-premultiplied color values.
+
+// To be valid:
+//  - `width` and `height` must be strictly positive.
+//  - `pixel_data` must contain the correct number of bytes for the image
+//    dimensions and pixel format. `pixel_data` is stored in row-major order.
+//  - `color_space` must be specified.
+//  - `pixel_format` must be specified.
+// See ../../rendering/bitmap.h
+message Bitmap {
+  // LINT.IfChange(pixel_format)
+  enum PixelFormat {
+    PIXEL_FORMAT_UNSPECIFIED = 0;
+    PIXEL_FORMAT_RGBA8888 = 1;
+  }
+  // LINT.ThenChange(../../rendering/bitmap.h)
+
+  // Number of pixels wide
+  optional int32 width = 1;
+  // Number of pixels high
+  optional int32 height = 2;
+  // Bit layout of each pixel
+  optional PixelFormat pixel_format = 3;
+  // Row-major pixel data
+  optional bytes pixel_data = 4;
+  // Color space in which RGB values are expressed
+  optional ColorSpace color_space = 5;
+}

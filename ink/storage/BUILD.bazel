@@ -339,6 +339,44 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "bitmap",
+    srcs = ["bitmap.cc"],
+    hdrs = ["bitmap.h"],
+    deps = [
+        ":color",
+        "//ink/color",
+        "//ink/color:color_space",
+        "//ink/rendering:bitmap",
+        "//ink/storage/proto:bitmap_cc_proto",
+        "//ink/storage/proto:color_cc_proto",
+        "@com_google_absl//absl/log:absl_log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "bitmap_test",
+    srcs = ["bitmap_test.cc"],
+    deps = [
+        ":bitmap",
+        "//ink/color",
+        "//ink/color:color_space",
+        "//ink/rendering:bitmap",
+        "//ink/rendering:fuzz_domains",
+        "//ink/storage/proto:bitmap_cc_proto",
+        "//ink/storage/proto:color_cc_proto",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_matchers",
+        "@com_google_absl//absl/strings",
+        "@com_google_fuzztest//fuzztest",
+        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+    ],
+)
+
 cc_test(
     name = "numeric_run_test",
     srcs = ["numeric_run_test.cc"],
