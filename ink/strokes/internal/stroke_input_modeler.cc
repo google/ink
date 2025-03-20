@@ -17,7 +17,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <optional>
-#include <type_traits>
 #include <variant>
 #include <vector>
 
