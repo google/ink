@@ -73,7 +73,7 @@ Domain<float> FinitePositiveFloat() {
                 Positive<float>());
 }
 
-Domain<std::pair<float, float>> PairOfFinitePositiveAscendingFloats() {
+Domain<std::pair<float, float>> PairOfFinitePositiveDescendingFloats() {
   auto a_and_b = [](float a) {
     return PairOf(InRange(a, std::numeric_limits<float>::max()), Just(a));
   };
@@ -474,7 +474,7 @@ Domain<Brush> ArbitraryBrush() {
             .value();
       },
       ArbitraryBrushFamily(), ArbitraryColor(),
-      PairOfFinitePositiveAscendingFloats());
+      PairOfFinitePositiveDescendingFloats());
 }
 
 Domain<BrushBehavior> ValidBrushBehavior() {
