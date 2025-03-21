@@ -55,6 +55,7 @@ cc_library(
         "@skia//:core",
         "@skia//:ganesh_gl",
     ],
+    alwayslink = 1,
 )
 
 cc_test(
