@@ -39,16 +39,15 @@ use_repo(llvm, "llvm_toolchain")
 
 register_toolchains("@llvm_toolchain//:all")
 
-# Configure and register the Android NDK toolchain for NDK builds.
-bazel_dep(name = "rules_android_ndk", version = "0.1.2")
+# Configure the Android NDK toolchain for NDK builds. Don't register that here so it's not required
+# for builds that don't need it. Those configs can register those in --extra_toolchains.
+bazel_dep(name = "rules_android_ndk", version = "0.1.3")
 
 android_ndk_repository_extension = use_extension(
     "@rules_android_ndk//:extension.bzl",
     "android_ndk_repository_extension",
 )
 use_repo(android_ndk_repository_extension, "androidndk")
-
-register_toolchains("@androidndk//:all")
 
 #################################################################################
 ## Direct dependencies

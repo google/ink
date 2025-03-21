@@ -9,7 +9,8 @@ common --enable_bzlmod
 try-import %workspace%/fuzztest.bazelrc
 
 # Android builds.
-build:android-x86 --platforms=//:android-x86
-build:android-x86_64 --platforms=//:android-x86_64
-build:android-armeabi-v7a --platforms=//:android-arm
-build:android-arm64-v8a --platforms=//:android-arm64
+build:android-common --extra_toolchains=@androidndk//:all
+build:android-x86 --config=android-common --platforms=//:android-x86
+build:android-x86_64 --config=android-common --platforms=//:android-x86_64
+build:android-armeabi-v7a --config=android-common --platforms=//:android-arm
+build:android-arm64-v8a --config=android-common --platforms=//:android-arm64
