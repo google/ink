@@ -14,12 +14,17 @@
 
 #include "ink/storage/brush.h"
 
+#include <cstdint>
+#include <map>
 #include <optional>
+#include <string>
+#include <utility>
 #include <variant>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/base/nullability.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
@@ -33,8 +38,11 @@
 #include "ink/brush/fuzz_domains.h"
 #include "ink/brush/type_matchers.h"
 #include "ink/color/color.h"
+#include "ink/color/color_space.h"
 #include "ink/geometry/vec.h"
+#include "ink/rendering/bitmap.h"
 #include "ink/storage/color.h"
+#include "ink/storage/proto/bitmap.pb.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/coded.pb.h"
 #include "ink/storage/proto_matchers.h"
@@ -50,44 +58,125 @@ using ::testing::HasSubstr;
 using ::testing::IsNull;
 using ::testing::SizeIs;
 
-constexpr absl::string_view kTestTextureId = "test-texture";
+constexpr absl::string_view kTestTextureId1 = "test-texture-one";
+constexpr absl::string_view kTestTextureId2 = "test-texture-two";
+constexpr absl::string_view kTestTextureId1Decoded = "test-texture-one-decoded";
+constexpr absl::string_view kTestTextureId2Decoded = "test-texture-two-decoded";
+
+VectorBitmap TestBitmap1x1() {
+  return VectorBitmap(
+      /*width=*/1, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb,
+      std::vector<uint8_t>{0x12, 0x34, 0x56, 0x78});
+}
+
+VectorBitmap TestBitmap2x2() {
+  return VectorBitmap(
+      /*width=*/2, /*height=*/2, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb,
+      std::vector<uint8_t>{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12,
+                           0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78});
+}
 
 TEST(BrushTest, DecodeBrushProto) {
   proto::Brush brush_proto;
-  brush_proto.set_size_stroke_space(10);
-  brush_proto.set_epsilon_stroke_space(1.1);
-  EncodeColor(Color::Green(), *brush_proto.mutable_color());
-  proto::BrushFamily* family_proto = brush_proto.mutable_brush_family();
-  family_proto->mutable_input_model()->mutable_spring_model();
-  proto::BrushCoat* coat_proto = family_proto->add_coats();
-  proto::BrushTip* tip_proto = coat_proto->mutable_tip();
-  tip_proto->set_corner_rounding(0.5f);
-  tip_proto->set_opacity_multiplier(1.0f);
-  proto::BrushPaint* paint_proto = coat_proto->mutable_paint();
-  proto::BrushPaint::TextureLayer* texture_layer_proto =
-      paint_proto->add_texture_layers();
-  texture_layer_proto->set_client_texture_id(std::string(kTestTextureId));
-  texture_layer_proto->set_mapping(
-      proto::BrushPaint::TextureLayer::MAPPING_WINDING);
-  texture_layer_proto->set_origin(
-      proto::BrushPaint::TextureLayer::ORIGIN_FIRST_STROKE_INPUT);
-  texture_layer_proto->set_size_unit(
-      proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_SIZE);
-  texture_layer_proto->set_size_x(10);
-  texture_layer_proto->set_size_y(15);
-  proto::BrushPaint::TextureKeyframe* keyframe_proto =
-      texture_layer_proto->add_keyframes();
-  keyframe_proto->set_progress(0.8f);
-  keyframe_proto->set_size_x(10);
-  keyframe_proto->set_size_y(15);
-  keyframe_proto->set_opacity(0.6f);
-  texture_layer_proto->set_blend_mode(
-      proto::BrushPaint::TextureLayer::BLEND_MODE_DST_OUT);
+  VectorBitmap test_bitmap_1 = TestBitmap1x1();
+  VectorBitmap test_bitmap_2 = TestBitmap2x2();
+  std::string bitmap_data_1(
+      reinterpret_cast<const char*>(test_bitmap_1.GetPixelData().data()),
+      test_bitmap_1.GetPixelData().size());
+  std::string bitmap_data_2(
+      reinterpret_cast<const char*>(test_bitmap_2.GetPixelData().data()),
+      test_bitmap_2.GetPixelData().size());
+  ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(
+      absl::StrFormat(
+          R"pb(
+            size_stroke_space: 10
+            epsilon_stroke_space: 1.1
+            color { r: 0 g: 1 b: 0 a: 1 color_space: COLOR_SPACE_SRGB }
+            brush_family {
+              input_model { spring_model {} }
+              texture_id_to_bitmap {
+                key: "%s"
+                value {
+                  width: 1
+                  height: 1
+                  pixel_format: PIXEL_FORMAT_RGBA8888
+                  color_space: COLOR_SPACE_SRGB
+                  pixel_data: "%s"
+                }
+              }
+              texture_id_to_bitmap {
+                key: "%s"
+                value {
+                  width: 2
+                  height: 2
+                  pixel_format: PIXEL_FORMAT_RGBA8888
+                  color_space: COLOR_SPACE_SRGB
+                  pixel_data: "%s"
+                }
+              }
+              coats {
+                tip { corner_rounding: 0.5 opacity_multiplier: 1.0 }
+                paint {
+                  texture_layers {
+                    client_texture_id: "%s"
+                    mapping: MAPPING_WINDING
+                    origin: ORIGIN_FIRST_STROKE_INPUT
+                    size_unit: SIZE_UNIT_STROKE_SIZE
+                    size_x: 10
+                    size_y: 15
+                    keyframes {
+                      progress: 0.8
+                      size_x: 10
+                      size_y: 15
+                      opacity: 0.6
+                    }
+                    blend_mode: BLEND_MODE_DST_OUT
+                  }
+                  texture_layers {
+                    client_texture_id: "%s"
+                    mapping: MAPPING_WINDING
+                    origin: ORIGIN_FIRST_STROKE_INPUT
+                    size_unit: SIZE_UNIT_STROKE_SIZE
+                    size_x: 4
+                    size_y: 10
+                    keyframes {
+                      progress: 0.5
+                      size_x: 10
+                      size_y: 15
+                      opacity: 0.6
+                    }
+                    blend_mode: BLEND_MODE_DST_OUT
+                  }
+                  texture_layers {
+                    client_texture_id: "%s"
+                    mapping: MAPPING_WINDING
+                    origin: ORIGIN_FIRST_STROKE_INPUT
+                    size_unit: SIZE_UNIT_STROKE_SIZE
+                    size_x: 1
+                    size_y: 2
+                    keyframes {
+                      progress: 0.3
+                      size_x: 10
+                      size_y: 15
+                      opacity: 0.6
+                    }
+                    blend_mode: BLEND_MODE_DST_OUT
+                  }
+                }
+              }
+            }
+          )pb",
+          kTestTextureId1, bitmap_data_1, kTestTextureId2, bitmap_data_2,
+          kTestTextureId1, kTestTextureId2, kTestTextureId1),
+      &brush_proto));
 
+  // Expected brush family.
   absl::StatusOr<BrushFamily> expected_family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.5f},
       {.texture_layers = {
-           {.client_texture_id = std::string(kTestTextureId),
+           {.client_texture_id = std::string(kTestTextureId1Decoded),
             .mapping = BrushPaint::TextureMapping::kWinding,
             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
@@ -95,15 +184,75 @@ TEST(BrushTest, DecodeBrushProto) {
             .keyframes = {{.progress = 0.8f,
                            .size = std::optional<Vec>({10, 15}),
                            .opacity = std::optional<float>(0.6f)}},
+            .blend_mode = BrushPaint::BlendMode::kDstOut},
+           {.client_texture_id = std::string(kTestTextureId2Decoded),
+            .mapping = BrushPaint::TextureMapping::kWinding,
+            .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
+            .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
+            .size = {4, 10},
+            .keyframes = {{.progress = 0.5f,
+                           .size = std::optional<Vec>({10, 15}),
+                           .opacity = std::optional<float>(0.6f)}},
+            .blend_mode = BrushPaint::BlendMode::kDstOut},
+           {.client_texture_id = std::string(kTestTextureId1Decoded),
+            .mapping = BrushPaint::TextureMapping::kWinding,
+            .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
+            .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
+            .size = {1, 2},
+            .keyframes = {{.progress = 0.3f,
+                           .size = std::optional<Vec>({10, 15}),
+                           .opacity = std::optional<float>(0.6f)}},
             .blend_mode = BrushPaint::BlendMode::kDstOut}}});
+
   ASSERT_EQ(expected_family.status(), absl::OkStatus());
   absl::StatusOr<Brush> expected_brush =
       Brush::Create(*expected_family, Color::Green(), 10, 1.1);
   ASSERT_EQ(expected_brush.status(), absl::OkStatus());
 
-  absl::StatusOr<Brush> brush = DecodeBrush(brush_proto);
+  std::map<std::string, VectorBitmap> decoded_bitmaps = {};
+  OnDecodeMappedTexture callback =
+      [&decoded_bitmaps](const std::string& id,
+                         VectorBitmap* absl_nullable bitmap) -> std::string {
+    std::string new_id = "";
+    if (id == kTestTextureId1) {
+      new_id = kTestTextureId1Decoded;
+    } else if (id == kTestTextureId2) {
+      new_id = kTestTextureId2Decoded;
+    }
+    if (bitmap != nullptr) {
+      if (decoded_bitmaps.find(new_id) == decoded_bitmaps.end()) {
+        VectorBitmap bitmap_copy = *bitmap;
+        decoded_bitmaps.insert({new_id, std::move(bitmap_copy)});
+      }
+    }
+    return new_id;
+  };
+  absl::StatusOr<Brush> brush = DecodeBrush(brush_proto, callback);
   ASSERT_EQ(brush.status(), absl::OkStatus());
   EXPECT_THAT(*brush, BrushEq(*expected_brush));
+  ASSERT_EQ(decoded_bitmaps.size(), 2);
+
+  EXPECT_NE(decoded_bitmaps.find(std::string(kTestTextureId1Decoded)),
+            decoded_bitmaps.end());
+  VectorBitmap decoded_bitmap_1 =
+      decoded_bitmaps.at(std::string(kTestTextureId1Decoded));
+  EXPECT_EQ(decoded_bitmap_1.width(), test_bitmap_1.width());
+  EXPECT_EQ(decoded_bitmap_1.height(), test_bitmap_1.height());
+  EXPECT_EQ(decoded_bitmap_1.pixel_format(), test_bitmap_1.pixel_format());
+  EXPECT_EQ(decoded_bitmap_1.color_format(), test_bitmap_1.color_format());
+  EXPECT_EQ(decoded_bitmap_1.color_space(), test_bitmap_1.color_space());
+  EXPECT_EQ(decoded_bitmap_1.GetPixelData(), test_bitmap_1.GetPixelData());
+
+  EXPECT_NE(decoded_bitmaps.find(std::string(kTestTextureId2Decoded)),
+            decoded_bitmaps.end());
+  VectorBitmap decoded_bitmap_2 =
+      decoded_bitmaps.at(std::string(kTestTextureId2Decoded));
+  EXPECT_EQ(decoded_bitmap_2.width(), test_bitmap_2.width());
+  EXPECT_EQ(decoded_bitmap_2.height(), test_bitmap_2.height());
+  EXPECT_EQ(decoded_bitmap_2.pixel_format(), test_bitmap_2.pixel_format());
+  EXPECT_EQ(decoded_bitmap_2.color_format(), test_bitmap_2.color_format());
+  EXPECT_EQ(decoded_bitmap_2.color_space(), test_bitmap_2.color_space());
+  EXPECT_EQ(decoded_bitmap_2.GetPixelData(), test_bitmap_2.GetPixelData());
 }
 
 TEST(BrushTest, DecodeBrushWithInvalidBrushSize) {
@@ -248,7 +397,7 @@ TEST(BrushTest, DecodeBrushPaintWithInvalidTextureKeyframe) {
         paint_proto->add_texture_layers();
     texture_layer_proto->set_size_unit(
         proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_SIZE);
-    texture_layer_proto->set_client_texture_id(std::string(kTestTextureId));
+    texture_layer_proto->set_client_texture_id(std::string(kTestTextureId1));
     texture_layer_proto->set_origin(
         proto::BrushPaint::TextureLayer::ORIGIN_FIRST_STROKE_INPUT);
     texture_layer_proto->set_mapping(
@@ -273,7 +422,7 @@ TEST(BrushTest, DecodeBrushPaintWithInvalidTextureKeyframe) {
         paint_proto->add_texture_layers();
     texture_layer_proto->set_size_unit(
         proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_SIZE);
-    texture_layer_proto->set_client_texture_id(std::string(kTestTextureId));
+    texture_layer_proto->set_client_texture_id(std::string(kTestTextureId1));
     texture_layer_proto->set_origin(
         proto::BrushPaint::TextureLayer::ORIGIN_FIRST_STROKE_INPUT);
     texture_layer_proto->set_mapping(
@@ -330,7 +479,7 @@ void DecodeBrushTipDoesNotCrashOnArbitraryInput(
 }
 FUZZ_TEST(BrushTest, DecodeBrushTipDoesNotCrashOnArbitraryInput);
 
-TEST(BrushTest, EncodeBrush) {
+TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{
           .corner_rounding = 0.25f,
@@ -339,7 +488,7 @@ TEST(BrushTest, EncodeBrush) {
           .particle_gap_duration = Duration32::Seconds(2),
       },
       {.texture_layers = {
-           {.client_texture_id = std::string(kTestTextureId),
+           {.client_texture_id = std::string(kTestTextureId1),
             .mapping = BrushPaint::TextureMapping::kWinding,
             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
             .wrap_y = BrushPaint::TextureWrap::kMirror,
@@ -354,59 +503,269 @@ TEST(BrushTest, EncodeBrush) {
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
   proto::Brush brush_proto_out;
-  EncodeBrush(*brush, brush_proto_out);
+  int callback_count = 0;
+  TextureBitmapProvider callback = [&callback_count](const std::string& id) {
+    callback_count++;
+    return std::nullopt;
+  };
+  EncodeBrush(*brush, brush_proto_out, callback);
 
   proto::Brush brush_proto;
-  brush_proto.set_size_stroke_space(10);
-  brush_proto.set_epsilon_stroke_space(1.1);
-  EncodeColor(Color::Green(), *brush_proto.mutable_color());
-  proto::BrushFamily* brush_family_proto = brush_proto.mutable_brush_family();
-  brush_family_proto->mutable_input_model()->mutable_spring_model();
-  proto::BrushCoat* brush_coat_proto = brush_family_proto->add_coats();
-  proto::BrushTip* brush_tip_proto = brush_coat_proto->mutable_tip();
-  brush_tip_proto->set_scale_x(1.f);
-  brush_tip_proto->set_scale_y(1.f);
-  brush_tip_proto->set_corner_rounding(0.25f);
-  brush_tip_proto->set_slant_radians(0.f);
-  brush_tip_proto->set_pinch(0.f);
-  brush_tip_proto->set_rotation_radians(0.f);
-  brush_tip_proto->set_opacity_multiplier(0.7f);
-  brush_tip_proto->set_particle_gap_distance_scale(1);
-  brush_tip_proto->set_particle_gap_duration_seconds(2);
-  proto::BrushPaint* brush_paint_proto = brush_coat_proto->mutable_paint();
-  proto::BrushPaint::TextureLayer* texture_layer_proto =
-      brush_paint_proto->add_texture_layers();
-  texture_layer_proto->set_client_texture_id(std::string(kTestTextureId));
-  texture_layer_proto->set_mapping(
-      proto::BrushPaint::TextureLayer::MAPPING_WINDING);
-  texture_layer_proto->set_origin(
-      proto::BrushPaint::TextureLayer::ORIGIN_STROKE_SPACE_ORIGIN);
-  texture_layer_proto->set_size_x(10);
-  texture_layer_proto->set_size_y(15);
-  texture_layer_proto->set_size_unit(
-      proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_SIZE);
-  texture_layer_proto->set_wrap_x(proto::BrushPaint::TextureLayer::WRAP_REPEAT);
-  texture_layer_proto->set_wrap_y(proto::BrushPaint::TextureLayer::WRAP_MIRROR);
-  texture_layer_proto->set_offset_x(0.f);
-  texture_layer_proto->set_offset_y(0.f);
-  texture_layer_proto->set_rotation_in_radians(0.f);
-  texture_layer_proto->set_size_jitter_x(3.f);
-  texture_layer_proto->set_size_jitter_y(7.f);
-  texture_layer_proto->set_offset_jitter_x(0.f);
-  texture_layer_proto->set_offset_jitter_y(0.f);
-  texture_layer_proto->set_rotation_jitter_in_radians(0.f);
-  texture_layer_proto->set_opacity(1.f);
-  texture_layer_proto->set_animation_frames(2);
-  proto::BrushPaint::TextureKeyframe* keyframe_proto =
-      texture_layer_proto->add_keyframes();
-  keyframe_proto->set_progress(0.8f);
-  keyframe_proto->set_size_x(10);
-  keyframe_proto->set_size_y(15);
-  keyframe_proto->set_opacity(0.6f);
-  texture_layer_proto->set_blend_mode(
-      proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
+  ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(
+      R"pb(
+        size_stroke_space: 10
+        epsilon_stroke_space: 1.1
+        color { r: 0 g: 1 b: 0 a: 1 color_space: COLOR_SPACE_SRGB }
+        brush_family {
+          input_model { spring_model {} }
+          coats {
+            tip {
+              scale_x: 1.f
+              scale_y: 1.f
+              corner_rounding: 0.25f
+              slant_radians: 0.f
+              pinch: 0.f
+              rotation_radians: 0.f
+              opacity_multiplier: 0.7f
+              particle_gap_distance_scale: 1
+              particle_gap_duration_seconds: 2
+            }
+            paint {
+              texture_layers {
+                client_texture_id: "test-texture-one"
+                mapping: MAPPING_WINDING
+                origin: ORIGIN_STROKE_SPACE_ORIGIN
+                size_x: 10
+                size_y: 15
+                size_unit: SIZE_UNIT_STROKE_SIZE
+                wrap_x: WRAP_REPEAT
+                wrap_y: WRAP_MIRROR
+                offset_x: 0.f
+                offset_y: 0.f
+                rotation_in_radians: 0.f
+                size_jitter_x: 3.f
+                size_jitter_y: 7.f
+                offset_jitter_x: 0.f
+                offset_jitter_y: 0.f
+                rotation_jitter_in_radians: 0.f
+                opacity: 1.f
+                animation_frames: 2
+                keyframes { progress: 0.8f size_x: 10 size_y: 15 opacity: 0.6f }
+                blend_mode: BLEND_MODE_SRC_IN
+              }
+            }
+          }
+        }
+      )pb",
+      &brush_proto));
 
   EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto));
+  EXPECT_EQ(callback_count, 1);
+}
+
+TEST(BrushTest, EncodeBrushWithTextureMap) {
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
+      BrushTip{
+          .corner_rounding = 0.25f,
+          .opacity_multiplier = 0.7f,
+          .particle_gap_distance_scale = 1,
+          .particle_gap_duration = Duration32::Seconds(2),
+      },
+      {.texture_layers = {
+           {.client_texture_id = std::string(kTestTextureId1),
+            .mapping = BrushPaint::TextureMapping::kWinding,
+            .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
+            .wrap_y = BrushPaint::TextureWrap::kMirror,
+            .size = {10, 15},
+            .size_jitter = {3, 7},
+            .animation_frames = 2,
+            .keyframes = {{.progress = 0.8f,
+                           .size = std::optional<Vec>({10, 15}),
+                           .opacity = std::optional<float>(0.6f)}},
+            .blend_mode = BrushPaint::BlendMode::kSrcIn}}});
+  ASSERT_EQ(family.status(), absl::OkStatus());
+  absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
+  ASSERT_EQ(brush.status(), absl::OkStatus());
+  proto::Brush brush_proto_out;
+  int callback_count = 0;
+  TextureBitmapProvider callback =
+      [&callback_count](
+          const std::string& id) -> std::optional<ink::VectorBitmap> {
+    callback_count++;
+    if (kTestTextureId1 == id) {
+      return TestBitmap1x1();
+    } else if (kTestTextureId2 == id) {
+      return TestBitmap2x2();
+    }
+    return std::nullopt;
+  };
+  EncodeBrush(*brush, brush_proto_out, callback);
+
+  proto::Brush brush_proto;
+  std::string bitmap_data_1(
+      reinterpret_cast<const char*>(TestBitmap1x1().GetPixelData().data()),
+      TestBitmap1x1().GetPixelData().size());
+  ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(
+      absl::StrFormat(
+          R"pb(
+            size_stroke_space: 10
+            epsilon_stroke_space: 1.1
+            color { r: 0 g: 1 b: 0 a: 1 color_space: COLOR_SPACE_SRGB }
+            brush_family {
+              input_model { spring_model {} }
+              texture_id_to_bitmap {
+                key: "%s"
+                value {
+                  width: 1
+                  height: 1
+                  pixel_format: PIXEL_FORMAT_RGBA8888
+                  color_space: COLOR_SPACE_SRGB
+                  pixel_data: "%s"
+                }
+              }
+              coats {
+                tip {
+                  scale_x: 1.f
+                  scale_y: 1.f
+                  corner_rounding: 0.25f
+                  slant_radians: 0.f
+                  pinch: 0.f
+                  rotation_radians: 0.f
+                  opacity_multiplier: 0.7f
+                  particle_gap_distance_scale: 1
+                  particle_gap_duration_seconds: 2
+                }
+                paint {
+                  texture_layers {
+                    client_texture_id: "%s"
+                    mapping: MAPPING_WINDING
+                    origin: ORIGIN_STROKE_SPACE_ORIGIN
+                    size_x: 10
+                    size_y: 15
+                    size_unit: SIZE_UNIT_STROKE_SIZE
+                    wrap_x: WRAP_REPEAT
+                    wrap_y: WRAP_MIRROR
+                    offset_x: 0.f
+                    offset_y: 0.f
+                    rotation_in_radians: 0.f
+                    size_jitter_x: 3.f
+                    size_jitter_y: 7.f
+                    offset_jitter_x: 0.f
+                    offset_jitter_y: 0.f
+                    rotation_jitter_in_radians: 0.f
+                    opacity: 1.f
+                    animation_frames: 2
+                    keyframes {
+                      progress: 0.8f
+                      size_x: 10
+                      size_y: 15
+                      opacity: 0.6f
+                    }
+                    blend_mode: BLEND_MODE_SRC_IN
+                  }
+                }
+              }
+            }
+          )pb",
+          kTestTextureId1, bitmap_data_1, kTestTextureId1),
+      &brush_proto));
+
+  EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto));
+  EXPECT_EQ(callback_count, 1);
+}
+
+TEST(BrushTest, EncodeBrushFamilyTextureMap) {
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
+      BrushTip{
+          .corner_rounding = 0.25f,
+          .opacity_multiplier = 0.7f,
+      },
+      {.texture_layers = {
+           {.client_texture_id = std::string(kTestTextureId1),
+            .mapping = BrushPaint::TextureMapping::kWinding,
+            .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
+            .wrap_y = BrushPaint::TextureWrap::kMirror,
+            .size = {10, 15},
+            .size_jitter = {3, 7},
+            .animation_frames = 2,
+            .keyframes = {{.progress = 0.8f,
+                           .size = std::optional<Vec>({10, 15}),
+                           .opacity = std::optional<float>(0.6f)}},
+            .blend_mode = BrushPaint::BlendMode::kSrcIn},
+           {.client_texture_id = std::string(kTestTextureId2),
+            .mapping = BrushPaint::TextureMapping::kWinding,
+            .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
+            .wrap_y = BrushPaint::TextureWrap::kMirror,
+            .size = {10, 15},
+            .size_jitter = {3, 7},
+            .animation_frames = 2,
+            .keyframes = {{.progress = 0.8f,
+                           .size = std::optional<Vec>({10, 15}),
+                           .opacity = std::optional<float>(0.6f)}},
+            .blend_mode = BrushPaint::BlendMode::kSrcIn},
+           {.client_texture_id = "unknown",
+            .mapping = BrushPaint::TextureMapping::kWinding,
+            .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
+            .wrap_y = BrushPaint::TextureWrap::kMirror,
+            .size = {10, 15},
+            .size_jitter = {3, 7},
+            .animation_frames = 2,
+            .keyframes = {{.progress = 0.8f,
+                           .size = std::optional<Vec>({10, 15}),
+                           .opacity = std::optional<float>(0.6f)}},
+            .blend_mode = BrushPaint::BlendMode::kSrcIn}}});
+  ASSERT_EQ(family.status(), absl::OkStatus());
+  ::google::protobuf::Map<std::string, ::ink::proto::Bitmap>
+      texture_id_to_bitmap_proto_out;
+  int distinct_texture_ids_count = 0;
+  TextureBitmapProvider callback =
+      [&distinct_texture_ids_count](
+          const std::string& id) -> std::optional<ink::VectorBitmap> {
+    distinct_texture_ids_count++;
+    if (kTestTextureId1 == id) {
+      return TestBitmap1x1();
+    } else if (kTestTextureId2 == id) {
+      return TestBitmap2x2();
+    }
+    return std::nullopt;
+  };
+  EncodeBrushFamilyTextureMap(*family, texture_id_to_bitmap_proto_out,
+                              callback);
+  std::string bitmap_data_1(
+      reinterpret_cast<const char*>(TestBitmap1x1().GetPixelData().data()),
+      TestBitmap1x1().GetPixelData().size());
+  std::string bitmap_data_2(
+      reinterpret_cast<const char*>(TestBitmap2x2().GetPixelData().data()),
+      TestBitmap2x2().GetPixelData().size());
+
+  EXPECT_EQ(texture_id_to_bitmap_proto_out.size(), 2);
+  EXPECT_EQ(texture_id_to_bitmap_proto_out.at(kTestTextureId1).pixel_data(),
+            bitmap_data_1);
+  EXPECT_EQ(texture_id_to_bitmap_proto_out.at(kTestTextureId2).pixel_data(),
+            bitmap_data_2);
+  EXPECT_EQ(distinct_texture_ids_count, 3);
+}
+
+TEST(BrushTest, EncodeBrushFamilyTextureMapWithNonEmptyProto) {
+  absl::StatusOr<BrushFamily> family = BrushFamily();
+  ASSERT_EQ(family.status(), absl::OkStatus());
+  ::google::protobuf::Map<std::string, ::ink::proto::Bitmap>
+      texture_id_to_bitmap_proto_out;
+  texture_id_to_bitmap_proto_out.insert(
+      {"existing_id", ::ink::proto::Bitmap()});
+
+  int callback_count = 0;
+  TextureBitmapProvider callback =
+      [&callback_count](
+          const std::string& id) -> std::optional<ink::VectorBitmap> {
+    callback_count++;
+    return std::nullopt;
+  };
+
+  EncodeBrushFamilyTextureMap(*family, texture_id_to_bitmap_proto_out,
+                              callback);
+  EXPECT_EQ(texture_id_to_bitmap_proto_out.size(), 0);
+  EXPECT_EQ(callback_count, 0);
 }
 
 TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
@@ -414,7 +773,7 @@ TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.25f},
       {.texture_layers = {
-           {.client_texture_id = std::string(kTestTextureId),
+           {.client_texture_id = std::string(kTestTextureId1),
             .mapping = BrushPaint::TextureMapping::kWinding,
             .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
             .size = {10, 15}}}});
@@ -445,7 +804,7 @@ TEST(BrushTest, DecodeBrushFamilyWithNoInputModel) {
 TEST(BrushTest, EncodeBrushPaintWithInvalidTextureMapping) {
   BrushPaint paint;
   paint.texture_layers.push_back(
-      {.client_texture_id = std::string(kTestTextureId),
+      {.client_texture_id = std::string(kTestTextureId1),
        .mapping = static_cast<BrushPaint::TextureMapping>(99),
        .size = {10, 15}});
   proto::BrushPaint paint_proto;
@@ -459,7 +818,7 @@ TEST(BrushTest, EncodeBrushPaintWithInvalidTextureMapping) {
 TEST(BrushTest, EncodeBrushPaintWithInvalidTextureOrigin) {
   BrushPaint paint;
   paint.texture_layers.push_back(
-      {.client_texture_id = std::string(kTestTextureId),
+      {.client_texture_id = std::string(kTestTextureId1),
        .origin = static_cast<BrushPaint::TextureOrigin>(99),
        .size = {10, 15}});
   proto::BrushPaint paint_proto;
@@ -560,16 +919,34 @@ TEST(BrushTest, EncodeBrushBehaviorDampingNodeWithInvalidDampingSource) {
 }
 
 void EncodeDecodeBrushRoundTrip(const Brush& brush_in) {
+  int encode_callback_count = 0;
+  int decode_callback_count = 0;
+  TextureBitmapProvider encode_callback =
+      [&encode_callback_count](
+          const std::string& id) -> std::optional<VectorBitmap> {
+    encode_callback_count++;
+    return std::nullopt;
+  };
+  OnDecodeMappedTexture decode_callback =
+      [&decode_callback_count](const std::string& id,
+                               Bitmap* absl_nullable bitmap) -> std::string {
+    decode_callback_count++;
+    return id;
+  };
   proto::Brush brush_proto_in;
-  EncodeBrush(brush_in, brush_proto_in);
+  EncodeBrush(brush_in, brush_proto_in, encode_callback);
 
-  absl::StatusOr<Brush> brush_out = DecodeBrush(brush_proto_in);
+  absl::StatusOr<Brush> brush_out =
+      DecodeBrush(brush_proto_in, decode_callback);
   ASSERT_EQ(brush_out.status(), absl::OkStatus());
   EXPECT_THAT(*brush_out, BrushEq(brush_in));
+  EXPECT_EQ(encode_callback_count, decode_callback_count);
 
+  encode_callback_count = 0;  // Reset the callback count.
   proto::Brush brush_proto_out;
-  EncodeBrush(*brush_out, brush_proto_out);
+  EncodeBrush(*brush_out, brush_proto_out, encode_callback);
   EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto_in));
+  EXPECT_EQ(encode_callback_count, decode_callback_count);
 }
 FUZZ_TEST(BrushTest, EncodeDecodeBrushRoundTrip).WithDomains(ValidBrush());
 

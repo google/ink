@@ -31,6 +31,7 @@ proto_library(
     name = "brush_proto",
     srcs = ["brush.proto"],
     deps = [
+        ":bitmap_proto",
         ":color_proto",
     ],
 )
