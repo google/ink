@@ -206,10 +206,11 @@ bool TessellateConnectedPolygons(
                    edge.size());
   }
   // Check for single-precision overflow.
-  if (static_cast<double>(max_x) - static_cast<double>(min_x) >
-          std::numeric_limits<float>::max() ||
-      static_cast<double>(max_y) - static_cast<double>(min_y) >
-          std::numeric_limits<float>::max()) {
+  double width = static_cast<double>(max_x) - static_cast<double>(min_x);
+  double height = static_cast<double>(max_y) - static_cast<double>(min_y);
+  if (width > std::numeric_limits<float>::max() ||
+      height > std::numeric_limits<float>::max() ||
+      width * height > std::numeric_limits<float>::max()) {
     return false;
   }
 
