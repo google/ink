@@ -26,8 +26,8 @@
 
 namespace ink {
 
-// The domain of all possible brushes.
-fuzztest::Domain<Brush> ArbitraryBrush();
+// The domain of all valid brushes.
+fuzztest::Domain<Brush> ValidBrush();
 
 // The domain of all valid brush behaviors.
 fuzztest::Domain<BrushBehavior> ValidBrushBehavior();
@@ -37,8 +37,8 @@ fuzztest::Domain<BrushBehavior::Node> ValidBrushBehaviorNode();
 // The domain of all valid brush coats.
 fuzztest::Domain<BrushCoat> ValidBrushCoat();
 
-// The domain of all possible brush families.
-fuzztest::Domain<BrushFamily> ArbitraryBrushFamily();
+// The domain of all valid brush families.
+fuzztest::Domain<BrushFamily> ValidBrushFamily();
 
 // The domain of all valid brush family input models.
 fuzztest::Domain<BrushFamily::InputModel> ValidBrushFamilyInputModel();

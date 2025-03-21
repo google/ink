@@ -571,7 +571,7 @@ void EncodeDecodeBrushRoundTrip(const Brush& brush_in) {
   EncodeBrush(*brush_out, brush_proto_out);
   EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto_in));
 }
-FUZZ_TEST(BrushTest, EncodeDecodeBrushRoundTrip).WithDomains(ArbitraryBrush());
+FUZZ_TEST(BrushTest, EncodeDecodeBrushRoundTrip).WithDomains(ValidBrush());
 
 void EncodeDecodeBrushFamilyRoundTrip(const BrushFamily& family_in) {
   proto::BrushFamily family_proto_in;
@@ -586,7 +586,7 @@ void EncodeDecodeBrushFamilyRoundTrip(const BrushFamily& family_in) {
   EXPECT_THAT(family_proto_out, EqualsProto(family_proto_in));
 }
 FUZZ_TEST(BrushTest, EncodeDecodeBrushFamilyRoundTrip)
-    .WithDomains(ArbitraryBrushFamily());
+    .WithDomains(ValidBrushFamily());
 
 // Unlike the Brush and BrushFamily classes, BrushCoat is an open struct that
 // does not enforce validity. Proto encode/decode round-tripping is only

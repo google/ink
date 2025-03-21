@@ -465,7 +465,7 @@ Domain<std::vector<BrushBehavior::Node>> ValidBrushBehaviorNodeForest() {
 
 }  // namespace
 
-Domain<Brush> ArbitraryBrush() {
+Domain<Brush> ValidBrush() {
   return Map(
       [](const BrushFamily& family, const Color& color,
          std::pair<float, float> size_and_epsilon) {
@@ -473,7 +473,7 @@ Domain<Brush> ArbitraryBrush() {
                              size_and_epsilon.second)
             .value();
       },
-      ArbitraryBrushFamily(), ArbitraryColor(),
+      ValidBrushFamily(), ArbitraryColor(),
       PairOfFinitePositiveDescendingFloats());
 }
 
@@ -495,7 +495,7 @@ Domain<BrushCoat> ValidBrushCoat() {
   return StructOf<BrushCoat>(ValidBrushTip(), ValidBrushPaint());
 }
 
-Domain<BrushFamily> ArbitraryBrushFamily() {
+Domain<BrushFamily> ValidBrushFamily() {
   return Map(
       [](absl::Span<const BrushCoat> coats, const std::string id,
          const BrushFamily::InputModel& input_model) {

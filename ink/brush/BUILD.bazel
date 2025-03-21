@@ -229,6 +229,36 @@ cc_test(
 )
 
 cc_library(
+    name = "brush_paint",
+    srcs = ["brush_paint.cc"],
+    hdrs = ["brush_paint.h"],
+    deps = [
+        "//ink/geometry:angle",
+        "//ink/geometry:vec",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "brush_paint_test",
+    srcs = ["brush_paint_test.cc"],
+    deps = [
+        ":brush_paint",
+        ":fuzz_domains",
+        "//ink/geometry:angle",
+        "//ink/geometry:vec",
+        "@com_google_absl//absl/hash:hash_testing",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_matchers",
+        "@com_google_absl//absl/strings",
+        "@com_google_fuzztest//fuzztest",
+        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+    ],
+)
+
+cc_library(
     name = "fuzz_domains",
     testonly = 1,
     srcs = ["fuzz_domains.cc"],
@@ -255,31 +285,13 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "brush_paint",
-    srcs = ["brush_paint.cc"],
-    hdrs = ["brush_paint.h"],
-    deps = [
-        "//ink/geometry:angle",
-        "//ink/geometry:vec",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-    ],
-)
-
 cc_test(
-    name = "brush_paint_test",
-    srcs = ["brush_paint_test.cc"],
+    name = "fuzz_domains_test",
+    srcs = ["fuzz_domains_test.cc"],
     deps = [
-        ":brush_paint",
+        ":brush",
+        ":brush_family",
         ":fuzz_domains",
-        "//ink/geometry:angle",
-        "//ink/geometry:vec",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/strings",
         "@com_google_fuzztest//fuzztest",
         "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
     ],

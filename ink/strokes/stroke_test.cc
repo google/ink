@@ -603,7 +603,7 @@ void CanConstructStrokeFromAnyInputBatch(const Brush& brush,
 // TODO(b/299275580): Add fuzz tests for stroke mesh generation. This currently
 // fails, being unable to create a PartitionedMesh in Stroke::RegenerateShape.
 FUZZ_TEST(DISABLED_StrokeTest, CanConstructStrokeFromAnyInputBatch)
-    .WithDomains(ArbitraryBrush(), ArbitraryStrokeInputBatch());
+    .WithDomains(ValidBrush(), ArbitraryStrokeInputBatch());
 
 }  // namespace
 }  // namespace ink
