@@ -22,6 +22,9 @@
 namespace ink {
 namespace {
 
+// Most crashes happen within libtess2. Please diagnose and fix them within the
+// library (instead of just sanitizing Ink's inputs), and then send a pull
+// request to https://github.com/memononen/libtess2.
 void CreateMeshFromPolylineDoesNotCrash(const std::vector<Point>& polyline) {
   CreateMeshFromPolyline(polyline).IgnoreError();
 }
