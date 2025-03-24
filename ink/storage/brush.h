@@ -32,23 +32,35 @@
 
 namespace ink {
 
+// Provides a bitmap for a given client texture `id`, if one exists.
+using TextureBitmapProvider =
+    std::function<std::optional<VectorBitmap>(const std::string& id)>;
+// Provides a new client texture id for a given encoded texture `id`, and
+// is responsible for receiving the bitmap for that new client texture id.
+using ClientTextureIdProviderAndBitmapReceiver = std::function<std::string(
+    const std::string& encoded_id, absl::Nullable<VectorBitmap*> bitmap)>;
+// Provides a new client texture id for a given encoded texture `id`.
+using ClientTextureIdProvider =
+    std::function<std::string(const std::string& encoded_id)>;
+
 // Populates the given proto by encoding the given brush object.
 //
 // The proto need not be empty before calling these; they will effectively clear
 // the proto first.
 void EncodeBrush(
     const Brush& brush, proto::Brush& brush_proto_out,
-    std::function<std::optional<VectorBitmap>(const std::string& id)>
-        get_bitmap = [](const std::string& id) { return std::nullopt; });
+    TextureBitmapProvider get_bitmap = [](const std::string& id) {
+      return std::nullopt;
+    });
 void EncodeBrushFamily(
     const BrushFamily& family, proto::BrushFamily& family_proto_out,
-    std::function<std::optional<VectorBitmap>(const std::string& id)>
-        get_bitmap = [](const std::string& id) { return std::nullopt; });
+    TextureBitmapProvider get_bitmap = [](const std::string& id) {
+      return std::nullopt;
+    });
 void EncodeBrushFamilyTextureMap(
     const BrushFamily& family,
     ::google::protobuf::Map<std::string, ::ink::proto::Bitmap>& texture_id_to_bitmap_out,
-    std::function<std::optional<VectorBitmap>(const std::string& id)>
-        get_bitmap);
+    TextureBitmapProvider get_bitmap);
 void EncodeBrushCoat(const BrushCoat& coat, proto::BrushCoat& coat_proto_out);
 void EncodeBrushPaint(const BrushPaint& paint,
                       proto::BrushPaint& paint_proto_out);
@@ -60,28 +72,22 @@ void EncodeBrushBehaviorNode(const BrushBehavior::Node& node,
 // invalid.
 absl::StatusOr<Brush> DecodeBrush(
     const proto::Brush& brush_proto,
-    std::function<std::string(const std::string& encoded_id,
-                              absl::Nullable<VectorBitmap*> bitmap)>
-        get_client_texture_id =
-            [](const std::string& encoded_id,
-               absl::Nullable<VectorBitmap*> bitmap) { return encoded_id; });
+    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id =
+        [](const std::string& encoded_id,
+           absl::Nullable<VectorBitmap*> bitmap) { return encoded_id; });
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto,
-    std::function<std::string(const std::string& encoded_id,
-                              absl::Nullable<VectorBitmap*> bitmap)>
-        get_client_texture_id =
-            [](const std::string& encoded_id,
-               absl::Nullable<VectorBitmap*> bitmap) { return encoded_id; });
+    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id =
+        [](const std::string& encoded_id,
+           absl::Nullable<VectorBitmap*> bitmap) { return encoded_id; });
 absl::StatusOr<BrushCoat> DecodeBrushCoat(
     const proto::BrushCoat& coat_proto,
-    std::function<std::string(const std::string& encoded_id)>
-        get_client_texture_id =
-            [](const std::string& encoded_id) { return encoded_id; });
+    ClientTextureIdProvider get_client_texture_id =
+        [](const std::string& encoded_id) { return encoded_id; });
 absl::StatusOr<BrushPaint> DecodeBrushPaint(
     const proto::BrushPaint& paint_proto,
-    std::function<std::string(const std::string& encoded_id)>
-        get_client_texture_id =
-            [](const std::string& encoded_id) { return encoded_id; });
+    ClientTextureIdProvider get_client_texture_id =
+        [](const std::string& encoded_id) { return encoded_id; });
 absl::StatusOr<BrushTip> DecodeBrushTip(const proto::BrushTip& tip_proto);
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNode(
     const proto::BrushBehavior::Node& node_proto);
