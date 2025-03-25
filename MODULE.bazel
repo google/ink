@@ -61,14 +61,13 @@ bazel_dep(
 
 git_repository(
     name = "ink_stroke_modeler",
-    commit = "11abc9c18dcc0d6074106fe14b3bd5eddd28559b",
+    commit = "8ce40dc2a847c73a72fb92ff30ca93b2e8ada8b0",
     remote = "https://github.com/google/ink-stroke-modeler.git",
 )
 
 git_repository(
     name = "libtess2",
-    build_file = "third_party/libtess2/BUILD.bazel",
-    commit = "fc52516467dfa124bdd967c15c7cf9faf02a34ca",
+    commit = "6e05801a57ca06bfd2908ceb9a73b6df5b0aae71",
     remote = "https://github.com/memononen/libtess2.git",
 )
 
