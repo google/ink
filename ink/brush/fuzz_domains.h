@@ -28,26 +28,41 @@ namespace ink {
 
 // The domain of all valid brushes.
 fuzztest::Domain<Brush> ValidBrush();
+// The domain of all valid brushes that can be serialized to proto.
+fuzztest::Domain<Brush> SerializableBrush();
 
 // The domain of all valid brush behaviors.
 fuzztest::Domain<BrushBehavior> ValidBrushBehavior();
+// The domain of all valid brush behaviors that can be serialized to proto.
+fuzztest::Domain<BrushBehavior> SerializableBrushBehavior();
+
 // The domain of all valid brush behavior nodes.
 fuzztest::Domain<BrushBehavior::Node> ValidBrushBehaviorNode();
+// The domain of all valid brush behavior nodes that can be serialized to proto.
+fuzztest::Domain<BrushBehavior::Node> SerializableBrushBehaviorNode();
 
 // The domain of all valid brush coats.
 fuzztest::Domain<BrushCoat> ValidBrushCoat();
+// The domain of all valid brush coats that can be serialized to proto.
+fuzztest::Domain<BrushCoat> SerializableBrushCoat();
 
 // The domain of all valid brush families.
 fuzztest::Domain<BrushFamily> ValidBrushFamily();
+// The domain of all valid brush families that can be serialized to proto.
+fuzztest::Domain<BrushFamily> SerializableBrushFamily();
 
 // The domain of all valid brush family input models.
 fuzztest::Domain<BrushFamily::InputModel> ValidBrushFamilyInputModel();
 
 // The domain of all valid brush paints.
 fuzztest::Domain<BrushPaint> ValidBrushPaint();
+// The domain of all valid brush paints that can be serialized to proto.
+fuzztest::Domain<BrushPaint> SerializableBrushPaint();
 
 // The domain of all valid brush tips.
 fuzztest::Domain<BrushTip> ValidBrushTip();
+// The domain of all valid brush tips that can be serialized to proto.
+fuzztest::Domain<BrushTip> SerializableBrushTip();
 
 // The domain of all valid easing functions.
 fuzztest::Domain<EasingFunction> ValidEasingFunction();

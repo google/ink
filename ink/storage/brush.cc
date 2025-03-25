@@ -395,7 +395,7 @@ proto::BrushBehavior::Target EncodeBrushBehaviorTarget(
       return proto::BrushBehavior::
           TARGET_POSITION_OFFSET_LATERAL_IN_MULTIPLES_OF_BRUSH_SIZE;
     case BrushBehavior::Target::kTextureAnimationProgressOffset:
-      return proto::BrushBehavior::TARGET_TEXTURE_ANIMATION_PROGRESS_OFFSET;
+      return proto::BrushBehavior::TARGET_UNSPECIFIED;
     case BrushBehavior::Target::kHueOffsetInRadians:
       return proto::BrushBehavior::TARGET_HUE_OFFSET_IN_RADIANS;
     case BrushBehavior::Target::kSaturationMultiplier:
@@ -447,8 +447,6 @@ absl::StatusOr<BrushBehavior::Target> DecodeBrushBehaviorTarget(
         TARGET_POSITION_OFFSET_LATERAL_IN_MULTIPLES_OF_BRUSH_SIZE:
       return BrushBehavior::Target::
           kPositionOffsetLateralInMultiplesOfBrushSize;
-    case proto::BrushBehavior::TARGET_TEXTURE_ANIMATION_PROGRESS_OFFSET:
-      return BrushBehavior::Target::kTextureAnimationProgressOffset;
     default:
       return absl::InvalidArgumentError(absl::StrCat(
           "invalid ink.proto.BrushBehavior.Target value: ", target_proto));
@@ -1171,57 +1169,6 @@ absl::StatusOr<BrushPaint::BlendMode> DecodeBrushPaintBlendMode(
   }
 }
 
-void EncodeBrushPaintTextureKeyFrame(
-    const BrushPaint::TextureKeyframe& keyframe,
-    proto::BrushPaint::TextureKeyframe& keyframe_proto) {
-  keyframe_proto.set_progress(keyframe.progress);
-  if (keyframe.size.has_value()) {
-    keyframe_proto.set_size_x(keyframe.size->x);
-    keyframe_proto.set_size_y(keyframe.size->y);
-  }
-  if (keyframe.offset.has_value()) {
-    keyframe_proto.set_offset_x(keyframe.offset->x);
-    keyframe_proto.set_offset_y(keyframe.offset->y);
-  }
-  if (keyframe.rotation.has_value()) {
-    keyframe_proto.set_rotation_in_radians(keyframe.rotation->ValueInRadians());
-  }
-  if (keyframe.opacity.has_value()) {
-    keyframe_proto.set_opacity(*keyframe.opacity);
-  }
-}
-
-absl::StatusOr<BrushPaint::TextureKeyframe> DecodeBrushPaintTextureKeyframe(
-    const proto::BrushPaint::TextureKeyframe& keyframe_proto) {
-  if (keyframe_proto.has_size_y() != keyframe_proto.has_size_x()) {
-    return absl::InvalidArgumentError(
-        "invalid ink.proto.BrushPaint.TextureKeyframe. size_x and size_y "
-        "must both be either set or unset.");
-  }
-  if (keyframe_proto.has_offset_x() != keyframe_proto.has_offset_y()) {
-    return absl::InvalidArgumentError(
-        "invalid ink.proto.BrushPaint.TextureKeyframe. offset_x and offset_y "
-        "must both be either set or unset.");
-  }
-  return BrushPaint::TextureKeyframe{
-      .progress = keyframe_proto.progress(),
-      .size = keyframe_proto.has_size_x()
-                  ? std::optional<Vec>(
-                        {keyframe_proto.size_x(), keyframe_proto.size_y()})
-                  : std::nullopt,
-      .offset = keyframe_proto.has_offset_x()
-                    ? std::optional<Vec>({keyframe_proto.offset_x(),
-                                          keyframe_proto.offset_y()})
-                    : std::nullopt,
-      .rotation = keyframe_proto.has_rotation_in_radians()
-                      ? std::optional<Angle>(Angle::Radians(
-                            keyframe_proto.rotation_in_radians()))
-                      : std::nullopt,
-      .opacity = keyframe_proto.has_opacity()
-                     ? std::optional<float>(keyframe_proto.opacity())
-                     : std::nullopt};
-}
-
 void EncodeBrushPaintTextureLayer(
     const BrushPaint::TextureLayer& layer,
     proto::BrushPaint::TextureLayer& layer_proto_out) {
@@ -1236,17 +1183,7 @@ void EncodeBrushPaintTextureLayer(
   layer_proto_out.set_offset_x(layer.offset.x);
   layer_proto_out.set_offset_y(layer.offset.y);
   layer_proto_out.set_rotation_in_radians(layer.rotation.ValueInRadians());
-  layer_proto_out.set_size_jitter_x(layer.size_jitter.x);
-  layer_proto_out.set_size_jitter_y(layer.size_jitter.y);
-  layer_proto_out.set_offset_jitter_x(layer.offset_jitter.x);
-  layer_proto_out.set_offset_jitter_y(layer.offset_jitter.y);
-  layer_proto_out.set_rotation_jitter_in_radians(
-      layer.rotation_jitter.ValueInRadians());
   layer_proto_out.set_opacity(layer.opacity);
-  layer_proto_out.set_animation_frames(layer.animation_frames);
-  for (const BrushPaint::TextureKeyframe& keyframe : layer.keyframes) {
-    EncodeBrushPaintTextureKeyFrame(keyframe, *layer_proto_out.add_keyframes());
-  }
   layer_proto_out.set_blend_mode(EncodeBrushPaintBlendMode(layer.blend_mode));
 }
 
@@ -1274,16 +1211,6 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
   if (!wrap_y.ok()) {
     return wrap_y.status();
   }
-  std::vector<BrushPaint::TextureKeyframe> keyframes;
-  keyframes.reserve(layer_proto.keyframes_size());
-  for (const proto::BrushPaint::TextureKeyframe& keyframe_proto :
-       layer_proto.keyframes()) {
-    auto keyframe = DecodeBrushPaintTextureKeyframe(keyframe_proto);
-    if (!keyframe.ok()) {
-      return keyframe.status();
-    }
-    keyframes.push_back(*keyframe);
-  }
   auto blend_mode = DecodeBrushPaintBlendMode(layer_proto.blend_mode());
   if (!blend_mode.ok()) {
     return blend_mode.status();
@@ -1299,14 +1226,7 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
       .size = {layer_proto.size_x(), layer_proto.size_y()},
       .offset = {layer_proto.offset_x(), layer_proto.offset_y()},
       .rotation = Angle::Radians(layer_proto.rotation_in_radians()),
-      .size_jitter = {layer_proto.size_jitter_x(), layer_proto.size_jitter_y()},
-      .offset_jitter = {layer_proto.offset_jitter_x(),
-                        layer_proto.offset_jitter_y()},
-      .rotation_jitter =
-          Angle::Radians(layer_proto.rotation_jitter_in_radians()),
       .opacity = layer_proto.opacity(),
-      .animation_frames = layer_proto.animation_frames(),
-      .keyframes = std::move(keyframes),
       .blend_mode = *blend_mode};
   if (absl::Status status =
           brush_internal::ValidateBrushPaintTextureLayer(texture_layer);

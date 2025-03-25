@@ -139,17 +139,6 @@ message BrushTip {
 // A `BrushPaint` consists of parameters that describe how a stroke mesh should
 // be rendered.
 message BrushPaint {
-  message TextureKeyframe {
-    optional float progress = 1;
-    // Size and offset require either both values, x and y, to be set for the
-    // attribute or both to be unset.
-    optional float size_x = 2;
-    optional float size_y = 3;
-    optional float offset_x = 4;
-    optional float offset_y = 5;
-    optional float rotation_in_radians = 6;
-    optional float opacity = 7;
-  }
   message TextureLayer {
     // LINT.IfChange(texture_wrap)
     enum Wrap {
@@ -208,18 +197,14 @@ message BrushPaint {
     optional float offset_x = 6;
     optional float offset_y = 7;
     optional float rotation_in_radians = 8;
-    optional float size_jitter_x = 9;
-    optional float size_jitter_y = 10;
-    optional float offset_jitter_x = 11;
-    optional float offset_jitter_y = 12;
-    optional float rotation_jitter_in_radians = 13;
+    reserved 9 to 13;
     optional float opacity = 14 [default = 1];
-    repeated TextureKeyframe keyframes = 15;
+    reserved 15;
     optional BlendMode blend_mode = 16 [default = BLEND_MODE_MODULATE];
     optional Origin origin = 17 [default = ORIGIN_STROKE_SPACE_ORIGIN];
     optional Wrap wrap_x = 18 [default = WRAP_REPEAT];
     optional Wrap wrap_y = 19 [default = WRAP_REPEAT];
-    optional int32 animation_frames = 20 [default = 1];
+    reserved 20;
   }
 
   repeated TextureLayer texture_layers = 1;
@@ -295,7 +280,7 @@ message BrushBehavior {
     TARGET_POSITION_OFFSET_FORWARD_IN_MULTIPLES_OF_BRUSH_SIZE = 14;
     TARGET_POSITION_OFFSET_LATERAL_IN_MULTIPLES_OF_BRUSH_SIZE = 15;
     reserved 16;
-    TARGET_TEXTURE_ANIMATION_PROGRESS_OFFSET = 17;
+    reserved 17;
   }
   // LINT.ThenChange(../../brush/brush_behavior.h:target)
 
