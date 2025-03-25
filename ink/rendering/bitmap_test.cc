@@ -22,6 +22,7 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/strings/str_cat.h"
 #include "ink/color/color.h"
 #include "ink/color/color_space.h"
@@ -30,6 +31,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::testing::HasSubstr;
 
 TEST(BitmapTest, StringifyPixelFormat) {
@@ -50,38 +53,53 @@ TEST(BitmapTest, ValidateBitmap) {
       /*width=*/1, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
       Color::Format::kGammaEncoded, ColorSpace::kSrgb,
       std::vector<uint8_t>{0x12, 0x34, 0x56, 0x78});
-  EXPECT_EQ(rendering_internal::ValidateBitmap(*valid_bitmap),
-            absl::OkStatus());
+  EXPECT_THAT(rendering_internal::ValidateBitmap(*valid_bitmap), IsOk());
 
   std::unique_ptr<Bitmap> invalid_bitmap = std::make_unique<VectorBitmap>(
       /*width=*/-1, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
       Color::Format::kGammaEncoded, ColorSpace::kSrgb,
       std::vector<uint8_t>{0x12, 0x34, 0x56, 0x78});
-  absl::Status status = rendering_internal::ValidateBitmap(*invalid_bitmap);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("width"));
+  EXPECT_THAT(rendering_internal::ValidateBitmap(*invalid_bitmap),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("width")));
 
   invalid_bitmap = std::make_unique<VectorBitmap>(
       /*width=*/1, /*height=*/0, Bitmap::PixelFormat::kRgba8888,
       Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
-  status = rendering_internal::ValidateBitmap(*invalid_bitmap);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("height"));
+  EXPECT_THAT(
+      rendering_internal::ValidateBitmap(*invalid_bitmap),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("height")));
+
+  // 2^16 x 2^15 = 2^31, which overflows int32.
+  invalid_bitmap = std::make_unique<VectorBitmap>(
+      /*width=*/65536, /*height=*/32768, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
+  EXPECT_THAT(rendering_internal::ValidateBitmap(*invalid_bitmap),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("area overflows")));
+
+  // 2^15 x 2^15 * 4 bytes/pixel = 2^32 bytes, which overflows int32.
+  invalid_bitmap = std::make_unique<VectorBitmap>(
+      /*width=*/32768, /*height=*/32768, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
+  EXPECT_THAT(rendering_internal::ValidateBitmap(*invalid_bitmap),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("pixel data size overflows")));
 
   invalid_bitmap = std::make_unique<VectorBitmap>(
       /*width=*/1, /*height=*/1, static_cast<Bitmap::PixelFormat>(123),
       Color::Format::kGammaEncoded, ColorSpace::kSrgb,
       std::vector<uint8_t>{0x12, 0x34, 0x56, 0x78});
-  status = rendering_internal::ValidateBitmap(*invalid_bitmap);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("pixel_format"));
+  EXPECT_THAT(
+      rendering_internal::ValidateBitmap(*invalid_bitmap),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pixel format")));
 
   invalid_bitmap = std::make_unique<VectorBitmap>(
       /*width=*/1, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
-      Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
-  status = rendering_internal::ValidateBitmap(*invalid_bitmap);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("should have size 4"));
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb,
+      std::vector<uint8_t>{0x12, 0x34, 0x56, 0x78, 0x9a});
+  EXPECT_THAT(rendering_internal::ValidateBitmap(*invalid_bitmap),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("expected 4 bytes")));
 }
 
 void CanValidateValidBitmap(std::unique_ptr<Bitmap> bitmap) {

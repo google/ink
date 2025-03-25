@@ -16,6 +16,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -41,28 +42,46 @@ bool IsValidPixelFormat(Bitmap::PixelFormat format) {
 }  // namespace
 
 absl::Status ValidateBitmap(const Bitmap& bitmap) {
-  if (bitmap.width() <= 0) {
+  return ValidateBitmap(bitmap.width(), bitmap.height(), bitmap.pixel_format(),
+                        bitmap.GetPixelData().size());
+}
+
+absl::Status ValidateBitmap(int width, int height,
+                            Bitmap::PixelFormat pixel_format,
+                            int pixel_data_size) {
+  if (width <= 0) {
     return absl::InvalidArgumentError(
-        absl::StrCat("`Bitmap::width` must be positive; was ", bitmap.width()));
+        absl::StrCat("Bitmap width must be positive; was ", width));
   }
-  if (bitmap.height() <= 0) {
+  if (height <= 0) {
     return absl::InvalidArgumentError(
-        absl::StrCat("Bitmap height must be positive; was ", bitmap.height()));
+        absl::StrCat("Bitmap height must be positive; was ", height));
   }
-  if (!IsValidPixelFormat(bitmap.pixel_format())) {
+  if (!IsValidPixelFormat(pixel_format)) {
     return absl::InvalidArgumentError(
-        absl::StrCat("`Bitmap::pixel_format` holds non-enumerator value ",
-                     static_cast<int>(bitmap.pixel_format())));
+        absl::StrCat("Bitmap's pixel format is invalid value ",
+                     static_cast<int>(pixel_format)));
   }
-  size_t expected_data_size = static_cast<size_t>(bitmap.width()) *
-                              static_cast<size_t>(bitmap.height()) *
-                              PixelFormatBytesPerPixel(bitmap.pixel_format());
-  size_t actual_data_size = bitmap.GetPixelData().size();
-  if (actual_data_size != expected_data_size) {
+
+  if (width > std::numeric_limits<int32_t>::max() / height) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Bitmap area overflows int32; was ", width, "x", height));
+  }
+  int area = width * height;
+
+  int bytes_per_pixel = PixelFormatBytesPerPixel(pixel_format);
+  if (area > std::numeric_limits<int32_t>::max() / bytes_per_pixel) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Bitmap pixel data size overflows int32; was ", width, "x",
+                     height, " @ ", bytes_per_pixel, " bytes per pixel"));
+  }
+  int expected_pixel_data_size = area * bytes_per_pixel;
+
+  if (pixel_data_size != expected_pixel_data_size) {
     return absl::InvalidArgumentError(absl::StrCat(
-        "`Bitmap` pixel data should have size ", expected_data_size, " for a ",
-        bitmap.width(), "x", bitmap.height(), " ", bitmap.pixel_format(),
-        " image, but has size ", actual_data_size));
+        "Bitmap pixel data has incorrect size; expected ",
+        expected_pixel_data_size, " bytes for a ", width, "x", height, " ",
+        pixel_format, " image, but was ", pixel_data_size, " bytes"));
   }
   return absl::OkStatus();
 }
@@ -91,7 +110,7 @@ VectorBitmap::VectorBitmap(int width, int height, PixelFormat pixel_format,
     : Bitmap(width, height, pixel_format, color_format, color_space),
       pixel_data_(std::move(pixel_data)) {}
 
-size_t PixelFormatBytesPerPixel(Bitmap::PixelFormat format) {
+int PixelFormatBytesPerPixel(Bitmap::PixelFormat format) {
   switch (format) {
     case Bitmap::PixelFormat::kRgba8888:
       return 4;

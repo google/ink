@@ -14,6 +14,7 @@
 #ifndef INK_STORAGE_BITMAP_H_
 #define INK_STORAGE_BITMAP_H_
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ink/rendering/bitmap.h"
 #include "ink/storage/proto/bitmap.pb.h"
@@ -24,7 +25,8 @@ namespace ink {
 //
 // The `bitmap_proto` need not be empty before calling these; they will
 // effectively clear the proto first.
-void EncodeBitmap(const Bitmap& bitmap, ink::proto::Bitmap& bitmap_proto);
+absl::Status EncodeBitmap(const Bitmap& bitmap,
+                          ink::proto::Bitmap& bitmap_proto);
 // Decodes the `proto::Bitmap` into a Bitmap. Returns an error if the proto
 // is invalid.
 absl::StatusOr<VectorBitmap> DecodeBitmap(const proto::Bitmap& bitmap_proto);

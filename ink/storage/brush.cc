@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "absl/base/nullability.h"
+#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -1547,7 +1548,12 @@ void EncodeBrushFamilyTextureMap(
       }
 
       proto::Bitmap bitmap_proto;
-      EncodeBitmap(*bitmap, bitmap_proto);
+      if (absl::Status status = EncodeBitmap(*bitmap, bitmap_proto);
+          !status.ok()) {
+        ABSL_LOG(WARNING) << "Failed to encode bitmap for texture id "
+                          << layer.client_texture_id << ": " << status;
+        continue;
+      }
       texture_id_to_bitmap_out.insert({layer.client_texture_id, bitmap_proto});
     }
   }

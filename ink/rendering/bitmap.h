@@ -81,11 +81,17 @@ class VectorBitmap : public Bitmap {
   std::vector<uint8_t> pixel_data_;
 };
 
-size_t PixelFormatBytesPerPixel(Bitmap::PixelFormat format);
+int PixelFormatBytesPerPixel(Bitmap::PixelFormat format);
 
 namespace rendering_internal {
 
+// Checks that the dimensions of the bitmap are valid (positive and not too
+// large), and that the pixel data size is correct for the dimensions and
+// pixel format.
 absl::Status ValidateBitmap(const Bitmap& bitmap);
+absl::Status ValidateBitmap(int width, int height,
+                            Bitmap::PixelFormat pixel_format,
+                            int pixel_data_size);
 
 std::string ToFormattedString(Bitmap::PixelFormat format);
 

@@ -77,7 +77,7 @@ TEST(BitmapTest, EncodeBitmap2x4) {
                       Color::Format::kGammaEncoded, ColorSpace::kSrgb,
                       pixel_data);
   proto::Bitmap bitmap_proto;
-  EncodeBitmap(bitmap, bitmap_proto);
+  EXPECT_THAT(EncodeBitmap(bitmap, bitmap_proto), IsOk());
   EXPECT_EQ(bitmap_proto.width(), 2);
   EXPECT_EQ(bitmap_proto.height(), 4);
   EXPECT_EQ(bitmap_proto.pixel_format(), proto::Bitmap::PIXEL_FORMAT_RGBA8888);
@@ -93,7 +93,7 @@ TEST(BitmapTest, EncodeBitmap1x3) {
                       Color::Format::kGammaEncoded, ColorSpace::kSrgb,
                       pixel_data);
   proto::Bitmap bitmap_proto;
-  EncodeBitmap(bitmap, bitmap_proto);
+  EXPECT_THAT(EncodeBitmap(bitmap, bitmap_proto), IsOk());
   EXPECT_EQ(bitmap_proto.width(), 1);
   EXPECT_EQ(bitmap_proto.height(), 3);
   EXPECT_EQ(bitmap_proto.pixel_format(), proto::Bitmap::PIXEL_FORMAT_RGBA8888);
@@ -101,6 +101,67 @@ TEST(BitmapTest, EncodeBitmap1x3) {
   EXPECT_EQ(bitmap_proto.pixel_data(),
             std::string_view(reinterpret_cast<const char*>(pixel_data.data()),
                              pixel_data.size()));
+}
+
+TEST(BitmapTest, EncodeBitmapFailsOnInvalidBitmap) {
+  proto::Bitmap bitmap_proto;
+
+  VectorBitmap bitmap = VectorBitmap(
+      /*width=*/-1, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
+  EXPECT_THAT(EncodeBitmap(bitmap, bitmap_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("width")));
+
+  bitmap = VectorBitmap(
+      /*width=*/0, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
+  EXPECT_THAT(EncodeBitmap(bitmap, bitmap_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("width")));
+
+  bitmap = VectorBitmap(
+      /*width=*/1, /*height=*/-1, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
+  EXPECT_THAT(
+      EncodeBitmap(bitmap, bitmap_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("height")));
+
+  bitmap = VectorBitmap(
+      /*width=*/1, /*height=*/0, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
+  EXPECT_THAT(
+      EncodeBitmap(bitmap, bitmap_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("height")));
+
+  // 2^16 x 2^15 = 2^31, which overflows int32.
+  bitmap = VectorBitmap(
+      /*width=*/65536, /*height=*/32768, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
+  EXPECT_THAT(EncodeBitmap(bitmap, bitmap_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("area overflows")));
+
+  // 2^15 x 2^15 * 4 bytes/pixel = 2^32 bytes, which overflows int32.
+  bitmap = VectorBitmap(
+      /*width=*/32768, /*height=*/32768, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
+  EXPECT_THAT(EncodeBitmap(bitmap, bitmap_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("pixel data size overflows")));
+
+  bitmap = VectorBitmap(
+      /*width=*/1, /*height=*/1, static_cast<Bitmap::PixelFormat>(123),
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb, std::vector<uint8_t>{});
+  EXPECT_THAT(
+      EncodeBitmap(bitmap, bitmap_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pixel format")));
+
+  bitmap = VectorBitmap(
+      /*width=*/1, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
+      Color::Format::kGammaEncoded, ColorSpace::kSrgb,
+      std::vector<uint8_t>{0x10, 0x20});
+  EXPECT_THAT(EncodeBitmap(bitmap, bitmap_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("expected 4 bytes")));
 }
 
 TEST(BitmapTest, DecodeBitmapProto2x4) {
