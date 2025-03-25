@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -38,7 +39,7 @@ absl::StatusOr<Bitmap::PixelFormat> DecodePixelFormat(
       return Bitmap::PixelFormat::kRgba8888;
     default:
       return absl::InvalidArgumentError(absl::StrCat(
-          "invalid ink.proto.Bitmap.PixelFormat value: ", pixel_format_proto));
+          "Invalid ink.proto.Bitmap.PixelFormat value: ", pixel_format_proto));
   }
 }
 
@@ -53,16 +54,16 @@ void EncodeBitmap(const Bitmap& bitmap, proto::Bitmap& bitmap_proto) {
 
 absl::StatusOr<VectorBitmap> DecodeBitmap(const proto::Bitmap& bitmap_proto) {
   if (!bitmap_proto.has_width()) {
-    return absl::InvalidArgumentError("Bitmap proto missing required width");
+    return absl::InvalidArgumentError("Bitmap proto: missing required width");
   }
   if (!bitmap_proto.has_height()) {
-    return absl::InvalidArgumentError("Bitmap proto missing required height");
+    return absl::InvalidArgumentError("Bitmap proto: missing required height");
   }
-  if (bitmap_proto.width() == 0) {
-    return absl::InvalidArgumentError("Bitmap proto width must be positive");
+  if (bitmap_proto.width() <= 0) {
+    return absl::InvalidArgumentError("Bitmap proto: width must be positive");
   }
-  if (bitmap_proto.height() == 0) {
-    return absl::InvalidArgumentError("Bitmap proto height must be positive");
+  if (bitmap_proto.height() <= 0) {
+    return absl::InvalidArgumentError("Bitmap proto: height must be positive");
   }
 
   absl::StatusOr<Bitmap::PixelFormat> pixel_format =
@@ -72,12 +73,22 @@ absl::StatusOr<VectorBitmap> DecodeBitmap(const proto::Bitmap& bitmap_proto) {
   }
   ColorSpace color_space = DecodeColorSpace(bitmap_proto.color_space());
 
-  size_t expected_pixel_data_size = bitmap_proto.width() *
-                                    bitmap_proto.height() *
-                                    PixelFormatBytesPerPixel(*pixel_format);
-  if (bitmap_proto.pixel_data().size() != expected_pixel_data_size) {
+  // Width and height are int32_t, so this multiplication can't overflow.
+  int64_t area = static_cast<int64_t>(bitmap_proto.width()) *
+                 static_cast<int64_t>(bitmap_proto.height());
+  if (area > std::numeric_limits<int32_t>::max()) {
+    return absl::InvalidArgumentError("Bitmap proto: area overflows int32_t");
+  }
+  int64_t expected_pixel_data_size =
+      area * static_cast<int64_t>(PixelFormatBytesPerPixel(*pixel_format));
+  if (expected_pixel_data_size > std::numeric_limits<int32_t>::max()) {
     return absl::InvalidArgumentError(
-        "Bitmap proto pixel data has incorrect size");
+        "Bitmap proto: pixel data size overflows int32_t");
+  }
+  if (bitmap_proto.pixel_data().size() !=
+      static_cast<size_t>(expected_pixel_data_size)) {
+    return absl::InvalidArgumentError(
+        "Bitmap proto: pixel data has incorrect size");
   }
 
   std::vector<uint8_t> pixel_data(bitmap_proto.pixel_data().begin(),

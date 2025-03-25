@@ -35,6 +35,10 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
+using ::testing::HasSubstr;
+
 std::vector<uint8_t> TestPixelData2x4Rgba8888() {
   return std::vector<uint8_t>{
       0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56,
@@ -57,7 +61,7 @@ TEST(BitmapTest, EncodePixelFormat) {
 
 TEST(BitmapTest, DecodePixelFormat) {
   auto result = DecodePixelFormat(proto::Bitmap::PIXEL_FORMAT_RGBA8888);
-  ASSERT_THAT(result, absl_testing::IsOk());
+  ASSERT_THAT(result, IsOk());
   EXPECT_EQ(*result, Bitmap::PixelFormat::kRgba8888);
 }
 
@@ -135,18 +139,38 @@ TEST(BitmapTest, DecodeBitmapProto1x3) {
   EXPECT_EQ(bitmap.GetPixelData(), pixel_data);
 }
 
-TEST(BitmapTest, DecodeBitmapProtoInvalidPixelFormat) {
+proto::Bitmap CreateValidTestBitmapProto2x4() {
   proto::Bitmap bitmap_proto;
   bitmap_proto.set_width(2);
   bitmap_proto.set_height(4);
-  bitmap_proto.set_pixel_format(proto::Bitmap::PIXEL_FORMAT_UNSPECIFIED);
+  bitmap_proto.set_pixel_format(proto::Bitmap::PIXEL_FORMAT_RGBA8888);
   bitmap_proto.set_color_space(proto::ColorSpace::COLOR_SPACE_SRGB);
   const std::vector<uint8_t> pixel_data = TestPixelData2x4Rgba8888();
   bitmap_proto.set_pixel_data(pixel_data.data(), pixel_data.size());
+  return bitmap_proto;
+}
 
-  auto result = DecodeBitmap(bitmap_proto);
-  EXPECT_EQ(result.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_TRUE(absl::StrContains(result.status().message(), "PixelFormat"));
+// This test ensures that all the DecodeBitmapProto* tests below that expect an
+// InvalidArgumentError are actually testing the right thing.
+TEST(BitmapTest, AssertThatCreateValidTestBitmapProto2x4Decodes) {
+  proto::Bitmap bitmap_proto = CreateValidTestBitmapProto2x4();
+  auto bitmap = DecodeBitmap(bitmap_proto);
+  ASSERT_THAT(bitmap, IsOk());
+  ASSERT_EQ(bitmap->width(), 2);
+  ASSERT_EQ(bitmap->height(), 4);
+  ASSERT_EQ(bitmap->pixel_format(), Bitmap::PixelFormat::kRgba8888);
+  ASSERT_EQ(bitmap->color_space(), ColorSpace::kSrgb);
+  ASSERT_EQ(bitmap->GetPixelData().size(), 32);
+  ASSERT_EQ(bitmap->GetPixelData(), TestPixelData2x4Rgba8888());
+}
+
+TEST(BitmapTest, DecodeBitmapProtoInvalidPixelFormat) {
+  proto::Bitmap bitmap_proto = CreateValidTestBitmapProto2x4();
+  bitmap_proto.set_pixel_format(proto::Bitmap::PIXEL_FORMAT_UNSPECIFIED);
+
+  EXPECT_THAT(
+      DecodeBitmap(bitmap_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("PixelFormat")));
 }
 
 TEST(BitmapTest, DecodeBitmapProtoInvalidColorSpaceDefaultsToSrgb) {
@@ -159,16 +183,13 @@ TEST(BitmapTest, DecodeBitmapProtoInvalidColorSpaceDefaultsToSrgb) {
   bitmap_proto.set_pixel_data(pixel_data.data(), pixel_data.size());
 
   auto result = DecodeBitmap(bitmap_proto);
-  EXPECT_THAT(result.status(), absl_testing::IsOk());
-  EXPECT_EQ(result.value().color_space(), ColorSpace::kSrgb);
+  EXPECT_THAT(result.status(), IsOk());
+  EXPECT_EQ(result->color_space(), ColorSpace::kSrgb);
 }
 
 TEST(BitmapTest, DecodeBitmapProtoInvalidPixelData) {
-  proto::Bitmap bitmap_proto;
-  bitmap_proto.set_width(2);
-  bitmap_proto.set_height(4);
-  bitmap_proto.set_pixel_format(proto::Bitmap::PIXEL_FORMAT_RGBA8888);
-  bitmap_proto.set_color_space(proto::ColorSpace::COLOR_SPACE_SRGB);
+  proto::Bitmap bitmap_proto = CreateValidTestBitmapProto2x4();
+  // 31 bytes instead of the expected 32.
   auto pixel_data = std::vector<uint8_t>{
       0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56,
       0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34,
@@ -176,63 +197,81 @@ TEST(BitmapTest, DecodeBitmapProtoInvalidPixelData) {
   };
   bitmap_proto.set_pixel_data(pixel_data.data(), pixel_data.size() - 1);
 
-  auto result = DecodeBitmap(bitmap_proto);
-  EXPECT_EQ(result.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_TRUE(absl::StrContains(result.status().message(), "pixel data"));
+  EXPECT_THAT(
+      DecodeBitmap(bitmap_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pixel data")));
 }
 
-TEST(BitmapTest, DecodeBitmapProtoInvalidHeight) {
-  proto::Bitmap bitmap_proto;
-  bitmap_proto.set_width(2);
+TEST(BitmapTest, DecodeBitmapProtoZeroHeight) {
+  proto::Bitmap bitmap_proto = CreateValidTestBitmapProto2x4();
   bitmap_proto.set_height(0);
-  bitmap_proto.set_pixel_format(proto::Bitmap::PIXEL_FORMAT_RGBA8888);
-  bitmap_proto.set_color_space(proto::ColorSpace::COLOR_SPACE_SRGB);
-  const std::vector<uint8_t> pixel_data = TestPixelData2x4Rgba8888();
-  bitmap_proto.set_pixel_data(pixel_data.data(), pixel_data.size());
 
-  auto result = DecodeBitmap(bitmap_proto);
-  EXPECT_EQ(result.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_TRUE(absl::StrContains(result.status().message(), "height"));
+  EXPECT_THAT(
+      DecodeBitmap(bitmap_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("height")));
+}
+
+TEST(BitmapTest, DecodeBitmapProtoNegativeHeight) {
+  proto::Bitmap bitmap_proto = CreateValidTestBitmapProto2x4();
+  bitmap_proto.set_height(-1);
+
+  EXPECT_THAT(
+      DecodeBitmap(bitmap_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("height")));
 }
 
 TEST(BitmapTest, DecodeBitmapProtoMissingHeight) {
-  proto::Bitmap bitmap_proto;
-  bitmap_proto.set_width(2);
-  bitmap_proto.set_pixel_format(proto::Bitmap::PIXEL_FORMAT_RGBA8888);
-  bitmap_proto.set_color_space(proto::ColorSpace::COLOR_SPACE_SRGB);
-  const std::vector<uint8_t> pixel_data = TestPixelData2x4Rgba8888();
-  bitmap_proto.set_pixel_data(pixel_data.data(), pixel_data.size());
+  proto::Bitmap bitmap_proto = CreateValidTestBitmapProto2x4();
+  bitmap_proto.clear_height();
 
-  auto result = DecodeBitmap(bitmap_proto);
-  EXPECT_EQ(result.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_TRUE(absl::StrContains(result.status().message(), "height"));
+  EXPECT_THAT(
+      DecodeBitmap(bitmap_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("height")));
 }
 
-TEST(BitmapTest, DecodeBitmapProtoInvalidWidth) {
-  proto::Bitmap bitmap_proto;
+TEST(BitmapTest, DecodeBitmapProtoZeroWidth) {
+  proto::Bitmap bitmap_proto = CreateValidTestBitmapProto2x4();
   bitmap_proto.set_width(0);
-  bitmap_proto.set_height(4);
-  bitmap_proto.set_pixel_format(proto::Bitmap::PIXEL_FORMAT_RGBA8888);
-  bitmap_proto.set_color_space(proto::ColorSpace::COLOR_SPACE_SRGB);
-  const std::vector<uint8_t> pixel_data = TestPixelData2x4Rgba8888();
-  bitmap_proto.set_pixel_data(pixel_data.data(), pixel_data.size());
 
-  auto result = DecodeBitmap(bitmap_proto);
-  EXPECT_EQ(result.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_TRUE(absl::StrContains(result.status().message(), "width"));
+  EXPECT_THAT(DecodeBitmap(bitmap_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("width")));
+}
+
+TEST(BitmapTest, DecodeBitmapProtoNegativeWidth) {
+  proto::Bitmap bitmap_proto = CreateValidTestBitmapProto2x4();
+  bitmap_proto.set_width(-1);
+
+  EXPECT_THAT(DecodeBitmap(bitmap_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("width")));
 }
 
 TEST(BitmapTest, DecodeBitmapProtoMissingWidth) {
-  proto::Bitmap bitmap_proto;
-  bitmap_proto.set_height(4);
-  bitmap_proto.set_pixel_format(proto::Bitmap::PIXEL_FORMAT_RGBA8888);
-  bitmap_proto.set_color_space(proto::ColorSpace::COLOR_SPACE_SRGB);
-  const std::vector<uint8_t> pixel_data = TestPixelData2x4Rgba8888();
-  bitmap_proto.set_pixel_data(pixel_data.data(), pixel_data.size());
+  proto::Bitmap bitmap_proto = CreateValidTestBitmapProto2x4();
+  bitmap_proto.clear_width();
 
-  auto result = DecodeBitmap(bitmap_proto);
-  EXPECT_EQ(result.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_TRUE(absl::StrContains(result.status().message(), "width"));
+  EXPECT_THAT(DecodeBitmap(bitmap_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("width")));
+}
+
+TEST(BitmapTest, DecodeBitmapProtoAreaOverflowsInt32) {
+  proto::Bitmap bitmap_proto = CreateValidTestBitmapProto2x4();
+  bitmap_proto.set_width(65536);   // 2^16
+  bitmap_proto.set_height(32768);  // 2^15
+  // Total area is 2^31, which overflows int32_t.
+
+  EXPECT_THAT(DecodeBitmap(bitmap_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("area")));
+}
+
+TEST(BitmapTest, DecodeBitmapProtoPixelDataSizeOverflowsInt32) {
+  proto::Bitmap bitmap_proto = CreateValidTestBitmapProto2x4();
+  bitmap_proto.set_width(32768);   // 2^15
+  bitmap_proto.set_height(32768);  // 2^15
+  // Total area is 2^30. 4 bytes per pixel, so the data size is 2^32, which
+  // overflows int32_t.
+  EXPECT_THAT(DecodeBitmap(bitmap_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("pixel data size")));
 }
 
 void EncodeDecodeBitmapRoundTrip(std::unique_ptr<Bitmap> bitmap) {}
