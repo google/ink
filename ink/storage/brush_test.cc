@@ -15,7 +15,6 @@
 #include "ink/storage/brush.h"
 
 #include <cstdint>
-#include <functional>
 #include <map>
 #include <optional>
 #include <string>
@@ -222,11 +221,9 @@ TEST(BrushTest, DecodeBrushProto) {
   ASSERT_EQ(expected_brush.status(), absl::OkStatus());
 
   std::map<std::string, VectorBitmap> decoded_bitmaps = {};
-  std::function<std::string(const std::string& encoded_id,
-                            absl::Nullable<VectorBitmap*> bitmap)>
-      callback = [&decoded_bitmaps](
-                     const std::string& id,
-                     absl::Nullable<VectorBitmap*> bitmap) -> std::string {
+  ClientTextureIdProviderAndBitmapReceiver callback =
+      [&decoded_bitmaps](const std::string& id,
+                         absl::Nullable<VectorBitmap*> bitmap) -> std::string {
     std::string new_id = "";
     if (id == kTestTextureId1) {
       new_id = kTestTextureId1Decoded;
@@ -518,11 +515,10 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   ASSERT_EQ(brush.status(), absl::OkStatus());
   proto::Brush brush_proto_out;
   int callback_count = 0;
-  std::function<std::optional<VectorBitmap>(const std::string& id)> callback =
-      [&callback_count](const std::string& id) {
-        callback_count++;
-        return std::nullopt;
-      };
+  TextureBitmapProvider callback = [&callback_count](const std::string& id) {
+    callback_count++;
+    return std::nullopt;
+  };
   EncodeBrush(*brush, brush_proto_out, callback);
 
   proto::Brush brush_proto;
@@ -608,7 +604,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   ASSERT_EQ(brush.status(), absl::OkStatus());
   proto::Brush brush_proto_out;
   int callback_count = 0;
-  std::function<std::optional<VectorBitmap>(const std::string& id)> callback =
+  TextureBitmapProvider callback =
       [&callback_count](
           const std::string& id) -> std::optional<ink::VectorBitmap> {
     callback_count++;
@@ -728,7 +724,7 @@ TEST(BrushTest, EncodeBrushFamilyTextureMap) {
   ::google::protobuf::Map<std::string, ::ink::proto::Bitmap>
       texture_id_to_bitmap_proto_out;
   int distinct_texture_ids_count = 0;
-  std::function<std::optional<VectorBitmap>(const std::string& id)> callback =
+  TextureBitmapProvider callback =
       [&distinct_texture_ids_count](
           const std::string& id) -> std::optional<ink::VectorBitmap> {
     distinct_texture_ids_count++;
@@ -762,7 +758,7 @@ TEST(BrushTest, EncodeBrushFamilyTextureMapWithNonEmptyProto) {
       {"existing_id", ::ink::proto::Bitmap()});
 
   int callback_count = 0;
-  std::function<std::optional<VectorBitmap>(const std::string& id)> callback =
+  TextureBitmapProvider callback =
       [&callback_count](
           const std::string& id) -> std::optional<ink::VectorBitmap> {
     callback_count++;
@@ -928,19 +924,16 @@ TEST(BrushTest, EncodeBrushBehaviorDampingNodeWithInvalidDampingSource) {
 void EncodeDecodeBrushRoundTrip(const Brush& brush_in) {
   int encode_callback_count = 0;
   int decode_callback_count = 0;
-  std::function<std::optional<VectorBitmap>(const std::string& id)>
-      encode_callback =
-          [&encode_callback_count](
-              const std::string& id) -> std::optional<VectorBitmap> {
+  TextureBitmapProvider encode_callback =
+      [&encode_callback_count](
+          const std::string& id) -> std::optional<VectorBitmap> {
     encode_callback_count++;
     return std::nullopt;
   };
-  std::function<std::string(const std::string& encoded_id,
-                            absl::Nullable<VectorBitmap*> bitmap)>
-      decode_callback =
-          [&decode_callback_count](
-              const std::string& id,
-              absl::Nullable<VectorBitmap*> bitmap) -> std::string {
+  ClientTextureIdProviderAndBitmapReceiver decode_callback =
+      [&decode_callback_count](
+          const std::string& id,
+          absl::Nullable<VectorBitmap*> bitmap) -> std::string {
     decode_callback_count++;
     return id;
   };

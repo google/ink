@@ -14,8 +14,14 @@
 
 #include <jni.h>
 
+#include <cstdint>
+#include <map>
+#include <optional>
+#include <string>
 #include <utility>
+#include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ink/brush/brush.h"
@@ -23,9 +29,12 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/color/color.h"
+#include "ink/color/color_space.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_proto_util.h"
 #include "ink/jni/internal/jni_throw_util.h"
+#include "ink/rendering/bitmap.h"
 #include "ink/storage/brush.h"
 #include "ink/storage/proto/brush.pb.h"
 
@@ -63,11 +72,24 @@ JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrush)
 }
 
 JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushFamily)
-(JNIEnv* env, jobject object, jlong brush_family_native_pointer) {
+(JNIEnv* env, jobject object, jlong brush_family_native_pointer,
+ jlong texture_map_native_pointer) {
   const auto* brush_family =
       reinterpret_cast<const BrushFamily*>(brush_family_native_pointer);
+  std::map<std::string, ink::VectorBitmap>* map =
+      reinterpret_cast<std::map<std::string, ink::VectorBitmap>*>(
+          texture_map_native_pointer);
+
+  ink::TextureBitmapProvider texture_bitmap_provider =
+      [map](const std::string& texture_id) -> std::optional<ink::VectorBitmap> {
+    auto it = map->find(texture_id);
+    if (it == map->end()) {
+      return std::nullopt;
+    }
+    return it->second;
+  };
   ink::proto::BrushFamily brush_family_proto;
-  EncodeBrushFamily(*brush_family, brush_family_proto);
+  EncodeBrushFamily(*brush_family, brush_family_proto, texture_bitmap_provider);
   return SerializeProto(env, brush_family_proto);
 }
 
@@ -122,11 +144,58 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFromProto)
   return reinterpret_cast<jlong>(new Brush(*std::move(brush)));
 }
 
-JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFamilyFromProto)
+JNI_METHOD(storage, BrushSerializationNative, jlong,
+           newBrushFamilyFromProtoInternal)
 (JNIEnv* env, jobject object, jobject brush_family_direct_byte_buffer,
- jbyteArray brush_family_byte_array, jint offset, jint length,
+ jbyteArray brush_family_byte_array, jint offset, jint length, jobject callback,
  jboolean throw_on_parse_error) {
   ink::proto::BrushFamily brush_family_proto;
+  jclass interfaceClazz = env->GetObjectClass(callback);
+  jmethodID on_decode_texture_method =
+      env->GetMethodID(interfaceClazz, "onDecodeNativeTexture",
+                       "(Ljava/lang/String;II[B)Ljava/lang/String;");
+  ink::ClientTextureIdProviderAndBitmapReceiver callback_lambda =
+      [env, callback, on_decode_texture_method](
+          const std::string& texture_id,
+          absl::Nullable<ink::VectorBitmap*> bitmap) -> std::string {
+    jstring texture_id_jstring = env->NewStringUTF(texture_id.c_str());
+
+    if (bitmap == nullptr) {
+      jbyteArray pixel_data_jarray = env->NewByteArray(0);
+      jstring texture_id_out = static_cast<jstring>(
+          env->CallObjectMethod(callback, on_decode_texture_method,
+                                texture_id_jstring, 0, 0, pixel_data_jarray));
+      env->DeleteLocalRef(texture_id_jstring);
+      env->DeleteLocalRef(pixel_data_jarray);
+      const char* texture_id_chars =
+          env->GetStringUTFChars(texture_id_out, nullptr);
+      std::string texture_id_string(texture_id_chars);
+      env->ReleaseStringUTFChars(texture_id_out, texture_id_chars);
+      env->DeleteLocalRef(texture_id_out);
+      return texture_id_string;
+    } else {
+      jbyteArray pixel_data_jarray =
+          env->NewByteArray(bitmap->GetPixelData().size());
+
+      env->SetByteArrayRegion(
+          pixel_data_jarray, 0, bitmap->GetPixelData().size(),
+          reinterpret_cast<const jbyte*>(bitmap->GetPixelData().data()));
+
+      jstring texture_id_out = static_cast<jstring>(env->CallObjectMethod(
+          callback, on_decode_texture_method, texture_id_jstring,
+          bitmap->width(), bitmap->height(), pixel_data_jarray));
+
+      env->DeleteLocalRef(texture_id_jstring);
+      env->DeleteLocalRef(pixel_data_jarray);
+
+      const char* texture_id_chars =
+          env->GetStringUTFChars(texture_id_out, nullptr);
+      std::string texture_id_string(texture_id_chars);
+      env->ReleaseStringUTFChars(texture_id_out, texture_id_chars);
+      env->DeleteLocalRef(texture_id_out);
+      return texture_id_string;
+    }
+  };
   if (absl::Status status = ParseProtoFromEither(
           env, brush_family_direct_byte_buffer, brush_family_byte_array, offset,
           length, brush_family_proto);
@@ -136,8 +205,9 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFamilyFromProto)
     }
     return 0;
   }
+
   absl::StatusOr<BrushFamily> brush_family =
-      DecodeBrushFamily(brush_family_proto);
+      DecodeBrushFamily(brush_family_proto, callback_lambda);
   if (!brush_family.ok()) {
     if (throw_on_parse_error) {
       ThrowExceptionFromStatus(env, brush_family.status());
@@ -145,6 +215,41 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFamilyFromProto)
     return 0;
   }
   return reinterpret_cast<jlong>(new BrushFamily(*std::move(brush_family)));
+}
+
+JNI_METHOD(storage, BrushSerializationNative, jlong, nativeCreateTextureMap)
+(JNIEnv* env, jobject object) {
+  return reinterpret_cast<jlong>(
+      new std::map<std::string, ink::VectorBitmap>());
+}
+
+JNI_METHOD(storage, BrushSerializationNative, void,
+           nativeAddTextureToTextureMap)
+(JNIEnv* env, jobject object, jlong map_native_pointer, jstring texture_id,
+ jint width, jint height, jbyteArray pixel_data) {
+  std::map<std::string, ink::VectorBitmap>* map =
+      reinterpret_cast<std::map<std::string, ink::VectorBitmap>*>(
+          map_native_pointer);
+  const char* texture_id_chars = env->GetStringUTFChars(texture_id, nullptr);
+  std::string texture_id_string(texture_id_chars);
+  env->ReleaseStringUTFChars(texture_id, texture_id_chars);
+  env->DeleteLocalRef(texture_id);
+
+  jsize pixel_data_size = env->GetArrayLength(pixel_data);
+  jbyte* pixel_data_bytes = env->GetByteArrayElements(pixel_data, nullptr);
+  std::vector<uint8_t> pixel_data_vector(pixel_data_bytes,
+                                         pixel_data_bytes + pixel_data_size);
+  ink::VectorBitmap bitmap(width, height, ink::Bitmap::PixelFormat::kRgba8888,
+                           ink::Color::Format::kGammaEncoded,
+                           ink::ColorSpace::kSrgb, pixel_data_vector);
+  env->ReleaseByteArrayElements(pixel_data, pixel_data_bytes, JNI_ABORT);
+  map->insert({texture_id_string, bitmap});
+}
+
+JNI_METHOD(storage, BrushSerializationNative, void, nativeDestroyTextureMap)
+(JNIEnv* env, jobject object, jlong map_native_pointer) {
+  delete reinterpret_cast<std::map<std::string, ink::VectorBitmap>*>(
+      map_native_pointer);
 }
 
 JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushCoatFromProto)
