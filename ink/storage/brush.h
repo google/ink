@@ -27,18 +27,17 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
-#include "ink/rendering/bitmap.h"
 #include "ink/storage/proto/brush.pb.h"
 
 namespace ink {
 
 // Provides a bitmap for a given client texture `id`, if one exists.
 using TextureBitmapProvider =
-    std::function<std::optional<VectorBitmap>(const std::string& id)>;
+    std::function<std::optional<std::string>(const std::string& id)>;
 // Provides a new client texture id for a given encoded texture `id`, and
 // is responsible for receiving the bitmap for that new client texture id.
 using ClientTextureIdProviderAndBitmapReceiver = std::function<std::string(
-    const std::string& encoded_id, absl::Nullable<VectorBitmap*> bitmap)>;
+    const std::string& encoded_id, absl::Nullable<std::string*> bitmap)>;
 // Provides a new client texture id for a given encoded texture `id`.
 using ClientTextureIdProvider =
     std::function<std::string(const std::string& encoded_id)>;
@@ -59,7 +58,7 @@ void EncodeBrushFamily(
     });
 void EncodeBrushFamilyTextureMap(
     const BrushFamily& family,
-    ::google::protobuf::Map<std::string, ::ink::proto::Bitmap>& texture_id_to_bitmap_out,
+    google::protobuf::Map<std::string, std::string>& texture_id_to_bitmap_out,
     TextureBitmapProvider get_bitmap);
 void EncodeBrushCoat(const BrushCoat& coat, proto::BrushCoat& coat_proto_out);
 void EncodeBrushPaint(const BrushPaint& paint,
@@ -73,13 +72,15 @@ void EncodeBrushBehaviorNode(const BrushBehavior::Node& node,
 absl::StatusOr<Brush> DecodeBrush(
     const proto::Brush& brush_proto,
     ClientTextureIdProviderAndBitmapReceiver get_client_texture_id =
-        [](const std::string& encoded_id,
-           absl::Nullable<VectorBitmap*> bitmap) { return encoded_id; });
+        [](const std::string& encoded_id, absl::Nullable<std::string*> bitmap) {
+          return encoded_id;
+        });
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto,
     ClientTextureIdProviderAndBitmapReceiver get_client_texture_id =
-        [](const std::string& encoded_id,
-           absl::Nullable<VectorBitmap*> bitmap) { return encoded_id; });
+        [](const std::string& encoded_id, absl::Nullable<std::string*> bitmap) {
+          return encoded_id;
+        });
 absl::StatusOr<BrushCoat> DecodeBrushCoat(
     const proto::BrushCoat& coat_proto,
     ClientTextureIdProvider get_client_texture_id =

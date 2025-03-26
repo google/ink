@@ -1,31 +1,24 @@
 #include "ink/rendering/skia/native/internal/shader_cache.h"
 
-#include <cstdint>
-#include <cstring>
-#include <memory>
 #include <utility>
 
 #include "absl/base/nullability.h"
-#include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/span.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/color/color.h"
 #include "ink/color/color_space.h"
 #include "ink/geometry/affine_transform.h"
-#include "ink/rendering/bitmap.h"
-#include "ink/rendering/texture_bitmap_store.h"
+#include "ink/rendering/skia/native/texture_bitmap_store.h"
 #include "ink/strokes/input/stroke_input_batch.h"
-#include "include/core/SkAlphaType.h"
+#include "include/codec/SkCodec.h"
 #include "include/core/SkBitmap.h"
 #include "include/core/SkBlendMode.h"
 #include "include/core/SkBlender.h"
 #include "include/core/SkColorSpace.h"
-#include "include/core/SkColorType.h"
 #include "include/core/SkImage.h"
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkMatrix.h"
@@ -80,27 +73,6 @@ SkBlendMode ToSkBlendMode(BrushPaint::BlendMode blend_mode) {
   }
   ABSL_LOG(FATAL) << "invalid `BrushPaint::BlendMode` value: "
                   << static_cast<int>(blend_mode);
-}
-
-SkColorType ToSkColorType(Bitmap::PixelFormat format) {
-  switch (format) {
-    case Bitmap::PixelFormat::kRgba8888:
-      return SkColorType::kRGBA_8888_SkColorType;
-  }
-  ABSL_LOG(FATAL) << "invalid `Bitmap::PixelFormat` value: "
-                  << static_cast<int>(format);
-}
-
-SkAlphaType GetAlphaType(Color::Format format) {
-  switch (format) {
-    case Color::Format::kLinear:
-    case Color::Format::kGammaEncoded:
-      return SkAlphaType::kUnpremul_SkAlphaType;
-    case Color::Format::kPremultipliedAlpha:
-      return SkAlphaType::kPremul_SkAlphaType;
-  }
-  ABSL_LOG(FATAL) << "invalid `Color::Format` value: "
-                  << static_cast<int>(format);
 }
 
 sk_sp<SkColorSpace> CreateColorSpace(ColorSpace color_space,
@@ -261,37 +233,13 @@ absl::StatusOr<sk_sp<SkImage>> ShaderCache::GetImageForTexture(
   }
   sk_sp<SkImage>& cached_image = texture_images_[texture_id];
   if (cached_image == nullptr) {
-    absl::StatusOr<std::shared_ptr<Bitmap>> bitmap =
+    absl::StatusOr<sk_sp<SkImage>> image =
         texture_provider_->GetTextureBitmap(texture_id);
-    if (!bitmap.ok()) return bitmap.status();
-    absl::StatusOr<sk_sp<SkImage>> image = CreateImageFromBitmap(**bitmap);
     if (!image.ok()) return image.status();
-    cached_image = *std::move(image);
+
+    cached_image = std::move(image.value());
   }
   return cached_image;
-}
-
-absl::StatusOr<sk_sp<SkImage>> ShaderCache::CreateImageFromBitmap(
-    const Bitmap& ink_bitmap) {
-  absl::Status status = rendering_internal::ValidateBitmap(ink_bitmap);
-  if (!status.ok()) return status;
-  SkImageInfo image_info = SkImageInfo::Make(
-      ink_bitmap.width(), ink_bitmap.height(),
-      ToSkColorType(ink_bitmap.pixel_format()),
-      GetAlphaType(ink_bitmap.color_format()),
-      GetColorSpace(ink_bitmap.color_space(), ink_bitmap.color_format()));
-  absl::Span<const uint8_t> pixel_data = ink_bitmap.GetPixelData();
-  ABSL_CHECK_EQ(pixel_data.size(), image_info.computeMinByteSize());
-  SkBitmap skia_bitmap;
-  bool success = skia_bitmap.tryAllocPixels(image_info);
-  if (!success) {
-    return absl::InternalError(absl::StrCat("failed to allocate pixels for ",
-                                            ink_bitmap.width(), "x",
-                                            ink_bitmap.height(), " SkImage"));
-  }
-  std::memcpy(skia_bitmap.getPixels(), pixel_data.data(), pixel_data.size());
-  skia_bitmap.setImmutable();
-  return skia_bitmap.asImage();
 }
 
 sk_sp<SkColorSpace> ShaderCache::GetColorSpace(ColorSpace color_space,

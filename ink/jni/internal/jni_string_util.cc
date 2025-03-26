@@ -16,6 +16,9 @@
 
 #include <jni.h>
 
+#include <string>
+
+#include "absl/log/absl_check.h"
 #include "absl/strings/string_view.h"
 
 namespace ink {
@@ -35,6 +38,24 @@ JStringView::~JStringView() {
     env_->ReleaseStringUTFChars(j_string_, string_view_.data());
     env_->DeleteGlobalRef(j_string_);
   }
+}
+
+jbyteArray StdStringToJbyteArray(JNIEnv* env, const std::string& str) {
+  jbyteArray array = env->NewByteArray(str.size());
+  env->SetByteArrayRegion(array, 0, str.size(),
+                          reinterpret_cast<const jbyte*>(str.data()));
+  return array;
+}
+std::string JByteArrayToStdString(JNIEnv* env, jbyteArray byteArray) {
+  std::string result;
+  ABSL_CHECK(byteArray != nullptr);
+  jsize length = env->GetArrayLength(byteArray);
+  jbyte* buffer = env->GetByteArrayElements(byteArray, nullptr);
+  ABSL_CHECK(buffer != nullptr);
+  result.assign(reinterpret_cast<char*>(buffer), length);
+  env->ReleaseByteArrayElements(byteArray, buffer, JNI_ABORT);
+
+  return result;
 }
 
 }  // namespace jni
