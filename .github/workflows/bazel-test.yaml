@@ -35,5 +35,18 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-bazel-
 
+    - name: Authenticate to Google Cloud
+      if: github.repository == 'google/ink'
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+        export_environment_variables: true
+
+    - name: Set up Bazel remote cache
+      if: github.repository == 'google/ink'
+      run: |
+        echo "BAZEL_CACHE=--remote_cache=https://storage.googleapis.com/ink-open-source-ci/" >> $GITHUB_ENV
+        echo "BAZEL_AUTH=--google_default_credentials" >> $GITHUB_ENV
+
     - name: Test
-      run: bazel test --test_output=errors --keep_going //ink/...
+      run: bazel test --test_output=errors ${BAZEL_CACHE:-} ${BAZEL_AUTH:-} --keep_going //ink/...
