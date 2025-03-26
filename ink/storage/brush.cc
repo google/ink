@@ -15,7 +15,6 @@
 #include "ink/storage/brush.h"
 
 #include <cstdint>
-#include <functional>
 #include <map>
 #include <optional>
 #include <string>
@@ -24,7 +23,6 @@
 #include <variant>
 #include <vector>
 
-#include "absl/base/nullability.h"
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -1189,8 +1187,7 @@ void EncodeBrushPaintTextureLayer(
 
 absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
     const proto::BrushPaint::TextureLayer& layer_proto,
-    std::function<std::string(const std::string& encoded_id)>
-        get_client_texture_id) {
+    ClientTextureIdProvider get_client_texture_id) {
   auto mapping = DecodeBrushPaintTextureMapping(layer_proto.mapping());
   if (!mapping.ok()) {
     return mapping.status();
@@ -1336,8 +1333,7 @@ void EncodeBrushPaint(const BrushPaint& paint,
 
 absl::StatusOr<BrushPaint> DecodeBrushPaint(
     const proto::BrushPaint& paint_proto,
-    std::function<std::string(const std::string& encoded_id)>
-        get_client_texture_id) {
+    ClientTextureIdProvider get_client_texture_id) {
   std::vector<BrushPaint::TextureLayer> layers;
   layers.reserve(paint_proto.texture_layers_size());
   for (const proto::BrushPaint::TextureLayer& layer_proto :
@@ -1431,8 +1427,7 @@ void EncodeBrushCoat(const BrushCoat& coat, proto::BrushCoat& coat_proto_out) {
 
 absl::StatusOr<BrushCoat> DecodeBrushCoat(
     const proto::BrushCoat& coat_proto,
-    std::function<std::string(const std::string& encoded_id)>
-        get_client_texture_id) {
+    ClientTextureIdProvider get_client_texture_id) {
   absl::StatusOr<BrushTip> tip = DecodeBrushTip(coat_proto.tip());
   if (!tip.ok()) {
     return tip.status();
@@ -1450,8 +1445,7 @@ absl::StatusOr<BrushCoat> DecodeBrushCoat(
 void EncodeBrushFamilyTextureMap(
     const BrushFamily& family,
     ::google::protobuf::Map<std::string, ::ink::proto::Bitmap>& texture_id_to_bitmap_out,
-    std::function<std::optional<VectorBitmap>(const std::string& id)>
-        get_bitmap) {
+    TextureBitmapProvider get_bitmap) {
   texture_id_to_bitmap_out.clear();
   // The set of texture ids for which we have already called get_bitmap().
   std::unordered_set<std::string> seen_ids = {};
@@ -1479,10 +1473,9 @@ void EncodeBrushFamilyTextureMap(
   }
 }
 
-void EncodeBrushFamily(
-    const BrushFamily& family, proto::BrushFamily& family_proto_out,
-    std::function<std::optional<VectorBitmap>(const std::string& id)>
-        get_bitmap) {
+void EncodeBrushFamily(const BrushFamily& family,
+                       proto::BrushFamily& family_proto_out,
+                       TextureBitmapProvider get_bitmap) {
   family_proto_out.Clear();
   EncodeBrushFamilyTextureMap(
       family, *family_proto_out.mutable_texture_id_to_bitmap(), get_bitmap);
@@ -1505,8 +1498,7 @@ void EncodeBrushFamily(
 
 absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
     const proto::BrushFamily& family_proto,
-    std::function<std::string(const std::string& encoded_id)>
-        get_client_texture_id) {
+    ClientTextureIdProvider get_client_texture_id) {
   std::vector<BrushCoat> coats;
 
   coats.reserve(family_proto.coats_size());
@@ -1537,9 +1529,7 @@ absl::StatusOr<std::map<std::string, VectorBitmap>> DecodeBrushFamilyTextureMap(
 
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto,
-    std::function<std::string(const std::string& encoded_id,
-                              absl::Nullable<VectorBitmap*> bitmap)>
-        get_client_texture_id) {
+    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id) {
   std::map<std::string, std::string> old_to_new_id = {};
   absl::StatusOr<std::map<std::string, VectorBitmap>> old_id_to_bitmap =
       DecodeBrushFamilyTextureMap(family_proto.texture_id_to_bitmap());
@@ -1548,7 +1538,7 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
   }
 
   // Write a texture_callback that uses the map of olds to new ids.
-  std::function<std::string(const std::string& encoded_id)> texture_callback =
+  ClientTextureIdProvider texture_callback =
       [&old_id_to_bitmap, &old_to_new_id,
        &get_client_texture_id](const std::string& old_id) -> std::string {
     if (old_to_new_id.find(old_id) != old_to_new_id.end()) {
@@ -1585,10 +1575,8 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
                              *input_model);
 }
 
-void EncodeBrush(
-    const Brush& brush, proto::Brush& brush_proto_out,
-    std::function<std::optional<VectorBitmap>(const std::string& id)>
-        get_bitmap) {
+void EncodeBrush(const Brush& brush, proto::Brush& brush_proto_out,
+                 TextureBitmapProvider get_bitmap) {
   EncodeColor(brush.GetColor(), *brush_proto_out.mutable_color());
   brush_proto_out.set_size_stroke_space(brush.GetSize());
   brush_proto_out.set_epsilon_stroke_space(brush.GetEpsilon());
@@ -1598,9 +1586,7 @@ void EncodeBrush(
 
 absl::StatusOr<Brush> DecodeBrush(
     const proto::Brush& brush_proto,
-    std::function<std::string(const std::string& encoded_id,
-                              absl::Nullable<VectorBitmap*> bitmap)>
-        get_client_texture_id) {
+    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id) {
   absl::StatusOr<BrushFamily> brush_family =
       DecodeBrushFamily(brush_proto.brush_family(), get_client_texture_id);
   if (!brush_family.ok()) {
