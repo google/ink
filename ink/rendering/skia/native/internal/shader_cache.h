@@ -25,8 +25,7 @@
 #include "ink/brush/brush_paint.h"
 #include "ink/color/color.h"
 #include "ink/color/color_space.h"
-#include "ink/rendering/bitmap.h"
-#include "ink/rendering/texture_bitmap_store.h"
+#include "ink/rendering/skia/native/texture_bitmap_store.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "include/core/SkBlender.h"
 #include "include/core/SkColorSpace.h"
@@ -72,14 +71,10 @@ class ShaderCache {
       const BrushPaint::TextureLayer& layer);
 
   // Returns an `SkImage` object with the bitmap data for the given texture
-  // id. The `SkImage` object will be cached, so that the same instance is
-  // returned for the same texture id.
+  // ID. The `SkImage` object will be cached, so that the same instance is
+  // returned for the same texture ID.
   absl::StatusOr<sk_sp<SkImage>> GetImageForTexture(
       absl::string_view texture_id);
-
-  // Creates a new `SkImage` object from the given Ink `Bitmap`.
-  absl::StatusOr<sk_sp<SkImage>> CreateImageFromBitmap(
-      const Bitmap& ink_bitmap);
 
   // Returns the `SkColorSpace` corresponding to the given Ink `ColorSpace` and
   // `Color::Format`. The `SkColorSpace` object will be cached, so that the same

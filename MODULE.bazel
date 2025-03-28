@@ -128,6 +128,7 @@ bazel_dep(
 # See: https://g-issues.skia.org/issues/367315534
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "libpng", version = "1.6.47")
 
 # Silence warnings about duplicate Python toolchain registration by using a
 # newer version of rules_python.  We can remove this when any of our
