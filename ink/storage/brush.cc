@@ -23,7 +23,6 @@
 #include <variant>
 #include <vector>
 
-#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -38,8 +37,6 @@
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
-#include "ink/rendering/bitmap.h"
-#include "ink/storage/bitmap.h"
 #include "ink/storage/color.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/coded.pb.h"
@@ -1444,7 +1441,7 @@ absl::StatusOr<BrushCoat> DecodeBrushCoat(
 
 void EncodeBrushFamilyTextureMap(
     const BrushFamily& family,
-    ::google::protobuf::Map<std::string, ::ink::proto::Bitmap>& texture_id_to_bitmap_out,
+    ::google::protobuf::Map<std::string, std::string>& texture_id_to_bitmap_out,
     TextureBitmapProvider get_bitmap) {
   texture_id_to_bitmap_out.clear();
   // The set of texture ids for which we have already called get_bitmap().
@@ -1455,20 +1452,13 @@ void EncodeBrushFamilyTextureMap(
         continue;
       }
 
-      std::optional<VectorBitmap> bitmap = get_bitmap(layer.client_texture_id);
+      std::optional<std::string> bitmap = get_bitmap(layer.client_texture_id);
       seen_ids.insert(layer.client_texture_id);
       if (!bitmap.has_value()) {
         continue;
       }
 
-      proto::Bitmap bitmap_proto;
-      if (absl::Status status = EncodeBitmap(*bitmap, bitmap_proto);
-          !status.ok()) {
-        ABSL_LOG(WARNING) << "Failed to encode bitmap for texture id "
-                          << layer.client_texture_id << ": " << status;
-        continue;
-      }
-      texture_id_to_bitmap_out.insert({layer.client_texture_id, bitmap_proto});
+      texture_id_to_bitmap_out.insert({layer.client_texture_id, *bitmap});
     }
   }
 }
@@ -1513,43 +1503,27 @@ absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
   return std::move(coats);
 }
 
-absl::StatusOr<std::map<std::string, VectorBitmap>> DecodeBrushFamilyTextureMap(
-    const ::google::protobuf::Map<std::string, ::ink::proto::Bitmap>&
-        texture_id_to_bitmap) {
-  std::map<std::string, VectorBitmap> bitmaps;
-  for (const auto& [id, bitmap_proto] : texture_id_to_bitmap) {
-    absl::StatusOr<VectorBitmap> bitmap = DecodeBitmap(bitmap_proto);
-    if (!bitmap.ok()) {
-      return bitmap.status();
-    }
-    bitmaps.insert({id, bitmap.value()});
-  }
-  return bitmaps;
-}
-
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto,
     ClientTextureIdProviderAndBitmapReceiver get_client_texture_id) {
+  // ID map that also serves as a record of the IDs for which we've already
+  // called `get_client_texture_id`.
   std::map<std::string, std::string> old_to_new_id = {};
-  absl::StatusOr<std::map<std::string, VectorBitmap>> old_id_to_bitmap =
-      DecodeBrushFamilyTextureMap(family_proto.texture_id_to_bitmap());
-  if (!old_id_to_bitmap.ok()) {
-    return old_id_to_bitmap.status();
-  }
 
-  // Write a texture_callback that uses the map of olds to new ids.
   ClientTextureIdProvider texture_callback =
-      [&old_id_to_bitmap, &old_to_new_id,
+      [&family_proto, &old_to_new_id,
        &get_client_texture_id](const std::string& old_id) -> std::string {
-    if (old_to_new_id.find(old_id) != old_to_new_id.end()) {
-      return old_to_new_id[old_id];
+    if (auto it = old_to_new_id.find(old_id); it != old_to_new_id.end()) {
+      // No need to call `get_client_texture_id` again.
+      return it->second;
     }
+
     std::string new_id;
-    auto bitmap_it = old_id_to_bitmap->find(old_id);
-    if (bitmap_it != old_id_to_bitmap->end()) {
-      new_id = get_client_texture_id(old_id, &bitmap_it->second);
+    if (auto bitmap_it = family_proto.texture_id_to_bitmap().find(old_id);
+        bitmap_it != family_proto.texture_id_to_bitmap().end()) {
+      new_id = get_client_texture_id(old_id, bitmap_it->second);
     } else {
-      new_id = get_client_texture_id(old_id, nullptr);
+      new_id = get_client_texture_id(old_id, std::string());
     }
     old_to_new_id.insert({old_id, new_id});
     return new_id;
@@ -1560,7 +1534,6 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
   if (!coats.ok()) {
     return coats.status();
   }
-
   absl::StatusOr<BrushFamily::InputModel> input_model =
       BrushFamily::SpringModel{};
   if (family_proto.has_input_model()) {

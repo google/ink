@@ -17,6 +17,8 @@
 
 #include <jni.h>
 
+#include <string>
+
 #include "absl/strings/string_view.h"
 
 namespace ink {
@@ -41,6 +43,12 @@ class JStringView {
 inline std::string JStringToStdString(JNIEnv* env, jstring j_string) {
   return std::string(JStringView(env, j_string).string_view());
 }
+
+// Converts a `std::string` to a JVM `jbyteArray`.
+jbyteArray StdStringToJByteArray(JNIEnv* env, const std::string& str);
+
+// Converts a JVM `jbyteArray` to a `std::string`.
+std::string JByteArrayToStdString(JNIEnv* env, jbyteArray byteArray);
 
 }  // namespace jni
 }  // namespace ink
