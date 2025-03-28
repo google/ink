@@ -15,6 +15,7 @@
 #include "ink/storage/brush.h"
 
 #include <cstdint>
+#include <cstring>
 #include <map>
 #include <optional>
 #include <string>
@@ -25,9 +26,13 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/base/nullability.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_coat.h"
@@ -38,16 +43,23 @@
 #include "ink/brush/fuzz_domains.h"
 #include "ink/brush/type_matchers.h"
 #include "ink/color/color.h"
-#include "ink/color/color_space.h"
 #include "ink/geometry/vec.h"
-#include "ink/rendering/bitmap.h"
 #include "ink/storage/color.h"
-#include "ink/storage/proto/bitmap.pb.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/coded.pb.h"
 #include "ink/storage/proto/color.pb.h"
 #include "ink/storage/proto_matchers.h"
 #include "ink/types/duration.h"
+#include "include/codec/SkCodec.h"
+#include "include/core/SkAlphaType.h"
+#include "include/core/SkBitmap.h"
+#include "include/core/SkColorSpace.h"
+#include "include/core/SkColorType.h"
+#include "include/core/SkImage.h"
+#include "include/core/SkImageInfo.h"
+#include "include/core/SkRefCnt.h"
+#include "include/core/SkShader.h"
+#include "include/encode/SkPngEncoder.h"
 
 namespace ink {
 namespace {
@@ -64,49 +76,46 @@ constexpr absl::string_view kTestTextureId2 = "test-texture-two";
 constexpr absl::string_view kTestTextureId1Decoded = "test-texture-one-decoded";
 constexpr absl::string_view kTestTextureId2Decoded = "test-texture-two-decoded";
 
-VectorBitmap TestBitmap1x1() {
-  return VectorBitmap(
-      /*width=*/1, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
-      Color::Format::kGammaEncoded, ColorSpace::kSrgb,
-      std::vector<uint8_t>{0x12, 0x34, 0x56, 0x78});
+absl::StatusOr<sk_sp<SkImage>> CreateTestImage(
+    int width, int height, absl::Span<const uint8_t> pixel_data) {
+  SkImageInfo image_info = SkImageInfo::Make(
+      width, height, SkColorType::kRGBA_8888_SkColorType,
+      SkAlphaType::kUnpremul_SkAlphaType, SkColorSpace::MakeSRGBLinear());
+  ABSL_CHECK_EQ(pixel_data.size(), image_info.computeMinByteSize());
+  SkBitmap skia_bitmap;
+  bool success = skia_bitmap.tryAllocPixels(image_info);
+  if (!success) {
+    return absl::InternalError(absl::StrCat("failed to allocate pixels for ",
+                                            width, "x", height, " SkImage"));
+  }
+  std::memcpy(skia_bitmap.getPixels(), pixel_data.data(), pixel_data.size());
+  skia_bitmap.setImmutable();
+  return skia_bitmap.asImage();
 }
 
-VectorBitmap TestBitmap2x2() {
-  return VectorBitmap(
-      /*width=*/2, /*height=*/2, Bitmap::PixelFormat::kRgba8888,
-      Color::Format::kGammaEncoded, ColorSpace::kSrgb,
-      std::vector<uint8_t>{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12,
+sk_sp<SkImage> TestImage1x1() {
+  return *CreateTestImage(1, 1, {0x12, 0x34, 0x56, 0x78});
+}
+sk_sp<SkImage> TestImage2x2() {
+  return *CreateTestImage(2, 2,
+                          {0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12,
                            0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78});
 }
-proto::Bitmap TestBitmapProto1x1() {
-  proto::Bitmap bitmap_proto;
-  bitmap_proto.set_width(1);
-  bitmap_proto.set_height(1);
-  bitmap_proto.set_pixel_format(proto::Bitmap::PIXEL_FORMAT_RGBA8888);
-  bitmap_proto.set_color_space(proto::ColorSpace::COLOR_SPACE_SRGB);
-  bitmap_proto.set_pixel_data(std::string(
-      reinterpret_cast<const char*>(TestBitmap1x1().GetPixelData().data()),
-      TestBitmap1x1().GetPixelData().size()));
-  return bitmap_proto;
+
+std::string EncodeImageToString(sk_sp<SkImage> image) {
+  sk_sp<SkData> data = SkPngEncoder::Encode(nullptr, image.get(), {});
+  std::string encoded_bitmap =
+      std::string(reinterpret_cast<const char*>(data->data()), data->size());
+  return encoded_bitmap;
 }
-proto::Bitmap TestBitmapProto2x2() {
-  proto::Bitmap bitmap_proto;
-  bitmap_proto.set_width(2);
-  bitmap_proto.set_height(2);
-  bitmap_proto.set_pixel_format(proto::Bitmap::PIXEL_FORMAT_RGBA8888);
-  bitmap_proto.set_color_space(proto::ColorSpace::COLOR_SPACE_SRGB);
-  bitmap_proto.set_pixel_data(std::string(
-      reinterpret_cast<const char*>(TestBitmap2x2().GetPixelData().data()),
-      TestBitmap2x2().GetPixelData().size()));
-  return bitmap_proto;
-}
+
+std::string TestPngBytes1x1() { return EncodeImageToString(TestImage1x1()); }
+std::string TestPngBytes2x2() { return EncodeImageToString(TestImage2x2()); }
 
 TEST(BrushTest, DecodeBrushProto) {
   proto::Brush brush_proto;
-  VectorBitmap test_bitmap_1 = TestBitmap1x1();
-  VectorBitmap test_bitmap_2 = TestBitmap2x2();
-  auto bitmap_proto_1 = TestBitmapProto1x1();
-  auto bitmap_proto_2 = TestBitmapProto2x2();
+  std::string test_bitmap_1 = TestPngBytes1x1();
+  std::string test_bitmap_2 = TestPngBytes2x2();
   brush_proto.set_size_stroke_space(10);
   brush_proto.set_epsilon_stroke_space(1.1);
   brush_proto.mutable_color()->set_r(0);
@@ -118,9 +127,9 @@ TEST(BrushTest, DecodeBrushProto) {
   proto::BrushFamily* family_proto = brush_proto.mutable_brush_family();
   family_proto->mutable_input_model()->mutable_spring_model();
   family_proto->mutable_texture_id_to_bitmap()->insert(
-      {std::string(kTestTextureId1), bitmap_proto_1});
+      {std::string(kTestTextureId1), test_bitmap_1});
   family_proto->mutable_texture_id_to_bitmap()->insert(
-      {std::string(kTestTextureId2), bitmap_proto_2});
+      {std::string(kTestTextureId2), test_bitmap_2});
   proto::BrushCoat* coat_proto = family_proto->add_coats();
   coat_proto->mutable_tip()->set_corner_rounding(0.5f);
   coat_proto->mutable_tip()->set_opacity_multiplier(1.0f);
@@ -193,10 +202,10 @@ TEST(BrushTest, DecodeBrushProto) {
       Brush::Create(*expected_family, Color::Green(), 10, 1.1);
   ASSERT_EQ(expected_brush.status(), absl::OkStatus());
 
-  std::map<std::string, VectorBitmap> decoded_bitmaps = {};
+  std::map<std::string, std::string> decoded_bitmaps = {};
   ClientTextureIdProviderAndBitmapReceiver callback =
       [&decoded_bitmaps](const std::string& id,
-                         absl::Nullable<VectorBitmap*> bitmap) -> std::string {
+                         absl::Nullable<std::string*> bitmap) -> std::string {
     std::string new_id = "";
     if (id == kTestTextureId1) {
       new_id = kTestTextureId1Decoded;
@@ -205,7 +214,7 @@ TEST(BrushTest, DecodeBrushProto) {
     }
     if (bitmap != nullptr) {
       if (decoded_bitmaps.find(new_id) == decoded_bitmaps.end()) {
-        VectorBitmap bitmap_copy = *bitmap;
+        std::string bitmap_copy = *bitmap;
         decoded_bitmaps.insert({new_id, std::move(bitmap_copy)});
       }
     }
@@ -218,25 +227,15 @@ TEST(BrushTest, DecodeBrushProto) {
 
   EXPECT_NE(decoded_bitmaps.find(std::string(kTestTextureId1Decoded)),
             decoded_bitmaps.end());
-  VectorBitmap decoded_bitmap_1 =
+  std::string decoded_bitmap_1 =
       decoded_bitmaps.at(std::string(kTestTextureId1Decoded));
-  EXPECT_EQ(decoded_bitmap_1.width(), test_bitmap_1.width());
-  EXPECT_EQ(decoded_bitmap_1.height(), test_bitmap_1.height());
-  EXPECT_EQ(decoded_bitmap_1.pixel_format(), test_bitmap_1.pixel_format());
-  EXPECT_EQ(decoded_bitmap_1.color_format(), test_bitmap_1.color_format());
-  EXPECT_EQ(decoded_bitmap_1.color_space(), test_bitmap_1.color_space());
-  EXPECT_EQ(decoded_bitmap_1.GetPixelData(), test_bitmap_1.GetPixelData());
+  EXPECT_EQ(decoded_bitmap_1, test_bitmap_1);
 
   EXPECT_NE(decoded_bitmaps.find(std::string(kTestTextureId2Decoded)),
             decoded_bitmaps.end());
-  VectorBitmap decoded_bitmap_2 =
+  std::string decoded_bitmap_2 =
       decoded_bitmaps.at(std::string(kTestTextureId2Decoded));
-  EXPECT_EQ(decoded_bitmap_2.width(), test_bitmap_2.width());
-  EXPECT_EQ(decoded_bitmap_2.height(), test_bitmap_2.height());
-  EXPECT_EQ(decoded_bitmap_2.pixel_format(), test_bitmap_2.pixel_format());
-  EXPECT_EQ(decoded_bitmap_2.color_format(), test_bitmap_2.color_format());
-  EXPECT_EQ(decoded_bitmap_2.color_space(), test_bitmap_2.color_space());
-  EXPECT_EQ(decoded_bitmap_2.GetPixelData(), test_bitmap_2.GetPixelData());
+  EXPECT_EQ(decoded_bitmap_2, test_bitmap_2);
 }
 
 TEST(BrushTest, DecodeBrushWithInvalidBrushSize) {
@@ -481,13 +480,12 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   proto::Brush brush_proto_out;
   int callback_count = 0;
   TextureBitmapProvider callback =
-      [&callback_count](
-          const std::string& id) -> std::optional<ink::VectorBitmap> {
+      [&callback_count](const std::string& id) -> std::optional<std::string> {
     callback_count++;
     if (kTestTextureId1 == id) {
-      return TestBitmap1x1();
+      return TestPngBytes1x1();
     } else if (kTestTextureId2 == id) {
-      return TestBitmap2x2();
+      return TestPngBytes2x2();
     }
     return std::nullopt;
   };
@@ -506,7 +504,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
       ->mutable_input_model()
       ->mutable_spring_model();
   brush_proto.mutable_brush_family()->mutable_texture_id_to_bitmap()->insert(
-      {std::string(kTestTextureId1), TestBitmapProto1x1()});
+      {std::string(kTestTextureId1), TestPngBytes1x1()});
   proto::BrushTip* tip_proto =
       brush_proto.mutable_brush_family()->add_coats()->mutable_tip();
   tip_proto->set_scale_x(1.f);
@@ -570,17 +568,16 @@ TEST(BrushTest, EncodeBrushFamilyTextureMap) {
             .size = {10, 15},
             .blend_mode = BrushPaint::BlendMode::kSrcIn}}});
   ASSERT_EQ(family.status(), absl::OkStatus());
-  ::google::protobuf::Map<std::string, ::ink::proto::Bitmap>
-      texture_id_to_bitmap_proto_out;
+  ::google::protobuf::Map<std::string, std::string> texture_id_to_bitmap_proto_out;
   int distinct_texture_ids_count = 0;
   TextureBitmapProvider callback =
       [&distinct_texture_ids_count](
-          const std::string& id) -> std::optional<ink::VectorBitmap> {
+          const std::string& id) -> std::optional<std::string> {
     distinct_texture_ids_count++;
     if (kTestTextureId1 == id) {
-      return TestBitmap1x1();
+      return TestPngBytes1x1();
     } else if (kTestTextureId2 == id) {
-      return TestBitmap2x2();
+      return TestPngBytes2x2();
     }
     return std::nullopt;
   };
@@ -588,28 +585,25 @@ TEST(BrushTest, EncodeBrushFamilyTextureMap) {
                               callback);
   EXPECT_EQ(texture_id_to_bitmap_proto_out.size(), 2);
 
-  auto expected_bitmap_proto_1 = TestBitmapProto1x1();
-  EXPECT_THAT(texture_id_to_bitmap_proto_out.at(kTestTextureId1),
-              EqualsProto(expected_bitmap_proto_1));
+  auto expected_bitmap_proto_1 = TestPngBytes1x1();
+  EXPECT_EQ(texture_id_to_bitmap_proto_out.at(kTestTextureId1),
+            expected_bitmap_proto_1);
 
-  auto expected_bitmap_proto_2 = TestBitmapProto2x2();
-  EXPECT_THAT(texture_id_to_bitmap_proto_out.at(kTestTextureId2),
-              EqualsProto(expected_bitmap_proto_2));
+  auto expected_bitmap_proto_2 = TestPngBytes2x2();
+  EXPECT_EQ(texture_id_to_bitmap_proto_out.at(kTestTextureId2),
+            expected_bitmap_proto_2);
   EXPECT_EQ(distinct_texture_ids_count, 3);
 }
 
 TEST(BrushTest, EncodeBrushFamilyTextureMapWithNonEmptyProto) {
   absl::StatusOr<BrushFamily> family = BrushFamily();
   ASSERT_EQ(family.status(), absl::OkStatus());
-  ::google::protobuf::Map<std::string, ::ink::proto::Bitmap>
-      texture_id_to_bitmap_proto_out;
-  texture_id_to_bitmap_proto_out.insert(
-      {"existing_id", ::ink::proto::Bitmap()});
+  ::google::protobuf::Map<std::string, std::string> texture_id_to_bitmap_proto_out;
+  texture_id_to_bitmap_proto_out.insert({"existing_id", TestPngBytes1x1()});
 
   int callback_count = 0;
   TextureBitmapProvider callback =
-      [&callback_count](
-          const std::string& id) -> std::optional<ink::VectorBitmap> {
+      [&callback_count](const std::string& id) -> std::optional<std::string> {
     callback_count++;
     return std::nullopt;
   };
@@ -775,14 +769,14 @@ void EncodeDecodeBrushRoundTrip(const Brush& brush_in) {
   int decode_callback_count = 0;
   TextureBitmapProvider encode_callback =
       [&encode_callback_count](
-          const std::string& id) -> std::optional<VectorBitmap> {
+          const std::string& id) -> std::optional<std::string> {
     encode_callback_count++;
     return std::nullopt;
   };
   ClientTextureIdProviderAndBitmapReceiver decode_callback =
       [&decode_callback_count](
           const std::string& id,
-          absl::Nullable<VectorBitmap*> bitmap) -> std::string {
+          absl::Nullable<std::string*> bitmap) -> std::string {
     decode_callback_count++;
     return id;
   };

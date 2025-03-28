@@ -18,7 +18,6 @@ syntax = "proto2";
 
 package ink.proto;
 
-import "ink/storage/proto/bitmap.proto";
 import "ink/storage/proto/color.proto";
 
 option java_package = "com.google.ink.proto";
@@ -104,7 +103,7 @@ message BrushFamily {
   // A mapping of texture IDs to bitmaps. This is used to store textures that
   // are not embedded in the brush family proto in-memory representation. This
   // is used to avoid storing the same texture multiple times in the proto.
-  map<string, Bitmap> texture_id_to_bitmap = 6;
+  map<string, bytes> texture_id_to_bitmap = 6;
 }
 
 // Specifies one coat of paint applied by a brush, including the paint itself,

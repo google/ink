@@ -31,7 +31,6 @@ proto_library(
     name = "brush_proto",
     srcs = ["brush.proto"],
     deps = [
-        ":bitmap_proto",
         ":color_proto",
     ],
 )
@@ -39,12 +38,6 @@ proto_library(
 proto_library(
     name = "coded_proto",
     srcs = ["coded.proto"],
-)
-
-proto_library(
-    name = "bitmap_proto",
-    srcs = ["bitmap.proto"],
-    deps = [":color_proto"],
 )
 
 cc_proto_library(
@@ -60,9 +53,4 @@ cc_proto_library(
 cc_proto_library(
     name = "coded_cc_proto",
     deps = [":coded_proto"],
-)
-
-cc_proto_library(
-    name = "bitmap_cc_proto",
-    deps = [":bitmap_proto"],
 )
