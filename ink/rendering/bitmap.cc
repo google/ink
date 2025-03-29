@@ -14,7 +14,6 @@
 
 #include "ink/rendering/bitmap.h"
 
-#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
