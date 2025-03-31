@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INK_RENDERING_TEXTURE_BITMAP_STORE_H_
-#define INK_RENDERING_TEXTURE_BITMAP_STORE_H_
+#ifndef INK_RENDERING_SKIA_NATIVE_TEXTURE_BITMAP_STORE_H_
+#define INK_RENDERING_SKIA_NATIVE_TEXTURE_BITMAP_STORE_H_
 
-#include <memory>
-
-#include "absl/base/nullability.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "ink/rendering/bitmap.h"
+#include "include/core/SkImage.h"
+#include "include/core/SkRefCnt.h"
 
 namespace ink {
 
@@ -36,10 +34,10 @@ class TextureBitmapStore {
   // decoding them into bitmap data should be done in advance. The result may be
   // cached by consumers, so this should return a deterministic result for a
   // given input.
-  virtual absl::StatusOr<absl::Nonnull<std::shared_ptr<Bitmap>>>
-  GetTextureBitmap(absl::string_view texture_id) const = 0;
+  virtual absl::StatusOr<sk_sp<SkImage>> GetTextureBitmap(
+      absl::string_view texture_id) const = 0;
 };
 
 }  // namespace ink
 
-#endif  // INK_RENDERING_TEXTURE_BITMAP_STORE_H_
+#endif  // INK_RENDERING_SKIA_NATIVE_TEXTURE_BITMAP_STORE_H_

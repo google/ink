@@ -15,27 +15,30 @@
 #include "ink/rendering/skia/native/internal/shader_cache.h"
 
 #include <cstdint>
+#include <cstring>
 #include <utility>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
-#include "absl/base/nullability.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/fuzz_domains.h"
-#include "ink/color/color.h"
-#include "ink/color/color_space.h"
-#include "ink/rendering/bitmap.h"
-#include "ink/rendering/fuzz_domains.h"
-#include "ink/rendering/texture_bitmap_store.h"
+#include "ink/rendering/skia/native/texture_bitmap_store.h"
 #include "ink/strokes/input/fuzz_domains.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "include/core/SkAlphaType.h"
+#include "include/core/SkBitmap.h"
+#include "include/core/SkColorSpace.h"
 #include "include/core/SkColorType.h"
 #include "include/core/SkImage.h"
+#include "include/core/SkImageInfo.h"
 #include "include/core/SkRefCnt.h"
 #include "include/core/SkShader.h"
 
@@ -50,20 +53,36 @@ using ::testing::NotNull;
 constexpr absl::string_view kTestTextureId = "test";
 
 // A TextureBitmapStore that always returns the same bitmap regardless of
-// the texture id.
+// the texture ID.
 class FakeBitmapStore : public TextureBitmapStore {
  public:
-  explicit FakeBitmapStore(std::shared_ptr<Bitmap> bitmap)
-      : bitmap_(std::move(bitmap)) {}
+  explicit FakeBitmapStore(sk_sp<SkImage> image) : image_(std::move(image)) {}
 
-  absl::StatusOr<absl::Nonnull<std::shared_ptr<Bitmap>>> GetTextureBitmap(
+  absl::StatusOr<sk_sp<SkImage>> GetTextureBitmap(
       absl::string_view texture_id) const override {
-    return bitmap_;
+    return image_;
   }
 
  private:
-  std::shared_ptr<Bitmap> bitmap_;
+  sk_sp<SkImage> image_;
 };
+
+absl::StatusOr<sk_sp<SkImage>> CreateImageFromSrgbLinearPixelData(
+    int width, int height, absl::Span<const uint8_t> pixel_data) {
+  SkImageInfo image_info = SkImageInfo::Make(
+      width, height, SkColorType::kRGBA_8888_SkColorType,
+      SkAlphaType::kUnpremul_SkAlphaType, SkColorSpace::MakeSRGBLinear());
+  ABSL_CHECK_EQ(pixel_data.size(), image_info.computeMinByteSize());
+  SkBitmap skia_bitmap;
+  bool success = skia_bitmap.tryAllocPixels(image_info);
+  if (!success) {
+    return absl::InternalError(absl::StrCat("failed to allocate pixels for ",
+                                            width, "x", height, " SkImage"));
+  }
+  std::memcpy(skia_bitmap.getPixels(), pixel_data.data(), pixel_data.size());
+  skia_bitmap.setImmutable();
+  return skia_bitmap.asImage();
+}
 
 TEST(ShaderCacheTest, GetShaderForEmptyBrushPaint) {
   ShaderCache cache(nullptr);
@@ -84,10 +103,11 @@ TEST(ShaderCacheTest, TryGetTextureShaderWithoutTextureProvider) {
 }
 
 TEST(ShaderCacheTest, GetShaderForTexturedBrushPaint) {
-  FakeBitmapStore provider(std::make_shared<VectorBitmap>(
-      /*width=*/2, /*height=*/1, Bitmap::PixelFormat::kRgba8888,
-      Color::Format::kLinear, ColorSpace::kDisplayP3,
-      std::vector<uint8_t>{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}));
+  auto test_image = CreateImageFromSrgbLinearPixelData(
+      /*width=*/2, /*height=*/1,
+      std::vector<uint8_t>{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff});
+  ASSERT_THAT(test_image.status(), absl::OkStatus());
+  FakeBitmapStore provider(*test_image);
   ShaderCache cache(&provider);
   absl::StatusOr<sk_sp<SkShader>> shader = cache.GetShaderForPaint(
       BrushPaint{{{.client_texture_id = std::string(kTestTextureId)}}}, 10,
@@ -105,19 +125,23 @@ TEST(ShaderCacheTest, GetShaderForTexturedBrushPaint) {
   EXPECT_FALSE(image->colorSpace()->isSRGB());
 }
 
-void CanGetShaderForAnyValidInputs(std::shared_ptr<Bitmap> bitmap,
-                                   const BrushPaint& brush_paint,
+void CanGetShaderForAnyValidInputs(const BrushPaint& brush_paint,
                                    float brush_size,
                                    const StrokeInputBatch& inputs) {
-  FakeBitmapStore provider(std::move(bitmap));
+  auto test_image = CreateImageFromSrgbLinearPixelData(
+      3, 2,
+      {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc,
+       0xdd, 0xee, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff});
+  ASSERT_THAT(test_image.status(), absl::OkStatus());
+  FakeBitmapStore provider(*test_image);
   ShaderCache cache(&provider);
   absl::StatusOr<sk_sp<SkShader>> shader =
       cache.GetShaderForPaint(brush_paint, brush_size, inputs);
   EXPECT_EQ(shader.status(), absl::OkStatus());
 }
 FUZZ_TEST(ShaderCacheTest, CanGetShaderForAnyValidInputs)
-    .WithDomains(ValidBitmapWithMaxSize(100, 100), ValidBrushPaint(),
-                 fuzztest::Positive<float>(), ArbitraryStrokeInputBatch());
+    .WithDomains(ValidBrushPaint(), fuzztest::Positive<float>(),
+                 ArbitraryStrokeInputBatch());
 
 }  // namespace
 }  // namespace ink::skia_native_internal

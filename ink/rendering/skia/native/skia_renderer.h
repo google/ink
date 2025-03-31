@@ -30,7 +30,7 @@
 #include "ink/rendering/skia/native/internal/mesh_specification_cache.h"
 #include "ink/rendering/skia/native/internal/path_drawable.h"
 #include "ink/rendering/skia/native/internal/shader_cache.h"
-#include "ink/rendering/texture_bitmap_store.h"
+#include "ink/rendering/skia/native/texture_bitmap_store.h"
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/stroke.h"
 #include "include/core/SkCanvas.h"
