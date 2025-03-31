@@ -14,24 +14,18 @@
 
 #include "ink/storage/brush.h"
 
-#include <cstdint>
-#include <cstring>
 #include <map>
 #include <optional>
 #include <string>
-#include <utility>
 #include <variant>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
-#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_coat.h"
@@ -49,16 +43,6 @@
 #include "ink/storage/proto/color.pb.h"
 #include "ink/storage/proto_matchers.h"
 #include "ink/types/duration.h"
-#include "include/core/SkAlphaType.h"
-#include "include/core/SkBitmap.h"
-#include "include/core/SkColorSpace.h"
-#include "include/core/SkColorType.h"
-#include "include/core/SkData.h"
-#include "include/core/SkImage.h"
-#include "include/core/SkImageInfo.h"
-#include "include/core/SkRefCnt.h"
-#include "include/core/SkShader.h"
-#include "include/encode/SkPngEncoder.h"
 
 namespace ink {
 namespace {
@@ -75,42 +59,13 @@ constexpr absl::string_view kTestTextureId2 = "test-texture-two";
 constexpr absl::string_view kTestTextureId1Decoded = "test-texture-one-decoded";
 constexpr absl::string_view kTestTextureId2Decoded = "test-texture-two-decoded";
 
-absl::StatusOr<sk_sp<SkImage>> CreateTestImage(
-    int width, int height, absl::Span<const uint8_t> pixel_data) {
-  SkImageInfo image_info = SkImageInfo::Make(
-      width, height, SkColorType::kRGBA_8888_SkColorType,
-      SkAlphaType::kUnpremul_SkAlphaType, SkColorSpace::MakeSRGBLinear());
-  ABSL_CHECK_EQ(pixel_data.size(), image_info.computeMinByteSize());
-  SkBitmap skia_bitmap;
-  bool success = skia_bitmap.tryAllocPixels(image_info);
-  if (!success) {
-    return absl::InternalError(absl::StrCat("failed to allocate pixels for ",
-                                            width, "x", height, " SkImage"));
-  }
-  std::memcpy(skia_bitmap.getPixels(), pixel_data.data(), pixel_data.size());
-  skia_bitmap.setImmutable();
-  return skia_bitmap.asImage();
+// Actual strings will be encoded PNGs, but for testing purposes we use
+// any string that can be confirmed unchanged before and after decoding.
+std::string TestPngBytes1x1() { return "{0x12, 0x34, 0x56, 0x78}"; }
+std::string TestPngBytes2x2() {
+  return "{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, "
+         "0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}";
 }
-
-sk_sp<SkImage> TestImage1x1() {
-  return *CreateTestImage(1, 1, {0x12, 0x34, 0x56, 0x78});
-}
-
-sk_sp<SkImage> TestImage2x2() {
-  return *CreateTestImage(2, 2,
-                          {0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12,
-                           0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78});
-}
-
-std::string EncodeImageToString(sk_sp<SkImage> image) {
-  sk_sp<SkData> data = SkPngEncoder::Encode(nullptr, image.get(), {});
-  std::string encoded_bitmap =
-      std::string(reinterpret_cast<const char*>(data->data()), data->size());
-  return encoded_bitmap;
-}
-
-std::string TestPngBytes1x1() { return EncodeImageToString(TestImage1x1()); }
-std::string TestPngBytes2x2() { return EncodeImageToString(TestImage2x2()); }
 
 TEST(BrushTest, DecodeBrushProto) {
   proto::Brush brush_proto;
