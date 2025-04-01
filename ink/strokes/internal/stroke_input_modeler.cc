@@ -74,6 +74,12 @@ using stroke_model::StylusStateModelerParams;
 // LINT.IfChange(input_model_types)
 
 PositionModelerParams::LoopContractionMitigationParameters
+LoopContractionParams(const BrushFamily::LegacySpringModel& legacy_spring_model,
+                      std::optional<PhysicalDistance> stroke_unit_length) {
+  return {.is_enabled = false};
+}
+
+PositionModelerParams::LoopContractionMitigationParameters
 LoopContractionParams(const BrushFamily::SpringModel& spring_model,
                       std::optional<PhysicalDistance> stroke_unit_length) {
   // Without the stroke unit length, we cannot determine the speed of
@@ -106,6 +112,11 @@ MakeLoopContractionMitigationParameters(
         return LoopContractionParams(input_model, stroke_unit_length);
       },
       input_model);
+}
+
+StylusStateModelerParams StylusModelerParams(
+    const BrushFamily::LegacySpringModel& legacy_spring_model) {
+  return {.max_input_samples = 10, .use_stroke_normal_projection = false};
 }
 
 StylusStateModelerParams StylusModelerParams(
