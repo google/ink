@@ -20,7 +20,7 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/coded_numeric_run.pb.h"
 #include "ink/types/iterator_range.h"
 
 namespace ink {

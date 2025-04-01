@@ -28,7 +28,7 @@
 #include "ink/storage/mesh_format.h"
 #include "ink/storage/numeric_run.h"
 #include "ink/storage/partitioned_mesh.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/mesh.pb.h"
 
 namespace ink {
 namespace {

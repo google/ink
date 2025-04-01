@@ -16,7 +16,7 @@
 #define INK_STORAGE_STROKE_INPUT_BATCH_H_
 
 #include "absl/status/statusor.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 
 namespace ink {

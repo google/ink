@@ -31,13 +31,37 @@ proto_library(
     name = "brush_proto",
     srcs = ["brush.proto"],
     deps = [
+        ":brush_family_proto",
         ":color_proto",
     ],
 )
 
 proto_library(
-    name = "coded_proto",
-    srcs = ["coded.proto"],
+    name = "brush_family_proto",
+    srcs = ["brush_family.proto"],
+    deps = [
+    ],
+)
+
+proto_library(
+    name = "stroke_input_batch_proto",
+    srcs = ["stroke_input_batch.proto"],
+    deps = [
+        ":coded_numeric_run_proto",
+    ],
+)
+
+proto_library(
+    name = "mesh_proto",
+    srcs = ["mesh.proto"],
+    deps = [
+        ":coded_numeric_run_proto",
+    ],
+)
+
+proto_library(
+    name = "coded_numeric_run_proto",
+    srcs = ["coded_numeric_run.proto"],
 )
 
 cc_proto_library(
@@ -51,6 +75,21 @@ cc_proto_library(
 )
 
 cc_proto_library(
-    name = "coded_cc_proto",
-    deps = [":coded_proto"],
+    name = "brush_family_cc_proto",
+    deps = [":brush_family_proto"],
+)
+
+cc_proto_library(
+    name = "stroke_input_batch_cc_proto",
+    deps = [":stroke_input_batch_proto"],
+)
+
+cc_proto_library(
+    name = "mesh_cc_proto",
+    deps = [":mesh_proto"],
+)
+
+cc_proto_library(
+    name = "coded_numeric_run_cc_proto",
+    deps = [":coded_numeric_run_proto"],
 )

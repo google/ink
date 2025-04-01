@@ -23,7 +23,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/type_matchers.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/types/iterator_range.h"
 #include "ink/types/numbers.h"
 #include "ink/types/type_matchers.h"

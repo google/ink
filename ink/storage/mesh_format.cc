@@ -22,7 +22,7 @@
 #include "absl/strings/str_cat.h"
 #include "ink/geometry/internal/mesh_constants.h"
 #include "ink/geometry/mesh_format.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/mesh.pb.h"
 #include "ink/types/small_array.h"
 
 namespace ink {

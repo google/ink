@@ -20,7 +20,7 @@
 
 #include "absl/status/statusor.h"
 #include "ink/storage/numeric_run.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/mesh.pb.h"
 #include "ink/strokes/internal/legacy_vertex.h"
 #include "ink/types/iterator_range.h"
 

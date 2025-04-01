@@ -22,7 +22,7 @@
 #include "ink/geometry/fuzz_domains.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/type_matchers.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/mesh.pb.h"
 #include "ink/storage/proto_matchers.h"
 
 namespace ink {

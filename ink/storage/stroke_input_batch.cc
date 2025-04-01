@@ -24,7 +24,7 @@
 #include "ink/geometry/angle.h"
 #include "ink/geometry/rect.h"
 #include "ink/storage/input_batch.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/types/duration.h"
