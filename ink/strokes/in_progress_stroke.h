@@ -161,7 +161,7 @@ class InProgressStroke {
 
   // Returns a pointer to the current brush, or `nullptr` if `Start()` has not
   // been called.
-  absl::Nullable<const Brush*> GetBrush() const;
+  const Brush* absl_nullable GetBrush() const;
 
   // Returns the number of `BrushCoats` for the current brush, or zero if
   // `Start()` has not been called. The returned value is an exclusive upper
@@ -284,7 +284,7 @@ inline bool InProgressStroke::InputsAreFinished() const {
   return inputs_are_finished_;
 }
 
-inline absl::Nullable<const Brush*> InProgressStroke::GetBrush() const {
+inline const Brush* absl_nullable InProgressStroke::GetBrush() const {
   return brush_.has_value() ? &*brush_ : nullptr;
 }
 

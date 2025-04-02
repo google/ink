@@ -81,7 +81,7 @@ class SkiaRenderer {
  public:
   class Drawable;
 
-  explicit SkiaRenderer(absl::Nullable<std::shared_ptr<TextureBitmapStore>>
+  explicit SkiaRenderer(absl_nullable std::shared_ptr<TextureBitmapStore>
                             texture_provider = nullptr);
 
   SkiaRenderer(const SkiaRenderer&) = delete;
@@ -144,7 +144,7 @@ class SkiaRenderer {
   // TODO: b/284117747 - Add functions to "update" a `Drawable`.
 
  private:
-  absl::Nullable<std::shared_ptr<TextureBitmapStore>> texture_provider_;
+  absl_nullable std::shared_ptr<TextureBitmapStore> texture_provider_;
   skia_native_internal::ShaderCache shader_cache_;
   skia_native_internal::MeshSpecificationCache specification_cache_;
 
