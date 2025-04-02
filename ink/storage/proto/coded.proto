@@ -18,25 +18,7 @@ syntax = "proto2";
 
 package ink.proto;
 
-option java_package = "com.google.ink.proto";
-option java_outer_classname = "CodedProto";
-option objc_class_prefix = "INKPB";
-
-// Efficiently encodes a sequence of numbers, compressed lossily using delta
-// coding (but sequences of integers can be represented exactly).  The first
-// value in the represented sequence is equal to `offset + scale * deltas[0]`,
-// and each successive Nth value is equal to `value[N-1] + scale * deltas[N]`.
-//
-// When representing a sequence of integers, the `scale` and `offset` fields
-// must be integral (or omitted, and their default values used).  Otherwise,
-// this can represent a sequence of floating point numbers at whatever level of
-// precision yields a good tradeoff between accuracy and gzip-compressibility of
-// the delta sequence.
-message CodedNumericRun {
-  repeated sint32 deltas = 1 [packed = true];
-  optional float scale = 2 [default = 1];
-  optional float offset = 3;
-}
+import "ink/storage/proto/coded_numeric_run.proto";
 
 // A struct-of-arrays representing a complete StrokeInputBatch, compressed
 // lossily using delta coding. Each numeric run, if present, must have the same

@@ -55,6 +55,7 @@ cc_library(
         "//ink/geometry:angle",
         "//ink/geometry:rect",
         "//ink/storage/proto:coded_cc_proto",
+        "//ink/storage/proto:coded_numeric_run_cc_proto",
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
@@ -135,6 +136,7 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry/internal:mesh_packing",
         "//ink/storage/proto:coded_cc_proto",
+        "//ink/storage/proto:coded_numeric_run_cc_proto",
         "//ink/types:iterator_range",
         "//ink/types:small_array",
         "@com_google_absl//absl/log:absl_check",
@@ -277,7 +279,7 @@ cc_library(
     srcs = ["numeric_run.cc"],
     hdrs = ["numeric_run.h"],
     deps = [
-        "//ink/storage/proto:coded_cc_proto",
+        "//ink/storage/proto:coded_numeric_run_cc_proto",
         "//ink/types:iterator_range",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
@@ -346,7 +348,7 @@ cc_test(
     srcs = ["numeric_run_test.cc"],
     deps = [
         ":numeric_run",
-        "//ink/storage/proto:coded_cc_proto",
+        "//ink/storage/proto:coded_numeric_run_cc_proto",
         "//ink/types:iterator_range",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",

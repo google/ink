@@ -38,6 +38,14 @@ proto_library(
 proto_library(
     name = "coded_proto",
     srcs = ["coded.proto"],
+    deps = [
+        ":coded_numeric_run_proto",
+    ],
+)
+
+proto_library(
+    name = "coded_numeric_run_proto",
+    srcs = ["coded_numeric_run.proto"],
 )
 
 cc_proto_library(
@@ -53,4 +61,9 @@ cc_proto_library(
 cc_proto_library(
     name = "coded_cc_proto",
     deps = [":coded_proto"],
+)
+
+cc_proto_library(
+    name = "coded_numeric_run_cc_proto",
+    deps = [":coded_numeric_run_proto"],
 )
