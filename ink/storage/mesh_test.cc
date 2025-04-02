@@ -30,7 +30,7 @@
 #include "ink/geometry/point.h"
 #include "ink/geometry/type_matchers.h"
 #include "ink/storage/numeric_run.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/mesh.pb.h"
 #include "ink/types/iterator_range.h"
 #include "google/protobuf/text_format.h"
 

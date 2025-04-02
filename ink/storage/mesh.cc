@@ -32,7 +32,8 @@
 #include "ink/geometry/point.h"
 #include "ink/storage/mesh_format.h"
 #include "ink/storage/numeric_run.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/coded_numeric_run.pb.h"
+#include "ink/storage/proto/mesh.pb.h"
 #include "ink/types/iterator_range.h"
 #include "ink/types/small_array.h"
 
