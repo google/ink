@@ -110,7 +110,7 @@ BrushPaint::TextureMapping GetBrushPaintTextureMapping(
 }  // namespace
 
 SkiaRenderer::SkiaRenderer(
-    absl::Nullable<std::shared_ptr<TextureBitmapStore>> texture_provider)
+    absl_nullable std::shared_ptr<TextureBitmapStore> texture_provider)
     : texture_provider_(std::move(texture_provider)),
       shader_cache_(texture_provider_.get()) {}
 

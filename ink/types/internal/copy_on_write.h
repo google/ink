@@ -107,7 +107,7 @@ class CopyOnWrite {
   }
 
  private:
-  absl::Nullable<std::shared_ptr<T>> value_;
+  absl_nullable std::shared_ptr<T> value_;
 };
 
 }  // namespace ink_internal
