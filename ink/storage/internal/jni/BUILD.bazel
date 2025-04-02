@@ -67,6 +67,7 @@ cc_library(
         "//ink/jni/internal:jni_throw_util",
         "//ink/storage:brush",
         "//ink/storage/proto:brush_cc_proto",
+        "//ink/storage/proto:brush_family_cc_proto",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",

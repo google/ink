@@ -27,6 +27,7 @@
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
 #include "ink/storage/proto/brush.pb.h"
+#include "ink/storage/proto/brush_family.pb.h"
 
 namespace ink {
 

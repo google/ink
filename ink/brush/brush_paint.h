@@ -196,7 +196,7 @@ struct BrushPaint {
     // possible until Android W at the earliest due to b/267164444.
   };
   // LINT.ThenChange(
-  //   ../storage/proto/brush.proto:blend_mode,
+  //   ../storage/proto/brush_family.proto:blend_mode,
   //   fuzz_domains.cc:blend_mode,
   // )
 

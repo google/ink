@@ -33,6 +33,7 @@
 #include "ink/jni/internal/jni_throw_util.h"
 #include "ink/storage/brush.h"
 #include "ink/storage/proto/brush.pb.h"
+#include "ink/storage/proto/brush_family.pb.h"
 
 namespace {
 

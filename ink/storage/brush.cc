@@ -39,6 +39,7 @@
 #include "ink/geometry/vec.h"
 #include "ink/storage/color.h"
 #include "ink/storage/proto/brush.pb.h"
+#include "ink/storage/proto/brush_family.pb.h"
 #include "ink/storage/proto/coded.pb.h"
 #include "ink/types/duration.h"
 

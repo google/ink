@@ -105,7 +105,8 @@ struct BrushBehavior {
   // List of input properties along with their units that can act as sources for
   // a `BrushBehavior`.
   //
-  // This should match the enum in BrushBehavior.kt and BrushExtensions.kt.
+  // This should match the enum in BrushBehavior.kt and
+  // BrushFamilyExtensions.kt.
   enum class Source : int8_t {
     // Stylus or touch pressure with values reported in the range [0, 1].
     kNormalizedPressure,
@@ -239,7 +240,8 @@ struct BrushBehavior {
 
   // List of tip properties that can be modified by a `BrushBehavior`.
   //
-  // This should match the enums in BrushBehavior.kt and BrushExtensions.kt.
+  // This should match the enums in BrushBehavior.kt and
+  // BrushFamilyExtensions.kt.
   enum class Target : int8_t {
     // `kWidthMultiplier` and `kHeightMultiplier` scale the brush-tip size along
     // one dimension, starting from the values calculated using
@@ -319,7 +321,8 @@ struct BrushBehavior {
 
   // List of vector tip properties that can be modified by a `BrushBehavior`.
   //
-  // This should match the enums in BrushBehavior.kt and BrushExtensions.kt.
+  // This should match the enums in BrushBehavior.kt and
+  // BrushFamilyExtensions.kt.
   enum class PolarTarget : int8_t {
     // Adds the vector to the brush tip's absolute x/y position in stroke space,
     // where the angle input is measured in radians and the magnitude input is
@@ -343,7 +346,8 @@ struct BrushBehavior {
   // The desired behavior when an input value is outside the bounds of
   // `source_value_range`.
   //
-  // This should match the enum in BrushBehavior.kt and BrushExtensions.kt.
+  // This should match the enum in BrushBehavior.kt and
+  // BrushFamilyExtensions.kt.
   enum class OutOfRange : int8_t {
     // Values outside the range will be clamped to not exceed the bounds.
     kClamp,
@@ -377,7 +381,8 @@ struct BrushBehavior {
 
   // List of input properties that might not be reported by `StrokeInput`.
   //
-  // This should match the enums in BrushBehavior.kt and BrushExtensions.kt.
+  // This should match the enums in BrushBehavior.kt and
+  // BrushFamilyExtensions.kt.
   enum OptionalInputProperty : int8_t {
     kPressure,
     kTilt,
@@ -394,7 +399,7 @@ struct BrushBehavior {
   };
   // LINT.ThenChange(
   //   fuzz_domains.cc:binary_op,
-  //   ../storage/proto/brush.proto:binary_op,
+  //   ../storage/proto/brush_family.proto:binary_op,
   // )
 
   // Dimensions/units for measuring the `damping_gap` field of a
@@ -417,7 +422,7 @@ struct BrushBehavior {
   };
   // LINT.ThenChange(
   //   fuzz_domains.cc:damping_source,
-  //   ../storage/proto/brush.proto:damping_source,
+  //   ../storage/proto/brush_family.proto:damping_source,
   // )
 
   // An interpolation function for combining three values in an
@@ -433,7 +438,7 @@ struct BrushBehavior {
   };
   // LINT.ThenChange(
   //   fuzz_domains.cc:interpolation,
-  //   ../storage/proto/brush.proto:interpolation,
+  //   ../storage/proto/brush_family.proto:interpolation,
   // )
 
   ////////////////////////

@@ -23,16 +23,24 @@ package(
 )
 
 proto_library(
-    name = "color_proto",
-    srcs = ["color.proto"],
-)
-
-proto_library(
     name = "brush_proto",
     srcs = ["brush.proto"],
     deps = [
+        ":brush_family_proto",
         ":color_proto",
     ],
+)
+
+proto_library(
+    name = "brush_family_proto",
+    srcs = ["brush_family.proto"],
+    deps = [
+    ],
+)
+
+proto_library(
+    name = "color_proto",
+    srcs = ["color.proto"],
 )
 
 proto_library(
@@ -49,13 +57,18 @@ proto_library(
 )
 
 cc_proto_library(
-    name = "color_cc_proto",
-    deps = [":color_proto"],
+    name = "brush_cc_proto",
+    deps = [":brush_proto"],
 )
 
 cc_proto_library(
-    name = "brush_cc_proto",
-    deps = [":brush_proto"],
+    name = "brush_family_cc_proto",
+    deps = [":brush_family_proto"],
+)
+
+cc_proto_library(
+    name = "color_cc_proto",
+    deps = [":color_proto"],
 )
 
 cc_proto_library(
