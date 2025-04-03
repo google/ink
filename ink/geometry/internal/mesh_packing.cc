@@ -742,7 +742,7 @@ void WriteTriangleIndicesToByteArray(uint32_t triangle_index,
 
 namespace {
 
-float UnalignedLoadFloat(absl::Nonnull<const std::byte*> bytes) {
+float UnalignedLoadFloat(const std::byte* absl_nonnull bytes) {
   float value;
   std::memcpy(&value, bytes, sizeof(float));
   return value;
