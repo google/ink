@@ -17,7 +17,7 @@
 
 #include "absl/status/statusor.h"
 #include "ink/geometry/mesh_format.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/mesh.pb.h"
 
 namespace ink {
 
