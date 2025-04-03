@@ -150,7 +150,9 @@ void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
        // the stroke is with `brush_epsilon` of the final input, further changes
        // are not considered visually distinct.
        .sampling_params = {.min_output_rate = kMinOutputRateHz,
-                           .end_of_stroke_stopping_distance = brush_epsilon},
+                           .end_of_stroke_stopping_distance = brush_epsilon,
+                           .max_estimated_angle_to_traverse_per_input =
+                               M_PI / 8.0},
        // If we use loop mitigation, we need to use the new projection method.
        .stylus_state_modeler_params = MakeStylusStateModelerParams(input_model),
        // We disable the internal predictor on the `StrokeModeler`,
