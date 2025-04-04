@@ -44,8 +44,8 @@ proto_library(
 )
 
 proto_library(
-    name = "coded_proto",
-    srcs = ["coded.proto"],
+    name = "stroke_input_batch_proto",
+    srcs = ["stroke_input_batch.proto"],
     deps = [
         ":coded_numeric_run_proto",
     ],
@@ -80,8 +80,8 @@ cc_proto_library(
 )
 
 cc_proto_library(
-    name = "coded_cc_proto",
-    deps = [":coded_proto"],
+    name = "stroke_input_batch_cc_proto",
+    deps = [":stroke_input_batch_proto"],
 )
 
 cc_proto_library(

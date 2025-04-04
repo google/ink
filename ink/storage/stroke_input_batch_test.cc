@@ -26,7 +26,7 @@
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
 #include "ink/storage/numeric_run.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/strokes/input/fuzz_domains.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"

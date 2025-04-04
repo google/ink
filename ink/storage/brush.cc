@@ -40,7 +40,7 @@
 #include "ink/storage/color.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/brush_family.pb.h"
-#include "ink/storage/proto/coded.pb.h"
+#include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/types/duration.h"
 
 namespace ink {
