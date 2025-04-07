@@ -38,7 +38,7 @@ namespace ink::skia_native_internal {
 class ShaderCache {
  public:
   // If non-null, `texture_provider` must outlive the `ShaderCache`.
-  explicit ShaderCache(absl::Nullable<const TextureBitmapStore*> provider);
+  explicit ShaderCache(const TextureBitmapStore* ABSL_NULLABLE provider);
 
   ShaderCache(const ShaderCache&) = delete;
   ShaderCache(ShaderCache&&) = default;
@@ -82,7 +82,7 @@ class ShaderCache {
   sk_sp<SkColorSpace> GetColorSpace(ColorSpace color_space,
                                     Color::Format format);
 
-  absl::Nullable<const TextureBitmapStore*> texture_provider_ = nullptr;
+  const TextureBitmapStore* ABSL_NULLABLE texture_provider_ = nullptr;
   absl::flat_hash_map<std::pair<ColorSpace, Color::Format>, sk_sp<SkColorSpace>>
       color_spaces_;
   absl::flat_hash_map<std::string, sk_sp<SkImage>> texture_images_;

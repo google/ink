@@ -505,7 +505,7 @@ class Geometry {
   // different self-intersection cases.
   class TriangleBuilder {
    public:
-    TriangleBuilder(absl::Nonnull<Geometry*> geometry,
+    TriangleBuilder(Geometry* ABSL_NONNULL geometry,
                     float initial_outline_reposition_budget,
                     float intersection_travel_limit,
                     float retriangulation_travel_threshold);
@@ -523,8 +523,8 @@ class Geometry {
     // "adjacent" refers to properties of the `new_index_side_`, and "opposite"
     // is used to refer to the other side.
     struct SlowPathTriangleInfo {
-      absl::Nonnull<Side*> adjacent_side;
-      absl::Nonnull<Side*> opposite_side;
+      Side* ABSL_NONNULL adjacent_side;
+      Side* ABSL_NONNULL opposite_side;
       Point adjacent_position;
       Point opposite_position;
       ExtrudedVertex proposed_vertex;
@@ -576,7 +576,7 @@ class Geometry {
     Side::SelfIntersection MakeAdjacentSelfIntersection(
         const SlowPathTriangleInfo& info) const;
 
-    absl::Nonnull<Geometry*> geometry_;
+    Geometry* ABSL_NONNULL geometry_;
     float initial_outline_reposition_budget_;
     float intersection_travel_limit_;
     float retriangulation_travel_threshold_;

@@ -293,7 +293,7 @@ Duration32 TimeSinceLastInput(
 
 }  // namespace
 
-void BrushTipModeler::StartStroke(absl::Nonnull<const BrushTip*> brush_tip,
+void BrushTipModeler::StartStroke(const BrushTip* ABSL_NONNULL brush_tip,
                                   float brush_size, uint32_t noise_seed) {
   ABSL_CHECK_NE(brush_tip, nullptr);
   ABSL_CHECK(std::isfinite(brush_size));
@@ -470,7 +470,7 @@ void BrushTipModeler::UpdateStroke(
                  current_target_modifiers_.size());
   absl::c_copy(fixed_target_modifiers_, current_target_modifiers_.begin());
 
-  absl::Nullable<const ModeledStrokeInput*> previous_input =
+  const ModeledStrokeInput* ABSL_NULLABLE previous_input =
       input_index_for_next_fixed_state_ > 0
           ? &inputs[input_index_for_next_fixed_state_ - 1]
           : nullptr;
@@ -559,7 +559,7 @@ void BrushTipModeler::ProcessSingleInput(
     const StrokeInputModeler::State& input_modeler_state,
     const ModeledStrokeInput& current_input,
     std::optional<Angle> current_travel_direction,
-    absl::Nullable<const ModeledStrokeInput*> previous_input,
+    const ModeledStrokeInput* ABSL_NULLABLE previous_input,
     std::optional<InputMetrics>& last_modeled_tip_state_metrics) {
   bool do_continuous_extrusion =
       particle_gap_metrics_.traveled_distance == 0 &&

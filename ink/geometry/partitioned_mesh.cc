@@ -194,7 +194,7 @@ absl::StatusOr<PartitionedMesh> PartitionedMesh::FromMeshGroups(
   return PartitionedMesh(*std::move(data));
 }
 
-absl::StatusOr<absl::Nonnull<std::unique_ptr<PartitionedMesh::Data>>>
+absl::StatusOr<ABSL_NONNULL std::unique_ptr<PartitionedMesh::Data>>
 PartitionedMesh::Data::FromMeshGroups(absl::Span<const MeshGroup> groups) {
   size_t total_meshes = 0;
   size_t total_outlines = 0;

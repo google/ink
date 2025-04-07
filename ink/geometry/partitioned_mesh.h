@@ -86,7 +86,7 @@ class PartitionedMesh {
     // TODO: b/295166196 - Once `MutableMesh` always uses 16-bit indices, change
     // this field to `absl::Span<const MutableMesh> meshes` (and change the type
     // of `outlines` to use `VertexIndexPair`).
-    absl::Nonnull<const MutableMesh*> mesh;
+    const MutableMesh* ABSL_NONNULL mesh;
     absl::Span<const absl::Span<const uint32_t>> outlines;
     // A list of mesh attributes present in the `MutableMesh` that should be
     // stripped out during construction of the `PartitionedMesh`.
@@ -348,7 +348,7 @@ class PartitionedMesh {
   // cached R-Tree, even if it was initialized after the copy.
   class Data {
    public:
-    static absl::StatusOr<absl::Nonnull<std::unique_ptr<Data>>> FromMeshGroups(
+    static absl::StatusOr<ABSL_NONNULL std::unique_ptr<Data>> FromMeshGroups(
         absl::Span<const MeshGroup> groups);
 
     uint32_t RenderGroupCount() const;
@@ -403,7 +403,7 @@ class PartitionedMesh {
     //   moved out of while the method is executing. This would be a
     //   synchronization bug in the caller and would cause undefined behavior
     //   and/or a use-after-free of `Data` even if we mutex-guarded the pointee
-    mutable absl::Nullable<std::unique_ptr<const RTree>> rtree_
+    mutable ABSL_NULLABLE std::unique_ptr<const RTree> rtree_
         ABSL_GUARDED_BY(cache_mutex_);
     mutable std::optional<float> cached_total_absolute_area_
         ABSL_GUARDED_BY(cache_mutex_);
@@ -411,9 +411,9 @@ class PartitionedMesh {
 
   // Constructor used by `FromMeshes` to instantiate the `PartitionedMesh` with
   // `Data`.
-  explicit PartitionedMesh(absl::Nonnull<std::unique_ptr<Data>> data);
+  explicit PartitionedMesh(ABSL_NONNULL std::unique_ptr<Data> data);
 
-  absl::Nullable<std::shared_ptr<const Data>> data_;
+  ABSL_NULLABLE std::shared_ptr<const Data> data_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -485,8 +485,7 @@ inline bool PartitionedMesh::IsSpatialIndexInitialized() const {
   return data_ && data_->IsSpatialIndexInitialized();
 }
 
-inline PartitionedMesh::PartitionedMesh(
-    absl::Nonnull<std::unique_ptr<Data>> data)
+inline PartitionedMesh::PartitionedMesh(ABSL_NONNULL std::unique_ptr<Data> data)
     : data_(std::move(data)) {}
 
 inline uint32_t PartitionedMesh::Data::RenderGroupCount() const {

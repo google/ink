@@ -80,7 +80,7 @@ class BrushTipModeler {
   // Calling `StartStroke()` is required before calling `UpdateStroke()`. The
   // `brush_tip` parameter must not be `nullptr` and must remain valid for the
   // duration of the stroke. `brush_size` must be finite and greater than 0.
-  void StartStroke(absl::Nonnull<const BrushTip*> brush_tip, float brush_size,
+  void StartStroke(const BrushTip* ABSL_NONNULL brush_tip, float brush_size,
                    uint32_t noise_seed = 0);
 
   // Updates the tip modeler with the current `StrokeInputModeler::State` and
@@ -139,7 +139,7 @@ class BrushTipModeler {
       const StrokeInputModeler::State& input_modeler_state,
       const ModeledStrokeInput& current_input,
       std::optional<Angle> current_travel_direction,
-      absl::Nullable<const ModeledStrokeInput*> previous_input,
+      const ModeledStrokeInput* ABSL_NULLABLE previous_input,
       std::optional<InputMetrics>& last_modeled_tip_state_metrics);
 
   // Appends a single new element to the `saved_tip_states_` based on the
@@ -177,7 +177,7 @@ class BrushTipModeler {
   // considered fixed.
   size_t new_fixed_tip_state_count_ = 0;
 
-  absl::Nullable<const BrushTip*> brush_tip_ = nullptr;
+  const BrushTip* ABSL_NULLABLE brush_tip_ = nullptr;
   float brush_size_ = 0;
   // Per-stroke random seed value for seeding generators for noise behaviors (if
   // the brush tip has any). All tips/coats in the same brush use the same

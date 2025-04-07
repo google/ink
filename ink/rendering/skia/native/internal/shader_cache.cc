@@ -167,7 +167,7 @@ AffineTransform ComputeSizeUnitToStrokeSpaceTransform(
 
 }  // namespace
 
-ShaderCache::ShaderCache(absl::Nullable<const TextureBitmapStore*> provider)
+ShaderCache::ShaderCache(const TextureBitmapStore* ABSL_NULLABLE provider)
     : texture_provider_(provider) {}
 
 sk_sp<SkBlender> ShaderCache::GetBlenderForPaint(const BrushPaint& paint) {
