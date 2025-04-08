@@ -14,9 +14,7 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
-package(
-    default_visibility = ["//ink:__subpackages__"],
-)
+package()
 
 cc_library(
     name = "native",
