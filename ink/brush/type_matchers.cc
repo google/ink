@@ -337,6 +337,11 @@ MATCHER(BrushCoatPointwiseEqMatcher, "") {
 }
 
 Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
+    const BrushFamily::LegacySpringModel& input_model) {
+  return VariantWith<BrushFamily::LegacySpringModel>(_);  // no fields to match
+}
+
+Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
     const BrushFamily::SpringModel& input_model) {
   return VariantWith<BrushFamily::SpringModel>(_);  // no fields to match
 }

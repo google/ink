@@ -36,6 +36,11 @@ class BrushFamily {
  public:
   // LINT.IfChange(input_model_types)
 
+  // The legacy spring-based input modeler, provided for backwards compatibility
+  // with existing Ink clients.
+  // DEPRECATED: Use `SpringModel` instead.
+  struct LegacySpringModel {};
+
   // Spring-based input modeler. Stored in the `InputModel` variant below to
   // allow future input models to be added without changing the shape of
   // existing strokes.
@@ -46,7 +51,7 @@ class BrushFamily {
   // inputs. Raw hardware inputs tend to be noisy, and must be smoothed before
   // being passed into a brush's behaviors and extruded into a mesh in order to
   // get a good-looking stroke.
-  using InputModel = std::variant<SpringModel>;
+  using InputModel = std::variant<LegacySpringModel, SpringModel>;
 
   // Returns the default `InputModel` that will be used by
   // `BrushFamily::Create()` when none is specified.

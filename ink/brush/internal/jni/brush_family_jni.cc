@@ -44,6 +44,7 @@ extern "C" {
 // Construct a native BrushFamily and return a pointer to it as a long.
 JNI_METHOD(brush, BrushFamilyNative, jlong,
            create)(JNIEnv* env, jobject object,
+                   jboolean use_legacy_spring_model,
                    jlongArray coat_native_pointer_array,
                    jstring client_brush_family_id) {
   std::vector<BrushCoat> coats;
@@ -60,7 +61,10 @@ JNI_METHOD(brush, BrushFamilyNative, jlong,
       // No need to copy back the array, which is not modified.
       JNI_ABORT);
 
-  BrushFamily::InputModel input_model = BrushFamily::SpringModel();
+  BrushFamily::InputModel input_model =
+      use_legacy_spring_model
+          ? BrushFamily::InputModel(BrushFamily::LegacySpringModel())
+          : BrushFamily::InputModel(BrushFamily::SpringModel());
   absl::StatusOr<BrushFamily> brush_family = BrushFamily::Create(
       coats, JStringView(env, client_brush_family_id).string_view(),
       input_model);
