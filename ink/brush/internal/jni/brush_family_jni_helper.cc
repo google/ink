@@ -15,7 +15,6 @@
 #include <jni.h>
 
 #include <utility>
-#include <variant>
 #include <vector>
 
 #include "absl/log/absl_check.h"
@@ -24,7 +23,6 @@
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
-#include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_string_util.h"
 #include "ink/jni/internal/jni_throw_util.h"
 
@@ -33,20 +31,16 @@ namespace {
 using ::ink::BrushCoat;
 using ::ink::BrushFamily;
 using ::ink::jni::CastToBrushCoat;
-using ::ink::jni::CastToBrushFamily;
 using ::ink::jni::JStringView;
 using ::ink::jni::ThrowExceptionFromStatus;
 
 }  // namespace
 
-extern "C" {
+namespace ink {
 
-// Construct a native BrushFamily and return a pointer to it as a long.
-JNI_METHOD(brush, BrushFamilyNative, jlong,
-           create)(JNIEnv* env, jobject object,
-                   jboolean use_legacy_spring_model,
-                   jlongArray coat_native_pointer_array,
-                   jstring client_brush_family_id) {
+jlong CreateBrushFamily(JNIEnv* env, ::ink::BrushFamily::InputModel input_model,
+                        jlongArray coat_native_pointer_array,
+                        jstring client_brush_family_id) {
   std::vector<BrushCoat> coats;
   const jsize num_coats = env->GetArrayLength(coat_native_pointer_array);
   coats.reserve(num_coats);
@@ -61,10 +55,6 @@ JNI_METHOD(brush, BrushFamilyNative, jlong,
       // No need to copy back the array, which is not modified.
       JNI_ABORT);
 
-  BrushFamily::InputModel input_model =
-      use_legacy_spring_model
-          ? BrushFamily::InputModel(BrushFamily::LegacySpringModel())
-          : BrushFamily::InputModel(BrushFamily::SpringModel());
   absl::StatusOr<BrushFamily> brush_family = BrushFamily::Create(
       coats, JStringView(env, client_brush_family_id).string_view(),
       input_model);
@@ -76,27 +66,4 @@ JNI_METHOD(brush, BrushFamilyNative, jlong,
   return reinterpret_cast<jlong>(new BrushFamily(*std::move(brush_family)));
 }
 
-JNI_METHOD(brush, BrushFamilyNative, void, free)
-(JNIEnv* env, jobject object, jlong native_pointer) {
-  delete reinterpret_cast<BrushFamily*>(native_pointer);
-}
-
-JNI_METHOD(brush, BrushFamilyNative, jstring, getClientBrushFamilyId)
-(JNIEnv* env, jobject object, jlong native_pointer) {
-  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
-  return env->NewStringUTF(brush_family.GetClientBrushFamilyId().c_str());
-}
-
-JNI_METHOD(brush, BrushFamilyNative, jlong, getBrushCoatCount)
-(JNIEnv* env, jobject object, jlong native_pointer) {
-  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
-  return brush_family.GetCoats().size();
-}
-
-JNI_METHOD(brush, BrushFamilyNative, jlong, newCopyOfBrushCoat)
-(JNIEnv* env, jobject object, jlong native_pointer, jint index) {
-  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
-  return reinterpret_cast<jlong>(new BrushCoat(brush_family.GetCoats()[index]));
-}
-
-}  // extern "C"
+}  // namespace ink
