@@ -62,10 +62,8 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     // `opacityShift` to `colorUnpremul`. Both the input color and the output
     // color are unpremultiplied linear sRGB, and may include RGB values outside
     // the range [0, 1], e.g. for wide-gamut colors. The current implementation
-    // performs the shift in the YIQ color space, using the Rec. 601 primaries.
-    //
-    // TODO: b/310989115 - Switch to using sRGB primaries instead (see
-    // discussion on cl/583146821).
+    // performs the shift in the YIQ color space, using the Rec. 601 primaries,
+    // though it might be better to use the sRGB primaries instead.
     //
     // NOTE: there is no separate `applyHSLShift()` taking two `float3`s to help
     // prevent accidentally passing arguments in the wrong order.
