@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@
 
 #include "ink/geometry/quad.h"
 
-namespace ink {
+namespace ink::jni {
+
 jobject CreateJImmutableParallelogram(JNIEnv* env, const Quad& quad,
                                       jclass immutable_parallelogram_class,
                                       jclass immutable_vec_class);
@@ -27,6 +28,6 @@ jobject CreateJImmutableParallelogram(JNIEnv* env, const Quad& quad,
 void FillJMutableParallelogram(JNIEnv* env, const Quad& quad,
                                jobject mutable_parallelogram);
 
-}  // namespace ink
+}  // namespace ink::jni
 
 #endif  // INK_GEOMETRY_INTERNAL_JNI_PARALLELOGRAM_JNI_HELPER_H_

@@ -45,7 +45,6 @@ namespace {
 using ::ink::Brush;
 using ::ink::Duration32;
 using ::ink::Envelope;
-using ::ink::FillJMutableEnvelope;
 using ::ink::InProgressStroke;
 using ::ink::MeshFormat;
 using ::ink::MutableMesh;
@@ -56,6 +55,8 @@ using ::ink::StrokeInputBatch;
 using ::ink::jni::CastToBrush;
 using ::ink::jni::CastToMutableStrokeInputBatch;
 using ::ink::jni::CastToStrokeInputBatch;
+using ::ink::jni::FillJMutableEnvelope;
+using ::ink::jni::FillJMutableVecFromPoint;
 using ::ink::jni::UpdateJObjectInput;
 
 // Associates an `InProgressStroke` with a cached triangle index buffer instance

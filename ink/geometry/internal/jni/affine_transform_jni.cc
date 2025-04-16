@@ -25,6 +25,8 @@ namespace {
 using ::ink::AffineTransform;
 using ::ink::Angle;
 using ::ink::Quad;
+using ::ink::jni::CreateJImmutableParallelogram;
+using ::ink::jni::FillJMutableParallelogram;
 
 }  // namespace
 
@@ -39,7 +41,7 @@ JNI_METHOD(geometry_internal, AffineTransformNative, jobject,
  jfloat quad_width, jfloat quad_height, jfloat quad_rotation,
  jfloat quad_shear_factor, jclass immutable_parallelogram_class,
  jclass immutable_vec_class) {
-  return ink::CreateJImmutableParallelogram(
+  return CreateJImmutableParallelogram(
       env,
       AffineTransform(affine_transform_A, affine_transform_B,
                       affine_transform_C, affine_transform_D,
@@ -58,7 +60,7 @@ JNI_METHOD(geometry_internal, AffineTransformNative, void,
  jfloat affine_transform_F, jfloat quad_center_x, jfloat quad_center_y,
  jfloat quad_width, jfloat quad_height, jfloat quad_rotation,
  jfloat quad_shear_factor, jobject mutable_quad) {
-  ink::FillJMutableParallelogram(
+  FillJMutableParallelogram(
       env,
       AffineTransform(affine_transform_A, affine_transform_B,
                       affine_transform_C, affine_transform_D,

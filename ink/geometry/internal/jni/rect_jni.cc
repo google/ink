@@ -23,6 +23,8 @@ namespace {
 
 using ::ink::Point;
 using ::ink::Rect;
+using ::ink::jni::CreateJImmutableVecFromPoint;
+using ::ink::jni::FillJMutableVecFromPoint;
 
 }  // namespace
 
@@ -35,7 +37,7 @@ JNI_METHOD(geometry_internal, BoxNative, jobject, createCenter)
       Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
   Point point = rect.Center();
 
-  return ink::CreateJImmutableVecFromPoint(env, point, immutable_vec_class);
+  return CreateJImmutableVecFromPoint(env, point, immutable_vec_class);
 }
 
 JNI_METHOD(geometry_internal, BoxNative, void, populateCenter)
@@ -45,7 +47,7 @@ JNI_METHOD(geometry_internal, BoxNative, void, populateCenter)
       Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
   Point point = rect.Center();
 
-  ink::FillJMutableVecFromPoint(env, mutable_vec, point);
+  FillJMutableVecFromPoint(env, mutable_vec, point);
 }
 
 JNI_METHOD(geometry_internal, BoxNative, jboolean, containsPoint)

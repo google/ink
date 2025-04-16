@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 #include "ink/geometry/quad.h"
 #include "ink/jni/internal/jni_defines.h"
 
-namespace ink {
+namespace ink::jni {
 
 jobject CreateJImmutableParallelogram(JNIEnv* env, const Quad& quad,
                                       jclass immutable_parallelogram_class,
@@ -36,8 +36,8 @@ jobject CreateJImmutableParallelogram(JNIEnv* env, const Quad& quad,
   ABSL_CHECK(from_center_dim_rot_shear_method);
   return env->CallStaticObjectMethod(
       immutable_parallelogram_class, from_center_dim_rot_shear_method,
-      ink::CreateJImmutableVecFromPoint(env, {quad.Center().x, quad.Center().y},
-                                        immutable_vec_class),
+      CreateJImmutableVecFromPoint(env, {quad.Center().x, quad.Center().y},
+                                   immutable_vec_class),
       quad.Width(), quad.Height(), quad.Rotation().ValueInRadians(),
       quad.ShearFactor());
 }
@@ -56,4 +56,4 @@ void FillJMutableParallelogram(JNIEnv* env, const Quad& quad,
                       quad.Rotation().ValueInRadians(), quad.ShearFactor());
 }
 
-}  // namespace ink
+}  // namespace ink::jni

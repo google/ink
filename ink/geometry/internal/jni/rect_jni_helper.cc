@@ -1,5 +1,5 @@
 
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 #include "ink/geometry/rect.h"
 #include "ink/jni/internal/jni_defines.h"
 
-namespace ink {
+namespace ink::jni {
 
 jobject CreateJImmutableBoxFromRect(JNIEnv* env, Rect rect,
                                     jclass immutable_box_class,
@@ -35,10 +35,10 @@ jobject CreateJImmutableBoxFromRect(JNIEnv* env, Rect rect,
   ABSL_CHECK(from_two_points_method);
   return env->CallStaticObjectMethod(
       immutable_box_class, from_two_points_method,
-      ink::CreateJImmutableVecFromPoint(env, {rect.XMin(), rect.YMin()},
-                                        immutable_vec_class),
-      ink::CreateJImmutableVecFromPoint(env, {rect.XMax(), rect.YMax()},
-                                        immutable_vec_class));
+      CreateJImmutableVecFromPoint(env, {rect.XMin(), rect.YMin()},
+                                   immutable_vec_class),
+      CreateJImmutableVecFromPoint(env, {rect.XMax(), rect.YMax()},
+                                   immutable_vec_class));
 }
 
 void FillJMutableBoxFromRect(JNIEnv* env, jobject mutable_box, Rect rect) {
@@ -59,4 +59,4 @@ void FillJMutableBoxFromRect(JNIEnv* env, jobject mutable_box, Rect rect) {
                         rect.YMax());
 }
 
-}  // namespace ink
+}  // namespace ink::jni

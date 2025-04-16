@@ -21,6 +21,8 @@
 namespace {
 
 using ::ink::Vec;
+using ::ink::jni::CreateJImmutableVecFromVec;
+using ::ink::jni::FillJMutableVecFromVec;
 
 }  // namespace
 

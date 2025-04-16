@@ -28,12 +28,12 @@ namespace {
 
 using ::ink::Angle;
 using ::ink::Envelope;
-using ::ink::FillJMutableEnvelope;
 using ::ink::Point;
 using ::ink::Quad;
 using ::ink::Rect;
 using ::ink::Segment;
 using ::ink::Triangle;
+using ::ink::jni::FillJMutableEnvelope;
 
 Envelope BuildEnvelopeFromBounds(jboolean envelope_has_bounds,
                                  jfloat envelope_bounds_x_min,

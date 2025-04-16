@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ namespace {
 using ::ink::Mesh;
 using ::ink::MeshFormat;
 using ::ink::Point;
+using ::ink::jni::FillJMutableEnvelope;
+using ::ink::jni::FillJMutableVecFromPoint;
 
 // The maximum supported number of attribute unpacking components.
 //
@@ -116,7 +118,7 @@ JNI_METHOD(geometry, MeshNative, jint, getAttributeCount)
 JNI_METHOD(geometry, MeshNative, void, fillBounds)
 (JNIEnv* env, jobject object, jlong native_pointer, jobject mutable_envelope) {
   const Mesh* mesh = GetMesh(native_pointer);
-  ink::FillJMutableEnvelope(env, mesh->Bounds(), mutable_envelope);
+  FillJMutableEnvelope(env, mesh->Bounds(), mutable_envelope);
 }
 
 JNI_METHOD(geometry, MeshNative, jint, fillAttributeUnpackingParams)
@@ -151,7 +153,7 @@ JNI_METHOD(geometry, MeshNative, void, fillPosition)
  jobject mutable_vec) {
   const Mesh* mesh = GetMesh(native_pointer);
   Point p = mesh->VertexPosition(vertex_index);
-  ink::FillJMutableVecFromPoint(env, mutable_vec, p);
+  FillJMutableVecFromPoint(env, mutable_vec, p);
 }
 
 // Create a newly allocated empty `Mesh`.

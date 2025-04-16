@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 
-namespace ink {
+namespace ink::jni {
 
 jobject CreateJImmutableVecFromVec(JNIEnv* env, Vec vec,
                                    jclass immutable_vec_class) {
@@ -64,4 +64,4 @@ void FillJMutableVecFromPoint(JNIEnv* env, jobject mutable_vec, Point point) {
   env->CallVoidMethod(mutable_vec, set_y_method, point.y);
 }
 
-}  // namespace ink
+}  // namespace ink::jni

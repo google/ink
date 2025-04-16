@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@
 
 #include "ink/geometry/envelope.h"
 
-namespace ink {
+namespace ink::jni {
 
 void FillJMutableEnvelope(JNIEnv* env, const Envelope& envelope,
                           jobject mutable_envelope);
 
-}  // namespace ink
+}  // namespace ink::jni
 
 #endif  // INK_GEOMETRY_INTERNAL_JNI_ENVELOPE_JNI_HELPER_H_
