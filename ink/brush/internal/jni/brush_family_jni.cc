@@ -60,7 +60,9 @@ JNI_METHOD(brush, BrushFamilyNative, jlong,
       // No need to copy back the array, which is not modified.
       JNI_ABORT);
 
-  BrushFamily::InputModel input_model = BrushFamily::SpringModel();
+  BrushFamily::InputModel input_model =
+      ink::BrushFamily::InputModel(ink::BrushFamily::SpringModel());
+
   absl::StatusOr<BrushFamily> brush_family = BrushFamily::Create(
       coats, JStringView(env, client_brush_family_id).string_view(),
       input_model);
