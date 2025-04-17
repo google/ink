@@ -128,6 +128,10 @@ void PathDrawable::SetPaintColor(const Color& color) {
       srgb_linear.get());
 }
 
+void PathDrawable::SetImageFilter(sk_sp<SkImageFilter> image_filter) {
+  paint_.setImageFilter(image_filter);
+}
+
 void PathDrawable::Draw(SkCanvas& canvas) const {
   for (const SkPath& path : paths_) {
     canvas.drawPath(path, paint_);

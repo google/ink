@@ -65,6 +65,8 @@ class PathDrawable {
   // `color` with the `opacity_multiplier` passed in during construction.
   void SetPaintColor(const Color& color);
 
+  void SetImageFilter(sk_sp<SkImageFilter> image_filter);
+
   void Draw(SkCanvas& canvas) const;
 
  private:

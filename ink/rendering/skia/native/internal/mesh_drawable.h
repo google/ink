@@ -27,6 +27,7 @@
 #include "ink/rendering/skia/native/internal/mesh_uniform_data.h"
 #include "include/core/SkBlender.h"
 #include "include/core/SkCanvas.h"
+#include "include/core/SkImageFilter.h"
 #include "include/core/SkMesh.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkRect.h"
@@ -106,6 +107,8 @@ class MeshDrawable {
   // does not have this uniform.
   void SetObjectToCanvas(const AffineTransform& transform);
 
+  void SetImageFilter(sk_sp<SkImageFilter> image_filter);
+
   // Draws the mesh-drawable into the provided `canvas`.
   void Draw(SkCanvas& canvas) const;
 
@@ -120,6 +123,7 @@ class MeshDrawable {
   sk_sp<SkShader> shader_;
   absl::InlinedVector<Partition, 1> partitions_;
   MeshUniformData uniform_data_;
+  sk_sp<SkImageFilter> image_filter_;
 };
 
 // ---------------------------------------------------------------------------
@@ -148,6 +152,10 @@ inline bool MeshDrawable::HasObjectToCanvas() const {
 
 inline void MeshDrawable::SetObjectToCanvas(const AffineTransform& transform) {
   uniform_data_.SetObjectToCanvasLinearComponent(transform);
+}
+
+inline void MeshDrawable::SetImageFilter(sk_sp<SkImageFilter> image_filter) {
+  image_filter_ = image_filter;
 }
 
 }  // namespace ink::skia_native_internal
