@@ -34,6 +34,7 @@
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/stroke.h"
 #include "include/core/SkCanvas.h"
+#include "include/core/SkImageFilter.h"
 #include "include/core/SkMesh.h"
 #include "include/gpu/ganesh/GrDirectContext.h"
 
@@ -198,6 +199,8 @@ class SkiaRenderer::Drawable {
   //
   // CHECK-fails if the drawable does not have the property.
   void SetBrushColor(const Color& color);
+
+  void SetImageFilter(sk_sp<SkImageFilter> image_filter);
 
  private:
   friend SkiaRenderer;
