@@ -205,14 +205,6 @@ bool TessellateConnectedPolygons(
                    sizeof(typename VertexTessellationHelper::VertexType),
                    edge.size());
   }
-  // Check for single-precision overflow.
-  double width = static_cast<double>(max_x) - static_cast<double>(min_x);
-  double height = static_cast<double>(max_y) - static_cast<double>(min_y);
-  if (width > std::numeric_limits<float>::max() ||
-      height > std::numeric_limits<float>::max() ||
-      width * height > std::numeric_limits<float>::max()) {
-    return false;
-  }
 
   // nullptr for the normal means it's automatically computed.
   return tessTesselate(tess, winding_rule, TESS_CONNECTED_POLYGONS,

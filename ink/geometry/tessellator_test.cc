@@ -59,25 +59,23 @@ TEST(TessellatorTest, ReturnsErrorForCollinearPoints) {
 }
 
 TEST(TessellatorFuzzTest, ReturnsErrorForOverflowingBoundingBox) {
-  // Each point is finite, but the width overflows a float (>3.4e+38).
+  // Each point is finite, but some are too big for the tessellator to handle
+  // without a risk of overflow errors.
   EXPECT_THAT(CreateMeshFromPolyline(
                   {Point{-2e+38f, 0}, Point{0, 0}, Point{2e+38f, -1}}),
               StatusIs(absl::StatusCode::kInternal, HasSubstr("tessellate")));
-
-  // Ditto for height.
   EXPECT_THAT(CreateMeshFromPolyline(
                   {Point{0, 0}, Point{0, 2e+38f}, Point{-1, -2e+38f}}),
               StatusIs(absl::StatusCode::kInternal, HasSubstr("tessellate")));
-
-  // Ditto for area: 2e17 * 2e21 = 4e38 > 3.4e38.
   EXPECT_THAT(CreateMeshFromPolyline(
                   {Point{-1e+17f, 0}, Point{0, 1e+21f}, Point{1e17f, -1e+21f}}),
               StatusIs(absl::StatusCode::kInternal, HasSubstr("tessellate")));
 
-  // Width is big but doesn't overflow, and neither does area.
+  // The bounding box doesn't overflow, but some coordinates are still too big.
+  // The tessellator allows coordinates between -2^23 and 2^23.
   EXPECT_THAT(CreateMeshFromPolyline(
                   {Point{-2e+37f, 0}, Point{0, 5}, Point{1e37f, -5}}),
-              IsOk());
+              StatusIs(absl::StatusCode::kInternal, HasSubstr("tessellate")));
 }
 
 TEST(TessellatorTest, ReturnsMeshForSingleTriangle) {
