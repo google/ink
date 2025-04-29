@@ -195,13 +195,14 @@ JNI_METHOD(strokes, InProgressStrokeNative, jint, getPredictedInputCount)
   return in_progress_stroke.PredictedInputCount();
 }
 
-JNI_METHOD(strokes, InProgressStrokeNative, jint, fillInputs)
+JNI_METHOD(strokes, InProgressStrokeNative, jint, populateInputs)
 (JNIEnv* env, jobject thiz, jlong native_pointer,
  jlong mutable_stroke_input_batch_pointer, jint from, jint to) {
   const InProgressStroke& in_progress_stroke =
       GetInProgressStrokeWrapper(native_pointer)->in_progress_stroke;
   StrokeInputBatch* batch =
       CastToMutableStrokeInputBatch(mutable_stroke_input_batch_pointer);
+  batch->Clear();
   const StrokeInputBatch& inputs = in_progress_stroke.GetInputs();
   for (int i = from; i < to; ++i) {
     // The input here should have already been validated.
