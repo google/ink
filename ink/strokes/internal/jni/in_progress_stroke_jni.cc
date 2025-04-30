@@ -160,7 +160,7 @@ JNI_METHOD(strokes, InProgressStrokeNative, jboolean, isInputFinished)
   return in_progress_stroke.InputsAreFinished();
 }
 
-JNI_METHOD(strokes, InProgressStrokeNative, jboolean, getNeedsUpdate)
+JNI_METHOD(strokes, InProgressStrokeNative, jboolean, isUpdateNeeded)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   const InProgressStroke& in_progress_stroke =
       GetInProgressStrokeWrapper(native_pointer)->in_progress_stroke;
