@@ -32,6 +32,7 @@
 #include "include/core/SkMesh.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkRefCnt.h"
+#include "include/effects/SkImageFilters.h"
 
 namespace ink::skia_native_internal {
 namespace {
@@ -120,6 +121,7 @@ void MeshDrawable::Draw(SkCanvas& canvas) const {
   SkPaint paint;
   paint.setShader(shader_);
   paint.setColor(SK_ColorWHITE);
+  paint.setImageFilter(image_filter_);
   sk_sp<const SkData> uniform_data = uniform_data_.Get();
   for (const Partition& partition : partitions_) {
     SkMesh mesh = MakeSkiaMesh(specification_, partition, uniform_data).mesh;

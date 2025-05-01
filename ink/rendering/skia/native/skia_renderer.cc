@@ -348,4 +348,17 @@ void SkiaRenderer::Drawable::SetBrushColor(const Color& color) {
   ABSL_CHECK(has_color);
 }
 
+void SkiaRenderer::Drawable::SetImageFilter(sk_sp<SkImageFilter> image_filter) {
+  for (Implementation& drawable_impl : drawable_implementations_) {
+    std::visit(absl::Overload(
+                   [&image_filter](MeshDrawable& drawable) {
+                     drawable.SetImageFilter(image_filter);
+                   },
+                   [&image_filter](PathDrawable& drawable) {
+                     drawable.SetImageFilter(image_filter);
+                   }),
+               drawable_impl);
+  }
+}
+
 }  // namespace ink
