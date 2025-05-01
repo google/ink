@@ -14,7 +14,9 @@
 
 #include <jni.h>
 
+#include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -36,6 +38,15 @@ using ::ink::Mesh;
 using ::ink::PartitionedMesh;
 using ::ink::Point;
 using ::ink::StrokeInputBatch;
+
+// private method to calculate the slope of a line segment. If the slope is
+// infinite, return float::infinity.
+float calculateSlope(Point p1, Point p2) {
+  if (p2.x == p1.x) {
+    return std::numeric_limits<float>::infinity();
+  }
+  return (p2.y - p1.y) / (p2.x - p1.x);
+}
 
 }  // namespace
 
@@ -85,6 +96,38 @@ JNI_METHOD(strokes, MeshCreationNative, jlong,
     mesh = Mesh::Create(ink::MeshFormat(), {x_values, y_values}, {0, 1, 2});
   } else {
     mesh = ink::CreateMeshFromPolyline(processed_points);
+  }
+  if (!mesh.status().ok() && processed_points.size() >= 2) {
+    // determine if input points are colinear
+    float min_x = std::min(processed_points[0].x, processed_points[1].x);
+    float max_x = std::max(processed_points[0].x, processed_points[1].x);
+    float min_y = std::min(processed_points[0].y, processed_points[1].y);
+    float max_y = std::max(processed_points[0].y, processed_points[1].y);
+    float slope = calculateSlope(processed_points[0], processed_points[1]);
+    bool is_colinear = true;
+    for (size_t i = 2; i < processed_points.size(); ++i) {
+      if (slope !=
+          calculateSlope(processed_points[i - 1], processed_points[i])) {
+        is_colinear = false;
+        break;
+      }
+      max_x = std::max(max_x, processed_points[i].x);
+      min_x = std::min(min_x, processed_points[i].x);
+      max_y = std::max(max_y, processed_points[i].y);
+      min_y = std::min(min_y, processed_points[i].y);
+    }
+    // if so, create a mesh with a single triangle that has repeated and
+    // overlapping points. This effectively creates a point-like or
+    // segment-like mesh. The resulting mesh will have an area of 0 but can
+    // still be used for hit testing via intersection.
+    // if not, return an error.
+    if (is_colinear) {
+      std::vector<float> x_values = {min_x, min_x, max_x};
+      std::vector<float> y_values =
+          slope < 0 ? std::vector<float>{max_y, max_y, min_y}
+                    : std::vector<float>{min_y, min_y, max_y};
+      mesh = Mesh::Create(ink::MeshFormat(), {x_values, y_values}, {0, 1, 2});
+    }
   }
   if (!ink::jni::CheckOkOrThrow(env, mesh.status())) {
     return 0;
