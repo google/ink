@@ -34,11 +34,11 @@ void FillJMutableEnvelope(JNIEnv* env, const Envelope& envelope,
     env->CallObjectMethod(mutable_envelope, reset_method);
   } else {
     const Rect rect = *envelope.AsRect();
-    jmethodID overwrite_method =
-        env->GetMethodID(mutable_envelope_class, "overwriteFrom",
+    jmethodID populate_method =
+        env->GetMethodID(mutable_envelope_class, "populateFrom",
                          "(FFFF)L" INK_PACKAGE "/geometry/BoxAccumulator;");
-    ABSL_CHECK(overwrite_method);
-    env->CallObjectMethod(mutable_envelope, overwrite_method, rect.XMin(),
+    ABSL_CHECK(populate_method);
+    env->CallObjectMethod(mutable_envelope, populate_method, rect.XMin(),
                           rect.YMin(), rect.XMax(), rect.YMax());
   }
 }
