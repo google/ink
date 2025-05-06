@@ -28,6 +28,7 @@ namespace jni {
 
 namespace {
 
+// These should all be subclasses of RuntimeException.
 const std::pair<absl::StatusCode, const char*> kStatusCodeClasses[] = {
     {absl::StatusCode::kFailedPrecondition, "java/lang/IllegalStateException"},
     {absl::StatusCode::kInvalidArgument, "java/lang/IllegalArgumentException"},

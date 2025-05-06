@@ -66,6 +66,7 @@ cc_library(
         "//ink/geometry/internal/jni:envelope_jni_helper",
         "//ink/geometry/internal/jni:vec_jni_helper",
         "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_throw_util",
         "//ink/strokes:in_progress_stroke",
         "//ink/strokes:stroke",
         "//ink/strokes/input:stroke_input",
@@ -118,6 +119,7 @@ cc_library(
         "//ink/types:duration",
         "//ink/types:physical_distance",
         "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [

@@ -17,8 +17,10 @@
 #include <optional>
 
 #include "absl/log/absl_check.h"
+#include "absl/status/status.h"
 #include "ink/geometry/angle.h"
 #include "ink/jni/internal/jni_defines.h"
+#include "ink/jni/internal/jni_throw_util.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/jni/stroke_input_jni_helper.h"
@@ -41,6 +43,7 @@ using ::ink::StrokeInputBatch;
 using ::ink::jni::CastToMutableStrokeInputBatch;
 using ::ink::jni::CastToStrokeInputBatch;
 using ::ink::jni::JIntToToolType;
+using ::ink::jni::ThrowExceptionFromStatus;
 using ::ink::jni::ToolTypeToJInt;
 using ::ink::jni::UpdateJObjectInput;
 
@@ -129,12 +132,11 @@ STROKE_INPUT_BATCH_JNI_METHOD(jint, getNoiseSeed)
 }
 
 // ************ Native Implementation of MutableStrokeInputBatch ************
-MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jstring, appendSingle)
+MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jboolean, appendSingle)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint tool_type, jfloat x,
  jfloat y, jlong elapsed_time_millis, jfloat stroke_unit_length_cm,
- jfloat pressure, jfloat tilt, jfloat orientation) {
+ jfloat pressure, jfloat tilt, jfloat orientation, jboolean throw_on_error) {
   StrokeInputBatch* batch = CastToMutableStrokeInputBatch(native_pointer);
-
   StrokeInput input = {.tool_type = JIntToToolType(tool_type),
                        .position = {x, y},
                        .elapsed_time = Duration32::Millis(elapsed_time_millis),
@@ -143,25 +145,25 @@ MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jstring, appendSingle)
                        .pressure = pressure,
                        .tilt = Angle::Radians(tilt),
                        .orientation = Angle::Radians(orientation)};
-  auto status = batch->Append(input);
-  if (!status.ok()) {
-    return env->NewStringUTF(status.ToString().c_str());
+  absl::Status status = batch->Append(input);
+  if (!status.ok() && throw_on_error) {
+    ThrowExceptionFromStatus(env, status);
   }
-  return nullptr;
+  return status.ok();
 }
 
-MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jstring, appendBatch)
+MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jboolean, appendBatch)
 (JNIEnv* env, jobject thiz, jlong native_pointer,
- jlong append_from_native_pointer) {
+ jlong append_from_native_pointer, jboolean throw_on_error) {
   StrokeInputBatch* batch = CastToMutableStrokeInputBatch(native_pointer);
   const StrokeInputBatch& append_from_batch =
       CastToStrokeInputBatch(append_from_native_pointer);
 
-  auto status = batch->Append(append_from_batch);
-  if (!status.ok()) {
-    return env->NewStringUTF(status.ToString().c_str());
+  absl::Status status = batch->Append(append_from_batch);
+  if (!status.ok() && throw_on_error) {
+    ThrowExceptionFromStatus(env, status);
   }
-  return nullptr;
+  return status.ok();
 }
 
 MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(void, clear)
