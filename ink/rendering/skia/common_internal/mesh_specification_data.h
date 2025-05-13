@@ -46,7 +46,7 @@ struct MeshSpecificationData {
   // Skia doesn't seem to place any clear limit on the number of uniforms, so
   // this value is just the size we choose to use for our array. Currently it is
   // set to the actual number of uniforms we happen to use right now.
-  static constexpr int kMaxUniforms = 8;
+  static constexpr int kMaxUniforms = 10;
 
   // Subsets of shader variable types for attributes, varyings, and uniforms
   // that are used by Ink and available across platforms.
@@ -97,6 +97,8 @@ struct MeshSpecificationData {
     kTextureAnimationProgress = 6,
     // The number of frames in the texture animation.
     kNumTextureAnimationFrames = 7,
+    kNumTextureAnimationRows = 8,
+    kNumTextureAnimationColumns = 9,
   };
 
   struct Attribute {

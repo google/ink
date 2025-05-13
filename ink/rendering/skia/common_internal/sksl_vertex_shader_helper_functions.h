@@ -262,12 +262,23 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
         const float2 surfaceUv,
         const float particleAnimationOffset,
         const float textureAnimationProgress,
-        const int numTextureAnimationFrames) {
+        const int numTextureAnimationFrames,
+        const int numTextureAnimationRows,
+        const int numTextureAnimationColumns) {
+      // Progress overshooting 1 is handled by wrapping around to 0. Effectively
+      // progress is mod 1.
       float progress =
           fract(textureAnimationProgress + particleAnimationOffset);
+
       float numFrames = float(numTextureAnimationFrames);
-      return vec2(surfaceUv.x,
-                  (surfaceUv.y + floor(progress * numFrames)) / numFrames);
+      float numRows = float(numTextureAnimationRows);
+      float numColumns = float(numTextureAnimationColumns);
+      float frameIndex = floor(progress * numFrames);
+      float frameRowFractional = frameIndex / numColumns;
+      float frameRow = floor(frameRowFractional);
+      float frameColumn = floor(fract(frameRowFractional) * numColumns);
+      return vec2((surfaceUv.x + frameColumn) / numColumns,
+                  (surfaceUv.y + frameRow) / numRows);
     })"
 
     // ------------------------------------------------------------------------

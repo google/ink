@@ -412,6 +412,8 @@ message BrushPaint {
     optional Wrap wrap_y = 19 [default = WRAP_REPEAT];
 
     reserved 20;
+    reserved 21;
+    reserved 22;
   }
 
   // Zero or more textures to blend together to affect this coat's appearance.
