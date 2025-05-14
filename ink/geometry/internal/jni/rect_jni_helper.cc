@@ -41,20 +41,22 @@ jobject CreateJImmutableBoxFromRect(JNIEnv* env, Rect rect,
                                    immutable_vec_class));
 }
 
-void FillJMutableBoxFromRect(JNIEnv* env, jobject mutable_box, Rect rect) {
+void FillJMutableBoxFromRectOrThrow(JNIEnv* env, jobject mutable_box,
+                                    Rect rect) {
   jclass mutable_box_class = env->GetObjectClass(mutable_box);
 
   jmethodID set_x_bound_method =
       env->GetMethodID(mutable_box_class, "setXBounds",
                        "(FF)L" INK_PACKAGE "/geometry/MutableBox;");
-  ABSL_CHECK(set_x_bound_method);
+  ABSL_CHECK_NE(set_x_bound_method, nullptr);
   env->CallObjectMethod(mutable_box, set_x_bound_method, rect.XMin(),
                         rect.XMax());
+  if (env->ExceptionCheck()) return;
 
   jmethodID set_y_bound_method =
       env->GetMethodID(mutable_box_class, "setYBounds",
                        "(FF)L" INK_PACKAGE "/geometry/MutableBox;");
-  ABSL_CHECK(set_y_bound_method);
+  ABSL_CHECK_NE(set_y_bound_method, nullptr);
   env->CallObjectMethod(mutable_box, set_y_bound_method, rect.YMin(),
                         rect.YMax());
 }

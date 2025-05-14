@@ -46,7 +46,7 @@ const char* ExceptionClassForStatusCode(absl::StatusCode code) {
 }
 
 absl::StatusCode StatusCodeForThrowable(JNIEnv* env, jthrowable exception) {
-  ABSL_CHECK(exception);
+  ABSL_CHECK_NE(exception, nullptr);
   for (auto [status_code, class_name] : kStatusCodeClasses) {
     jclass clazz = env->FindClass(class_name);
     ABSL_CHECK(clazz);
@@ -59,12 +59,18 @@ absl::StatusCode StatusCodeForThrowable(JNIEnv* env, jthrowable exception) {
 
 // Returns the message string for a JVM exception. Returns null if the exception
 // is null, or if the exception has no message.
-jstring GetExceptionMessage(JNIEnv* env, jthrowable exception) {
+jstring GetExceptionMessageOrThrow(JNIEnv* env, jthrowable exception) {
   if (exception == nullptr) return nullptr;
+  ABSL_CHECK(!env->ExceptionCheck())
+      << "Must call env->ExceptionClear() before reading exception.";
   jmethodID method = env->GetMethodID(env->GetObjectClass(exception),
                                       "getMessage", "()Ljava/lang/String;");
-  ABSL_CHECK(method);
-  return static_cast<jstring>(env->CallObjectMethod(exception, method));
+  ABSL_CHECK_NE(method, nullptr);
+  jobject message = env->CallObjectMethod(exception, method);
+  if (env->ExceptionCheck()) {
+    return nullptr;
+  }
+  return static_cast<jstring>(message);
 }
 
 }  // namespace
@@ -73,9 +79,15 @@ absl::Status CatchExceptionAsStatus(JNIEnv* env) {
   jthrowable exception = env->ExceptionOccurred();
   if (exception == nullptr) return absl::OkStatus();
   env->ExceptionClear();
-  return absl::Status(
-      StatusCodeForThrowable(env, exception),
-      JStringView(env, GetExceptionMessage(env, exception)).string_view());
+  JStringView message =
+      JStringView(env, GetExceptionMessageOrThrow(env, exception));
+  if (env->ExceptionCheck()) {
+    env->ExceptionClear();
+    return absl::UnknownError(
+        "Encountered exception while retrieving exception message.");
+  }
+  return absl::Status(StatusCodeForThrowable(env, exception),
+                      message.string_view());
 }
 
 bool CheckOkOrThrow(JNIEnv* env, const absl::Status& status) {

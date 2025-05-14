@@ -52,6 +52,7 @@ using ::ink::EncodeBrushCoat;
 using ::ink::EncodeBrushFamily;
 using ::ink::EncodeBrushPaint;
 using ::ink::EncodeBrushTip;
+using ::ink::jni::CatchExceptionAsStatus;
 using ::ink::jni::JByteArrayToStdString;
 using ::ink::jni::JStringToStdString;
 using ::ink::jni::ParseProtoFromEither;
@@ -167,29 +168,6 @@ JNI_METHOD(storage, BrushSerializationNative, jlong,
  jbyteArray brush_family_byte_array, jint offset, jint length, jobject callback,
  jboolean throw_on_parse_error) {
   ink::proto::BrushFamily brush_family_proto;
-  jclass callbackClass = env->GetObjectClass(callback);
-  jmethodID on_decode_texture_method =
-      env->GetMethodID(callbackClass, "onDecodeTexture",
-                       "(Ljava/lang/String;[B)Ljava/lang/String;");
-  ink::ClientTextureIdProviderAndBitmapReceiver decode_texture_jni_wrapper =
-      [env, callback, on_decode_texture_method](
-          const std::string& encoded_id,
-          const std::string& bitmap) -> std::string {
-    jstring encoded_id_jstring = env->NewStringUTF(encoded_id.c_str());
-    jbyteArray pixel_data_jarray =
-        bitmap.empty() ? nullptr : StdStringToJByteArray(env, bitmap);
-
-    jstring new_id_jstring = static_cast<jstring>(
-        env->CallObjectMethod(callback, on_decode_texture_method,
-                              encoded_id_jstring, pixel_data_jarray));
-    env->DeleteLocalRef(encoded_id_jstring);
-    env->DeleteLocalRef(pixel_data_jarray);
-
-    std::string new_id(env->GetStringUTFChars(new_id_jstring, nullptr));
-    env->DeleteLocalRef(new_id_jstring);
-    return new_id;
-  };
-
   if (absl::Status status = ParseProtoFromEither(
           env, brush_family_direct_byte_buffer, brush_family_byte_array, offset,
           length, brush_family_proto);
@@ -199,11 +177,53 @@ JNI_METHOD(storage, BrushSerializationNative, jlong,
     }
     return 0;
   }
+
+  jclass callbackClass = env->GetObjectClass(callback);
+  jmethodID on_decode_texture_method =
+      env->GetMethodID(callbackClass, "onDecodeTexture",
+                       "(Ljava/lang/String;[B)Ljava/lang/String;");
+  ink::ClientTextureIdProviderAndBitmapReceiver decode_texture_jni_wrapper =
+      [env, callback, on_decode_texture_method](
+          const std::string& encoded_id,
+          const std::string& bitmap) -> absl::StatusOr<std::string> {
+    if (env->ExceptionCheck()) {
+      return absl::InternalError("Previously encountered exception in JVM.");
+    }
+    jstring encoded_id_jstring = env->NewStringUTF(encoded_id.c_str());
+    jbyteArray pixel_data_jarray =
+        bitmap.empty() ? nullptr : StdStringToJByteArray(env, bitmap);
+
+    jstring new_id_jstring = static_cast<jstring>(
+        env->CallObjectMethod(callback, on_decode_texture_method,
+                              encoded_id_jstring, pixel_data_jarray));
+    if (env->ExceptionCheck()) {
+      // Note that we're not clearing the exception here since we want to
+      // raise it as-is later. We're counting on the parsing code bailing out
+      // on the first error status encountered.
+      return absl::InternalError("onDecodeTexture raised exception.");
+    }
+    if (absl::Status status = CatchExceptionAsStatus(env); !status.ok()) {
+      return status;
+    }
+    env->DeleteLocalRef(encoded_id_jstring);
+    env->DeleteLocalRef(pixel_data_jarray);
+
+    std::string new_id(env->GetStringUTFChars(new_id_jstring, nullptr));
+    env->DeleteLocalRef(new_id_jstring);
+    return new_id;
+  };
   absl::StatusOr<BrushFamily> brush_family =
       DecodeBrushFamily(brush_family_proto, decode_texture_jni_wrapper);
   if (!brush_family.ok()) {
     if (throw_on_parse_error) {
-      ThrowExceptionFromStatus(env, brush_family.status());
+      // If the callback raised an exception we want to raise that as-is
+      // instead of replacing it with the status.
+      if (!env->ExceptionCheck()) {
+        ThrowExceptionFromStatus(env, brush_family.status());
+      }
+    } else {
+      // If the callback raised an exception, suppress that as well.
+      env->ExceptionClear();
     }
     return 0;
   }

@@ -31,7 +31,7 @@ namespace {
 using ::ink::Mesh;
 using ::ink::MeshFormat;
 using ::ink::Point;
-using ::ink::jni::FillJMutableEnvelope;
+using ::ink::jni::FillJMutableEnvelopeOrThrow;
 using ::ink::jni::FillJMutableVecFromPoint;
 
 // The maximum supported number of attribute unpacking components.
@@ -118,7 +118,7 @@ JNI_METHOD(geometry, MeshNative, jint, getAttributeCount)
 JNI_METHOD(geometry, MeshNative, void, fillBounds)
 (JNIEnv* env, jobject object, jlong native_pointer, jobject mutable_envelope) {
   const Mesh* mesh = GetMesh(native_pointer);
-  FillJMutableEnvelope(env, mesh->Bounds(), mutable_envelope);
+  FillJMutableEnvelopeOrThrow(env, mesh->Bounds(), mutable_envelope);
 }
 
 JNI_METHOD(geometry, MeshNative, jint, fillAttributeUnpackingParams)

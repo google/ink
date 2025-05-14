@@ -36,7 +36,7 @@ using ::ink::Vec;
 using ::ink::jni::CreateJImmutableBoxFromRect;
 using ::ink::jni::CreateJImmutableVecFromPoint;
 using ::ink::jni::CreateJImmutableVecFromVec;
-using ::ink::jni::FillJMutableBoxFromRect;
+using ::ink::jni::FillJMutableBoxFromRectOrThrow;
 using ::ink::jni::FillJMutableVecFromPoint;
 using ::ink::jni::FillJMutableVecFromVec;
 
@@ -63,7 +63,8 @@ JNI_METHOD(geometry_internal, ParallelogramNative, void, populateBoundingBox)
       {center_x, center_y}, width, height, Angle::Radians(rotation),
       shear_factor);
 
-  FillJMutableBoxFromRect(env, mutable_box, Envelope(quad).AsRect().value());
+  FillJMutableBoxFromRectOrThrow(env, mutable_box,
+                                 Envelope(quad).AsRect().value());
 }
 
 JNI_METHOD(geometry_internal, ParallelogramNative, jobjectArray, createSemiAxes)

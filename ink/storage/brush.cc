@@ -1210,9 +1210,13 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
   if (!blend_mode.ok()) {
     return blend_mode.status();
   }
+  absl::StatusOr<std::string> client_texture_id =
+      get_client_texture_id(layer_proto.client_texture_id());
+  if (!client_texture_id.ok()) {
+    return client_texture_id.status();
+  }
   BrushPaint::TextureLayer texture_layer{
-      .client_texture_id =
-          get_client_texture_id(layer_proto.client_texture_id()),
+      .client_texture_id = *client_texture_id,
       .mapping = *mapping,
       .origin = *origin,
       .size_unit = *size_unit,
@@ -1512,22 +1516,25 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
   std::map<std::string, std::string> old_to_new_id = {};
 
   ClientTextureIdProvider texture_callback =
-      [&family_proto, &old_to_new_id,
-       &get_client_texture_id](const std::string& old_id) -> std::string {
+      [&family_proto, &old_to_new_id, &get_client_texture_id](
+          const std::string& old_id) -> absl::StatusOr<std::string> {
     if (auto it = old_to_new_id.find(old_id); it != old_to_new_id.end()) {
       // No need to call `get_client_texture_id` again.
       return it->second;
     }
 
-    std::string new_id;
+    absl::StatusOr<std::string> new_id;
     if (auto bitmap_it = family_proto.texture_id_to_bitmap().find(old_id);
         bitmap_it != family_proto.texture_id_to_bitmap().end()) {
       new_id = get_client_texture_id(old_id, bitmap_it->second);
     } else {
       new_id = get_client_texture_id(old_id, std::string());
     }
-    old_to_new_id.insert({old_id, new_id});
-    return new_id;
+    if (!new_id.ok()) {
+      return new_id.status();
+    }
+    old_to_new_id.insert({old_id, *new_id});
+    return *new_id;
   };
 
   absl::StatusOr<std::vector<BrushCoat>> coats =

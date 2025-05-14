@@ -602,6 +602,36 @@ TEST(BrushTest, DecodeBrushFamilyWithNoInputModel) {
       family->GetInputModel()));
 }
 
+TEST(BrushTest, DecodeBrushFamilyReturnsErrorStatusFromCallback) {
+  absl::Status error_status = absl::InternalError("test error");
+  ClientTextureIdProviderAndBitmapReceiver callback =
+      [&error_status](const std::string&,
+                      const std::string&) -> absl::StatusOr<std::string> {
+    return error_status;
+  };
+  proto::BrushFamily family_proto;
+  family_proto.add_coats()
+      ->mutable_paint()
+      ->add_texture_layers()
+      ->set_client_texture_id(kTestTextureId1);
+  absl::StatusOr<BrushFamily> family =
+      DecodeBrushFamily(family_proto, callback);
+  ASSERT_THAT(family, StatusIs(absl::StatusCode::kInternal, "test error"));
+}
+
+TEST(BrushTest, DecodeBrushPaintReturnsErrorStatusFromCallback) {
+  absl::Status error_status = absl::InternalError("test error");
+  ClientTextureIdProvider callback =
+      [&error_status](
+          const std::string& encoded_id) -> absl::StatusOr<std::string> {
+    return error_status;
+  };
+  proto::BrushPaint paint_proto;
+  paint_proto.add_texture_layers()->set_client_texture_id(kTestTextureId1);
+  absl::StatusOr<BrushPaint> paint = DecodeBrushPaint(paint_proto, callback);
+  ASSERT_THAT(paint, StatusIs(absl::StatusCode::kInternal, "test error"));
+}
+
 TEST(BrushTest, EncodeBrushPaintWithInvalidTextureMapping) {
   BrushPaint paint;
   paint.texture_layers.push_back(
@@ -729,8 +759,9 @@ void EncodeDecodeBrushRoundTrip(const Brush& brush_in) {
     return std::nullopt;
   };
   ClientTextureIdProviderAndBitmapReceiver decode_callback =
-      [&decode_callback_count](const std::string& id,
-                               const std::string& bitmap) -> std::string {
+      [&decode_callback_count](
+          const std::string& id,
+          const std::string& bitmap) -> absl::StatusOr<std::string> {
     decode_callback_count++;
     return id;
   };

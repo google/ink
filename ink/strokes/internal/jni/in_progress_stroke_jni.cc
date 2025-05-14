@@ -56,7 +56,7 @@ using ::ink::StrokeInputBatch;
 using ::ink::jni::CastToBrush;
 using ::ink::jni::CastToMutableStrokeInputBatch;
 using ::ink::jni::CastToStrokeInputBatch;
-using ::ink::jni::FillJMutableEnvelope;
+using ::ink::jni::FillJMutableEnvelopeOrThrow;
 using ::ink::jni::FillJMutableVecFromPoint;
 using ::ink::jni::ThrowExceptionFromStatus;
 using ::ink::jni::UpdateJObjectInput;
@@ -234,8 +234,8 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, getMeshBounds)
  jobject j_out_envelope) {
   const InProgressStroke& in_progress_stroke =
       GetInProgressStrokeWrapper(native_pointer)->in_progress_stroke;
-  FillJMutableEnvelope(env, in_progress_stroke.GetMeshBounds(coat_index),
-                       j_out_envelope);
+  FillJMutableEnvelopeOrThrow(env, in_progress_stroke.GetMeshBounds(coat_index),
+                              j_out_envelope);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, void, fillUpdatedRegion)
@@ -243,7 +243,7 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, fillUpdatedRegion)
   const InProgressStroke& in_progress_stroke =
       GetInProgressStrokeWrapper(native_pointer)->in_progress_stroke;
   const Envelope& updated_region = in_progress_stroke.GetUpdatedRegion();
-  FillJMutableEnvelope(env, updated_region, j_out_envelope);
+  FillJMutableEnvelopeOrThrow(env, updated_region, j_out_envelope);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, void, resetUpdatedRegion)

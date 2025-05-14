@@ -25,7 +25,8 @@ jobject CreateJImmutableBoxFromRect(JNIEnv* env, Rect rect,
                                     jclass immutable_box_class,
                                     jclass immutable_vec_class);
 
-void FillJMutableBoxFromRect(JNIEnv* env, jobject mutable_box, Rect rect);
+void FillJMutableBoxFromRectOrThrow(JNIEnv* env, jobject mutable_box,
+                                    Rect rect);
 
 }  // namespace ink::jni
 

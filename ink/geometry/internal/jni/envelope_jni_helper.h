@@ -21,8 +21,8 @@
 
 namespace ink::jni {
 
-void FillJMutableEnvelope(JNIEnv* env, const Envelope& envelope,
-                          jobject mutable_envelope);
+void FillJMutableEnvelopeOrThrow(JNIEnv* env, const Envelope& envelope,
+                                 jobject mutable_envelope);
 
 }  // namespace ink::jni
 

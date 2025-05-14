@@ -36,15 +36,18 @@ namespace ink {
 // the bitmap is not available.
 using TextureBitmapProvider =
     std::function<std::optional<std::string>(const std::string& id)>;
+
 // Provides a new client texture ID for a given encoded texture ID, and is
 // responsible for receiving (e.g. by storing) the corresponding bitmap.
 // `bitmap` is the bytes of the PNG-encoded bitmap that the proto associated
 // with `encoded_id`, or the empty string if there was no associated bitmap.
-using ClientTextureIdProviderAndBitmapReceiver = std::function<std::string(
-    const std::string& encoded_id, const std::string& bitmap)>;
+using ClientTextureIdProviderAndBitmapReceiver =
+    std::function<absl::StatusOr<std::string>(const std::string& encoded_id,
+                                              const std::string& bitmap)>;
+
 // Provides a new client texture ID for a given encoded texture ID.
 using ClientTextureIdProvider =
-    std::function<std::string(const std::string& encoded_id)>;
+    std::function<absl::StatusOr<std::string>(const std::string& encoded_id)>;
 
 // Populates the given proto by encoding the given brush object.
 //
