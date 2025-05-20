@@ -125,7 +125,8 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
             "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
-            "opacity=1, keyframes={TextureKeyframe{progress=0.1, "
+            "opacity=1, animation_frames=1, animation_rows=1, "
+            "animation_columns=1, keyframes={TextureKeyframe{progress=0.1, "
             "rotation=0.25π}}, blend_mode=kDstIn}}}}])");
 }
 
@@ -143,7 +144,8 @@ TEST(BrushFamilyTest, StringifyWithId) {
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
             "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
-            "opacity=1, keyframes={TextureKeyframe{progress=0.1, "
+            "opacity=1, animation_frames=1, animation_rows=1, "
+            "animation_columns=1, keyframes={TextureKeyframe{progress=0.1, "
             "rotation=0.25π}}, blend_mode=kDstIn}}}}], "
             "client_brush_family_id='big-square')");
 }

@@ -84,6 +84,8 @@ bool IsValidUniformId(MeshSpecificationData::UniformId id) {
     case MeshSpecificationData::UniformId::kTextureMapping:
     case MeshSpecificationData::UniformId::kTextureAnimationProgress:
     case MeshSpecificationData::UniformId::kNumTextureAnimationFrames:
+    case MeshSpecificationData::UniformId::kNumTextureAnimationRows:
+    case MeshSpecificationData::UniformId::kNumTextureAnimationColumns:
       return true;
   }
   return false;
@@ -96,6 +98,8 @@ bool IsUnpackingTransformUniformId(MeshSpecificationData::UniformId id) {
     case MeshSpecificationData::UniformId::kTextureMapping:
     case MeshSpecificationData::UniformId::kTextureAnimationProgress:
     case MeshSpecificationData::UniformId::kNumTextureAnimationFrames:
+    case MeshSpecificationData::UniformId::kNumTextureAnimationRows:
+    case MeshSpecificationData::UniformId::kNumTextureAnimationColumns:
       break;
     case MeshSpecificationData::UniformId::kPositionUnpackingTransform:
     case MeshSpecificationData::UniformId::kSideDerivativeUnpackingTransform:
@@ -232,6 +236,13 @@ TEST(MeshSpecificationDataTest, GetUniformName) {
   EXPECT_THAT(MeshSpecificationData::GetUniformName(
                   MeshSpecificationData::UniformId::kNumTextureAnimationFrames),
               Not(IsEmpty()));
+  EXPECT_THAT(MeshSpecificationData::GetUniformName(
+                  MeshSpecificationData::UniformId::kNumTextureAnimationRows),
+              Not(IsEmpty()));
+  EXPECT_THAT(
+      MeshSpecificationData::GetUniformName(
+          MeshSpecificationData::UniformId::kNumTextureAnimationColumns),
+      Not(IsEmpty()));
   EXPECT_THAT(MeshSpecificationData::GetUniformName(
                   static_cast<MeshSpecificationData::UniformId>(99)),
               IsEmpty());

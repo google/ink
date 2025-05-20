@@ -1210,6 +1210,7 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
   if (!blend_mode.ok()) {
     return blend_mode.status();
   }
+
   absl::StatusOr<std::string> client_texture_id =
       get_client_texture_id(layer_proto.client_texture_id());
   if (!client_texture_id.ok()) {

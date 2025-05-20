@@ -248,11 +248,20 @@ struct BrushPaint {
     // Overall layer opacity.
     float opacity = 1;
 
-    // The number of animation frames in this texture. Must be strictly positive
-    // to be valid. If 1 (the default), then animation is effectively disabled.
-    // If greater than 1, then the texture image is treated as a vertical strip
-    // of this many frame images, in order from top to bottom.
+    // The number of animation frames in this texture. Must be between 1 and
+    // 2^24 (inclusive). If 1 (the default), then animation is effectively
+    // disabled. If greater than 1, then the texture image is treated as a grid
+    // of frame images, with dimensions `animation_rows` x `animation_columns`,
+    // indexed in row-major order.
     int animation_frames = 1;
+
+    // The number of rows in the grid of frame images. See `animation_frames`
+    // for more details. Must be between 1 and 2^12 (inclusive).
+    int animation_rows = 1;
+
+    // The number of columns in the grid of frame images. See `animation_frames`
+    // for more details. Must be between 1 and 2^12 (inclusive).
+    int animation_columns = 1;
 
     // Animation keyframes; currently unused.
     //

@@ -204,11 +204,31 @@ absl::Status ValidateBrushPaintTextureLayer(
         "Got %v",
         layer.opacity));
   }
-  if (layer.animation_frames <= 0) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("`BrushPaint::TextureLayer::animation_frames` must be "
-                     "strictly positive (use 1 to disable animation). Got ",
-                     layer.animation_frames));
+  if (layer.animation_frames <= 0 || layer.animation_frames > (1 << 24)) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "`BrushPaint::TextureLayer::animation_frames` must be in "
+        "the interval [1, 2^24] (use 1 to disable animation). Got ",
+        layer.animation_frames));
+  }
+  if (layer.animation_rows <= 0 || layer.animation_rows > (1 << 12)) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "`BrushPaint::TextureLayer::animation_rows` must be in the interval "
+        "[1, 2^12] (use 1 to disable animation). Got ",
+        layer.animation_rows));
+  }
+  if (layer.animation_columns <= 0 || layer.animation_columns > (1 << 12)) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "`BrushPaint::TextureLayer::animation_columns` must be in the interval "
+        "[1, 2^12] (use 1 to disable animation). Got ",
+        layer.animation_columns));
+  }
+  // Equivalent to `frames > rows * columns` but in a way that avoids overflow.
+  if (layer.animation_frames > layer.animation_rows * layer.animation_columns) {
+    return absl::InvalidArgumentError(absl::StrFormat(
+        "`BrushPaint::TextureLayer::animation_frames` must be "
+        "less than or equal to the product of `animation_rows` "
+        "and `animation_columns`. Got %d > %d * %d",
+        layer.animation_frames, layer.animation_rows, layer.animation_columns));
   }
   for (const BrushPaint::TextureKeyframe& keyframe : layer.keyframes) {
     if (auto status = ValidateBrushPaintTextureKeyframe(keyframe);
@@ -228,6 +248,8 @@ absl::Status ValidateBrushPaintTextureLayer(
 absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
   if (!paint.texture_layers.empty()) {
     int first_animation_frames = paint.texture_layers[0].animation_frames;
+    int first_animation_rows = paint.texture_layers[0].animation_rows;
+    int first_animation_columns = paint.texture_layers[0].animation_columns;
     BrushPaint::TextureMapping first_mapping = paint.texture_layers[0].mapping;
     for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
       if (layer.animation_frames != first_animation_frames) {
@@ -235,6 +257,18 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
             "`BrushPaint::TextureLayer::animation_frames` must be the same for "
             "all texture layers. Got `",
             first_animation_frames, "` and `", layer.animation_frames, "`"));
+      }
+      if (layer.animation_rows != first_animation_rows) {
+        return absl::InvalidArgumentError(absl::StrCat(
+            "`BrushPaint::TextureLayer::animation_rows` must be the same for "
+            "all texture layers. Got `",
+            first_animation_rows, "` and `", layer.animation_rows, "`"));
+      }
+      if (layer.animation_columns != first_animation_columns) {
+        return absl::InvalidArgumentError(absl::StrCat(
+            "`BrushPaint::TextureLayer::animation_columns` must be the same "
+            "for all texture layers. Got `",
+            first_animation_columns, "` and `", layer.animation_columns, "`"));
       }
       // TODO: b/375203215 - Remove the below check once we are able to mix
       // rendering tiling and winding textures in a single `BrushPaint`.
@@ -373,7 +407,10 @@ std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
       ", size_jitter=", texture_layer.size_jitter,
       ", offset_jitter=", texture_layer.offset_jitter,
       ", rotation_jitter=", texture_layer.rotation_jitter,
-      ", opacity=", texture_layer.opacity, ", keyframes={",
+      ", opacity=", texture_layer.opacity,
+      ", animation_frames=", texture_layer.animation_frames,
+      ", animation_rows=", texture_layer.animation_rows,
+      ", animation_columns=", texture_layer.animation_columns, ", keyframes={",
       absl::StrJoin(texture_layer.keyframes, ", "), "}",
       ", blend_mode=", ToFormattedString(texture_layer.blend_mode), "}");
 }

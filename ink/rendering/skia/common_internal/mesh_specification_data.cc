@@ -51,6 +51,10 @@ constexpr absl::string_view kTextureAnimationProgressName =
     "uTextureAnimationProgress";
 constexpr absl::string_view kNumTextureAnimationFramesName =
     "uNumTextureAnimationFrames";
+constexpr absl::string_view kNumTextureAnimationRowsName =
+    "uNumTextureAnimationRows";
+constexpr absl::string_view kNumTextureAnimationColumnsName =
+    "uNumTextureAnimationColumns";
 
 // Shared fragment shader used for both InProgressStroke and Stroke.
 constexpr absl::string_view kFragmentMain = R"(
@@ -82,6 +86,10 @@ absl::string_view MeshSpecificationData::GetUniformName(UniformId uniform_id) {
       return kTextureAnimationProgressName;
     case UniformId::kNumTextureAnimationFrames:
       return kNumTextureAnimationFramesName;
+    case UniformId::kNumTextureAnimationRows:
+      return kNumTextureAnimationRowsName;
+    case UniformId::kNumTextureAnimationColumns:
+      return kNumTextureAnimationColumnsName;
   }
   return "";
 }
@@ -103,6 +111,9 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
   static_assert(kTextureMappingName == "uTextureMapping");
   static_assert(kTextureAnimationProgressName == "uTextureAnimationProgress");
   static_assert(kNumTextureAnimationFramesName == "uNumTextureAnimationFrames");
+  static_assert(kNumTextureAnimationRowsName == "uNumTextureAnimationRows");
+  static_assert(kNumTextureAnimationColumnsName ==
+                "uNumTextureAnimationColumns");
   // Do not use `layout(color)` for uBrushColor, as the color is being converted
   // into the shader color space manually rather than relying on the implicit
   // conversion of setColorUniform.
@@ -112,6 +123,8 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
       uniform int uTextureMapping;
       uniform float uTextureAnimationProgress;
       uniform int uNumTextureAnimationFrames;
+      uniform int uNumTextureAnimationRows;
+      uniform int uNumTextureAnimationColumns;
 
       Varyings main(const Attributes attributes) {
         Varyings varyings;
@@ -135,7 +148,9 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
               unpackSurfaceUv(attributes.surfaceUvAndAnimationOffset.xy),
               unpackAnimationOffset(attributes.surfaceUvAndAnimationOffset.z),
               uTextureAnimationProgress,
-              uNumTextureAnimationFrames);
+              uNumTextureAnimationFrames,
+              uNumTextureAnimationRows,
+              uNumTextureAnimationColumns);
         } else {
           varyings.textureCoords = varyings.position;
         }
@@ -214,7 +229,11 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
                    {.type = UniformType::kFloat,
                     .id = UniformId::kTextureAnimationProgress},
                    {.type = UniformType::kInt,
-                    .id = UniformId::kNumTextureAnimationFrames}},
+                    .id = UniformId::kNumTextureAnimationFrames},
+                   {.type = UniformType::kInt,
+                    .id = UniformId::kNumTextureAnimationRows},
+                   {.type = UniformType::kInt,
+                    .id = UniformId::kNumTextureAnimationColumns}},
       .vertex_shader_source = absl::StrCat(
           kSkSLCommonShaderHelpers, kSkSLVertexShaderHelpers, kVertexMain),
       .fragment_shader_source = absl::StrCat(
@@ -477,6 +496,9 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
   static_assert(kTextureMappingName == "uTextureMapping");
   static_assert(kTextureAnimationProgressName == "uTextureAnimationProgress");
   static_assert(kNumTextureAnimationFramesName == "uNumTextureAnimationFrames");
+  static_assert(kNumTextureAnimationRowsName == "uNumTextureAnimationRows");
+  static_assert(kNumTextureAnimationColumnsName ==
+                "uNumTextureAnimationColumns");
   // Do not use `layout(color)` for uBrushColor, as the color is being converted
   // into the shader color space manually rather than relying on the implicit
   // conversion of setColorUniform.
@@ -489,6 +511,8 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
       uniform int uTextureMapping;
       uniform float uTextureAnimationProgress;
       uniform int uNumTextureAnimationFrames;
+      uniform int uNumTextureAnimationRows;
+      uniform int uNumTextureAnimationColumns;
 
       Varyings main(const Attributes attributes) {
         Varyings varyings;
@@ -531,7 +555,9 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
               unpackSurfaceUv(attributes.surfaceUvAndAnimationOffset.xyz),
               unpackAnimationOffset(attributes.surfaceUvAndAnimationOffset.w),
               uTextureAnimationProgress,
-              uNumTextureAnimationFrames);
+              uNumTextureAnimationFrames,
+              uNumTextureAnimationRows,
+              uNumTextureAnimationColumns);
         } else {
           varyings.textureCoords = varyings.position;
         }
@@ -604,7 +630,11 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
            {.type = UniformType::kFloat,
             .id = UniformId::kTextureAnimationProgress},
            {.type = UniformType::kInt,
-            .id = UniformId::kNumTextureAnimationFrames}},
+            .id = UniformId::kNumTextureAnimationFrames},
+           {.type = UniformType::kInt,
+            .id = UniformId::kNumTextureAnimationRows},
+           {.type = UniformType::kInt,
+            .id = UniformId::kNumTextureAnimationColumns}},
       .vertex_shader_source = absl::StrCat(
           kSkSLCommonShaderHelpers, kSkSLVertexShaderHelpers, kVertexMainStart,
           types_and_offsets->hsl_shift.has_value()
