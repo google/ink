@@ -23,34 +23,34 @@ namespace {
 
 using ::ink::Point;
 using ::ink::Rect;
-using ::ink::jni::CreateJImmutableVecFromPoint;
-using ::ink::jni::FillJMutableVecFromPoint;
+using ::ink::jni::CreateJImmutableVecFromPointOrThrow;
+using ::ink::jni::FillJMutableVecFromPointOrThrow;
 
 }  // namespace
 
 extern "C" {
 
-JNI_METHOD(geometry_internal, BoxNative, jobject, createCenter)
+JNI_METHOD(geometry, BoxNative, jobject, createCenter)
 (JNIEnv* env, jobject object, float rect_x_min, jfloat rect_y_min,
- jfloat rect_x_max, jfloat rect_y_max, jclass immutable_vec_class) {
+ jfloat rect_x_max, jfloat rect_y_max) {
   Rect rect =
       Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
   Point point = rect.Center();
 
-  return CreateJImmutableVecFromPoint(env, point, immutable_vec_class);
+  return CreateJImmutableVecFromPointOrThrow(env, point);
 }
 
-JNI_METHOD(geometry_internal, BoxNative, void, populateCenter)
+JNI_METHOD(geometry, BoxNative, void, populateCenter)
 (JNIEnv* env, jobject object, float rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max, jobject mutable_vec) {
   Rect rect =
       Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
   Point point = rect.Center();
 
-  FillJMutableVecFromPoint(env, mutable_vec, point);
+  FillJMutableVecFromPointOrThrow(env, mutable_vec, point);
 }
 
-JNI_METHOD(geometry_internal, BoxNative, jboolean, containsPoint)
+JNI_METHOD(geometry, BoxNative, jboolean, containsPoint)
 (JNIEnv* env, jobject object, jfloat rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max, jfloat point_x, jfloat point_y) {
   Rect rect =
@@ -58,7 +58,7 @@ JNI_METHOD(geometry_internal, BoxNative, jboolean, containsPoint)
   return rect.Contains(Point{point_x, point_y});
 }
 
-JNI_METHOD(geometry_internal, BoxNative, jboolean, containsBox)
+JNI_METHOD(geometry, BoxNative, jboolean, containsBox)
 (JNIEnv* env, jobject object, jfloat rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max, jfloat other_x_min, jfloat other_y_min,
  jfloat other_x_max, jfloat other_y_max) {

@@ -16,30 +16,21 @@
 
 #include <jni.h>
 
-#include "absl/log/absl_check.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/rect.h"
-#include "ink/jni/internal/jni_defines.h"
+#include "ink/jni/internal/jni_jvm_interface.h"
 
 namespace ink::jni {
 
 void FillJMutableEnvelopeOrThrow(JNIEnv* env, const Envelope& envelope,
                                  jobject mutable_envelope) {
-  jclass mutable_envelope_class = env->GetObjectClass(mutable_envelope);
   if (envelope.IsEmpty()) {
-    jmethodID reset_method =
-        env->GetMethodID(mutable_envelope_class, "reset",
-                         "()L" INK_PACKAGE "/geometry/BoxAccumulator;");
-    ABSL_CHECK_NE(reset_method, nullptr);
-    env->CallObjectMethod(mutable_envelope, reset_method);
+    env->CallObjectMethod(mutable_envelope, MethodBoxAccumulatorReset());
   } else {
     const Rect rect = *envelope.AsRect();
-    jmethodID populate_method =
-        env->GetMethodID(mutable_envelope_class, "populateFrom",
-                         "(FFFF)L" INK_PACKAGE "/geometry/BoxAccumulator;");
-    ABSL_CHECK_NE(populate_method, nullptr);
-    env->CallObjectMethod(mutable_envelope, populate_method, rect.XMin(),
-                          rect.YMin(), rect.XMax(), rect.YMax());
+
+    env->CallObjectMethod(mutable_envelope, MethodBoxAccumulatorPopulateFrom(),
+                          rect.XMin(), rect.YMin(), rect.XMax(), rect.YMax());
   }
 }
 

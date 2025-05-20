@@ -209,6 +209,7 @@ cc_library(
         "//ink/geometry:envelope",
         "//ink/geometry:rect",
         "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_jvm_interface",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
@@ -245,6 +246,7 @@ cc_library(
         ":vec_jni_helper",
         "//ink/geometry:rect",
         "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_jvm_interface",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
@@ -285,6 +287,7 @@ cc_library(
         "//ink/geometry:quad",
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_jvm_interface",
         "@com_google_absl//absl/log",
     ] + select({
         "@platforms//os:android": [],
@@ -304,6 +307,7 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry:quad",
         "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_jvm_interface",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
@@ -336,11 +340,11 @@ cc_library(
     name = "vec_jni_helper",
     srcs = ["vec_jni_helper.cc"],
     hdrs = ["vec_jni_helper.h"],
-    # Temporarily limited visibility while new APIs are being developed.
     visibility = ["//ink:__subpackages__"],
     deps = [
         "//ink/geometry:point",
         "//ink/geometry:vec",
+        "//ink/jni/internal:jni_jvm_interface",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],

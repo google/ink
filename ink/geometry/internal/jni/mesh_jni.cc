@@ -34,7 +34,7 @@ using ::ink::Point;
 using ::ink::jni::CastToMesh;
 using ::ink::jni::DeleteNativeMesh;
 using ::ink::jni::FillJMutableEnvelopeOrThrow;
-using ::ink::jni::FillJMutableVecFromPoint;
+using ::ink::jni::FillJMutableVecFromPointOrThrow;
 using ::ink::jni::NewNativeMesh;
 using ::ink::jni::NewNativeMeshFormat;
 
@@ -154,8 +154,8 @@ JNI_METHOD(geometry, MeshNative, jlong, newCopyOfFormat)
 JNI_METHOD(geometry, MeshNative, void, fillPosition)
 (JNIEnv* env, jobject object, jlong native_pointer, jint vertex_index,
  jobject mutable_vec) {
-  const Mesh& mesh = CastToMesh(native_pointer);
-  Point p = mesh.VertexPosition(vertex_index);
+  const Mesh* mesh = GetMesh(native_pointer);
+  Point p = mesh->VertexPosition(vertex_index);
   FillJMutableVecFromPoint(env, mutable_vec, p);
 }
 

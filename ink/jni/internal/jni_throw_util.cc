@@ -23,8 +23,7 @@
 #include "absl/status/status.h"
 #include "ink/jni/internal/jni_string_util.h"
 
-namespace ink {
-namespace jni {
+namespace ink::jni {
 
 namespace {
 
@@ -111,5 +110,4 @@ void ThrowException(JNIEnv* env, const char* java_exception_path,
   env->ThrowNew(exception_class, message.c_str());
 }
 
-}  // namespace jni
-}  // namespace ink
+}  // namespace ink::jni

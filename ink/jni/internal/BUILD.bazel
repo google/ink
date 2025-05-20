@@ -24,6 +24,21 @@ cc_library(
 )
 
 cc_library(
+    name = "jni_jvm_interface",
+    srcs = ["jni_jvm_interface.cc"],
+    hdrs = ["jni_jvm_interface.h"],
+    deps = [
+        ":jni_defines",
+        "@com_google_absl//absl/log:absl_check",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+)
+
+cc_library(
     name = "jni_string_util",
     srcs = ["jni_string_util.cc"],
     hdrs = ["jni_string_util.h"],

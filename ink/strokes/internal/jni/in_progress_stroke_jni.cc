@@ -55,13 +55,13 @@ using ::ink::jni::CastToMutableStrokeInputBatch;
 using ::ink::jni::CastToStrokeInputBatch;
 using ::ink::jni::DeleteNativeInProgressStroke;
 using ::ink::jni::FillJMutableEnvelopeOrThrow;
-using ::ink::jni::FillJMutableVecFromPoint;
+using ::ink::jni::FillJMutableVecFromPointOrThrow;
 using ::ink::jni::NativeInProgressStrokeTriangleIndexDataCaches;
 using ::ink::jni::NewNativeInProgressStroke;
 using ::ink::jni::NewNativeMeshFormat;
 using ::ink::jni::NewNativeStroke;
 using ::ink::jni::ThrowExceptionFromStatus;
-using ::ink::jni::UpdateJObjectInput;
+using ::ink::jni::UpdateJObjectInputOrThrow;
 
 }  // namespace
 
@@ -179,7 +179,7 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, getAndOverwriteInput)
   const InProgressStroke& in_progress_stroke =
       CastToInProgressStroke(native_pointer);
   StrokeInput input = in_progress_stroke.GetInputs().Get(index);
-  UpdateJObjectInput(env, input, j_input, input_tool_type_class);
+  UpdateJObjectInputOrThrow(env, input, j_input);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getBrushCoatCount)
@@ -233,7 +233,7 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, fillOutlinePosition)
   // TODO: b/294561921 - Implement multiple meshes.
   Point position = in_progress_stroke.GetMesh(coat_index)
                        .VertexPosition(outline[outline_vertex_index]);
-  FillJMutableVecFromPoint(env, out_position, position);
+  FillJMutableVecFromPointOrThrow(env, out_position, position);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getMeshPartitionCount)
