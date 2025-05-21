@@ -24,12 +24,15 @@
 #include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/storage/stroke_input_batch.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/jni/stroke_input_jni_helper.h"
 
 namespace {
 
 using ::ink::DecodeStrokeInputBatch;
 using ::ink::EncodeStrokeInputBatch;
 using ::ink::StrokeInputBatch;
+using ::ink::jni::CastToStrokeInputBatch;
+using ::ink::jni::NewNativeStrokeInputBatch;
 using ::ink::jni::ParseProtoFromEither;
 using ::ink::jni::SerializeProto;
 using ::ink::jni::ThrowExceptionFromStatus;
@@ -58,15 +61,14 @@ JNI_METHOD(storage, StrokeInputBatchSerializationNative, jlong, newFromProto)
     if (throw_on_parse_error) ThrowExceptionFromStatus(env, input.status());
     return 0;
   }
-  return reinterpret_cast<jlong>(new StrokeInputBatch(*std::move(input)));
+  return NewNativeStrokeInputBatch(*std::move(input));
 }
 
 JNI_METHOD(storage, StrokeInputBatchSerializationNative, jbyteArray, serialize)
 (JNIEnv* env, jclass klass, jlong stroke_input_batch_native_pointer) {
-  const auto* input = reinterpret_cast<const StrokeInputBatch*>(
-      stroke_input_batch_native_pointer);
   CodedStrokeInputBatch coded_input;
-  EncodeStrokeInputBatch(*input, coded_input);
+  EncodeStrokeInputBatch(
+      CastToStrokeInputBatch(stroke_input_batch_native_pointer), coded_input);
   return SerializeProto(env, coded_input);
 }
 

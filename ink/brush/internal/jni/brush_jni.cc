@@ -37,7 +37,10 @@ using ::ink::jni::CastToBrush;
 using ::ink::jni::CastToBrushFamily;
 using ::ink::jni::ColorSpaceIsSupportedInJetpack;
 using ::ink::jni::ColorSpaceToJInt;
+using ::ink::jni::DeleteNativeBrush;
 using ::ink::jni::JIntToColorSpace;
+using ::ink::jni::NewNativeBrush;
+using ::ink::jni::NewNativeBrushFamily;
 using ::ink::jni::ThrowExceptionFromStatus;
 
 }  // namespace
@@ -61,12 +64,12 @@ JNI_METHOD(brush, BrushNative, jlong, create)
     return -1;  // Unused return value.
   }
 
-  return reinterpret_cast<jlong>(new Brush(*std::move(brush)));
+  return NewNativeBrush(*std::move(brush));
 }
 
 JNI_METHOD(brush, BrushNative, void, free)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  delete reinterpret_cast<Brush*>(native_pointer);
+  DeleteNativeBrush(native_pointer);
 }
 
 JNI_METHOD(brush, BrushNative, jlong, computeComposeColorLong)
@@ -95,19 +98,17 @@ JNI_METHOD(brush, BrushNative, jlong, computeComposeColorLong)
 
 JNI_METHOD(brush, BrushNative, jfloat, getSize)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  const Brush& brush = CastToBrush(native_pointer);
-  return brush.GetSize();
+  return CastToBrush(native_pointer).GetSize();
 }
 
 JNI_METHOD(brush, BrushNative, jfloat, getEpsilon)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  const Brush& brush = CastToBrush(native_pointer);
-  return brush.GetEpsilon();
+  return CastToBrush(native_pointer).GetEpsilon();
 }
 
 JNI_METHOD(brush, BrushNative, jlong, newCopyOfBrushFamily)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  const Brush& brush = CastToBrush(native_pointer);
-  return reinterpret_cast<jlong>(new BrushFamily(brush.GetFamily()));
+  return NewNativeBrushFamily(CastToBrush(native_pointer).GetFamily());
 }
-}
+
+}  // extern "C"

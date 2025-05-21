@@ -32,6 +32,7 @@ cc_library(
     srcs = ["canvas_mesh_renderer_jni.cc"],
     deps = [
         "//ink/geometry:mesh_format",
+        "//ink/geometry/internal/jni:mesh_format_jni_helper",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_throw_util",
         "//ink/rendering/skia/common_internal:mesh_specification_data",

@@ -34,7 +34,10 @@ using ::ink::BrushCoat;
 using ::ink::BrushFamily;
 using ::ink::jni::CastToBrushCoat;
 using ::ink::jni::CastToBrushFamily;
+using ::ink::jni::DeleteNativeBrushFamily;
 using ::ink::jni::JStringView;
+using ::ink::jni::NewNativeBrushCoat;
+using ::ink::jni::NewNativeBrushFamily;
 using ::ink::jni::ThrowExceptionFromStatus;
 
 }  // namespace
@@ -71,12 +74,12 @@ JNI_METHOD(brush, BrushFamilyNative, jlong,
     return 0;  // Unused return value.
   }
 
-  return reinterpret_cast<jlong>(new BrushFamily(*std::move(brush_family)));
+  return NewNativeBrushFamily(*std::move(brush_family));
 }
 
 JNI_METHOD(brush, BrushFamilyNative, void, free)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  delete reinterpret_cast<BrushFamily*>(native_pointer);
+  DeleteNativeBrushFamily(native_pointer);
 }
 
 JNI_METHOD(brush, BrushFamilyNative, jstring, getClientBrushFamilyId)
@@ -94,7 +97,7 @@ JNI_METHOD(brush, BrushFamilyNative, jlong, getBrushCoatCount)
 JNI_METHOD(brush, BrushFamilyNative, jlong, newCopyOfBrushCoat)
 (JNIEnv* env, jobject object, jlong native_pointer, jint index) {
   const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
-  return reinterpret_cast<jlong>(new BrushCoat(brush_family.GetCoats()[index]));
+  return NewNativeBrushCoat(brush_family.GetCoats()[index]);
 }
 
 }  // extern "C"

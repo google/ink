@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -234,8 +234,11 @@ class PartitionedMesh {
 
   // Forces initialization of the spatial index. This is a no-op if the spatial
   // index has already been initialized, or if the `PartitionedMesh` contains no
-  // meshes.
-  void InitializeSpatialIndex();
+  // meshes. Note that this is treated as const because it only mutates
+  // explicitly mutable cache fields (i.e. it does not affect behavior, only
+  // performance, and is safe to do when changes to the contents are not
+  // expected).
+  void InitializeSpatialIndex() const;
 
   // Returns true if the spatial index has already been initialized.
   bool IsSpatialIndexInitialized() const;
@@ -475,7 +478,7 @@ inline uint32_t PartitionedMesh::OutlineVertexCount(
   return Outline(group_index, outline_index).size();
 }
 
-inline void PartitionedMesh::InitializeSpatialIndex() {
+inline void PartitionedMesh::InitializeSpatialIndex() const {
   if (!data_) return;
 
   (void)data_->SpatialIndex();

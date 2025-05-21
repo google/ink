@@ -31,6 +31,8 @@ namespace {
 using ink::EasingFunction;
 using ink::Point;
 using ink::jni::CastToEasingFunction;
+using ink::jni::DeleteNativeEasingFunction;
+using ink::jni::NewNativeEasingFunction;
 using ink::jni::ThrowExceptionFromStatus;
 
 jlong ValidateAndHoistEasingFunctionOrThrow(
@@ -42,8 +44,7 @@ jlong ValidateAndHoistEasingFunctionOrThrow(
     ThrowExceptionFromStatus(env, status);
     return 0;
   }
-  return reinterpret_cast<jlong>(
-      new EasingFunction(std::move(easing_function)));
+  return NewNativeEasingFunction(std::move(easing_function));
 }
 
 // Helper type for visitor pattern. This is a quick way of constructing a
@@ -112,7 +113,7 @@ JNI_METHOD(brush, EasingFunctionNative, jlong, createLinear)
 
 JNI_METHOD(brush, EasingFunctionNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  delete reinterpret_cast<EasingFunction*>(native_pointer);
+  DeleteNativeEasingFunction(native_pointer);
 }
 
 JNI_METHOD(brush, EasingFunctionNative, jlong, getParametersType)

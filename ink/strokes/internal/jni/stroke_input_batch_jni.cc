@@ -16,7 +16,6 @@
 
 #include <optional>
 
-#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "ink/geometry/angle.h"
 #include "ink/jni/internal/jni_defines.h"
@@ -42,7 +41,9 @@ using ::ink::StrokeInput;
 using ::ink::StrokeInputBatch;
 using ::ink::jni::CastToMutableStrokeInputBatch;
 using ::ink::jni::CastToStrokeInputBatch;
+using ::ink::jni::DeleteNativeStrokeInputBatch;
 using ::ink::jni::JIntToToolType;
+using ::ink::jni::NewNativeStrokeInputBatch;
 using ::ink::jni::ThrowExceptionFromStatus;
 using ::ink::jni::ToolTypeToJInt;
 using ::ink::jni::UpdateJObjectInput;
@@ -53,58 +54,46 @@ extern "C" {
 
 // ******** Native Implementation of Immutable/Mutable StrokeInputBatch ********
 STROKE_INPUT_BATCH_JNI_METHOD(jlong, create)
-(JNIEnv* env, jobject thiz) {
-  return reinterpret_cast<jlong>(new StrokeInputBatch());
-}
+(JNIEnv* env, jobject thiz) { return NewNativeStrokeInputBatch(); }
 
 STROKE_INPUT_BATCH_JNI_METHOD(void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  ABSL_CHECK_NE(native_pointer, 0)
-      << "Invalid native pointer for StrokeInputBatch.";
-  delete reinterpret_cast<StrokeInputBatch*>(native_pointer);
+  DeleteNativeStrokeInputBatch(native_pointer);
 }
 
 STROKE_INPUT_BATCH_JNI_METHOD(jint, getSize)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  const StrokeInputBatch& batch = CastToStrokeInputBatch(native_pointer);
-  return batch.Size();
+  return CastToStrokeInputBatch(native_pointer).Size();
 }
 
 STROKE_INPUT_BATCH_JNI_METHOD(void, populate)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint index, jobject j_input,
  jclass input_tool_type_class) {
-  const StrokeInputBatch& batch = CastToStrokeInputBatch(native_pointer);
-  StrokeInput input = batch.Get(index);
+  StrokeInput input = CastToStrokeInputBatch(native_pointer).Get(index);
   UpdateJObjectInput(env, input, j_input, input_tool_type_class);
 }
 
 STROKE_INPUT_BATCH_JNI_METHOD(jlong, getDurationMillis)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  const StrokeInputBatch& batch = CastToStrokeInputBatch(native_pointer);
-  return batch.GetDuration().ToMillis();
+  return CastToStrokeInputBatch(native_pointer).GetDuration().ToMillis();
 }
 
 STROKE_INPUT_BATCH_JNI_METHOD(jint, getToolType)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  const StrokeInputBatch& batch = CastToStrokeInputBatch(native_pointer);
-  return ToolTypeToJInt(batch.GetToolType());
+  return ToolTypeToJInt(CastToStrokeInputBatch(native_pointer).GetToolType());
 }
 
 STROKE_INPUT_BATCH_JNI_METHOD(jfloat, getStrokeUnitLengthCm)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  const StrokeInputBatch& batch = CastToStrokeInputBatch(native_pointer);
   std::optional<PhysicalDistance> stroke_unit_length =
-      batch.GetStrokeUnitLength();
+      CastToStrokeInputBatch(native_pointer).GetStrokeUnitLength();
   if (!stroke_unit_length.has_value()) return 0;
   return stroke_unit_length->ToCentimeters();
 }
 
 STROKE_INPUT_BATCH_JNI_METHOD(jboolean, hasStrokeUnitLength)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  ABSL_CHECK_NE(native_pointer, 0)
-      << "Invalid native pointer for StrokeInputBatch.";
-  const StrokeInputBatch& batch = CastToStrokeInputBatch(native_pointer);
-  return batch.HasStrokeUnitLength();
+  return CastToStrokeInputBatch(native_pointer).HasStrokeUnitLength();
 }
 
 STROKE_INPUT_BATCH_JNI_METHOD(jboolean, hasPressure)
@@ -136,7 +125,6 @@ MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jboolean, appendSingle)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint tool_type, jfloat x,
  jfloat y, jlong elapsed_time_millis, jfloat stroke_unit_length_cm,
  jfloat pressure, jfloat tilt, jfloat orientation, jboolean throw_on_error) {
-  StrokeInputBatch* batch = CastToMutableStrokeInputBatch(native_pointer);
   StrokeInput input = {.tool_type = JIntToToolType(tool_type),
                        .position = {x, y},
                        .elapsed_time = Duration32::Millis(elapsed_time_millis),
@@ -145,7 +133,8 @@ MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jboolean, appendSingle)
                        .pressure = pressure,
                        .tilt = Angle::Radians(tilt),
                        .orientation = Angle::Radians(orientation)};
-  absl::Status status = batch->Append(input);
+  absl::Status status =
+      CastToMutableStrokeInputBatch(native_pointer).Append(input);
   if (!status.ok() && throw_on_error) {
     ThrowExceptionFromStatus(env, status);
   }
@@ -155,11 +144,9 @@ MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jboolean, appendSingle)
 MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jboolean, appendBatch)
 (JNIEnv* env, jobject thiz, jlong native_pointer,
  jlong append_from_native_pointer, jboolean throw_on_error) {
-  StrokeInputBatch* batch = CastToMutableStrokeInputBatch(native_pointer);
-  const StrokeInputBatch& append_from_batch =
-      CastToStrokeInputBatch(append_from_native_pointer);
-
-  absl::Status status = batch->Append(append_from_batch);
+  absl::Status status =
+      CastToMutableStrokeInputBatch(native_pointer)
+          .Append(CastToStrokeInputBatch(append_from_native_pointer));
   if (!status.ok() && throw_on_error) {
     ThrowExceptionFromStatus(env, status);
   }
@@ -168,20 +155,17 @@ MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jboolean, appendBatch)
 
 MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(void, clear)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  StrokeInputBatch* batch = CastToMutableStrokeInputBatch(native_pointer);
-  batch->Clear();
+  CastToMutableStrokeInputBatch(native_pointer).Clear();
 }
 
 MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jlong, newCopy)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  StrokeInputBatch* batch = CastToMutableStrokeInputBatch(native_pointer);
-  return reinterpret_cast<jlong>(new StrokeInputBatch(*batch));
+  return NewNativeStrokeInputBatch(CastToStrokeInputBatch(native_pointer));
 }
 
 MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(void, setNoiseSeed)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint seed) {
-  StrokeInputBatch* batch = CastToMutableStrokeInputBatch(native_pointer);
-  batch->SetNoiseSeed(seed);
+  CastToMutableStrokeInputBatch(native_pointer).SetNoiseSeed(seed);
 }
 
 }  // extern "C"

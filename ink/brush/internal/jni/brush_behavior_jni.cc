@@ -36,6 +36,11 @@ using ink::brush_internal::ValidateBrushBehaviorTopLevel;
 using ink::jni::CastToBrushBehavior;
 using ink::jni::CastToBrushBehaviorNode;
 using ink::jni::CastToEasingFunction;
+using ink::jni::DeleteNativeBrushBehavior;
+using ink::jni::DeleteNativeBrushBehaviorNode;
+using ink::jni::NewNativeBrushBehavior;
+using ink::jni::NewNativeBrushBehaviorNode;
+using ink::jni::NewNativeEasingFunction;
 using ink::jni::ThrowExceptionFromStatus;
 
 jlong ValidateAndHoistNodeOrThrow(BrushBehavior::Node node, JNIEnv* env) {
@@ -43,7 +48,7 @@ jlong ValidateAndHoistNodeOrThrow(BrushBehavior::Node node, JNIEnv* env) {
     ThrowExceptionFromStatus(env, status);
     return 0;
   }
-  return reinterpret_cast<jlong>(new BrushBehavior::Node(std::move(node)));
+  return NewNativeBrushBehaviorNode(std::move(node));
 }
 
 // Helper type for visitor pattern. This is a quick way of constructing a
@@ -97,12 +102,12 @@ JNI_METHOD(brush, BrushBehaviorNative, jlong, createFromOrderedNodes)
     ThrowExceptionFromStatus(env, status);
     return 0;
   }
-  return reinterpret_cast<jlong>(new BrushBehavior(std::move(behavior)));
+  return NewNativeBrushBehavior(std::move(behavior));
 }
 
 JNI_METHOD(brush, BrushBehaviorNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  delete reinterpret_cast<BrushBehavior*>(native_pointer);
+  DeleteNativeBrushBehavior(native_pointer);
 }
 
 JNI_METHOD(brush, BrushBehaviorNative, jint, getNodeCount)
@@ -112,8 +117,8 @@ JNI_METHOD(brush, BrushBehaviorNative, jint, getNodeCount)
 
 JNI_METHOD(brush, BrushBehaviorNative, jlong, newCopyOfNode)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
-  return reinterpret_cast<jlong>(new BrushBehavior::Node(
-      CastToBrushBehavior(native_pointer).nodes[index]));
+  return NewNativeBrushBehaviorNode(
+      CastToBrushBehavior(native_pointer).nodes[index]);
 }
 
 // Functions for dealing with BrushBehavior::Nodes. Note that on the C++ side,
@@ -240,7 +245,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createPolarTarget)
 
 JNI_METHOD(brush, BrushBehaviorNodeNative, void, free)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
-  delete reinterpret_cast<BrushBehavior::Node*>(node_native_pointer);
+  DeleteNativeBrushBehaviorNode(node_native_pointer);
 }
 
 JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getNodeType)
@@ -393,10 +398,10 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getDampingGap)
 JNI_METHOD(brush, BrushBehaviorNodeNative, jlong,
            newCopyOfResponseEasingFunction)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
-  return reinterpret_cast<jlong>(
-      new EasingFunction(std::get<BrushBehavior::ResponseNode>(
-                             CastToBrushBehaviorNode(node_native_pointer))
-                             .response_curve));
+  return NewNativeEasingFunction(
+      std::get<BrushBehavior::ResponseNode>(
+          CastToBrushBehaviorNode(node_native_pointer))
+          .response_curve);
 }
 
 // BinaryOpNode accessors:

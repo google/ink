@@ -34,7 +34,11 @@ using ::ink::BrushBehavior;
 using ::ink::BrushTip;
 using ::ink::Duration32;
 using ::ink::brush_internal::ValidateBrushTip;
+using ::ink::jni::CastToBrushBehavior;
 using ::ink::jni::CastToBrushTip;
+using ::ink::jni::DeleteNativeBrushTip;
+using ::ink::jni::NewNativeBrushBehavior;
+using ::ink::jni::NewNativeBrushTip;
 using ::ink::jni::ThrowExceptionFromStatus;
 
 }  // namespace
@@ -57,8 +61,7 @@ JNI_METHOD(brush, BrushTipNative, jlong, create)
       env->GetLongArrayElements(behavior_native_pointers_array, nullptr);
   ABSL_CHECK(behavior_pointers != nullptr);
   for (jsize i = 0; i < num_behaviors; ++i) {
-    behaviors.push_back(
-        *reinterpret_cast<ink::BrushBehavior*>(behavior_pointers[i]));
+    behaviors.push_back(CastToBrushBehavior(behavior_pointers[i]));
   }
   // No need to copy back the array, which is not modified.
   env->ReleaseLongArrayElements(behavior_native_pointers_array,
@@ -77,12 +80,12 @@ JNI_METHOD(brush, BrushTipNative, jlong, create)
     ThrowExceptionFromStatus(env, status);
     return -1;  // Unused return value.
   }
-  return reinterpret_cast<jlong>(new ink::BrushTip(std::move(tip)));
+  return NewNativeBrushTip(std::move(tip));
 }
 
 JNI_METHOD(brush, BrushTipNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  delete reinterpret_cast<ink::BrushTip*>(native_pointer);
+  DeleteNativeBrushTip(native_pointer);
 }
 
 JNI_METHOD(brush, BrushTipNative, jfloat, getScaleX)
@@ -137,7 +140,8 @@ JNI_METHOD(brush, BrushTipNative, jint, getBehaviorCount)
 
 JNI_METHOD(brush, BrushTipNative, jlong, newCopyOfBrushBehavior)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
-  return reinterpret_cast<jlong>(
-      new BrushBehavior(CastToBrushTip(native_pointer).behaviors[index]));
+  return NewNativeBrushBehavior(
+      CastToBrushTip(native_pointer).behaviors[index]);
 }
-}
+
+}  // extern "C"

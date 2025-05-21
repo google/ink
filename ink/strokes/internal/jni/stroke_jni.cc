@@ -14,12 +14,14 @@
 
 #include <jni.h>
 
-#include "absl/log/absl_check.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/geometry/internal/jni/partitioned_mesh_jni_helper.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/jni/stroke_input_jni_helper.h"
+#include "ink/strokes/internal/jni/stroke_jni_helper.h"
 #include "ink/strokes/stroke.h"
 
 namespace {
@@ -29,16 +31,13 @@ using ::ink::PartitionedMesh;
 using ::ink::Stroke;
 using ::ink::StrokeInputBatch;
 using ::ink::jni::CastToBrush;
-
-// Cast the raw pointer to a **const** `Stroke` pointer. Note that `Stroke`
-// is **immutable** in Kotlin/Java, so none of the operations here should
-// modify a C++ `Stroke`. Instead, writes must happen in a copied `Stroke`
-// object, and the raw pointer to that copied object should be returned to the
-// Kotlin/Java layer to be wrapped in a new Kotlin `Stroke`.
-const Stroke* GetStroke(jlong native_pointer_to_stroke) {
-  ABSL_CHECK_NE(native_pointer_to_stroke, 0);
-  return reinterpret_cast<Stroke*>(native_pointer_to_stroke);
-}
+using ::ink::jni::CastToPartitionedMesh;
+using ::ink::jni::CastToStroke;
+using ::ink::jni::CastToStrokeInputBatch;
+using ::ink::jni::DeleteNativeStroke;
+using ::ink::jni::NewNativePartitionedMesh;
+using ::ink::jni::NewNativeStroke;
+using ::ink::jni::NewNativeStrokeInputBatch;
 
 }  // namespace
 
@@ -47,19 +46,17 @@ extern "C" {
 JNI_METHOD(strokes, StrokeNative, jlong, createWithBrushAndInputs)
 (JNIEnv* env, jobject object, jlong brush_native_pointer,
  jlong inputs_native_pointer) {
-  auto batch = reinterpret_cast<StrokeInputBatch*>(inputs_native_pointer);
-  const Brush& brush = CastToBrush(brush_native_pointer);
-  return reinterpret_cast<jlong>(new Stroke(brush, *batch));
+  return NewNativeStroke(Stroke(CastToBrush(brush_native_pointer),
+                                CastToStrokeInputBatch(inputs_native_pointer)));
 }
 
 JNI_METHOD(strokes, StrokeNative, jlong, createWithBrushInputsAndShape)
 (JNIEnv* env, jobject object, jlong brush_native_pointer,
  jlong inputs_native_pointer, jlong partitioned_mesh_native_pointer) {
-  const Brush& brush = CastToBrush(brush_native_pointer);
-  auto batch = reinterpret_cast<StrokeInputBatch*>(inputs_native_pointer);
-  auto shape =
-      reinterpret_cast<PartitionedMesh*>(partitioned_mesh_native_pointer);
-  return reinterpret_cast<jlong>(new Stroke(brush, *batch, *shape));
+  return NewNativeStroke(
+      Stroke(CastToBrush(brush_native_pointer),
+             CastToStrokeInputBatch(inputs_native_pointer),
+             CastToPartitionedMesh(partitioned_mesh_native_pointer)));
 }
 
 // Make a heap-allocated shallow (doesn't replicate all the individual input
@@ -69,9 +66,8 @@ JNI_METHOD(strokes, StrokeNative, jlong, createWithBrushInputsAndShape)
 // garbage collected and finalized.
 JNI_METHOD(strokes, StrokeNative, jlong, newShallowCopyOfInputs)
 (JNIEnv* env, jobject object, jlong native_pointer_to_stroke) {
-  const Stroke* stroke = GetStroke(native_pointer_to_stroke);
-  const StrokeInputBatch& stroke_batch = stroke->GetInputs();
-  return reinterpret_cast<jlong>(new StrokeInputBatch(stroke_batch));
+  return NewNativeStrokeInputBatch(
+      CastToStroke(native_pointer_to_stroke).GetInputs());
 }
 
 // Make a heap-allocated shallow (doesn't replicate all the individual meshes)
@@ -81,16 +77,14 @@ JNI_METHOD(strokes, StrokeNative, jlong, newShallowCopyOfInputs)
 // finalized.
 JNI_METHOD(strokes, StrokeNative, jlong, newShallowCopyOfShape)
 (JNIEnv* env, jobject object, jlong native_pointer_to_stroke) {
-  const Stroke* stroke = GetStroke(native_pointer_to_stroke);
-  const PartitionedMesh& stroke_shape = stroke->GetShape();
-  PartitionedMesh* shallow_copy = new PartitionedMesh(stroke_shape);
-  return reinterpret_cast<jlong>(shallow_copy);
+  return NewNativePartitionedMesh(
+      CastToStroke(native_pointer_to_stroke).GetShape());
 }
 
 // Free the given `Stroke`.
 JNI_METHOD(strokes, StrokeNative, void, free)
 (JNIEnv* env, jobject object, jlong native_pointer_to_stroke) {
-  delete GetStroke(native_pointer_to_stroke);
+  DeleteNativeStroke(native_pointer_to_stroke);
 }
 
 }  // extern "C"

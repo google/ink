@@ -17,11 +17,11 @@
 #include <algorithm>
 #include <cstddef>
 #include <limits>
-#include <memory>
 #include <vector>
 
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
+#include "ink/geometry/internal/jni/partitioned_mesh_jni_helper.h"
 #include "ink/geometry/internal/polyline_processing.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
@@ -31,6 +31,7 @@
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_throw_util.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/jni/stroke_input_jni_helper.h"
 
 namespace {
 
@@ -38,6 +39,8 @@ using ::ink::Mesh;
 using ::ink::PartitionedMesh;
 using ::ink::Point;
 using ::ink::StrokeInputBatch;
+using ::ink::jni::CastToStrokeInputBatch;
+using ::ink::jni::NewNativePartitionedMesh;
 
 // private method to calculate the slope of a line segment. If the slope is
 // infinite, return float::infinity.
@@ -55,21 +58,20 @@ extern "C" {
 JNI_METHOD(strokes, MeshCreationNative, jlong,
            createClosedShapeFromStrokeInputBatch)
 (JNIEnv* env, jobject object, jlong stroke_input_batch_native_pointer) {
-  const auto* input = reinterpret_cast<const StrokeInputBatch*>(
-      stroke_input_batch_native_pointer);
+  const StrokeInputBatch& input =
+      CastToStrokeInputBatch(stroke_input_batch_native_pointer);
 
   // If the input is empty then this will return an empty PartitionedMesh with
   // no location and no area. This will not intersect with anything if used for
   // hit testing.
-  if (input->IsEmpty()) {
-    return reinterpret_cast<jlong>(
-        std::make_unique<PartitionedMesh>(PartitionedMesh()).release());
+  if (input.IsEmpty()) {
+    return NewNativePartitionedMesh();
   }
 
   std::vector<Point> points;
-  points.reserve(input->Size());
-  for (size_t i = 0; i < input->Size(); ++i) {
-    points.push_back(input->Get(i).position);
+  points.reserve(input.Size());
+  for (size_t i = 0; i < input.Size(); ++i) {
+    points.push_back(input.Get(i).position);
   }
 
   std::vector<Point> processed_points =
@@ -138,7 +140,7 @@ JNI_METHOD(strokes, MeshCreationNative, jlong,
   if (!ink::jni::CheckOkOrThrow(env, partitioned_mesh.status())) {
     return 0;
   }
-  return reinterpret_cast<jlong>(new PartitionedMesh(*partitioned_mesh));
+  return NewNativePartitionedMesh(*partitioned_mesh);
 }
 
 }  // extern "C

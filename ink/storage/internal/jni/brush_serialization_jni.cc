@@ -27,6 +27,7 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_proto_util.h"
 #include "ink/jni/internal/jni_string_util.h"
@@ -52,9 +53,19 @@ using ::ink::EncodeBrushCoat;
 using ::ink::EncodeBrushFamily;
 using ::ink::EncodeBrushPaint;
 using ::ink::EncodeBrushTip;
+using ::ink::jni::CastToBrush;
+using ::ink::jni::CastToBrushCoat;
+using ::ink::jni::CastToBrushFamily;
+using ::ink::jni::CastToBrushPaint;
+using ::ink::jni::CastToBrushTip;
 using ::ink::jni::CatchExceptionAsStatus;
 using ::ink::jni::JByteArrayToStdString;
 using ::ink::jni::JStringToStdString;
+using ::ink::jni::NewNativeBrush;
+using ::ink::jni::NewNativeBrushCoat;
+using ::ink::jni::NewNativeBrushFamily;
+using ::ink::jni::NewNativeBrushPaint;
+using ::ink::jni::NewNativeBrushTip;
 using ::ink::jni::ParseProtoFromEither;
 using ::ink::jni::SerializeProto;
 using ::ink::jni::StdStringToJByteArray;
@@ -66,17 +77,14 @@ extern "C" {
 
 JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrush)
 (JNIEnv* env, jobject object, jlong brush_native_pointer) {
-  const auto* brush = reinterpret_cast<const Brush*>(brush_native_pointer);
   ink::proto::Brush brush_proto;
-  EncodeBrush(*brush, brush_proto);
+  EncodeBrush(CastToBrush(brush_native_pointer), brush_proto);
   return SerializeProto(env, brush_proto);
 }
 
 JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushFamily)
 (JNIEnv* env, jobject object, jlong brush_family_native_pointer,
  jobjectArray texture_map_keys, jobjectArray texture_map_values) {
-  const auto* brush_family =
-      reinterpret_cast<const BrushFamily*>(brush_family_native_pointer);
   std::map<std::string, std::string> texture_map = {};
 
   jsize key_length = env->GetArrayLength(texture_map_keys);
@@ -107,34 +115,30 @@ JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushFamily)
   };
 
   ink::proto::BrushFamily brush_family_proto;
-  EncodeBrushFamily(*brush_family, brush_family_proto, texture_bitmap_provider);
+  EncodeBrushFamily(CastToBrushFamily(brush_family_native_pointer),
+                    brush_family_proto, texture_bitmap_provider);
   return SerializeProto(env, brush_family_proto);
 }
 
 JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushCoat)
 (JNIEnv* env, jobject object, jlong brush_coat_native_pointer) {
-  const auto* brush_coat =
-      reinterpret_cast<const BrushCoat*>(brush_coat_native_pointer);
   ink::proto::BrushCoat brush_coat_proto;
-  EncodeBrushCoat(*brush_coat, brush_coat_proto);
+  EncodeBrushCoat(CastToBrushCoat(brush_coat_native_pointer), brush_coat_proto);
   return SerializeProto(env, brush_coat_proto);
 }
 
 JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushTip)
 (JNIEnv* env, jobject object, jlong brush_tip_native_pointer) {
-  const auto* brush_tip =
-      reinterpret_cast<const BrushTip*>(brush_tip_native_pointer);
   ink::proto::BrushTip brush_tip_proto;
-  EncodeBrushTip(*brush_tip, brush_tip_proto);
+  EncodeBrushTip(CastToBrushTip(brush_tip_native_pointer), brush_tip_proto);
   return SerializeProto(env, brush_tip_proto);
 }
 
 JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushPaint)
 (JNIEnv* env, jobject object, jlong brush_paint_native_pointer) {
-  const auto* brush_paint =
-      reinterpret_cast<const BrushPaint*>(brush_paint_native_pointer);
   ink::proto::BrushPaint brush_paint_proto;
-  EncodeBrushPaint(*brush_paint, brush_paint_proto);
+  EncodeBrushPaint(CastToBrushPaint(brush_paint_native_pointer),
+                   brush_paint_proto);
   return SerializeProto(env, brush_paint_proto);
 }
 
@@ -159,7 +163,7 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFromProto)
     }
     return 0;
   }
-  return reinterpret_cast<jlong>(new Brush(*std::move(brush)));
+  return NewNativeBrush(*std::move(brush));
 }
 
 JNI_METHOD(storage, BrushSerializationNative, jlong,
@@ -227,7 +231,7 @@ JNI_METHOD(storage, BrushSerializationNative, jlong,
     }
     return 0;
   }
-  return reinterpret_cast<jlong>(new BrushFamily(*std::move(brush_family)));
+  return NewNativeBrushFamily(*std::move(brush_family));
 }
 
 JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushCoatFromProto)
@@ -251,7 +255,7 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushCoatFromProto)
     }
     return 0;
   }
-  return reinterpret_cast<jlong>(new BrushCoat(*std::move(brush_coat)));
+  return NewNativeBrushCoat(*std::move(brush_coat));
 }
 
 JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushTipFromProto)
@@ -275,7 +279,7 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushTipFromProto)
     }
     return 0;
   }
-  return reinterpret_cast<jlong>(new BrushTip(*std::move(brush_tip)));
+  return NewNativeBrushTip(*std::move(brush_tip));
 }
 
 JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushPaintFromProto)
@@ -299,7 +303,7 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushPaintFromProto)
     }
     return 0;
   }
-  return reinterpret_cast<jlong>(new BrushPaint(*std::move(brush_paint)));
+  return NewNativeBrushPaint(*std::move(brush_paint));
 }
 
 }  // extern "C"
