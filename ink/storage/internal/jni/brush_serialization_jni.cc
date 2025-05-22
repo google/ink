@@ -200,18 +200,15 @@ JNI_METHOD(storage, BrushSerializationNative, jlong,
     jstring new_id_jstring = static_cast<jstring>(
         env->CallObjectMethod(callback, on_decode_texture_method,
                               encoded_id_jstring, pixel_data_jarray));
+    env->DeleteLocalRef(encoded_id_jstring);
+    env->DeleteLocalRef(pixel_data_jarray);
+
     if (env->ExceptionCheck()) {
       // Note that we're not clearing the exception here since we want to
       // raise it as-is later. We're counting on the parsing code bailing out
       // on the first error status encountered.
       return absl::InternalError("onDecodeTexture raised exception.");
     }
-    if (absl::Status status = CatchExceptionAsStatus(env); !status.ok()) {
-      return status;
-    }
-    env->DeleteLocalRef(encoded_id_jstring);
-    env->DeleteLocalRef(pixel_data_jarray);
-
     std::string new_id(env->GetStringUTFChars(new_id_jstring, nullptr));
     env->DeleteLocalRef(new_id_jstring);
     return new_id;
