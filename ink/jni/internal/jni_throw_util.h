@@ -48,15 +48,6 @@ void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status);
 // the JNI method) so that the Java exception can be processed.
 [[nodiscard]] bool CheckOkOrThrow(JNIEnv* env, const absl::Status& status);
 
-// Throws a Java exception, with the exception class path and message.
-//
-// Note that C++ execution will continue on after this function returns; the
-// caller should immediately return control back to the JVM after calling this
-// (e.g. by returning a placeholder value from the JNI method) so that the Java
-// exception can be processed.
-void ThrowException(JNIEnv* env, const char* java_exception_path,
-                    const std::string& message);
-
 }  // namespace jni
 }  // namespace ink
 

@@ -73,6 +73,13 @@ jstring GetExceptionMessageOrThrow(JNIEnv* env, jthrowable exception) {
   return static_cast<jstring>(message);
 }
 
+void ThrowException(JNIEnv* env, const char* java_exception_path,
+                    const std::string& message) {
+  jclass exception_class = env->FindClass(java_exception_path);
+  ABSL_CHECK(exception_class);
+  env->ThrowNew(exception_class, message.c_str());
+}
+
 }  // namespace
 
 absl::Status CatchExceptionAsStatus(JNIEnv* env) {
@@ -102,13 +109,6 @@ void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status) {
   ABSL_CHECK(!status.ok());
   ThrowException(env, ExceptionClassForStatusCode(status.code()),
                  status.ToString());
-}
-
-void ThrowException(JNIEnv* env, const char* java_exception_path,
-                    const std::string& message) {
-  jclass exception_class = env->FindClass(java_exception_path);
-  ABSL_CHECK(exception_class);
-  env->ThrowNew(exception_class, message.c_str());
 }
 
 }  // namespace jni
