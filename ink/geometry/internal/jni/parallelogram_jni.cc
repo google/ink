@@ -44,7 +44,7 @@ using ::ink::jni::FillJMutableVecFromVec;
 
 extern "C" {
 
-JNI_METHOD(geometry_internal, ParallelogramNative, jobject, createBoundingBox)
+JNI_METHOD(geometry, ParallelogramNative, jobject, createBoundingBox)
 (JNIEnv* env, jobject object, jfloat center_x, jfloat center_y, jfloat width,
  jfloat height, jfloat rotation, jfloat shear_factor,
  jclass immutable_box_class, jclass immutable_vec_class) {
@@ -56,7 +56,7 @@ JNI_METHOD(geometry_internal, ParallelogramNative, jobject, createBoundingBox)
                                      immutable_box_class, immutable_vec_class);
 }
 
-JNI_METHOD(geometry_internal, ParallelogramNative, void, populateBoundingBox)
+JNI_METHOD(geometry, ParallelogramNative, void, populateBoundingBox)
 (JNIEnv* env, jobject object, jfloat center_x, jfloat center_y, jfloat width,
  jfloat height, jfloat rotation, jfloat shear_factor, jobject mutable_box) {
   Quad quad = Quad::FromCenterDimensionsRotationAndShear(
@@ -67,7 +67,7 @@ JNI_METHOD(geometry_internal, ParallelogramNative, void, populateBoundingBox)
                                  Envelope(quad).AsRect().value());
 }
 
-JNI_METHOD(geometry_internal, ParallelogramNative, jobjectArray, createSemiAxes)
+JNI_METHOD(geometry, ParallelogramNative, jobjectArray, createSemiAxes)
 (JNIEnv* env, jobject object, jfloat center_x, jfloat center_y, jfloat width,
  jfloat height, jfloat rotation, jfloat shear_factor,
  jclass immutable_vec_class) {
@@ -86,7 +86,7 @@ JNI_METHOD(geometry_internal, ParallelogramNative, jobjectArray, createSemiAxes)
   return vector_array;
 }
 
-JNI_METHOD(geometry_internal, ParallelogramNative, void, populateSemiAxes)
+JNI_METHOD(geometry, ParallelogramNative, void, populateSemiAxes)
 (JNIEnv* env, jobject object, jfloat center_x, jfloat center_y, jfloat width,
  jfloat height, jfloat rotation, jfloat shear_factor, jobject out_axis1,
  jobject out_axis2) {
@@ -98,7 +98,7 @@ JNI_METHOD(geometry_internal, ParallelogramNative, void, populateSemiAxes)
   FillJMutableVecFromVec(env, out_axis2, axes.second);
 }
 
-JNI_METHOD(geometry_internal, ParallelogramNative, jobjectArray, createCorners)
+JNI_METHOD(geometry, ParallelogramNative, jobjectArray, createCorners)
 (JNIEnv* env, jobject object, jfloat center_x, jfloat center_y, jfloat width,
  jfloat height, jfloat rotation, jfloat shear_factor,
  jclass immutable_vec_class) {
@@ -116,7 +116,7 @@ JNI_METHOD(geometry_internal, ParallelogramNative, jobjectArray, createCorners)
   return vector_array;
 }
 
-JNI_METHOD(geometry_internal, ParallelogramNative, void, populateCorners)
+JNI_METHOD(geometry, ParallelogramNative, void, populateCorners)
 (JNIEnv* env, jobject object, jfloat center_x, jfloat center_y, jfloat width,
  jfloat height, jfloat rotation, jfloat shear_factor, jobject out_corner1,
  jobject out_corner2, jobject out_corner3, jobject out_corner4) {
@@ -130,7 +130,7 @@ JNI_METHOD(geometry_internal, ParallelogramNative, void, populateCorners)
   FillJMutableVecFromPoint(env, out_corner4, corners[3]);
 }
 
-JNI_METHOD(geometry_internal, ParallelogramNative, jboolean, contains)
+JNI_METHOD(geometry, ParallelogramNative, jboolean, contains)
 (JNIEnv* env, jobject object, jfloat center_x, jfloat center_y, jfloat width,
  jfloat height, jfloat rotation, jfloat shear_factor, jfloat point_x,
  jfloat point_y) {
