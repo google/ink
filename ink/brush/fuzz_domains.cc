@@ -542,7 +542,6 @@ namespace {
 Domain<BrushPaint::TextureSizeUnit> ArbitraryBrushPaintTextureSizeUnit() {
   return ElementOf({
       BrushPaint::TextureSizeUnit::kBrushSize,
-      BrushPaint::TextureSizeUnit::kStrokeSize,
       BrushPaint::TextureSizeUnit::kStrokeCoordinates,
   });
 }

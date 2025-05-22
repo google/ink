@@ -1044,10 +1044,10 @@ proto::BrushPaint::TextureLayer::SizeUnit EncodeBrushPaintSizeUnit(
   switch (size_unit) {
     case BrushPaint::TextureSizeUnit::kBrushSize:
       return proto::BrushPaint::TextureLayer::SIZE_UNIT_BRUSH_SIZE;
-    case BrushPaint::TextureSizeUnit::kStrokeSize:
-      return proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_SIZE;
     case BrushPaint::TextureSizeUnit::kStrokeCoordinates:
       return proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_COORDINATES;
+    case BrushPaint::TextureSizeUnit::kStrokeSize:
+      return proto::BrushPaint::TextureLayer::SIZE_UNIT_UNSPECIFIED;
   }
   return proto::BrushPaint::TextureLayer::SIZE_UNIT_UNSPECIFIED;
 }
@@ -1059,8 +1059,6 @@ absl::StatusOr<BrushPaint::TextureSizeUnit> DecodeBrushPaintSizeUnit(
       return BrushPaint::TextureSizeUnit::kBrushSize;
     case proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_COORDINATES:
       return BrushPaint::TextureSizeUnit::kStrokeCoordinates;
-    case proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_SIZE:
-      return BrushPaint::TextureSizeUnit::kStrokeSize;
     case proto::BrushPaint::TextureLayer::SIZE_UNIT_UNSPECIFIED:
     default:
       return absl::InvalidArgumentError(absl::StrCat(
