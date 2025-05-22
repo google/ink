@@ -21,12 +21,10 @@
 
 namespace ink::jni {
 
-jobject CreateJImmutableParallelogram(JNIEnv* env, const Quad& quad,
-                                      jclass immutable_parallelogram_class,
-                                      jclass immutable_vec_class);
+jobject CreateJImmutableParallelogramOrThrow(JNIEnv* env, const Quad& quad);
 
-void FillJMutableParallelogram(JNIEnv* env, const Quad& quad,
-                               jobject mutable_parallelogram);
+void FillJMutableParallelogramOrThrow(JNIEnv* env, const Quad& quad,
+                                      jobject mutable_parallelogram);
 
 }  // namespace ink::jni
 

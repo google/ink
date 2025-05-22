@@ -46,7 +46,7 @@ using ::ink::jni::JIntToToolType;
 using ::ink::jni::NewNativeStrokeInputBatch;
 using ::ink::jni::ThrowExceptionFromStatus;
 using ::ink::jni::ToolTypeToJInt;
-using ::ink::jni::UpdateJObjectInput;
+using ::ink::jni::UpdateJObjectInputOrThrow;
 
 }  // namespace
 
@@ -67,10 +67,9 @@ STROKE_INPUT_BATCH_JNI_METHOD(jint, getSize)
 }
 
 STROKE_INPUT_BATCH_JNI_METHOD(void, populate)
-(JNIEnv* env, jobject thiz, jlong native_pointer, jint index, jobject j_input,
- jclass input_tool_type_class) {
+(JNIEnv* env, jobject thiz, jlong native_pointer, jint index, jobject j_input) {
   StrokeInput input = CastToStrokeInputBatch(native_pointer).Get(index);
-  UpdateJObjectInput(env, input, j_input, input_tool_type_class);
+  UpdateJObjectInputOrThrow(env, input, j_input);
 }
 
 STROKE_INPUT_BATCH_JNI_METHOD(jlong, getDurationMillis)
