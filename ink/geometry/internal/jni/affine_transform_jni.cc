@@ -32,7 +32,7 @@ using ::ink::jni::FillJMutableParallelogram;
 
 extern "C" {
 
-JNI_METHOD(geometry_internal, AffineTransformNative, jobject,
+JNI_METHOD(geometry, AffineTransformNative, jobject,
            createFromApplyParallelogram)
 (JNIEnv* env, jobject object, jfloat affine_transform_A,
  jfloat affine_transform_B, jfloat affine_transform_C,
@@ -52,7 +52,7 @@ JNI_METHOD(geometry_internal, AffineTransformNative, jobject,
       immutable_parallelogram_class, immutable_vec_class);
 }
 
-JNI_METHOD(geometry_internal, AffineTransformNative, void,
+JNI_METHOD(geometry, AffineTransformNative, void,
            populateFromApplyParallelogram)
 (JNIEnv* env, jobject object, jfloat affine_transform_A,
  jfloat affine_transform_B, jfloat affine_transform_C,

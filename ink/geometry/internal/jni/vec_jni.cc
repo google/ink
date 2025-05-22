@@ -28,21 +28,21 @@ using ::ink::jni::FillJMutableVecFromVec;
 
 extern "C" {
 
-JNI_METHOD(geometry_internal, VecNative, jobject, unitVec)
+JNI_METHOD(geometry, VecNative, jobject, unitVec)
 (JNIEnv* env, jobject object, jfloat vec_X, jfloat vec_Y,
  jclass immutable_vec_class) {
   return CreateJImmutableVecFromVec(env, Vec{vec_X, vec_Y}.AsUnitVec(),
                                     immutable_vec_class);
 }
 
-JNI_METHOD(geometry_internal, VecNative, void, populateUnitVec)
+JNI_METHOD(geometry, VecNative, void, populateUnitVec)
 (JNIEnv* env, jobject object, jfloat vec_X, jfloat vec_Y,
  jobject output_mutable_vec) {
   FillJMutableVecFromVec(env, output_mutable_vec,
                          Vec{vec_X, vec_Y}.AsUnitVec());
 }
 
-JNI_METHOD(geometry_internal, VecNative, jfloat, absoluteAngleBetween)
+JNI_METHOD(geometry, VecNative, jfloat, absoluteAngleBetween)
 (JNIEnv* env, jobject object, jfloat first_vec_X, jfloat first_vec_Y,
  jfloat second_vec_X, jfloat second_vec_Y) {
   return Vec::AbsoluteAngleBetween(Vec{first_vec_X, first_vec_Y},
@@ -50,7 +50,7 @@ JNI_METHOD(geometry_internal, VecNative, jfloat, absoluteAngleBetween)
       .ValueInRadians();
 }
 
-JNI_METHOD(geometry_internal, VecNative, jfloat, signedAngleBetween)
+JNI_METHOD(geometry, VecNative, jfloat, signedAngleBetween)
 (JNIEnv* env, jobject object, jfloat first_vec_X, jfloat first_vec_Y,
  jfloat second_vec_X, jfloat second_vec_Y) {
   return Vec::SignedAngleBetween(Vec{first_vec_X, first_vec_Y},
