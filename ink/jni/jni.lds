@@ -1,11 +1,8 @@
 VERS_1.0 {
-  # Export JNI symbols and ANativeActivity_onCreate.
-  # Android's NativeActivity expects ANativeActivity_onCreate as its entrypoint.
+  # Export JNI symbols.
   global:
     Java_*;
-    JNI_OnLoad;
-    JNI_OnUnload;
-    ANativeActivity_onCreate;
+    JNI_*;
 
   # Hide everything else.
   local:

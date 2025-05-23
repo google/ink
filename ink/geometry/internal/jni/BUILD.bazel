@@ -203,7 +203,6 @@ cc_library(
     name = "envelope_jni_helper",
     srcs = ["envelope_jni_helper.cc"],
     hdrs = ["envelope_jni_helper.h"],
-    # Temporarily limited visibility while new APIs are being developed.
     visibility = ["//ink:__subpackages__"],
     deps = [
         "//ink/geometry:envelope",

@@ -20,17 +20,15 @@ package(
 
 cc_binary(
     name = "libink.so",
+    additional_linker_inputs = ["jni.lds"],
+    features = ["-legacy_whole_archive"],
     linkopts = [
         # Use a linker script to limit exported symbols to JNI functions.
         "-Wl,--version-script=$(location :jni.lds)",
-        # Suppress undefined symbol errors in the linker script so we don't have
-        # to remember to add JNI_OnLoad or similar functions to it later.
-        "-Wl,-undefined-version",
     ],
     linkshared = 1,
     linkstatic = 1,
     deps = [
-        ":jni.lds",
         "//ink/color/internal/jni:native",
         "//ink/geometry/internal/jni:native",
         "//ink/rendering/skia/common_internal/jni:native",
