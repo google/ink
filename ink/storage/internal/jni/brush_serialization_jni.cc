@@ -58,7 +58,6 @@ using ::ink::jni::CastToBrushCoat;
 using ::ink::jni::CastToBrushFamily;
 using ::ink::jni::CastToBrushPaint;
 using ::ink::jni::CastToBrushTip;
-using ::ink::jni::CatchExceptionAsStatus;
 using ::ink::jni::JByteArrayToStdString;
 using ::ink::jni::JStringToStdString;
 using ::ink::jni::NewNativeBrush;

@@ -17,17 +17,9 @@
 
 #include <jni.h>
 
-#include <string>
-
 #include "absl/status/status.h"
 
-namespace ink {
-namespace jni {
-
-// If a JVM exception is being thrown, catches it and returns an absl::Status
-// describing the exception. If no JVM exception is being thrown, returns
-// absl::OkStatus().
-absl::Status CatchExceptionAsStatus(JNIEnv* env);
+namespace ink::jni {
 
 // Throws a Java exception, with the exception class and message determined from
 // the given (non-OK) absl::Status.
@@ -48,7 +40,6 @@ void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status);
 // the JNI method) so that the Java exception can be processed.
 [[nodiscard]] bool CheckOkOrThrow(JNIEnv* env, const absl::Status& status);
 
-}  // namespace jni
-}  // namespace ink
+}  // namespace ink::jni
 
 #endif  // INK_JNI_INTERNAL_JNI_THROW_UTIL_H_
