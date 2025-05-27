@@ -23,54 +23,26 @@
 #include "absl/status/status.h"
 #include "ink/jni/internal/jni_string_util.h"
 
-namespace ink {
-namespace jni {
+namespace ink::jni {
 
 namespace {
 
-// These should all be subclasses of RuntimeException.
-const std::pair<absl::StatusCode, const char*> kStatusCodeClasses[] = {
-    {absl::StatusCode::kFailedPrecondition, "java/lang/IllegalStateException"},
-    {absl::StatusCode::kInvalidArgument, "java/lang/IllegalArgumentException"},
-    {absl::StatusCode::kNotFound, "java/util/NoSuchElementException"},
-    {absl::StatusCode::kOutOfRange, "java/lang/IndexOutOfBoundsException"},
-    {absl::StatusCode::kUnimplemented,
-     "java/lang/UnsupportedOperationException"},
-};
-
 const char* ExceptionClassForStatusCode(absl::StatusCode code) {
-  for (auto [status_code, class_name] : kStatusCodeClasses) {
-    if (status_code == code) return class_name;
+  // These should all be subclasses of RuntimeException.
+  switch (code) {
+    case absl::StatusCode::kFailedPrecondition:
+      return "java/lang/IllegalStateException";
+    case absl::StatusCode::kInvalidArgument:
+      return "java/lang/IllegalArgumentException";
+    case absl::StatusCode::kNotFound:
+      return "java/util/NoSuchElementException";
+    case absl::StatusCode::kOutOfRange:
+      return "java/lang/IndexOutOfBoundsException";
+    case absl::StatusCode::kUnimplemented:
+      return "java/lang/UnsupportedOperationException";
+    default:
+      return "java/lang/RuntimeException";
   }
-  return "java/lang/IllegalStateException";
-}
-
-absl::StatusCode StatusCodeForThrowable(JNIEnv* env, jthrowable exception) {
-  ABSL_CHECK_NE(exception, nullptr);
-  for (auto [status_code, class_name] : kStatusCodeClasses) {
-    jclass clazz = env->FindClass(class_name);
-    ABSL_CHECK(clazz);
-    if (env->IsInstanceOf(exception, clazz)) {
-      return status_code;
-    }
-  }
-  return absl::StatusCode::kUnknown;
-}
-
-// Returns the message string for a JVM exception. Returns null if the exception
-// is null, or if the exception has no message.
-jstring GetExceptionMessageOrThrow(JNIEnv* env, jthrowable exception) {
-  if (exception == nullptr) return nullptr;
-  ABSL_CHECK(!env->ExceptionCheck())
-      << "Must call env->ExceptionClear() before reading exception.";
-  jmethodID method = env->GetMethodID(env->GetObjectClass(exception),
-                                      "getMessage", "()Ljava/lang/String;");
-  ABSL_CHECK_NE(method, nullptr);
-  jobject message = env->CallObjectMethod(exception, method);
-  if (env->ExceptionCheck()) {
-    return nullptr;
-  }
-  return static_cast<jstring>(message);
 }
 
 void ThrowException(JNIEnv* env, const char* java_exception_path,
@@ -81,21 +53,6 @@ void ThrowException(JNIEnv* env, const char* java_exception_path,
 }
 
 }  // namespace
-
-absl::Status CatchExceptionAsStatus(JNIEnv* env) {
-  jthrowable exception = env->ExceptionOccurred();
-  if (exception == nullptr) return absl::OkStatus();
-  env->ExceptionClear();
-  JStringView message =
-      JStringView(env, GetExceptionMessageOrThrow(env, exception));
-  if (env->ExceptionCheck()) {
-    env->ExceptionClear();
-    return absl::UnknownError(
-        "Encountered exception while retrieving exception message.");
-  }
-  return absl::Status(StatusCodeForThrowable(env, exception),
-                      message.string_view());
-}
 
 bool CheckOkOrThrow(JNIEnv* env, const absl::Status& status) {
   if (status.ok()) {
@@ -111,5 +68,4 @@ void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status) {
                  status.ToString());
 }
 
-}  // namespace jni
-}  // namespace ink
+}  // namespace ink::jni
