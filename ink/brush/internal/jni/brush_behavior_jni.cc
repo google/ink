@@ -30,7 +30,6 @@
 namespace {
 
 using ink::BrushBehavior;
-using ink::EasingFunction;
 using ink::brush_internal::ValidateBrushBehaviorNode;
 using ink::brush_internal::ValidateBrushBehaviorTopLevel;
 using ink::jni::CastToBrushBehavior;
