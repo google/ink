@@ -26,10 +26,7 @@
 
 namespace {
 
-using ::ink::Brush;
-using ::ink::PartitionedMesh;
 using ::ink::Stroke;
-using ::ink::StrokeInputBatch;
 using ::ink::jni::CastToBrush;
 using ::ink::jni::CastToPartitionedMesh;
 using ::ink::jni::CastToStroke;
