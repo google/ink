@@ -48,17 +48,17 @@ extern "C" {
 // must later be freed by the caller.
 JNI_METHOD(storage, StrokeInputBatchSerializationNative, jlong, newFromProto)
 (JNIEnv* env, jclass klass, jobject direct_byte_buffer, jbyteArray byte_array,
- jint offset, jint length, jboolean throw_on_parse_error) {
+ jint offset, jint length) {
   CodedStrokeInputBatch coded_input;
   if (absl::Status status = ParseProtoFromEither(
           env, direct_byte_buffer, byte_array, offset, length, coded_input);
       !status.ok()) {
-    if (throw_on_parse_error) ThrowExceptionFromStatus(env, status);
+    ThrowExceptionFromStatus(env, status);
     return 0;
   }
   absl::StatusOr<StrokeInputBatch> input = DecodeStrokeInputBatch(coded_input);
   if (!input.ok()) {
-    if (throw_on_parse_error) ThrowExceptionFromStatus(env, input.status());
+    ThrowExceptionFromStatus(env, input.status());
     return 0;
   }
   return NewNativeStrokeInputBatch(*std::move(input));

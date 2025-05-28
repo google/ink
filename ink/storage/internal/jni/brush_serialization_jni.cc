@@ -143,23 +143,18 @@ JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushPaint)
 
 JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFromProto)
 (JNIEnv* env, jobject object, jobject brush_direct_byte_buffer,
- jbyteArray brush_byte_array, jint offset, jint length,
- jboolean throw_on_parse_error) {
+ jbyteArray brush_byte_array, jint offset, jint length) {
   ink::proto::Brush brush_proto;
   if (absl::Status status =
           ParseProtoFromEither(env, brush_direct_byte_buffer, brush_byte_array,
                                offset, length, brush_proto);
       !status.ok()) {
-    if (throw_on_parse_error) {
-      ThrowExceptionFromStatus(env, status);
-    }
+    ThrowExceptionFromStatus(env, status);
     return 0;
   }
   absl::StatusOr<Brush> brush = DecodeBrush(brush_proto);
   if (!brush.ok()) {
-    if (throw_on_parse_error) {
-      ThrowExceptionFromStatus(env, brush.status());
-    }
+    ThrowExceptionFromStatus(env, brush.status());
     return 0;
   }
   return NewNativeBrush(*std::move(brush));
@@ -168,16 +163,14 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFromProto)
 JNI_METHOD(storage, BrushSerializationNative, jlong,
            newBrushFamilyFromProtoInternal)
 (JNIEnv* env, jobject object, jobject brush_family_direct_byte_buffer,
- jbyteArray brush_family_byte_array, jint offset, jint length, jobject callback,
- jboolean throw_on_parse_error) {
+ jbyteArray brush_family_byte_array, jint offset, jint length,
+ jobject callback) {
   ink::proto::BrushFamily brush_family_proto;
   if (absl::Status status = ParseProtoFromEither(
           env, brush_family_direct_byte_buffer, brush_family_byte_array, offset,
           length, brush_family_proto);
       !status.ok()) {
-    if (throw_on_parse_error) {
-      ThrowExceptionFromStatus(env, status);
-    }
+    ThrowExceptionFromStatus(env, status);
     return 0;
   }
 
@@ -215,15 +208,10 @@ JNI_METHOD(storage, BrushSerializationNative, jlong,
   absl::StatusOr<BrushFamily> brush_family =
       DecodeBrushFamily(brush_family_proto, decode_texture_jni_wrapper);
   if (!brush_family.ok()) {
-    if (throw_on_parse_error) {
-      // If the callback raised an exception we want to raise that as-is
-      // instead of replacing it with the status.
-      if (!env->ExceptionCheck()) {
-        ThrowExceptionFromStatus(env, brush_family.status());
-      }
-    } else {
-      // If the callback raised an exception, suppress that as well.
-      env->ExceptionClear();
+    // If the callback raised an exception we want to raise that as-is
+    // instead of replacing it with the status.
+    if (!env->ExceptionCheck()) {
+      ThrowExceptionFromStatus(env, brush_family.status());
     }
     return 0;
   }
@@ -232,23 +220,18 @@ JNI_METHOD(storage, BrushSerializationNative, jlong,
 
 JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushCoatFromProto)
 (JNIEnv* env, jobject object, jobject brush_coat_direct_byte_buffer,
- jbyteArray brush_coat_byte_array, jint offset, jint length,
- jboolean throw_on_parse_error) {
+ jbyteArray brush_coat_byte_array, jint offset, jint length) {
   ink::proto::BrushCoat brush_coat_proto;
   if (absl::Status status = ParseProtoFromEither(
           env, brush_coat_direct_byte_buffer, brush_coat_byte_array, offset,
           length, brush_coat_proto);
       !status.ok()) {
-    if (throw_on_parse_error) {
-      ThrowExceptionFromStatus(env, status);
-    }
+    ThrowExceptionFromStatus(env, status);
     return 0;
   }
   absl::StatusOr<BrushCoat> brush_coat = DecodeBrushCoat(brush_coat_proto);
   if (!brush_coat.ok()) {
-    if (throw_on_parse_error) {
-      ThrowExceptionFromStatus(env, brush_coat.status());
-    }
+    ThrowExceptionFromStatus(env, brush_coat.status());
     return 0;
   }
   return NewNativeBrushCoat(*std::move(brush_coat));
@@ -263,16 +246,12 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushTipFromProto)
           env, brush_tip_direct_byte_buffer, brush_tip_byte_array, offset,
           length, brush_tip_proto);
       !status.ok()) {
-    if (throw_on_parse_error) {
-      ThrowExceptionFromStatus(env, status);
-    }
+    ThrowExceptionFromStatus(env, status);
     return 0;
   }
   absl::StatusOr<BrushTip> brush_tip = DecodeBrushTip(brush_tip_proto);
   if (!brush_tip.ok()) {
-    if (throw_on_parse_error) {
-      ThrowExceptionFromStatus(env, brush_tip.status());
-    }
+    ThrowExceptionFromStatus(env, brush_tip.status());
     return 0;
   }
   return NewNativeBrushTip(*std::move(brush_tip));
@@ -280,23 +259,18 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushTipFromProto)
 
 JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushPaintFromProto)
 (JNIEnv* env, jobject object, jobject brush_paint_direct_byte_buffer,
- jbyteArray brush_paint_byte_array, jint offset, jint length,
- jboolean throw_on_parse_error) {
+ jbyteArray brush_paint_byte_array, jint offset, jint length) {
   ink::proto::BrushPaint brush_paint_proto;
   if (absl::Status status = ParseProtoFromEither(
           env, brush_paint_direct_byte_buffer, brush_paint_byte_array, offset,
           length, brush_paint_proto);
       !status.ok()) {
-    if (throw_on_parse_error) {
-      ThrowExceptionFromStatus(env, status);
-    }
+    ThrowExceptionFromStatus(env, status);
     return 0;
   }
   absl::StatusOr<BrushPaint> brush_paint = DecodeBrushPaint(brush_paint_proto);
   if (!brush_paint.ok()) {
-    if (throw_on_parse_error) {
-      ThrowExceptionFromStatus(env, brush_paint.status());
-    }
+    ThrowExceptionFromStatus(env, brush_paint.status());
     return 0;
   }
   return NewNativeBrushPaint(*std::move(brush_paint));
