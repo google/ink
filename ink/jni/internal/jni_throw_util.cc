@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,9 @@
 #include <jni.h>
 
 #include <string>
-#include <utility>
 
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
-#include "ink/jni/internal/jni_string_util.h"
 
 namespace ink::jni {
 
@@ -53,14 +51,6 @@ void ThrowException(JNIEnv* env, const char* java_exception_path,
 }
 
 }  // namespace
-
-bool CheckOkOrThrow(JNIEnv* env, const absl::Status& status) {
-  if (status.ok()) {
-    return true;
-  }
-  ThrowExceptionFromStatus(env, status);
-  return false;
-}
 
 void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status) {
   ABSL_CHECK(!status.ok());

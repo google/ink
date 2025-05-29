@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,16 +29,6 @@ namespace ink::jni {
 // (e.g. by returning a placeholder value from the JNI method) so that the Java
 // exception can be processed.
 void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status);
-
-// Checks if the given absl::Status is OK, and returns true if so. If not, then
-// throws a Java exception and returns false, with the exception class and
-// message determined from the absl::Status.
-//
-// Note that C++ execution will continue on after this function returns; the
-// caller should check the return value and immediately return control back to
-// the JVM if the result is false (e.g. by returning a placeholder value from
-// the JNI method) so that the Java exception can be processed.
-[[nodiscard]] bool CheckOkOrThrow(JNIEnv* env, const absl::Status& status);
 
 }  // namespace ink::jni
 

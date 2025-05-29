@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ using ::ink::Point;
 using ::ink::StrokeInputBatch;
 using ::ink::jni::CastToStrokeInputBatch;
 using ::ink::jni::NewNativePartitionedMesh;
+using ::ink::jni::ThrowExceptionFromStatus;
 
 // private method to calculate the slope of a line segment. If the slope is
 // infinite, return float::infinity.
@@ -131,13 +132,15 @@ JNI_METHOD(strokes, MeshCreationNative, jlong,
       mesh = Mesh::Create(ink::MeshFormat(), {x_values, y_values}, {0, 1, 2});
     }
   }
-  if (!ink::jni::CheckOkOrThrow(env, mesh.status())) {
+  if (!mesh.ok()) {
+    ThrowExceptionFromStatus(env, mesh.status());
     return 0;
   }
 
   absl::StatusOr<PartitionedMesh> partitioned_mesh =
       PartitionedMesh::FromMeshes(absl::MakeSpan(&mesh.value(), 1));
-  if (!ink::jni::CheckOkOrThrow(env, partitioned_mesh.status())) {
+  if (!partitioned_mesh.ok()) {
+    ThrowExceptionFromStatus(env, partitioned_mesh.status());
     return 0;
   }
   return NewNativePartitionedMesh(*partitioned_mesh);
