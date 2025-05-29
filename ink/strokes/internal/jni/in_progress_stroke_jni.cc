@@ -91,31 +91,34 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, start)
 
 JNI_METHOD(strokes, InProgressStrokeNative, jboolean, enqueueInputs)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jlong real_inputs_pointer,
- jlong predicted_inputs_pointer, jboolean throw_on_error) {
+ jlong predicted_inputs_pointer) {
   InProgressStroke& in_progress_stroke = CastToInProgressStroke(native_pointer);
   const StrokeInputBatch& real_inputs =
       CastToStrokeInputBatch(real_inputs_pointer);
   const StrokeInputBatch& predicted_inputs =
       CastToStrokeInputBatch(predicted_inputs_pointer);
-  absl::Status status =
-      in_progress_stroke.EnqueueInputs(real_inputs, predicted_inputs);
-  if (!status.ok() && throw_on_error) {
+  if (absl::Status status =
+          in_progress_stroke.EnqueueInputs(real_inputs, predicted_inputs);
+      !status.ok()) {
     ThrowExceptionFromStatus(env, status);
+    return false;
   }
-  return status.ok();
+  return true;
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jboolean, updateShape)
 (JNIEnv* env, jobject thiz, jlong native_pointer,
- jlong j_current_elapsed_time_millis, jboolean throw_on_error) {
+ jlong j_current_elapsed_time_millis) {
   InProgressStroke& in_progress_stroke = CastToInProgressStroke(native_pointer);
   Duration32 current_elapsed_time =
       Duration32::Millis(j_current_elapsed_time_millis);
-  absl::Status status = in_progress_stroke.UpdateShape(current_elapsed_time);
-  if (!status.ok() && throw_on_error) {
+  if (absl::Status status =
+          in_progress_stroke.UpdateShape(current_elapsed_time);
+      !status.ok()) {
     ThrowExceptionFromStatus(env, status);
+    return false;
   }
-  return status.ok();
+  return true;
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, void, finishInput)
