@@ -68,8 +68,15 @@ void BrushTipExtruder::StartStroke(float brush_epsilon,
   deleted_save_point_extrusions_.clear();
   geometry_.Reset(MutableMeshView(mesh));
   bounds_ = {};
-  outlines_.resize(1);
-  outlines_[0].TruncateIndices({0, 0});
+  // Pre-allocate the first outline.
+  num_outlines_ = 1;
+  if (outlines_.empty()) {
+    outlines_.resize(1);
+  }
+  // Clear all the outlines from the previous stroke.
+  for (StrokeOutline& outline : outlines_) {
+    outline.TruncateIndices({0, 0});
+  }
 }
 
 namespace {
@@ -125,6 +132,7 @@ StrokeShapeUpdate BrushTipExtruder::ExtendStroke(
   }
 
   ExtrudeBreakPoint();
+  geometry_.UpdateMeshDerivatives();
   UpdateCurrentBounds();
   return ConstructUpdate(geometry_, triangle_count_before_update,
                          vertex_count_before_update);
@@ -213,24 +221,27 @@ void BrushTipExtruder::Save() {
 
 void BrushTipExtruder::TruncateOutlines() {
   ABSL_DCHECK_LE(geometry_.ExtrusionBreakCount(), outlines_.size());
-  // If we're already working on the outline after the last remaining break
-  // point, drop outlines after that (if there are any) and truncate the last
-  // one.
+  // Prune the outline after the last break point to the first mutation.
   uint32_t max_num_outlines = geometry_.ExtrusionBreakCount() + 1;
-  if (outlines_.size() >= max_num_outlines) {
-    outlines_.resize(max_num_outlines);
+  if (num_outlines_ >= max_num_outlines) {
+    num_outlines_ = max_num_outlines;
     const Geometry::IndexCounts& last_extrusion_break_offset =
         geometry_.IndexCountsAtLastExtrusionBreak();
     ABSL_DCHECK_GE(geometry_.FirstMutatedLeftIndexOffsetInCurrentPartition(),
                    last_extrusion_break_offset.left);
     ABSL_DCHECK_GE(geometry_.FirstMutatedRightIndexOffsetInCurrentPartition(),
                    last_extrusion_break_offset.right);
-    outlines_.back().TruncateIndices({
+    StrokeOutline& last_outline = outlines_[num_outlines_ - 1];
+    last_outline.TruncateIndices({
         .left = geometry_.FirstMutatedLeftIndexOffsetInCurrentPartition() -
                 last_extrusion_break_offset.left,
         .right = geometry_.FirstMutatedRightIndexOffsetInCurrentPartition() -
                  last_extrusion_break_offset.right,
     });
+  }
+  // Clear any later outlines.
+  for (uint32_t i = max_num_outlines; i < outlines_.size(); i++) {
+    outlines_[i].TruncateIndices({0, 0});
   }
 }
 
@@ -527,22 +538,22 @@ void BrushTipExtruder::ExtrudeBreakPoint() {
     return;
   }
 
-  // Close the outline and update the mesh derivatives. This needs to be done
-  // after recording the counts (because we want the counts back to the previous
-  // break point) but before adding the new outline (because
-  // UpdateMeshDerivatives can modify the outline indices). Possibly we're
-  // adding a new empty outline here, possibly we're just filling in the end
-  // of a last outline we already allocated.
+  // Allocate more capacity if we need it.
   if (outlines_.size() == geometry_.ExtrusionBreakCount()) {
-    outlines_.emplace_back();
+    outlines_.resize(outlines_.size() * 2);
   }
+
+  // Add to the count of outlines if we're completing an entirely new outline
+  // instead of refinishing an in-progress one.
+  if (num_outlines_ == geometry_.ExtrusionBreakCount()) {
+    num_outlines_++;
+  }
+
   geometry_.AddExtrusionBreak();
   extrusions_.emplace_back(BrushTipExtrusion::BreakPoint{});
-  geometry_.UpdateMeshDerivatives();
 
-  // Complete the outline before the last breakpoint.
-  StrokeOutline& outline = outlines_.back();
-  ABSL_DCHECK_EQ(geometry_.ExtrusionBreakCount(), outlines_.size());
+  StrokeOutline& outline = outlines_[num_outlines_ - 1];
+  ABSL_DCHECK_EQ(geometry_.ExtrusionBreakCount(), num_outlines_);
   StrokeOutline::IndexCounts outline_counts = outline.GetIndexCounts();
   ABSL_DCHECK_GE(geometry_.LeftSide().indices.size(),
                  counts_at_last_break.left + outline_counts.left);

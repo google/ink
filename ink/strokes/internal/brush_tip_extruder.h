@@ -219,6 +219,10 @@ class BrushTipExtruder {
   ExtrusionPoints current_extrusion_points_;
   brush_tip_extruder_internal::Geometry geometry_;
   Bounds bounds_;
+
+  // Store a separate count of the number of used outlines so that storage can
+  // be reused when outlines are discarded.
+  uint32_t num_outlines_ = 1;
   absl::InlinedVector<StrokeOutline, 1> outlines_;
 };
 
@@ -230,7 +234,7 @@ inline const Envelope& BrushTipExtruder::GetBounds() const {
 }
 
 inline absl::Span<const StrokeOutline> BrushTipExtruder::GetOutlines() const {
-  return outlines_;
+  return absl::MakeSpan(outlines_).subspan(0, num_outlines_);
 }
 
 }  // namespace ink::strokes_internal

@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/log/absl_check.h"
+#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
@@ -320,6 +321,8 @@ JNI_METHOD(strokes, InProgressStrokeNative, jobject, getRawTriangleIndexData)
       triangle_index_data_cache.erase(
           triangle_index_data_cache.begin() + i_last_multiple_of_3,
           triangle_index_data_cache.end());
+      ABSL_LOG_EVERY_N_SEC(WARNING, 1)
+          << "Triangle index data exceeds 16-bit limit, truncating.";
       break;
     }
     uint16_t triangle_index_16 = triangle_index_32;

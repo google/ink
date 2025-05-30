@@ -35,9 +35,7 @@ void StrokeOutline::GrowIndexStorage(IndexCounts new_index_counts) {
   size_t new_capacity = absl::bit_ceil(minimum_new_capacity);
 
   IndexStorage new_storage = {
-      // TODO: Replace with `make_unique_for_overwrite()` once we
-      // have C++23 or it becomes available in Abseil.
-      .data = std::unique_ptr<uint32_t[]>(new uint32_t[new_capacity]),
+      .data = std::make_unique_for_overwrite<uint32_t[]>(new_capacity),
       .capacity = new_capacity,
       .used_counts = index_storage_.used_counts,
   };
