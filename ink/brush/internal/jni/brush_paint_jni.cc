@@ -19,6 +19,7 @@
 
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/time/time.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/geometry/angle.h"
@@ -121,8 +122,8 @@ JNI_METHOD(brush, TextureLayerNative, jlong, create)
 (JNIEnv* env, jobject thiz, jstring client_texture_id, jfloat size_x,
  jfloat size_y, jfloat offset_x, jfloat offset_y, jfloat rotation_in_radians,
  jfloat opacity, jint animation_frames, jint animation_rows,
- jint animation_columns, jint size_unit, jint origin, jint mapping, jint wrap_x,
- jint wrap_y, jint blend_mode) {
+ jint animation_columns, jlong animation_duration_millis, jint size_unit,
+ jint origin, jint mapping, jint wrap_x, jint wrap_y, jint blend_mode) {
   BrushPaint::TextureLayer texture_layer{
       .client_texture_id = JStringToStdString(env, client_texture_id),
       .mapping = JIntToMapping(mapping),
@@ -137,6 +138,7 @@ JNI_METHOD(brush, TextureLayerNative, jlong, create)
       .animation_frames = animation_frames,
       .animation_rows = animation_rows,
       .animation_columns = animation_columns,
+      .animation_duration = absl::Milliseconds(animation_duration_millis),
       .blend_mode = JIntToBlendMode(blend_mode),
   };
   if (absl::Status status = ValidateBrushPaintTextureLayer(texture_layer);
@@ -214,6 +216,12 @@ JNI_METHOD(brush, TextureLayerNative, jint, getAnimationRows)
 JNI_METHOD(brush, TextureLayerNative, jint, getAnimationColumns)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return CastToTextureLayer(native_pointer).animation_columns;
+}
+
+JNI_METHOD(brush, TextureLayerNative, jlong, getAnimationDurationMillis)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return absl::ToInt64Milliseconds(
+      CastToTextureLayer(native_pointer).animation_duration);
 }
 
 JNI_METHOD(brush, TextureLayerNative, jint, getSizeUnitInt)
