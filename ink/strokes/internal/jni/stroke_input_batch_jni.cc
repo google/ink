@@ -124,7 +124,7 @@ STROKE_INPUT_BATCH_JNI_METHOD(jint, getNoiseSeed)
 MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jboolean, appendSingle)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint tool_type, jfloat x,
  jfloat y, jlong elapsed_time_millis, jfloat stroke_unit_length_cm,
- jfloat pressure, jfloat tilt, jfloat orientation, jboolean throw_on_error) {
+ jfloat pressure, jfloat tilt, jfloat orientation) {
   StrokeInput input = {.tool_type = JIntToToolType(tool_type),
                        .position = {x, y},
                        .elapsed_time = Duration32::Millis(elapsed_time_millis),
@@ -133,24 +133,27 @@ MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jboolean, appendSingle)
                        .pressure = pressure,
                        .tilt = Angle::Radians(tilt),
                        .orientation = Angle::Radians(orientation)};
-  absl::Status status =
-      CastToMutableStrokeInputBatch(native_pointer).Append(input);
-  if (!status.ok() && throw_on_error) {
+
+  if (absl::Status status =
+          CastToMutableStrokeInputBatch(native_pointer).Append(input);
+      !status.ok()) {
     ThrowExceptionFromStatus(env, status);
+    return false;
   }
-  return status.ok();
+  return true;
 }
 
 MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(jboolean, appendBatch)
 (JNIEnv* env, jobject thiz, jlong native_pointer,
- jlong append_from_native_pointer, jboolean throw_on_error) {
-  absl::Status status =
-      CastToMutableStrokeInputBatch(native_pointer)
-          .Append(CastToStrokeInputBatch(append_from_native_pointer));
-  if (!status.ok() && throw_on_error) {
+ jlong append_from_native_pointer) {
+  if (absl::Status status =
+          CastToMutableStrokeInputBatch(native_pointer)
+              .Append(CastToStrokeInputBatch(append_from_native_pointer));
+      !status.ok()) {
     ThrowExceptionFromStatus(env, status);
+    return false;
   }
-  return status.ok();
+  return true;
 }
 
 MUTABLE_STROKE_INPUT_BATCH_JNI_METHOD(void, clear)
