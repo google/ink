@@ -26,6 +26,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
