@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/time/time.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/vec.h"
 
@@ -262,6 +263,15 @@ struct BrushPaint {
     // The number of columns in the grid of frame images. See `animation_frames`
     // for more details. Must be between 1 and 2^12 (inclusive).
     int animation_columns = 1;
+
+    // The length of time in milliseconds that it takes to loop through every
+    // one of the `animation_frames` frames in the texture. This means that each
+    // frame will be displayed (on average) for
+    // `animation_duration / animation_frames` milliseconds. Defaults to 1
+    // second, but ignored if `animation_frames` is 1 (its default value)
+    // because that indicates that animation is disabled. Must be positive and
+    // finite.
+    absl::Duration animation_duration = absl::Seconds(1);
 
     // Animation keyframes; currently unused.
     //

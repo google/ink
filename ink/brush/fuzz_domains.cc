@@ -26,6 +26,7 @@
 #include "fuzztest/fuzztest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
@@ -604,10 +605,22 @@ Domain<BrushPaint::TextureKeyframe> ValidBrushPaintTextureKeyframe() {
       OptionalOf(FiniteAngle()), OptionalOf(InRange(0.f, 1.f)));
 }
 
+fuzztest::Domain<absl::Duration> PositiveDuration() {
+  return fuzztest::Filter(
+      [](absl::Duration d) {
+        return d != absl::ZeroDuration() && d != absl::InfiniteDuration();
+      },
+      fuzztest::Map(
+          [](absl::Time a, absl::Time b) { return absl::AbsDuration(b - a); },
+          fuzztest::Arbitrary<absl::Time>(),
+          fuzztest::Arbitrary<absl::Time>()));
+}
+
 fuzztest::Domain<BrushPaint::TextureLayer>
 ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
     BrushPaint::TextureMapping mapping, int animation_frames,
-    int animation_rows, int animation_columns, DomainVariant variant) {
+    int animation_rows, int animation_columns,
+    absl::Duration animation_duration, DomainVariant variant) {
   auto texture_layer = [=](Vec size) {
     auto size_jitter_domain =
         StructOf<Vec>(InRange<float>(0.f, size.x), InRange<float>(0.f, size.y));
@@ -617,6 +630,7 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
     auto animation_frames_domain = Just(animation_frames);
     auto animation_rows_domain = Just(animation_rows);
     auto animation_columns_domain = Just(animation_columns);
+    auto animation_duration_domain = Just(animation_duration);
     auto keyframes_domain = VectorOf(ValidBrushPaintTextureKeyframe());
     if (variant == DomainVariant::kValidAndSerializable) {
       size_jitter_domain =
@@ -627,6 +641,7 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
       animation_frames_domain = Just(1);
       animation_rows_domain = Just(1);
       animation_columns_domain = Just(1);
+      animation_duration_domain = Just(absl::Seconds(1));
       keyframes_domain = VectorOf(ValidBrushPaintTextureKeyframe()).WithSize(0);
     }
     return StructOf<BrushPaint::TextureLayer>(
@@ -637,7 +652,8 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
         StructOf<Vec>(InRange<float>(0.f, 1.f), InRange<float>(0.f, 1.f)),
         FiniteAngle(), size_jitter_domain, offset_jitter_domain,
         rotation_jitter_domain, InRange(0.f, 1.f), animation_frames_domain,
-        animation_rows_domain, animation_columns_domain, keyframes_domain,
+        animation_rows_domain, animation_columns_domain,
+        animation_duration_domain, keyframes_domain,
         ArbitraryBrushPaintBlendMode());
   };
   return FlatMap(texture_layer,
@@ -647,12 +663,14 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
 fuzztest::Domain<BrushPaint> ValidBrushPaint(DomainVariant variant) {
   return FlatMap(
       [=](BrushPaint::TextureMapping mapping,
-          std::tuple<int, int, int> animation_frames_rows_columns) {
+          std::tuple<int, int, int> animation_frames_rows_columns,
+          absl::Duration animation_duration) {
         return std::apply(
             [&](int frames, int rows, int columns) {
               return fuzztest::StructOf<BrushPaint>(VectorOf(
                   ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
-                      mapping, frames, rows, columns, variant)));
+                      mapping, frames, rows, columns, animation_duration,
+                      variant)));
             },
             animation_frames_rows_columns);
       },
@@ -662,7 +680,8 @@ fuzztest::Domain<BrushPaint> ValidBrushPaint(DomainVariant variant) {
             return TupleOf(InRange<int>(1, rows * columns), Just(rows),
                            Just(columns));
           },
-          InRange<int>(1, 1 << 12), InRange<int>(1, 1 << 12)));
+          InRange<int>(1, 1 << 12), InRange<int>(1, 1 << 12)),
+      PositiveDuration());
 }
 
 Domain<BrushTip> ValidBrushTip(DomainVariant variant) {
