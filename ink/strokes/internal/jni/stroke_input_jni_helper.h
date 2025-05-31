@@ -72,17 +72,12 @@ StrokeInput::ToolType JIntToToolType(jint val);
 // InputToolType enum.
 jint ToolTypeToJInt(StrokeInput::ToolType type);
 
-// "Converts" a C++ StrokeInput object into a jobject of type StrokeInput by
-// overwriting the fields of `j_input_out` using the values of `input_in`.
-// Return error JVM exception is pending or if overwrite operation failed.
-// Accepts InputToolType.class from the Java/Kotlin side as a convenience to
-// avoid a reflection-based FindClass lookup or other ways to access the jclass
-// for InputToolType.
-void UpdateJObjectInput(JNIEnv* env, const StrokeInput& input_in,
-                        jobject j_input_out, jclass inputtooltype_class);
-
-// "Converts" a kotlin StrokeInput to a C++ StrokeInput object.
-StrokeInput JObjectToStrokeInput(JNIEnv* env, jobject j_input);
+// Calls back into the JVM to populate an existing Kotlin StrokeInput object
+// with the provided StrokeInput. The caller must check if an exception was
+// thrown by this call, e.g. with env->ExceptionCheck(). If an exception was
+// thrown, the caller must bail out instead of continuing execution.
+void UpdateJObjectInputOrThrow(JNIEnv* env, const StrokeInput& input_in,
+                               jobject j_input_out);
 
 }  // namespace ink::jni
 

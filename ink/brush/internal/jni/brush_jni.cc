@@ -16,7 +16,6 @@
 
 #include <utility>
 
-#include "absl/log/absl_check.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_family.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
@@ -24,6 +23,7 @@
 #include "ink/color/color_space.h"
 #include "ink/color/internal/jni/color_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
+#include "ink/jni/internal/jni_jvm_interface.h"
 #include "ink/jni/internal/jni_throw_util.h"
 
 namespace {
@@ -35,10 +35,12 @@ using ::ink::ColorSpace;
 using ::ink::Color::Format::kGammaEncoded;
 using ::ink::jni::CastToBrush;
 using ::ink::jni::CastToBrushFamily;
+using ::ink::jni::ClassBrushNative;
 using ::ink::jni::ColorSpaceIsSupportedInJetpack;
 using ::ink::jni::ColorSpaceToJInt;
 using ::ink::jni::DeleteNativeBrush;
 using ::ink::jni::JIntToColorSpace;
+using ::ink::jni::MethodBrushNativeComposeColorLongFromComponents;
 using ::ink::jni::NewNativeBrush;
 using ::ink::jni::NewNativeBrushFamily;
 using ::ink::jni::ThrowExceptionFromStatus;
@@ -85,12 +87,9 @@ JNI_METHOD(brush, BrushNative, jlong, computeComposeColorLong)
       (color_space_is_supported ? color
                                 : color.InColorSpace(ColorSpace::kDisplayP3))
           .AsFloat(kGammaEncoded);
-  jmethodID compose_color_long_from_components_method =
-      env->GetMethodID(env->GetObjectClass(object),
-                       "composeColorLongFromComponents", "(IFFFF)J");
-  ABSL_CHECK(compose_color_long_from_components_method != nullptr);
-  return env->CallLongMethod(
-      object, compose_color_long_from_components_method,
+  return env->CallStaticLongMethod(
+      ClassBrushNative(env),
+      MethodBrushNativeComposeColorLongFromComponents(env),
       ColorSpaceToJInt(color_space_is_supported ? original_color_space
                                                 : ColorSpace::kDisplayP3),
       rgba.r, rgba.g, rgba.b, rgba.a);

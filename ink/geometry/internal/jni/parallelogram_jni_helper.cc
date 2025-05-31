@@ -16,44 +16,31 @@
 
 #include <jni.h>
 
-#include "absl/log/absl_check.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
-#include "ink/jni/internal/jni_defines.h"
+#include "ink/jni/internal/jni_jvm_interface.h"
 
 namespace ink::jni {
 
-jobject CreateJImmutableParallelogram(JNIEnv* env, const Quad& quad,
-                                      jclass immutable_parallelogram_class,
-                                      jclass immutable_vec_class) {
-  ABSL_CHECK(immutable_parallelogram_class);
-
-  jmethodID from_center_dim_rot_shear_method = env->GetStaticMethodID(
-      immutable_parallelogram_class, "fromCenterDimensionsRotationAndShear",
-      "(L" INK_PACKAGE "/geometry/ImmutableVec;FFFF)L" INK_PACKAGE
-      "/geometry/ImmutableParallelogram;");
-  ABSL_CHECK(from_center_dim_rot_shear_method);
+jobject CreateJImmutableParallelogramOrThrow(JNIEnv* env, const Quad& quad) {
+  jobject center = CreateJImmutableVecFromPointOrThrow(
+      env, {quad.Center().x, quad.Center().y});
+  if (env->ExceptionCheck()) return nullptr;
   return env->CallStaticObjectMethod(
-      immutable_parallelogram_class, from_center_dim_rot_shear_method,
-      CreateJImmutableVecFromPoint(env, {quad.Center().x, quad.Center().y},
-                                   immutable_vec_class),
-      quad.Width(), quad.Height(), quad.Rotation().ValueInRadians(),
+      ClassImmutableParallelogram(env),
+      MethodImmutableParallelogramFromCenterDimensionsRotationAndShear(env),
+      center, quad.Width(), quad.Height(), quad.Rotation().ValueInRadians(),
       quad.ShearFactor());
 }
 
-void FillJMutableParallelogram(JNIEnv* env, const Quad& quad,
-                               jobject mutable_parallelogram) {
-  jclass mutable_parallelogram_class =
-      env->GetObjectClass(mutable_parallelogram);
-
-  jmethodID setter_method =
-      env->GetMethodID(mutable_parallelogram_class,
-                       "setCenterDimensionsRotationAndShear", "(FFFFFF)V");
-  ABSL_CHECK(setter_method);
-  env->CallVoidMethod(mutable_parallelogram, setter_method, quad.Center().x,
-                      quad.Center().y, quad.Width(), quad.Height(),
-                      quad.Rotation().ValueInRadians(), quad.ShearFactor());
+void FillJMutableParallelogramOrThrow(JNIEnv* env, const Quad& quad,
+                                      jobject mutable_parallelogram) {
+  env->CallVoidMethod(
+      mutable_parallelogram,
+      MethodMutableParallelogramSetCenterDimensionsRotationAndShear(env),
+      quad.Center().x, quad.Center().y, quad.Width(), quad.Height(),
+      quad.Rotation().ValueInRadians(), quad.ShearFactor());
 }
 
 }  // namespace ink::jni

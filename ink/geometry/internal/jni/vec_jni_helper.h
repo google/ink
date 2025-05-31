@@ -22,15 +22,30 @@
 
 namespace ink::jni {
 
-jobject CreateJImmutableVecFromVec(JNIEnv* env, Vec vec,
-                                   jclass immutable_vec_class);
+// Calls back into the JVM to create a new ImmutableVec object
+// with the provided Vec. The caller must check if an exception was thrown by
+// this call, e.g. with env->ExceptionCheck(). If an exception was thrown, the
+// caller must bail out instead of continuing execution.
+jobject CreateJImmutableVecFromVecOrThrow(JNIEnv* env, Vec vec);
 
-jobject CreateJImmutableVecFromPoint(JNIEnv* env, Point point,
-                                     jclass immutable_vec_class);
+// Calls back into the JVM to create a new ImmutableVec object
+// with the provided Point. The caller must check if an exception was thrown by
+// this call, e.g. with env->ExceptionCheck(). If an exception was thrown, the
+// caller must bail out instead of continuing execution.
+jobject CreateJImmutableVecFromPointOrThrow(JNIEnv* env, Point point);
 
-void FillJMutableVecFromVec(JNIEnv* env, jobject mutable_vec, Vec vec);
+// Calls back into the JVM to populate an existing MutableVec object
+// with the provided Vec. The caller must check if an exception was thrown by
+// this call, e.g. with env->ExceptionCheck(). If an exception was thrown, the
+// caller must bail out instead of continuing execution.
+void FillJMutableVecFromVecOrThrow(JNIEnv* env, jobject mutable_vec, Vec vec);
 
-void FillJMutableVecFromPoint(JNIEnv* env, jobject mutable_vec, Point point);
+// Calls back into the JVM to populate an existing MutableVec object
+// with the provided Point. The caller must check if an exception was thrown by
+// this call, e.g. with env->ExceptionCheck(). If an exception was thrown, the
+// caller must bail out instead of continuing execution.
+void FillJMutableVecFromPointOrThrow(JNIEnv* env, jobject mutable_vec,
+                                     Point point);
 
 }  // namespace ink::jni
 

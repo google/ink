@@ -19,11 +19,22 @@
 #include "absl/log/absl_check.h"
 #include "ink/geometry/angle.h"
 #include "ink/jni/internal/jni_defines.h"
+#include "ink/jni/internal/jni_jvm_interface.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/types/duration.h"
 #include "ink/types/physical_distance.h"
 
 namespace ink::jni {
+
+namespace {
+
+jobject ToolTypeToJObjectOrThrow(JNIEnv* env, StrokeInput::ToolType tool_type) {
+  return env->CallStaticObjectMethod(ClassInputToolType(env),
+                                     MethodInputToolTypeFrom(env),
+                                     ToolTypeToJInt(tool_type));
+}
+
+}  // namespace
 
 // Convert an int to an StrokeInput::ToolType enum.
 //
@@ -45,56 +56,17 @@ jint ToolTypeToJInt(StrokeInput::ToolType type) {
   }
 }
 
-StrokeInput::ToolType JObjectToToolType(JNIEnv* env, jobject j_inputtooltype) {
-  jclass inputtooltype_class = env->GetObjectClass(j_inputtooltype);
-  ABSL_CHECK(inputtooltype_class) << "InputToolType class not found.";
-  jfieldID inputtooltype_value_fieldID =
-      env->GetFieldID(inputtooltype_class, "value", "I");
-  ABSL_CHECK(inputtooltype_value_fieldID)
-      << "Couldn't find InputToolType.value field.";
-  jint tooltype_value =
-      env->GetIntField(j_inputtooltype, inputtooltype_value_fieldID);
-  ABSL_CHECK(!env->ExceptionCheck()) << "InputToolType.value accessor failed.";
-  return JIntToToolType(tooltype_value);
-}
-
-jobject ToolTypeToJObject(JNIEnv* env, StrokeInput::ToolType tool_type,
-                          jclass inputtooltype_class) {
-  jmethodID inputtooltype_from_methodID = env->GetStaticMethodID(
-      inputtooltype_class, "from", "(I)L" INK_PACKAGE "/brush/InputToolType;");
-  ABSL_CHECK(inputtooltype_from_methodID)
-      << "InputToolType.from method not found.";
-  jobject j_inputtooltype = env->CallStaticObjectMethod(
-      inputtooltype_class, inputtooltype_from_methodID,
-      ToolTypeToJInt(tool_type));
-  ABSL_CHECK(j_inputtooltype) << "InputToolType.from method failed.";
-  return j_inputtooltype;
-}
-
-void UpdateJObjectInput(JNIEnv* env, const StrokeInput& input_in,
-                        jobject j_input_out, jclass inputtooltype_class) {
-  // Note: verbose variable naming used to clarify class_fieldname or
-  // class_methodname through the multiple stages of references needed.
-
-  jclass strokeinput_class = env->GetObjectClass(j_input_out);
-  ABSL_CHECK(strokeinput_class) << "StrokeInput class not found.";
-
-  jobject j_inputtooltype =
-      ToolTypeToJObject(env, input_in.tool_type, inputtooltype_class);
-
-  jmethodID strokeinput_update_methodID =
-      env->GetMethodID(strokeinput_class, "update",
-                       "(FFJL" INK_PACKAGE "/brush/InputToolType;FFFF)V");
-  ABSL_CHECK(strokeinput_update_methodID)
-      << "StrokeInput.update method not found.";
+void UpdateJObjectInputOrThrow(JNIEnv* env, const StrokeInput& input_in,
+                               jobject j_input_out) {
+  jobject j_inputtooltype = ToolTypeToJObjectOrThrow(env, input_in.tool_type);
+  if (env->ExceptionCheck()) return;
 
   jlong elapsed_time_millis = input_in.elapsed_time.ToMillis();
   env->CallVoidMethod(
-      j_input_out, strokeinput_update_methodID, input_in.position.x,
+      j_input_out, MethodStrokeInputUpdate(env), input_in.position.x,
       input_in.position.y, elapsed_time_millis, j_inputtooltype,
       input_in.stroke_unit_length.ToCentimeters(), input_in.pressure,
       input_in.tilt.ValueInRadians(), input_in.orientation.ValueInRadians());
-  ABSL_CHECK(!env->ExceptionCheck()) << "StrokeInput.update method failed.";
 }
 
 }  // namespace ink::jni

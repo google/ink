@@ -19,49 +19,31 @@
 #include "absl/log/absl_check.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
+#include "ink/jni/internal/jni_jvm_interface.h"
 
 namespace ink::jni {
 
-jobject CreateJImmutableVecFromVec(JNIEnv* env, Vec vec,
-                                   jclass immutable_vec_class) {
-  ABSL_CHECK(immutable_vec_class);
-  jmethodID constructor =
-      env->GetMethodID(immutable_vec_class, "<init>", "(FF)V");
-  ABSL_CHECK(constructor);
-  return env->NewObject(immutable_vec_class, constructor, vec.x, vec.y);
+jobject CreateJImmutableVecFromVecOrThrow(JNIEnv* env, Vec vec) {
+  return env->NewObject(ClassImmutableVec(env), MethodImmutableVecInitXY(env),
+                        vec.x, vec.y);
 }
 
-jobject CreateJImmutableVecFromPoint(JNIEnv* env, Point point,
-                                     jclass immutable_vec_class) {
-  ABSL_CHECK(immutable_vec_class);
-  jmethodID constructor =
-      env->GetMethodID(immutable_vec_class, "<init>", "(FF)V");
-  ABSL_CHECK(constructor);
-  return env->NewObject(immutable_vec_class, constructor, point.x, point.y);
+jobject CreateJImmutableVecFromPointOrThrow(JNIEnv* env, Point point) {
+  return env->NewObject(ClassImmutableVec(env), MethodImmutableVecInitXY(env),
+                        point.x, point.y);
 }
 
-void FillJMutableVecFromVec(JNIEnv* env, jobject mutable_vec, Vec vec) {
-  jclass mutable_vec_class = env->GetObjectClass(mutable_vec);
-
-  jmethodID set_x_method = env->GetMethodID(mutable_vec_class, "setX", "(F)V");
-  ABSL_CHECK(set_x_method);
-  env->CallVoidMethod(mutable_vec, set_x_method, vec.x);
-
-  jmethodID set_y_method = env->GetMethodID(mutable_vec_class, "setY", "(F)V");
-  ABSL_CHECK(set_y_method);
-  env->CallVoidMethod(mutable_vec, set_y_method, vec.y);
+void FillJMutableVecFromVecOrThrow(JNIEnv* env, jobject mutable_vec, Vec vec) {
+  env->CallVoidMethod(mutable_vec, MethodMutableVecSetX(env), vec.x);
+  if (env->ExceptionCheck()) return;
+  env->CallVoidMethod(mutable_vec, MethodMutableVecSetY(env), vec.y);
 }
 
-void FillJMutableVecFromPoint(JNIEnv* env, jobject mutable_vec, Point point) {
-  jclass mutable_vec_class = env->GetObjectClass(mutable_vec);
-
-  jmethodID set_x_method = env->GetMethodID(mutable_vec_class, "setX", "(F)V");
-  ABSL_CHECK(set_x_method);
-  env->CallVoidMethod(mutable_vec, set_x_method, point.x);
-
-  jmethodID set_y_method = env->GetMethodID(mutable_vec_class, "setY", "(F)V");
-  ABSL_CHECK(set_y_method);
-  env->CallVoidMethod(mutable_vec, set_y_method, point.y);
+void FillJMutableVecFromPointOrThrow(JNIEnv* env, jobject mutable_vec,
+                                     Point point) {
+  env->CallVoidMethod(mutable_vec, MethodMutableVecSetX(env), point.x);
+  if (env->ExceptionCheck()) return;
+  env->CallVoidMethod(mutable_vec, MethodMutableVecSetY(env), point.y);
 }
 
 }  // namespace ink::jni

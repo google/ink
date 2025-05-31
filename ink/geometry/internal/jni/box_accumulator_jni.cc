@@ -16,7 +16,7 @@
 
 #include "ink/geometry/angle.h"
 #include "ink/geometry/envelope.h"
-#include "ink/geometry/internal/jni/envelope_jni_helper.h"
+#include "ink/geometry/internal/jni/box_accumulator_jni_helper.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
 #include "ink/geometry/rect.h"
@@ -33,7 +33,7 @@ using ::ink::Quad;
 using ::ink::Rect;
 using ::ink::Segment;
 using ::ink::Triangle;
-using ::ink::jni::FillJMutableEnvelopeOrThrow;
+using ::ink::jni::FillJBoxAccumulatorOrThrow;
 
 Envelope BuildEnvelopeFromBounds(jboolean envelope_has_bounds,
                                  jfloat envelope_bounds_x_min,
@@ -63,7 +63,7 @@ JNI_METHOD(geometry, BoxAccumulatorNative, void, addSegment)
   Segment segment{{segment_start_x, segment_start_y},
                   {segment_end_x, segment_end_y}};
   envelope.Add(segment);
-  FillJMutableEnvelopeOrThrow(env, envelope, output);
+  FillJBoxAccumulatorOrThrow(env, envelope, output);
 }
 
 JNI_METHOD(geometry, BoxAccumulatorNative, void, addTriangle)
@@ -80,7 +80,7 @@ JNI_METHOD(geometry, BoxAccumulatorNative, void, addTriangle)
                     {triangle_p1_x, triangle_p1_y},
                     {triangle_p2_x, triangle_p2_y}};
   envelope.Add(triangle);
-  FillJMutableEnvelopeOrThrow(env, envelope, output);
+  FillJBoxAccumulatorOrThrow(env, envelope, output);
 }
 
 JNI_METHOD(geometry, BoxAccumulatorNative, void, addParallelogram)
@@ -97,7 +97,7 @@ JNI_METHOD(geometry, BoxAccumulatorNative, void, addParallelogram)
       Point{quad_center_x, quad_center_y}, quad_width, quad_height,
       Angle::Radians(quad_angle_radian), quad_shear_factor);
   envelope.Add(quad);
-  FillJMutableEnvelopeOrThrow(env, envelope, output);
+  FillJBoxAccumulatorOrThrow(env, envelope, output);
 }
 
 JNI_METHOD(geometry, BoxAccumulatorNative, void, addPoint)
@@ -110,7 +110,7 @@ JNI_METHOD(geometry, BoxAccumulatorNative, void, addPoint)
       envelope_bounds_x_max, envelope_bounds_y_max);
   Point point = Point{point_x, point_y};
   envelope.Add(point);
-  FillJMutableEnvelopeOrThrow(env, envelope, output);
+  FillJBoxAccumulatorOrThrow(env, envelope, output);
 }
 
 JNI_METHOD(geometry, BoxAccumulatorNative, void, addOptionalBox)
@@ -126,6 +126,6 @@ JNI_METHOD(geometry, BoxAccumulatorNative, void, addOptionalBox)
   Rect rect =
       ink::Rect::FromTwoPoints({box_x_min, box_y_min}, {box_x_max, box_y_max});
   envelope.Add(rect);
-  FillJMutableEnvelopeOrThrow(env, envelope, output);
+  FillJBoxAccumulatorOrThrow(env, envelope, output);
 }
 }

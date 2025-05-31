@@ -1,4 +1,4 @@
-// Copyright 2024-2025 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INK_GEOMETRY_INTERNAL_JNI_ENVELOPE_JNI_HELPER_H_
-#define INK_GEOMETRY_INTERNAL_JNI_ENVELOPE_JNI_HELPER_H_
-
 #include <jni.h>
 
-#include "ink/geometry/envelope.h"
+#include "absl/log/absl_check.h"
+#include "ink/jni/internal/jni_jvm_interface.h"
 
-namespace ink::jni {
+extern "C" {
 
-void FillJMutableEnvelopeOrThrow(JNIEnv* env, const Envelope& envelope,
-                                 jobject mutable_envelope);
+JNIEXPORT void JNICALL JNI_OnUnload(JavaVM* vm, void* reserved) {
+  JNIEnv* env;
+  vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+  ABSL_CHECK_NE(env, nullptr);
+  // There's no corresponding OnLoad because loading of this interface is
+  // done lazily.
+  ink::jni::UnloadJvmInterface(env);
+}
 
-}  // namespace ink::jni
-
-#endif  // INK_GEOMETRY_INTERNAL_JNI_ENVELOPE_JNI_HELPER_H_
+}  // extern "C"

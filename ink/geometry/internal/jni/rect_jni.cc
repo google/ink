@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ namespace {
 
 using ::ink::Point;
 using ::ink::Rect;
-using ::ink::jni::CreateJImmutableVecFromPoint;
-using ::ink::jni::FillJMutableVecFromPoint;
+using ::ink::jni::CreateJImmutableVecFromPointOrThrow;
+using ::ink::jni::FillJMutableVecFromPointOrThrow;
 
 }  // namespace
 
@@ -32,12 +32,12 @@ extern "C" {
 
 JNI_METHOD(geometry, BoxNative, jobject, createCenter)
 (JNIEnv* env, jobject object, float rect_x_min, jfloat rect_y_min,
- jfloat rect_x_max, jfloat rect_y_max, jclass immutable_vec_class) {
+ jfloat rect_x_max, jfloat rect_y_max) {
   Rect rect =
       Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
   Point point = rect.Center();
 
-  return CreateJImmutableVecFromPoint(env, point, immutable_vec_class);
+  return CreateJImmutableVecFromPointOrThrow(env, point);
 }
 
 JNI_METHOD(geometry, BoxNative, void, populateCenter)
@@ -47,7 +47,7 @@ JNI_METHOD(geometry, BoxNative, void, populateCenter)
       Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
   Point point = rect.Center();
 
-  FillJMutableVecFromPoint(env, mutable_vec, point);
+  FillJMutableVecFromPointOrThrow(env, mutable_vec, point);
 }
 
 JNI_METHOD(geometry, BoxNative, jboolean, containsPoint)

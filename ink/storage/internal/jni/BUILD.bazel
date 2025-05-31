@@ -64,6 +64,7 @@ cc_library(
         "//ink/brush:brush_tip",
         "//ink/brush/internal/jni:brush_jni_helper",
         "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_jvm_interface",
         "//ink/jni/internal:jni_proto_util",
         "//ink/jni/internal:jni_string_util",
         "//ink/jni/internal:jni_throw_util",

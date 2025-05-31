@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,25 +21,23 @@
 namespace {
 
 using ::ink::Vec;
-using ::ink::jni::CreateJImmutableVecFromVec;
-using ::ink::jni::FillJMutableVecFromVec;
+using ::ink::jni::CreateJImmutableVecFromVecOrThrow;
+using ::ink::jni::FillJMutableVecFromVecOrThrow;
 
 }  // namespace
 
 extern "C" {
 
 JNI_METHOD(geometry, VecNative, jobject, unitVec)
-(JNIEnv* env, jobject object, jfloat vec_X, jfloat vec_Y,
- jclass immutable_vec_class) {
-  return CreateJImmutableVecFromVec(env, Vec{vec_X, vec_Y}.AsUnitVec(),
-                                    immutable_vec_class);
+(JNIEnv* env, jobject object, jfloat vec_X, jfloat vec_Y) {
+  return CreateJImmutableVecFromVecOrThrow(env, Vec{vec_X, vec_Y}.AsUnitVec());
 }
 
 JNI_METHOD(geometry, VecNative, void, populateUnitVec)
 (JNIEnv* env, jobject object, jfloat vec_X, jfloat vec_Y,
  jobject output_mutable_vec) {
-  FillJMutableVecFromVec(env, output_mutable_vec,
-                         Vec{vec_X, vec_Y}.AsUnitVec());
+  FillJMutableVecFromVecOrThrow(env, output_mutable_vec,
+                                Vec{vec_X, vec_Y}.AsUnitVec());
 }
 
 JNI_METHOD(geometry, VecNative, jfloat, absoluteAngleBetween)

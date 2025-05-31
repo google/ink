@@ -29,10 +29,28 @@ cc_binary(
     linkshared = 1,
     linkstatic = 1,
     deps = [
+        ":jni.lds",
         "//ink/color/internal/jni:native",
         "//ink/geometry/internal/jni:native",
+        "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_jvm_interface",
         "//ink/rendering/skia/common_internal/jni:native",
         "//ink/storage/internal/jni:native",
         "//ink/strokes/internal/jni:native",
     ],
+)
+
+cc_library(
+    name = "jni_onload",
+    srcs = ["jni_onload.cc"],
+    visibility = ["//ink:__subpackages__"],
+    deps = [
+        "//ink/jni/internal:jni_jvm_interface",
+        "@com_google_absl//absl/log:absl_check",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
 )

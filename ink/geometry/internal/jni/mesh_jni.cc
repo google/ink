@@ -18,7 +18,7 @@
 
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
-#include "ink/geometry/internal/jni/envelope_jni_helper.h"
+#include "ink/geometry/internal/jni/box_accumulator_jni_helper.h"
 #include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
 #include "ink/geometry/internal/jni/mesh_jni_helper.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
@@ -33,8 +33,8 @@ using ::ink::Mesh;
 using ::ink::Point;
 using ::ink::jni::CastToMesh;
 using ::ink::jni::DeleteNativeMesh;
-using ::ink::jni::FillJMutableEnvelopeOrThrow;
-using ::ink::jni::FillJMutableVecFromPoint;
+using ::ink::jni::FillJBoxAccumulatorOrThrow;
+using ::ink::jni::FillJMutableVecFromPointOrThrow;
 using ::ink::jni::NewNativeMesh;
 using ::ink::jni::NewNativeMeshFormat;
 
@@ -120,9 +120,9 @@ JNI_METHOD(geometry, MeshNative, jint, getAttributeCount)
 }
 
 JNI_METHOD(geometry, MeshNative, void, fillBounds)
-(JNIEnv* env, jobject object, jlong native_pointer, jobject mutable_envelope) {
+(JNIEnv* env, jobject object, jlong native_pointer, jobject box_accumulator) {
   const Mesh& mesh = CastToMesh(native_pointer);
-  FillJMutableEnvelopeOrThrow(env, mesh.Bounds(), mutable_envelope);
+  FillJBoxAccumulatorOrThrow(env, mesh.Bounds(), box_accumulator);
 }
 
 JNI_METHOD(geometry, MeshNative, jint, fillAttributeUnpackingParams)
@@ -154,9 +154,9 @@ JNI_METHOD(geometry, MeshNative, jlong, newCopyOfFormat)
 JNI_METHOD(geometry, MeshNative, void, fillPosition)
 (JNIEnv* env, jobject object, jlong native_pointer, jint vertex_index,
  jobject mutable_vec) {
-  const Mesh& mesh = CastToMesh(native_pointer);
-  Point p = mesh.VertexPosition(vertex_index);
-  FillJMutableVecFromPoint(env, mutable_vec, p);
+  FillJMutableVecFromPointOrThrow(
+      env, mutable_vec,
+      CastToMesh(native_pointer).VertexPosition(vertex_index));
 }
 
 }  // extern "C"

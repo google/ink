@@ -20,42 +20,36 @@
 
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "ink/jni/internal/jni_jvm_interface.h"
 
 namespace ink::jni {
 
 namespace {
 
-const char* ExceptionClassForStatusCode(absl::StatusCode code) {
+jclass ExceptionClassForStatusCode(JNIEnv* env, absl::StatusCode code) {
   // These should all be subclasses of RuntimeException.
   switch (code) {
     case absl::StatusCode::kFailedPrecondition:
-      return "java/lang/IllegalStateException";
+      return ClassIllegalStateException(env);
     case absl::StatusCode::kInvalidArgument:
-      return "java/lang/IllegalArgumentException";
+      return ClassIllegalArgumentException(env);
     case absl::StatusCode::kNotFound:
-      return "java/util/NoSuchElementException";
+      return ClassNoSuchElementException(env);
     case absl::StatusCode::kOutOfRange:
-      return "java/lang/IndexOutOfBoundsException";
+      return ClassIndexOutOfBoundsException(env);
     case absl::StatusCode::kUnimplemented:
-      return "java/lang/UnsupportedOperationException";
+      return ClassUnsupportedOperationException(env);
     default:
-      return "java/lang/RuntimeException";
+      return ClassRuntimeException(env);
   }
-}
-
-void ThrowException(JNIEnv* env, const char* java_exception_path,
-                    const std::string& message) {
-  jclass exception_class = env->FindClass(java_exception_path);
-  ABSL_CHECK(exception_class);
-  env->ThrowNew(exception_class, message.c_str());
 }
 
 }  // namespace
 
 void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status) {
-  ABSL_CHECK(!status.ok());
-  ThrowException(env, ExceptionClassForStatusCode(status.code()),
-                 status.ToString());
+  ABSL_CHECK(!status.ok()) << "Trying to throw an exception from OK status.";
+  env->ThrowNew(ExceptionClassForStatusCode(env, status.code()),
+                status.ToString().c_str());
 }
 
 }  // namespace ink::jni

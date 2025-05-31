@@ -82,7 +82,7 @@ cc_library(
         "//ink/geometry:mesh_format",
         "//ink/geometry:mutable_mesh",
         "//ink/geometry:point",
-        "//ink/geometry/internal/jni:envelope_jni_helper",
+        "//ink/geometry/internal/jni:box_accumulator_jni_helper",
         "//ink/geometry/internal/jni:mesh_format_jni_helper",
         "//ink/geometry/internal/jni:vec_jni_helper",
         "//ink/jni/internal:jni_defines",
@@ -134,6 +134,7 @@ cc_library(
     deps = [
         "//ink/geometry:angle",
         "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_jvm_interface",
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",

@@ -175,9 +175,13 @@ JNI_METHOD(storage, BrushSerializationNative, jlong,
   }
 
   jclass callbackClass = env->GetObjectClass(callback);
+
+  // Can't cache this method lookup because it's on an interface and we don't
+  // know what class it will be on in advance.
   jmethodID on_decode_texture_method =
       env->GetMethodID(callbackClass, "onDecodeTexture",
                        "(Ljava/lang/String;[B)Ljava/lang/String;");
+
   ink::ClientTextureIdProviderAndBitmapReceiver decode_texture_jni_wrapper =
       [env, callback, on_decode_texture_method](
           const std::string& encoded_id,

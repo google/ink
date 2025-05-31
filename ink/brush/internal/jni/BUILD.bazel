@@ -178,6 +178,7 @@ cc_library(
         "//ink/color:color_space",
         "//ink/color/internal/jni:color_jni_helper",
         "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_jvm_interface",
         "//ink/jni/internal:jni_throw_util",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
