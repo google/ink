@@ -16,7 +16,6 @@
 
 #include <jni.h>
 
-#include "absl/log/absl_check.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 #include "ink/jni/internal/jni_jvm_interface.h"
