@@ -72,7 +72,7 @@ jclass ClassBrushNative(JNIEnv* env);
 jmethodID MethodBrushNativeComposeColorLongFromComponents(JNIEnv* env);
 
 jclass ClassInputToolType(JNIEnv* env);
-jmethodID MethodInputToolTypeFrom(JNIEnv* env);
+jmethodID MethodInputToolTypeFromInt(JNIEnv* env);
 
 jclass ClassStrokeInput(JNIEnv* env);
 jmethodID MethodStrokeInputUpdate(JNIEnv* env);

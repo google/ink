@@ -366,10 +366,10 @@ jclass ClassInputToolType(JNIEnv* env) {
   return class_input_tool_type;
 }
 
-jmethodID MethodInputToolTypeFrom(JNIEnv* env) {
+jmethodID MethodInputToolTypeFromInt(JNIEnv* env) {
   if (method_input_tool_type_from == nullptr) {
     method_input_tool_type_from =
-        GetStaticMethodId(env, ClassInputToolType(env), "from",
+        GetStaticMethodId(env, ClassInputToolType(env), "fromInt",
                           "(I)L" INK_PACKAGE "/brush/InputToolType;");
   }
   return method_input_tool_type_from;

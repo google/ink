@@ -29,7 +29,7 @@ namespace {
 
 jobject ToolTypeToJObjectOrThrow(JNIEnv* env, StrokeInput::ToolType tool_type) {
   return env->CallStaticObjectMethod(ClassInputToolType(env),
-                                     MethodInputToolTypeFrom(env),
+                                     MethodInputToolTypeFromInt(env),
                                      ToolTypeToJInt(tool_type));
 }
 
