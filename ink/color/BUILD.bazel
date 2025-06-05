@@ -37,6 +37,7 @@ cc_library(
 cc_test(
     name = "color_test",
     srcs = ["color_test.cc"],
+    shard_count = 2,
     deps = [
         ":color",
         ":color_space",
