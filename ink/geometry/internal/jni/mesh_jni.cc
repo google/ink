@@ -30,7 +30,6 @@
 namespace {
 
 using ::ink::Mesh;
-using ::ink::Point;
 using ::ink::jni::CastToMesh;
 using ::ink::jni::DeleteNativeMesh;
 using ::ink::jni::FillJBoxAccumulatorOrThrow;
