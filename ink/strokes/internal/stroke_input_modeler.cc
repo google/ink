@@ -98,6 +98,21 @@ LoopContractionParams(const BrushFamily::SpringModel& spring_model,
 }
 
 PositionModelerParams::LoopContractionMitigationParameters
+LoopContractionParams(
+    const BrushFamily::ExperimentalRawPositionModel& raw_position_model,
+    std::optional<PhysicalDistance> stroke_unit_length) {
+  return {
+      .is_enabled = true,
+      .speed_lower_bound = 0.0f,
+      .speed_upper_bound = 0.0f,
+      .interpolation_strength_at_speed_lower_bound = 0.0f,
+      .interpolation_strength_at_speed_upper_bound = 0.0f,
+      .min_speed_sampling_window = stroke_model::Duration(0),
+      .min_discrete_speed_samples = 1,
+  };
+}
+
+PositionModelerParams::LoopContractionMitigationParameters
 MakeLoopContractionMitigationParameters(
     const BrushFamily::InputModel& input_model,
     std::optional<PhysicalDistance> stroke_unit_length) {
@@ -113,6 +128,13 @@ StylusStateModelerParams StylusModelerParams(
   return {.use_stroke_normal_projection = true,
           .min_input_samples = 8,
           .min_sample_duration = stroke_model::Duration(0.04)};
+}
+
+StylusStateModelerParams StylusModelerParams(
+    const BrushFamily::ExperimentalRawPositionModel& raw_position_model) {
+  return {.use_stroke_normal_projection = true,
+          .min_input_samples = 1,
+          .min_sample_duration = stroke_model::Duration(0)};
 }
 
 StylusStateModelerParams MakeStylusStateModelerParams(

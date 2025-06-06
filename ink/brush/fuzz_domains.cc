@@ -533,7 +533,8 @@ Domain<BrushFamily> ValidBrushFamily(DomainVariant variant) {
 }  // namespace
 
 Domain<BrushFamily::InputModel> ValidBrushFamilyInputModel() {
-  return VariantOf(StructOf<BrushFamily::SpringModel>());
+  return VariantOf(StructOf<BrushFamily::SpringModel>(),
+                   StructOf<BrushFamily::ExperimentalRawPositionModel>());
 }
 
 namespace {

@@ -341,6 +341,12 @@ Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
   return VariantWith<BrushFamily::SpringModel>(_);  // no fields to match
 }
 
+Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
+    const BrushFamily::ExperimentalRawPositionModel& input_model) {
+  return VariantWith<BrushFamily::ExperimentalRawPositionModel>(
+      _);  // no fields to match
+}
+
 [[maybe_unused]] Matcher<BrushFamily::InputModel> BrushFamilyInputModelEq(
     const BrushFamily::InputModel& expected) {
   return std::visit(

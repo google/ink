@@ -41,12 +41,17 @@ class BrushFamily {
   // existing strokes.
   struct SpringModel {};
 
+  // Model that attempts to preserve input positions as closely as possible.
+  // This is an experimental configuration which may be adjusted or removed
+  // later.
+  struct ExperimentalRawPositionModel {};
+
   // Specifies a model for turning a sequence of raw hardware inputs (e.g. from
   // a stylus, touchscreen, or mouse) into a sequence of smoothed, modeled
   // inputs. Raw hardware inputs tend to be noisy, and must be smoothed before
   // being passed into a brush's behaviors and extruded into a mesh in order to
   // get a good-looking stroke.
-  using InputModel = std::variant<SpringModel>;
+  using InputModel = std::variant<SpringModel, ExperimentalRawPositionModel>;
 
   // Returns the default `InputModel` that will be used by
   // `BrushFamily::Create()` when none is specified.
