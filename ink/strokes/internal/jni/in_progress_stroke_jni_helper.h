@@ -72,7 +72,7 @@ NativeInProgressStrokeTriangleIndexDataCaches(jlong native_pointer) {
 
 // Frees a Kotlin InProgressStroke.nativePointer.
 inline void DeleteNativeInProgressStroke(jlong native_pointer) {
-  ABSL_CHECK_NE(native_pointer, 0);
+  if (native_pointer == 0) return;
   delete reinterpret_cast<internal::InProgressStrokeWrapper*>(native_pointer);
 }
 

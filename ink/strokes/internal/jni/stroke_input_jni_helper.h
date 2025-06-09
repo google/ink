@@ -59,8 +59,7 @@ inline StrokeInputBatch& CastToMutableStrokeInputBatch(
 // Frees a Kotlin StrokeInputBatch.nativePointer or
 // MutableStrokeInputBatch.nativePointer.
 inline void DeleteNativeStrokeInputBatch(jlong native_pointer) {
-  ABSL_CHECK_NE(native_pointer, 0)
-      << "Invalid native pointer for StrokeInputBatch.";
+  if (native_pointer == 0) return;
   delete reinterpret_cast<StrokeInputBatch*>(native_pointer);
 }
 

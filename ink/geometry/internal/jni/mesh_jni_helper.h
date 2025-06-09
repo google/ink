@@ -31,7 +31,7 @@ inline const Mesh& CastToMesh(jlong native_pointer) {
 
 // Frees a Kotlin Mesh.nativePointer.
 inline void DeleteNativeMesh(jlong native_pointer) {
-  ABSL_CHECK_NE(native_pointer, 0);
+  if (native_pointer == 0) return;
   delete reinterpret_cast<Mesh*>(native_pointer);
 }
 

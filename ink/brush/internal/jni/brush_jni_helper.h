@@ -43,7 +43,7 @@ inline const Brush& CastToBrush(jlong brush_native_pointer) {
 
 // Frees a Kotlin Brush.nativePointer.
 inline void DeleteNativeBrush(jlong brush_native_pointer) {
-  ABSL_CHECK_NE(brush_native_pointer, 0);
+  if (brush_native_pointer == 0) return;
   delete reinterpret_cast<Brush*>(brush_native_pointer);
 }
 
@@ -62,7 +62,7 @@ inline const BrushFamily& CastToBrushFamily(jlong brush_family_native_pointer) {
 
 // Frees a Kotlin BrushFamily.nativePointer.
 inline void DeleteNativeBrushFamily(jlong brush_family_native_pointer) {
-  ABSL_CHECK_NE(brush_family_native_pointer, 0);
+  if (brush_family_native_pointer == 0) return;
   delete reinterpret_cast<BrushFamily*>(brush_family_native_pointer);
 }
 
@@ -81,7 +81,7 @@ inline const BrushCoat& CastToBrushCoat(jlong brush_coat_native_pointer) {
 
 // Frees a Kotlin BrushCoat.nativePointer.
 inline void DeleteNativeBrushCoat(jlong brush_coat_native_pointer) {
-  ABSL_CHECK_NE(brush_coat_native_pointer, 0);
+  if (brush_coat_native_pointer == 0) return;
   delete reinterpret_cast<BrushCoat*>(brush_coat_native_pointer);
 }
 
@@ -100,7 +100,7 @@ inline const BrushPaint& CastToBrushPaint(jlong brush_paint_native_pointer) {
 
 // Frees a Kotlin BrushPaint.nativePointer.
 inline void DeleteNativeBrushPaint(jlong brush_paint_native_pointer) {
-  ABSL_CHECK_NE(brush_paint_native_pointer, 0);
+  if (brush_paint_native_pointer == 0) return;
   delete reinterpret_cast<BrushPaint*>(brush_paint_native_pointer);
 }
 
@@ -124,7 +124,7 @@ inline const BrushPaint::TextureLayer& CastToTextureLayer(
 
 // Frees a Kotlin BrushPaint::TextureLayer.nativePointer.
 inline void DeleteNativeTextureLayer(jlong texture_layer_native_pointer) {
-  ABSL_CHECK_NE(texture_layer_native_pointer, 0);
+  if (texture_layer_native_pointer == 0) return;
   delete reinterpret_cast<BrushPaint::TextureLayer*>(
       texture_layer_native_pointer);
 }
@@ -144,7 +144,7 @@ inline const BrushTip& CastToBrushTip(jlong brush_tip_native_pointer) {
 
 // Frees a Kotlin BrushTip.nativePointer.
 inline void DeleteNativeBrushTip(jlong brush_tip_native_pointer) {
-  ABSL_CHECK_NE(brush_tip_native_pointer, 0);
+  if (brush_tip_native_pointer == 0) return;
   delete reinterpret_cast<BrushTip*>(brush_tip_native_pointer);
 }
 
@@ -165,7 +165,7 @@ inline const BrushBehavior& CastToBrushBehavior(
 
 // Frees a Kotlin BrushBehavior.nativePointer.
 inline void DeleteNativeBrushBehavior(jlong brush_behavior_native_pointer) {
-  ABSL_CHECK_NE(brush_behavior_native_pointer, 0);
+  if (brush_behavior_native_pointer == 0) return;
   delete reinterpret_cast<BrushBehavior*>(brush_behavior_native_pointer);
 }
 
@@ -187,7 +187,7 @@ inline const BrushBehavior::Node& CastToBrushBehaviorNode(
 
 // Frees a Kotlin BrushBehavior::Node.nativePointer.
 inline void DeleteNativeBrushBehaviorNode(jlong node_native_pointer) {
-  ABSL_CHECK_NE(node_native_pointer, 0);
+  if (node_native_pointer == 0) return;
   delete reinterpret_cast<BrushBehavior::Node*>(node_native_pointer);
 }
 
@@ -208,7 +208,7 @@ inline const EasingFunction& CastToEasingFunction(
 
 // Frees a Kotlin EasingFunction.nativePointer.
 inline void DeleteNativeEasingFunction(jlong easing_function_native_pointer) {
-  ABSL_CHECK_NE(easing_function_native_pointer, 0);
+  if (easing_function_native_pointer == 0) return;
   delete reinterpret_cast<EasingFunction*>(easing_function_native_pointer);
 }
 
