@@ -282,7 +282,7 @@ class Mesh {
   absl::Span<const std::byte> PackedVertexAttribute(
       uint32_t vertex_index, uint32_t attribute_index) const;
 
-  ABSL_NONNULL std::shared_ptr<const Data> data_;
+  absl_nonnull std::shared_ptr<const Data> data_;
 };
 
 }  // namespace ink

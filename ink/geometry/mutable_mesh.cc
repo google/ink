@@ -268,8 +268,8 @@ struct FlippedTriangleCorrectionData {
   // Pointers to the mesh we're packing, and the packing params used to do so.
   // The owner of this object is responsible for ensuring that the mesh and
   // packing params outlive this.
-  const MutableMesh* ABSL_NONNULL mesh;
-  const MeshAttributeCodingParams* ABSL_NONNULL packing_params;
+  const MutableMesh* absl_nonnull mesh;
+  const MeshAttributeCodingParams* absl_nonnull packing_params;
   // The vertex positions of the mesh, rescaled to the range [0, 2^n_bits - 1]
   // and rounded to the nearest integer.
   std::vector<Point> quantized_vertex_positions;
