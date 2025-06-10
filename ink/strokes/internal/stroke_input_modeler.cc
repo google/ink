@@ -92,8 +92,6 @@ LoopContractionParams(const BrushFamily::SpringModel& spring_model,
       .interpolation_strength_at_speed_upper_bound =
           kDefaultLoopMitigationInterpolationStrengthAtSpeedUpperBound,
       .min_speed_sampling_window = kDefaultLoopMitigationMinSpeedSamplingWindow,
-      .min_discrete_speed_samples =
-          kDefaultLoopMitigationMinDiscreteSpeedSamples,
   };
 }
 
@@ -108,7 +106,6 @@ LoopContractionParams(
       .interpolation_strength_at_speed_lower_bound = 0.0f,
       .interpolation_strength_at_speed_upper_bound = 0.0f,
       .min_speed_sampling_window = stroke_model::Duration(0),
-      .min_discrete_speed_samples = 1,
   };
 }
 
@@ -125,16 +122,12 @@ MakeLoopContractionMitigationParameters(
 
 StylusStateModelerParams StylusModelerParams(
     const BrushFamily::SpringModel& spring_model) {
-  return {.use_stroke_normal_projection = true,
-          .min_input_samples = 8,
-          .min_sample_duration = stroke_model::Duration(0.04)};
+  return {.use_stroke_normal_projection = true};
 }
 
 StylusStateModelerParams StylusModelerParams(
     const BrushFamily::ExperimentalRawPositionModel& raw_position_model) {
-  return {.use_stroke_normal_projection = true,
-          .min_input_samples = 1,
-          .min_sample_duration = stroke_model::Duration(0)};
+  return StylusModelerParams(BrushFamily::SpringModel{});
 }
 
 StylusStateModelerParams MakeStylusStateModelerParams(
