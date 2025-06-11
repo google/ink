@@ -172,7 +172,7 @@ class GeometrySaveTest : public testing::Test {
     float simplification_threshold;
   };
 
-  void AppendVertices(Geometry* ABSL_NONNULL geometry,
+  void AppendVertices(Geometry* absl_nonnull geometry,
                       const Extrusion& extrusion) {
     for (Point p : extrusion.left) {
       geometry->AppendLeftVertex(p);
@@ -182,7 +182,7 @@ class GeometrySaveTest : public testing::Test {
     }
   }
 
-  void Extrude(Geometry* ABSL_NONNULL geometry,
+  void Extrude(Geometry* absl_nonnull geometry,
                absl::Span<const Extrusion> extrusions) {
     for (const Extrusion& extrusion : extrusions) {
       AppendVertices(geometry, extrusion);
@@ -194,9 +194,9 @@ class GeometrySaveTest : public testing::Test {
   // Performs an identical extrusion on multiple Geometry objects. This is
   // useful for having a known correct copy of Geometry from prior to setting a
   // save point.
-  void Extrude(absl::Span<Geometry* ABSL_NONNULL const> geometries,
+  void Extrude(absl::Span<Geometry* absl_nonnull const> geometries,
                absl::Span<const Extrusion> extrusions) {
-    for (Geometry* ABSL_NONNULL g : geometries) {
+    for (Geometry* absl_nonnull g : geometries) {
       Extrude(g, extrusions);
     }
   }

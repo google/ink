@@ -85,7 +85,7 @@ class StrokeOutline {
   // default-initialized unused capacity at both the start and end of the
   // allocated array.
   struct IndexStorage {
-    ABSL_NONNULL std::unique_ptr<uint32_t[]> data;
+    absl_nonnull std::unique_ptr<uint32_t[]> data;
     size_t capacity = 0;
     IndexCounts used_counts;
 

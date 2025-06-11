@@ -2278,7 +2278,7 @@ void Geometry::DisconnectPartitionSides(Side& side) {
 }
 
 Geometry::TriangleBuilder::TriangleBuilder(
-    Geometry* ABSL_NONNULL geometry, float initial_outline_reposition_budget,
+    Geometry* absl_nonnull geometry, float initial_outline_reposition_budget,
     float intersection_travel_limit, float retriangulation_travel_threshold)
     : geometry_(geometry),
       initial_outline_reposition_budget_(initial_outline_reposition_budget),

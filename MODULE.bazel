@@ -13,7 +13,7 @@
 # limitations under the License.
 
 module(
-    name = "ink-strokes-api",
+    name = "ink",
     version = "0.0.1",
 )
 
@@ -25,8 +25,8 @@ http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "ht
 ## Toolchain setup
 #################################################################################
 
-bazel_dep(name = "platforms", version = "0.0.10")
-bazel_dep(name = "rules_cc", version = "0.0.17")
+bazel_dep(name = "platforms", version = "0.0.11")
+bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "toolchains_llvm", version = "1.2.0")
 
 # Configure and register the LLVM toolchain for host builds.
@@ -55,7 +55,7 @@ use_repo(android_ndk_repository_extension, "androidndk")
 
 bazel_dep(
     name = "abseil-cpp",
-    version = "20250127.1",
+    version = "20250512.0",
     repo_name = "com_google_absl",
 )
 
@@ -71,12 +71,9 @@ git_repository(
     remote = "https://github.com/memononen/libtess2.git",
 )
 
-bazel_dep(name = "protobuf", version = "29.3")
+bazel_dep(name = "protobuf", version = "31.1")
 bazel_dep(name = "rules_android", version = "0.6.0")
-bazel_dep(
-    name = "rules_jni",
-    version = "0.10.1",
-)
+bazel_dep(name = "rules_jni", version = "0.10.1")
 
 SKIA_COMMIT = "515a23f3cbe1e2f54ffa6821e6da6f4891763f47"
 
@@ -103,7 +100,7 @@ local_repository(
 #################################################################################
 bazel_dep(
     name = "googletest",
-    version = "1.15.2",
+    version = "1.17.0",
     dev_dependency = True,
     repo_name = "com_google_googletest",
 )
@@ -115,9 +112,20 @@ bazel_dep(
 )
 bazel_dep(
     name = "fuzztest",
-    version = "20241028.0",
+    version = "20250214.0",
     dev_dependency = True,
     repo_name = "com_google_fuzztest",
+)
+
+# Depend on a later version of Riegeli than the one in Fuzztest to avoid an
+# incompatibility with the version of Abseil that we use. We don't use this
+# directly, so it can be removed when we upgrade to a version of Fuzztest
+# that depends on a later version (pending upgrade in
+# https://github.com/google/fuzztest/pull/1742).
+bazel_dep(
+    name = "riegeli",
+    version = "0.0.0-20250706-c4d1f27",
+    dev_dependency = True,
 )
 
 #################################################################################
@@ -129,8 +137,3 @@ bazel_dep(
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "libpng", version = "1.6.47")
-
-# Silence warnings about duplicate Python toolchain registration by using a
-# newer version of rules_python.  We can remove this when any of our
-# dependencies use a sufficiently newer rules_python.
-bazel_dep(name = "rules_python", version = "0.40.0")

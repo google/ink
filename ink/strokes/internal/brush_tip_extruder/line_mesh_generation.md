@@ -103,8 +103,8 @@ class Geometry {
     // "adjacent" refers to properties of the `new_index_side_`, and "opposite"
     // is used to refer to the other side.
     struct SlowPathTriangleInfo {
-      Side* ABSL_NONNULL adjacent_side;
-      Side* ABSL_NONNULL opposite_side;
+      Side* absl_nonnull adjacent_side;
+      Side* absl_nonnull opposite_side;
       Point adjacent_position;
       Point opposite_position;
       ExtrudedVertex proposed_vertex;
@@ -113,7 +113,7 @@ class Geometry {
       std::optional<uint32_t> proposed_vertex_triangle;
     };
 
-    Geometry* ABSL_NONNULL geometry_;
+    Geometry* absl_nonnull geometry_;
     float initial_outline_reposition_budget_;
     float intersection_travel_limit_;
     float retriangulation_travel_threshold_;
@@ -142,7 +142,7 @@ overlaps in the geometry.
 `TriangleBuilder` is constructed via:
 
 ```c++
-TriangleBuilder(Geometry* ABSL_NONNULL geometry,
+TriangleBuilder(Geometry* absl_nonnull geometry,
                 float initial_outline_reposition_budget,
                 float intersection_travel_limit,
                 float retriangulation_travel_threshold);
