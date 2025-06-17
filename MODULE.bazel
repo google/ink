@@ -59,7 +59,8 @@ bazel_dep(
 
 git_repository(
     name = "ink_stroke_modeler",
-    commit = "8ce40dc2a847c73a72fb92ff30ca93b2e8ada8b0",
+    # Temporarily pointing to pending PR while that is released.
+    commit = "a50023c379021611d10ba3a06de1805008db731d",
     remote = "https://github.com/google/ink-stroke-modeler.git",
 )
 
