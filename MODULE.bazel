@@ -59,14 +59,13 @@ bazel_dep(
 
 git_repository(
     name = "ink_stroke_modeler",
-    # Temporarily pointing to pending PR while that is released.
-    commit = "a50023c379021611d10ba3a06de1805008db731d",
+    commit = "748f84a30335b773e073fd1cf31c591be0a6b77e",  # Head as of 2025-06-17
     remote = "https://github.com/google/ink-stroke-modeler.git",
 )
 
 git_repository(
     name = "libtess2",
-    commit = "446bae6dfb4c3efb43cb2764379574dcb4f0ee6c",
+    commit = "446bae6dfb4c3efb43cb2764379574dcb4f0ee6c",  # Head as of 2025-04-25
     remote = "https://github.com/memononen/libtess2.git",
 )
 
