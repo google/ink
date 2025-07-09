@@ -414,6 +414,7 @@ message BrushPaint {
     reserved 20;
     reserved 21;
     reserved 22;
+    reserved 23;
   }
 
   // Zero or more textures to blend together to affect this coat's appearance.

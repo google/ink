@@ -21,6 +21,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/time/time.h"
 
 namespace ink {
 namespace brush_internal {
@@ -230,6 +231,15 @@ absl::Status ValidateBrushPaintTextureLayer(
         "and `animation_columns`. Got %d > %d * %d",
         layer.animation_frames, layer.animation_rows, layer.animation_columns));
   }
+  if (layer.animation_duration < absl::Milliseconds(1) ||
+      layer.animation_duration > absl::Milliseconds(1 << 24) ||
+      layer.animation_duration % absl::Milliseconds(1) !=
+          absl::ZeroDuration()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "`BrushPaint::TextureLayer::animation_duration` must be "
+        "a whole number of milliseconds in the interval [1, 2^24]. Got ",
+        layer.animation_duration));
+  }
   for (const BrushPaint::TextureKeyframe& keyframe : layer.keyframes) {
     if (auto status = ValidateBrushPaintTextureKeyframe(keyframe);
         !status.ok()) {
@@ -250,6 +260,8 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
     int first_animation_frames = paint.texture_layers[0].animation_frames;
     int first_animation_rows = paint.texture_layers[0].animation_rows;
     int first_animation_columns = paint.texture_layers[0].animation_columns;
+    absl::Duration first_animation_duration =
+        paint.texture_layers[0].animation_duration;
     BrushPaint::TextureMapping first_mapping = paint.texture_layers[0].mapping;
     for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
       if (layer.animation_frames != first_animation_frames) {
@@ -269,6 +281,13 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
             "`BrushPaint::TextureLayer::animation_columns` must be the same "
             "for all texture layers. Got `",
             first_animation_columns, "` and `", layer.animation_columns, "`"));
+      }
+      if (layer.animation_duration != first_animation_duration) {
+        return absl::InvalidArgumentError(absl::StrCat(
+            "`BrushPaint::TextureLayer::animation_duration` must be the same "
+            "for all texture layers. Got `",
+            first_animation_duration, "` and `", layer.animation_duration,
+            "`"));
       }
       // TODO: b/375203215 - Remove the below check once we are able to mix
       // rendering tiling and winding textures in a single `BrushPaint`.
@@ -410,8 +429,9 @@ std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
       ", opacity=", texture_layer.opacity,
       ", animation_frames=", texture_layer.animation_frames,
       ", animation_rows=", texture_layer.animation_rows,
-      ", animation_columns=", texture_layer.animation_columns, ", keyframes={",
-      absl::StrJoin(texture_layer.keyframes, ", "), "}",
+      ", animation_columns=", texture_layer.animation_columns,
+      ", animation_duration=", texture_layer.animation_duration,
+      ", keyframes={", absl::StrJoin(texture_layer.keyframes, ", "), "}",
       ", blend_mode=", ToFormattedString(texture_layer.blend_mode), "}");
 }
 
