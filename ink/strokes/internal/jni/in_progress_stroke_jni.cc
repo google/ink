@@ -14,14 +14,10 @@
 
 #include <jni.h>
 
-#include <cstddef>
 #include <cstdint>
-#include <cstring>
-#include <limits>
-#include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
@@ -46,18 +42,17 @@ namespace {
 using ::ink::Duration32;
 using ::ink::Envelope;
 using ::ink::InProgressStroke;
-using ::ink::MutableMesh;
 using ::ink::Point;
 using ::ink::StrokeInput;
 using ::ink::StrokeInputBatch;
 using ::ink::jni::CastToBrush;
-using ::ink::jni::CastToInProgressStroke;
+using ::ink::jni::CastToInProgressStrokeWrapper;
+using ::ink::jni::CastToMutableInProgressStrokeWrapper;
 using ::ink::jni::CastToMutableStrokeInputBatch;
 using ::ink::jni::CastToStrokeInputBatch;
 using ::ink::jni::DeleteNativeInProgressStroke;
 using ::ink::jni::FillJBoxAccumulatorOrThrow;
 using ::ink::jni::FillJMutableVecFromPointOrThrow;
-using ::ink::jni::NativeInProgressStrokeTriangleIndexDataCaches;
 using ::ink::jni::NewNativeInProgressStroke;
 using ::ink::jni::NewNativeMeshFormat;
 using ::ink::jni::NewNativeStroke;
@@ -79,27 +74,25 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, free)
 
 JNI_METHOD(strokes, InProgressStrokeNative, void, clear)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  CastToInProgressStroke(native_pointer).Clear();
+  CastToMutableInProgressStrokeWrapper(native_pointer).Stroke().Clear();
 }
 
 // Starts the stroke with a brush.
 JNI_METHOD(strokes, InProgressStrokeNative, void, start)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jlong brush_native_pointer,
  jint noise_seed) {
-  CastToInProgressStroke(native_pointer)
+  CastToMutableInProgressStrokeWrapper(native_pointer)
       .Start(CastToBrush(brush_native_pointer), noise_seed);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jboolean, enqueueInputs)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jlong real_inputs_pointer,
  jlong predicted_inputs_pointer) {
-  InProgressStroke& in_progress_stroke = CastToInProgressStroke(native_pointer);
-  const StrokeInputBatch& real_inputs =
-      CastToStrokeInputBatch(real_inputs_pointer);
-  const StrokeInputBatch& predicted_inputs =
-      CastToStrokeInputBatch(predicted_inputs_pointer);
-  if (absl::Status status =
-          in_progress_stroke.EnqueueInputs(real_inputs, predicted_inputs);
+  InProgressStroke& in_progress_stroke =
+      CastToMutableInProgressStrokeWrapper(native_pointer).Stroke();
+  if (absl::Status status = in_progress_stroke.EnqueueInputs(
+          CastToStrokeInputBatch(real_inputs_pointer),
+          CastToStrokeInputBatch(predicted_inputs_pointer));
       !status.ok()) {
     ThrowExceptionFromStatus(env, status);
     return false;
@@ -110,11 +103,9 @@ JNI_METHOD(strokes, InProgressStrokeNative, jboolean, enqueueInputs)
 JNI_METHOD(strokes, InProgressStrokeNative, jboolean, updateShape)
 (JNIEnv* env, jobject thiz, jlong native_pointer,
  jlong j_current_elapsed_time_millis) {
-  InProgressStroke& in_progress_stroke = CastToInProgressStroke(native_pointer);
-  Duration32 current_elapsed_time =
-      Duration32::Millis(j_current_elapsed_time_millis);
   if (absl::Status status =
-          in_progress_stroke.UpdateShape(current_elapsed_time);
+          CastToMutableInProgressStrokeWrapper(native_pointer)
+              .UpdateShape(Duration32::Millis(j_current_elapsed_time_millis));
       !status.ok()) {
     ThrowExceptionFromStatus(env, status);
     return false;
@@ -124,40 +115,43 @@ JNI_METHOD(strokes, InProgressStrokeNative, jboolean, updateShape)
 
 JNI_METHOD(strokes, InProgressStrokeNative, void, finishInput)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  CastToInProgressStroke(native_pointer).FinishInputs();
+  CastToMutableInProgressStrokeWrapper(native_pointer).Stroke().FinishInputs();
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jboolean, isInputFinished)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return CastToInProgressStroke(native_pointer).InputsAreFinished();
+  return CastToInProgressStrokeWrapper(native_pointer)
+      .Stroke()
+      .InputsAreFinished();
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jboolean, isUpdateNeeded)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return CastToInProgressStroke(native_pointer).NeedsUpdate();
+  return CastToInProgressStrokeWrapper(native_pointer).Stroke().NeedsUpdate();
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jlong, newStrokeFromCopy)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return NewNativeStroke(CastToInProgressStroke(native_pointer).CopyToStroke());
+  return NewNativeStroke(
+      CastToInProgressStrokeWrapper(native_pointer).Stroke().CopyToStroke());
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getInputCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return CastToInProgressStroke(native_pointer).InputCount();
+  return CastToInProgressStrokeWrapper(native_pointer).Stroke().InputCount();
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getRealInputCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   const InProgressStroke& in_progress_stroke =
-      CastToInProgressStroke(native_pointer);
+      CastToInProgressStrokeWrapper(native_pointer).Stroke();
   return in_progress_stroke.RealInputCount();
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getPredictedInputCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   const InProgressStroke& in_progress_stroke =
-      CastToInProgressStroke(native_pointer);
+      CastToInProgressStrokeWrapper(native_pointer).Stroke();
   return in_progress_stroke.PredictedInputCount();
 }
 
@@ -165,7 +159,7 @@ JNI_METHOD(strokes, InProgressStrokeNative, jint, populateInputs)
 (JNIEnv* env, jobject thiz, jlong native_pointer,
  jlong mutable_stroke_input_batch_pointer, jint from, jint to) {
   const InProgressStroke& in_progress_stroke =
-      CastToInProgressStroke(native_pointer);
+      CastToInProgressStrokeWrapper(native_pointer).Stroke();
   StrokeInputBatch& batch =
       CastToMutableStrokeInputBatch(mutable_stroke_input_batch_pointer);
   batch.Clear();
@@ -181,40 +175,47 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, getAndOverwriteInput)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jobject j_input, jint index,
  jclass input_tool_type_class) {
   const InProgressStroke& in_progress_stroke =
-      CastToInProgressStroke(native_pointer);
+      CastToInProgressStrokeWrapper(native_pointer).Stroke();
   StrokeInput input = in_progress_stroke.GetInputs().Get(index);
   UpdateJObjectInputOrThrow(env, input, j_input);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getBrushCoatCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return CastToInProgressStroke(native_pointer).BrushCoatCount();
+  return CastToInProgressStrokeWrapper(native_pointer)
+      .Stroke()
+      .BrushCoatCount();
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, void, getMeshBounds)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jobject j_out_envelope) {
-  FillJBoxAccumulatorOrThrow(
-      env, CastToInProgressStroke(native_pointer).GetMeshBounds(coat_index),
-      j_out_envelope);
+  FillJBoxAccumulatorOrThrow(env,
+                             CastToInProgressStrokeWrapper(native_pointer)
+                                 .Stroke()
+                                 .GetMeshBounds(coat_index),
+                             j_out_envelope);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, void, fillUpdatedRegion)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jobject j_out_envelope) {
   const InProgressStroke& in_progress_stroke =
-      CastToInProgressStroke(native_pointer);
+      CastToInProgressStrokeWrapper(native_pointer).Stroke();
   const Envelope& updated_region = in_progress_stroke.GetUpdatedRegion();
   FillJBoxAccumulatorOrThrow(env, updated_region, j_out_envelope);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, void, resetUpdatedRegion)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  CastToInProgressStroke(native_pointer).ResetUpdatedRegion();
+  CastToMutableInProgressStrokeWrapper(native_pointer)
+      .Stroke()
+      .ResetUpdatedRegion();
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getOutlineCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index) {
-  return CastToInProgressStroke(native_pointer)
+  return CastToInProgressStrokeWrapper(native_pointer)
+      .Stroke()
       .GetCoatOutlines(coat_index)
       .size();
 }
@@ -222,7 +223,8 @@ JNI_METHOD(strokes, InProgressStrokeNative, jint, getOutlineCount)
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getOutlineVertexCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint outline_index) {
-  return CastToInProgressStroke(native_pointer)
+  return CastToInProgressStrokeWrapper(native_pointer)
+      .Stroke()
       .GetCoatOutlines(coat_index)[outline_index]
       .size();
 }
@@ -231,10 +233,9 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, fillOutlinePosition)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint outline_index, jint outline_vertex_index, jobject out_position) {
   const InProgressStroke& in_progress_stroke =
-      CastToInProgressStroke(native_pointer);
+      CastToInProgressStrokeWrapper(native_pointer).Stroke();
   absl::Span<const uint32_t> outline =
       in_progress_stroke.GetCoatOutlines(coat_index)[outline_index];
-  // TODO: b/294561921 - Implement multiple meshes.
   Point position = in_progress_stroke.GetMesh(coat_index)
                        .VertexPosition(outline[outline_vertex_index]);
   FillJMutableVecFromPointOrThrow(env, out_position, position);
@@ -242,33 +243,23 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, fillOutlinePosition)
 
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getMeshPartitionCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index) {
-  // TODO: b/294561921 - Implement multiple meshes.
-  return 1;
+  return CastToInProgressStrokeWrapper(native_pointer)
+      .MeshPartitionCount(coat_index);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getVertexCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint mesh_index) {
-  const InProgressStroke& in_progress_stroke =
-      CastToInProgressStroke(native_pointer);
-  // TODO: b/294561921 - Implement multiple meshes.
-  return in_progress_stroke.GetMesh(coat_index).VertexCount();
+  return CastToInProgressStrokeWrapper(native_pointer)
+      .VertexCount(coat_index, mesh_index);
 }
 
-JNI_METHOD(strokes, InProgressStrokeNative, jobject, getRawVertexData)
+JNI_METHOD(strokes, InProgressStrokeNative, absl_nullable jobject,
+           getUnsafelyMutableRawVertexData)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint mesh_index) {
-  const InProgressStroke& in_progress_stroke =
-      CastToInProgressStroke(native_pointer);
-  // TODO: b/294561921 - Implement multiple meshes.
-  const absl::Span<const std::byte> raw_vertex_data =
-      in_progress_stroke.GetMesh(coat_index).RawVertexData();
-  if (raw_vertex_data.data() == nullptr) return nullptr;
-  return env->NewDirectByteBuffer(
-      // NewDirectByteBuffer needs a non-const void*. The resulting buffer is
-      // writeable, but it will be wrapped at the Kotlin layer in a read-only
-      // buffer that delegates to this one.
-      const_cast<std::byte*>(raw_vertex_data.data()), raw_vertex_data.size());
+  return CastToInProgressStrokeWrapper(native_pointer)
+      .GetUnsafelyMutableRawVertexData(env, coat_index, mesh_index);
 }
 
 // Returns a direct byte buffer of the triangle index data in 16-bit format.
@@ -279,79 +270,23 @@ JNI_METHOD(strokes, InProgressStrokeNative, jobject, getRawVertexData)
 // method (which is typically used for rendering).
 // TODO: b/294561921 - Simplify this when the underlying index data is in 16 bit
 //   values.
-JNI_METHOD(strokes, InProgressStrokeNative, jobject, getRawTriangleIndexData)
+JNI_METHOD(strokes, InProgressStrokeNative, absl_nullable jobject,
+           getUnsafelyMutableRawTriangleIndexData)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint mesh_index) {
   ABSL_CHECK_EQ(mesh_index, 0) << "Unsupported mesh index: " << mesh_index;
-  const InProgressStroke& in_progress_stroke =
-      CastToInProgressStroke(native_pointer);
-
-  const MutableMesh& mesh = in_progress_stroke.GetMesh(coat_index);
-  size_t index_stride = mesh.IndexStride();
-  ABSL_CHECK(index_stride == sizeof(uint32_t))
-      << "Unsupported index stride: " << index_stride;
-
-  // If necessary, expand the list of caches.
-  std::vector<std::vector<uint16_t>>& triangle_index_data_caches =
-      NativeInProgressStrokeTriangleIndexDataCaches(native_pointer);
-  if (coat_index >= static_cast<int>(triangle_index_data_caches.size())) {
-    triangle_index_data_caches.resize(coat_index + 1);
-  }
-
-  std::vector<uint16_t>& triangle_index_data_cache =
-      triangle_index_data_caches[coat_index];
-  // Clear the contents, but don't give up any of the capacity because it will
-  // be filled again right away.
-  triangle_index_data_cache.clear();
-  const absl::Span<const std::byte> raw_index_data = mesh.RawIndexData();
-  uint32_t index_count = 3 * mesh.TriangleCount();
-  for (uint32_t i = 0; i < index_count; ++i) {
-    uint32_t i_byte = sizeof(uint32_t) * i;
-    uint32_t triangle_index_32;
-    // Interpret each set of 4 bytes as a 32-bit integer.
-    std::memcpy(&triangle_index_32, &raw_index_data[i_byte], sizeof(uint32_t));
-    // If that 32-bit integer would not fit into a 16-bit integer, then stop
-    // copying content and return all the triangles that have been processed so
-    // far.
-    if (triangle_index_32 > std::numeric_limits<uint16_t>::max()) {
-      // The offending index may have been in the middle of a triangle, so
-      // rewind back to the previous multiple of 3 to just return whole
-      // triangles.
-      uint32_t i_last_multiple_of_3 = (i / 3) * 3;
-      triangle_index_data_cache.erase(
-          triangle_index_data_cache.begin() + i_last_multiple_of_3,
-          triangle_index_data_cache.end());
-      ABSL_LOG_EVERY_N_SEC(WARNING, 1)
-          << "Triangle index data exceeds 16-bit limit, truncating.";
-      break;
-    }
-    uint16_t triangle_index_16 = triangle_index_32;
-    triangle_index_data_cache.push_back(triangle_index_16);
-  }
-
-  ABSL_CHECK_EQ(triangle_index_data_cache.size() % 3, 0u);
-
-  // This direct byte buffer is writeable, but it will be wrapped at the Kotlin
-  // layer in a read-only buffer that delegates to this one.
-  if (triangle_index_data_cache.data() == nullptr) return nullptr;
-  return env->NewDirectByteBuffer(
-      triangle_index_data_cache.data(),
-      triangle_index_data_cache.size() * sizeof(uint16_t));
-}
-
-JNI_METHOD(strokes, InProgressStrokeNative, jint, getTriangleIndexStride)
-(JNIEnv* env, jobject thiz, jlong native_pointer, jint mesh_index) {
-  // The data is converted from uint32_t above in getRawTriangleIndexData.
-  return sizeof(uint16_t);
+  return CastToInProgressStrokeWrapper(native_pointer)
+      .GetUnsafelyMutableRawTriangleIndexData(env, coat_index, mesh_index);
 }
 
 // Return a newly allocated copy of the given `Mesh`'s `MeshFormat`.
 JNI_METHOD(strokes, InProgressStrokeNative, jlong, newCopyOfMeshFormat)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint mesh_index) {
-  // TODO: b/294561921 - Implement multiple meshes.
-  return NewNativeMeshFormat(
-      CastToInProgressStroke(native_pointer).GetMesh(coat_index).Format());
+  return NewNativeMeshFormat(CastToInProgressStrokeWrapper(native_pointer)
+                                 .Stroke()
+                                 .GetMesh(coat_index)
+                                 .Format());
 }
 
 }  // extern "C"

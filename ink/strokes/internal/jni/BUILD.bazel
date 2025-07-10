@@ -92,6 +92,7 @@ cc_library(
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
+        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/status",
@@ -107,18 +108,24 @@ cc_library(
 
 cc_library(
     name = "in_progress_stroke_jni_helper",
+    srcs = ["in_progress_stroke_jni_helper.cc"],
     hdrs = ["in_progress_stroke_jni_helper.h"],
     deps = [
+        "//ink/brush",
         "//ink/geometry:angle",
+        "//ink/geometry:mutable_mesh",
         "//ink/jni/internal:jni_defines",
         "//ink/strokes:in_progress_stroke",
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
         "//ink/types:physical_distance",
+        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/types:span",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
