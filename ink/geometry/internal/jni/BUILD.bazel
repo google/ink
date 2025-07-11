@@ -115,6 +115,7 @@ cc_library(
         ":box_accumulator_jni_helper",
         ":mesh_format_jni_helper",
         ":mesh_jni_helper",
+        ":rect_jni_helper",
         ":vec_jni_helper",
         "//ink/geometry:envelope",
         "//ink/geometry:mesh",
@@ -122,6 +123,7 @@ cc_library(
         "//ink/geometry:mesh_packing_types",
         "//ink/geometry:point",
         "//ink/jni/internal:jni_defines",
+        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ] + select({
