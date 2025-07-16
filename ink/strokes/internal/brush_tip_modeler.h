@@ -217,9 +217,7 @@ inline absl::Span<const BrushTipState> BrushTipModeler::NewFixedTipStates()
 
 inline absl::Span<const BrushTipState> BrushTipModeler::VolatileTipStates()
     const {
-  auto span = absl::MakeSpan(saved_tip_states_);
-  span.remove_prefix(new_fixed_tip_state_count_);
-  return span;
+  return absl::MakeSpan(saved_tip_states_).subspan(new_fixed_tip_state_count_);
 }
 
 }  // namespace ink::strokes_internal

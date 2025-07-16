@@ -471,7 +471,8 @@ void BrushTipExtruder::Extrude(const BrushTipState& tip_state,
     return;
 
   auto end_iter = extrusions_.end();
-  if (extrusions_.size() < 2 || (end_iter - 2)->IsBreakPoint()) {
+  if (extrusions_.size() < 2 || (end_iter - 1)->IsBreakPoint() ||
+      (end_iter - 2)->IsBreakPoint()) {
     // There is nothing for this function to do with fewer than two
     // non-break-point extrusion data.
     return;
@@ -532,9 +533,20 @@ void BrushTipExtruder::ExtrudeBreakPoint() {
   // do anything.
   Geometry::IndexCounts counts_at_last_break =
       geometry_.IndexCountsAtLastExtrusionBreak();
-
-  if (geometry_.LeftSide().indices.size() <= counts_at_last_break.left &&
-      geometry_.RightSide().indices.size() <= counts_at_last_break.right) {
+  ABSL_DCHECK_GE(geometry_.LeftSide().indices.size(),
+                 counts_at_last_break.left);
+  ABSL_DCHECK_GE(geometry_.RightSide().indices.size(),
+                 counts_at_last_break.right);
+  int new_vertex_count =
+      geometry_.LeftSide().indices.size() - counts_at_last_break.left +
+      geometry_.RightSide().indices.size() - counts_at_last_break.right;
+  if (new_vertex_count == 0) {
+    // There's nothing since the last extrusion break, so we're done.
+    return;
+  } else if (new_vertex_count < 3) {
+    // We added fewer than three vertices, so there's not enough since the
+    // last extrusion break to actually draw anything. Discard it.
+    geometry_.ClearSinceLastExtrusionBreak();
     return;
   }
 
@@ -566,6 +578,7 @@ void BrushTipExtruder::ExtrudeBreakPoint() {
       absl::MakeSpan(geometry_.RightSide().indices)
           .subspan(counts_at_last_break.right + outline_counts.right);
   outline.AppendNewIndices(new_left_indices, new_right_indices);
+  ABSL_DCHECK_GE(outline.GetIndices().size(), 3);
 }
 
 }  // namespace ink::strokes_internal

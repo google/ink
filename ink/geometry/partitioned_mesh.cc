@@ -150,15 +150,17 @@ absl::StatusOr<PartitionedMesh> PartitionedMesh::FromMutableMeshGroups(
 
       for (size_t o_idx = 0; o_idx < outlines.size(); ++o_idx) {
         if (outlines[o_idx].empty()) continue;
-        group_partitioned_outlines.emplace_back();
-        std::vector<VertexIndexPair>& outline_index_pairs =
-            group_partitioned_outlines.back();
+        std::vector<VertexIndexPair> outline_index_pairs;
         outline_index_pairs.reserve(outlines[o_idx].size());
         for (uint32_t index : outlines[o_idx]) {
           auto it = partition_map.find(index);
           if (it != partition_map.end()) {
             outline_index_pairs.push_back(it->second);
           }
+        }
+        if (outline_index_pairs.size() >= 3) {
+          group_partitioned_outlines.emplace_back(
+              std::move(outline_index_pairs));
         }
       }
     }
