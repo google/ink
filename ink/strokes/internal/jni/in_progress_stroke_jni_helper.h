@@ -23,16 +23,64 @@
 #include "absl/base/nullability.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/types/duration.h"
 
 namespace ink::jni {
 
+namespace internal {
+
+struct PartitionedCoatIndices {
+  struct Partition {
+    // The offset of the start of this partition of the index buffer. The
+    // partition ends at the start of the next partition, or the start of the
+    // whole buffer for the last partition.
+    int index_buffer_offset = 0;
+
+    // The first vertex in this partition. This is one of the raw 32-bit indices
+    // into the vertex buffer.
+    uint32_t vertex_buffer_offset = 0;
+
+    // The vertex buffer size, which comes from the difference between two
+    // 32-bit indices. This doesn't quite fit in a 16-bit index, since the
+    // max partition size is the max 16-bit index plus one. This needs to be
+    // tracked separately from vertex_buffer_offset because the partitions of
+    // the vertex buffer may overlap.
+    int vertex_buffer_size = 0;
+  };
+
+  // The whole index buffer for a coat, converted to 16-bit indices from
+  // 32-bit. Note that these indices index into the relevant partition of the
+  // vertex buffer, not the overall vertex buffer. This can differ if the
+  // indices exceed the 16-bit limit.
+  //
+  // The vertex buffer for the coat lives in
+  // in_progress_stroke_.GetMesh(coat_index).RawVertexData(), and portions of
+  // that can be used as-is for each partition's vertex buffer.
+  std::vector<uint16_t> converted_index_buffer;
+
+  // Partitions of the index buffer and vertex buffer. If the range of indices
+  // exceeds the 16-bit limit, the index buffer will be split into
+  // non-overlapping partitions (the corresponding partitions of the vertex
+  // buffer may overlap).
+  std::vector<Partition> partitions;
+};
+
+// Exposes the core of InProgressStrokeWrapper::UpdateCache(int coat_index)
+// for testing.
+void UpdatePartitionedCoatIndices(absl::Span<const uint32_t> index_data,
+                                  PartitionedCoatIndices& cache);
+
+}  // namespace internal
+
 // Associates an `InProgressStroke` with a cached triangle index buffer instance
 // that is used for converting 32-bit indices to 16-bit indices, without needing
 // to allocate a new buffer for this conversion every time.
-
+//
+// TODO: b/294561921 - Change MutableMesh to create partitions as it goes and
+// always use 16-bit indices, then remove this wrapper.
 class InProgressStrokeWrapper {
  public:
   InProgressStrokeWrapper() = default;
@@ -62,19 +110,16 @@ class InProgressStrokeWrapper {
       JNIEnv* env, int coat_index, jint mesh_partition_index) const;
 
  private:
-  // For each brush coat, holds ByteBuffers for index and vertex data. For the
-  // index buffer, this also holds the underlying array of 16-bit values, since
-  // the MutableMesh stores 32-bit indices, but the JNI interface needs
-  // ShortBuffer.
-  struct Cache {
-    std::vector<uint16_t> triangle_index_data;
-  };
-
   void UpdateCaches();
   void UpdateCache(int coat_index);
 
   InProgressStroke in_progress_stroke_;
-  std::vector<Cache> coat_buffer_caches_;
+
+  // For each brush coat, holds data underlying ShortBuffers of indices used for
+  // mesh rendering. Since the indices need to fit in a ShortBuffer, they are
+  // converted from 32-bit to 16-bit and possibly partitioned into multiple
+  // buffers underlying multiple meshes.
+  std::vector<internal::PartitionedCoatIndices> coat_buffer_partitions_;
 };
 
 // Creates a new stack-allocated

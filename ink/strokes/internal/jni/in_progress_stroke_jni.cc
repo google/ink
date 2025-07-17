@@ -53,6 +53,7 @@ using ::ink::jni::CastToStrokeInputBatch;
 using ::ink::jni::DeleteNativeInProgressStroke;
 using ::ink::jni::FillJBoxAccumulatorOrThrow;
 using ::ink::jni::FillJMutableVecFromPointOrThrow;
+using ::ink::jni::InProgressStrokeWrapper;
 using ::ink::jni::NewNativeInProgressStroke;
 using ::ink::jni::NewNativeMeshFormat;
 using ::ink::jni::NewNativeStroke;
@@ -274,7 +275,6 @@ JNI_METHOD(strokes, InProgressStrokeNative, absl_nullable jobject,
            getUnsafelyMutableRawTriangleIndexData)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint mesh_index) {
-  ABSL_CHECK_EQ(mesh_index, 0) << "Unsupported mesh index: " << mesh_index;
   return CastToInProgressStrokeWrapper(native_pointer)
       .GetUnsafelyMutableRawTriangleIndexData(env, coat_index, mesh_index);
 }
@@ -283,10 +283,12 @@ JNI_METHOD(strokes, InProgressStrokeNative, absl_nullable jobject,
 JNI_METHOD(strokes, InProgressStrokeNative, jlong, newCopyOfMeshFormat)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint mesh_index) {
-  return NewNativeMeshFormat(CastToInProgressStrokeWrapper(native_pointer)
-                                 .Stroke()
-                                 .GetMesh(coat_index)
-                                 .Format());
+  const InProgressStrokeWrapper& in_progress_stroke_wrapper =
+      CastToInProgressStrokeWrapper(native_pointer);
+  ABSL_CHECK_LT(mesh_index,
+                in_progress_stroke_wrapper.MeshPartitionCount(coat_index));
+  return NewNativeMeshFormat(
+      in_progress_stroke_wrapper.Stroke().GetMesh(coat_index).Format());
 }
 
 }  // extern "C"

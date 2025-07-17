@@ -2,9 +2,9 @@
 
 #include <jni.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <limits>
 #include <vector>
 
@@ -19,10 +19,21 @@
 
 namespace ink::jni {
 
+namespace {
+
+using internal::PartitionedCoatIndices;
+using internal::UpdatePartitionedCoatIndices;
+
+}  // namespace
+
 int InProgressStrokeWrapper::VertexCount(jint coat_index,
                                          jint mesh_partition_index) const {
-  // TODO: b/294561921 - Implement multiple mesh partitions.
-  return in_progress_stroke_.GetMesh(coat_index).VertexCount();
+  ABSL_CHECK_LT(coat_index, coat_buffer_partitions_.size());
+  ABSL_CHECK_LT(mesh_partition_index,
+                coat_buffer_partitions_[coat_index].partitions.size());
+  return coat_buffer_partitions_[coat_index]
+      .partitions[mesh_partition_index]
+      .vertex_buffer_size;
 }
 
 void InProgressStrokeWrapper::Start(const Brush& brush, int noise_seed) {
@@ -43,60 +54,120 @@ absl::Status InProgressStrokeWrapper::UpdateShape(
 
 void InProgressStrokeWrapper::UpdateCaches() {
   int coat_count = in_progress_stroke_.BrushCoatCount();
-  coat_buffer_caches_.resize(coat_count);
+  coat_buffer_partitions_.resize(coat_count);
   for (int coat_index = 0; coat_index < coat_count; ++coat_index) {
     UpdateCache(coat_index);
   }
 }
 
-void InProgressStrokeWrapper::UpdateCache(int coat_index) {
-  const MutableMesh& mesh = in_progress_stroke_.GetMesh(coat_index);
-  Cache& cache = coat_buffer_caches_[coat_index];
-  size_t index_stride = mesh.IndexStride();
-  ABSL_CHECK_EQ(index_stride, sizeof(uint32_t))
-      << "Unsupported index stride: " << index_stride;
+namespace internal {
+
+void UpdatePartitionedCoatIndices(absl::Span<const uint32_t> index_data,
+                                  PartitionedCoatIndices& cache) {
+  constexpr int kMaxVertexIndexInPartition =
+      std::numeric_limits<uint16_t>::max();
   // Clear the contents, but don't give up any of the capacity because it will
   // be filled again right away.
-  cache.triangle_index_data.clear();
-  const absl::Span<const std::byte> raw_index_data = mesh.RawIndexData();
-  uint32_t index_count = 3 * mesh.TriangleCount();
-  for (uint32_t i = 0; i < index_count; ++i) {
-    uint32_t i_byte = sizeof(uint32_t) * i;
-    uint32_t triangle_index_32;
-    // Interpret each set of 4 bytes as a 32-bit integer.
-    std::memcpy(&triangle_index_32, &raw_index_data[i_byte], sizeof(uint32_t));
-    // If that 32-bit integer would not fit into a 16-bit integer, then stop
-    // copying content and return all the triangles that have been processed so
-    // far.
-    if (triangle_index_32 > std::numeric_limits<uint16_t>::max()) {
-      // The offending index may have been in the middle of a triangle, so
-      // rewind back to the previous multiple of 3 to just return whole
-      // triangles.
-      uint32_t i_last_multiple_of_3 = (i / 3) * 3;
-      cache.triangle_index_data.erase(
-          cache.triangle_index_data.begin() + i_last_multiple_of_3,
-          cache.triangle_index_data.end());
-      ABSL_LOG_EVERY_N_SEC(WARNING, 1)
-          << "Triangle index data exceeds 16-bit limit, truncating.";
-      break;
+  cache.converted_index_buffer.clear();
+  cache.partitions.clear();
+  // Start the first partition, vertex_offset and index_offset start at 0. This
+  // avoids an extra linear pass in the common case where everything fits in
+  // 16-bit indices.
+  cache.partitions.emplace_back();
+  int index_count = index_data.size();
+  for (int i = 0; i < index_count; ++i) {
+    uint32_t overall_vertex_index = index_data[i];
+    uint32_t current_vertex_offset =
+        cache.partitions.back().vertex_buffer_offset;
+    int vertex_index_in_partition =
+        overall_vertex_index - current_vertex_offset;
+
+    // If this fits into the current partition, add it to the buffer and
+    // update where the partition's portion of the vertex buffer ends.
+    if (vertex_index_in_partition <= kMaxVertexIndexInPartition) {
+      cache.converted_index_buffer.push_back(vertex_index_in_partition);
+      PartitionedCoatIndices::Partition& current_partition =
+          cache.partitions.back();
+      current_partition.vertex_buffer_size = std::max(
+          current_partition.vertex_buffer_size, vertex_index_in_partition + 1);
+      continue;
     }
-    uint16_t triangle_index_16 = triangle_index_32;
-    cache.triangle_index_data.push_back(triangle_index_16);
+
+    // Otherwise, we need to resize down to the last complete triangle and
+    // start a new partition.
+    cache.converted_index_buffer.resize(i / 3 * 3);
+    ABSL_LOG_EVERY_N_SEC(WARNING, 1)
+        << "Triangle index data exceeds 16-bit limit, attempting to "
+        << "partition into " << cache.partitions.size() + 1 << " partitions.";
+    // Rewind to just before the new partition.
+    i = cache.converted_index_buffer.size() - 1;
+    // Find the next span of the index buffer that can be represented as
+    // 16-bit indices into a subspan of the vertex buffer.
+    uint32_t max_later_overall_vertex_index = 0;
+    uint32_t min_later_overall_vertex_index =
+        std::numeric_limits<uint32_t>::max();
+    for (int later_i = i + 1; later_i < index_count; ++later_i) {
+      uint32_t later_overall_vertex_index = index_data[later_i];
+      min_later_overall_vertex_index =
+          std::min(min_later_overall_vertex_index, later_overall_vertex_index);
+      max_later_overall_vertex_index =
+          std::max(max_later_overall_vertex_index, later_overall_vertex_index);
+      if (max_later_overall_vertex_index - min_later_overall_vertex_index >
+          kMaxVertexIndexInPartition) {
+        // Speaking of hopefully unlikely edge-cases, we do need to be able to
+        // fit at least one triangle into a partition to make progress and
+        // avoid an infinite loop. Bail out if the next triangle's vertex
+        // indices can't fit within a 16-bit-max span.
+        if (later_i - i <= 3) {
+          ABSL_LOG_EVERY_N_SEC(ERROR, 1)
+              << "Partitioning failed because the span of the next "
+              << "triangle's vertices is more than the 16-bit limit, giving "
+              << "up and truncating.";
+          return;
+        }
+        break;
+      }
+    }
+    // The _first_ index is very unlikely to exceed the 16-bit limit. But for
+    // full generality, avoid creating an extra empty partition in that case.
+    // If the partition is non-empty, then close it and start a new one.
+    if (!cache.converted_index_buffer.empty()) {
+      cache.partitions.emplace_back();
+    }
+    // Set the start bounds of the new partition.
+    PartitionedCoatIndices::Partition& current_partition =
+        cache.partitions.back();
+    current_partition.index_buffer_offset = i + 1;
+    current_partition.vertex_buffer_offset = min_later_overall_vertex_index;
   }
-  ABSL_CHECK_EQ(cache.triangle_index_data.size() % 3, 0u);
+}
+
+}  // namespace internal
+
+void InProgressStrokeWrapper::UpdateCache(int coat_index) {
+  const MutableMesh& mesh = in_progress_stroke_.GetMesh(coat_index);
+  ABSL_CHECK_EQ(mesh.IndexStride(), sizeof(uint32_t))
+      << "Unsupported index stride: " << mesh.IndexStride();
+  const absl::Span<const std::byte>& raw_index_data = mesh.RawIndexData();
+  int index_count = raw_index_data.size() / sizeof(uint32_t);
+  ABSL_CHECK_EQ(index_count, mesh.TriangleCount() * 3);
+  UpdatePartitionedCoatIndices(
+      absl::MakeConstSpan(
+          reinterpret_cast<const uint32_t*>(raw_index_data.data()),
+          index_count),
+      coat_buffer_partitions_[coat_index]);
 }
 
 int InProgressStrokeWrapper::MeshPartitionCount(jint coat_index) const {
-  // TODO: b/294561921 - Implement multiple mesh partitions.
-  return 1;
+  ABSL_CHECK_LT(coat_index, coat_buffer_partitions_.size());
+  return coat_buffer_partitions_[coat_index].partitions.size();
 }
 
 absl_nullable jobject InProgressStrokeWrapper::GetUnsafelyMutableRawVertexData(
     JNIEnv* env, int coat_index, jint mesh_partition_index) const {
-  // TODO: b/294561921 - Implement multiple mesh partitions.
-  ABSL_CHECK_EQ(mesh_partition_index, 0)
-      << "Unsupported mesh partition index: " << mesh_partition_index;
-  ABSL_CHECK_LT(coat_index, coat_buffer_caches_.size());
+  ABSL_CHECK_LT(coat_index, coat_buffer_partitions_.size());
+  ABSL_CHECK_LT(mesh_partition_index,
+                coat_buffer_partitions_[coat_index].partitions.size());
   const absl::Span<const std::byte> raw_vertex_data =
       in_progress_stroke_.GetMesh(coat_index).RawVertexData();
   // absl::Span::data() may be nullptr if empty, which NewDirectByteBuffer does
@@ -104,34 +175,57 @@ absl_nullable jobject InProgressStrokeWrapper::GetUnsafelyMutableRawVertexData(
   if (raw_vertex_data.data() == nullptr) {
     return nullptr;
   }
+  const PartitionedCoatIndices::Partition& partition =
+      coat_buffer_partitions_[coat_index].partitions[mesh_partition_index];
+  uint16_t vertex_stride =
+      in_progress_stroke_.GetMesh(coat_index).VertexStride();
+  ABSL_CHECK_LE(0, partition.vertex_buffer_offset);
+  ABSL_CHECK_LE(
+      (partition.vertex_buffer_offset + partition.vertex_buffer_size) *
+          vertex_stride,
+      raw_vertex_data.size());
   return env->NewDirectByteBuffer(
       // NewDirectByteBuffer needs a non-const void*. The resulting buffer is
       // writeable, but it will be wrapped at the Kotlin layer in a read-only
       // buffer that delegates to this one.
-      const_cast<std::byte*>(raw_vertex_data.data()), raw_vertex_data.size());
+      const_cast<std::byte*>(raw_vertex_data.data()) +
+          partition.vertex_buffer_offset * vertex_stride,
+      partition.vertex_buffer_size * vertex_stride);
 }
 
 absl_nullable jobject
 InProgressStrokeWrapper::GetUnsafelyMutableRawTriangleIndexData(
     JNIEnv* env, int coat_index, jint mesh_partition_index) const {
-  // TODO: b/294561921 - Implement multiple mesh partitions.
-  ABSL_CHECK_EQ(mesh_partition_index, 0)
-      << "Unsupported mesh partition index: " << mesh_partition_index;
-  ABSL_CHECK_LT(coat_index, coat_buffer_caches_.size());
+  ABSL_CHECK_LT(coat_index, coat_buffer_partitions_.size());
+  ABSL_CHECK_LT(mesh_partition_index,
+                coat_buffer_partitions_[coat_index].partitions.size());
+  const PartitionedCoatIndices& cache = coat_buffer_partitions_[coat_index];
   const std::vector<uint16_t>& triangle_index_data =
-      coat_buffer_caches_[coat_index].triangle_index_data;
+      cache.converted_index_buffer;
   // std::vector::data() may be nullptr if empty, which NewDirectByteBuffer
   // does not permit (even if the size is zero).
   if (triangle_index_data.data() == nullptr) {
     return nullptr;
   }
+  const PartitionedCoatIndices::Partition& partition =
+      cache.partitions[mesh_partition_index];
+  ABSL_CHECK_LE(0, partition.index_buffer_offset);
+  int next_partition_index_buffer_offset =
+      mesh_partition_index == static_cast<int>(cache.partitions.size()) - 1
+          ? triangle_index_data.size()
+          : cache.partitions[mesh_partition_index + 1].index_buffer_offset;
+  int partition_index_buffer_size =
+      next_partition_index_buffer_offset - partition.index_buffer_offset;
+  ABSL_CHECK_LE(partition.index_buffer_offset + partition_index_buffer_size,
+                triangle_index_data.size());
   return env->NewDirectByteBuffer(
       // NewDirectByteBuffer needs a non-const void*. The resulting buffer
       // is writeable, but it will be wrapped at the Kotlin layer in a
       // read-only buffer that delegates to this one. This one needs to be
       // compatible with ShortBuffer, which expects 16-bit values.
-      const_cast<uint16_t*>(triangle_index_data.data()),
-      triangle_index_data.size() * sizeof(uint16_t));
+      const_cast<uint16_t*>(triangle_index_data.data() +
+                            partition.index_buffer_offset),
+      partition_index_buffer_size * sizeof(uint16_t));
 }
 
 }  // namespace ink::jni

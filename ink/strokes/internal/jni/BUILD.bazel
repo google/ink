@@ -121,6 +121,7 @@ cc_library(
         "//ink/types:duration",
         "//ink/types:physical_distance",
         "@com_google_absl//absl/base:nullability",
+        "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/status",
@@ -132,6 +133,15 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
+)
+
+cc_test(
+    name = "in_progress_stroke_jni_helper_test",
+    srcs = ["in_progress_stroke_jni_helper_test.cc"],
+    deps = [
+        ":in_progress_stroke_jni_helper",
+        "@com_google_googletest//:gtest_main",
+    ],
 )
 
 cc_library(
