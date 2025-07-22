@@ -16,8 +16,8 @@
 #define INK_STROKES_BRUSH_BRUSH_COAT_H_
 
 #include <string>
-#include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
@@ -47,7 +47,7 @@ absl::Status ValidateBrushCoat(const BrushCoat& coat);
 // other attribute IDs (`kSideDerivative`, `kSideLabel`, `kForwardDerivative`,
 // `kForwardLabel`, and `kOpacityShift`), and may also include additional
 // attribute IDs depending on the tip and paint settings.
-std::vector<MeshFormat::AttributeId> GetRequiredAttributeIds(
+absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
     const BrushCoat& coat);
 
 std::string ToFormattedString(const BrushCoat& coat);

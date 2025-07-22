@@ -137,6 +137,14 @@ JNI_METHOD(strokes, InProgressStrokeNative, jlong, newStrokeFromCopy)
       CastToInProgressStrokeWrapper(native_pointer).Stroke().CopyToStroke());
 }
 
+JNI_METHOD(strokes, InProgressStrokeNative, jlong, newStrokeFromPrunedCopy)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return NewNativeStroke(
+      CastToInProgressStrokeWrapper(native_pointer)
+          .Stroke()
+          .CopyToStroke(InProgressStroke::RetainAttributes::kUsedByThisBrush));
+}
+
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getInputCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return CastToInProgressStrokeWrapper(native_pointer).Stroke().InputCount();

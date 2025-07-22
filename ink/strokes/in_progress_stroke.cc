@@ -16,9 +16,9 @@
 
 #include <cstdint>
 #include <optional>
-#include <vector>
+#include <unordered_set>
 
-#include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
@@ -252,15 +252,12 @@ Stroke InProgressStroke::CopyToStroke(
       case RetainAttributes::kAll:
         break;
       case RetainAttributes::kUsedByThisBrush: {
-        std::vector<MeshFormat::AttributeId> required_attributes =
+        absl::flat_hash_set<MeshFormat::AttributeId> required_attributes =
             brush_internal::GetRequiredAttributeIds(
                 brush->GetFamily().GetCoats()[coat_index]);
         for (MeshFormat::Attribute attribute :
              GetMesh(coat_index).Format().Attributes()) {
-          if (absl::c_find_if(required_attributes,
-                              [attribute](MeshFormat::AttributeId id) {
-                                return id == attribute.id;
-                              }) == required_attributes.end()) {
+          if (!required_attributes.contains(attribute.id)) {
             omit_attributes[coat_index].push_back(attribute.id);
           }
         }

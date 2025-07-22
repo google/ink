@@ -307,6 +307,7 @@ cc_library(
         "//ink/storage/proto:brush_family_cc_proto",
         "//ink/storage/proto:stroke_input_batch_cc_proto",
         "//ink/types:duration",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",

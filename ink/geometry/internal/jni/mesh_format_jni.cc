@@ -40,6 +40,11 @@ JNI_METHOD(geometry, MeshFormatNative, jboolean, isUnpackedEquivalent)
       CastToMeshFormat(native_pointer), CastToMeshFormat(other_native_pointer));
 }
 
+JNI_METHOD(geometry, MeshFormatNative, jint, attributeCount)
+(JNIEnv* env, jobject obj, jlong native_pointer) {
+  return CastToMeshFormat(native_pointer).Attributes().size();
+}
+
 JNI_METHOD(geometry, MeshFormatNative, void, free)
 (JNIEnv* env, jobject obj, jlong native_pointer) {
   DeleteNativeMeshFormat(native_pointer);

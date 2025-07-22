@@ -18,11 +18,11 @@
 #include <map>
 #include <optional>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <variant>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -1459,7 +1459,7 @@ void EncodeBrushFamilyTextureMap(
     TextureBitmapProvider get_bitmap) {
   texture_id_to_bitmap_out.clear();
   // The set of texture ids for which we have already called get_bitmap().
-  std::unordered_set<std::string> seen_ids = {};
+  absl::flat_hash_set<std::string> seen_ids;
   for (const BrushCoat& coat : family.GetCoats()) {
     for (const BrushPaint::TextureLayer& layer : coat.paint.texture_layers) {
       if (seen_ids.find(layer.client_texture_id) != seen_ids.end()) {

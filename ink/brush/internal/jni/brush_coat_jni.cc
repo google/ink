@@ -14,16 +14,24 @@
 
 #include <jni.h>
 
+#include <algorithm>
+
+#include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
+#include "ink/geometry/mesh_format.h"
 #include "ink/jni/internal/jni_defines.h"
 
 namespace {
 
 using ::ink::BrushCoat;
+using ::ink::MeshFormat;
+using ::ink::brush_internal::GetRequiredAttributeIds;
 using ::ink::jni::CastToBrushCoat;
 using ::ink::jni::CastToBrushPaint;
 using ::ink::jni::CastToBrushTip;
+using ::ink::jni::CastToMeshFormat;
 using ::ink::jni::DeleteNativeBrushCoat;
 using ::ink::jni::NewNativeBrushCoat;
 using ::ink::jni::NewNativeBrushPaint;
@@ -41,6 +49,23 @@ JNI_METHOD(brush, BrushCoatNative, jlong, create)
       .tip = CastToBrushTip(tip_native_pointer),
       .paint = CastToBrushPaint(paint_native_pointer),
   });
+}
+
+JNI_METHOD(brush, BrushCoatNative, jboolean, isCompatibleWithMeshFormat)
+(JNIEnv* env, jobject obj, jlong native_pointer,
+ jlong mesh_format_native_pointer) {
+  absl::Span<const MeshFormat::Attribute> mesh_attributes =
+      CastToMeshFormat(mesh_format_native_pointer).Attributes();
+  for (const MeshFormat::AttributeId& required_attribute_id :
+       GetRequiredAttributeIds(CastToBrushCoat(native_pointer))) {
+    if (std::find_if(mesh_attributes.begin(), mesh_attributes.end(),
+                     [&](const MeshFormat::Attribute& attr) {
+                       return attr.id == required_attribute_id;
+                     }) == mesh_attributes.end()) {
+      return false;
+    }
+  }
+  return true;
 }
 
 JNI_METHOD(brush, BrushCoatNative, void, free)

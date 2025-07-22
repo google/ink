@@ -16,8 +16,8 @@
 
 #include <string>
 #include <variant>
-#include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "ink/brush/brush_behavior.h"
@@ -59,9 +59,9 @@ absl::Status ValidateBrushCoat(const BrushCoat& coat) {
   return absl::OkStatus();
 }
 
-std::vector<MeshFormat::AttributeId> GetRequiredAttributeIds(
+absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
     const BrushCoat& coat) {
-  std::vector<MeshFormat::AttributeId> ids = {
+  absl::flat_hash_set<MeshFormat::AttributeId> ids = {
       // All meshes must have a kPosition attribute.
       MeshFormat::AttributeId::kPosition,
       // The side/forward attributes are always required, in order to support
@@ -77,12 +77,12 @@ std::vector<MeshFormat::AttributeId> GetRequiredAttributeIds(
   };
 
   if (BrushTipUsesColorShift(coat.tip)) {
-    ids.push_back(MeshFormat::AttributeId::kColorShiftHsl);
+    ids.insert(MeshFormat::AttributeId::kColorShiftHsl);
   }
 
   for (const BrushPaint::TextureLayer& layer : coat.paint.texture_layers) {
     if (layer.mapping == BrushPaint::TextureMapping::kWinding) {
-      ids.push_back(MeshFormat::AttributeId::kSurfaceUv);
+      ids.insert(MeshFormat::AttributeId::kSurfaceUv);
       break;
     }
   }
