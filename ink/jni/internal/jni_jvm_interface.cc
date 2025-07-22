@@ -336,7 +336,8 @@ jmethodID MethodMutableParallelogramSetCenterDimensionsRotationAndShear(
   if (method_mutable_parallelogram_set_center_dim_rot_shear == nullptr) {
     method_mutable_parallelogram_set_center_dim_rot_shear =
         GetMethodId(env, ClassMutableParallelogram(env),
-                    "setCenterDimensionsRotationAndShear", "(FFFFFF)V");
+                    "setCenterDimensionsRotationAndShear",
+                    "(FFFFFF)L" INK_PACKAGE "/geometry/MutableParallelogram;");
   }
   return method_mutable_parallelogram_set_center_dim_rot_shear;
 }
