@@ -32,6 +32,7 @@
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/stroke_shape_builder.h"
 #include "ink/strokes/internal/stroke_vertex.h"
+#include "ink/types/duration.h"
 
 namespace ink {
 namespace {
@@ -174,7 +175,14 @@ void Stroke::RegenerateShape() {
     builder.StartStroke(brush_.GetFamily().GetInputModel(), coats[i],
                         brush_.GetSize(), brush_.GetEpsilon(),
                         inputs_.GetNoiseSeed());
-    builder.ExtendStroke(inputs_, StrokeInputBatch(), inputs_.GetDuration());
+
+    // A finished stroke has all of its
+    // `BrushBehavior::Source::kTimeSinceInputInMillis` and
+    // `BrushBehavior::Source::kTimeSinceInputInSeconds` behaviors completed.
+    // Passing an infinite duration to `ExtendStroke()` achieves this, in an
+    // equivalent but simpler way than looping through each behavior and finding
+    // the ones using these sources and getting their maximum range values.
+    builder.ExtendStroke(inputs_, StrokeInputBatch(), Duration32::Infinite());
 
     const MutableMesh& mesh = builder.GetMesh();
     shape_gen.custom_packing_arrays.push_back(
