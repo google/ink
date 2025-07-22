@@ -38,6 +38,10 @@ namespace ink {
 // This differs from `std::array` in that `std::array` is always considered to
 // have `N` elements; this may be used when the maximum number of elements is
 // known at compile-time, but the actual number of elements is not.
+//
+// This differs from `absl::InlinedVector` in that this is trivially
+// destructible, and thus can be used in global variables. On the other hand,
+// unlike `absl::InlinedVector`, this cannot grow beyond its fixed maximum size.
 template <typename T, uint8_t N>
 class SmallArray {
  public:
