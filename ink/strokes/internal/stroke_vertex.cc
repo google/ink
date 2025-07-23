@@ -115,12 +115,13 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
   // LINT.ThenChange(
   //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:uv_packing)
 
-  // Animation offsets are stored unpacked in the range [0, 1). Note that we
-  // divide by 2^N (= 256) here rather than 2^N - 1 (= 255), since a value of 1
-  // does not need to be representable.
+  // Animation offsets are stored unpacked in the range [0, 1). It's tempting to
+  // use 1/256 as the scale here, since a value of 1 does not need to be
+  // representable, but due to rounding this would make values just less than 1
+  // also unrepresentable (see b/432526862), so we use 1/255 instead.
   // LINT.IfChange(anim_packing)
   constexpr MeshAttributeCodingParams::ComponentCodingParams
-      kAnimationCodingParams8bit = {.scale = 1.f / 256};
+      kAnimationCodingParams8bit = {.scale = 1.f / 255};
   // LINT.ThenChange(
   //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:anim_packing)
 

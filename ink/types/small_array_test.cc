@@ -19,6 +19,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 
 namespace ink {
@@ -26,6 +27,12 @@ namespace {
 
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
+
+TEST(SmallArrayTest, Stringify) {
+  EXPECT_EQ(absl::StrCat(SmallArray<float, 4>()), "[]");
+  EXPECT_EQ(absl::StrCat(SmallArray<float, 4>(1)), "[0]");
+  EXPECT_EQ(absl::StrCat(SmallArray<float, 4>(3, 7)), "[7, 7, 7]");
+}
 
 TEST(SmallArrayTest, DefaultCtor) {
   SmallArray<float, 4> array;

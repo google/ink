@@ -2090,7 +2090,8 @@ TEST(MeshPackingTest,
                                       {.offset = -1, .scale = .1}}}})
           .status();
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("but the attribute is unpacked"));
+  EXPECT_THAT(status.message(),
+              HasSubstr("but the attribute type is unpacked"));
 }
 
 TEST(MeshPackingTest, ComputeCodingParamsArrayCustomParamsIsInvalid) {
@@ -2115,7 +2116,7 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayCustomParamsIsInvalid) {
             .status();
     EXPECT_EQ(wrong_num_components.code(), absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(wrong_num_components.message(),
-                HasSubstr("is not valid for format"));
+                HasSubstr("not valid for that type"));
   }
   {
     absl::Status non_finite_value =
@@ -2139,7 +2140,7 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayCustomParamsIsInvalid) {
             .status();
     EXPECT_EQ(non_finite_value.code(), absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(non_finite_value.message(),
-                HasSubstr("is not valid for format"));
+                HasSubstr("not valid for that type"));
   }
 }
 
@@ -2167,7 +2168,7 @@ TEST(MeshPackingTest,
             .status();
     EXPECT_EQ(range_starts_too_high.code(), absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(range_starts_too_high.message(),
-                HasSubstr("cannot represent all values of its attribute"));
+                HasSubstr("cannot represent all values of that attribute"));
   }
   {
     absl::Status range_ends_too_low =
@@ -2191,7 +2192,7 @@ TEST(MeshPackingTest,
             .status();
     EXPECT_EQ(range_ends_too_low.code(), absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(range_ends_too_low.message(),
-                HasSubstr("cannot represent all values of its attribute"));
+                HasSubstr("cannot represent all values of that attribute"));
   }
 }
 

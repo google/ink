@@ -448,8 +448,22 @@ cc_test(
 
 cc_library(
     name = "mesh_packing_types",
+    srcs = ["mesh_packing_types.cc"],
     hdrs = ["mesh_packing_types.h"],
-    deps = ["//ink/types:small_array"],
+    deps = [
+        "//ink/types:small_array",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "mesh_packing_types_test",
+    srcs = ["mesh_packing_types_test.cc"],
+    deps = [
+        ":mesh_packing_types",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_main",
+    ],
 )
 
 cc_library(

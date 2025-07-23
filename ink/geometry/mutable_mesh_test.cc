@@ -1538,7 +1538,7 @@ TEST(MutableMeshTest, AsMeshesFailsPackingParamsForUnpackedType) {
   EXPECT_EQ(packing_for_unpacked_attr.code(),
             absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(packing_for_unpacked_attr.message(),
-              HasSubstr("but the attribute is unpacked"));
+              HasSubstr("but the attribute type is unpacked"));
 }
 
 TEST(MutableMeshTest, AsMeshesFailsInvalidPackingParams) {
@@ -1580,7 +1580,7 @@ TEST(MutableMeshTest, AsMeshesFailsInvalidPackingParams) {
     EXPECT_EQ(invalid_packing_params.code(),
               absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(invalid_packing_params.message(),
-                HasSubstr("is not valid for format"));
+                HasSubstr("not valid for that type"));
   }
 
   {
@@ -1599,7 +1599,7 @@ TEST(MutableMeshTest, AsMeshesFailsInvalidPackingParams) {
     EXPECT_EQ(invalid_packing_params.code(),
               absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(invalid_packing_params.message(),
-                HasSubstr("is not valid for format"));
+                HasSubstr("not valid for that type"));
   }
 }
 

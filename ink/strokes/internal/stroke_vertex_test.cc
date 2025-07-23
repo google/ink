@@ -14,6 +14,7 @@
 
 #include "ink/strokes/internal/stroke_vertex.h"
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -23,8 +24,11 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
+#include "ink/geometry/internal/mesh_packing.h"
 #include "ink/geometry/mesh_format.h"
+#include "ink/geometry/mesh_packing_types.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/type_matchers.h"
@@ -34,12 +38,14 @@
 namespace ink::strokes_internal {
 namespace {
 
+using ::absl_testing::IsOk;
 using ::testing::Each;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::FloatEq;
 using ::testing::Optional;
 using ::testing::Pointwise;
+using ::testing::SizeIs;
 
 TEST(StrokeVertexLabelTest, LabelConstantProperties) {
   EXPECT_EQ(StrokeVertex::kInteriorLabel.DecodeSideCategory(),
@@ -205,6 +211,30 @@ TEST(StrokeVertexTest, MakeCustomPackingArraySkipsMatchingAttributes) {
   EXPECT_THAT(packing_array.Size(), Eq(mesh_format->Attributes().size() -
                                        (skipped_attribute_ids.size() - 1)));
   EXPECT_THAT(packing_array.Values(), Each(Eq(std::nullopt)));
+}
+
+TEST(StrokeVertexTest, CanPackValidAnimationOffsets) {
+  // Get attribute coding params for an animation offset attribute.
+  absl::StatusOr<MeshFormat> mesh_format = MeshFormat::Create(
+      {{MeshFormat::AttributeType::kFloat2Unpacked,
+        MeshFormat::AttributeId::kPosition},
+       {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
+        MeshFormat::AttributeId::kAnimationOffset}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(mesh_format.status(), IsOk());
+  StrokeVertex::CustomPackingArray packing_array =
+      StrokeVertex::MakeCustomPackingArray(*mesh_format);
+  ASSERT_TRUE(packing_array[1].has_value());
+  const MeshAttributeCodingParams& attribute_params = *packing_array[1];
+  ASSERT_THAT(attribute_params.components.Values(), SizeIs(1));
+  const MeshAttributeCodingParams::ComponentCodingParams& component_params =
+      attribute_params.components[0];
+
+  // Verify that any animation offset in the range [0, 1) is packable.
+  EXPECT_EQ(mesh_internal::PackSingleFloat(component_params, 0.f), 0);
+  EXPECT_LE(mesh_internal::PackSingleFloat(component_params,
+                                           std::nextafter(1.f, 0.f)),
+            255);
 }
 
 TEST(StrokeVertexTest, MemoryLayoutMatchesUnpackedFullMeshFormat) {

@@ -440,16 +440,18 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     float unpackAnimationOffset(const float unpackedValue) {
       return unpackedValue;
     })"
-    // A [0, 1) animation offset can be packed into one [0, 256) byte, where 0.0
-    // maps to 0 and 1.0 would map to 256. This [0, 255] byte is exposed to the
-    // shader as a [0, 1] half float. So to unpack, we multiply the [0, 1] half
-    // float by 255/256 to get our [0, 1) animation offset.
+    // A [0, 1) animation offset can be packed into one byte, where 0.0 maps to
+    // 0 and 1.0 (or rather, values just below 1.0) maps to 255. This [0, 255]
+    // byte is exposed to the shader as a [0, 1] half float. So to unpack, we
+    // simply cast the [0, 1] half float to a full float get a [0, 1] animation
+    // offset. (An animation offset of exactly 1 will be harmlessly wrapped back
+    // to 0.)
     R"(
     float unpackAnimationOffset(const half packedValue) {
-      return 255.0 * float(packedValue) / 256.0;
+      return float(packedValue);
     })"
     // LINT.ThenChange(
-    //     ../../../strokes/internal/stroke_vertex.cc:uv_packing)
+    //     ../../../strokes/internal/stroke_vertex.cc:anim_packing)
     "";
 
 }  // namespace ink::skia_common_internal

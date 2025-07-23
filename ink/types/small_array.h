@@ -19,9 +19,12 @@
 #include <array>
 #include <cstdint>
 #include <initializer_list>
+#include <string>
 
 #include "absl/algorithm/container.h"
 #include "absl/log/absl_check.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 
 namespace ink {
@@ -115,7 +118,19 @@ class SmallArray {
   // equal to `N`.
   uint8_t MaxSize() const { return N; }
 
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, SmallArray array) {
+    sink.Append(array.ToFormattedString());
+  }
+
  private:
+  // Implementation helper for AbslStringify.
+  std::string ToFormattedString() const {
+    absl::Span<const T> values = Values();
+    return absl::StrCat("[", absl::StrJoin(values.begin(), values.end(), ", "),
+                        "]");
+  }
+
   uint8_t size_ = 0;
   // We use a `std::array` for the underlying storage instead of an aligned
   // array of `char`. This keeps the implementation simpler and also this type

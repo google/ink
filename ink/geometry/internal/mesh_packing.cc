@@ -904,51 +904,54 @@ absl::StatusOr<CodingParamsArray> ComputeCodingParamsArray(
     const MeshFormat& format, const AttributeBoundsArray& bounds,
     absl::Span<const std::optional<MeshAttributeCodingParams>>
         custom_coding_params_array) {
-  size_t n_attrs = format.Attributes().size();
-  if (bounds.Size() != n_attrs) {
+  absl::Span<const MeshFormat::Attribute> attributes = format.Attributes();
+  if (bounds.Size() != attributes.size()) {
     return absl::InvalidArgumentError(
         absl::Substitute("Size mismatch: `format` has $0 attributes, but "
                          "`bounds` has $1 elements",
-                         n_attrs, bounds.Size()));
+                         attributes.size(), bounds.Size()));
   }
   if (!custom_coding_params_array.empty()) {
-    if (custom_coding_params_array.size() != n_attrs) {
-      return absl::InvalidArgumentError(
-          absl::Substitute("Wrong number of coding params for format; "
-                           "attributes = $0, coding params = $1",
-                           n_attrs, custom_coding_params_array.size()));
+    if (custom_coding_params_array.size() != attributes.size()) {
+      return absl::InvalidArgumentError(absl::Substitute(
+          "Wrong number of coding params for format; "
+          "attributes = $0, coding params = $1",
+          attributes.size(), custom_coding_params_array.size()));
     }
-    for (size_t i = 0; i < n_attrs; ++i) {
+    for (size_t i = 0; i < attributes.size(); ++i) {
       if (!custom_coding_params_array[i].has_value()) continue;
-
-      MeshFormat::AttributeType type = format.Attributes()[i].type;
-      if (MeshFormat::IsUnpackedType(type)) {
-        return absl::InvalidArgumentError(
-            absl::Substitute("Coding params specified for attribute at index "
-                             "$0, but the attribute is unpacked",
-                             i));
+      const MeshFormat::Attribute attribute = attributes[i];
+      if (MeshFormat::IsUnpackedType(attribute.type)) {
+        return absl::InvalidArgumentError(absl::Substitute(
+            "Coding params were provided for attribute at index $0 with id $1 "
+            "and type $2, but the attribute type is unpacked",
+            i, attribute.id, attribute.type));
       }
 
       const MeshAttributeCodingParams& params = *custom_coding_params_array[i];
-      if (!IsValidCodingParams(type, params)) {
+      if (!IsValidCodingParams(attribute.type, params)) {
         return absl::InvalidArgumentError(absl::Substitute(
-            "Coding params at index $0 is not valid for format", i));
+            "Coding params were provided for attribute at index $0 with id $1 "
+            "and type $2, but were not valid for that type; params = $3",
+            i, attribute.id, attribute.type, params));
       }
 
-      if (!UnpackedFloatValuesAreRepresentable(type, params,
+      if (!UnpackedFloatValuesAreRepresentable(attribute.type, params,
                                                bounds[i].minimum) ||
-          !UnpackedFloatValuesAreRepresentable(type, params,
+          !UnpackedFloatValuesAreRepresentable(attribute.type, params,
                                                bounds[i].maximum)) {
-        return absl::InvalidArgumentError(
-            absl::Substitute("Coding params at index $0 cannot represent all "
-                             "values of its attribute",
-                             i));
+        return absl::InvalidArgumentError(absl::Substitute(
+            "Coding params were provided for attribute at index $0 with id $1 "
+            "and type $2, but cannot represent all values of that attribute; "
+            "params = $3, minimum = $4, maximum = $5",
+            i, attribute.id, attribute.type, params, bounds[i].minimum,
+            bounds[i].maximum));
       }
     }
   }
 
-  CodingParamsArray coding_params_array(n_attrs);
-  for (size_t attr_idx = 0; attr_idx < n_attrs; ++attr_idx) {
+  CodingParamsArray coding_params_array(attributes.size());
+  for (size_t attr_idx = 0; attr_idx < attributes.size(); ++attr_idx) {
     MeshFormat::AttributeType type = format.Attributes()[attr_idx].type;
     if (!custom_coding_params_array.empty() &&
         custom_coding_params_array[attr_idx].has_value() &&

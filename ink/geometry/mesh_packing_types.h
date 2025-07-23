@@ -15,6 +15,8 @@
 #ifndef INK_GEOMETRY_MESH_PACKING_TYPES_H_
 #define INK_GEOMETRY_MESH_PACKING_TYPES_H_
 
+#include <string>
+
 #include "ink/types/small_array.h"
 
 namespace ink {
@@ -37,6 +39,24 @@ struct MeshAttributeBounds {
   SmallArray<float, 4> minimum;
   SmallArray<float, 4> maximum;
 };
+
+namespace geometry_internal {
+std::string ToFormattedString(
+    MeshAttributeCodingParams::ComponentCodingParams component_params);
+}  // namespace geometry_internal
+
+template <typename Sink>
+void AbslStringify(
+    Sink& sink,
+    MeshAttributeCodingParams::ComponentCodingParams component_params) {
+  sink.Append(geometry_internal::ToFormattedString(component_params));
+}
+
+template <typename Sink>
+void AbslStringify(Sink& sink,
+                   const MeshAttributeCodingParams& attribute_params) {
+  AbslStringify(sink, attribute_params.components);
+}
 
 }  // namespace ink
 

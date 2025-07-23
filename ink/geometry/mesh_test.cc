@@ -679,7 +679,7 @@ TEST(MeshTest, CreationErrorPackingParamsForUnpackedType) {
   EXPECT_EQ(packing_params_for_unpacked.code(),
             absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(packing_params_for_unpacked.message(),
-              HasSubstr("but the attribute is unpacked"));
+              HasSubstr("but the attribute type is unpacked"));
 }
 
 TEST(MeshTest, CreationErrorInvalidPackingParams) {
@@ -696,7 +696,7 @@ TEST(MeshTest, CreationErrorInvalidPackingParams) {
     EXPECT_EQ(invalid_packing_params.code(),
               absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(invalid_packing_params.message(),
-                HasSubstr("is not valid for format"));
+                HasSubstr("not valid for that type"));
   }
 
   {
@@ -713,7 +713,7 @@ TEST(MeshTest, CreationErrorInvalidPackingParams) {
     EXPECT_EQ(invalid_packing_params.code(),
               absl::StatusCode::kInvalidArgument);
     EXPECT_THAT(invalid_packing_params.message(),
-                HasSubstr("is not valid for format"));
+                HasSubstr("not valid for that type"));
   }
 }
 
