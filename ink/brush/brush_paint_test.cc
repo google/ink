@@ -281,7 +281,12 @@ TEST(BrushPaintTest, StringifyBlendMode) {
   EXPECT_EQ(absl::StrCat(BrushPaint::BlendMode::kSrcAtop), "kSrcAtop");
   EXPECT_EQ(absl::StrCat(BrushPaint::BlendMode::kSrcIn), "kSrcIn");
   EXPECT_EQ(absl::StrCat(BrushPaint::BlendMode::kSrcOver), "kSrcOver");
+  EXPECT_EQ(absl::StrCat(BrushPaint::BlendMode::kDstOver), "kDstOver");
   EXPECT_EQ(absl::StrCat(BrushPaint::BlendMode::kSrc), "kSrc");
+  EXPECT_EQ(absl::StrCat(BrushPaint::BlendMode::kDst), "kDst");
+  EXPECT_EQ(absl::StrCat(BrushPaint::BlendMode::kSrcOut), "kSrcOut");
+  EXPECT_EQ(absl::StrCat(BrushPaint::BlendMode::kDstAtop), "kDstAtop");
+  EXPECT_EQ(absl::StrCat(BrushPaint::BlendMode::kXor), "kXor");
   EXPECT_EQ(absl::StrCat(static_cast<BrushPaint::BlendMode>(99)),
             "BlendMode(99)");
 }

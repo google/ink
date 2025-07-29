@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -522,7 +523,7 @@ Domain<BrushCoat> ValidBrushCoat(DomainVariant variant) {
 
 Domain<BrushFamily> ValidBrushFamily(DomainVariant variant) {
   return Map(
-      [](absl::Span<const BrushCoat> coats, const std::string id,
+      [](absl::Span<const BrushCoat> coats, const std::string& id,
          const BrushFamily::InputModel& input_model) {
         return BrushFamily::Create(coats, id, input_model).value();
       },

@@ -71,6 +71,16 @@ TEST(EasingFunctionTest, StringifySteps) {
       "Steps{3, StepPosition(99)}");
 }
 
+TEST(EasingFunctionTest, StringifyStepPosition) {
+  EXPECT_EQ(absl::StrCat(EasingFunction::StepPosition::kJumpEnd), "kJumpEnd");
+  EXPECT_EQ(absl::StrCat(EasingFunction::StepPosition::kJumpStart),
+            "kJumpStart");
+  EXPECT_EQ(absl::StrCat(EasingFunction::StepPosition::kJumpNone), "kJumpNone");
+  EXPECT_EQ(absl::StrCat(EasingFunction::StepPosition::kJumpBoth), "kJumpBoth");
+  EXPECT_EQ(absl::StrCat(static_cast<EasingFunction::StepPosition>(99)),
+            "StepPosition(99)");
+}
+
 TEST(EasingFunctionTest, StringifyEasingFunction) {
   EXPECT_EQ(absl::StrCat(EasingFunction{}), "kLinear");
   EXPECT_EQ(absl::StrCat(EasingFunction{EasingFunction::Predefined::kEaseIn}),

@@ -14,6 +14,8 @@
 
 #include "ink/brush/brush_coat.h"
 
+#include <string>
+
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
