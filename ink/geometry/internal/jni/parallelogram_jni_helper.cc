@@ -36,7 +36,7 @@ jobject CreateJImmutableParallelogramOrThrow(JNIEnv* env, const Quad& quad) {
 
 void FillJMutableParallelogramOrThrow(JNIEnv* env, const Quad& quad,
                                       jobject mutable_parallelogram) {
-  env->CallVoidMethod(
+  env->CallObjectMethod(
       mutable_parallelogram,
       MethodMutableParallelogramSetCenterDimensionsRotationAndShear(env),
       quad.Center().x, quad.Center().y, quad.Width(), quad.Height(),
