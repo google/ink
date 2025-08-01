@@ -687,7 +687,8 @@ void ApplyModifiersToTipState(const BrushTipStateModifiers& modifiers,
 
 }  // namespace
 
-BrushTipState CreateTipState(Point position, std::optional<Angle> direction,
+BrushTipState CreateTipState(const ModeledStrokeInput& input,
+                             std::optional<Angle> direction,
                              const BrushTip& brush_tip, float brush_size,
                              absl::Span<const BrushBehavior::Target> targets,
                              absl::Span<const float> target_modifiers) {
@@ -700,7 +701,8 @@ BrushTipState CreateTipState(Point position, std::optional<Angle> direction,
   }
 
   BrushTipState tip_state = {
-      .position = position,
+      .position = input.position,
+      .traveled_distance = input.traveled_distance,
       .width = brush_size * brush_tip.scale.x,
       .height = brush_size * brush_tip.scale.y,
       .percent_radius = brush_tip.corner_rounding,
