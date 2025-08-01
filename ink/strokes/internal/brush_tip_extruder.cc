@@ -46,6 +46,7 @@ namespace {
 using ::ink::brush_tip_extruder_internal::Geometry;
 using ::ink::brush_tip_extruder_internal::MutableMeshView;
 using ::ink::brush_tip_extruder_internal::Side;
+using ::ink::brush_tip_extruder_internal::SideId;
 
 // TODO: b/289230108 - Define a clear relationship between brush epsilon and the
 // max chord height / simplification threshold values. Probably at least one of
@@ -56,13 +57,13 @@ float GetSimplificationThreshold(float brush_epsilon) { return brush_epsilon; }
 }  // namespace
 
 void BrushTipExtruder::StartStroke(float brush_epsilon,
-                                   bool is_winding_texture_particle_brush,
+                                   SurfaceUvExtrusion surface_uv_extrusion,
                                    MutableMesh& mesh) {
   ABSL_CHECK_GT(brush_epsilon, 0);
   brush_epsilon_ = brush_epsilon;
   max_chord_height_ = GetMaxChordHeight(brush_epsilon);
   simplification_threshold_ = GetSimplificationThreshold(brush_epsilon);
-  is_winding_texture_particle_brush_ = is_winding_texture_particle_brush;
+  surface_uv_extrusion_ = surface_uv_extrusion;
   extrusions_.clear();
   saved_extrusion_data_count_ = 0;
   deleted_save_point_extrusions_.clear();
@@ -411,10 +412,8 @@ AffineTransform ComputeParticleSurfaceUvTransform(
 void ExtrudeGeometry(const ExtrusionPoints& points,
                      const BrushTipState& tip_state,
                      float simplification_threshold,
-                     bool apply_particle_surface_uv,
+                     SurfaceUvExtrusion surface_uv_extrusion,
                      brush_tip_extruder_internal::Geometry& geometry) {
-  // TODO: b/271837965 - Add calculation of winding texture coordinates.
-
   // TODO: b/271837965 - Investigate if we should interpolate per-vertex
   // color-shifts between adjacent tip states instead of feeding the same values
   // for every vertex per call to this function.
@@ -430,29 +429,35 @@ void ExtrudeGeometry(const ExtrusionPoints& points,
   AffineTransform position_to_particle_surface_uv =
       ComputeParticleSurfaceUvTransform(tip_state);
 
-  auto compute_surface_uv =
-      [apply_particle_surface_uv,
-       &position_to_particle_surface_uv](Point p) -> Point {
-    // If we don't need surface UVs, we default to (0, 0).
-    if (!apply_particle_surface_uv) return {0, 0};
-
-    Point transformed = position_to_particle_surface_uv.Apply(p);
-
-    // Surface UVs must be lie in the interval [0, 1]; however, we may end up
-    // with values outside of that due to floating-point precision loss, so we
-    // clamp it to that interval.
-    return {std::clamp(transformed.x, 0.f, 1.f),
-            std::clamp(transformed.y, 0.f, 1.f)};
+  auto compute_surface_uv = [&tip_state, surface_uv_extrusion,
+                             &position_to_particle_surface_uv](
+                                Point p, SideId side) -> Point {
+    switch (surface_uv_extrusion) {
+      case SurfaceUvExtrusion::kNone:
+        break;
+      case SurfaceUvExtrusion::kContinuousStroke: {
+        return {side == SideId::kLeft ? 0.f : 1.f, tip_state.traveled_distance};
+      }
+      case SurfaceUvExtrusion::kParticles: {
+        Point transformed = position_to_particle_surface_uv.Apply(p);
+        // Particle surface UVs must be lie in the interval [0, 1]; however,
+        // we may end up with values outside of that due to floating-point
+        // precision loss, so we clamp it to that interval.
+        return {std::clamp(transformed.x, 0.f, 1.f),
+                std::clamp(transformed.y, 0.f, 1.f)};
+      }
+    }
+    return {0, 0};
   };
 
   for (Point point : points.left) {
     geometry.AppendLeftVertex(point, opacity_shift, hsl_shift,
-                              compute_surface_uv(point),
+                              compute_surface_uv(point, SideId::kLeft),
                               tip_state.texture_animation_progress_offset);
   }
   for (Point point : points.right) {
     geometry.AppendRightVertex(point, opacity_shift, hsl_shift,
-                               compute_surface_uv(point),
+                               compute_surface_uv(point, SideId::kRight),
                                tip_state.texture_animation_progress_offset);
   }
   geometry.ProcessNewVertices(simplification_threshold, tip_state);
@@ -498,8 +503,7 @@ void BrushTipExtruder::Extrude(const BrushTipState& tip_state,
 
   const BrushTipState& extruded_state = (end_iter - 2)->GetState();
   ExtrudeGeometry(current_extrusion_points_, extruded_state,
-                  simplification_threshold_, is_winding_texture_particle_brush_,
-                  geometry_);
+                  simplification_threshold_, surface_uv_extrusion_, geometry_);
 }
 
 void BrushTipExtruder::ExtrudeBreakPoint() {
@@ -526,8 +530,7 @@ void BrushTipExtruder::ExtrudeBreakPoint() {
   }
 
   ExtrudeGeometry(current_extrusion_points_, extrusions_.back().GetState(),
-                  simplification_threshold_, is_winding_texture_particle_brush_,
-                  geometry_);
+                  simplification_threshold_, surface_uv_extrusion_, geometry_);
 
   // If no new geometry was added after the last breakpoint, we don't need to
   // do anything.

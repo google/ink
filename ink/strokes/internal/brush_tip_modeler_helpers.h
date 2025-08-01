@@ -117,14 +117,15 @@ struct BehaviorNodeContext {
 void ProcessBehaviorNode(const BehaviorNodeImplementation& node,
                          const BehaviorNodeContext& context);
 
-// Constructs a `BrushTipState` at the given `position` using the non-behavior
+// Constructs a `BrushTipState` from the given `input` using the non-behavior
 // parameters of `brush_tip` with `brush_size`, and then applies
 // `behavior_modifiers`.
 //
 // `behavior_modifiers` is expected to be the same size as `brush_tip.behaviors`
 // and to hold the current modifier value for each behavior calculated using
 // `UpdateBehaviorModifier()` above.
-BrushTipState CreateTipState(Point position, std::optional<Angle> direction,
+BrushTipState CreateTipState(const ModeledStrokeInput& input,
+                             std::optional<Angle> direction,
                              const BrushTip& brush_tip, float brush_size,
                              absl::Span<const BrushBehavior::Target> targets,
                              absl::Span<const float> target_modifiers);
