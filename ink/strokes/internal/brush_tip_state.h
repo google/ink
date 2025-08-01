@@ -25,19 +25,21 @@ namespace ink::strokes_internal {
 struct BrushTipState {
   // The current absolute position of the brush tip center within stroke space.
   Point position;
+  // The distance traveled since the start of the stroke, in stroke space units.
+  float traveled_distance = 0.f;
   // The current width/height of the brush tip shape, measured in stroke units.
   float width;
   float height;
   // The current corner rounding of the brush tip shape, from 0 (fully square)
   // to 1 (fully circular).
-  float percent_radius;
+  float percent_radius = 0.f;
   // The current rotation angle of the brush tip shape.
   Angle rotation;
   // The current slant of the brush tip shape, in the range [-π/2, π/2] radians.
   Angle slant;
   // A unitless parameter in the range [0, 1] that controls the separation
   // between two of the brush tip shape's corners prior to applying `rotation`.
-  float pinch;
+  float pinch = 0.f;
   // An offset to the initial texture animation progress value
   // of the current particle (which is relevant only for strokes with an
   // animated texture) in the range [0, 1).
@@ -58,9 +60,6 @@ struct BrushTipState {
   // The opacity multiplier, in the range [0, 2], to apply to the brush color at
   // this tip position.
   float opacity_multiplier = 1.f;
-
-  // TODO: b/271837965 - It may be useful for winding texture coordinates to
-  // also add distance traveled.
 
   // Returns a `BrushTipState` whose `width`, `height`, `percent_radius`,
   // `rotation`, and `slant` are linearly interpolated between 'a' and 'b'; all

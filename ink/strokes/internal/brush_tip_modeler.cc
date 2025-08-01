@@ -662,7 +662,7 @@ void BrushTipModeler::AddNewTipState(
   ABSL_DCHECK(behavior_stack_.empty());
 
   saved_tip_states_.push_back(
-      CreateTipState(input.position, travel_direction, *brush_tip_, brush_size_,
+      CreateTipState(input, travel_direction, *brush_tip_, brush_size_,
                      behavior_targets_, current_target_modifiers_));
   last_modeled_tip_state_metrics = {
       .traveled_distance = input.traveled_distance,

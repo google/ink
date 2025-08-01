@@ -206,8 +206,6 @@ class Geometry {
   //
   // The vertices do not become part of the mesh until `ProcessNewVertices()` is
   // called.
-  //
-  // TODO: b/271837965 - Add parameters for winding texture coordinates.
   void AppendLeftVertex(Point position, float opacity_shift = 0,
                         const std::array<float, 3>& hsl_shift = {},
                         Point surface_uv = {0, 0}, float animation_offset = 0);

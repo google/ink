@@ -1382,13 +1382,33 @@ TEST_F(ProcessBehaviorNodeTest, PolarTargetNode) {
 }
 
 TEST(CreateTipStateTest, HasPassedInPosition) {
-  EXPECT_THAT(CreateTipState({0, 0}, Angle(), BrushTip{}, 1.f, {}, {}).position,
-              PointEq({0, 0}));
   EXPECT_THAT(
-      CreateTipState({-1, 2}, Angle(), BrushTip{}, 1.f, {}, {}).position,
+      CreateTipState({.position = {0, 0}}, Angle(), BrushTip{}, 1.f, {}, {})
+          .position,
+      PointEq({0, 0}));
+  EXPECT_THAT(
+      CreateTipState({.position = {-1, 2}}, Angle(), BrushTip{}, 1.f, {}, {})
+          .position,
       PointEq({-1, 2}));
-  EXPECT_THAT(CreateTipState({6, 8}, Angle(), BrushTip{}, 1.f, {}, {}).position,
-              PointEq({6, 8}));
+  EXPECT_THAT(
+      CreateTipState({.position = {6, 8}}, Angle(), BrushTip{}, 1.f, {}, {})
+          .position,
+      PointEq({6, 8}));
+}
+
+TEST(CreateTipStateTest, HasPassedInTraveledDistance) {
+  EXPECT_THAT(
+      CreateTipState({.traveled_distance = 0}, Angle(), BrushTip{}, 1.f, {}, {})
+          .traveled_distance,
+      FloatEq(0));
+  EXPECT_THAT(CreateTipState({.traveled_distance = 12}, Angle(), BrushTip{},
+                             1.f, {}, {})
+                  .traveled_distance,
+              FloatEq(12));
+  EXPECT_THAT(CreateTipState({.traveled_distance = 7.25}, Angle(), BrushTip{},
+                             1.f, {}, {})
+                  .traveled_distance,
+              FloatEq(7.25));
 }
 
 BrushTip MakeBaseBrushTip() {
@@ -1406,7 +1426,7 @@ TEST(CreateTipStateTest, HasBasePropertiesWithoutBehaviors) {
   BrushTip brush_tip = MakeBaseBrushTip();
   float brush_size = 3.f;
   BrushTipState state =
-      CreateTipState({0, 0}, Angle(), brush_tip, brush_size, {}, {});
+      CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size, {}, {});
 
   EXPECT_FLOAT_EQ(state.width, brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height, brush_tip.scale.y * brush_size);
@@ -1422,7 +1442,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingWidth) {
   float brush_size = 2.f;
   float width_multiplier = 1.5f;
   BrushTipState state = CreateTipState(
-      {0, 0}, Angle(), brush_tip, brush_size,
+      {{0, 0}}, Angle(), brush_tip, brush_size,
       {BrushBehavior::Target::kWidthMultiplier}, {width_multiplier});
 
   // Only the width should be affected by the multiplier:
@@ -1433,7 +1453,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingWidth) {
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   float clamp_multiplier = 5.f;
-  state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  state = CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                          {BrushBehavior::Target::kWidthMultiplier},
                          {clamp_multiplier});
   EXPECT_FLOAT_EQ(state.width,
@@ -1445,7 +1465,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingHeight) {
   float brush_size = 3.f;
   float height_multiplier = 1.75f;
   BrushTipState state = CreateTipState(
-      {0, 0}, Angle(), brush_tip, brush_size,
+      {{0, 0}}, Angle(), brush_tip, brush_size,
       {BrushBehavior::Target::kHeightMultiplier}, {height_multiplier});
 
   // Only the height should be affected by the multiplier:
@@ -1456,7 +1476,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingHeight) {
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   float clamp_multiplier = -4.f;
-  state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  state = CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                          {BrushBehavior::Target::kHeightMultiplier},
                          {clamp_multiplier});
   EXPECT_FLOAT_EQ(state.height, /**clamped to 0*/ 0);
@@ -1466,7 +1486,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingSize) {
   BrushTip brush_tip = MakeBaseBrushTip();
   float brush_size = 2.5f;
   float size_multiplier = 1.3;
-  BrushTipState state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  BrushTipState state = CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                                        {BrushBehavior::Target::kSizeMultiplier},
                                        {size_multiplier});
 
@@ -1479,7 +1499,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingSize) {
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   float clamp_multiplier = 5.f;
-  state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  state = CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                          {BrushBehavior::Target::kSizeMultiplier},
                          {clamp_multiplier});
   EXPECT_FLOAT_EQ(state.width,
@@ -1493,7 +1513,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingSlant) {
   float brush_size = 2.5f;
   float slant_offset_in_radians = 0.3;
   BrushTipState state =
-      CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+      CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                      {BrushBehavior::Target::kSlantOffsetInRadians},
                      {slant_offset_in_radians});
 
@@ -1504,7 +1524,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingSlant) {
                                    Angle::Radians(slant_offset_in_radians)));
 
   float clamp_offset_in_radians = kFullTurn.ValueInRadians();
-  state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  state = CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                          {BrushBehavior::Target::kSlantOffsetInRadians},
                          {clamp_offset_in_radians});
 
@@ -1517,7 +1537,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingPinch) {
   float brush_size = 2.5f;
   float pinch_offset = 0.3;
   BrushTipState state =
-      CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+      CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                      {BrushBehavior::Target::kPinchOffset}, {pinch_offset});
 
   EXPECT_FLOAT_EQ(state.pinch, brush_tip.pinch + pinch_offset);
@@ -1526,7 +1546,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingPinch) {
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   float clamp_offset = 5;
-  state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  state = CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                          {BrushBehavior::Target::kPinchOffset}, {clamp_offset});
   EXPECT_FLOAT_EQ(state.pinch, 1);  // clamped to 1
 }
@@ -1536,7 +1556,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingRotation) {
   float brush_size = 2.5f;
   float rotation_offset_in_radians = 0.3;
   BrushTipState state =
-      CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+      CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                      {BrushBehavior::Target::kRotationOffsetInRadians},
                      {rotation_offset_in_radians});
 
@@ -1554,7 +1574,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingCornerRounding) {
   float brush_size = 2.5f;
   float rounding_offset = 0.3;
   BrushTipState state = CreateTipState(
-      {0, 0}, Angle(), brush_tip, brush_size,
+      {{0, 0}}, Angle(), brush_tip, brush_size,
       {BrushBehavior::Target::kCornerRoundingOffset}, {rounding_offset});
 
   EXPECT_FLOAT_EQ(state.percent_radius,
@@ -1564,7 +1584,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingCornerRounding) {
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   float clamp_offset = -5;
-  state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  state = CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                          {BrushBehavior::Target::kCornerRoundingOffset},
                          {clamp_offset});
   EXPECT_FLOAT_EQ(state.percent_radius, /**clamped to 0*/ 0);
@@ -1575,7 +1595,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingTextureAnimationProgress) {
   float brush_size = 2.5f;
   float texture_animation_progress_offset = -3.25;
   BrushTipState state =
-      CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+      CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                      {BrushBehavior::Target::kTextureAnimationProgressOffset},
                      {texture_animation_progress_offset});
   // The final progress offset should be computed mod 1.
@@ -1587,7 +1607,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingHue) {
   float brush_size = 2.5f;
   float hue_offset_in_radians = 0.3f;
   BrushTipState state = CreateTipState(
-      {0, 0}, Angle(), brush_tip, brush_size,
+      {{0, 0}}, Angle(), brush_tip, brush_size,
       {BrushBehavior::Target::kHueOffsetInRadians}, {hue_offset_in_radians});
 
   EXPECT_FLOAT_EQ(state.hue_offset_in_full_turns,
@@ -1597,7 +1617,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingHue) {
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   Angle normalize_offset = kFullTurn * 1.5f;
-  state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  state = CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                          {BrushBehavior::Target::kHueOffsetInRadians},
                          {normalize_offset.ValueInRadians()});
   EXPECT_FLOAT_EQ(state.hue_offset_in_full_turns, 0.5);
@@ -1608,7 +1628,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingSaturation) {
   float brush_size = 2.5f;
   float saturation_multiplier = 1.3;
   BrushTipState state = CreateTipState(
-      {0, 0}, Angle(), brush_tip, brush_size,
+      {{0, 0}}, Angle(), brush_tip, brush_size,
       {BrushBehavior::Target::kSaturationMultiplier}, {saturation_multiplier});
 
   EXPECT_FLOAT_EQ(state.saturation_multiplier, saturation_multiplier);
@@ -1617,7 +1637,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingSaturation) {
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   float clamp_multiplier = 3.f;
-  state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  state = CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                          {BrushBehavior::Target::kSaturationMultiplier},
                          {clamp_multiplier});
   EXPECT_FLOAT_EQ(state.saturation_multiplier, 2.f);
@@ -1628,7 +1648,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingLuminosity) {
   float brush_size = 2.5f;
   float luminosity_offset = 0.3;
   BrushTipState state =
-      CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+      CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                      {BrushBehavior::Target::kLuminosity}, {luminosity_offset});
 
   EXPECT_FLOAT_EQ(state.luminosity_shift, luminosity_offset);
@@ -1637,7 +1657,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingLuminosity) {
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   float clamp_offset = 2.f;
-  state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  state = CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                          {BrushBehavior::Target::kLuminosity}, {clamp_offset});
   EXPECT_FLOAT_EQ(state.luminosity_shift, 1.f);
 }
@@ -1647,7 +1667,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingOpacity) {
   float brush_size = 2.5f;
   float opacity_multiplier = 1.3;
   BrushTipState state = CreateTipState(
-      {0, 0}, Angle(), brush_tip, brush_size,
+      {{0, 0}}, Angle(), brush_tip, brush_size,
       {BrushBehavior::Target::kOpacityMultiplier}, {opacity_multiplier});
 
   EXPECT_FLOAT_EQ(state.opacity_multiplier,
@@ -1657,7 +1677,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingOpacity) {
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   float clamp_multiplier = 3.f;
-  state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  state = CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                          {BrushBehavior::Target::kOpacityMultiplier},
                          {clamp_multiplier});
   EXPECT_FLOAT_EQ(state.opacity_multiplier, 2.f);
@@ -1668,7 +1688,7 @@ TEST(CreateTipStateTest, WithBehaviorsTargetingTheSameProperty) {
   float brush_size = 3.f;
   float modifiers[] = {1.5f, 0.8f};
   BrushTipState state =
-      CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+      CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                      {BrushBehavior::Target::kWidthMultiplier,
                       BrushBehavior::Target::kWidthMultiplier},
                      modifiers);
@@ -1686,7 +1706,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingEachProperty) {
   float brush_size = 1.f;
   float modifiers[] = {0.9f, 1.2f};
   BrushTipState state =
-      CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+      CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                      {BrushBehavior::Target::kWidthMultiplier,
                       BrushBehavior::Target::kHeightMultiplier},
                      modifiers);
@@ -1701,13 +1721,13 @@ TEST(CreateTipStateTest, WidthIsClampedZeroToTwiceBaseValue) {
   BrushTip brush_tip = MakeBaseBrushTip();
   float brush_size = 3.f;
 
-  EXPECT_FLOAT_EQ(CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  EXPECT_FLOAT_EQ(CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                                  {BrushBehavior::Target::kWidthMultiplier,
                                   BrushBehavior::Target::kWidthMultiplier},
                                  {-0.9f, 1.7f})
                       .width,
                   0);
-  EXPECT_FLOAT_EQ(CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  EXPECT_FLOAT_EQ(CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                                  {BrushBehavior::Target::kWidthMultiplier,
                                   BrushBehavior::Target::kWidthMultiplier},
                                  {1.8f, 1.7f})
@@ -1719,13 +1739,13 @@ TEST(CreateTipStateTest, HeightIsClampedZeroToTwiceBaseValue) {
   BrushTip brush_tip = MakeBaseBrushTip();
   float brush_size = 3.f;
 
-  EXPECT_FLOAT_EQ(CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  EXPECT_FLOAT_EQ(CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                                  {BrushBehavior::Target::kHeightMultiplier,
                                   BrushBehavior::Target::kHeightMultiplier},
                                  {0.5f, -0.3f})
                       .height,
                   0);
-  EXPECT_FLOAT_EQ(CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+  EXPECT_FLOAT_EQ(CreateTipState({{0, 0}}, Angle(), brush_tip, brush_size,
                                  {BrushBehavior::Target::kHeightMultiplier,
                                   BrushBehavior::Target::kHeightMultiplier},
                                  {1.2f, 1.9f})

@@ -37,6 +37,11 @@ bool IsWindingTextureCoat(const BrushCoat& coat) {
              BrushPaint::TextureMapping::kWinding;
 }
 
+bool IsParticleCoat(const BrushCoat& coat) {
+  return coat.tip.particle_gap_distance_scale != 0 ||
+         coat.tip.particle_gap_duration != Duration32::Zero();
+}
+
 }  // namespace
 
 void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
@@ -50,14 +55,13 @@ void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
   mesh_bounds_.Reset();
   outlines_.clear();
 
-  bool is_winding_texture_brush = IsWindingTextureCoat(coat);
-  bool is_winding_texture_particle_brush =
-      is_winding_texture_brush &&
-      (coat.tip.particle_gap_distance_scale != 0 ||
-       coat.tip.particle_gap_duration != Duration32::Zero());
+  SurfaceUvExtrusion surface_uv_extrusion =
+      !IsWindingTextureCoat(coat) ? SurfaceUvExtrusion::kNone
+      : IsParticleCoat(coat)      ? SurfaceUvExtrusion::kParticles
+                                  : SurfaceUvExtrusion::kContinuousStroke;
+
   tip_.modeler.StartStroke(&coat.tip, brush_size, noise_seed);
-  tip_.extruder.StartStroke(brush_epsilon, is_winding_texture_particle_brush,
-                            mesh_);
+  tip_.extruder.StartStroke(brush_epsilon, surface_uv_extrusion, mesh_);
 }
 
 StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
