@@ -40,10 +40,10 @@ float DistanceBetween(Point a, Point b) { return (a - b).Magnitude(); }
 }  // namespace
 
 DirectedPartialOutline::DirectedPartialOutline(
-    const std::vector<IndexType>* starting_indices,
+    const std::vector<MutableMeshView::IndexType>* starting_indices,
     uint32_t starting_indices_start, uint32_t n_starting_indices,
-    const std::vector<IndexType>* ending_indices, uint32_t ending_indices_start,
-    uint32_t n_ending_indices)
+    const std::vector<MutableMeshView::IndexType>* ending_indices,
+    uint32_t ending_indices_start, uint32_t n_ending_indices)
     : starting_indices_(starting_indices),
       starting_indices_start_(starting_indices_start),
       n_starting_indices_(n_starting_indices),
@@ -59,7 +59,8 @@ uint32_t DirectedPartialOutline::StartingSideSize() const {
   return n_starting_indices_;
 }
 
-IndexType DirectedPartialOutline::operator[](uint32_t i) const {
+MutableMeshView::IndexType DirectedPartialOutline::operator[](
+    uint32_t i) const {
   ABSL_DCHECK_LT(i, Size());
   if (i < n_starting_indices_) {
     return (*starting_indices_)[starting_indices_start_ + n_starting_indices_ -

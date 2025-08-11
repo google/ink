@@ -44,7 +44,7 @@ using ::testing::Value;
 
 struct MeshData {
   std::vector<LegacyVertex> vertices;
-  std::vector<IndexType> triangle_indices;
+  std::vector<MutableMeshView::IndexType> triangle_indices;
 };
 
 MutableMeshView MakeView(MeshData& data) {

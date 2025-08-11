@@ -49,7 +49,7 @@ testing::Matcher<ExtrudedVertex> VertexPositionEq(Point p) {
 
 struct MeshData {
   std::vector<strokes_internal::LegacyVertex> vertices;
-  std::vector<IndexType> triangle_indices;
+  std::vector<MutableMeshView::IndexType> triangle_indices;
 };
 
 MutableMeshView MakeView(MeshData& data) {
@@ -238,8 +238,8 @@ TEST(GeometryTest, AppendVerticesAndProcess) {
               EnvelopeEq(Rect::FromCenterAndDimensions({0, 1}, 2, 2)));
 
   EXPECT_EQ(line_geometry.GetMeshView().TriangleCount(), 3);
-  EXPECT_EQ(mesh_data.triangle_indices,
-            std::vector<IndexType>({0, 1, 2, 0, 2, 3, 3, 2, 4}));
+  EXPECT_EQ(mesh_data.triangle_indices, std::vector<MutableMeshView::IndexType>(
+                                            {0, 1, 2, 0, 2, 3, 3, 2, 4}));
 
   // After processing new vertices, two vertices from each side will be part of
   // the buffered vertices for the next extrusion:
@@ -287,7 +287,7 @@ TEST(GeometryTest, Reset) {
 
   EXPECT_EQ(line_geometry.GetMeshView().TriangleCount(), 2);
   EXPECT_EQ(final_mesh_data.triangle_indices,
-            std::vector<IndexType>({0, 1, 2, 0, 2, 3}));
+            std::vector<MutableMeshView::IndexType>({0, 1, 2, 0, 2, 3}));
 
   // After processing new vertices, two vertices from each side will be part of
   // the buffered vertices for the next extrusion:
@@ -315,8 +315,9 @@ TEST(GeometryTest, Fans) {
                 EnvelopeEq(Rect::FromCenterAndDimensions({0, 0}, 2, 2)));
 
     EXPECT_EQ(line_geometry.GetMeshView().TriangleCount(), 3);
-    EXPECT_EQ(mesh_data.triangle_indices,
-              std::vector<IndexType>({0, 1, 2, 2, 1, 3, 3, 1, 4}));
+    EXPECT_EQ(
+        mesh_data.triangle_indices,
+        std::vector<MutableMeshView::IndexType>({0, 1, 2, 2, 1, 3, 3, 1, 4}));
   }
 
   {
@@ -338,8 +339,9 @@ TEST(GeometryTest, Fans) {
                 EnvelopeEq(Rect::FromCenterAndDimensions({0, 0}, 2, 2)));
 
     EXPECT_EQ(line_geometry.GetMeshView().TriangleCount(), 3);
-    EXPECT_EQ(mesh_data.triangle_indices,
-              std::vector<IndexType>({1, 0, 2, 1, 2, 3, 1, 3, 4}));
+    EXPECT_EQ(
+        mesh_data.triangle_indices,
+        std::vector<MutableMeshView::IndexType>({1, 0, 2, 1, 2, 3, 1, 3, 4}));
   }
 }
 

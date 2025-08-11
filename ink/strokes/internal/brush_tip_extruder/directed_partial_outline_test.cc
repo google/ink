@@ -37,8 +37,8 @@ TEST(DirectedPartialOutlineTest, Size) {
   EXPECT_EQ(default_constructed.Size(), 0);
   EXPECT_EQ(default_constructed.StartingSideSize(), 0);
 
-  std::vector<IndexType> left(10, 5);
-  std::vector<IndexType> right(3, 7);
+  std::vector<MutableMeshView::IndexType> left(10, 5);
+  std::vector<MutableMeshView::IndexType> right(3, 7);
   DirectedPartialOutline outline(&left, 0, left.size(), &right, 0,
                                  right.size());
   EXPECT_EQ(outline.Size(), left.size() + right.size());
@@ -46,7 +46,7 @@ TEST(DirectedPartialOutlineTest, Size) {
 }
 
 TEST(DirectedPartialOutlineTest, IterationOneSideEmpty) {
-  std::vector<IndexType> nonempty({0, 1, 2, 3, 4});
+  std::vector<MutableMeshView::IndexType> nonempty({0, 1, 2, 3, 4});
 
   {
     DirectedPartialOutline outline(nullptr, 0, 0, &nonempty, 0,
@@ -61,8 +61,8 @@ TEST(DirectedPartialOutlineTest, IterationOneSideEmpty) {
 }
 
 TEST(DirectedPartialOutlineTest, IterationNonEmptySides) {
-  std::vector<IndexType> left({3, 2, 1, 0});
-  std::vector<IndexType> right({4, 5, 6, 7, 8, 9, 10});
+  std::vector<MutableMeshView::IndexType> left({3, 2, 1, 0});
+  std::vector<MutableMeshView::IndexType> right({4, 5, 6, 7, 8, 9, 10});
 
   DirectedPartialOutline start_left_outline(&left, 0, left.size(), &right, 0,
                                             right.size());
@@ -73,7 +73,7 @@ TEST(DirectedPartialOutlineTest, IterationNonEmptySides) {
 
 struct MeshData {
   std::vector<strokes_internal::LegacyVertex> vertices;
-  std::vector<IndexType> triangle_indices;
+  std::vector<MutableMeshView::IndexType> triangle_indices;
 };
 
 MutableMeshView MakeView(MeshData& data) {
@@ -94,7 +94,7 @@ TEST(FindOutlineIntersectionTest, EmptyOutline) {
 TEST(FindOutlineIntersectionTest, ZeroInitialSearchBudget) {
   MeshData data = {.vertices = {{.position = {-1, 0}}, {.position = {1, 0}}}};
   MutableMeshView mesh = MakeView(data);
-  std::vector<IndexType> indices = {0, 1};
+  std::vector<MutableMeshView::IndexType> indices = {0, 1};
   DirectedPartialOutline outline(&indices, 0, indices.size(), nullptr, 0, 0);
   float search_budget = 0;
   OutlineIntersectionResult result = FindOutlineIntersection(
@@ -106,7 +106,7 @@ TEST(FindOutlineIntersectionTest, ZeroInitialSearchBudget) {
 TEST(FindOutlineIntersectionTest, SingleNondegenerateSegment) {
   MeshData data = {.vertices = {{.position = {-1, 0}}, {.position = {1, 0}}}};
   MutableMeshView mesh = MakeView(data);
-  std::vector<IndexType> indices = {0, 1};
+  std::vector<MutableMeshView::IndexType> indices = {0, 1};
   // Note that starting side indices are traversed backwards, so the outline
   // segment will travel from x = 1 to x = -1.
   DirectedPartialOutline outline(&indices, 0, indices.size(), nullptr, 0, 0);
@@ -161,7 +161,7 @@ TEST(FindOutlineIntersectionTest, IncludingDegenerateSegment) {
                                 {.position = {0, 2}},
                                 {.position = {0, 3}}}};
   MutableMeshView mesh = MakeView(data);
-  std::vector<IndexType> indices = {0, 1, 2, 3};
+  std::vector<MutableMeshView::IndexType> indices = {0, 1, 2, 3};
   DirectedPartialOutline outline(nullptr, 0, 0, &indices, 0, indices.size());
   float search_budget = 10;
 
@@ -205,7 +205,7 @@ TEST(FindOutlineIntersectionTest, IncludingDegenerateSegment) {
 TEST(FindOutlineIntersectionTest, SingleVertexOutline) {
   MeshData data = {.vertices = {{.position = {0, 0}}}};
   MutableMeshView mesh = MakeView(data);
-  std::vector<IndexType> indices = {0};
+  std::vector<MutableMeshView::IndexType> indices = {0};
   DirectedPartialOutline outline(&indices, 0, indices.size(), nullptr, 0, 0);
   float search_budget = 10;
   OutlineIntersectionResult result = FindOutlineIntersection(
@@ -222,7 +222,7 @@ TEST(FindOutlineIntersectionTest, OnlyDegenerateSegments) {
                                 {.position = {0, 0}},
                                 {.position = {0, 0}}}};
   MutableMeshView mesh = MakeView(data);
-  std::vector<IndexType> indices = {0, 1, 2, 3};
+  std::vector<MutableMeshView::IndexType> indices = {0, 1, 2, 3};
   DirectedPartialOutline outline(&indices, 0, indices.size(), nullptr, 0, 0);
   float search_budget = 10;
   OutlineIntersectionResult result = FindOutlineIntersection(
@@ -245,8 +245,8 @@ TEST(FindOutlineIntersectionTest, NoIntersectionExcessSearchBudget) {
                                 {.position = {1, 0}},
                                 {.position = {1, 2}}}};
   MutableMeshView mesh = MakeView(data);
-  std::vector<IndexType> left_indices = {0, 1};
-  std::vector<IndexType> right_indices = {2, 3};
+  std::vector<MutableMeshView::IndexType> left_indices = {0, 1};
+  std::vector<MutableMeshView::IndexType> right_indices = {2, 3};
   DirectedPartialOutline outline(&left_indices, 0, left_indices.size(),
                                  &right_indices, 0, right_indices.size());
   float search_budget = 7;
@@ -260,7 +260,7 @@ TEST(FindOutlineIntersectionTest, NoIntersectionExcessSearchBudget) {
 TEST(FindOutlineIntersectionTest, PartiallyCoincidentSegments) {
   MeshData data = {.vertices = {{.position = {-1, 0}}, {.position = {1, 0}}}};
   MutableMeshView mesh = MakeView(data);
-  std::vector<IndexType> indices = {0, 1};
+  std::vector<MutableMeshView::IndexType> indices = {0, 1};
   DirectedPartialOutline outline(nullptr, 0, 0, &indices, 0, indices.size());
   float search_budget = 2;
   OutlineIntersectionResult result = FindOutlineIntersection(
@@ -283,8 +283,8 @@ TEST(FindOutlineIntersectionTest, IntersectionPastBudget) {
                                 {.position = {1, 0}},
                                 {.position = {1, 2}}}};
   MutableMeshView mesh = MakeView(data);
-  std::vector<IndexType> left_indices = {0, 1};
-  std::vector<IndexType> right_indices = {2, 3};
+  std::vector<MutableMeshView::IndexType> left_indices = {0, 1};
+  std::vector<MutableMeshView::IndexType> right_indices = {2, 3};
   DirectedPartialOutline outline(&left_indices, 0, left_indices.size(),
                                  &right_indices, 0, right_indices.size());
 
@@ -322,8 +322,8 @@ TEST(FindOutlineIntersectionTest, WithContainingTriangle) {
                                 {.position = {1, 0}},
                                 {.position = {1, 2}}}};
   MutableMeshView mesh = MakeView(data);
-  std::vector<IndexType> left_indices = {0, 1};
-  std::vector<IndexType> right_indices = {2, 3};
+  std::vector<MutableMeshView::IndexType> left_indices = {0, 1};
+  std::vector<MutableMeshView::IndexType> right_indices = {2, 3};
   DirectedPartialOutline outline(&left_indices, 0, left_indices.size(),
                                  &right_indices, 0, right_indices.size());
 

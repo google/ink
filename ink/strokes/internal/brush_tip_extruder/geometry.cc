@@ -564,7 +564,8 @@ void Geometry::ClearSinceLastExtrusionBreak() {
 namespace {
 
 void UpdateFirstMutatedSideIndexValue(
-    IndexType index, std::optional<IndexType>& first_mutated_index) {
+    MutableMeshView::IndexType index,
+    std::optional<MutableMeshView::IndexType>& first_mutated_index) {
   if (first_mutated_index.has_value()) {
     *first_mutated_index = std::min(*first_mutated_index, index);
   } else {
@@ -575,8 +576,8 @@ void UpdateFirstMutatedSideIndexValue(
 }  // namespace
 
 void Geometry::UpdateMeshDerivatives() {
-  absl::Span<const IndexType> left_indices_to_update;
-  absl::Span<const IndexType> right_indices_to_update;
+  absl::Span<const MutableMeshView::IndexType> left_indices_to_update;
+  absl::Span<const MutableMeshView::IndexType> right_indices_to_update;
 
   uint32_t first_visually_mutated_triangle = FirstVisuallyMutatedTriangle();
   if (first_visually_mutated_triangle == 0) {
@@ -587,15 +588,17 @@ void Geometry::UpdateMeshDerivatives() {
         mesh_, vertex_side_ids_, first_visually_mutated_triangle);
 
     // Returns the subspan of `all_side_indices` that need to be updated.
-    auto make_subspan = [this](absl::Span<const IndexType> all_side_indices,
-                               IndexType first_exterior_side_index) {
-      // Backtrack to the start of a coincident vertex range, if one is present,
-      // because derivatives must get averaged across coincident vertices.
-      return all_side_indices.subspan(
-          StartingOffsetForCoincidentConnectedVertices(
-              mesh_, all_side_indices,
-              side_offsets_[first_exterior_side_index]));
-    };
+    auto make_subspan =
+        [this](absl::Span<const MutableMeshView::IndexType> all_side_indices,
+               MutableMeshView::IndexType first_exterior_side_index) {
+          // Backtrack to the start of a coincident vertex range, if one is
+          // present, because derivatives must get averaged across coincident
+          // vertices.
+          return all_side_indices.subspan(
+              StartingOffsetForCoincidentConnectedVertices(
+                  mesh_, all_side_indices,
+                  side_offsets_[first_exterior_side_index]));
+        };
     if (index_pair.left.has_value()) {
       left_indices_to_update =
           make_subspan(left_side_.indices, *index_pair.left);
@@ -639,19 +642,21 @@ void Geometry::DebugMakeMeshAfterSavePoint(MutableMeshView mesh) const {
                      mesh_.GetVertexIndex(triangle, 2)});
   };
 
-  IndexType min_index_after_save =
+  MutableMeshView::IndexType min_index_after_save =
       min_triangle_index(mesh_.TriangleCount() - 1);
   for (uint32_t i = save_point_state_.n_mesh_triangles;
        i + 1 < mesh_.TriangleCount(); ++i) {
     min_index_after_save =
         std::min(min_index_after_save, min_triangle_index(i));
   }
-  for (IndexType i = min_index_after_save; i < mesh_.VertexCount(); ++i) {
+  for (MutableMeshView::IndexType i = min_index_after_save;
+       i < mesh_.VertexCount(); ++i) {
     mesh.AppendVertex(mesh_.GetVertex(i));
   }
   for (uint32_t i = save_point_state_.n_mesh_triangles;
        i < mesh_.TriangleCount(); ++i) {
-    std::array<IndexType, 3> indices = mesh_.GetTriangleIndices(i);
+    std::array<MutableMeshView::IndexType, 3> indices =
+        mesh_.GetTriangleIndices(i);
     mesh.AppendTriangleIndices({indices[0] - min_index_after_save,
                                 indices[1] - min_index_after_save,
                                 indices[2] - min_index_after_save});
@@ -820,7 +825,7 @@ const Side& Geometry::OpposingSide(const Side& side) const {
 }
 
 void Geometry::AppendVertexToMesh(Side& side, const ExtrudedVertex& vertex) {
-  IndexType new_index = mesh_.VertexCount();
+  MutableMeshView::IndexType new_index = mesh_.VertexCount();
   mesh_.AppendVertex(vertex);
   vertex_side_ids_.push_back(side.self_id);
   side_offsets_.push_back(side.indices.size());
@@ -841,8 +846,8 @@ void Geometry::TryAppendVertexAndTriangleToMesh(Side& side,
       TriangleWinding::kCounterClockwise) {
     return;
   }
-  IndexType last_left = left_side_.indices.back();
-  IndexType last_right = right_side_.indices.back();
+  MutableMeshView::IndexType last_left = left_side_.indices.back();
+  MutableMeshView::IndexType last_right = right_side_.indices.back();
   AppendVertexToMesh(side, vertex);
   mesh_.AppendTriangleIndices({last_left, last_right, side.indices.back()});
 }
@@ -964,15 +969,15 @@ void Geometry::SimplifyBufferedVertices(float initial_outline_reposition_budget,
 }
 
 bool Geometry::TriangleIndicesAreLeftRightConforming(
-    absl::Span<const IndexType> indices) const {
+    absl::Span<const MutableMeshView::IndexType> indices) const {
   ABSL_DCHECK_EQ(left_side_.first_triangle_vertex, 0);
   ABSL_DCHECK_EQ(right_side_.first_triangle_vertex, 1);
   return vertex_side_ids_[indices[0]] == SideId::kLeft &&
          vertex_side_ids_[indices[1]] == SideId::kRight;
 }
 
-bool Geometry::TriangleIndicesAllBelongTo(absl::Span<const IndexType> indices,
-                                          SideId side) const {
+bool Geometry::TriangleIndicesAllBelongTo(
+    absl::Span<const MutableMeshView::IndexType> indices, SideId side) const {
   return vertex_side_ids_[indices[0]] == side &&
          vertex_side_ids_[indices[1]] == side &&
          vertex_side_ids_[indices[2]] == side;
@@ -983,8 +988,8 @@ std::optional<uint32_t> Geometry::FindLastTriangleContainingSegmentEnd(
     uint32_t max_early_exit_triangle) const {
   // The threshold for an index on the adjacent side that could be a pivot of
   // the current intersection, if one exists.
-  IndexType current_pivot_index_threshold =
-      std::numeric_limits<IndexType>::max();
+  MutableMeshView::IndexType current_pivot_index_threshold =
+      std::numeric_limits<MutableMeshView::IndexType>::max();
   if (search_along_side.intersection.has_value() &&
       search_along_side.intersection->retriangulation_started) {
     current_pivot_index_threshold =
@@ -995,7 +1000,8 @@ std::optional<uint32_t> Geometry::FindLastTriangleContainingSegmentEnd(
 
   for (uint32_t i = mesh_.TriangleCount();
        i > search_along_side.partition_start.first_triangle; --i) {
-    std::array<IndexType, 3> indices = mesh_.GetTriangleIndices(i - 1);
+    std::array<MutableMeshView::IndexType, 3> indices =
+        mesh_.GetTriangleIndices(i - 1);
 
     // The triangle is a candidate if it is left-right conforming or if it is
     // one of the triangles split in the current intersection.
@@ -1155,9 +1161,10 @@ bool Geometry::ExtendOutlineToSegment(Side& outline_starting_side,
   return false;
 }
 
-void Geometry::AssignVerticesInRange(std::vector<IndexType>::iterator begin,
-                                     std::vector<IndexType>::iterator end,
-                                     const ExtrudedVertex& target) {
+void Geometry::AssignVerticesInRange(
+    std::vector<MutableMeshView::IndexType>::iterator begin,
+    std::vector<MutableMeshView::IndexType>::iterator end,
+    const ExtrudedVertex& target) {
   for (auto it = begin; it < end; ++it) {
     SetVertex(*it, target);
   }
@@ -1188,15 +1195,17 @@ bool Geometry::TryBeginIntersectionRetriangulation(
     can_begin = false;
   }
 
-  std::array<IndexType, 3> indices =
+  std::array<MutableMeshView::IndexType, 3> indices =
       mesh_.GetTriangleIndices(intersection_vertex_triangle);
   if (!TriangleIndicesAreLeftRightConforming(indices)) {
     // This *should* be impossible, but protect against it anyway. Any old
     // triangles an intersection is allowed to start on should be L-R-(L|R).
     can_begin = false;
   }
-  IndexType saved_left = indices[left_side_.first_triangle_vertex];
-  IndexType saved_right = indices[right_side_.first_triangle_vertex];
+  MutableMeshView::IndexType saved_left =
+      indices[left_side_.first_triangle_vertex];
+  MutableMeshView::IndexType saved_right =
+      indices[right_side_.first_triangle_vertex];
 
   if (!can_begin) {
     // If the propsed winding is counter-clockwise, we give up the intersection.
@@ -1245,7 +1254,8 @@ bool Geometry::TryBeginIntersectionRetriangulation(
   //
   for (uint32_t i = mesh_.TriangleCount(); i > intersection_vertex_triangle;
        --i) {
-    std::array<IndexType, 3> mesh_indices = mesh_.GetTriangleIndices(i - 1);
+    std::array<MutableMeshView::IndexType, 3> mesh_indices =
+        mesh_.GetTriangleIndices(i - 1);
 
     // Try to save every triangle, because they will all be shifted when we
     // insert a new triangle after this loop.
@@ -1291,7 +1301,7 @@ bool Geometry::TryBeginIntersectionRetriangulation(
 
   if (proposed_winding != TriangleWinding::kCounterClockwise) {
     // After:
-    std::array<IndexType, 3> intersection_indices;
+    std::array<MutableMeshView::IndexType, 3> intersection_indices;
     if (intersecting_side.self_id == SideId::kLeft) {
       intersection_indices[0] = *(intersection_start_index - 1);
       intersection_indices[1] = *(intersection_start_index + 1);
@@ -1348,7 +1358,7 @@ void Geometry::ContinueIntersectionRetriangulation(
     return;
   }
 
-  IndexType intersection_pivot_index =
+  MutableMeshView::IndexType intersection_pivot_index =
       intersecting_side
           .indices[intersecting_side.intersection->starting_offset + 1];
 
@@ -1360,7 +1370,8 @@ void Geometry::ContinueIntersectionRetriangulation(
   for (uint32_t i =
            intersecting_side.intersection->oldest_retriangulation_triangle;
        i > intersection_vertex_triangle; --i) {
-    std::array<IndexType, 3> indices = mesh_.GetTriangleIndices(i - 1);
+    std::array<MutableMeshView::IndexType, 3> indices =
+        mesh_.GetTriangleIndices(i - 1);
 
     // Push the triangle onto the stack so it can be restored later if needed.
     intersecting_side.intersection->undo_triangulation_stack.push_back(indices);
@@ -1379,7 +1390,7 @@ void Geometry::ContinueIntersectionRetriangulation(
 
   // The first two indices of the new gap-filling triangle are already correct,
   // so we only have to reset the third.
-  std::array<IndexType, 3> indices =
+  std::array<MutableMeshView::IndexType, 3> indices =
       mesh_.GetTriangleIndices(intersection_vertex_triangle);
   indices[2] = intersection_pivot_index;
   SetTriangleIndices(intersection_vertex_triangle, indices);
@@ -1397,16 +1408,19 @@ void Geometry::UndoIntersectionRetriangulation(
     return;
   }
 
-  std::vector<std::array<IndexType, 3>>& triangle_stack =
+  std::vector<std::array<MutableMeshView::IndexType, 3>>& triangle_stack =
       intersecting_side.intersection->undo_triangulation_stack;
   uint32_t triangle_index =
       intersecting_side.intersection->oldest_retriangulation_triangle;
 
-  IndexType last_left = mesh_.GetVertexIndex(triangle_index, 0);
-  IndexType last_right = mesh_.GetVertexIndex(triangle_index, 1);
+  MutableMeshView::IndexType last_left =
+      mesh_.GetVertexIndex(triangle_index, 0);
+  MutableMeshView::IndexType last_right =
+      mesh_.GetVertexIndex(triangle_index, 1);
 
   while (!triangle_stack.empty() && triangle_index < mesh_.TriangleCount()) {
-    const std::array<IndexType, 3>& indices = triangle_stack.back();
+    const std::array<MutableMeshView::IndexType, 3>& indices =
+        triangle_stack.back();
 
     if (stop_at_position.has_value() &&
         LegacyTriangleContains(Triangle{.p0 = mesh_.GetPosition(indices[0]),
@@ -1477,7 +1491,7 @@ Side::IndexOffsetRanges Geometry::GetIntersectionTriangleFanOffsetRanges(
   //    found first vertex on that side would not have clockwise triangles.
 
   bool undo_stack_triangle_found = false;
-  std::array<IndexType, 3> triangle_indices;
+  std::array<MutableMeshView::IndexType, 3> triangle_indices;
   if (intersecting_side.intersection->retriangulation_started &&
       intersection_vertex_triangle >
           intersecting_side.intersection->oldest_retriangulation_triangle) {
@@ -1485,7 +1499,7 @@ Side::IndexOffsetRanges Geometry::GetIntersectionTriangleFanOffsetRanges(
     // through the undo stack as does `UndoIntersectionRetriangulation`. This
     // way, we will try to find the indices of what will be
     // `oldest_retriangulation_triangle` at the end of processing this vertex.
-    const std::vector<std::array<IndexType, 3>>& undo_stack =
+    const std::vector<std::array<MutableMeshView::IndexType, 3>>& undo_stack =
         intersecting_side.intersection->undo_triangulation_stack;
     for (auto it = undo_stack.rbegin(); it != undo_stack.rend(); ++it) {
       if (TriangleIndicesAreLeftRightConforming(*it) &&
@@ -1682,7 +1696,8 @@ bool Geometry::MovingStartingOutlineVerticesWouldCauseClockwiseTriangle(
   // 4. Test the triangle fan made from the `target_position` and the found
   //    indices on the opposite side.
 
-  IndexType oldest_to_be_moved = outline[intersection.starting_index];
+  MutableMeshView::IndexType oldest_to_be_moved =
+      outline[intersection.starting_index];
 
   const Side& opposite_side = OpposingSide(outline_starting_side);
   Side::IndexOffsetRange opposite_offset_range;
@@ -1699,7 +1714,7 @@ bool Geometry::MovingStartingOutlineVerticesWouldCauseClockwiseTriangle(
   if (outline_starting_side.intersection.has_value() &&
       outline_starting_side.intersection->retriangulation_started &&
       stop_at_oldest_retriangulation_triangle) {
-    IndexType opposite_last_index = mesh_.GetVertexIndex(
+    MutableMeshView::IndexType opposite_last_index = mesh_.GetVertexIndex(
         outline_starting_side.intersection->oldest_retriangulation_triangle,
         opposite_side.first_triangle_vertex);
     if (vertex_side_ids_[opposite_last_index] != opposite_side.self_id) {
@@ -1748,7 +1763,7 @@ void Geometry::UpdateIntersectionPivotVertices(
   // First, we calculate the Vertex that will start the pivot. It must connect
   // to vertices preceding the intersection, so it is interpolated based on the
   // triangle we are currently intersecting.
-  std::array<IndexType, 3> triangle_indices;
+  std::array<MutableMeshView::IndexType, 3> triangle_indices;
   if (!intersecting_side.intersection->undo_triangulation_stack.empty()) {
     triangle_indices =
         intersecting_side.intersection->undo_triangulation_stack.back();
@@ -1780,14 +1795,16 @@ void Geometry::UpdateIntersectionPivotVertices(
   if (intersecting_side.indices.end() - intersection_start_index > 2) {
     uint32_t replacement_triangle_vertex =
         intersecting_side.first_triangle_vertex;
-    IndexType replacement_index = *(intersection_start_index + 2);
+    MutableMeshView::IndexType replacement_index =
+        *(intersection_start_index + 2);
     uint32_t starting_triangle =
         intersecting_side.intersection->oldest_retriangulation_triangle + 1;
     for (uint32_t i = starting_triangle; i < mesh_.TriangleCount(); ++i) {
       // The triangles of interest have two vertices opposite to
       // `intersecting_side`, which requires the last index to not be on
       // `intersecting_side`.
-      std::array<IndexType, 3> indices = mesh_.GetTriangleIndices(i);
+      std::array<MutableMeshView::IndexType, 3> indices =
+          mesh_.GetTriangleIndices(i);
       if (!TriangleIndicesAreLeftRightConforming(indices) ||
           vertex_side_ids_[indices[2]] == intersecting_side.self_id) {
         continue;
@@ -1800,9 +1817,9 @@ void Geometry::UpdateIntersectionPivotVertices(
   }
 }
 
-void Geometry::UpdateIntersectionOuterVertices(Side& intersecting_side,
-                                               IndexType pivot_start,
-                                               IndexType pivot_end) {
+void Geometry::UpdateIntersectionOuterVertices(
+    Side& intersecting_side, MutableMeshView::IndexType pivot_start,
+    MutableMeshView::IndexType pivot_end) {
   if (texture_coord_type_ == TextureCoordType::kTiling) return;
 
   // Update the secondary_texture_coords for the outside of the intersection:
@@ -1820,13 +1837,15 @@ void Geometry::UpdateIntersectionOuterVertices(Side& intersecting_side,
   uint32_t pivot_last_triangle = std::numeric_limits<uint32_t>::max();
   uint32_t i = mesh_.TriangleCount();
   while (i > 0) {
-    std::array<IndexType, 3> indices = mesh_.GetTriangleIndices(i - 1);
+    std::array<MutableMeshView::IndexType, 3> indices =
+        mesh_.GetTriangleIndices(i - 1);
     if (!TriangleIndicesAreLeftRightConforming(indices) ||
         vertex_side_ids_[indices[2]] == intersecting_side.self_id) {
       --i;
       continue;
     }
-    IndexType pivoting_index = indices[intersecting_side.first_triangle_vertex];
+    MutableMeshView::IndexType pivoting_index =
+        indices[intersecting_side.first_triangle_vertex];
     if (pivoting_index <= pivot_start) break;
     if (mesh_.GetVertex(pivoting_index).texture_coords ==
         kWindingTextureCoordinateSentinelValue) {
@@ -1844,7 +1863,8 @@ void Geometry::UpdateIntersectionOuterVertices(Side& intersecting_side,
   // Continue iterating to find the oldest pivoting triangle.
   uint32_t pivot_first_triangle = pivot_last_triangle;
   while (i > 0) {
-    std::array<IndexType, 3> indices = mesh_.GetTriangleIndices(i - 1);
+    std::array<MutableMeshView::IndexType, 3> indices =
+        mesh_.GetTriangleIndices(i - 1);
     if (!TriangleIndicesAreLeftRightConforming(indices) ||
         vertex_side_ids_[indices[2]] == intersecting_side.self_id) {
       --i;
@@ -1861,14 +1881,16 @@ void Geometry::UpdateIntersectionOuterVertices(Side& intersecting_side,
   // Use the first and last triangles in the pivot to get the first and last
   // indices along the outside so that we can iterate over
   // `opposite_side.indices`.
-  IndexType last_outside_index = mesh_.GetVertexIndex(pivot_last_triangle, 2);
+  MutableMeshView::IndexType last_outside_index =
+      mesh_.GetVertexIndex(pivot_last_triangle, 2);
   Side& opposite_side = OpposingSide(intersecting_side);
-  std::vector<IndexType>::iterator it = opposite_side.indices.end() - 1;
+  std::vector<MutableMeshView::IndexType>::iterator it =
+      opposite_side.indices.end() - 1;
   while (it != opposite_side.indices.begin() && *it > last_outside_index) {
     --it;
   }
 
-  IndexType first_outside_index = mesh_.GetVertexIndex(
+  MutableMeshView::IndexType first_outside_index = mesh_.GetVertexIndex(
       pivot_first_triangle, opposite_side.first_triangle_vertex);
   ABSL_DCHECK(vertex_side_ids_[first_outside_index] == opposite_side.self_id);
   if (vertex_side_ids_[first_outside_index] != opposite_side.self_id) {
@@ -1987,10 +2009,11 @@ void Geometry::TryFinishIntersectionHandling(
         // Otherwise, we can try to at least collapse all of the triangles on
         // `intersecting_side` that make a triangle fan with the intersection
         // vertex.
-        IndexType result_start =
+        MutableMeshView::IndexType result_start =
             outline[result.segment_intersection->starting_index];
-        std::array<IndexType, 3> indices = mesh_.GetTriangleIndices(
-            intersecting_side.intersection->oldest_retriangulation_triangle);
+        std::array<MutableMeshView::IndexType, 3> indices =
+            mesh_.GetTriangleIndices(intersecting_side.intersection
+                                         ->oldest_retriangulation_triangle);
         if (vertex_side_ids_[result_start] == intersecting_side.self_id &&
             TriangleIndicesAreLeftRightConforming(indices)) {
           auto target =
@@ -2135,7 +2158,7 @@ void Geometry::GiveUpIntersectionHandling(Side& intersecting_side) {
   // Add the "discontinuity" caused by the leftover non-left-right-conforming
   // triangles, which span the indices belonging to the intersecting side in
   // `oldest_retriangulation_triangle`.
-  std::array<IndexType, 3> indices = mesh_.GetTriangleIndices(
+  std::array<MutableMeshView::IndexType, 3> indices = mesh_.GetTriangleIndices(
       intersecting_side.intersection->oldest_retriangulation_triangle);
   if (TriangleIndicesAreLeftRightConforming(indices) &&
       vertex_side_ids_[indices[2]] == intersecting_side.self_id &&
@@ -2351,8 +2374,9 @@ void Geometry::TriangleBuilder::TryAppend(Side& new_vertex_side) {
   if (!geometry_->left_side_.intersection.has_value() &&
       !geometry_->right_side_.intersection.has_value() &&
       proposed_winding == TriangleWinding::kCounterClockwise) {
-    IndexType last_left = geometry_->left_side_.indices.back();
-    IndexType last_right = geometry_->right_side_.indices.back();
+    MutableMeshView::IndexType last_left = geometry_->left_side_.indices.back();
+    MutableMeshView::IndexType last_right =
+        geometry_->right_side_.indices.back();
     geometry_->AppendVertexToMesh(new_vertex_side, next_vertex);
     geometry_->mesh_.AppendTriangleIndices(
         {last_left, last_right, new_vertex_side.indices.back()});
@@ -2825,7 +2849,7 @@ void Geometry::TriangleBuilder::HandleNonCcwAdjacentIntersectingTriangle(
   SetSideLabelToInterior(*corrected_vertex);
   geometry_->UpdateIntersectionPivotVertices(*info.adjacent_side,
                                              *corrected_vertex);
-  IndexType pivot_start =
+  MutableMeshView::IndexType pivot_start =
       info.adjacent_side
           ->indices[info.adjacent_side->intersection->starting_offset + 1];
   geometry_->UpdateIntersectionOuterVertices(
@@ -2932,7 +2956,8 @@ void Geometry::TriangleBuilder::HandleNonCcwBothSidesIntersectingTriangle(
   if (geometry_->ProposedTriangleWinding(
           opposite_outline_second_vertex.position) ==
       TriangleWinding::kCounterClockwise) {
-    IndexType opposite_outline_first_index = start_opposite_outline[0];
+    MutableMeshView::IndexType opposite_outline_first_index =
+        start_opposite_outline[0];
     ExtrudedVertex adjacent_last_vertex =
         geometry_->LastVertex(*info.adjacent_side);
 
@@ -2957,7 +2982,8 @@ void Geometry::TriangleBuilder::HandleNonCcwBothSidesIntersectingTriangle(
 }
 // LINT.ThenChange(./line_mesh_generation.md)
 
-void Geometry::SetVertex(IndexType index, const ExtrudedVertex& new_vertex,
+void Geometry::SetVertex(MutableMeshView::IndexType index,
+                         const ExtrudedVertex& new_vertex,
                          bool update_save_state,
                          bool update_envelope_of_removed_geometry) {
   if (update_save_state && save_point_state_.is_active &&
@@ -2978,9 +3004,10 @@ void Geometry::SetVertex(IndexType index, const ExtrudedVertex& new_vertex,
   mesh_.SetVertex(index, new_vertex);
 }
 
-void Geometry::SetTriangleIndices(uint32_t triangle_index,
-                                  const std::array<IndexType, 3>& new_indices,
-                                  bool update_save_state) {
+void Geometry::SetTriangleIndices(
+    uint32_t triangle_index,
+    const std::array<MutableMeshView::IndexType, 3>& new_indices,
+    bool update_save_state) {
   if (update_save_state && save_point_state_.is_active &&
       triangle_index < save_point_state_.n_mesh_triangles) {
     save_point_state_.saved_triangle_indices.emplace(
@@ -2990,7 +3017,8 @@ void Geometry::SetTriangleIndices(uint32_t triangle_index,
   mesh_.SetTriangleIndices(triangle_index, new_indices);
 }
 
-void Geometry::UpdateOppositeSideOffset(IndexType index, uint32_t new_offset,
+void Geometry::UpdateOppositeSideOffset(MutableMeshView::IndexType index,
+                                        uint32_t new_offset,
                                         bool update_save_state) {
   uint32_t& current_offset = opposite_side_offsets_[index];
   if (current_offset == new_offset) return;
@@ -3086,9 +3114,9 @@ uint32_t Geometry::FirstVisuallyMutatedTriangle() const {
     return mesh_.FirstMutatedTriangle();
   }
 
-  IndexType left_index_lower_bound =
+  MutableMeshView::IndexType left_index_lower_bound =
       first_mutated_left_index_.value_or(mesh_.VertexCount());
-  IndexType right_index_lower_bound =
+  MutableMeshView::IndexType right_index_lower_bound =
       first_mutated_right_index_.value_or(mesh_.VertexCount());
 
   uint32_t i =

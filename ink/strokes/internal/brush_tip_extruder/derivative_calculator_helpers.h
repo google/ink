@@ -26,8 +26,8 @@ namespace ink::brush_tip_extruder_internal {
 
 // Return type for `FindFirstExteriorVertices()` below.
 struct OptionalSideIndexPair {
-  std::optional<IndexType> left;
-  std::optional<IndexType> right;
+  std::optional<MutableMeshView::IndexType> left;
+  std::optional<MutableMeshView::IndexType> right;
 };
 
 // Iterates over the `mesh` triangle indices beginning with `starting_triangle`
@@ -50,7 +50,8 @@ OptionalSideIndexPair FindFirstExteriorVertices(
 //
 // CHECK-fails if `included_offset` is not less than `side_indices.size()`.
 uint32_t StartingOffsetForCoincidentConnectedVertices(
-    const MutableMeshView& mesh, absl::Span<const IndexType> side_indices,
+    const MutableMeshView& mesh,
+    absl::Span<const MutableMeshView::IndexType> side_indices,
     uint32_t included_offset);
 
 }  // namespace ink::brush_tip_extruder_internal

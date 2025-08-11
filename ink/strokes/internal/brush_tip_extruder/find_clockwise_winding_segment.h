@@ -36,7 +36,8 @@ namespace brush_tip_extruder_internal {
 // as given by `outer_side_identifier`. The indices in `outer_indices` are
 // assumed to be ordered from the back of the stroke to the front.
 std::optional<Segment> FindLastClockwiseWindingTriangleFanSegment(
-    const MutableMeshView& mesh, absl::Span<const IndexType> outer_indices,
+    const MutableMeshView& mesh,
+    absl::Span<const MutableMeshView::IndexType> outer_indices,
     SideId outer_side_identifier, Point central_position);
 
 // Finds the last segment along the outside of a triangle fan that is part of a

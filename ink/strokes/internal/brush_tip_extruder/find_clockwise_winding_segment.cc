@@ -31,7 +31,8 @@ namespace ink {
 namespace brush_tip_extruder_internal {
 
 std::optional<Segment> FindLastClockwiseWindingTriangleFanSegment(
-    const MutableMeshView& mesh, absl::Span<const IndexType> outer_indices,
+    const MutableMeshView& mesh,
+    absl::Span<const MutableMeshView::IndexType> outer_indices,
     SideId outer_side_identifier, Point central_position) {
   if (outer_indices.size() < 2) return std::nullopt;
 

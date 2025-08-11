@@ -51,22 +51,21 @@ namespace brush_tip_extruder_internal {
 class DirectedPartialOutline {
  public:
   DirectedPartialOutline() = default;
-  DirectedPartialOutline(const std::vector<IndexType>* starting_indices,
-                         uint32_t starting_indices_start,
-                         uint32_t n_starting_indices,
-                         const std::vector<IndexType>* ending_indices,
-                         uint32_t ending_indices_start,
-                         uint32_t n_ending_indices);
+  DirectedPartialOutline(
+      const std::vector<MutableMeshView::IndexType>* starting_indices,
+      uint32_t starting_indices_start, uint32_t n_starting_indices,
+      const std::vector<MutableMeshView::IndexType>* ending_indices,
+      uint32_t ending_indices_start, uint32_t n_ending_indices);
 
   uint32_t Size() const;
   uint32_t StartingSideSize() const;
-  IndexType operator[](uint32_t i) const;
+  MutableMeshView::IndexType operator[](uint32_t i) const;
 
  private:
-  const std::vector<IndexType>* starting_indices_ = nullptr;
+  const std::vector<MutableMeshView::IndexType>* starting_indices_ = nullptr;
   uint32_t starting_indices_start_ = 0;
   uint32_t n_starting_indices_ = 0;
-  const std::vector<IndexType>* ending_indices_ = nullptr;
+  const std::vector<MutableMeshView::IndexType>* ending_indices_ = nullptr;
   uint32_t ending_indices_start_ = 0;
   uint32_t n_ending_indices_ = 0;
 };

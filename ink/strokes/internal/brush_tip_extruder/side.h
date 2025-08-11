@@ -28,11 +28,6 @@
 namespace ink {
 namespace brush_tip_extruder_internal {
 
-using IndexType = uint32_t;
-static_assert(sizeof(IndexType) ==
-              sizeof(decltype(std::declval<MutableMeshView>()
-                                  .GetTriangleIndices(0))::value_type));
-
 // Identifies to which side of the geometry something belongs.
 //
 // "Left" and "right" are defined at each section of the stroke when viewed from
@@ -67,7 +62,8 @@ struct Side {
     // triangles will be restored. Since retriangulation travels backwards,
     // newest triangles are at the bottom of the stack and oldest are at the
     // top.
-    std::vector<std::array<IndexType, 3>> undo_triangulation_stack;
+    std::vector<std::array<MutableMeshView::IndexType, 3>>
+        undo_triangulation_stack;
     // The maximum remaining distance that vertices in the outline may be moved
     // while handling this intersection.
     float outline_reposition_budget;
@@ -95,7 +91,7 @@ struct Side {
     // If set, this is an index for a helper vertex that may be used when
     // handling non-ccw proposed triangles that extend to the beginning of this
     // partition.
-    std::optional<IndexType> non_ccw_connection_index;
+    std::optional<MutableMeshView::IndexType> non_ccw_connection_index;
     // Determines if the `DirectedPartialOutline` connects the first adjacent
     // and opposite vertices.
     bool outline_connects_sides = true;
@@ -125,7 +121,7 @@ struct Side {
   // Indices into e.g. `MutableMeshView::GetVertex()` for getting the vertices
   // that make up a side of the line. These are ordered from the start of the
   // line to the end.
-  std::vector<IndexType> indices;
+  std::vector<MutableMeshView::IndexType> indices;
   // Ranges of offsets into `indices` that represent discontinuities from giving
   // up intersection handling. Indices within each range will permanently be
   // part of triangles whose vertices all belong to this side. The first and

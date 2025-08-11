@@ -79,7 +79,7 @@ struct GeometrySavePointState {
     // at indices greater than `n_indices` and `n_intersection_discontinuities`.
     // These will only be populated if geometry has been deleted, e.g. via
     // `ClearSinceLastExtrusionBreak`.
-    std::vector<IndexType> saved_indices;
+    std::vector<MutableMeshView::IndexType> saved_indices;
     std::vector<Side::IndexOffsetRange> saved_intersection_discontinuities;
 
     // The rest of the members are copies of those in `Side`.
@@ -115,10 +115,12 @@ struct GeometrySavePointState {
   // We expect a small number will need to be saved, but without expected order,
   // so we use maps for simpler bookkeeping during extrusion instead of trying
   // to store a sub-vectors for faster revert.
-  absl::flat_hash_map<IndexType, ExtrudedVertex> saved_vertices;
-  absl::flat_hash_map<uint32_t, std::array<IndexType, 3>>
+  absl::flat_hash_map<MutableMeshView::IndexType, ExtrudedVertex>
+      saved_vertices;
+  absl::flat_hash_map<uint32_t, std::array<MutableMeshView::IndexType, 3>>
       saved_triangle_indices;
-  absl::flat_hash_map<IndexType, uint32_t> saved_opposite_side_offsets;
+  absl::flat_hash_map<MutableMeshView::IndexType, uint32_t>
+      saved_opposite_side_offsets;
 
   GeometryLastExtrusionBreakMetadata saved_last_extrusion_break;
 
@@ -335,11 +337,11 @@ class Geometry {
   // Returns true if the first and second `indices` belong to the left and right
   // sides respectively.
   bool TriangleIndicesAreLeftRightConforming(
-      absl::Span<const IndexType> indices) const;
+      absl::Span<const MutableMeshView::IndexType> indices) const;
 
   // Returns true if all three `indices` belong to the given `side`.
-  bool TriangleIndicesAllBelongTo(absl::Span<const IndexType> indices,
-                                  SideId side) const;
+  bool TriangleIndicesAllBelongTo(
+      absl::Span<const MutableMeshView::IndexType> indices, SideId side) const;
 
   // Searches backwards through through a "sufficiently convex" part of mesh to
   // find a triangle containing `segment.to`, and returns its index if one is
@@ -393,9 +395,10 @@ class Geometry {
       const Segment& segment, float max_extension_distance);
 
   // Assigns all vertices in the range [begin, end) to the value of `target`.
-  void AssignVerticesInRange(std::vector<IndexType>::iterator begin,
-                             std::vector<IndexType>::iterator end,
-                             const ExtrudedVertex& target);
+  void AssignVerticesInRange(
+      std::vector<MutableMeshView::IndexType>::iterator begin,
+      std::vector<MutableMeshView::IndexType>::iterator end,
+      const ExtrudedVertex& target);
 
   // Tries to perform the initial breaking up of triangles in intersection
   // handling that has exceeded the retriangulation threshold.
@@ -464,8 +467,8 @@ class Geometry {
   // the envelope of any vertices modified. If the line modifier does not assign
   // winding texture coordinates, this function is a no-op.
   void UpdateIntersectionOuterVertices(Side& intersecting_side,
-                                       IndexType pivot_start,
-                                       IndexType pivot_end);
+                                       MutableMeshView::IndexType pivot_start,
+                                       MutableMeshView::IndexType pivot_end);
 
   // Tries to cleanly finish intersection handling assuming the vertex at
   // `new_index` is now in the exterior of the line. If this function succeeds,
@@ -592,7 +595,8 @@ class Geometry {
   //     vertex had prior to this call to `envelope_of_removed_geometry_`.
   //   * If `update_save_state` is true and a save point is set, saves the
   //     current value of the vertex if necessary.
-  void SetVertex(IndexType index, const ExtrudedVertex& new_vertex,
+  void SetVertex(MutableMeshView::IndexType index,
+                 const ExtrudedVertex& new_vertex,
                  bool update_save_state = true,
                  bool update_envelope_of_removed_geometry = true);
 
@@ -602,14 +606,16 @@ class Geometry {
   //
   // If `update_save_state` is true and a save point is set, the function will
   // save the current value of the triangle indices if necessary.
-  void SetTriangleIndices(uint32_t triangle_index,
-                          const std::array<IndexType, 3>& new_indices,
-                          bool update_save_state = true);
+  void SetTriangleIndices(
+      uint32_t triangle_index,
+      const std::array<MutableMeshView::IndexType, 3>& new_indices,
+      bool update_save_state = true);
 
   // Sets a new value for an existing index's `opposite_side_offset_`. If
   // `update_save_state` is true and a save point is set, the function will save
   // the current value as needed.
-  void UpdateOppositeSideOffset(IndexType index, uint32_t new_offset,
+  void UpdateOppositeSideOffset(MutableMeshView::IndexType index,
+                                uint32_t new_offset,
                                 bool update_save_state = true);
 
   // The following two functions handle starting and ending a triangle fan in
@@ -691,8 +697,8 @@ class Geometry {
 
   // The following members keep track of when existing vertices of each side are
   // modified.
-  std::optional<IndexType> first_mutated_left_index_;
-  std::optional<IndexType> first_mutated_right_index_;
+  std::optional<MutableMeshView::IndexType> first_mutated_left_index_;
+  std::optional<MutableMeshView::IndexType> first_mutated_right_index_;
 
   // The following members keep track of modifications to `left_side_.indices`
   // and `right_side_.indices` following the latest extrusion break.

@@ -60,6 +60,9 @@ namespace ink::brush_tip_extruder_internal {
 // support both legacy and new vertex memory layouts.
 class MutableMeshView {
  public:
+  // The type used for vertex and triangle indices in a `MutableMeshView`.
+  using IndexType = uint32_t;
+
   // Constructs a view with no mesh data.
   MutableMeshView() = default;
 
@@ -74,7 +77,7 @@ class MutableMeshView {
   //
   // Like with a string_view, the passed-in vectors must outlive this object.
   MutableMeshView(std::vector<strokes_internal::LegacyVertex>& vertices,
-                  std::vector<uint32_t>& indices);
+                  std::vector<IndexType>& indices);
 
   MutableMeshView(const MutableMeshView&) = default;
   MutableMeshView& operator=(const MutableMeshView&) = default;
@@ -89,27 +92,27 @@ class MutableMeshView {
   uint32_t VertexCount() const;
   uint32_t TriangleCount() const;
 
-  Point GetPosition(uint32_t index) const;
+  Point GetPosition(IndexType index) const;
 
   // The following return the side and forward derivatives, respectively.
   //
   // The return value will always be the zero-vector if the mesh view references
   // legacy vertices and indices rather than a `MutableMesh`.
-  Vec GetSideDerivative(uint32_t index) const;
-  Vec GetForwardDerivative(uint32_t index) const;
+  Vec GetSideDerivative(IndexType index) const;
+  Vec GetForwardDerivative(IndexType index) const;
 
   // The following return the side and forward label, respectively.
   //
   // The return value will always be `StrokeVertex::kInteriorLabel` if the mesh
   // view references legacy vertices and indices rather than a `MutableMesh`.
-  strokes_internal::StrokeVertex::Label GetSideLabel(uint32_t index) const;
-  strokes_internal::StrokeVertex::Label GetForwardLabel(uint32_t index) const;
+  strokes_internal::StrokeVertex::Label GetSideLabel(IndexType index) const;
+  strokes_internal::StrokeVertex::Label GetForwardLabel(IndexType index) const;
 
-  ExtrudedVertex GetVertex(uint32_t index) const;
+  ExtrudedVertex GetVertex(IndexType index) const;
 
-  Triangle GetTriangle(uint32_t triangle) const;
-  std::array<uint32_t, 3> GetTriangleIndices(uint32_t triangle) const;
-  uint32_t GetVertexIndex(uint32_t triangle, uint32_t triangle_vertex) const;
+  Triangle GetTriangle(IndexType triangle) const;
+  std::array<IndexType, 3> GetTriangleIndices(IndexType triangle) const;
+  IndexType GetVertexIndex(IndexType triangle, uint32_t triangle_vertex) const;
 
   // Appends a new vertex.
   //
@@ -121,36 +124,36 @@ class MutableMeshView {
   //
   // NOTE: As with other members, this is an Illegal operation when
   // `HasMeshData()` is false.
-  void AppendTriangleIndices(const std::array<uint32_t, 3>& indices);
+  void AppendTriangleIndices(const std::array<IndexType, 3>& indices);
 
   // The following set the value of the side and forward derivatives,
   // respectively.
   //
   // These functions are a no-op if the mesh view references legacy vertices and
   // indices rather than a `MutableMesh`.
-  void SetSideDerivative(uint32_t index, Vec derivative);
-  void SetForwardDerivative(uint32_t index, Vec derivative);
+  void SetSideDerivative(IndexType index, Vec derivative);
+  void SetForwardDerivative(IndexType index, Vec derivative);
 
   // The following set the value of the side and forward labels, respectively.
   //
   // These functions are a no-op if the mesh view references legacy vertices and
   // indices rather than a `MutableMesh`.
-  void SetSideLabel(uint32_t index,
+  void SetSideLabel(IndexType index,
                     strokes_internal::StrokeVertex::Label label);
-  void SetForwardLabel(uint32_t index,
+  void SetForwardLabel(IndexType index,
                        strokes_internal::StrokeVertex::Label label);
 
-  void SetVertex(uint32_t index, const ExtrudedVertex& vertex);
+  void SetVertex(IndexType index, const ExtrudedVertex& vertex);
 
-  void SetTriangleIndices(uint32_t triangle,
-                          const std::array<uint32_t, 3>& indices);
+  void SetTriangleIndices(IndexType triangle,
+                          const std::array<IndexType, 3>& indices);
 
   // Inserts a new triplet of indices.
   //
   // NOTE: As with other members, this is an Illegal operation when
   // `HasMeshData()` is false.
-  void InsertTriangleIndices(uint32_t triangle,
-                             const std::array<uint32_t, 3>& indices);
+  void InsertTriangleIndices(IndexType triangle,
+                             const std::array<IndexType, 3>& indices);
 
   // Changes the size of the mesh data.
   //
@@ -162,11 +165,11 @@ class MutableMeshView {
 
   // Returns the index of the first new or updated vertex since construction or
   // the last call to `ResetMutationTracking()`.
-  uint32_t FirstMutatedVertex() const;
+  IndexType FirstMutatedVertex() const;
 
   // Returns the index of the first new or updated triangle since construction
   // or the last call to `ResetMutationTracking()`.
-  uint32_t FirstMutatedTriangle() const;
+  IndexType FirstMutatedTriangle() const;
 
   // Resets mutation tracking so that all vertices and triangle indices
   // currently in the mesh are considered "not mutated" after this call.
@@ -175,12 +178,12 @@ class MutableMeshView {
  private:
   struct LegacyVectors {
     std::vector<strokes_internal::LegacyVertex>* vertices;
-    std::vector<uint32_t>* indices;
+    std::vector<IndexType>* indices;
   };
 
   std::variant<std::monostate, LegacyVectors, MutableMesh*> data_;
-  uint32_t first_mutated_triangle_ = 0;
-  uint32_t first_mutated_vertex_ = 0;
+  IndexType first_mutated_triangle_ = 0;
+  IndexType first_mutated_vertex_ = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -190,11 +193,12 @@ inline bool MutableMeshView::HasMeshData() const {
   return !std::holds_alternative<std::monostate>(data_);
 }
 
-inline uint32_t MutableMeshView::FirstMutatedVertex() const {
+inline MutableMeshView::IndexType MutableMeshView::FirstMutatedVertex() const {
   return first_mutated_vertex_;
 }
 
-inline uint32_t MutableMeshView::FirstMutatedTriangle() const {
+inline MutableMeshView::IndexType MutableMeshView::FirstMutatedTriangle()
+    const {
   return first_mutated_triangle_;
 }
 

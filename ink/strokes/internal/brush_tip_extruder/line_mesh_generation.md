@@ -63,7 +63,8 @@ struct Side {
     // triangles will be restored. Since retriangulation travels backwards,
     // newest triangles are at the bottom of the stack and oldest are at the
     // top.
-    std::vector<std::array<IndexType, 3>> undo_triangulation_stack;
+    std::vector<std::array<MutableMeshView::IndexType, 3>>
+        undo_triangulation_stack;
     // The maximum remaining distance that vertices in the outline may be moved
     // while handling this intersection.
     float outline_reposition_budget;
@@ -80,7 +81,7 @@ struct Side {
   // Indices into e.g. `MutableMeshView::GetVertex()` for getting the vertices
   // that make up a side of the line. These are ordered from the start of the
   // line to the end.
-  std::vector<IndexType> indices;
+  std::vector<MutableMeshView::IndexType> indices;
   // Vertices that need to be processed. Will contain one or two vertices that
   // are already appended to the mesh, because they are needed here for the
   // simplification algorithm.

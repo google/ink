@@ -300,7 +300,7 @@ TEST(StartingOffsetForCoincidentConnectedVerticesTest, AllPositionsAreUnique) {
   AppendVertex(mesh_view, {1, 1});
   AppendVertex(mesh_view, {2, 0});
 
-  std::vector<IndexType> side_indices = {0, 2, 4};
+  std::vector<MutableMeshView::IndexType> side_indices = {0, 2, 4};
 
   EXPECT_EQ(
       StartingOffsetForCoincidentConnectedVertices(mesh_view, side_indices, 0),
@@ -328,7 +328,7 @@ TEST(StartingOffsetForCoincidentConnectedVerticesTest,
   AppendVertex(mesh_view, shared_point);  // 5
   AppendVertex(mesh_view, {2, 0});        // 6
 
-  std::vector<IndexType> side_indices = {0, 1, 3, 5, 6};
+  std::vector<MutableMeshView::IndexType> side_indices = {0, 1, 3, 5, 6};
 
   EXPECT_EQ(
       StartingOffsetForCoincidentConnectedVertices(mesh_view, side_indices, 0),
@@ -362,7 +362,7 @@ TEST(StartingOffsetForCoincidentConnectedVerticesTest,
   AppendVertex(mesh_view, shared_point, kLeftExterior);  // 5
   AppendVertex(mesh_view, {2, 0});                       // 6
 
-  std::vector<IndexType> side_indices = {0, 1, 3, 5, 6};
+  std::vector<MutableMeshView::IndexType> side_indices = {0, 1, 3, 5, 6};
 
   EXPECT_EQ(
       StartingOffsetForCoincidentConnectedVertices(mesh_view, side_indices, 0),
@@ -396,7 +396,7 @@ TEST(StartingOffsetForCoincidentConnectedVerticesTest,
   AppendVertex(mesh_view, shared_point, kLeftExterior, kFrontExterior);  // 5
   AppendVertex(mesh_view, {2, 0}, kLeftExterior);                        // 6
 
-  std::vector<IndexType> side_indices = {0, 1, 3, 5, 6};
+  std::vector<MutableMeshView::IndexType> side_indices = {0, 1, 3, 5, 6};
 
   EXPECT_EQ(
       StartingOffsetForCoincidentConnectedVertices(mesh_view, side_indices, 0),
@@ -422,7 +422,7 @@ TEST(StartingOffsetForCoincidentConnectedVerticesDeathTest,
   mesh_view.AppendVertex({});
   mesh_view.AppendVertex({});
   mesh_view.AppendVertex({});
-  std::vector<IndexType> side_indices = {0, 1, 2};
+  std::vector<MutableMeshView::IndexType> side_indices = {0, 1, 2};
 
   EXPECT_DEATH_IF_SUPPORTED(StartingOffsetForCoincidentConnectedVertices(
                                 mesh_view, side_indices, side_indices.size()),

@@ -28,7 +28,8 @@ namespace {
 
 using ::ink::strokes_internal::StrokeVertex;
 
-bool VertexIsExterior(const MutableMeshView& mesh, IndexType index) {
+bool VertexIsExterior(const MutableMeshView& mesh,
+                      MutableMeshView::IndexType index) {
   return mesh.GetSideLabel(index) != StrokeVertex::kInteriorLabel ||
          mesh.GetForwardLabel(index) != StrokeVertex::kInteriorLabel;
 }
@@ -41,7 +42,7 @@ OptionalSideIndexPair FindFirstExteriorVertices(
   OptionalSideIndexPair index_pair;
 
   for (uint32_t i = starting_triangle; i < mesh.TriangleCount(); ++i) {
-    for (IndexType index : mesh.GetTriangleIndices(i)) {
+    for (MutableMeshView::IndexType index : mesh.GetTriangleIndices(i)) {
       if (vertex_side_ids[index] == SideId::kLeft) {
         if (!index_pair.left.has_value() && VertexIsExterior(mesh, index)) {
           index_pair.left = index;
@@ -58,11 +59,12 @@ OptionalSideIndexPair FindFirstExteriorVertices(
 }
 
 uint32_t StartingOffsetForCoincidentConnectedVertices(
-    const MutableMeshView& mesh, absl::Span<const IndexType> side_indices,
+    const MutableMeshView& mesh,
+    absl::Span<const MutableMeshView::IndexType> side_indices,
     uint32_t included_offset) {
   ABSL_CHECK_LT(included_offset, side_indices.size());
 
-  IndexType index = side_indices[included_offset];
+  MutableMeshView::IndexType index = side_indices[included_offset];
   Point position = mesh.GetPosition(index);
   StrokeVertex::ForwardCategory forward_category =
       mesh.GetForwardLabel(index).DecodeForwardCategory();
