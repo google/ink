@@ -32,6 +32,14 @@
 
 namespace ink::strokes_internal {
 
+// Whether and how surface UV coordinates should be calculated when extruding a
+// given stroke.
+enum class SurfaceUvExtrusion {
+  kNone,              // do not calculate UV (they will default to zero)
+  kContinuousStroke,  // calcualte UV for a winding-textured continuous stroke
+  kParticles,         // calculate UV for winding-textured particles
+};
+
 // Type responsible for generating extruded stroke geometry.
 //
 // Extrusion of a stroke:
@@ -77,7 +85,7 @@ class BrushTipExtruder {
   //
   // This function must be called at least once after construction before
   // calling `ExtendStroke()`. Any previously extruded stroke data is cleared.
-  void StartStroke(float brush_epsilon, bool is_winding_texture_particle_brush,
+  void StartStroke(float brush_epsilon, SurfaceUvExtrusion surface_uv_extrusion,
                    MutableMesh& mesh);
 
   // Extends the stroke by extruding geometry using new "fixed" and "volatile"
@@ -212,9 +220,8 @@ class BrushTipExtruder {
   // Parameter used by `geometry_` to remove points along the outline that do
   // not meaningfully contribute to curvature.
   float simplification_threshold_ = 0;
-  // Indicates whether this is stroke is being extruded with a particle brush
-  // with a winding texture (which may be animated).
-  bool is_winding_texture_particle_brush_;
+  // Whether and how to calculate surface UV coordinates for this stroke.
+  SurfaceUvExtrusion surface_uv_extrusion_ = SurfaceUvExtrusion::kNone;
 
   ExtrusionPoints current_extrusion_points_;
   brush_tip_extruder_internal::Geometry geometry_;
