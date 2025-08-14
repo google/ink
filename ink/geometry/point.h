@@ -41,15 +41,15 @@ Point operator+(Point p, Vec v);
 Point operator+(Vec v, Point p);
 Point operator-(Point p, Vec v);
 
-Point &operator+=(Point &p, Vec v);
-Point &operator-=(Point &p, Vec v);
+Point& operator+=(Point& p, Vec v);
+Point& operator-=(Point& p, Vec v);
 
 namespace point_internal {
 std::string ToFormattedString(Point p);
 }  // namespace point_internal
 
 template <typename Sink>
-void AbslStringify(Sink &sink, Point p) {
+void AbslStringify(Sink& sink, Point p) {
   sink.Append(point_internal::ToFormattedString(p));
 }
 
@@ -81,12 +81,12 @@ inline Point operator-(Point p, Vec v) {
   return {.x = p.x - v.x, .y = p.y - v.y};
 }
 
-inline Point &operator+=(Point &p, Vec v) {
+inline Point& operator+=(Point& p, Vec v) {
   p.x += v.x;
   p.y += v.y;
   return p;
 }
-inline Point &operator-=(Point &p, Vec v) {
+inline Point& operator-=(Point& p, Vec v) {
   p.x -= v.x;
   p.y -= v.y;
   return p;

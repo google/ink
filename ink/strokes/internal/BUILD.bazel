@@ -20,6 +20,37 @@ package(
 )
 
 cc_library(
+    name = "mutable_multi_mesh",
+    srcs = ["mutable_multi_mesh.cc"],
+    hdrs = ["mutable_multi_mesh.h"],
+    deps = [
+        "//ink/geometry:mesh_format",
+        "//ink/geometry:mutable_mesh",
+        "//ink/geometry:point",
+        "//ink/geometry:triangle",
+        "//ink/types:small_array",
+        "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "mutable_multi_mesh_test",
+    srcs = ["mutable_multi_mesh_test.cc"],
+    deps = [
+        ":mutable_multi_mesh",
+        "//ink/geometry:mesh_format",
+        "//ink/geometry:triangle",
+        "//ink/geometry:type_matchers",
+        "//ink/types:small_array",
+        "@com_google_absl//absl/status:status_matchers",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "stroke_shape_update",
     srcs = ["stroke_shape_update.cc"],
     hdrs = ["stroke_shape_update.h"],

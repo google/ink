@@ -21,7 +21,7 @@
 namespace ink {
 namespace geometry_internal {
 
-bool LegacyTriangleContains(const Triangle &triangle, Point p) {
+bool LegacyTriangleContains(const Triangle& triangle, Point p) {
   if (p == triangle.p0 || p == triangle.p1 || p == triangle.p2) return true;
 
   auto relative_pos1 = PositionRelativeToLine(triangle.p0, triangle.p1, p);

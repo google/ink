@@ -61,7 +61,7 @@ Vec Vec::AsUnitVec() const {
   return scaled / scaled.Magnitude();
 }
 
-Angle Vec::SignedAngleBetween(const Vec &a, const Vec &b) {
+Angle Vec::SignedAngleBetween(const Vec& a, const Vec& b) {
   Vec a_unit = a.AsUnitVec();
   Vec b_unit = b.AsUnitVec();
   // Calculate the absolute angle between the two vectors. Note that we don't

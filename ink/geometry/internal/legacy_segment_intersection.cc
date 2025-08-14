@@ -39,8 +39,8 @@ int Exponent(float v) {
 
 // Returns an exponent X such that we can compute the intersection of
 // 2^X * segment1 and 2^X * segment2 without causing an overflow error.
-int FindSafeExponentForSegmentIntersection(const Segment &segment1,
-                                           const Segment &segment2) {
+int FindSafeExponentForSegmentIntersection(const Segment& segment1,
+                                           const Segment& segment2) {
   // This approximation allows us to quickly determine that a segment pair will
   // not cause an overflow or underflow error. The derivation is as follows:
   //
@@ -123,8 +123,8 @@ int FindSafeExponentForSegmentIntersection(const Segment &segment1,
 }
 
 bool SegmentIntersectionHelper(Segment segment1, Segment segment2,
-                               std::array<float, 2> *seg1_interval,
-                               std::array<float, 2> *seg2_interval) {
+                               std::array<float, 2>* seg1_interval,
+                               std::array<float, 2>* seg2_interval) {
   if (segment1.start == segment2.start && segment1.end == segment2.end) {
     *seg1_interval = {{0, 1}};
     *seg2_interval = {{0, 1}};
@@ -215,8 +215,8 @@ bool SegmentIntersectionHelper(Segment segment1, Segment segment2,
   }
 
   auto populate_params = [](float segment1_param, float segment2_param,
-                            std::array<float, 2> *seg1_interval,
-                            std::array<float, 2> *seg2_interval) {
+                            std::array<float, 2>* seg1_interval,
+                            std::array<float, 2>* seg2_interval) {
     (*seg1_interval)[0] = segment1_param;
     (*seg1_interval)[1] = segment1_param;
     (*seg2_interval)[0] = segment2_param;
@@ -277,8 +277,8 @@ bool SegmentIntersectionHelper(Segment segment1, Segment segment2,
 
 }  // namespace
 
-std::optional<LegacySegmentIntersection> LegacyIntersection(const Segment &a,
-                                                            const Segment &b) {
+std::optional<LegacySegmentIntersection> LegacyIntersection(const Segment& a,
+                                                            const Segment& b) {
   LegacySegmentIntersection intx;
   if (SegmentIntersectionHelper(a, b, &intx.segment1_interval,
                                 &intx.segment2_interval)) {

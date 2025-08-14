@@ -946,9 +946,9 @@ TEST(BrushTipShapeTest,
   EXPECT_EQ(indices.right.second, 3);
 }
 
-ExtrusionPoints AppendTipExtrusionPointsHelper(const BrushTipState &start,
-                                               const BrushTipState &middle,
-                                               const BrushTipState &end,
+ExtrusionPoints AppendTipExtrusionPointsHelper(const BrushTipState& start,
+                                               const BrushTipState& middle,
+                                               const BrushTipState& end,
                                                float max_chord_height) {
   ExtrusionPoints result;
   BrushTipShape::AppendTurnExtrusionPoints(

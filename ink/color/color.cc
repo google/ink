@@ -102,7 +102,7 @@ Color Color::FromPackedUint32RGBA(uint32_t rgba, Format format,
                    static_cast<uint8_t>(rgba & 0xff), format, color_space);
 }
 
-bool Color::operator==(const Color &other) const {
+bool Color::operator==(const Color& other) const {
   if (color_space_ != other.color_space_) {
     return false;
   }
@@ -114,7 +114,7 @@ bool Color::operator==(const Color &other) const {
   return true;
 }
 
-bool Color::NearlyEquals(const Color &other) const {
+bool Color::NearlyEquals(const Color& other) const {
   const Color converted = other.InColorSpace(color_space_);
   for (int i = 0; i < kNumChannelsIncludingAlpha; ++i) {
     if (std::fabs(converted.rgba_[i] - rgba_[i]) > kNearlyZero) {
@@ -145,7 +145,7 @@ bool Color::IsNearlyInGamut() const {
 Color Color::ClampedToGamut() const {
   Color copy(*this);
   // Modify all channels, including alpha.
-  for (float &c : copy.rgba_) {
+  for (float& c : copy.rgba_) {
     c = std::clamp(c, 0.0f, 1.0f);
   }
   return copy;
@@ -155,7 +155,7 @@ Color Color::ScaledToGamut() const {
   Color copy(*this);
 
   // Clamp all channels, including alpha, up to zero.
-  for (float &c : copy.rgba_) {
+  for (float& c : copy.rgba_) {
     c = std::max(0.0f, c);
   }
 

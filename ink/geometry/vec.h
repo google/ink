@@ -68,7 +68,7 @@ struct Vec {
   //   a ⋅ b = ‖a‖ * ‖b‖ * cos(θ)
   // where ‖v‖ is the magnitude of the vector, and θ is the angle
   // from a to b.
-  static float DotProduct(const Vec &lhs, const Vec &rhs) {
+  static float DotProduct(const Vec& lhs, const Vec& rhs) {
     return lhs.x * rhs.x + lhs.y * rhs.y;
   }
 
@@ -80,7 +80,7 @@ struct Vec {
   //   a × b = ‖a‖ * ‖b‖ * sin(θ)
   // where ‖v‖ is the magnitude of the vector, and θ is the signed
   // angle from a to b.
-  static float Determinant(const Vec &a, const Vec &b) {
+  static float Determinant(const Vec& a, const Vec& b) {
     return a.x * b.y - a.y * b.x;
   }
 
@@ -91,7 +91,7 @@ struct Vec {
   //   Abs((b.Direction() - a.Direction()).NormalizedAboutZero())
   // or:
   //   Abs(Vec::SignedAngleBetween(a, b))
-  static Angle AbsoluteAngleBetween(const Vec &a, const Vec &b) {
+  static Angle AbsoluteAngleBetween(const Vec& a, const Vec& b) {
     return Acos(
         std::clamp(Vec::DotProduct(a.AsUnitVec(), b.AsUnitVec()), -1.0f, 1.0f));
   }
@@ -101,7 +101,7 @@ struct Vec {
   // will lie in the interval (-π, π] radians. This method is equivalent to (but
   // faster than):
   //   (b.Direction() - a.Direction()).NormalizedAboutZero();
-  static Angle SignedAngleBetween(const Vec &a, const Vec &b);
+  static Angle SignedAngleBetween(const Vec& a, const Vec& b);
 };
 
 bool operator==(Vec lhs, Vec rhs);
@@ -114,17 +114,17 @@ Vec operator*(float scalar, Vec v);
 Vec operator*(Vec v, float scalar);
 Vec operator/(Vec v, float scalar);
 
-Vec &operator+=(Vec &lhs, Vec rhs);
-Vec &operator-=(Vec &lhs, Vec rhs);
-Vec &operator*=(Vec &lhs, float scalar);
-Vec &operator/=(Vec &lhs, float scalar);
+Vec& operator+=(Vec& lhs, Vec rhs);
+Vec& operator-=(Vec& lhs, Vec rhs);
+Vec& operator*=(Vec& lhs, float scalar);
+Vec& operator/=(Vec& lhs, float scalar);
 
 namespace vec_internal {
 std::string ToFormattedString(Vec v);
 }  // namespace vec_internal
 
 template <typename Sink>
-void AbslStringify(Sink &sink, Vec v) {
+void AbslStringify(Sink& sink, Vec v) {
   sink.Append(vec_internal::ToFormattedString(v));
 }
 
@@ -158,22 +158,22 @@ inline Vec operator/(Vec v, float scalar) {
   return {.x = v.x / scalar, .y = v.y / scalar};
 }
 
-inline Vec &operator+=(Vec &lhs, Vec rhs) {
+inline Vec& operator+=(Vec& lhs, Vec rhs) {
   lhs.x += rhs.x;
   lhs.y += rhs.y;
   return lhs;
 }
-inline Vec &operator-=(Vec &lhs, Vec rhs) {
+inline Vec& operator-=(Vec& lhs, Vec rhs) {
   lhs.x -= rhs.x;
   lhs.y -= rhs.y;
   return lhs;
 }
-inline Vec &operator*=(Vec &lhs, float scalar) {
+inline Vec& operator*=(Vec& lhs, float scalar) {
   lhs.x *= scalar;
   lhs.y *= scalar;
   return lhs;
 }
-inline Vec &operator/=(Vec &lhs, float scalar) {
+inline Vec& operator/=(Vec& lhs, float scalar) {
   lhs.x /= scalar;
   lhs.y /= scalar;
   return lhs;
