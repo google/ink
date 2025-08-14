@@ -112,16 +112,15 @@ class AffineTransform {
     return AffineTransform(cos, -sin, 0, sin, cos, 0);
   }
 
-  // Returns a transformation that shears in the x-direction by the
+  // Returns a transformation that skews in the x-direction by the
   // given factor.
-  static AffineTransform ShearX(float shear_factor) {
-    return AffineTransform(1, shear_factor, 0, 0, 1, 0);
+  static AffineTransform SkewX(float sx) {
+    return AffineTransform(1, sx, 0, 0, 1, 0);
   }
 
-  // Returns a transformation that shears in the y-direction by the
-  // given factor.
-  static AffineTransform ShearY(float shear_factor) {
-    return AffineTransform(1, 0, 0, shear_factor, 1, 0);
+  // Returns a transformation that skews in the y-direction by the given factor.
+  static AffineTransform SkewY(float sy) {
+    return AffineTransform(1, 0, 0, sy, 1, 0);
   }
 
   // Returns a transformation that scales in both the x- and y-directions by the
@@ -178,7 +177,7 @@ class AffineTransform {
   Quad Apply(const Quad& q) const;
 
   // Returns a copy of the Rect with the transformation applied. Note
-  // that, since AffineTransform allows for rotation and shear, the
+  // that, since AffineTransform allows for rotation and skew, the
   // result is not necessarily an axis-aligned rectangle.
   // If you want an axis-aligned rect, you must get the envelope of the
   // returned Quad.

@@ -157,19 +157,19 @@ TEST(AffineTransformTest, Rotate) {
       AffineTransformEq(AffineTransform(cos, -sin, 0.0f, sin, cos, 0.0f)));
 }
 
-TEST(AffineTransformTest, ShearX) {
-  EXPECT_THAT(AffineTransform::ShearX(0.0f),
+TEST(AffineTransformTest, SkewX) {
+  EXPECT_THAT(AffineTransform::SkewX(0.0f),
               AffineTransformEq(AffineTransform::Identity()));
   EXPECT_THAT(
-      AffineTransform::ShearX(2.2f),
+      AffineTransform::SkewX(2.2f),
       AffineTransformEq(AffineTransform(1.0f, 2.2f, 0.0f, 0.0f, 1.0f, 0.0f)));
 }
 
-TEST(AffineTransformTest, ShearY) {
-  EXPECT_THAT(AffineTransform::ShearY(0.0f),
+TEST(AffineTransformTest, SkewY) {
+  EXPECT_THAT(AffineTransform::SkewY(0.0f),
               AffineTransformEq(AffineTransform::Identity()));
   EXPECT_THAT(
-      AffineTransform::ShearY(7.0f),
+      AffineTransform::SkewY(7.0f),
       AffineTransformEq(AffineTransform(1.0f, 0.0f, 0.0f, 7.0f, 1.0f, 0.0f)));
 }
 
@@ -254,8 +254,8 @@ TEST(AffineTransformTest, Inverse) {
   EXPECT_THAT(
       AffineTransform::Translate({5, 10}).Inverse(),
       Optional(AffineTransformEq(AffineTransform::Translate({-5, -10}))));
-  EXPECT_THAT(AffineTransform::ShearX(5).Inverse(),
-              Optional(AffineTransformEq(AffineTransform::ShearX(-5))));
+  EXPECT_THAT(AffineTransform::SkewX(5).Inverse(),
+              Optional(AffineTransformEq(AffineTransform::SkewX(-5))));
 }
 
 TEST(AffineTransformTest, CannotFindInverse) {
@@ -279,9 +279,9 @@ TEST(AffineTransformTest, ApplyPoint) {
               PointEq({10.0f, 15.0f}));
   EXPECT_THAT(AffineTransform::Scale(2.5f, -.5f).Apply(test_point),
               PointEq({10.0f, -3.0f}));
-  EXPECT_THAT(AffineTransform::ShearX(2.5f).Apply(test_point),
+  EXPECT_THAT(AffineTransform::SkewX(2.5f).Apply(test_point),
               PointEq({19.0f, 6.0f}));
-  EXPECT_THAT(AffineTransform::ShearY(2.5f).Apply(test_point),
+  EXPECT_THAT(AffineTransform::SkewY(2.5f).Apply(test_point),
               PointEq({4.0f, 16.0f}));
   EXPECT_THAT(AffineTransform::Rotate(kHalfTurn).Apply(test_point),
               PointEq({-4.0f, -6.0f}));
@@ -302,9 +302,9 @@ TEST(AffineTransformTest, ApplySegment) {
               SegmentEq(Segment{{10.0f, 15.0f}, {100.0f, 150.0f}}));
   EXPECT_THAT(AffineTransform::Scale(2.5f, -.5f).Apply(test_segment),
               SegmentEq(Segment{{10.0f, -3.0f}, {100.0f, -30.0f}}));
-  EXPECT_THAT(AffineTransform::ShearX(2.5f).Apply(test_segment),
+  EXPECT_THAT(AffineTransform::SkewX(2.5f).Apply(test_segment),
               SegmentEq(Segment{{19.0f, 6.0f}, {190.0f, 60.0f}}));
-  EXPECT_THAT(AffineTransform::ShearY(2.5f).Apply(test_segment),
+  EXPECT_THAT(AffineTransform::SkewY(2.5f).Apply(test_segment),
               SegmentEq(Segment{{4.0f, 16.0f}, {40.0f, 160.0f}}));
   EXPECT_THAT(AffineTransform::Rotate(kHalfTurn).Apply(test_segment),
               SegmentEq(Segment{{-4.0f, -6.0f}, {-40.0f, -60.0f}}));
@@ -339,10 +339,10 @@ TEST(AffineTransformTest, ApplyTriangle) {
       AffineTransform::Scale(2.5f, -.5f).Apply(test_triangle),
       TriangleEq(Triangle{{2.5f, -1.0f}, {15.0f, 1.5f}, {-10.0f, 3.0f}}));
   EXPECT_THAT(
-      AffineTransform::ShearX(2.5f).Apply(test_triangle),
+      AffineTransform::SkewX(2.5f).Apply(test_triangle),
       TriangleEq(Triangle{{6.0f, 2.0f}, {-1.5f, -3.0f}, {-19.0f, -6.0f}}));
   EXPECT_THAT(
-      AffineTransform::ShearY(2.5f).Apply(test_triangle),
+      AffineTransform::SkewY(2.5f).Apply(test_triangle),
       TriangleEq(Triangle{{1.0f, 4.5f}, {6.0f, 12.0f}, {-4.0f, -16.0f}}));
   EXPECT_THAT(
       AffineTransform::Rotate(kHalfTurn).Apply(test_triangle),
@@ -374,7 +374,7 @@ TEST(AffineTransformTest, ApplyRect) {
   EXPECT_THAT(
       AffineTransform::Scale(2.5f, -.5f).Apply(test_rect),
       QuadEq(Quad::FromCenterAndDimensions({10.0f, -0.5f}, 15.0f, -4.0f)));
-  EXPECT_THAT(AffineTransform::ShearX(2.5f).Apply(test_rect),
+  EXPECT_THAT(AffineTransform::SkewX(2.5f).Apply(test_rect),
               QuadEq(Quad::FromCenterDimensionsRotationAndShear(
                   {6.5f, 1.0f}, 6.0f, 8.0f, Angle(), 2.5f)));
   EXPECT_THAT(AffineTransform::Rotate(kHalfTurn).Apply(test_rect),
@@ -391,7 +391,7 @@ TEST(AffineTransformTest, ApplyRect) {
               QuadEq(Quad::FromCenterDimensionsAndRotation(
                   {4.0f, 1.0f}, 6.0f, 8.0f, kQuarterTurn)));
   std::array<Point, 4> test_corners =
-      AffineTransform::ShearY(2.5f).Apply(test_rect).Corners();
+      AffineTransform::SkewY(2.5f).Apply(test_rect).Corners();
   EXPECT_THAT(test_corners[0], PointEq({1.0f, -0.5f}));
   EXPECT_THAT(test_corners[1], PointEq({7.0f, 14.5f}));
   EXPECT_THAT(test_corners[2], PointEq({7.0f, 22.5f}));
@@ -416,7 +416,7 @@ TEST(AffineTransformTest, ApplyZeroWidthRect) {
   EXPECT_THAT(
       AffineTransform::Scale(2.5f, -.5f).Apply(test_rect),
       QuadEq(Quad::FromCenterAndDimensions({2.5f, -1.0f}, 0.0f, -4.0f)));
-  EXPECT_THAT(AffineTransform::ShearX(2.5f).Apply(test_rect),
+  EXPECT_THAT(AffineTransform::SkewX(2.5f).Apply(test_rect),
               QuadEq(Quad::FromCenterDimensionsRotationAndShear(
                   {6.0f, 2.0f}, 0.0f, 8.0f, Angle(), 2.5f)));
   EXPECT_THAT(AffineTransform::Rotate(kHalfTurn).Apply(test_rect),
@@ -433,7 +433,7 @@ TEST(AffineTransformTest, ApplyZeroWidthRect) {
               QuadEq(Quad::FromCenterDimensionsAndRotation(
                   {1.0f, 2.0f}, 0.0f, 8.0f, kQuarterTurn)));
   std::array<Point, 4> test_corners =
-      AffineTransform::ShearY(2.5f).Apply(test_rect).Corners();
+      AffineTransform::SkewY(2.5f).Apply(test_rect).Corners();
   EXPECT_THAT(test_corners[0], PointEq({1.0f, 0.5f}));
   EXPECT_THAT(test_corners[1], PointEq({1.0f, 0.5f}));
   EXPECT_THAT(test_corners[2], PointEq({1.0f, 8.5f}));
@@ -457,7 +457,7 @@ TEST(AffineTransformTest, ApplyZeroHeightRect) {
   EXPECT_THAT(
       AffineTransform::Scale(2.5f, -.5f).Apply(test_rect),
       QuadEq(Quad::FromCenterAndDimensions({2.5f, -1.0f}, 20.0f, 0.0f)));
-  EXPECT_THAT(AffineTransform::ShearX(2.5f).Apply(test_rect),
+  EXPECT_THAT(AffineTransform::SkewX(2.5f).Apply(test_rect),
               QuadEq(Quad::FromCenterDimensionsRotationAndShear(
                   {6.0f, 2.0f}, 8.0f, 0.0f, Angle(), 2.5f)));
   EXPECT_THAT(AffineTransform::Rotate(kHalfTurn).Apply(test_rect),
@@ -474,7 +474,7 @@ TEST(AffineTransformTest, ApplyZeroHeightRect) {
               QuadEq(Quad::FromCenterDimensionsAndRotation(
                   {1.0f, 2.0f}, 8.0f, 0.0f, kQuarterTurn)));
   std::array<Point, 4> test_corners =
-      AffineTransform::ShearY(2.5f).Apply(test_rect).Corners();
+      AffineTransform::SkewY(2.5f).Apply(test_rect).Corners();
   EXPECT_THAT(test_corners[0], PointEq({-3.0f, -5.5f}));
   EXPECT_THAT(test_corners[1], PointEq({5.0f, 14.5f}));
   EXPECT_THAT(test_corners[2], PointEq({5.0f, 14.5f}));
@@ -497,7 +497,7 @@ TEST(AffineTransformTest, ApplyPointLikeRect) {
               QuadEq(Quad::FromCenterAndDimensions({2.5f, 5.0f}, 0.0f, 0.0f)));
   EXPECT_THAT(AffineTransform::Scale(2.5f, -.5f).Apply(test_rect),
               QuadEq(Quad::FromCenterAndDimensions({2.5f, -1.0f}, 0.0f, 0.0f)));
-  EXPECT_THAT(AffineTransform::ShearX(2.5f).Apply(test_rect),
+  EXPECT_THAT(AffineTransform::SkewX(2.5f).Apply(test_rect),
               QuadEq(Quad::FromCenterDimensionsRotationAndShear(
                   {6.0f, 2.0f}, 0.0f, 0.0f, Angle(), 2.5f)));
   EXPECT_THAT(AffineTransform::Rotate(kHalfTurn).Apply(test_rect),
@@ -514,7 +514,7 @@ TEST(AffineTransformTest, ApplyPointLikeRect) {
               QuadEq(Quad::FromCenterDimensionsAndRotation(
                   {1.0f, 2.0f}, 0.0f, 0.0f, kQuarterTurn)));
   std::array<Point, 4> test_corners =
-      AffineTransform::ShearY(2.5f).Apply(test_rect).Corners();
+      AffineTransform::SkewY(2.5f).Apply(test_rect).Corners();
   EXPECT_THAT(test_corners[0], PointEq({1.0f, 4.5f}));
   EXPECT_THAT(test_corners[1], PointEq({1.0f, 4.5f}));
   EXPECT_THAT(test_corners[2], PointEq({1.0f, 4.5f}));
@@ -571,18 +571,18 @@ TEST(AffineTransformTest, ApplyQuad) {
                   .Apply(test_quad),
               QuadEq(Quad::FromCenterDimensionsRotationAndShear(
                   {4.0f, 1.0f}, 6.0f, 8.0f, kHalfTurn, 0.5f)));
-  std::array<Point, 4> shearx_corners =
-      AffineTransform::ShearX(2.5f).Apply(test_quad).Corners();
-  EXPECT_THAT(shearx_corners[0], PointNear({-2.0f, -4.0f}, 0.0001f));
-  EXPECT_THAT(shearx_corners[1], PointNear({13.0f, 2.0f}, 0.0001f));
-  EXPECT_THAT(shearx_corners[2], PointNear({15.0f, 6.0f}, 0.0001f));
-  EXPECT_THAT(shearx_corners[3], PointNear({0.0f, 0.0f}, 0.0001f));
-  std::array<Point, 4> sheary_corners =
-      AffineTransform::ShearY(2.5f).Apply(test_quad).Corners();
-  EXPECT_THAT(sheary_corners[0], PointNear({8.0f, 16.0f}, 0.0001f));
-  EXPECT_THAT(sheary_corners[1], PointNear({8.0f, 22.0f}, 0.0001f));
-  EXPECT_THAT(sheary_corners[2], PointNear({0.0f, 6.0f}, 0.0001f));
-  EXPECT_THAT(sheary_corners[3], PointNear({0.0f, 0.0f}, 0.0001f));
+  std::array<Point, 4> skewx_corners =
+      AffineTransform::SkewX(2.5f).Apply(test_quad).Corners();
+  EXPECT_THAT(skewx_corners[0], PointNear({-2.0f, -4.0f}, 0.0001f));
+  EXPECT_THAT(skewx_corners[1], PointNear({13.0f, 2.0f}, 0.0001f));
+  EXPECT_THAT(skewx_corners[2], PointNear({15.0f, 6.0f}, 0.0001f));
+  EXPECT_THAT(skewx_corners[3], PointNear({0.0f, 0.0f}, 0.0001f));
+  std::array<Point, 4> skewy_corners =
+      AffineTransform::SkewY(2.5f).Apply(test_quad).Corners();
+  EXPECT_THAT(skewy_corners[0], PointNear({8.0f, 16.0f}, 0.0001f));
+  EXPECT_THAT(skewy_corners[1], PointNear({8.0f, 22.0f}, 0.0001f));
+  EXPECT_THAT(skewy_corners[2], PointNear({0.0f, 6.0f}, 0.0001f));
+  EXPECT_THAT(skewy_corners[3], PointNear({0.0f, 0.0f}, 0.0001f));
 }
 
 TEST(AffineTransformTest, ApplyZeroWidthQuad) {
@@ -635,18 +635,18 @@ TEST(AffineTransformTest, ApplyZeroWidthQuad) {
                   .Apply(test_quad),
               QuadEq(Quad::FromCenterDimensionsRotationAndShear(
                   {4.0f, 1.0f}, 0.0f, 8.0f, kHalfTurn, 0.5f)));
-  std::array<Point, 4> shearx_corners =
-      AffineTransform::ShearX(2.5f).Apply(test_quad).Corners();
-  EXPECT_THAT(shearx_corners[0], PointNear({5.5f, -1.0f}, 0.0001f));
-  EXPECT_THAT(shearx_corners[1], PointNear({5.5f, -1.0f}, 0.0001f));
-  EXPECT_THAT(shearx_corners[2], PointNear({7.5f, 3.0f}, 0.0001f));
-  EXPECT_THAT(shearx_corners[3], PointNear({7.5f, 3.0f}, 0.0001f));
-  std::array<Point, 4> sheary_corners =
-      AffineTransform::ShearY(2.5f).Apply(test_quad).Corners();
-  EXPECT_THAT(sheary_corners[0], PointNear({8.0f, 19.0f}, 0.0001f));
-  EXPECT_THAT(sheary_corners[1], PointNear({8.0f, 19.0f}, 0.0001f));
-  EXPECT_THAT(sheary_corners[2], PointNear({0.0f, 3.0f}, 0.0001f));
-  EXPECT_THAT(sheary_corners[3], PointNear({0.0f, 3.0f}, 0.0001f));
+  std::array<Point, 4> skewx_corners =
+      AffineTransform::SkewX(2.5f).Apply(test_quad).Corners();
+  EXPECT_THAT(skewx_corners[0], PointNear({5.5f, -1.0f}, 0.0001f));
+  EXPECT_THAT(skewx_corners[1], PointNear({5.5f, -1.0f}, 0.0001f));
+  EXPECT_THAT(skewx_corners[2], PointNear({7.5f, 3.0f}, 0.0001f));
+  EXPECT_THAT(skewx_corners[3], PointNear({7.5f, 3.0f}, 0.0001f));
+  std::array<Point, 4> skewy_corners =
+      AffineTransform::SkewY(2.5f).Apply(test_quad).Corners();
+  EXPECT_THAT(skewy_corners[0], PointNear({8.0f, 19.0f}, 0.0001f));
+  EXPECT_THAT(skewy_corners[1], PointNear({8.0f, 19.0f}, 0.0001f));
+  EXPECT_THAT(skewy_corners[2], PointNear({0.0f, 3.0f}, 0.0001f));
+  EXPECT_THAT(skewy_corners[3], PointNear({0.0f, 3.0f}, 0.0001f));
 }
 
 TEST(AffineTransformTest, ApplyZeroHeightQuad) {
@@ -699,18 +699,18 @@ TEST(AffineTransformTest, ApplyZeroHeightQuad) {
                   .Apply(test_quad),
               QuadEq(Quad::FromCenterDimensionsRotationAndShear(
                   {4.0f, 1.0f}, 6.0f, 0.0f, kHalfTurn, 0.5f)));
-  std::array<Point, 4> shearx_corners =
-      AffineTransform::ShearX(2.5f).Apply(test_quad).Corners();
-  EXPECT_THAT(shearx_corners[0], PointNear({-1.0f, -2.0f}, 0.0001f));
-  EXPECT_THAT(shearx_corners[1], PointNear({14.0f, 4.0f}, 0.0001f));
-  EXPECT_THAT(shearx_corners[2], PointNear({14.0f, 4.0f}, 0.0001f));
-  EXPECT_THAT(shearx_corners[3], PointNear({-1.0f, -2.0f}, 0.0001f));
-  std::array<Point, 4> sheary_corners =
-      AffineTransform::ShearY(2.5f).Apply(test_quad).Corners();
-  EXPECT_THAT(sheary_corners[0], PointNear({4.0f, 8.0f}, 0.0001f));
-  EXPECT_THAT(sheary_corners[1], PointNear({4.0f, 14.0f}, 0.0001f));
-  EXPECT_THAT(sheary_corners[2], PointNear({4.0f, 14.0f}, 0.0001f));
-  EXPECT_THAT(sheary_corners[3], PointNear({4.0f, 8.0f}, 0.0001f));
+  std::array<Point, 4> skewx_corners =
+      AffineTransform::SkewX(2.5f).Apply(test_quad).Corners();
+  EXPECT_THAT(skewx_corners[0], PointNear({-1.0f, -2.0f}, 0.0001f));
+  EXPECT_THAT(skewx_corners[1], PointNear({14.0f, 4.0f}, 0.0001f));
+  EXPECT_THAT(skewx_corners[2], PointNear({14.0f, 4.0f}, 0.0001f));
+  EXPECT_THAT(skewx_corners[3], PointNear({-1.0f, -2.0f}, 0.0001f));
+  std::array<Point, 4> skewy_corners =
+      AffineTransform::SkewY(2.5f).Apply(test_quad).Corners();
+  EXPECT_THAT(skewy_corners[0], PointNear({4.0f, 8.0f}, 0.0001f));
+  EXPECT_THAT(skewy_corners[1], PointNear({4.0f, 14.0f}, 0.0001f));
+  EXPECT_THAT(skewy_corners[2], PointNear({4.0f, 14.0f}, 0.0001f));
+  EXPECT_THAT(skewy_corners[3], PointNear({4.0f, 8.0f}, 0.0001f));
 }
 
 TEST(AffineTransformTest, ApplyPointLikeQuad) {
@@ -763,18 +763,18 @@ TEST(AffineTransformTest, ApplyPointLikeQuad) {
                   .Apply(test_quad),
               QuadEq(Quad::FromCenterDimensionsRotationAndShear(
                   {4.0f, 1.0f}, 0.0f, 0.0f, kHalfTurn, 0.5f)));
-  std::array<Point, 4> shearx_corners =
-      AffineTransform::ShearX(2.5f).Apply(test_quad).Corners();
-  EXPECT_THAT(shearx_corners[0], PointNear({6.5f, 1.0f}, 0.0001f));
-  EXPECT_THAT(shearx_corners[1], PointNear({6.5f, 1.0f}, 0.0001f));
-  EXPECT_THAT(shearx_corners[2], PointNear({6.5f, 1.0f}, 0.0001f));
-  EXPECT_THAT(shearx_corners[3], PointNear({6.5f, 1.0f}, 0.0001f));
-  std::array<Point, 4> sheary_corners =
-      AffineTransform::ShearY(2.5f).Apply(test_quad).Corners();
-  EXPECT_THAT(sheary_corners[0], PointNear({4.0f, 11.0f}, 0.0001f));
-  EXPECT_THAT(sheary_corners[1], PointNear({4.0f, 11.0f}, 0.0001f));
-  EXPECT_THAT(sheary_corners[2], PointNear({4.0f, 11.0f}, 0.0001f));
-  EXPECT_THAT(sheary_corners[3], PointNear({4.0f, 11.0f}, 0.0001f));
+  std::array<Point, 4> skewx_corners =
+      AffineTransform::SkewX(2.5f).Apply(test_quad).Corners();
+  EXPECT_THAT(skewx_corners[0], PointNear({6.5f, 1.0f}, 0.0001f));
+  EXPECT_THAT(skewx_corners[1], PointNear({6.5f, 1.0f}, 0.0001f));
+  EXPECT_THAT(skewx_corners[2], PointNear({6.5f, 1.0f}, 0.0001f));
+  EXPECT_THAT(skewx_corners[3], PointNear({6.5f, 1.0f}, 0.0001f));
+  std::array<Point, 4> skewy_corners =
+      AffineTransform::SkewY(2.5f).Apply(test_quad).Corners();
+  EXPECT_THAT(skewy_corners[0], PointNear({4.0f, 11.0f}, 0.0001f));
+  EXPECT_THAT(skewy_corners[1], PointNear({4.0f, 11.0f}, 0.0001f));
+  EXPECT_THAT(skewy_corners[2], PointNear({4.0f, 11.0f}, 0.0001f));
+  EXPECT_THAT(skewy_corners[3], PointNear({4.0f, 11.0f}, 0.0001f));
 }
 
 TEST(AffineTransformTest, FindSegmentSimpleTransforms) {
@@ -1033,21 +1033,21 @@ TEST(AffineTransformTest, FindTriangleSimpleTransforms) {
                   .value()
                   .Apply(Triangle{{1, 1}, {4, 1}, {1, 5}}),
               TriangleNear(Triangle{{3, 3}, {12, 3}, {3, 15}}, 0.0001f));
-  // ShearX
+  // SkewX
   EXPECT_THAT(
       AffineTransform::Find(Triangle{{1, 1}, {4, 1}, {1, 5}},
                             Triangle{{3, 1}, {6, 1}, {11, 5}}),
-      Optional(AffineTransformNear(AffineTransform::ShearX(2), 0.0001f)));
+      Optional(AffineTransformNear(AffineTransform::SkewX(2), 0.0001f)));
   EXPECT_THAT(AffineTransform::Find(Triangle{{1, 1}, {4, 1}, {1, 5}},
                                     Triangle{{3, 1}, {6, 1}, {11, 5}})
                   .value()
                   .Apply(Triangle{{1, 1}, {4, 1}, {1, 5}}),
               TriangleNear(Triangle{{3, 1}, {6, 1}, {11, 5}}, 0.0001f));
-  // ShearY
+  // SkewY
   EXPECT_THAT(
       AffineTransform::Find(Triangle{{1, 1}, {4, 1}, {1, 5}},
                             Triangle{{1, 3}, {4, 9}, {1, 7}}),
-      Optional(AffineTransformNear(AffineTransform::ShearY(2), 0.0001f)));
+      Optional(AffineTransformNear(AffineTransform::SkewY(2), 0.0001f)));
   EXPECT_THAT(AffineTransform::Find(Triangle{{1, 1}, {4, 1}, {1, 5}},
                                     Triangle{{1, 3}, {4, 9}, {1, 7}})
                   .value()

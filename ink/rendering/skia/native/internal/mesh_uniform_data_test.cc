@@ -344,13 +344,13 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
 
   // Setting the object-to-canvas transform should update the stored value and
   // also not modify the value of the stored color:
-  data.SetObjectToCanvasLinearComponent(AffineTransform::ShearX(5.0));
+  data.SetObjectToCanvasLinearComponent(AffineTransform::SkewX(5.0));
   sk_sp<const SkData> second_get_data = data.Get();
   ASSERT_NE(second_get_data, nullptr);
   EXPECT_THAT(GetStoredAffineTransformLinearComponent(
                   second_get_data->bytes() +
                   object_to_canvas_linear_component_uniform->offset),
-              AffineTransformEq(AffineTransform::ShearX(5.0)));
+              AffineTransformEq(AffineTransform::SkewX(5.0)));
   EXPECT_THAT(GetStoredColor(second_get_data->bytes() + color_uniform->offset),
               ColorNearlyEquals(Color::Blue()));
 
@@ -362,7 +362,7 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
   EXPECT_THAT(GetStoredAffineTransformLinearComponent(
                   third_get_data->bytes() +
                   object_to_canvas_linear_component_uniform->offset),
-              AffineTransformEq(AffineTransform::ShearX(5.0)));
+              AffineTransformEq(AffineTransform::SkewX(5.0)));
   EXPECT_THAT(GetStoredColor(third_get_data->bytes() + color_uniform->offset),
               ColorNearlyEquals(Color::Cyan()));
 }
