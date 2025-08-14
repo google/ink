@@ -131,6 +131,13 @@ JNI_METHOD(strokes, InProgressStrokeNative, jboolean, isUpdateNeeded)
   return CastToInProgressStrokeWrapper(native_pointer).Stroke().NeedsUpdate();
 }
 
+JNI_METHOD(strokes, InProgressStrokeNative, jboolean, changesWithTime)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return CastToInProgressStrokeWrapper(native_pointer)
+      .Stroke()
+      .ChangesWithTime();
+}
+
 JNI_METHOD(strokes, InProgressStrokeNative, jlong, newStrokeFromCopy)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return NewNativeStroke(

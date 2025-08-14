@@ -168,6 +168,10 @@ bool InProgressStroke::NeedsUpdate() const {
   if (!queued_real_inputs_.IsEmpty() || !queued_predicted_inputs_.IsEmpty()) {
     return true;
   }
+  return ChangesWithTime();
+}
+
+bool InProgressStroke::ChangesWithTime() const {
   uint32_t num_coats = BrushCoatCount();
   for (uint32_t coat_index = 0; coat_index < num_coats; ++coat_index) {
     if (shape_builders_[coat_index].HasUnfinishedTimeBehaviors()) {

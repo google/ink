@@ -159,6 +159,16 @@ class InProgressStroke {
   // call to `Start()`.
   bool NeedsUpdate() const;
 
+  // Returns true if the stroke's geometry changes with the passage of time
+  // (denoted by new values being passed to `UpdateShape()`), even if no new
+  // inputs are provided via `EnqueueInputs()`. This is the case if the brush
+  // has one or more timed animation behavior that are still active (which can
+  // be true even after inputs are finished).
+  //
+  // This is similar to `NeedsUpdate()`, except that it ignores whether inputs
+  // are finished or pending.
+  bool ChangesWithTime() const;
+
   // Returns a pointer to the current brush, or `nullptr` if `Start()` has not
   // been called.
   const Brush* absl_nullable GetBrush() const;

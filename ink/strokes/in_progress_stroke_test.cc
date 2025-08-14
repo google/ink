@@ -215,6 +215,7 @@ TEST(InProgressStrokeTest, DefaultConstructed) {
   EXPECT_TRUE(stroke.GetUpdatedRegion().IsEmpty());
   EXPECT_TRUE(stroke.InputsAreFinished());
   EXPECT_FALSE(stroke.NeedsUpdate());
+  EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
 TEST(InProgressStrokeTest, MoveConstructedAndAssigned) {
@@ -264,6 +265,7 @@ TEST(InProgressStrokeTest, StartAfterConstruction) {
   EXPECT_TRUE(stroke.GetUpdatedRegion().IsEmpty());
   EXPECT_FALSE(stroke.InputsAreFinished());
   EXPECT_FALSE(stroke.NeedsUpdate());
+  EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
 TEST(InProgressStrokeTest, ClearAfterStart) {
@@ -278,6 +280,7 @@ TEST(InProgressStrokeTest, ClearAfterStart) {
   EXPECT_TRUE(stroke.GetUpdatedRegion().IsEmpty());
   EXPECT_TRUE(stroke.InputsAreFinished());
   EXPECT_FALSE(stroke.NeedsUpdate());
+  EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
 TEST(InProgressStrokeTest, EnqueueInputsWithoutStart) {
@@ -308,6 +311,7 @@ TEST(InProgressStrokeTest, EmptyEnqueueInputsDoesNotNeedUpdate) {
   EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, {}));
 
   EXPECT_FALSE(stroke.NeedsUpdate());
+  EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
 TEST(InProgressStrokeTest, NonEmptyEnqueueInputsNeedsUpdate) {
@@ -321,6 +325,7 @@ TEST(InProgressStrokeTest, NonEmptyEnqueueInputsNeedsUpdate) {
   EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*real_inputs, {}));
 
   EXPECT_TRUE(stroke.NeedsUpdate());
+  EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
 TEST(InProgressStrokeTest, EmptyEnqueueInputsAndUpdateAfterStart) {
@@ -338,6 +343,7 @@ TEST(InProgressStrokeTest, EmptyEnqueueInputsAndUpdateAfterStart) {
   EXPECT_THAT(stroke.GetCoatOutlines(0), IsEmpty());
   EXPECT_TRUE(stroke.GetUpdatedRegion().IsEmpty());
   EXPECT_FALSE(stroke.NeedsUpdate());
+  EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
 TEST(InProgressStrokeTest, EnqueueInputsPredictionOnlyAndUpdate) {
@@ -351,6 +357,7 @@ TEST(InProgressStrokeTest, EnqueueInputsPredictionOnlyAndUpdate) {
   EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *predicted_inputs));
 
   EXPECT_TRUE(stroke.NeedsUpdate());
+  EXPECT_FALSE(stroke.ChangesWithTime());
 
   EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
 
@@ -359,6 +366,7 @@ TEST(InProgressStrokeTest, EnqueueInputsPredictionOnlyAndUpdate) {
   EXPECT_GT(stroke.GetMesh(0).VertexCount(), 0u);
   EXPECT_FALSE(stroke.GetUpdatedRegion().IsEmpty());
   EXPECT_FALSE(stroke.NeedsUpdate());
+  EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
 TEST(InProgressStrokeTest, NonEmptyInputs) {
@@ -489,15 +497,18 @@ TEST(InProgressStrokeTest, EnqueueInputsWithDifferentToolTypes) {
   EXPECT_THAT(stroke.EnqueueInputs(*mouse_input, *touch_input),
               IsInvalidArgumentErrorThat(HasSubstr("tool_type")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
 
   // We *can* predict touch inputs (with no real inputs so far)...
   EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *touch_input));
   EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
   EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
   // ...and then actually end up with real mouse inputs (which replace the
   // predicted touch inputs).
   EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*mouse_input, {}));
   EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
   EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
 
   // But now that we have real mouse inputs, we can't predict further touch
@@ -505,10 +516,12 @@ TEST(InProgressStrokeTest, EnqueueInputsWithDifferentToolTypes) {
   EXPECT_THAT(stroke.EnqueueInputs({}, *touch_input),
               IsInvalidArgumentErrorThat(HasSubstr("tool_type")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
   // ...nor can we add real touch inputs.
   EXPECT_THAT(stroke.EnqueueInputs(*touch_input, {}),
               IsInvalidArgumentErrorThat(HasSubstr("tool_type")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
 TEST(InProgressStrokeTest, EnqueueInputsDuplicatePositionAndTime) {
@@ -523,22 +536,27 @@ TEST(InProgressStrokeTest, EnqueueInputsDuplicatePositionAndTime) {
   EXPECT_THAT(stroke.EnqueueInputs(*input, *input),
               IsInvalidArgumentErrorThat(HasSubstr("duplicate")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
 
   EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *input));
   EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
   EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(1)));
 
   EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*input, {}));
   EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
   EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(1)));
 
   EXPECT_THAT(stroke.EnqueueInputs({}, *input),
               IsInvalidArgumentErrorThat(HasSubstr("duplicate")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
 
   EXPECT_THAT(stroke.EnqueueInputs(*input, {}),
               IsInvalidArgumentErrorThat(HasSubstr("duplicate")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
 TEST(InProgressStrokeTest,
@@ -555,10 +573,12 @@ TEST(InProgressStrokeTest,
 
   EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*first, {}));
   EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
   EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(1)));
 
   EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*second, {}));
   EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
   // But not actually doing an update yet. We reject updates that would
   // duplicate against the last real input, which is currently queued.
   EXPECT_THAT(stroke.EnqueueInputs(*second, {}),
@@ -591,14 +611,17 @@ TEST(InProgressStrokeTest, EnqueueInputsWithDecreasingElapsedTime) {
   EXPECT_THAT(stroke.EnqueueInputs(*first_inputs, *second_inputs),
               IsInvalidArgumentErrorThat(HasSubstr("non-decreasing")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
 
   // We *can* enqueue just the prediction...
   EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *second_inputs));
   EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
   EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(3)));
   // ...and then later replace it with the real inputs.
   EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*first_inputs, {}));
   EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
   EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(4)));
 
   // But now that we've added the real inputs, we can't then add a prediction
@@ -606,10 +629,12 @@ TEST(InProgressStrokeTest, EnqueueInputsWithDecreasingElapsedTime) {
   EXPECT_THAT(stroke.EnqueueInputs({}, *second_inputs),
               IsInvalidArgumentErrorThat(HasSubstr("non-decreasing")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
   // ...nor can we add those overlapping inputs as additional real inputs.
   EXPECT_THAT(stroke.EnqueueInputs(*second_inputs, {}),
               IsInvalidArgumentErrorThat(HasSubstr("non-decreasing")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
 TEST(InProgressStrokeTest, EnqueueInputsWithDifferentOptionalPropertyFormats) {
@@ -629,10 +654,12 @@ TEST(InProgressStrokeTest, EnqueueInputsWithDifferentOptionalPropertyFormats) {
   EXPECT_THAT(stroke.EnqueueInputs(*pressure_input, *no_pressure_input),
               IsInvalidArgumentErrorThat(HasSubstr("pressure")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
 
   // Add some real inputs with pressure data.
   EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*pressure_input, {}));
   EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
   EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
 
   // Now that we have real inputs with pressure data, we can't predict further
@@ -640,10 +667,12 @@ TEST(InProgressStrokeTest, EnqueueInputsWithDifferentOptionalPropertyFormats) {
   EXPECT_THAT(stroke.EnqueueInputs({}, *no_pressure_input),
               IsInvalidArgumentErrorThat(HasSubstr("pressure")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
   // ...nor can we add further real inputs without pressure data.
   EXPECT_THAT(stroke.EnqueueInputs(*no_pressure_input, {}),
               IsInvalidArgumentErrorThat(HasSubstr("pressure")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
+  EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
 TEST(InProgressStrokeTest, UpdateShapeWithNegativeCurrentElapsedTime) {
