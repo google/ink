@@ -335,5 +335,87 @@ TEST(MutableMultiMeshTest, InsertTriangleIndicesCopiesVerticesIntoMesh) {
               TriangleEq(mesh.GetTriangle(1)));
 }
 
+TEST(MutableMultiMeshTest, ResizeLarger) {
+  // Create a mesh with 15 vertices and 3 triangles across 2 partitions.
+  MutableMultiMesh mesh =
+      MutableMultiMesh(MeshFormat(), /* partition_after= */ 10);
+  for (int i = 0; i < 10; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({0, 1, 2});
+  mesh.AppendTriangleIndices({6, 7, 8});
+  for (int i = 10; i < 15; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({10, 11, 12});
+  EXPECT_EQ(mesh.VertexCount(), 15);
+  EXPECT_EQ(mesh.TriangleCount(), 3);
+  ASSERT_THAT(mesh.GetMeshes(), SizeIs(2));
+  EXPECT_EQ(mesh.GetMeshes()[0].VertexCount(), 10);
+  EXPECT_EQ(mesh.GetMeshes()[1].VertexCount(), 5);
+  // Resize up to 28 vertices and 5 triangles.
+  mesh.Resize(28, 5);
+  EXPECT_EQ(mesh.VertexCount(), 28);
+  EXPECT_EQ(mesh.TriangleCount(), 5);
+  // The vertices should now be distributed across 3 partitions.
+  ASSERT_THAT(mesh.GetMeshes(), SizeIs(3));
+  EXPECT_EQ(mesh.GetMeshes()[0].VertexCount(), 10);
+  EXPECT_EQ(mesh.GetMeshes()[1].VertexCount(), 10);
+  EXPECT_EQ(mesh.GetMeshes()[2].VertexCount(), 8);
+}
+
+TEST(MutableMultiMeshTest, ResizeSmaller) {
+  // Create a mesh with 25 vertices and 5 triangles across 3 partitions.
+  MutableMultiMesh mesh =
+      MutableMultiMesh(MeshFormat(), /* partition_after= */ 10);
+  for (int i = 0; i < 10; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({0, 1, 2});
+  mesh.AppendTriangleIndices({6, 7, 8});
+  for (int i = 10; i < 20; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({10, 11, 12});
+  mesh.AppendTriangleIndices({16, 17, 18});
+  for (int i = 20; i < 25; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({20, 21, 22});
+  EXPECT_EQ(mesh.VertexCount(), 25);
+  EXPECT_EQ(mesh.TriangleCount(), 5);
+  ASSERT_THAT(mesh.GetMeshes(), SizeIs(3));
+  EXPECT_EQ(mesh.GetMeshes()[0].VertexCount(), 10);
+  EXPECT_EQ(mesh.GetMeshes()[1].VertexCount(), 10);
+  EXPECT_EQ(mesh.GetMeshes()[2].VertexCount(), 5);
+  // Resize down to 9 vertices and 2 triangles.
+  mesh.Resize(9, 2);
+  EXPECT_EQ(mesh.VertexCount(), 9);
+  EXPECT_EQ(mesh.TriangleCount(), 2);
+  ASSERT_THAT(mesh.GetMeshes(), SizeIs(1));
+  EXPECT_EQ(mesh.GetMeshes()[0].VertexCount(), 9);
+}
+
+TEST(MutableMultiMeshTest, ResizeUpFromEmpty) {
+  MutableMultiMesh mesh =
+      MutableMultiMesh(MeshFormat(), /* partition_after= */ 10);
+  mesh.Resize(28, 5);
+  EXPECT_EQ(mesh.VertexCount(), 28);
+  EXPECT_EQ(mesh.TriangleCount(), 5);
+  ASSERT_THAT(mesh.GetMeshes(), SizeIs(3));
+  EXPECT_EQ(mesh.GetMeshes()[0].VertexCount(), 10);
+  EXPECT_EQ(mesh.GetMeshes()[1].VertexCount(), 10);
+  EXPECT_EQ(mesh.GetMeshes()[2].VertexCount(), 8);
+}
+
+TEST(MutableMultiMeshTest, ResizeDownToEmpty) {
+  // Create a mesh with 15 vertices and 3 triangles across 2 partitions.
+  MutableMultiMesh mesh =
+      MutableMultiMesh(MeshFormat(), /* partition_after= */ 10);
+  for (int i = 0; i < 10; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({0, 1, 2});
+  mesh.AppendTriangleIndices({6, 7, 8});
+  for (int i = 10; i < 15; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({10, 11, 12});
+  EXPECT_EQ(mesh.VertexCount(), 15);
+  EXPECT_EQ(mesh.TriangleCount(), 3);
+  EXPECT_THAT(mesh.GetMeshes(), SizeIs(2));
+  // `Resize(0, 0)` should remove everything.
+  mesh.Resize(0, 0);
+  EXPECT_EQ(mesh.VertexCount(), 0);
+  EXPECT_EQ(mesh.TriangleCount(), 0);
+  EXPECT_THAT(mesh.GetMeshes(), SizeIs(0));
+}
+
 }  // namespace
 }  // namespace ink::strokes_internal
