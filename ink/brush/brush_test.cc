@@ -72,7 +72,7 @@ BrushFamily CreateTestFamily() {
           }}},
       },
       {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
+                           .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
                            .size_jitter = {0.1, 2},
@@ -89,7 +89,7 @@ TEST(BrushTest, Stringify) {
       BrushTip{
           .scale = {3, 3}, .corner_rounding = 0, .opacity_multiplier = 0.7},
       {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
+                           .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
                            .size_jitter = {0.1, 2},
@@ -107,7 +107,7 @@ TEST(BrushTest, Stringify) {
       "family=BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
       "corner_rounding=0, opacity_multiplier=0.7}, "
       "paint=BrushPaint{texture_layers={TextureLayer{client_texture_id="
-      "test-texture, mapping=kWinding, "
+      "test-texture, mapping=kStamping, "
       "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
       "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
       "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
@@ -238,7 +238,7 @@ TEST(BrushTest, SetNewFamily) {
   auto new_family = BrushFamily::Create(
       BrushTip{},
       {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
+                           .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
                            .size_jitter = {0.1, 2},

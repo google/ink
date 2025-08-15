@@ -989,8 +989,8 @@ absl::StatusOr<BrushBehavior> DecodeBrushBehavior(
 proto::BrushPaint::TextureLayer::Mapping EncodeBrushPaintTextureMapping(
     BrushPaint::TextureMapping mapping) {
   switch (mapping) {
-    case BrushPaint::TextureMapping::kWinding:
-      return proto::BrushPaint::TextureLayer::MAPPING_WINDING;
+    case BrushPaint::TextureMapping::kStamping:
+      return proto::BrushPaint::TextureLayer::MAPPING_STAMPING;
     case BrushPaint::TextureMapping::kTiling:
       return proto::BrushPaint::TextureLayer::MAPPING_TILING;
   }
@@ -1000,8 +1000,8 @@ proto::BrushPaint::TextureLayer::Mapping EncodeBrushPaintTextureMapping(
 absl::StatusOr<BrushPaint::TextureMapping> DecodeBrushPaintTextureMapping(
     proto::BrushPaint::TextureLayer::Mapping mapping_proto) {
   switch (mapping_proto) {
-    case proto::BrushPaint::TextureLayer::MAPPING_WINDING:
-      return BrushPaint::TextureMapping::kWinding;
+    case proto::BrushPaint::TextureLayer::MAPPING_STAMPING:
+      return BrushPaint::TextureMapping::kStamping;
     case proto::BrushPaint::TextureLayer::MAPPING_TILING:
       return BrushPaint::TextureMapping::kTiling;
     default:

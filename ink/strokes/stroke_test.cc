@@ -64,7 +64,7 @@ Brush CreateBrush() {
           .rotation = kFullTurn / 8,
       },
       {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
+                           .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
                            .size_jitter = {0.1, 2},

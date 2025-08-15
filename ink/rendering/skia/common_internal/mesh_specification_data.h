@@ -83,7 +83,7 @@ struct MeshSpecificationData {
     kForwardDerivativeUnpackingTransform = 4,
     // The `BrushPaint::TextureMapping` value.
     // TODO: b/375203215 - Get rid of this uniform once we are able to mix
-    // tiling and winding textures in a single `BrushPaint`.
+    // different texture mapping modes in a single `BrushPaint`.
     kTextureMapping = 5,
     // The current progress, a float in [0, 1], of the texture animation.
     //

@@ -81,7 +81,7 @@ absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
   }
 
   for (const BrushPaint::TextureLayer& layer : coat.paint.texture_layers) {
-    if (layer.mapping == BrushPaint::TextureMapping::kWinding) {
+    if (layer.mapping == BrushPaint::TextureMapping::kStamping) {
       ids.insert(MeshFormat::AttributeId::kSurfaceUv);
       break;
     }

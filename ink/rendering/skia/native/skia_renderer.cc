@@ -99,8 +99,8 @@ float OpacityMultiplierForPath(const Brush& brush, uint32_t coat_index) {
 // doesn't really matter either way, so it just returns `kTiling` (since that
 // mode is marginally easier for the shader to calculate).
 //
-// TODO: b/375203215 - Get rid of this function once we are able to mix tiling
-// and winding textures in a single `BrushPaint`.
+// TODO: b/375203215 - Get rid of this uniform once we are able to mix different
+// texture mapping modes in a single `BrushPaint`.
 BrushPaint::TextureMapping GetBrushPaintTextureMapping(
     const BrushPaint& paint) {
   return !paint.texture_layers.empty() ? paint.texture_layers[0].mapping
