@@ -69,6 +69,8 @@ class MutableMultiMesh {
   void InsertTriangleIndices(uint32_t triangle_index,
                              const std::array<uint32_t, 3>& vertex_indices);
 
+  void Resize(uint32_t new_vertex_count, uint32_t new_triangle_count);
+
  private:
   struct VertexIndexPair {
     uint16_t partition_index;
@@ -102,6 +104,12 @@ class MutableMultiMesh {
       const std::array<uint32_t, 3>& vertex_indices, uint16_t partition_index);
   uint16_t CopyVertexIntoPartition(uint32_t vertex_index,
                                    uint16_t partition_index);
+
+  // Helper methods for `Resize()`.
+  void ResizeAppendTriangles(uint32_t num_new_triangles);
+  void ResizeTruncateTriangles(uint32_t new_triangle_count);
+  void ResizeAppendVertices(uint32_t num_new_vertices);
+  void ResizeTruncateVertices(uint32_t new_vertex_count);
 
   std::vector<MutableMesh> meshes_;
   std::vector<Partition> partitions_;
