@@ -315,7 +315,7 @@ jmethodID MethodImmutableParallelogramFromCenterDimensionsRotationAndSkew(
   if (method_immutable_parallelogram_from_center_dim_rot_skew == nullptr) {
     method_immutable_parallelogram_from_center_dim_rot_skew = GetStaticMethodId(
         env, ClassImmutableParallelogram(env),
-        "FromCenterDimensionsRotationAndSkew",
+        "fromCenterDimensionsRotationAndSkew",
         "(L" INK_PACKAGE "/geometry/ImmutableVec;FFFF)L" INK_PACKAGE
         "/geometry/ImmutableParallelogram;");
   }
