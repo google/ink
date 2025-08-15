@@ -85,8 +85,8 @@ class MeshDrawable {
 
   // Returns true if the drawable has the texture-mapping uniform.
   //
-  // TODO: b/375203215 - Get rid of this uniform once we are able to mix tiling
-  // and winding textures in a single `BrushPaint`.
+  // TODO: b/375203215 - Get rid of this uniform once we are able to mix
+  // different texture mapping modes in a single `BrushPaint`.
   bool HasTextureMapping() const;
 
   // Sets the value of the texture-mapping uniform.
@@ -94,8 +94,8 @@ class MeshDrawable {
   // CHECK-fails if the drawable was created with an `SkMeshSpecification` that
   // does not have this uniform.
   //
-  // TODO: b/375203215 - Get rid of this uniform once we are able to mix tiling
-  // and winding textures in a single `BrushPaint`.
+  // TODO: b/375203215 - Get rid of this uniform once we are able to mix
+  // different texture mapping modes in a single `BrushPaint`.
   void SetTextureMapping(BrushPaint::TextureMapping mapping);
 
   // Returns true if the drawable has an object-to-canvas uniform.

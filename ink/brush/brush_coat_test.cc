@@ -116,7 +116,7 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithColorShift) {
   }
 }
 
-TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutWindingTextures) {
+TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutStampingTextures) {
   BrushPaint paint = {
       .texture_layers = {BrushPaint::TextureLayer{
           .client_texture_id = std::string(kTestTextureId),
@@ -128,11 +128,11 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutWindingTextures) {
               Not(Contains(MeshFormat::AttributeId::kSurfaceUv)));
 }
 
-TEST(BrushCoatTest, GetRequiredAttributeIdsWithWindingTextures) {
+TEST(BrushCoatTest, GetRequiredAttributeIdsWithStampingTextures) {
   BrushPaint paint = {
       .texture_layers = {BrushPaint::TextureLayer{
           .client_texture_id = std::string(kTestTextureId),
-          .mapping = BrushPaint::TextureMapping::kWinding,
+          .mapping = BrushPaint::TextureMapping::kStamping,
       }},
   };
   BrushCoat coat = {.tip = BrushTip(), .paint = paint};

@@ -35,13 +35,23 @@ struct BrushPaint {
   enum class TextureMapping {
     // The texture will repeat according to a 2D affine transformation of
     // vertex positions. Each copy of the texture will have the same size
-    // and shape modulo reflections.
+    // and shape, modulo reflections.
+    //
+    // This mode does not support texture animations, so it ignores the
+    // `animation_frames`, `animation_rows`, `animation_columns`, and
+    // `animation_duration` fields.
     kTiling,
-    // The texture will morph to "wind along the path of the stroke." The
-    // horizontal axis of texture space will lie along the width of the stroke
-    // and the vertical axis will lie along the direction of travel of the
-    // stroke at each point.
-    kWinding,
+    // This mode is intended for use with particle brush coats (i.e. with a
+    // brush tip with a nonzero particle gap). A copy of the texture (or one
+    // animation frame thereof) will be "stamped" onto each particle of the
+    // stroke, scaled or rotated appropriately to cover the whole particle.
+    //
+    // Since the whole texture (or animation frame) is always scaled to the size
+    // of each particle and positioned atop each one, this mode ignores the
+    // `origin`, `size_unit`, `wrap_x`, `wrap_y`, and `size` fields.
+    kStamping,
+    // TODO: b/271837965 - Add kWinding mode to support winding-textured
+    // continuous (non-particle) strokes.
   };
 
   // Specification of the origin point to use for the texture.

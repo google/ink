@@ -81,7 +81,7 @@ TEST_F(BrushTipExtruderTest, StartStrokeEmptiesMeshBoundsAndOutline) {
 
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   EXPECT_EQ(mesh_.VertexCount(), 0);
   EXPECT_EQ(mesh_.TriangleCount(), 0);
@@ -93,7 +93,7 @@ TEST_F(BrushTipExtruderTest, StartStrokeEmptiesMeshBoundsAndOutline) {
 TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithEmptyStates) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   StrokeShapeUpdate update = extruder.ExtendStroke({}, {});
 
@@ -110,7 +110,7 @@ TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithEmptyStates) {
 TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithSingleFixedState) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   StrokeShapeUpdate update =
       extruder.ExtendStroke({MakeCircularTipState({0, 0}, 1)}, {});
@@ -131,7 +131,7 @@ TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithSingleFixedState) {
 TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithSingleVolatileState) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   StrokeShapeUpdate update =
       extruder.ExtendStroke({}, {MakeCircularTipState({0, 0}, 1)});
@@ -152,7 +152,7 @@ TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithSingleVolatileState) {
 TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithMultipleFixedStates) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   StrokeShapeUpdate update = extruder.ExtendStroke(
       MakeUniformCircularTipStates({{0, 0}, {1, 0}, {2, 1}}, 1), {});
@@ -174,7 +174,7 @@ TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithMultipleFixedStates) {
 TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithMultipleVolatileStates) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   StrokeShapeUpdate update = extruder.ExtendStroke(
       MakeUniformCircularTipStates({{0, 0}, {-1, 0}, {-2, 1}}, 1), {});
@@ -196,7 +196,7 @@ TEST_F(BrushTipExtruderTest, ExtendNewStrokeWithMultipleVolatileStates) {
 TEST_F(BrushTipExtruderTest, ExtendSingleFixedStateStroke) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   StrokeShapeUpdate update =
       extruder.ExtendStroke({MakeCircularTipState({0, 0}, 1)}, {});
@@ -232,7 +232,7 @@ TEST_F(BrushTipExtruderTest, ExtendSingleFixedStateStroke) {
 TEST_F(BrushTipExtruderTest, ExtendSingleVolatileStateStroke) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   StrokeShapeUpdate update =
       extruder.ExtendStroke({}, {MakeCircularTipState({0, 0}, 1)});
@@ -268,7 +268,7 @@ TEST_F(BrushTipExtruderTest, ExtendSingleVolatileStateStroke) {
 TEST_F(BrushTipExtruderTest, ExtendManyFixedStateStroke) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   StrokeShapeUpdate update = extruder.ExtendStroke(
       MakeUniformCircularTipStates({{-2, 0}, {2, 2}, {-1, 2}, {2, 0}}, 1), {});
@@ -306,7 +306,7 @@ TEST_F(BrushTipExtruderTest, ExtendManyFixedStateStroke) {
 TEST_F(BrushTipExtruderTest, ExtendCoversRemovedPreviousVolatileGeometry) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   // Make a stroke that first has volatile states extending in the positive x
   // direction, and then turns toward the positive y, which simulates an input
@@ -354,7 +354,7 @@ TEST_F(BrushTipExtruderTest, ExtendCoversRemovedPreviousVolatileGeometry) {
 TEST_F(BrushTipExtruderTest, EmptyExtendRemovesPreviousVolatileGeometry) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   StrokeShapeUpdate update = extruder.ExtendStroke(
       MakeUniformCircularTipStates({{0, 0}, {1, 0}, {2, 0}}, 1),
@@ -395,7 +395,7 @@ TEST_F(BrushTipExtruderTest, EmptyExtendRemovesPreviousVolatileGeometry) {
 TEST_F(BrushTipExtruderTest, EmptyExtendClearsCompletelyVolatileStroke) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   StrokeShapeUpdate update = extruder.ExtendStroke(
       {}, MakeUniformCircularTipStates({{3, 0}, {4, 0}, {5, 0}}, 1));
@@ -426,7 +426,7 @@ TEST_F(BrushTipExtruderTest, EmptyExtendClearsCompletelyVolatileStroke) {
 TEST_F(BrushTipExtruderTest, StartSecondStroke) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   StrokeShapeUpdate update = extruder.ExtendStroke(
       MakeUniformCircularTipStates({{0, 0}, {1, 0}, {2, 0}}, 1),
@@ -445,7 +445,7 @@ TEST_F(BrushTipExtruderTest, StartSecondStroke) {
               ElementsAreArray({12, 10, 8, 6, 4, 2, 1, 0, 3, 5, 7, 9, 11, 13}));
 
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
 
   // Starting a new stroke should clear the geometry
   EXPECT_EQ(mesh_.VertexCount(), 0);
@@ -473,7 +473,7 @@ TEST_F(BrushTipExtruderTest, WidthAndHeightLessThanEpsilonCreatesBreakPoint) {
 
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   StrokeShapeUpdate update =
       extruder.ExtendStroke({MakeCircularTipState({10, 10}, tip_radius)}, {});
 
@@ -491,7 +491,7 @@ TEST_F(BrushTipExtruderTest, OneDimensionLessThanEpsilonIsNotABreakPoint) {
 
   BrushTipExtruder extruder;
   extruder.StartStroke(brush_epsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   StrokeShapeUpdate update = extruder.ExtendStroke(
       {
           {.position = {0, 0}, .width = 0.09, .height = 1},
@@ -511,7 +511,7 @@ TEST_F(BrushTipExtruderTest, OneDimensionLessThanEpsilonIsNotABreakPoint) {
 TEST_F(BrushTipExtruderTest, AddBreakPointsToNonEmptyStroke) {
   BrushTipExtruder extruder;
   extruder.StartStroke(/* brush_epsilon = */ 0.06,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   extruder.ExtendStroke(
       MakeUniformCircularTipStates({{0, 0}, {1, 0}, {2, 1}}, 1), {});
 
@@ -546,7 +546,7 @@ TEST_F(BrushTipExtruderTest, AddBreakPointsToNonEmptyStroke) {
 TEST_F(BrushTipExtruderTest, RejectTipStateContainedInPrevious) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   extruder.ExtendStroke(
       {MakeCircularTipState({0, 0}, 10), MakeCircularTipState({5, 0}, 10)}, {});
   uint32_t n_verts = mesh_.VertexCount();
@@ -567,7 +567,7 @@ TEST_F(BrushTipExtruderTest, RejectTipStateContainedInPrevious) {
 TEST_F(BrushTipExtruderTest, DontRejectTipStateAfterBreakPoint) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   extruder.ExtendStroke(
       {MakeCircularTipState({0, 0}, 10), MakeCircularTipState({5, 0}, 10),
        MakeCircularTipState({15, 0}, 0.1 * kBrushEpsilon)},
@@ -595,7 +595,7 @@ TEST_F(BrushTipExtruderTest,
        StartNewPartitionIfCurrentPartitionIsPartiallyContained) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   // We stagger the extrusions vertically so that vertices don't get simplified
   // away.
   extruder.ExtendStroke(
@@ -625,7 +625,7 @@ TEST_F(BrushTipExtruderTest,
        RestartPartitionIfCurrentPartitionIsFullyContained) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   // We stagger the extrusions vertically so that vertices don't get simplified
   // away.
   extruder.ExtendStroke(
@@ -664,7 +664,7 @@ TEST_F(BrushTipExtruderTest,
 TEST_F(BrushTipExtruderTest, RestartPartitionIfWholeStrokeIsContained) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   // We stagger the extrusions vertically so that vertices don't get simplified
   // away.
   extruder.ExtendStroke(
@@ -693,7 +693,7 @@ TEST_F(BrushTipExtruderTest, RejectTipStateIfWeCannotConstrainIt) {
   // the proposed shape (red).
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   extruder.ExtendStroke({{.position = {0, 0}, .width = 1, .height = 3},
                          {.position = {2, 0}, .width = 1, .height = 3}},
                         {});
@@ -725,7 +725,7 @@ TEST_F(BrushTipExtruderTest, ConstrainTipStateIfItDoesNotHaveGoodTangents) {
   // construct tangents to, and use that instead of the proposed shape (red).
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   extruder.ExtendStroke(
       /* new_fixed_states = */ {{.position = {0, 0}, .width = 1, .height = 4},
                                 {.position = {2, 0}, .width = 1, .height = 4}},
@@ -751,7 +751,7 @@ TEST_F(BrushTipExtruderTest,
   // shape (green).
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   extruder.ExtendStroke(
       /* new_fixed_states = */ {{.position = {0, 0}, .width = 2, .height = 15}},
       {});
@@ -778,7 +778,7 @@ TEST_F(BrushTipExtruderTest, DontRejectFinalFixedTipStateIfNoVolatileState) {
   // it instead of the proposed shape (red), to avoid lagging behind the stylus.
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   extruder.ExtendStroke(
       /* new_fixed_states = */ {{.position = {0, 0}, .width = 2, .height = 15}},
       /* volatile_states = */ {});
@@ -810,7 +810,7 @@ TEST_F(
   // (green), even though the subsequent shape (teal) is a volatile state.
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   extruder.ExtendStroke(
       /* new_fixed_states = */ {{.position = {0, 0}, .width = 2, .height = 15}},
       /* volatile_states = */ {});
@@ -843,7 +843,7 @@ TEST_F(BrushTipExtruderTest,
   // that only the first shape (blue) is a fixed state.
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   extruder.ExtendStroke(
       /* new_fixed_states = */ {{.position = {0, 0}, .width = 2, .height = 15}},
       /* volatile_states = */ {});
@@ -873,7 +873,7 @@ TEST_F(BrushTipExtruderTest,
   // first two shapes (black and blue) are fixed states.
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   extruder.ExtendStroke(
       /* new_fixed_states = */ {{.position = {0, 0}, .width = 2, .height = 15}},
       /* volatile_states = */ {});
@@ -901,7 +901,7 @@ TEST(BrushTipExtruderDeathTest, ZeroBrushEpsilon) {
   MutableMesh mesh;
   EXPECT_DEATH_IF_SUPPORTED(
       extruder.StartStroke(/* brush_epsilon = */ 0,
-                           /* is_winding_texture_particle_brush = */ false,
+                           /* is_stamping_texture_particle_brush = */ false,
                            mesh),
       "");
 }
@@ -913,7 +913,7 @@ TEST_F(BrushTipExtruderTest, TextureUVsAreSetForWindingTextureParticles) {
   // We choose a larger value for brush_epsilon so that the rounded corners are
   // reduced to line segments, giving us (irregular) octagons for each particle.
   extruder.StartStroke(/* brush_epsilon = */ 1,
-                       /* is_winding_texture_particle_brush = */ true, mesh_);
+                       /* is_stamping_texture_particle_brush = */ true, mesh_);
   extruder.ExtendStroke(
       /* new_fixed_states = */ {{.position = {0, 0},
                                  .width = 10,
@@ -987,7 +987,7 @@ TEST_F(BrushTipExtruderTest, TextureUVsAreSetForWindingTextureParticles) {
 TEST_F(BrushTipExtruderTest, TextureUVsAreNotSetForNonWindingTextureParticles) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ false, mesh_);
+                       /* is_stamping_texture_particle_brush = */ false, mesh_);
   extruder.ExtendStroke(
       /* new_fixed_states = */ {{.position = {0, 0},
                                  .width = 10,
@@ -1004,7 +1004,7 @@ TEST_F(BrushTipExtruderTest, TextureUVsAreNotSetForNonWindingTextureParticles) {
 TEST_F(BrushTipExtruderTest, WindingTextureParticleUVsAreClamped) {
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ true, mesh_);
+                       /* is_stamping_texture_particle_brush = */ true, mesh_);
   extruder.ExtendStroke(
       /* new_fixed_states = */ {{.position = {1669.30981, 761.19311},
                                  .width = 109.525535,
@@ -1027,7 +1027,7 @@ TEST_F(BrushTipExtruderTest, TextureUVsFollowTipRotation) {
 
   BrushTipExtruder extruder;
   extruder.StartStroke(kBrushEpsilon,
-                       /* is_winding_texture_particle_brush = */ true, mesh_);
+                       /* is_stamping_texture_particle_brush = */ true, mesh_);
   extruder.ExtendStroke(
       /* new_fixed_states = */ {{.position = {5, 5},
                                  .width = 2,

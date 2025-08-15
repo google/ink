@@ -174,12 +174,12 @@ TEST(StrokeShapeBuilderTest, NonTexturedNonParticleBrushDoesNotHaveSurfaceUvs) {
   }
 }
 
-TEST(StrokeShapeBuilderTest, WindingNonParticleBrushDoesNotHaveSurfaceUvs) {
+TEST(StrokeShapeBuilderTest, StampingNonParticleBrushDoesNotHaveSurfaceUvs) {
   StrokeShapeBuilder builder;
   BrushCoat brush_coat{
       .tip = BrushTip{},
       .paint = {.texture_layers = {
-                    {.mapping = BrushPaint::TextureMapping::kWinding}}}};
+                    {.mapping = BrushPaint::TextureMapping::kStamping}}}};
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat,
                       /* brush_size = */ 10, /* brush_epsilon = */ 0.1);
 
@@ -238,7 +238,7 @@ TEST(StrokeShapeBuilderTest,
 }
 
 TEST(StrokeShapeBuilderTest,
-     NonWindingParticleDurationBrushDoesNotHaveSurfaceUvs) {
+     NonStampingParticleDurationBrushDoesNotHaveSurfaceUvs) {
   StrokeShapeBuilder builder;
   BrushCoat brush_coat{
       .tip = BrushTip{.particle_gap_duration = Duration32::Seconds(0.05)},
@@ -258,12 +258,12 @@ TEST(StrokeShapeBuilderTest,
   }
 }
 
-TEST(StrokeShapeBuilderTest, WindingParticleDistanceBrushHasSurfaceUvs) {
+TEST(StrokeShapeBuilderTest, StampingParticleDistanceBrushHasSurfaceUvs) {
   StrokeShapeBuilder builder;
   BrushCoat brush_coat{
       .tip = BrushTip{.particle_gap_distance_scale = 0.05},
       .paint = {.texture_layers = {
-                    {.mapping = BrushPaint::TextureMapping::kWinding}}}};
+                    {.mapping = BrushPaint::TextureMapping::kStamping}}}};
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat,
                       /* brush_size = */ 10, /* brush_epsilon = */ 0.1);
 
@@ -285,12 +285,12 @@ TEST(StrokeShapeBuilderTest, WindingParticleDistanceBrushHasSurfaceUvs) {
   EXPECT_GT(uv_envelope.AsRect()->Height(), 0);
 }
 
-TEST(StrokeShapeBuilderTest, WindingParticleDurationBrushHasSurfaceUvs) {
+TEST(StrokeShapeBuilderTest, StampingParticleDurationBrushHasSurfaceUvs) {
   StrokeShapeBuilder builder;
   BrushCoat brush_coat{
       .tip = BrushTip{.particle_gap_duration = Duration32::Seconds(0.05)},
       .paint = {.texture_layers = {
-                    {.mapping = BrushPaint::TextureMapping::kWinding}}}};
+                    {.mapping = BrushPaint::TextureMapping::kStamping}}}};
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat,
                       /* brush_size = */ 10, /* brush_epsilon = */ 0.1);
 

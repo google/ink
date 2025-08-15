@@ -56,13 +56,13 @@ float GetSimplificationThreshold(float brush_epsilon) { return brush_epsilon; }
 }  // namespace
 
 void BrushTipExtruder::StartStroke(float brush_epsilon,
-                                   bool is_winding_texture_particle_brush,
+                                   bool is_stamping_texture_particle_brush,
                                    MutableMesh& mesh) {
   ABSL_CHECK_GT(brush_epsilon, 0);
   brush_epsilon_ = brush_epsilon;
   max_chord_height_ = GetMaxChordHeight(brush_epsilon);
   simplification_threshold_ = GetSimplificationThreshold(brush_epsilon);
-  is_winding_texture_particle_brush_ = is_winding_texture_particle_brush;
+  is_stamping_texture_particle_brush_ = is_stamping_texture_particle_brush;
   extrusions_.clear();
   saved_extrusion_data_count_ = 0;
   deleted_save_point_extrusions_.clear();
@@ -498,8 +498,8 @@ void BrushTipExtruder::Extrude(const BrushTipState& tip_state,
 
   const BrushTipState& extruded_state = (end_iter - 2)->GetState();
   ExtrudeGeometry(current_extrusion_points_, extruded_state,
-                  simplification_threshold_, is_winding_texture_particle_brush_,
-                  geometry_);
+                  simplification_threshold_,
+                  is_stamping_texture_particle_brush_, geometry_);
 }
 
 void BrushTipExtruder::ExtrudeBreakPoint() {
@@ -526,8 +526,8 @@ void BrushTipExtruder::ExtrudeBreakPoint() {
   }
 
   ExtrudeGeometry(current_extrusion_points_, extrusions_.back().GetState(),
-                  simplification_threshold_, is_winding_texture_particle_brush_,
-                  geometry_);
+                  simplification_threshold_,
+                  is_stamping_texture_particle_brush_, geometry_);
 
   // If no new geometry was added after the last breakpoint, we don't need to
   // do anything.
