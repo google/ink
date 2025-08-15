@@ -60,8 +60,9 @@ TEST(BrushPaintTest, TextureLayerSupportsAbslHash) {
   EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
       BrushPaint::TextureLayer{.client_texture_id = id1},
       BrushPaint::TextureLayer{.client_texture_id = id2},
-      BrushPaint::TextureLayer{.client_texture_id = id1,
-                               .mapping = BrushPaint::TextureMapping::kWinding},
+      BrushPaint::TextureLayer{
+          .client_texture_id = id1,
+          .mapping = BrushPaint::TextureMapping::kStamping},
       BrushPaint::TextureLayer{
           .client_texture_id = id1,
           .origin = BrushPaint::TextureOrigin::kFirstStrokeInput},
@@ -160,7 +161,7 @@ TEST(BrushPaintTest, TextureLayerEqualAndNotEqual) {
   EXPECT_NE(layer, other);
 
   other = layer;
-  other.mapping = BrushPaint::TextureMapping::kWinding;
+  other.mapping = BrushPaint::TextureMapping::kStamping;
   EXPECT_NE(layer, other);
 
   other = layer;
@@ -238,7 +239,7 @@ TEST(BrushPaintTest, BrushPaintEqualAndNotEqual) {
 }
 
 TEST(BrushPaintTest, StringifyTextureMapping) {
-  EXPECT_EQ(absl::StrCat(BrushPaint::TextureMapping::kWinding), "kWinding");
+  EXPECT_EQ(absl::StrCat(BrushPaint::TextureMapping::kStamping), "kStamping");
   EXPECT_EQ(absl::StrCat(BrushPaint::TextureMapping::kTiling), "kTiling");
   EXPECT_EQ(absl::StrCat(static_cast<BrushPaint::TextureMapping>(99)),
             "TextureMapping(99)");
@@ -348,7 +349,7 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
   EXPECT_EQ(
       absl::StrCat(BrushPaint::TextureLayer{
           .client_texture_id = std::string(kTestTextureId),
-          .mapping = BrushPaint::TextureMapping::kWinding,
+          .mapping = BrushPaint::TextureMapping::kStamping,
           .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
           .wrap_x = BrushPaint::TextureWrap::kMirror,
@@ -369,7 +370,7 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
                          .rotation = kFullTurn / 16}},
           .blend_mode = BrushPaint::BlendMode::kDstIn}),
       "TextureLayer{client_texture_id=test-texture, "
-      "mapping=kWinding, origin=kFirstStrokeInput, size_unit=kBrushSize, "
+      "mapping=kStamping, origin=kFirstStrokeInput, size_unit=kBrushSize, "
       "wrap_x=kMirror, wrap_y=kClamp, "
       "size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, size_jitter=<0.1, 0.2>, "
       "offset_jitter=<0.7, 0.3>, rotation_jitter=0.125π, opacity=0.6, "
@@ -380,7 +381,7 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
   EXPECT_EQ(
       absl::StrCat(BrushPaint::TextureLayer{
           .client_texture_id = std::string(kTestTextureId),
-          .mapping = BrushPaint::TextureMapping::kWinding,
+          .mapping = BrushPaint::TextureMapping::kStamping,
           .origin = BrushPaint::TextureOrigin::kLastStrokeInput,
           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
           .wrap_x = BrushPaint::TextureWrap::kClamp,
@@ -404,7 +405,7 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
                          .opacity = 0.4}},
           .blend_mode = BrushPaint::BlendMode::kSrcAtop}),
       "TextureLayer{client_texture_id=test-texture, "
-      "mapping=kWinding, origin=kLastStrokeInput, size_unit=kBrushSize, "
+      "mapping=kStamping, origin=kLastStrokeInput, size_unit=kBrushSize, "
       "wrap_x=kClamp, wrap_y=kMirror, "
       "size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, size_jitter=<0.1, 0.2>, "
       "offset_jitter=<0.7, 0.3>, rotation_jitter=0.125π, opacity=0.6, "
@@ -442,11 +443,11 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .mapping = BrushPaint::TextureMapping::kWinding,
+                              .mapping = BrushPaint::TextureMapping::kStamping,
                               .size_unit =
                                   BrushPaint::TextureSizeUnit::kBrushSize}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kWinding, origin=kStrokeSpaceOrigin, "
+      "mapping=kStamping, origin=kStrokeSpaceOrigin, "
       "size_unit=kBrushSize, wrap_x=kRepeat, wrap_y=kRepeat, "
       "size=<1, 1>, offset=<0, 0>, rotation=0π, "
       "size_jitter=<0, 0>, offset_jitter=<0, 0>, rotation_jitter=0π, "
@@ -455,12 +456,12 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .mapping = BrushPaint::TextureMapping::kWinding,
+                              .mapping = BrushPaint::TextureMapping::kStamping,
                               .size_unit =
                                   BrushPaint::TextureSizeUnit::kBrushSize,
                               .size = {3, 5}}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kWinding, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
+      "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, "
       "rotation=0π, size_jitter=<0, 0>, offset_jitter=<0, 0>, "
       "rotation_jitter=0π, opacity=1, animation_frames=1, animation_rows=1, "
@@ -507,14 +508,14 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .mapping = BrushPaint::TextureMapping::kWinding,
+                              .mapping = BrushPaint::TextureMapping::kStamping,
                               .size_unit =
                                   BrushPaint::TextureSizeUnit::kBrushSize,
                               .size = {3, 5},
                               .offset = {2, 0.2},
                               .blend_mode = BrushPaint::BlendMode::kSrcIn}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kWinding, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
+      "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
       "rotation=0π, size_jitter=<0, 0>, offset_jitter=<0, 0>, "
       "rotation_jitter=0π, opacity=1, animation_frames=1, animation_rows=1, "
@@ -523,7 +524,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .mapping = BrushPaint::TextureMapping::kWinding,
+                              .mapping = BrushPaint::TextureMapping::kStamping,
                               .size_unit =
                                   BrushPaint::TextureSizeUnit::kBrushSize,
                               .size = {3, 5},
@@ -531,7 +532,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                               .rotation = kQuarterTurn,
                               .opacity = 0.6}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kWinding, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
+      "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
       "rotation=0.5π, size_jitter=<0, 0>, offset_jitter=<0, 0>, "
       "rotation_jitter=0π, opacity=0.6, animation_frames=1, animation_rows=1, "
@@ -540,7 +541,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .mapping = BrushPaint::TextureMapping::kWinding,
+                              .mapping = BrushPaint::TextureMapping::kStamping,
                               .size_unit =
                                   BrushPaint::TextureSizeUnit::kBrushSize,
                               .size = {3, 5},
@@ -552,7 +553,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                               .opacity = 0.6,
                               .blend_mode = BrushPaint::BlendMode::kSrcIn}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kWinding, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
+      "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
       "rotation=0.5π, size_jitter=<0.1, 0.2>, offset_jitter=<0.7, 0.3>, "
       "rotation_jitter=0.125π, opacity=0.6, animation_frames=1, "
@@ -562,7 +563,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       absl::StrCat(BrushPaint{
           .texture_layers =
               {{.client_texture_id = std::string(kTestTextureId),
-                .mapping = BrushPaint::TextureMapping::kWinding,
+                .mapping = BrushPaint::TextureMapping::kStamping,
                 .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                 .size = {3, 5},
                 .offset = {2, 0.2},
@@ -577,7 +578,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                                .rotation = kQuarterTurn,
                                .opacity = 0.6}}}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kWinding, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
+      "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
       "rotation=0.5π, size_jitter=<0.1, 0.2>, offset_jitter=<0.7, 0.3>, "
       "rotation_jitter=0.125π, opacity=0.6, animation_frames=1, "
@@ -588,7 +589,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       absl::StrCat(BrushPaint{
           .texture_layers =
               {{.client_texture_id = std::string(kTestTextureId),
-                .mapping = BrushPaint::TextureMapping::kWinding,
+                .mapping = BrushPaint::TextureMapping::kStamping,
                 .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                 .size = {3, 5},
                 .offset = {2, 0.2},
@@ -611,7 +612,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                                .opacity = 0.4}},
                 .blend_mode = BrushPaint::BlendMode::kDstIn}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kWinding, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
+      "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
       "rotation=0.5π, size_jitter=<0.1, 0.2>, offset_jitter=<0.7, 0.3>, "
       "rotation_jitter=0.125π, opacity=0.6, animation_frames=1, "
@@ -788,7 +789,7 @@ TEST(BrushPaintTest, MismatchedTextureMappings) {
                   {{.client_texture_id = std::string(kTestTextureId),
                     .mapping = BrushPaint::TextureMapping::kTiling},
                    {.client_texture_id = std::string(kTestTextureId),
-                    .mapping = BrushPaint::TextureMapping::kWinding}}}),
+                    .mapping = BrushPaint::TextureMapping::kStamping}}}),
               StatusIs(absl::StatusCode::kInvalidArgument,
                        HasSubstr("TextureLayer::mapping` must be the same")));
 }

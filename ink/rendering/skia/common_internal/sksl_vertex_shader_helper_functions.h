@@ -245,7 +245,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
 
     // Calculates the texture UV coordinates that should be used for a
-    // particular vertex of a winding-textured mesh.
+    // particular vertex of a stamping-textured mesh.
     //   * `surfaceUv` is the unpacked surface UV mesh attribute at this vertex,
     //     where U measures lateral position across the stroke or particle, and
     //     V measures forward position along the stroke or particle.
@@ -258,7 +258,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     //     is assumed to be an atlas that is divided vertically (along its V
     //     dimension) into this many equal-sized frames.
     R"(
-    float2 calculateWindingTextureUv(
+    float2 calculateStampingTextureUv(
         const float2 surfaceUv,
         const float particleAnimationOffset,
         const float textureAnimationProgress,

@@ -95,7 +95,7 @@ TEST(BrushTest, DecodeBrushProto) {
       paint_proto->add_texture_layers();
   texture_layer_proto_1->set_client_texture_id(std::string(kTestTextureId1));
   texture_layer_proto_1->set_mapping(
-      proto::BrushPaint::TextureLayer::MAPPING_WINDING);
+      proto::BrushPaint::TextureLayer::MAPPING_STAMPING);
   texture_layer_proto_1->set_origin(
       proto::BrushPaint::TextureLayer::ORIGIN_FIRST_STROKE_INPUT);
   texture_layer_proto_1->set_size_unit(
@@ -108,7 +108,7 @@ TEST(BrushTest, DecodeBrushProto) {
       paint_proto->add_texture_layers();
   texture_layer_proto_2->set_client_texture_id(std::string(kTestTextureId2));
   texture_layer_proto_2->set_mapping(
-      proto::BrushPaint::TextureLayer::MAPPING_WINDING);
+      proto::BrushPaint::TextureLayer::MAPPING_STAMPING);
   texture_layer_proto_2->set_origin(
       proto::BrushPaint::TextureLayer::ORIGIN_FIRST_STROKE_INPUT);
   texture_layer_proto_2->set_size_unit(
@@ -121,7 +121,7 @@ TEST(BrushTest, DecodeBrushProto) {
       paint_proto->add_texture_layers();
   texture_layer_proto_3->set_client_texture_id(std::string(kTestTextureId1));
   texture_layer_proto_3->set_mapping(
-      proto::BrushPaint::TextureLayer::MAPPING_WINDING);
+      proto::BrushPaint::TextureLayer::MAPPING_STAMPING);
   texture_layer_proto_3->set_origin(
       proto::BrushPaint::TextureLayer::ORIGIN_FIRST_STROKE_INPUT);
   texture_layer_proto_3->set_size_unit(
@@ -136,19 +136,19 @@ TEST(BrushTest, DecodeBrushProto) {
       BrushTip{.corner_rounding = 0.5f},
       {.texture_layers = {
            {.client_texture_id = std::string(kTestTextureId1Decoded),
-            .mapping = BrushPaint::TextureMapping::kWinding,
+            .mapping = BrushPaint::TextureMapping::kStamping,
             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
             .size = {10, 15},
             .blend_mode = BrushPaint::BlendMode::kDstOut},
            {.client_texture_id = std::string(kTestTextureId2Decoded),
-            .mapping = BrushPaint::TextureMapping::kWinding,
+            .mapping = BrushPaint::TextureMapping::kStamping,
             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
             .size = {4, 10},
             .blend_mode = BrushPaint::BlendMode::kDstOut},
            {.client_texture_id = std::string(kTestTextureId1Decoded),
-            .mapping = BrushPaint::TextureMapping::kWinding,
+            .mapping = BrushPaint::TextureMapping::kStamping,
             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
             .size = {1, 2},
@@ -352,7 +352,7 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
           .particle_gap_duration = Duration32::Seconds(2),
       },
       {.texture_layers = {{.client_texture_id = std::string(kTestTextureId1),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
+                           .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .wrap_y = BrushPaint::TextureWrap::kMirror,
                            .size = {10, 15},
@@ -394,7 +394,7 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   proto::BrushPaint::TextureLayer* layer_proto =
       coat_proto->mutable_paint()->add_texture_layers();
   layer_proto->set_client_texture_id("test-texture-one");
-  layer_proto->set_mapping(proto::BrushPaint::TextureLayer::MAPPING_WINDING);
+  layer_proto->set_mapping(proto::BrushPaint::TextureLayer::MAPPING_STAMPING);
   layer_proto->set_origin(
       proto::BrushPaint::TextureLayer::ORIGIN_STROKE_SPACE_ORIGIN);
   layer_proto->set_size_x(10);
@@ -423,7 +423,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
           .particle_gap_duration = Duration32::Seconds(2),
       },
       {.texture_layers = {{.client_texture_id = std::string(kTestTextureId1),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
+                           .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .wrap_y = BrushPaint::TextureWrap::kMirror,
                            .size = {10, 15},
@@ -476,7 +476,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
       paint_proto->add_texture_layers();
   texture_layer_proto->set_client_texture_id(kTestTextureId1);
   texture_layer_proto->set_mapping(
-      proto::BrushPaint::TextureLayer::MAPPING_WINDING);
+      proto::BrushPaint::TextureLayer::MAPPING_STAMPING);
   texture_layer_proto->set_origin(
       proto::BrushPaint::TextureLayer::ORIGIN_STROKE_SPACE_ORIGIN);
   texture_layer_proto->set_size_x(10);
@@ -503,19 +503,19 @@ TEST(BrushTest, EncodeBrushFamilyTextureMap) {
           .opacity_multiplier = 0.7f,
       },
       {.texture_layers = {{.client_texture_id = std::string(kTestTextureId1),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
+                           .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .wrap_y = BrushPaint::TextureWrap::kMirror,
                            .size = {10, 15},
                            .blend_mode = BrushPaint::BlendMode::kSrcIn},
                           {.client_texture_id = std::string(kTestTextureId2),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
+                           .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .wrap_y = BrushPaint::TextureWrap::kMirror,
                            .size = {10, 15},
                            .blend_mode = BrushPaint::BlendMode::kSrcIn},
                           {.client_texture_id = "unknown",
-                           .mapping = BrushPaint::TextureMapping::kWinding,
+                           .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .wrap_y = BrushPaint::TextureWrap::kMirror,
                            .size = {10, 15},
@@ -572,7 +572,7 @@ TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.25f},
       {.texture_layers = {{.client_texture_id = std::string(kTestTextureId1),
-                           .mapping = BrushPaint::TextureMapping::kWinding,
+                           .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {10, 15}}}});
   ASSERT_EQ(family.status(), absl::OkStatus());
