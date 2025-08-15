@@ -49,7 +49,7 @@ static jmethodID method_box_accumulator_reset = nullptr;
 static jmethodID method_box_accumulator_populate_from = nullptr;
 
 static jclass class_immutable_parallelogram = nullptr;
-static jmethodID method_immutable_parallelogram_from_center_dim_rot_shear =
+static jmethodID method_immutable_parallelogram_from_center_dim_rot_skew =
     nullptr;
 
 static jclass class_mutable_parallelogram = nullptr;
@@ -129,7 +129,7 @@ void UnloadJvmInterface(JNIEnv* env) {
   method_box_accumulator_populate_from = nullptr;
 
   DeleteCachedClass(env, class_immutable_parallelogram);
-  method_immutable_parallelogram_from_center_dim_rot_shear = nullptr;
+  method_immutable_parallelogram_from_center_dim_rot_skew = nullptr;
 
   DeleteCachedClass(env, class_mutable_parallelogram);
   method_mutable_parallelogram_set_center_dim_rot_shear = nullptr;
@@ -310,17 +310,16 @@ jclass ClassImmutableParallelogram(JNIEnv* env) {
   return class_immutable_parallelogram;
 }
 
-jmethodID MethodImmutableParallelogramFromCenterDimensionsRotationAndShear(
+jmethodID MethodImmutableParallelogramFromCenterDimensionsRotationAndSkew(
     JNIEnv* env) {
-  if (method_immutable_parallelogram_from_center_dim_rot_shear == nullptr) {
-    method_immutable_parallelogram_from_center_dim_rot_shear =
-        GetStaticMethodId(env, ClassImmutableParallelogram(env),
-                          "fromCenterDimensionsRotationAndShear",
-                          "(L" INK_PACKAGE
-                          "/geometry/ImmutableVec;FFFF)L" INK_PACKAGE
-                          "/geometry/ImmutableParallelogram;");
+  if (method_immutable_parallelogram_from_center_dim_rot_skew == nullptr) {
+    method_immutable_parallelogram_from_center_dim_rot_skew = GetStaticMethodId(
+        env, ClassImmutableParallelogram(env),
+        "FromCenterDimensionsRotationAndSkew",
+        "(L" INK_PACKAGE "/geometry/ImmutableVec;FFFF)L" INK_PACKAGE
+        "/geometry/ImmutableParallelogram;");
   }
-  return method_immutable_parallelogram_from_center_dim_rot_shear;
+  return method_immutable_parallelogram_from_center_dim_rot_skew;
 }
 
 jclass ClassMutableParallelogram(JNIEnv* env) {
@@ -331,12 +330,12 @@ jclass ClassMutableParallelogram(JNIEnv* env) {
   return class_mutable_parallelogram;
 }
 
-jmethodID MethodMutableParallelogramSetCenterDimensionsRotationAndShear(
+jmethodID MethodMutableParallelogramSetCenterDimensionsRotationAndSkew(
     JNIEnv* env) {
   if (method_mutable_parallelogram_set_center_dim_rot_shear == nullptr) {
     method_mutable_parallelogram_set_center_dim_rot_shear =
         GetMethodId(env, ClassMutableParallelogram(env),
-                    "setCenterDimensionsRotationAndShear",
+                    "setCenterDimensionsRotationAndSkew",
                     "(FFFFFF)L" INK_PACKAGE "/geometry/MutableParallelogram;");
   }
   return method_mutable_parallelogram_set_center_dim_rot_shear;

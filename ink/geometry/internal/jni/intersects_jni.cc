@@ -77,7 +77,7 @@ JNI_METHOD(geometry, Intersection, jboolean, nativeVecParallelogramIntersects)
  jfloat parallelogram_width, jfloat parallelogram_height,
  jfloat parallelogram_angle_radian, jfloat parallelogram_shear_factor) {
   Point point{vec_x, vec_y};
-  Quad quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad quad = Quad::FromCenterDimensionsRotationAndSkew(
       Point{parallelogram_center_x, parallelogram_center_y},
       parallelogram_width, parallelogram_height,
       Angle::Radians(parallelogram_angle_radian), parallelogram_shear_factor);
@@ -129,7 +129,7 @@ JNI_METHOD(geometry, Intersection, jboolean,
  jfloat parallelogram_shear_factor) {
   Segment segment{{segment_start_x, segment_start_y},
                   {segment_end_x, segment_end_y}};
-  Quad quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad quad = Quad::FromCenterDimensionsRotationAndSkew(
       Point{parallelogram_center_x, parallelogram_center_y},
       parallelogram_width, parallelogram_height,
       Angle::Radians(parallelogram_angle_radian), parallelogram_shear_factor);
@@ -175,7 +175,7 @@ JNI_METHOD(geometry, Intersection, jboolean,
   Triangle triangle{{triangle_p0_x, triangle_p0_y},
                     {triangle_p1_x, triangle_p1_y},
                     {triangle_p2_x, triangle_p2_y}};
-  Quad quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad quad = Quad::FromCenterDimensionsRotationAndSkew(
       Point{parallelogram_center_x, parallelogram_center_y},
       parallelogram_width, parallelogram_height,
       Angle::Radians(parallelogram_angle_radian), parallelogram_shear_factor);
@@ -201,7 +201,7 @@ JNI_METHOD(geometry, Intersection, jboolean, nativeBoxParallelogramIntersects)
  jfloat parallelogram_shear_factor) {
   Rect rect =
       Rect::FromTwoPoints({box_x_min, box_y_min}, {box_x_max, box_y_max});
-  Quad quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad quad = Quad::FromCenterDimensionsRotationAndSkew(
       Point{parallelogram_center_x, parallelogram_center_y},
       parallelogram_width, parallelogram_height,
       Angle::Radians(parallelogram_angle_radian), parallelogram_shear_factor);
@@ -217,12 +217,12 @@ JNI_METHOD(geometry, Intersection, jboolean,
  jfloat parallelogram_2_center_y, jfloat parallelogram_2_width,
  jfloat parallelogram_2_height, jfloat parallelogram_2_angle_in_radian,
  jfloat parallelogram_2_shear_factor) {
-  Quad quad1 = Quad::FromCenterDimensionsRotationAndShear(
+  Quad quad1 = Quad::FromCenterDimensionsRotationAndSkew(
       Point{parallelogram_1_center_x, parallelogram_1_center_y},
       parallelogram_1_width, parallelogram_1_height,
       Angle::Radians(parallelogram_1_angle_in_radian),
       parallelogram_1_shear_factor);
-  Quad quad2 = Quad::FromCenterDimensionsRotationAndShear(
+  Quad quad2 = Quad::FromCenterDimensionsRotationAndSkew(
       Point{parallelogram_2_center_x, parallelogram_2_center_y},
       parallelogram_2_width, parallelogram_2_height,
       Angle::Radians(parallelogram_2_angle_in_radian),
@@ -327,7 +327,7 @@ JNI_METHOD(geometry, Intersection, jboolean,
  jfloat parallelogram_to_partitionedMesh_transform_d,
  jfloat parallelogram_to_partitionedMesh_transform_e,
  jfloat parallelogram_to_partitionedMesh_transform_f) {
-  Quad quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad quad = Quad::FromCenterDimensionsRotationAndSkew(
       Point{parallelogram_center_x, parallelogram_center_y},
       parallelogram_width, parallelogram_height,
       Angle::Radians(parallelogram_angle_radian), parallelogram_shear_factor);

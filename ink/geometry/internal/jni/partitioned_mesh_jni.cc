@@ -170,7 +170,7 @@ JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
  jfloat quad_to_partitionedMesh_transform_f) {
   const PartitionedMesh& partitioned_mesh =
       CastToPartitionedMesh(native_pointer);
-  Quad quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad quad = Quad::FromCenterDimensionsRotationAndSkew(
       Point{quad_center_x, quad_center_y}, quad_width, quad_height,
       Angle::Radians(quad_angle_radian), quad_shear_factor);
   AffineTransform transform(
@@ -259,7 +259,7 @@ JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
  jfloat quad_to_partitionedMesh_transform_f) {
   const PartitionedMesh& partitioned_mesh =
       CastToPartitionedMesh(native_pointer);
-  Quad quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad quad = Quad::FromCenterDimensionsRotationAndSkew(
       Point{quad_center_x, quad_center_y}, quad_width, quad_height,
       Angle::Radians(quad_angle_radian), quad_shear_factor);
   AffineTransform transform(

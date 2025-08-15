@@ -34,9 +34,8 @@ std::pair<Vec, Vec> Quad::SemiAxes() const {
     const float cos_rotation = Cos(rotation_);
     const float sin_rotation = Sin(rotation_);
     Vec axis_1 = Vec{.5f * width_ * cos_rotation, .5f * width_ * sin_rotation};
-    Vec axis_2 =
-        Vec{.5f * height_ * (shear_factor_ * cos_rotation - sin_rotation),
-            .5f * height_ * (shear_factor_ * sin_rotation + cos_rotation)};
+    Vec axis_2 = Vec{.5f * height_ * (skew_ * cos_rotation - sin_rotation),
+                     .5f * height_ * (skew_ * sin_rotation + cos_rotation)};
     semi_axes_ = std::make_pair(axis_1, axis_2);
   }
   return semi_axes_.value();
@@ -71,8 +70,8 @@ std::pair<Vec, Vec> UnitAxes(Quad q) {
   const float cos_rotation = Cos(q.Rotation());
   const float sin_rotation = Sin(q.Rotation());
   Vec axis_1 = Vec{cos_rotation, sin_rotation};
-  Vec axis_2 = Vec{q.ShearFactor() * cos_rotation - sin_rotation,
-                   q.ShearFactor() * sin_rotation + cos_rotation};
+  Vec axis_2 = Vec{q.Skew() * cos_rotation - sin_rotation,
+                   q.Skew() * sin_rotation + cos_rotation};
   return std::make_pair(axis_1, axis_2);
 }
 }  // namespace
@@ -84,7 +83,7 @@ void Quad::Join(Point point) {
   float u_cross_q = Vec::Determinant(unit_axes.first, q);
   float v_cross_q = Vec::Determinant(unit_axes.second, q);
   float new_width =
-      std::max(width_, .5f * width_ + abs(u_dot_q - shear_factor_ * u_cross_q));
+      std::max(width_, .5f * width_ + abs(u_dot_q - skew_ * u_cross_q));
   float new_height = std::copysign(1.f, height_) *
                      std::max(std::abs(height_),
                               .5f * std::abs(height_) + std::abs(u_cross_q));
@@ -103,7 +102,7 @@ bool Quad::Contains(Point point) const {
   float u_cross_q = Vec::Determinant(u, q);
   if (std::abs(u_cross_q) > .5f * std::abs(height_)) return false;
   float u_dot_q = Vec::DotProduct(u, q);
-  return std::abs(u_dot_q - shear_factor_ * u_cross_q) <= .5f * width_;
+  return std::abs(u_dot_q - skew_ * u_cross_q) <= .5f * width_;
 }
 
 }  // namespace ink

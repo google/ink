@@ -76,8 +76,7 @@ Quad AffineTransform::Apply(const Quad& q) const {
   std::pair<Vec, Vec> semi_axes = q.SemiAxes();
   Vec u = q.Width() == 0 ? Vec::FromDirectionAndMagnitude(q.Rotation(), 1)
                          : semi_axes.first;
-  Vec v =
-      q.Height() == 0 ? q.ShearFactor() * u + u.Orthogonal() : semi_axes.second;
+  Vec v = q.Height() == 0 ? q.Skew() * u + u.Orthogonal() : semi_axes.second;
   u = ApplyAffineTransformToVec(*this, u);
   v = ApplyAffineTransformToVec(*this, v);
 
@@ -92,7 +91,7 @@ Quad AffineTransform::Apply(const Quad& q) const {
   Angle new_rotation = u.Direction();
   float new_shear = u_cross_v == 0 ? 0 : u_dot_v / u_cross_v;
 
-  return Quad::FromCenterDimensionsRotationAndShear(
+  return Quad::FromCenterDimensionsRotationAndSkew(
       new_center, new_width, new_height, new_rotation, new_shear);
 }
 

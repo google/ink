@@ -1148,7 +1148,7 @@ TEST(PartitionedMeshTest, VisitIntersectedTrianglesQuadQuery) {
                   TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 5})));
   EXPECT_THAT(
       GetAllIntersectedTriangles(shape,
-                                 Quad::FromCenterDimensionsRotationAndShear(
+                                 Quad::FromCenterDimensionsRotationAndSkew(
                                      {1, .5}, .2, .5, Angle::Degrees(0), 2)),
       UnorderedElementsAre(
           TriangleIndexPairEq({.mesh_index = 0, .triangle_index = 0}),
@@ -1178,7 +1178,7 @@ TEST(PartitionedMeshTest, VisitIntersectedTrianglesQuadQueryMultipleMeshes) {
   ASSERT_EQ(shape.status(), absl::OkStatus());
 
   EXPECT_THAT(GetAllIntersectedTriangles(
-                  *shape, Quad::FromCenterDimensionsRotationAndShear(
+                  *shape, Quad::FromCenterDimensionsRotationAndSkew(
                               {5, 5}, 1, 2, Angle::Degrees(75), 1)),
               IsEmpty());
   EXPECT_THAT(GetAllIntersectedTriangles(

@@ -61,11 +61,11 @@ jmethodID MethodBoxAccumulatorReset(JNIEnv* env);
 jmethodID MethodBoxAccumulatorPopulateFrom(JNIEnv* env);
 
 jclass ClassImmutableParallelogram(JNIEnv* env);
-jmethodID MethodImmutableParallelogramFromCenterDimensionsRotationAndShear(
+jmethodID MethodImmutableParallelogramFromCenterDimensionsRotationAndSkew(
     JNIEnv* env);
 
 jclass ClassMutableParallelogram(JNIEnv* env);
-jmethodID MethodMutableParallelogramSetCenterDimensionsRotationAndShear(
+jmethodID MethodMutableParallelogramSetCenterDimensionsRotationAndSkew(
     JNIEnv* env);
 
 jclass ClassBrushNative(JNIEnv* env);

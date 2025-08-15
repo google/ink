@@ -552,7 +552,7 @@ TEST(DistanceTest, PointToRectDegenerateRect) {
 
 TEST(DistanceTest, PointToQuadEndpointClosest) {
   // Test Quad Corners: (-53,-33), (-43,-33), (-27,-17), (-37,-17)
-  Quad test_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad test_quad = Quad::FromCenterDimensionsRotationAndSkew(
       {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f);
 
   // The Point is closest to an endpoint of the Quad.
@@ -570,7 +570,7 @@ TEST(DistanceTest, PointToQuadEndpointClosest) {
 
 TEST(DistanceTest, PointToQuadSideClosest) {
   // Test Quad Corners: (-53,-33), (-43,-33), (-27,-17), (-37,-17)
-  Quad test_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad test_quad = Quad::FromCenterDimensionsRotationAndSkew(
       {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f);
 
   // The Point is closest to a Point along the side of the Quad.
@@ -590,7 +590,7 @@ TEST(DistanceTest, PointToQuadSideClosest) {
 
 TEST(DistanceTest, PointToQuadContained) {
   // Test Quad Corners: (-53,-33), (-43,-33), (-27,-17), (-37,-17)
-  Quad test_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad test_quad = Quad::FromCenterDimensionsRotationAndSkew(
       {-40.0f, -25.0f}, 10.0f, 16.0f, kFullTurn, 1.0f);
 
   // The Point is contained within the Quad.
@@ -601,7 +601,7 @@ TEST(DistanceTest, PointToQuadContained) {
 }
 
 TEST(DistanceTest, PointToQuadDegenerateQuad) {
-  Quad point_like_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad point_like_quad = Quad::FromCenterDimensionsRotationAndSkew(
       {-40.0f, -25.0f}, 0.0f, 0.0f, kFullTurn, 1.0f);
 
   // The Quad is Point-like.
@@ -612,7 +612,7 @@ TEST(DistanceTest, PointToQuadDegenerateQuad) {
   EXPECT_FLOAT_EQ(Distance(Point{-40.0f, -65.0f}, point_like_quad), 40.0f);
 
   // Test Quad Corners: (-35,-25), (-35,-25), (-45,-25), (-45,-25)
-  Quad segment_like_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad segment_like_quad = Quad::FromCenterDimensionsRotationAndSkew(
       {-40.0f, -25.0f}, 10.0f, 0.0f, kFullTurn, 1.0f);
   // The Quad is Segment-like.
   EXPECT_FLOAT_EQ(Distance(Point{-37.0f, -35.0f}, segment_like_quad), 10.0f);
@@ -807,7 +807,7 @@ TEST(DistanceTest,
 
 TEST(DistanceTest,
      SegmentToQuadReturnsCorrectValueWhenSegmentEndpointIsClosestToQuadEdge) {
-  Quad test_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad test_quad = Quad::FromCenterDimensionsRotationAndSkew(
       {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f);
 
   // Edge 0
@@ -825,7 +825,7 @@ TEST(DistanceTest,
 }
 
 TEST(DistanceTest, SegmentToQuadReturnsZeroWhenSegmentIsIntersectingQuad) {
-  Quad test_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad test_quad = Quad::FromCenterDimensionsRotationAndSkew(
       {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f);
 
   // Edge 0
@@ -843,34 +843,34 @@ TEST(DistanceTest,
      SegmentToQuadReturnsCorrectValueWhenOneOrBothObjectsAreDegenerate) {
   // Segment is point-like.
   EXPECT_FLOAT_EQ(Distance(Segment{{55.0f, -5.0f}, {55.0f, -5.0f}},
-                           Quad::FromCenterDimensionsRotationAndShear(
+                           Quad::FromCenterDimensionsRotationAndSkew(
                                {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)),
                   53.0f);
   EXPECT_FLOAT_EQ(Distance(Segment{{1.0f, -5.0f}, {1.0f, -5.0f}},
-                           Quad::FromCenterDimensionsRotationAndShear(
+                           Quad::FromCenterDimensionsRotationAndSkew(
                                {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)),
                   0.0f);
 
   // Quad is point-like.
   EXPECT_FLOAT_EQ(
       Distance(Segment{{55.0f, -15.0f}, {-25.0f, 40.0f}},
-               Quad::FromCenterDimensionsRotationAndShear(
+               Quad::FromCenterDimensionsRotationAndSkew(
                    {65.0f, -15.0f}, 0.0f, 0.0f, kQuarterTurn, 2.0f)),
       10.0f);
   EXPECT_FLOAT_EQ(Distance(Segment{{55.0f, -15.0f}, {-25.0f, 65.0f}},
-                           Quad::FromCenterDimensionsRotationAndShear(
+                           Quad::FromCenterDimensionsRotationAndSkew(
                                {15.0f, 25.0f}, 0.0f, 0.0f, kQuarterTurn, 2.0f)),
                   0.0f);
 
   // Both are point-like.
   EXPECT_FLOAT_EQ(
       Distance(Segment{{55.0f, -15.0f}, {55.0f, -15.0f}},
-               Quad::FromCenterDimensionsRotationAndShear(
+               Quad::FromCenterDimensionsRotationAndSkew(
                    {45.0f, -15.0f}, 0.0f, 0.0f, kQuarterTurn, 2.0f)),
       10.0f);
   EXPECT_FLOAT_EQ(
       Distance(Segment{{55.0f, -15.0f}, {55.0f, -15.0f}},
-               Quad::FromCenterDimensionsRotationAndShear(
+               Quad::FromCenterDimensionsRotationAndSkew(
                    {55.0f, -15.0f}, 0.0f, 0.0f, kQuarterTurn, 2.0f)),
       0.0f);
 }
@@ -1031,7 +1031,7 @@ TEST(DistanceTest,
 TEST(DistanceTest,
      TriangleToQuadReturnsCorrectValueWhenQuadEndpointIsClosestToTriangleEdge) {
   // Test Quad Corners: (2, -14), (2, 6), (-2, 14), (-2, -6),
-  Quad test_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad test_quad = Quad::FromCenterDimensionsRotationAndSkew(
       /*center=*/{0.0f, 0.0f}, /*width=*/20.0f, /*height=*/4.0f,
       /*rotation=*/kQuarterTurn, /*shear=*/2.0f);
 
@@ -1069,7 +1069,7 @@ TEST(DistanceTest,
 TEST(DistanceTest,
      TriangleToQuadReturnsZeroWhenTriangleAndQuadAreIntersecting) {
   // Test Quad Corners: (2, -14), (2, 6), (-2, 14), (-2, -6),
-  Quad test_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad test_quad = Quad::FromCenterDimensionsRotationAndSkew(
       /*center=*/{0.0f, 0.0f}, /*width=*/20.0f, /*height=*/4.0f,
       /*rotation=*/kQuarterTurn, /*shear=*/2.0f);
 
@@ -1095,35 +1095,35 @@ TEST(DistanceTest,
   // Triangle is point-like.
   EXPECT_FLOAT_EQ(
       Distance(Triangle{{10.0f, 1.0f}, {10.0f, 1.0f}, {10.0f, 1.0f}},
-               Quad::FromCenterDimensionsRotationAndShear(
+               Quad::FromCenterDimensionsRotationAndSkew(
                    {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)),
       8.0f);
   EXPECT_FLOAT_EQ(Distance(Triangle{{1.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 1.0f}},
-                           Quad::FromCenterDimensionsRotationAndShear(
+                           Quad::FromCenterDimensionsRotationAndSkew(
                                {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)),
                   0.0f);
 
   // Quad is point-like.
   EXPECT_FLOAT_EQ(
       Distance(Triangle{{-10.0f, 40.0f}, {40.0f, -10.0f}, {-10.0f, -10.0f}},
-               Quad::FromCenterDimensionsRotationAndShear(
+               Quad::FromCenterDimensionsRotationAndSkew(
                    {50.0f, -10.0f}, 0.0f, 0.0f, kQuarterTurn, 0.0f)),
       10.0f);
   EXPECT_FLOAT_EQ(
       Distance(Triangle{{-10.0f, 40.0f}, {40.0f, -10.0f}, {-10.0f, -10.0f}},
-               Quad::FromCenterDimensionsRotationAndShear(
+               Quad::FromCenterDimensionsRotationAndSkew(
                    {20.0f, 0.0f}, 0.0f, 0.0f, kQuarterTurn, 0.0f)),
       0.0f);
 
   // Both are point-like.
   EXPECT_FLOAT_EQ(
       Distance(Triangle{{10.0f, 10.0f}, {10.0f, 10.0f}, {10.0f, 10.0f}},
-               Quad::FromCenterDimensionsRotationAndShear(
+               Quad::FromCenterDimensionsRotationAndSkew(
                    {50.0f, 10.0f}, 0.0f, 0.0f, kQuarterTurn, 0.0f)),
       40.0f);
   EXPECT_FLOAT_EQ(
       Distance(Triangle{{10.0f, 10.0f}, {10.0f, 10.0f}, {10.0f, 10.0f}},
-               Quad::FromCenterDimensionsRotationAndShear(
+               Quad::FromCenterDimensionsRotationAndSkew(
                    {10.0f, 10.0f}, 0.0f, 0.0f, kQuarterTurn, 0.0f)),
       0.0f);
 }
@@ -1220,7 +1220,7 @@ TEST(DistanceTest,
 TEST(DistanceTest,
      RectToQuadReturnsCorrectValueWhenQuadEndpointIsClosestToRectEdge) {
   // Test Quad Corners: (2, -14), (2, 6), (-2, 14), (-2, -6),
-  Quad test_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad test_quad = Quad::FromCenterDimensionsRotationAndSkew(
       /*center=*/{0.0f, 0.0f}, /*width=*/20.0f, /*height=*/4.0f,
       /*rotation=*/kQuarterTurn, /*shear=*/2.0f);
 
@@ -1258,7 +1258,7 @@ TEST(DistanceTest,
 
 TEST(DistanceTest, RectToQuadReturnsZeroWhenRectAndQuadAreIntersecting) {
   // Test Quad Corners: (2, -14), (2, 6), (-2, 14), (-2, -6),
-  Quad test_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad test_quad = Quad::FromCenterDimensionsRotationAndSkew(
       /*center=*/{0.0f, 0.0f}, /*width=*/20.0f, /*height=*/4.0f,
       /*rotation=*/kQuarterTurn, /*shear=*/2.0f);
 
@@ -1280,32 +1280,32 @@ TEST(DistanceTest,
      RectToQuadReturnsCorrectValueWhenOneOrBothObjectsAreDegenerate) {
   // Rect is point-like.
   EXPECT_FLOAT_EQ(Distance(Rect::FromTwoPoints({-10.0f, 2.0f}, {-10.0f, 2.0f}),
-                           Quad::FromCenterDimensionsRotationAndShear(
+                           Quad::FromCenterDimensionsRotationAndSkew(
                                {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)),
                   8.0f);
   EXPECT_FLOAT_EQ(Distance(Rect::FromTwoPoints({1.0f, 2.0f}, {1.0f, 2.0f}),
-                           Quad::FromCenterDimensionsRotationAndShear(
+                           Quad::FromCenterDimensionsRotationAndSkew(
                                {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)),
                   0.0f);
 
   // Quad is point-like.
   EXPECT_FLOAT_EQ(Distance(Rect::FromTwoPoints({-20.0f, -2.0f}, {-10.0f, 2.0f}),
-                           Quad::FromCenterDimensionsRotationAndShear(
+                           Quad::FromCenterDimensionsRotationAndSkew(
                                {-30.0f, 1.0f}, 0.0f, 0.0f, kQuarterTurn, 0.0f)),
                   10.0f);
   EXPECT_FLOAT_EQ(
       Distance(Rect::FromTwoPoints({-20.0f, -2.0f}, {-10.0f, 2.0f}),
-               Quad::FromCenterDimensionsRotationAndShear(
+               Quad::FromCenterDimensionsRotationAndSkew(
                    {-15.0f, -1.0f}, 0.0f, 0.0f, kQuarterTurn, 0.0f)),
       0.0f);
 
   // Both are point-like.
   EXPECT_FLOAT_EQ(Distance(Rect::FromTwoPoints({-10.0f, 2.0f}, {-10.0f, 2.0f}),
-                           Quad::FromCenterDimensionsRotationAndShear(
+                           Quad::FromCenterDimensionsRotationAndSkew(
                                {50.0f, 2.0f}, 0.0f, 0.0f, kQuarterTurn, 0.0f)),
                   60.0f);
   EXPECT_FLOAT_EQ(Distance(Rect::FromTwoPoints({-10.0f, 2.0f}, {-10.0f, 2.0f}),
-                           Quad::FromCenterDimensionsRotationAndShear(
+                           Quad::FromCenterDimensionsRotationAndSkew(
                                {-10.0f, 2.0f}, 0.0f, 0.0f, kQuarterTurn, 0.0f)),
                   0.0f);
 }
@@ -1313,7 +1313,7 @@ TEST(DistanceTest,
 TEST(DistanceTest,
      QuadToQuadReturnsCorrectValueWhenQuadEdgeIsClosestToQuadEdge) {
   // Test Quad Corners: (2, -14), (2, 6), (-2, 14), (-2, -6),
-  Quad test_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad test_quad = Quad::FromCenterDimensionsRotationAndSkew(
       /*center=*/{0.0f, 0.0f}, /*width=*/20.0f, /*height=*/4.0f,
       /*rotation=*/kQuarterTurn, /*shear=*/2.0f);
 
@@ -1321,37 +1321,37 @@ TEST(DistanceTest,
   // is being calculated. Arguments are flipped to verify order independence.
   // Edge 0
   EXPECT_FLOAT_EQ(
-      Distance(test_quad, Quad::FromCenterDimensionsRotationAndShear(
+      Distance(test_quad, Quad::FromCenterDimensionsRotationAndSkew(
                               {23.0f, 12.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)),
       8.0f);
-  EXPECT_FLOAT_EQ(Distance(Quad::FromCenterDimensionsRotationAndShear(
+  EXPECT_FLOAT_EQ(Distance(Quad::FromCenterDimensionsRotationAndSkew(
                                {23.0f, 12.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                            test_quad),
                   8.0f);
   // Edge 1
   EXPECT_FLOAT_EQ(
-      Distance(test_quad, Quad::FromCenterDimensionsRotationAndShear(
+      Distance(test_quad, Quad::FromCenterDimensionsRotationAndSkew(
                               {11.0f, 28.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)),
       6.0f);
-  EXPECT_FLOAT_EQ(Distance(Quad::FromCenterDimensionsRotationAndShear(
+  EXPECT_FLOAT_EQ(Distance(Quad::FromCenterDimensionsRotationAndSkew(
                                {11.0f, 28.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                            test_quad),
                   6.0f);
   // Edge 2
   EXPECT_FLOAT_EQ(
-      Distance(test_quad, Quad::FromCenterDimensionsRotationAndShear(
+      Distance(test_quad, Quad::FromCenterDimensionsRotationAndSkew(
                               {-33.0f, -8.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)),
       18.0f);
-  EXPECT_FLOAT_EQ(Distance(Quad::FromCenterDimensionsRotationAndShear(
+  EXPECT_FLOAT_EQ(Distance(Quad::FromCenterDimensionsRotationAndSkew(
                                {-33.0f, -8.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                            test_quad),
                   18.0f);
   // Edge 3
   EXPECT_FLOAT_EQ(
-      Distance(test_quad, Quad::FromCenterDimensionsRotationAndShear(
+      Distance(test_quad, Quad::FromCenterDimensionsRotationAndSkew(
                               {-11.0f, -38.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)),
       16.0f);
-  EXPECT_FLOAT_EQ(Distance(Quad::FromCenterDimensionsRotationAndShear(
+  EXPECT_FLOAT_EQ(Distance(Quad::FromCenterDimensionsRotationAndSkew(
                                {-11.0f, -38.0f}, 10.0f, 16.0f, kFullTurn, 1.0f),
                            test_quad),
                   16.0f);
@@ -1359,23 +1359,23 @@ TEST(DistanceTest,
 
 TEST(DistanceTest, QuadToQuadReturnsZeroWhenTheQuadsAreIntersecting) {
   // Test Quad Corners: (2, -14), (2, 6), (-2, 14), (-2, -6),
-  Quad test_quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad test_quad = Quad::FromCenterDimensionsRotationAndSkew(
       /*center=*/{0.0f, 0.0f}, /*width=*/20.0f, /*height=*/4.0f,
       /*rotation=*/kQuarterTurn, /*shear=*/2.0f);
 
   // Edge 0
   EXPECT_FLOAT_EQ(
-      Distance(test_quad, Quad::FromCenterDimensionsRotationAndShear(
+      Distance(test_quad, Quad::FromCenterDimensionsRotationAndSkew(
                               {13.0f, 12.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)),
       0.0f);
   // Edge 3
   EXPECT_FLOAT_EQ(
-      Distance(test_quad, Quad::FromCenterDimensionsRotationAndShear(
+      Distance(test_quad, Quad::FromCenterDimensionsRotationAndSkew(
                               {-13.0f, -15.0f}, 10.0f, 16.0f, kFullTurn, 1.0f)),
       0.0f);
   // Contained
   EXPECT_FLOAT_EQ(
-      Distance(test_quad, Quad::FromCenterDimensionsRotationAndShear(
+      Distance(test_quad, Quad::FromCenterDimensionsRotationAndSkew(
                               {0.1f, -1.0f}, 0.5f, 1.0f, kFullTurn, 0.2f)),
       0.0f);
 }
@@ -1385,22 +1385,22 @@ TEST(DistanceTest,
   // One Quad is point-like.
   EXPECT_FLOAT_EQ(
       Distance(Quad::FromCenterAndDimensions({9.0f, 3.0f}, 0.0f, 0.0f),
-               Quad::FromCenterDimensionsRotationAndShear(
+               Quad::FromCenterDimensionsRotationAndSkew(
                    {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)),
       7.0f);
   EXPECT_FLOAT_EQ(
       Distance(Quad::FromCenterAndDimensions({1.0f, 3.0f}, 0.0f, 0.0f),
-               Quad::FromCenterDimensionsRotationAndShear(
+               Quad::FromCenterDimensionsRotationAndSkew(
                    {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f)),
       0.0f);
   // Arguments are flipped to verify order independence.
   EXPECT_FLOAT_EQ(
-      Distance(Quad::FromCenterDimensionsRotationAndShear(
+      Distance(Quad::FromCenterDimensionsRotationAndSkew(
                    {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                Quad::FromCenterAndDimensions({9.0f, 3.0f}, 0.0f, 0.0f)),
       7.0f);
   EXPECT_FLOAT_EQ(
-      Distance(Quad::FromCenterDimensionsRotationAndShear(
+      Distance(Quad::FromCenterDimensionsRotationAndSkew(
                    {0.0f, 0.0f}, 20.0f, 4.0f, kQuarterTurn, 2.0f),
                Quad::FromCenterAndDimensions({1.0f, 3.0f}, 0.0f, 0.0f)),
       0.0f);

@@ -29,60 +29,66 @@
 namespace ink {
 
 // This class represents a quadrilateral with parallel sides (i.e. a
-// parallelogram), defined by its center, width, height, rotation, and shear
-// factor.
+// parallelogram), defined by its center, width, height, rotation, and skew.
 //
-// A Quad's parameters are used to define a pair of vector semi-axes:
-//   u = {.5 * w * cos(θ), .5 * w * sin(θ)}
-//   v = {.5 * h * (s * cos(θ) - sin(θ)),
-//        .5 * h * (s * sin(θ) + cos(θ))}
-// where `w` is the width, `h` is the height, `s` is the shear factor and `θ` is
-// the angle of rotation. From the semi-axes, we define the shape of the Quad as
-// the set of all points c + 𝛼 * u + 𝛽 * v, where `c` is the center, and `𝛼` and
-// `𝛽` are real numbers in the interval [-1, 1].
+// The shape of the Quad with width `w`, height `h`, and skew `s` is this before
+// rotation:
 //
-// A Quad may have a positive or negative height; a positive height indicates
-// that the angle from the first semi-axis to the second will also be positive.
-//
-// A Quad may have a positive or negative shear factor; a positive shear factor
-// indicates a smaller absolute angle between the semi-axes (the shear factor
-// is, in fact, the cotangent of that angle). A Quad may *not* have a negative
-// width. If an operation on a Quad would result in a negative width, it is
-// instead normalized, by negating both the width and the height, adding π to
-// the angle of rotation, and normalizing rotation to the range [0, 2π).
-//
-// A Quad may also be degenerate; that is, its width or height, or both, may be
-// zero. Degenerate `Quad`s may still have a non-zero rotation and/or shear
-// factor. A `Quad` that has both width and height of zero is effectively a
-// point, and so rotation and shear factor do not affect the values of the axes
-// or corners. A `Quad` that has either width or height of zero (but not both)
-// is effectively a line segment, and so is similarly unaffected by shear
-// factor.
-//
-// More intuitively, you can think of the shape of the Quad, before taking the
-// center and rotation into account, like this:
 //        s*h
-//      |------|__________
+//      |------|__________  Displaced horizontal edge
 //     ⎡       /         /
 //     ⎢      /         /
 //     ⎢     /         /
 //   h ⎢    /         /
 //     ⎢   /         /
 //     ⎢  /         /
-//     ⎣ /_________/
+//     ⎣ /_________/  Undisplaced horizontal edge
 //       |---------|
 //            w
-// Where `w` is the width, `h` is the height, and `s` is the shear factor. You
-// then rotate, and translate such that the center is in the correct position.
 //
-// Note that rectangles and axis-aligned boundings boxes may be represented as
-// special cases of Quads; a rectangle is a Quad with a shear factor of zero,
-// and an axis-aligned bounding box is a Quad with both a shear factor and a
-// rotation of zero.
+// The quad is then translated so that its center is in the correct position and
+// rotated by rotation `θ`.
+//
+// A Quad's parameters are used to define a pair of vector semi-axes:
+//   u = {.5 * w * cos(θ), .5 * w * sin(θ)}
+//   v = {.5 * h * (s * cos(θ) - sin(θ)),
+//        .5 * h * (s * sin(θ) + cos(θ))}
+// where `w` is the width, `h` is the height, `s` is the skew and `θ` is
+// the angle of rotation. From the semi-axes, we define the shape of the Quad as
+// the set of all points c + 𝛼 * u + 𝛽 * v, where `c` is the center, and `𝛼` and
+// `𝛽` are real numbers in the interval [-1, 1].
+//
+// A Quad may have a positive or negative height. One of the two horizontal
+// edges before rotation is vertically displaced by height from the other. The
+// sign of the height corresponds to the sign of the angle between the two
+// semi-axes.
+//
+// A Quad may have a positive or negative skew (aka shear). The horizontal edge
+// before rotation that is displaced vertically by height is also displaced
+// horizontally by skew times height. The skew can be positive or negative, a
+// positive skew corresponds to a smaller absolute angle between the two
+// semi-axes. The skew is equal to the cotangent of the absolute angle between
+// the two semi-axes.
+//
+// A Quad may *not* have a negative width. If an operation on a Quad would
+// result in a negative width, it is instead normalized, by negating both the
+// width and the height, adding π to the angle of rotation, and normalizing
+// rotation to the range [0, 2π).
+//
+// A Quad may also be degenerate; that is, its width or height, or both, may be
+// zero. Degenerate `Quad`s may still have a non-zero rotation and/or skew. A
+// `Quad` that has both width and height of zero is effectively a point, and so
+// rotation and skew do not affect the values of the axes or corners. A `Quad`
+// that has height of zero is effectively a horizontal line, and so is
+// unaffected by skew.
+//
+// Note that rectangles and axis-aligned bounding boxes may be represented as
+// special cases of Quads; a rectangle is a Quad with a skew of zero, and an
+// axis-aligned bounding box is a Quad with both a skew and a rotation of zero.
 class Quad {
  public:
   // Constructs a Quad centered on the origin, with zero width, height,
-  // rotation, and shear factor.
+  // rotation, and skew.
   Quad();
 
   // Constructs a Quad with the specified parameters, setting unspecified
@@ -95,10 +101,10 @@ class Quad {
                                               float height, Angle rotation) {
     return Quad(center, width, height, rotation, 0);
   }
-  static Quad FromCenterDimensionsRotationAndShear(Point center, float width,
-                                                   float height, Angle rotation,
-                                                   float shear_factor) {
-    return Quad(center, width, height, rotation, shear_factor);
+  static Quad FromCenterDimensionsRotationAndSkew(Point center, float width,
+                                                  float height, Angle rotation,
+                                                  float skew) {
+    return Quad(center, width, height, rotation, skew);
   }
 
   // Constructs a Quad that is equivalent to the given Rect.
@@ -129,24 +135,24 @@ class Quad {
   Angle Rotation() const;
   void SetRotation(Angle rotation);
 
-  // Accessors for the shear factor of the Quad.
-  float ShearFactor() const;
-  void SetShearFactor(float shear_factor);
+  // Accessors for the skew of the Quad.
+  float Skew() const;
+  void SetSkew(float skew);
 
   // Returns the semi-axes of the Quad.
   std::pair<Vec, Vec> SemiAxes() const;
 
   // Returns true if the Quad is a rectangle, i.e. if its corners form right
   // angles. This is equivalent to:
-  //   p.ShearFactor() == 0;
-  // Note that only the shear factor determines the return value, even for
+  //   p.Skew() == 0;
+  // Note that only the skew determines the return value, even for
   // degenerate Quads.
-  bool IsRectangular() const { return shear_factor_ == 0; }
+  bool IsRectangular() const { return skew_ == 0; }
 
   // Returns true if the Quad is an axis-aligned rectangle, i.e. if its corners
   // form right angles and its sides are parallel to the x- and y-axes. Due to
   // floating point precision loss, this takes a tolerance value for checking
-  // the rotation of Quad. Note that only the shear factor and rotation angle
+  // the rotation of Quad. Note that only the skew and rotation angle
   // determine the return value, even for degenerate Quads.
   bool IsAxisAligned(Angle tolerance = Angle::Radians(1e-5)) const {
     return IsRectangular() &&
@@ -177,7 +183,7 @@ class Quad {
   Segment GetEdge(int index) const;
 
   // Expands the Quad such that it contains the given Point, without altering
-  // the rotation or shear factor.
+  // the rotation or skew.
   void Join(Point point);
 
   // Returns whether the given Point is contained within the Quad.
@@ -185,9 +191,9 @@ class Quad {
 
  private:
   constexpr Quad(Point center, float width, float height, Angle rotation,
-                 float shear_factor) {
+                 float skew) {
     center_ = center;
-    shear_factor_ = shear_factor;
+    skew_ = skew;
     width_ = width;
     height_ = height;
     rotation_ = rotation.Normalized();
@@ -206,7 +212,7 @@ class Quad {
   float width_ = 0;
   float height_ = 0;
   Angle rotation_ = Angle::Radians(0);
-  float shear_factor_ = 0;
+  float skew_ = 0;
   mutable std::optional<std::pair<Vec, Vec>> semi_axes_;
 };
 
@@ -221,7 +227,7 @@ inline Point Quad::Center() const { return center_; }
 inline float Quad::Width() const { return width_; }
 inline float Quad::Height() const { return height_; }
 inline Angle Quad::Rotation() const { return rotation_; }
-inline float Quad::ShearFactor() const { return shear_factor_; }
+inline float Quad::Skew() const { return skew_; }
 
 inline void Quad::SetCenter(Point center) { center_ = center; }
 inline void Quad::SetHeight(float height) {
@@ -238,12 +244,12 @@ inline void Quad::SetRotation(Angle rotation) {
   semi_axes_.reset();
   rotation_ = rotation.Normalized();
 }
-inline void Quad::SetShearFactor(float shear_factor) {
-  if (shear_factor == shear_factor_) {
+inline void Quad::SetSkew(float skew) {
+  if (skew == skew_) {
     return;
   }
   semi_axes_.reset();
-  shear_factor_ = shear_factor;
+  skew_ = skew;
 }
 inline void Quad::SetWidth(float width) {
   if (width == width_) {
@@ -257,7 +263,7 @@ inline void Quad::SetWidth(float width) {
 inline bool operator==(const Quad& lhs, const Quad& rhs) {
   return lhs.Center() == rhs.Center() && lhs.Width() == rhs.Width() &&
          lhs.Height() == rhs.Height() && lhs.Rotation() == rhs.Rotation() &&
-         lhs.ShearFactor() == rhs.ShearFactor();
+         lhs.Skew() == rhs.Skew();
 }
 
 inline bool operator!=(const Quad& lhs, const Quad& rhs) {

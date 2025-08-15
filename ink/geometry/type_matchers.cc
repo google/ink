@@ -186,8 +186,7 @@ MATCHER_P(QuadEqMatcher, expected,
             Property("width", &Quad::Width, FloatEq(expected.Width())),
             Property("height", &Quad::Height, FloatEq(expected.Height())),
             Property("rotation", &Quad::Rotation, AngleEq(expected.Rotation())),
-            Property("shear factor", &Quad::ShearFactor,
-                     FloatEq(expected.ShearFactor()))),
+            Property("skew", &Quad::Skew, FloatEq(expected.Skew()))),
       arg, result_listener);
 }
 
@@ -197,16 +196,16 @@ MATCHER_P2(QuadNearMatcher, expected, tolerance,
                         " Quad (expected: ", PrintToString(expected),
                         ", tolerance: ", PrintToString(tolerance), ")")) {
   return ExplainMatchResult(
-      AllOf(Property("center", &Quad::Center,
-                     PointNear(expected.Center(), tolerance)),
-            Property("width", &Quad::Width,
-                     FloatNear(expected.Width(), tolerance)),
-            Property("height", &Quad::Height,
-                     FloatNear(expected.Height(), tolerance)),
-            Property("rotation", &Quad::Rotation,
-                     AngleNear(expected.Rotation(), tolerance)),
-            Property("shear factor", &Quad::ShearFactor,
-                     FloatNear(expected.ShearFactor(), tolerance))),
+      AllOf(
+          Property("center", &Quad::Center,
+                   PointNear(expected.Center(), tolerance)),
+          Property("width", &Quad::Width,
+                   FloatNear(expected.Width(), tolerance)),
+          Property("height", &Quad::Height,
+                   FloatNear(expected.Height(), tolerance)),
+          Property("rotation", &Quad::Rotation,
+                   AngleNear(expected.Rotation(), tolerance)),
+          Property("skew", &Quad::Skew, FloatNear(expected.Skew(), tolerance))),
       arg, result_listener);
 }
 

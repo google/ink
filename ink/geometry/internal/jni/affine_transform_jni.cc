@@ -45,7 +45,7 @@ JNI_METHOD(geometry, AffineTransformNative, jobject,
       AffineTransform(affine_transform_A, affine_transform_B,
                       affine_transform_C, affine_transform_D,
                       affine_transform_E, affine_transform_F)
-          .Apply(Quad::FromCenterDimensionsRotationAndShear(
+          .Apply(Quad::FromCenterDimensionsRotationAndSkew(
               {.x = quad_center_x, .y = quad_center_y}, quad_width, quad_height,
               Angle::Radians(quad_rotation), quad_shear_factor)));
 }
@@ -63,7 +63,7 @@ JNI_METHOD(geometry, AffineTransformNative, void,
       AffineTransform(affine_transform_A, affine_transform_B,
                       affine_transform_C, affine_transform_D,
                       affine_transform_E, affine_transform_F)
-          .Apply(Quad::FromCenterDimensionsRotationAndShear(
+          .Apply(Quad::FromCenterDimensionsRotationAndSkew(
               {.x = quad_center_x, .y = quad_center_y}, quad_width, quad_height,
               Angle::Radians(quad_rotation), quad_shear_factor)),
       mutable_quad);

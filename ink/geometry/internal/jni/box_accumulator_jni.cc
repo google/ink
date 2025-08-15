@@ -93,7 +93,7 @@ JNI_METHOD(geometry, BoxAccumulatorNative, void, addParallelogram)
   Envelope envelope = BuildEnvelopeFromBounds(
       envelope_has_bounds, envelope_bounds_x_min, envelope_bounds_y_min,
       envelope_bounds_x_max, envelope_bounds_y_max);
-  Quad quad = Quad::FromCenterDimensionsRotationAndShear(
+  Quad quad = Quad::FromCenterDimensionsRotationAndSkew(
       Point{quad_center_x, quad_center_y}, quad_width, quad_height,
       Angle::Radians(quad_angle_radian), quad_shear_factor);
   envelope.Add(quad);
