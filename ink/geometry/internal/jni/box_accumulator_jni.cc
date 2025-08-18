@@ -128,4 +128,5 @@ JNI_METHOD(geometry, BoxAccumulatorNative, void, addOptionalBox)
   envelope.Add(rect);
   FillJBoxAccumulatorOrThrow(env, envelope, output);
 }
-}
+
+}  // extern "C"

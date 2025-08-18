@@ -37,4 +37,5 @@ JNI_METHOD(geometry, TriangleNative, jboolean, contains)
                     {triangle_p2_x, triangle_p2_y}};
   return triangle.Contains(point);
 }
-}
+
+}  // extern "C"
