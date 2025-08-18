@@ -31,6 +31,7 @@ cc_library(
         ":brush_family",
         ":brush_paint",
         ":brush_tip",
+        ":color_function",
         ":easing_function",
         "//:gtest_for_library_testonly",
         "//ink/geometry:type_matchers",
@@ -176,6 +177,32 @@ cc_test(
 )
 
 cc_library(
+    name = "color_function",
+    srcs = ["color_function.cc"],
+    hdrs = ["color_function.h"],
+    deps = [
+        "//ink/color",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "color_function_test",
+    srcs = ["color_function_test.cc"],
+    deps = [
+        ":color_function",
+        ":fuzz_domains",
+        "//ink/color",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_matchers",
+        "@com_google_absl//absl/strings",
+        "@com_google_fuzztest//fuzztest",
+        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+    ],
+)
+
+cc_library(
     name = "easing_function",
     srcs = ["easing_function.cc"],
     hdrs = ["easing_function.h"],
@@ -233,6 +260,7 @@ cc_library(
     srcs = ["brush_paint.cc"],
     hdrs = ["brush_paint.h"],
     deps = [
+        ":color_function",
         "//ink/geometry:angle",
         "//ink/geometry:vec",
         "@com_google_absl//absl/status",
@@ -247,7 +275,9 @@ cc_test(
     srcs = ["brush_paint_test.cc"],
     deps = [
         ":brush_paint",
+        ":color_function",
         ":fuzz_domains",
+        "//ink/color",
         "//ink/geometry:angle",
         "//ink/geometry:vec",
         "@com_google_absl//absl/hash:hash_testing",
@@ -272,6 +302,7 @@ cc_library(
         ":brush_family",
         ":brush_paint",
         ":brush_tip",
+        ":color_function",
         ":easing_function",
         "//ink/color",
         "//ink/color:fuzz_domains",

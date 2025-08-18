@@ -22,6 +22,7 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
 
 namespace ink {
@@ -63,6 +64,9 @@ fuzztest::Domain<BrushPaint> SerializableBrushPaint();
 fuzztest::Domain<BrushTip> ValidBrushTip();
 // The domain of all valid brush tips that can be serialized to proto.
 fuzztest::Domain<BrushTip> SerializableBrushTip();
+
+// The domain of all valid color functions.
+fuzztest::Domain<ColorFunction> ValidColorFunction();
 
 // The domain of all valid easing functions.
 fuzztest::Domain<EasingFunction> ValidEasingFunction();

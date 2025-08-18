@@ -27,7 +27,9 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "ink/brush/color_function.h"
 #include "ink/brush/fuzz_domains.h"
+#include "ink/color/color.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/vec.h"
 
@@ -94,8 +96,16 @@ TEST(BrushPaintTest, BrushPaintSupportsAbslHash) {
   std::string id2 = "bar";
   EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
       BrushPaint{},
-      BrushPaint{{{.client_texture_id = id1}}},
-      BrushPaint{{{.client_texture_id = id1}, {.client_texture_id = id2}}},
+      BrushPaint{.texture_layers = {{.client_texture_id = id1}}},
+      BrushPaint{.texture_layers = {{.client_texture_id = id2}}},
+      BrushPaint{.texture_layers = {{.client_texture_id = id1},
+                                    {.client_texture_id = id2}}},
+      BrushPaint{.color_functions = {{ColorFunction::OpacityMultiplier{0.5}}}},
+      BrushPaint{
+          .color_functions = {{ColorFunction::ReplaceColor{Color::Red()}}}},
+      BrushPaint{
+          .texture_layers = {{.client_texture_id = id1}},
+          .color_functions = {{ColorFunction::ReplaceColor{Color::Red()}}}},
   }));
 }
 
@@ -417,7 +427,7 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
 }
 
 TEST(BrushPaintTest, StringifyBrushPaint) {
-  EXPECT_EQ(absl::StrCat(BrushPaint{}), "BrushPaint{texture_layers={}}");
+  EXPECT_EQ(absl::StrCat(BrushPaint{}), "BrushPaint{}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{.texture_layers = {{}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=, "
@@ -628,6 +638,21 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "keyframes={TextureKeyframe{progress=0.2, size=<2, 5>, rotation=0.125π}, "
       "TextureKeyframe{progress=0.4, offset=<2, 0.2>, opacity=0.4}}, "
       "blend_mode=kDstIn}}}");
+  EXPECT_EQ(absl::StrCat(BrushPaint{
+                .color_functions = {{ColorFunction::OpacityMultiplier{0.5}}}}),
+            "BrushPaint{color_functions={OpacityMultiplier{0.5}}}");
+  EXPECT_EQ(absl::StrCat(BrushPaint{
+                .texture_layers = {{.client_texture_id =
+                                        std::string(kTestTextureId)}},
+                .color_functions = {{ColorFunction::OpacityMultiplier{0.5}}}}),
+            "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-"
+            "texture, mapping=kTiling, origin=kStrokeSpaceOrigin, "
+            "size_unit=kStrokeCoordinates, wrap_x=kRepeat, wrap_y=kRepeat, "
+            "size=<1, 1>, offset=<0, 0>, rotation=0π, size_jitter=<0, 0>, "
+            "offset_jitter=<0, 0>, rotation_jitter=0π, opacity=1, "
+            "animation_frames=1, animation_rows=1, animation_columns=1, "
+            "animation_duration=1s, keyframes={}, blend_mode=kModulate}}, "
+            "color_functions={OpacityMultiplier{0.5}}}");
 }
 
 TEST(BrushPaintTest, InvalidTextureLayerRotation) {

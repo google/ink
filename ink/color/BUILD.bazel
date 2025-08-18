@@ -43,6 +43,7 @@ cc_test(
         ":color_space",
         ":fuzz_domains",
         ":type_matchers",
+        "@com_google_absl//absl/hash:hash_testing",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_fuzztest//fuzztest",

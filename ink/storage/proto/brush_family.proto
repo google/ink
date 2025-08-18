@@ -18,6 +18,8 @@ syntax = "proto2";
 
 package ink.proto;
 
+import "ink/storage/proto/color.proto";
+
 // Specifies a list of `BrushCoat`s that determine the stroke shape and dynamic
 // input response and the shading of the stroke geometry. The `BrushFamily` can
 // optionally be identified by setting a non-empty `client_brush_family_id`.
@@ -421,6 +423,8 @@ message BrushPaint {
   // Each layer is blended into the next one, and finally into the color of the
   // paint, according to each layer's `blend_mode`.
   repeated TextureLayer texture_layers = 1;
+
+  repeated ColorFunction color_functions = 2;
 }
 
 // A behavior describing how stroke input properties should affect the shape and
@@ -1164,6 +1168,13 @@ message BrushBehavior {
 
   // Were fields controlling brush behavior, use `nodes` instead.
   reserved 1 to 14;
+}
+
+message ColorFunction {
+  oneof function {
+    float opacity_multiplier = 1;
+    Color replace_color = 2;
+  }
 }
 
 // LINT.IfChange(predefined)

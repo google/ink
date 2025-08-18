@@ -22,6 +22,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/time/time.h"
+#include "ink/brush/color_function.h"
 
 namespace ink {
 namespace brush_internal {
@@ -309,6 +310,12 @@ absl::Status ValidateBrushPaint(const BrushPaint& paint) {
       return status;
     }
   }
+  for (const ColorFunction& color_function : paint.color_functions) {
+    if (absl::Status status = ValidateColorFunction(color_function);
+        !status.ok()) {
+      return status;
+    }
+  }
   if (absl::Status status = ValidateBrushPaintTopLevel(paint); !status.ok()) {
     return status;
   }
@@ -436,10 +443,19 @@ std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
 }
 
 std::string ToFormattedString(const BrushPaint& paint) {
-  std::string formatted =
-      absl::StrCat("BrushPaint{texture_layers={",
-                   absl::StrJoin(paint.texture_layers, ", "), "}}");
-
+  std::string formatted = "BrushPaint{";
+  if (!paint.texture_layers.empty()) {
+    absl::StrAppend(&formatted, "texture_layers={",
+                    absl::StrJoin(paint.texture_layers, ", "), "}");
+  }
+  if (!paint.color_functions.empty()) {
+    if (!paint.texture_layers.empty()) {
+      absl::StrAppend(&formatted, ", ");
+    }
+    absl::StrAppend(&formatted, "color_functions={",
+                    absl::StrJoin(paint.color_functions, ", "), "}");
+  }
+  absl::StrAppend(&formatted, "}");
   return formatted;
 }
 
