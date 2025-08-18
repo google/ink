@@ -35,6 +35,7 @@ proto_library(
     name = "brush_family_proto",
     srcs = ["brush_family.proto"],
     deps = [
+        ":color_proto",
     ],
 )
 

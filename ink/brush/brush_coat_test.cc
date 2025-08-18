@@ -41,7 +41,7 @@ constexpr absl::string_view kTestTextureId = "test-paint";
 TEST(BrushCoatTest, Stringify) {
   EXPECT_EQ(absl::StrCat(BrushCoat{.tip = BrushTip{}}),
             "BrushCoat{tip=BrushTip{scale=<1, 1>, corner_rounding=1}, "
-            "paint=BrushPaint{texture_layers={}}}");
+            "paint=BrushPaint{}}");
 }
 
 TEST(BrushCoatTest, CoatWithDefaultTipAndPaintIsValid) {

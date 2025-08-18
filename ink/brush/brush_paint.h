@@ -21,6 +21,7 @@
 
 #include "absl/status/status.h"
 #include "absl/time/time.h"
+#include "ink/brush/color_function.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/vec.h"
 
@@ -299,6 +300,10 @@ struct BrushPaint {
   };
 
   std::vector<TextureLayer> texture_layers;
+  // Transformations to apply to the base brush color (in order) before drawing
+  // this coat of paint. When this list is empty, the base brush color will be
+  // used unchanged.
+  std::vector<ColorFunction> color_functions;
 };
 
 bool operator==(const BrushPaint::TextureKeyframe& lhs,
@@ -395,7 +400,7 @@ H AbslHashValue(H h, const BrushPaint::TextureLayer& layer) {
 
 template <typename H>
 H AbslHashValue(H h, const BrushPaint& paint) {
-  return H::combine(std::move(h), paint.texture_layers);
+  return H::combine(std::move(h), paint.texture_layers, paint.color_functions);
 }
 
 inline bool operator!=(const BrushPaint::TextureKeyframe& lhs,
@@ -409,7 +414,8 @@ inline bool operator!=(const BrushPaint::TextureLayer& lhs,
 }
 
 inline bool operator==(const BrushPaint& lhs, const BrushPaint& rhs) {
-  return lhs.texture_layers == rhs.texture_layers;
+  return lhs.texture_layers == rhs.texture_layers &&
+         lhs.color_functions == rhs.color_functions;
 }
 
 inline bool operator!=(const BrushPaint& lhs, const BrushPaint& rhs) {
