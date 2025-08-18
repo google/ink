@@ -554,7 +554,7 @@ Domain<BrushPaint::TextureSizeUnit> ArbitraryBrushPaintTextureSizeUnit() {
 Domain<BrushPaint::TextureMapping> ArbitraryBrushPaintTextureMapping() {
   return ElementOf({
       BrushPaint::TextureMapping::kTiling,
-      BrushPaint::TextureMapping::kWinding,
+      BrushPaint::TextureMapping::kStamping,
   });
 }
 // LINT.ThenChange(brush_paint.h:texture_mapping)

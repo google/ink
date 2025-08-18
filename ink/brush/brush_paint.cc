@@ -30,7 +30,7 @@ namespace {
 bool IsValidBrushPaintTextureMapping(BrushPaint::TextureMapping mapping) {
   switch (mapping) {
     case BrushPaint::TextureMapping::kTiling:
-    case BrushPaint::TextureMapping::kWinding:
+    case BrushPaint::TextureMapping::kStamping:
       return true;
   }
   return false;
@@ -290,7 +290,7 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
             "`"));
       }
       // TODO: b/375203215 - Remove the below check once we are able to mix
-      // rendering tiling and winding textures in a single `BrushPaint`.
+      // rendering different mapping modes in a single `BrushPaint`.
       if (layer.mapping != first_mapping) {
         return absl::InvalidArgumentError(
             absl::StrCat("`BrushPaint::TextureLayer::mapping` must be the same "
@@ -319,8 +319,8 @@ std::string ToFormattedString(BrushPaint::TextureMapping texture_mapping) {
   switch (texture_mapping) {
     case BrushPaint::TextureMapping::kTiling:
       return "kTiling";
-    case BrushPaint::TextureMapping::kWinding:
-      return "kWinding";
+    case BrushPaint::TextureMapping::kStamping:
+      return "kStamping";
   }
   return absl::StrCat("TextureMapping(", static_cast<int>(texture_mapping),
                       ")");

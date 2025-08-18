@@ -241,11 +241,11 @@ message BrushPaint {
       // shape modulo reflections.
       MAPPING_TILING = 1;
 
-      // The texture will morph to "wind along the path of the stroke." The
-      // horizontal axis of texture space will lie along the width of the stroke
-      // and the vertical axis will lie along the direction of travel of the
-      // stroke at each point.
-      MAPPING_WINDING = 2;
+      // This mode is intended for use with particle brush coats (i.e. with a
+      // brush tip with a nonzero particle gap). A copy of the texture (or one
+      // animation frame thereof) will be "stamped" onto each particle of the
+      // stroke, scaled or rotated appropriately to cover the whole particle.
+      MAPPING_STAMPING = 2;
     }
     // LINT.ThenChange(../../brush/brush_paint.h:texture_mapping)
 
