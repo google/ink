@@ -92,7 +92,7 @@ BrushTip CreatePressureTestTip() {
 BrushPaint CreateTestPaint() {
   return {.texture_layers = {
               {.client_texture_id = std::string(kTestTextureId),
-               .mapping = BrushPaint::TextureMapping::kWinding,
+               .mapping = BrushPaint::TextureMapping::kStamping,
                .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                .size = {3, 5},
                .size_jitter = {0.1, 2},
@@ -121,7 +121,7 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
             "corner_rounding=0, opacity_multiplier=0.7, "
             "particle_gap_distance_scale=0.1, particle_gap_duration=2s}, "
             "paint=BrushPaint{texture_layers={TextureLayer{"
-            "client_texture_id=test-paint, mapping=kWinding, "
+            "client_texture_id=test-paint, mapping=kStamping, "
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
             "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
@@ -141,7 +141,7 @@ TEST(BrushFamilyTest, StringifyWithId) {
             "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
             "corner_rounding=0, opacity_multiplier=0.7}, "
             "paint=BrushPaint{texture_layers={TextureLayer{client_texture_id="
-            "test-paint, mapping=kWinding, "
+            "test-paint, mapping=kStamping, "
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
             "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "

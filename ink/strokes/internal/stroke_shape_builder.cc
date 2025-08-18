@@ -30,11 +30,11 @@
 namespace ink::strokes_internal {
 namespace {
 
-bool IsWindingTextureCoat(const BrushCoat& coat) {
-  // We can only handle winding textures when there is a single texture layer.
+bool IsStampingTextureCoat(const BrushCoat& coat) {
+  // We can only handle stamping textures when there is a single texture layer.
   return coat.paint.texture_layers.size() == 1 &&
          coat.paint.texture_layers[0].mapping ==
-             BrushPaint::TextureMapping::kWinding;
+             BrushPaint::TextureMapping::kStamping;
 }
 
 }  // namespace
@@ -50,13 +50,13 @@ void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
   mesh_bounds_.Reset();
   outlines_.clear();
 
-  bool is_winding_texture_brush = IsWindingTextureCoat(coat);
-  bool is_winding_texture_particle_brush =
-      is_winding_texture_brush &&
+  bool is_stamping_texture_brush = IsStampingTextureCoat(coat);
+  bool is_stamping_texture_particle_brush =
+      is_stamping_texture_brush &&
       (coat.tip.particle_gap_distance_scale != 0 ||
        coat.tip.particle_gap_duration != Duration32::Zero());
   tip_.modeler.StartStroke(&coat.tip, brush_size, noise_seed);
-  tip_.extruder.StartStroke(brush_epsilon, is_winding_texture_particle_brush,
+  tip_.extruder.StartStroke(brush_epsilon, is_stamping_texture_particle_brush,
                             mesh_);
 }
 

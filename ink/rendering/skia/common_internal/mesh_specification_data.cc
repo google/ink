@@ -144,7 +144,7 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
         varyings.color.rgb *= varyings.color.a;
 
         if (uTextureMapping == 1) {
-          varyings.textureCoords = calculateWindingTextureUv(
+          varyings.textureCoords = calculateStampingTextureUv(
               unpackSurfaceUv(attributes.surfaceUvAndAnimationOffset.xy),
               unpackAnimationOffset(attributes.surfaceUvAndAnimationOffset.z),
               uTextureAnimationProgress,
@@ -158,7 +158,7 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
         return varyings;
       }
   )";
-  static_assert(static_cast<int>(BrushPaint::TextureMapping::kWinding) == 1);
+  static_assert(static_cast<int>(BrushPaint::TextureMapping::kStamping) == 1);
 
   // Translate from `MeshFormat` to `MeshSpecificationData` attributes. Where
   // applicable below, multiple `MeshFormat` attributes are combined into one
@@ -545,13 +545,13 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
   // There are three cases for computing texture coordinates in the shader.
   //
   // Case 1: 12-bit surface U and V and 8-bit animation offset. This is used for
-  // particle-based meshes to support (potentially-animated) "winding" textured
+  // particle-based meshes to support (potentially-animated) "stamping" textured
   // particles.
-  static_assert(static_cast<int>(BrushPaint::TextureMapping::kWinding) == 1);
+  static_assert(static_cast<int>(BrushPaint::TextureMapping::kStamping) == 1);
   constexpr absl::string_view
       kVertexMainTextureUvWithSurfaceUvAndAnimationOffset = R"(
         if (uTextureMapping == 1) {
-          varyings.textureCoords = calculateWindingTextureUv(
+          varyings.textureCoords = calculateStampingTextureUv(
               unpackSurfaceUv(attributes.surfaceUvAndAnimationOffset.xyz),
               unpackAnimationOffset(attributes.surfaceUvAndAnimationOffset.w),
               uTextureAnimationProgress,
@@ -569,7 +569,7 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
   // TODO: b/330511293 - Support this case.
   //
   // Case 3: No surface UV or animation offset attribute is available at all;
-  // winding textures are not supported for this mesh.
+  // stamping/winding textures are not supported for this mesh.
   constexpr absl::string_view kVertexMainTextureUvWithoutSurfaceUv = R"(
         varyings.textureCoords = varyings.position;
   )";
