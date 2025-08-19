@@ -374,6 +374,8 @@ struct BrushBehavior {
 
     bool HasAnyTypes() const;
     bool HasAllTypes() const;
+
+    bool operator==(const EnabledToolTypes& rhs) const = default;
   };
 
   static constexpr EnabledToolTypes kAllToolTypes = {
@@ -459,6 +461,8 @@ struct BrushBehavior {
     Source source;
     OutOfRange source_out_of_range_behavior = OutOfRange::kClamp;
     std::array<float, 2> source_value_range;
+
+    bool operator==(const SourceNode& rhs) const = default;
   };
 
   // Value node for producing a constant value.
@@ -467,6 +471,8 @@ struct BrushBehavior {
   // To be valid: `value` must be finite.
   struct ConstantNode {
     float value;
+
+    bool operator==(const ConstantNode& rhs) const = default;
   };
 
   // Value node for producing a continuous random noise function with values
@@ -480,6 +486,8 @@ struct BrushBehavior {
     uint32_t seed;
     DampingSource vary_over;
     float base_period;
+
+    bool operator==(const NoiseNode& rhs) const = default;
   };
 
   //////////////////////////
@@ -495,6 +503,8 @@ struct BrushBehavior {
   //   - `is_fallback_for` must be a valid `OptionalInputProperty` enumerator.
   struct FallbackFilterNode {
     OptionalInputProperty is_fallback_for;
+
+    bool operator==(const FallbackFilterNode& rhs) const = default;
   };
 
   // Value node for filtering out a branch of a behavior graph unless this
@@ -505,6 +515,8 @@ struct BrushBehavior {
   // To be valid: At least one tool type must be enabled.
   struct ToolTypeFilterNode {
     EnabledToolTypes enabled_tool_types;
+
+    bool operator==(const ToolTypeFilterNode& rhs) const = default;
   };
 
   ////////////////////////////
@@ -524,6 +536,8 @@ struct BrushBehavior {
   struct DampingNode {
     DampingSource damping_source;
     float damping_gap;
+
+    bool operator==(const DampingNode& rhs) const = default;
   };
 
   // Value node for mapping a value through a response curve.
@@ -534,6 +548,8 @@ struct BrushBehavior {
   // To be valid: `function` must be a valid `EasingFunction`.
   struct ResponseNode {
     EasingFunction response_curve;
+
+    bool operator==(const ResponseNode& rhs) const = default;
   };
 
   // Value node for combining two other values with a binary operation.
@@ -544,6 +560,8 @@ struct BrushBehavior {
   // To be valid: `operation` must be a valid `BinaryOp` enumerator.
   struct BinaryOpNode {
     BinaryOp operation;
+
+    bool operator==(const BinaryOpNode& rhs) const = default;
   };
 
   // Value node for interpolating to/from a range of two values.
@@ -554,6 +572,8 @@ struct BrushBehavior {
   // To be valid: `interpolation` must be a valid `Interpolation` enumerator.
   struct InterpolationNode {
     Interpolation interpolation;
+
+    bool operator==(const InterpolationNode& rhs) const = default;
   };
 
   //////////////////////
@@ -573,6 +593,8 @@ struct BrushBehavior {
   struct TargetNode {
     Target target;
     std::array<float, 2> target_modifier_range;
+
+    bool operator==(const TargetNode& rhs) const = default;
   };
 
   // Terminal node that consumes two input values (angle and magnitude), forming
@@ -591,6 +613,8 @@ struct BrushBehavior {
     PolarTarget target;
     std::array<float, 2> angle_range;
     std::array<float, 2> magnitude_range;
+
+    bool operator==(const PolarTargetNode& rhs) const = default;
   };
 
   // A single node in a behavior's graph.  Each node type is either a "value
@@ -604,45 +628,9 @@ struct BrushBehavior {
                    InterpolationNode, TargetNode, PolarTargetNode>;
 
   std::vector<Node> nodes;
+
+  bool operator==(const BrushBehavior& rhs) const = default;
 };
-
-bool operator==(const BrushBehavior::EnabledToolTypes& lhs,
-                const BrushBehavior::EnabledToolTypes& rhs);
-
-bool operator==(const BrushBehavior::SourceNode& lhs,
-                const BrushBehavior::SourceNode& rhs);
-
-bool operator==(const BrushBehavior::ConstantNode& lhs,
-                const BrushBehavior::ConstantNode& rhs);
-
-bool operator==(const BrushBehavior::NoiseNode& lhs,
-                const BrushBehavior::NoiseNode& rhs);
-
-bool operator==(const BrushBehavior::FallbackFilterNode& lhs,
-                const BrushBehavior::FallbackFilterNode& rhs);
-
-bool operator==(const BrushBehavior::ToolTypeFilterNode& lhs,
-                const BrushBehavior::ToolTypeFilterNode& rhs);
-
-bool operator==(const BrushBehavior::DampingNode& lhs,
-                const BrushBehavior::DampingNode& rhs);
-
-bool operator==(const BrushBehavior::ResponseNode& lhs,
-                const BrushBehavior::ResponseNode& rhs);
-
-bool operator==(const BrushBehavior::BinaryOpNode& lhs,
-                const BrushBehavior::BinaryOpNode& rhs);
-
-bool operator==(const BrushBehavior::InterpolationNode& lhs,
-                const BrushBehavior::InterpolationNode& rhs);
-
-bool operator==(const BrushBehavior::TargetNode& lhs,
-                const BrushBehavior::TargetNode& rhs);
-
-bool operator==(const BrushBehavior::PolarTargetNode& lhs,
-                const BrushBehavior::PolarTargetNode& rhs);
-
-bool operator==(const BrushBehavior& lhs, const BrushBehavior& rhs);
 
 namespace brush_internal {
 

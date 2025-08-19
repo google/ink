@@ -109,7 +109,7 @@ struct BrushTip {
 
   std::vector<BrushBehavior> behaviors;
 
-  bool operator==(const BrushTip& other) const;
+  bool operator==(const BrushTip& other) const = default;
 };
 
 namespace brush_internal {

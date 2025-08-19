@@ -559,7 +559,6 @@ cc_test(
 
 cc_library(
     name = "legacy_vertex",
-    srcs = ["legacy_vertex.cc"],
     hdrs = ["legacy_vertex.h"],
     deps = [
         "//ink/color",

@@ -270,6 +270,7 @@ class StrokeInputBatch::ConstIterator {
   ConstIterator& operator++();
   ConstIterator operator++(int);
 
+  // Not default because it ignores the cached value_.
   friend bool operator==(const ConstIterator& lhs, const ConstIterator& rhs);
 
  private:

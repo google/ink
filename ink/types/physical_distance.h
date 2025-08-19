@@ -51,11 +51,8 @@ class PhysicalDistance {
 
   bool IsFinite() const;
 
-  friend bool operator==(PhysicalDistance a, PhysicalDistance b);
-  friend bool operator<(PhysicalDistance a, PhysicalDistance b);
-  friend bool operator>(PhysicalDistance a, PhysicalDistance b);
-  friend bool operator<=(PhysicalDistance a, PhysicalDistance b);
-  friend bool operator>=(PhysicalDistance a, PhysicalDistance b);
+  bool operator==(const PhysicalDistance& rhs) const = default;
+  auto operator<=>(const PhysicalDistance& rhs) const = default;
 
   friend PhysicalDistance operator-(PhysicalDistance d);
 
@@ -128,26 +125,6 @@ inline float PhysicalDistance::ToMeters() const {
 
 inline bool PhysicalDistance::IsFinite() const {
   return std::isfinite(value_centimeters_);
-}
-
-inline bool operator==(PhysicalDistance a, PhysicalDistance b) {
-  return a.value_centimeters_ == b.value_centimeters_;
-}
-
-inline bool operator<(PhysicalDistance a, PhysicalDistance b) {
-  return a.value_centimeters_ < b.value_centimeters_;
-}
-
-inline bool operator>(PhysicalDistance a, PhysicalDistance b) {
-  return a.value_centimeters_ > b.value_centimeters_;
-}
-
-inline bool operator<=(PhysicalDistance a, PhysicalDistance b) {
-  return a.value_centimeters_ <= b.value_centimeters_;
-}
-
-inline bool operator>=(PhysicalDistance a, PhysicalDistance b) {
-  return a.value_centimeters_ >= b.value_centimeters_;
 }
 
 inline PhysicalDistance operator-(PhysicalDistance d) {

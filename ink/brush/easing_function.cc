@@ -25,25 +25,7 @@
 #include "absl/strings/str_join.h"
 #include "ink/geometry/point.h"
 
-namespace ink {
-
-bool EasingFunction::operator==(const EasingFunction& other) const {
-  return parameters == other.parameters;
-}
-
-bool EasingFunction::CubicBezier::operator==(const CubicBezier& other) const {
-  return x1 == other.x1 && y1 == other.y1 && x2 == other.x2 && y2 == other.y2;
-}
-
-bool EasingFunction::Linear::operator==(const Linear& other) const {
-  return points == other.points;
-}
-
-bool EasingFunction::Steps::operator==(const Steps& other) const {
-  return step_count == other.step_count && step_position == other.step_position;
-}
-
-namespace brush_internal {
+namespace ink::brush_internal {
 namespace {
 
 bool IsValidPredefinedEasingFunction(EasingFunction::Predefined predefined) {
@@ -218,5 +200,4 @@ std::string ToFormattedString(const EasingFunction::Parameters& parameters) {
                     parameters);
 }
 
-}  // namespace brush_internal
-}  // namespace ink
+}  // namespace ink::brush_internal

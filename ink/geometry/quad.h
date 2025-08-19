@@ -216,6 +216,7 @@ class Quad {
   mutable std::optional<std::pair<Vec, Vec>> semi_axes_;
 };
 
+// Not default because this ignores semi_axes_, which are recomputed lazily.
 bool operator==(const Quad& lhs, const Quad& rhs);
 
 ////////////////////////////////////////////////////////////////////////////////

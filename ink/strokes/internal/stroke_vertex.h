@@ -84,6 +84,8 @@ struct StrokeVertex {
     float DerivativeOutsetSign() const;
 
     float encoded_value;
+
+    bool operator==(const Label& other) const = default;
   };
 
   // The maximum value of the margin that will be encoded without clipping.
@@ -135,6 +137,8 @@ struct StrokeVertex {
     Point surface_uv;
     // Offset for texture animation progress, in the range [0, 1).
     float animation_offset = 0;
+
+    bool operator==(const NonPositionAttributes& other) const = default;
   };
 
   // Indices into `MeshFormat::Attributes()` for each stroke vertex attribute.
@@ -272,20 +276,6 @@ StrokeVertex::NonPositionAttributes BarycentricLerp(
     const StrokeVertex::NonPositionAttributes& b,
     const StrokeVertex::NonPositionAttributes& c,
     const std::array<float, 3>& t);
-
-inline bool operator==(StrokeVertex::Label a, StrokeVertex::Label b) {
-  return a.encoded_value == b.encoded_value;
-}
-
-inline bool operator==(const StrokeVertex::NonPositionAttributes& a,
-                       const StrokeVertex::NonPositionAttributes& b) {
-  return a.opacity_shift == b.opacity_shift && a.hsl_shift == b.hsl_shift &&
-         a.side_derivative == b.side_derivative &&
-         a.side_label == b.side_label &&
-         a.forward_derivative == b.forward_derivative &&
-         a.forward_label == b.forward_label && a.surface_uv == b.surface_uv &&
-         a.animation_offset == b.animation_offset;
-}
 
 inline StrokeVertex::SideCategory StrokeVertex::Label::DecodeSideCategory()
     const {

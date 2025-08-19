@@ -102,18 +102,6 @@ Color Color::FromPackedUint32RGBA(uint32_t rgba, Format format,
                    static_cast<uint8_t>(rgba & 0xff), format, color_space);
 }
 
-bool Color::operator==(const Color& other) const {
-  if (color_space_ != other.color_space_) {
-    return false;
-  }
-  for (int i = 0; i < kNumChannelsIncludingAlpha; ++i) {
-    if (rgba_[i] != other.rgba_[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
 bool Color::NearlyEquals(const Color& other) const {
   const Color converted = other.InColorSpace(color_space_);
   for (int i = 0; i < kNumChannelsIncludingAlpha; ++i) {

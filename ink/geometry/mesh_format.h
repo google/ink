@@ -330,6 +330,8 @@ class MeshFormat {
   uint8_t unpacked_index_stride_;
 };
 
+// Attribute equivalence is more complicated than equality on the underlying
+// fields.
 bool operator==(const MeshFormat& a, const MeshFormat& b);
 
 namespace mesh_internal {

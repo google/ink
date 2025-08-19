@@ -16,6 +16,7 @@
 #define INK_GEOMETRY_ANGLE_H_
 
 #include <cmath>
+#include <compare>
 #include <cstdlib>
 #include <string>
 
@@ -66,6 +67,9 @@ class Angle {
     return H::combine(std::move(h), angle.radians_);
   }
 
+  bool operator==(const Angle& rhs) const = default;
+  auto operator<=>(const Angle& rhs) const = default;
+
  private:
   // Constructs an angle, in radians. The value is not normalized.
   explicit constexpr Angle(float radians) : radians_(radians) {}
@@ -93,12 +97,6 @@ Angle Abs(Angle angle);
 Angle Mod(Angle value, Angle divisor);
 Angle Min(Angle a, Angle b);
 Angle Max(Angle a, Angle b);
-
-bool operator==(Angle lhs, Angle rhs);
-bool operator<(Angle lhs, Angle rhs);
-bool operator>(Angle lhs, Angle rhs);
-bool operator<=(Angle lhs, Angle rhs);
-bool operator>=(Angle lhs, Angle rhs);
 
 Angle operator-(Angle angle);
 Angle operator+(Angle lhs, Angle rhs);
@@ -137,22 +135,6 @@ inline Angle Min(Angle a, Angle b) {
 }
 inline Angle Max(Angle a, Angle b) {
   return (a.ValueInRadians() > b.ValueInRadians()) ? a : b;
-}
-
-inline bool operator==(Angle lhs, Angle rhs) {
-  return lhs.ValueInRadians() == rhs.ValueInRadians();
-}
-inline bool operator<(Angle lhs, Angle rhs) {
-  return lhs.ValueInRadians() < rhs.ValueInRadians();
-}
-inline bool operator>(Angle lhs, Angle rhs) {
-  return lhs.ValueInRadians() > rhs.ValueInRadians();
-}
-inline bool operator<=(Angle lhs, Angle rhs) {
-  return lhs.ValueInRadians() <= rhs.ValueInRadians();
-}
-inline bool operator>=(Angle lhs, Angle rhs) {
-  return lhs.ValueInRadians() >= rhs.ValueInRadians();
 }
 
 inline Angle operator-(Angle angle) {

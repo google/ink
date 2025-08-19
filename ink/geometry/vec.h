@@ -102,9 +102,9 @@ struct Vec {
   // faster than):
   //   (b.Direction() - a.Direction()).NormalizedAboutZero();
   static Angle SignedAngleBetween(const Vec& a, const Vec& b);
-};
 
-bool operator==(Vec lhs, Vec rhs);
+  bool operator==(const Vec& rhs) const = default;
+};
 
 Vec operator+(Vec lhs, Vec rhs);
 Vec operator-(Vec lhs, Vec rhs);
@@ -135,10 +135,6 @@ H AbslHashValue(H h, Vec v) {
 ////////////////////////////////////////////////////////////////////////////////
 // Inline function definitions
 ////////////////////////////////////////////////////////////////////////////////
-
-inline bool operator==(Vec lhs, Vec rhs) {
-  return lhs.x == rhs.x && lhs.y == rhs.y;
-}
 
 inline Vec operator+(Vec lhs, Vec rhs) {
   return {.x = lhs.x + rhs.x, .y = lhs.y + rhs.y};

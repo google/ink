@@ -226,6 +226,8 @@ struct BrushPaint {
     // Value of texture layer opacity to apply for this keyframe. This value
     // will override `TextureLayer::opacity`.
     std::optional<float> opacity;
+
+    bool operator==(const TextureKeyframe& rhs) const = default;
   };
 
   struct TextureLayer {
@@ -296,18 +298,14 @@ struct BrushPaint {
     // "dst", which is the layer at index + 1. If index refers to the last
     // texture layer, then the layer at "index + 1" is the brush color layer.
     BlendMode blend_mode = BlendMode::kModulate;
+
+    bool operator==(const TextureLayer& rhs) const = default;
   };
 
   std::vector<TextureLayer> texture_layers;
+
+  bool operator==(const BrushPaint& rhs) const = default;
 };
-
-bool operator==(const BrushPaint::TextureKeyframe& lhs,
-                const BrushPaint::TextureKeyframe& rhs);
-
-bool operator==(const BrushPaint::TextureLayer& lhs,
-                const BrushPaint::TextureLayer& rhs);
-
-bool operator==(const BrushPaint& lhs, const BrushPaint& rhs);
 
 namespace brush_internal {
 
@@ -391,10 +389,6 @@ H AbslHashValue(H h, const BrushPaint::TextureLayer& layer) {
 template <typename H>
 H AbslHashValue(H h, const BrushPaint& paint) {
   return H::combine(std::move(h), paint.texture_layers);
-}
-
-inline bool operator==(const BrushPaint& lhs, const BrushPaint& rhs) {
-  return lhs.texture_layers == rhs.texture_layers;
 }
 
 }  // namespace ink

@@ -61,6 +61,8 @@ class CodedMeshVertexIterator {
 
   friend bool operator==(const CodedMeshVertexIterator& lhs,
                          const CodedMeshVertexIterator& rhs) {
+    // Just checking one of these is sufficient to ensure that the iterators
+    // are pointing at the same underlying data.
     return lhs.x_stroke_space_ == rhs.x_stroke_space_;
   }
 

@@ -23,8 +23,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/time/time.h"
 
-namespace ink {
-namespace brush_internal {
+namespace ink::brush_internal {
 namespace {
 
 bool IsValidBrushPaintTextureMapping(BrushPaint::TextureMapping mapping) {
@@ -443,27 +442,4 @@ std::string ToFormattedString(const BrushPaint& paint) {
   return formatted;
 }
 
-}  // namespace brush_internal
-
-bool operator==(const BrushPaint::TextureKeyframe& lhs,
-                const BrushPaint::TextureKeyframe& rhs) {
-  return lhs.progress == rhs.progress && lhs.size == rhs.size &&
-         lhs.offset == rhs.offset && lhs.rotation == rhs.rotation &&
-         lhs.opacity == rhs.opacity;
-}
-
-bool operator==(const BrushPaint::TextureLayer& lhs,
-                const BrushPaint::TextureLayer& rhs) {
-  return lhs.client_texture_id == rhs.client_texture_id &&
-         lhs.mapping == rhs.mapping && lhs.origin == rhs.origin &&
-         lhs.size_unit == rhs.size_unit && lhs.wrap_x == rhs.wrap_x &&
-         lhs.wrap_y == rhs.wrap_y && lhs.size == rhs.size &&
-         lhs.offset == rhs.offset && lhs.rotation == rhs.rotation &&
-         lhs.size_jitter == rhs.size_jitter &&
-         lhs.offset_jitter == rhs.offset_jitter &&
-         lhs.rotation_jitter == rhs.rotation_jitter &&
-         lhs.opacity == rhs.opacity && lhs.keyframes == rhs.keyframes &&
-         lhs.blend_mode == rhs.blend_mode;
-}
-
-}  // namespace ink
+}  // namespace ink::brush_internal

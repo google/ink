@@ -67,12 +67,13 @@ struct Segment {
   // Vector().MagnitudeSquared() <= 0 (which means the projection cannot be
   // reliably computed).
   std::optional<float> Project(Point point) const;
-};
 
-// Segments are considered equivalent only when their starting points are
-// identical and their ending points are identical. Segments who have the same
-// endpoints but run opposite directions are not considered equivalent.
-bool operator==(const Segment& lhs, const Segment& rhs);
+  // Segments are considered equivalent only when their starting points are
+  // identical and their ending points are identical. Segments who have the same
+  // endpoints but run opposite directions are not considered equivalent. So
+  // this can use the default field-by-field comparison.
+  bool operator==(const Segment& rhs) const = default;
+};
 
 namespace segment_internal {
 std::string ToFormattedString(Segment segment);
@@ -81,14 +82,6 @@ std::string ToFormattedString(Segment segment);
 template <typename Sink>
 void AbslStringify(Sink& sink, Segment segment) {
   sink.Append(segment_internal::ToFormattedString(segment));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Inline function definitions
-////////////////////////////////////////////////////////////////////////////////
-
-inline bool operator==(const Segment& lhs, const Segment& rhs) {
-  return lhs.start == rhs.start && lhs.end == rhs.end;
 }
 
 }  // namespace ink

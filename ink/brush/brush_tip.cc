@@ -27,19 +27,7 @@
 #include "ink/geometry/vec.h"
 #include "ink/types/duration.h"
 
-namespace ink {
-
-bool BrushTip::operator==(const BrushTip& other) const {
-  return scale == other.scale && corner_rounding == other.corner_rounding &&
-         slant == other.slant && pinch == other.pinch &&
-         rotation == other.rotation &&
-         opacity_multiplier == other.opacity_multiplier &&
-         particle_gap_distance_scale == other.particle_gap_distance_scale &&
-         particle_gap_duration == other.particle_gap_duration &&
-         behaviors == other.behaviors;
-}
-
-namespace brush_internal {
+namespace ink::brush_internal {
 
 absl::Status ValidateBrushTipTopLevel(const BrushTip& tip) {
   if (!std::isfinite(tip.scale.x) || !std::isfinite(tip.scale.y) ||
@@ -139,5 +127,4 @@ std::string ToFormattedString(const BrushTip& tip) {
   return formatted;
 }
 
-}  // namespace brush_internal
-}  // namespace ink
+}  // namespace ink::brush_internal

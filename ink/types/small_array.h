@@ -139,7 +139,7 @@ class SmallArray {
 };
 
 template <typename T, uint8_t N>
-bool operator==(SmallArray<T, N> lhs, SmallArray<T, N> rhs) {
+bool operator==(const SmallArray<T, N>& lhs, const SmallArray<T, N>& rhs) {
   return absl::c_equal(lhs.Values(), rhs.Values());
 }
 

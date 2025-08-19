@@ -28,11 +28,11 @@ struct Point {
 
   // Returns the offset vector from the origin to this point.
   Vec Offset() const { return Vec{x, y}; }
+
+  bool operator==(const Point& rhs) const = default;
 };
 
 inline constexpr Point kOrigin{0, 0};
-
-bool operator==(Point lhs, Point rhs);
 
 Vec operator-(Point lhs, Point rhs);
 
@@ -60,10 +60,6 @@ H AbslHashValue(H h, Point p) {
 ////////////////////////////////////////////////////////////////////////////////
 // Inline function definitions
 ////////////////////////////////////////////////////////////////////////////////
-
-inline bool operator==(Point lhs, Point rhs) {
-  return lhs.x == rhs.x && lhs.y == rhs.y;
-}
 
 inline Vec operator-(Point lhs, Point rhs) {
   return Vec{.x = lhs.x - rhs.x, .y = lhs.y - rhs.y};
