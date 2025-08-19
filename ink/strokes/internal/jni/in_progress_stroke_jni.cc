@@ -296,12 +296,9 @@ JNI_METHOD(strokes, InProgressStrokeNative, absl_nullable jobject,
 
 // Return a newly allocated copy of the given `Mesh`'s `MeshFormat`.
 JNI_METHOD(strokes, InProgressStrokeNative, jlong, newCopyOfMeshFormat)
-(JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
- jint mesh_index) {
+(JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index) {
   const InProgressStrokeWrapper& in_progress_stroke_wrapper =
       CastToInProgressStrokeWrapper(native_pointer);
-  ABSL_CHECK_LT(mesh_index,
-                in_progress_stroke_wrapper.MeshPartitionCount(coat_index));
   return NewNativeMeshFormat(
       in_progress_stroke_wrapper.Stroke().GetMeshFormat(coat_index));
 }
