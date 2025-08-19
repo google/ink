@@ -277,10 +277,6 @@ inline bool operator==(StrokeVertex::Label a, StrokeVertex::Label b) {
   return a.encoded_value == b.encoded_value;
 }
 
-inline bool operator!=(StrokeVertex::Label a, StrokeVertex::Label b) {
-  return !(a == b);
-}
-
 inline bool operator==(const StrokeVertex::NonPositionAttributes& a,
                        const StrokeVertex::NonPositionAttributes& b) {
   return a.opacity_shift == b.opacity_shift && a.hsl_shift == b.hsl_shift &&

@@ -75,10 +75,6 @@ class CodedStrokeInputBatchIterator {
                          const CodedStrokeInputBatchIterator& rhs) {
     return lhs.x_stroke_space_ == rhs.x_stroke_space_;
   }
-  friend bool operator!=(const CodedStrokeInputBatchIterator& lhs,
-                         const CodedStrokeInputBatchIterator& rhs) {
-    return lhs.x_stroke_space_ != rhs.x_stroke_space_;
-  }
 
  private:
   CodedStrokeInputBatchIterator(

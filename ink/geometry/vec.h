@@ -105,7 +105,6 @@ struct Vec {
 };
 
 bool operator==(Vec lhs, Vec rhs);
-bool operator!=(Vec lhs, Vec rhs);
 
 Vec operator+(Vec lhs, Vec rhs);
 Vec operator-(Vec lhs, Vec rhs);
@@ -140,7 +139,6 @@ H AbslHashValue(H h, Vec v) {
 inline bool operator==(Vec lhs, Vec rhs) {
   return lhs.x == rhs.x && lhs.y == rhs.y;
 }
-inline bool operator!=(Vec lhs, Vec rhs) { return !(lhs == rhs); }
 
 inline Vec operator+(Vec lhs, Vec rhs) {
   return {.x = lhs.x + rhs.x, .y = lhs.y + rhs.y};

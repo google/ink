@@ -63,10 +63,6 @@ class CodedMeshVertexIterator {
                          const CodedMeshVertexIterator& rhs) {
     return lhs.x_stroke_space_ == rhs.x_stroke_space_;
   }
-  friend bool operator!=(const CodedMeshVertexIterator& lhs,
-                         const CodedMeshVertexIterator& rhs) {
-    return lhs.x_stroke_space_ != rhs.x_stroke_space_;
-  }
 
  private:
   CodedMeshVertexIterator(CodedNumericRunIterator<float> x_stroke_space,

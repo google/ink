@@ -44,7 +44,6 @@ struct ExtrudedVertex {
 };
 
 bool operator==(const ExtrudedVertex& a, const ExtrudedVertex& b);
-bool operator!=(const ExtrudedVertex& a, const ExtrudedVertex& b);
 
 // Computes the linear interpolation between `a` and `b` when `t` is in the
 // range [0, 1], and the linear extrapolation otherwise.
@@ -98,10 +97,6 @@ inline bool operator==(const ExtrudedVertex& a, const ExtrudedVertex& b) {
          a.color.b == b.color.b && a.color.a == b.color.a &&
          a.texture_coords == b.texture_coords &&
          a.secondary_texture_coords == b.secondary_texture_coords;
-}
-
-inline bool operator!=(const ExtrudedVertex& a, const ExtrudedVertex& b) {
-  return !(a == b);
 }
 
 }  // namespace ink::brush_tip_extruder_internal

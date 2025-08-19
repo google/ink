@@ -331,9 +331,6 @@ class MeshFormat {
 };
 
 bool operator==(const MeshFormat& a, const MeshFormat& b);
-inline bool operator!=(const MeshFormat& a, const MeshFormat& b) {
-  return !(a == b);
-}
 
 namespace mesh_internal {
 std::string ToFormattedString(MeshFormat::AttributeType type);

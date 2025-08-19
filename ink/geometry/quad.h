@@ -217,7 +217,6 @@ class Quad {
 };
 
 bool operator==(const Quad& lhs, const Quad& rhs);
-bool operator!=(const Quad& lhs, const Quad& rhs);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Inline function definitions
@@ -264,10 +263,6 @@ inline bool operator==(const Quad& lhs, const Quad& rhs) {
   return lhs.Center() == rhs.Center() && lhs.Width() == rhs.Width() &&
          lhs.Height() == rhs.Height() && lhs.Rotation() == rhs.Rotation() &&
          lhs.Skew() == rhs.Skew();
-}
-
-inline bool operator!=(const Quad& lhs, const Quad& rhs) {
-  return !(lhs == rhs);
 }
 
 }  // namespace ink

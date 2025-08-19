@@ -27,7 +27,6 @@ struct LegacyVertex {
   Point secondary_texture_coords = {0, 0};
 
   bool operator==(const LegacyVertex& other) const;
-  bool operator!=(const LegacyVertex& other) const { return !(other == *this); }
 };
 
 }  // namespace ink::strokes_internal

@@ -608,66 +608,41 @@ struct BrushBehavior {
 
 bool operator==(const BrushBehavior::EnabledToolTypes& lhs,
                 const BrushBehavior::EnabledToolTypes& rhs);
-bool operator!=(const BrushBehavior::EnabledToolTypes& lhs,
-                const BrushBehavior::EnabledToolTypes& rhs);
 
 bool operator==(const BrushBehavior::SourceNode& lhs,
-                const BrushBehavior::SourceNode& rhs);
-bool operator!=(const BrushBehavior::SourceNode& lhs,
                 const BrushBehavior::SourceNode& rhs);
 
 bool operator==(const BrushBehavior::ConstantNode& lhs,
                 const BrushBehavior::ConstantNode& rhs);
-bool operator!=(const BrushBehavior::ConstantNode& lhs,
-                const BrushBehavior::ConstantNode& rhs);
 
 bool operator==(const BrushBehavior::NoiseNode& lhs,
-                const BrushBehavior::NoiseNode& rhs);
-bool operator!=(const BrushBehavior::NoiseNode& lhs,
                 const BrushBehavior::NoiseNode& rhs);
 
 bool operator==(const BrushBehavior::FallbackFilterNode& lhs,
                 const BrushBehavior::FallbackFilterNode& rhs);
-bool operator!=(const BrushBehavior::FallbackFilterNode& lhs,
-                const BrushBehavior::FallbackFilterNode& rhs);
 
 bool operator==(const BrushBehavior::ToolTypeFilterNode& lhs,
-                const BrushBehavior::ToolTypeFilterNode& rhs);
-bool operator!=(const BrushBehavior::ToolTypeFilterNode& lhs,
                 const BrushBehavior::ToolTypeFilterNode& rhs);
 
 bool operator==(const BrushBehavior::DampingNode& lhs,
                 const BrushBehavior::DampingNode& rhs);
-bool operator!=(const BrushBehavior::DampingNode& lhs,
-                const BrushBehavior::DampingNode& rhs);
 
 bool operator==(const BrushBehavior::ResponseNode& lhs,
-                const BrushBehavior::ResponseNode& rhs);
-bool operator!=(const BrushBehavior::ResponseNode& lhs,
                 const BrushBehavior::ResponseNode& rhs);
 
 bool operator==(const BrushBehavior::BinaryOpNode& lhs,
                 const BrushBehavior::BinaryOpNode& rhs);
-bool operator!=(const BrushBehavior::BinaryOpNode& lhs,
-                const BrushBehavior::BinaryOpNode& rhs);
 
 bool operator==(const BrushBehavior::InterpolationNode& lhs,
-                const BrushBehavior::InterpolationNode& rhs);
-bool operator!=(const BrushBehavior::InterpolationNode& lhs,
                 const BrushBehavior::InterpolationNode& rhs);
 
 bool operator==(const BrushBehavior::TargetNode& lhs,
                 const BrushBehavior::TargetNode& rhs);
-bool operator!=(const BrushBehavior::TargetNode& lhs,
-                const BrushBehavior::TargetNode& rhs);
 
 bool operator==(const BrushBehavior::PolarTargetNode& lhs,
                 const BrushBehavior::PolarTargetNode& rhs);
-bool operator!=(const BrushBehavior::PolarTargetNode& lhs,
-                const BrushBehavior::PolarTargetNode& rhs);
 
 bool operator==(const BrushBehavior& lhs, const BrushBehavior& rhs);
-bool operator!=(const BrushBehavior& lhs, const BrushBehavior& rhs);
 
 namespace brush_internal {
 

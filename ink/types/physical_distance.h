@@ -52,7 +52,6 @@ class PhysicalDistance {
   bool IsFinite() const;
 
   friend bool operator==(PhysicalDistance a, PhysicalDistance b);
-  friend bool operator!=(PhysicalDistance a, PhysicalDistance b);
   friend bool operator<(PhysicalDistance a, PhysicalDistance b);
   friend bool operator>(PhysicalDistance a, PhysicalDistance b);
   friend bool operator<=(PhysicalDistance a, PhysicalDistance b);
@@ -133,10 +132,6 @@ inline bool PhysicalDistance::IsFinite() const {
 
 inline bool operator==(PhysicalDistance a, PhysicalDistance b) {
   return a.value_centimeters_ == b.value_centimeters_;
-}
-
-inline bool operator!=(PhysicalDistance a, PhysicalDistance b) {
-  return a.value_centimeters_ != b.value_centimeters_;
 }
 
 inline bool operator<(PhysicalDistance a, PhysicalDistance b) {

@@ -81,7 +81,6 @@ struct EasingFunction {
     float y2;
 
     bool operator==(const CubicBezier& other) const;
-    bool operator!=(const CubicBezier& other) const;
   };
 
   // Parameters for a custom piecewise-linear easing function.
@@ -108,7 +107,6 @@ struct EasingFunction {
     std::vector<Point> points;
 
     bool operator==(const Linear& other) const;
-    bool operator!=(const Linear& other) const;
   };
 
   // Setting to determine the desired output value of the first and last
@@ -153,7 +151,6 @@ struct EasingFunction {
     StepPosition step_position;
 
     bool operator==(const Steps& other) const;
-    bool operator!=(const Steps& other) const;
   };
 
   // Union of possible easing function parameters.
@@ -162,7 +159,6 @@ struct EasingFunction {
   Parameters parameters = Predefined::kLinear;
 
   bool operator==(const EasingFunction& other) const;
-  bool operator!=(const EasingFunction& other) const;
 };
 
 namespace brush_internal {

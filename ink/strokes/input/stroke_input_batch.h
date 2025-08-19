@@ -271,7 +271,6 @@ class StrokeInputBatch::ConstIterator {
   ConstIterator operator++(int);
 
   friend bool operator==(const ConstIterator& lhs, const ConstIterator& rhs);
-  friend bool operator!=(const ConstIterator& lhs, const ConstIterator& rhs);
 
  private:
   friend class StrokeInputBatch;
@@ -363,11 +362,6 @@ StrokeInputBatch::ConstIterator::operator*() const {
 inline bool operator==(const StrokeInputBatch::ConstIterator& lhs,
                        const StrokeInputBatch::ConstIterator& rhs) {
   return lhs.batch_subdata_.data() == rhs.batch_subdata_.data();
-}
-
-inline bool operator!=(const StrokeInputBatch::ConstIterator& lhs,
-                       const StrokeInputBatch::ConstIterator& rhs) {
-  return !(lhs == rhs);
 }
 
 inline int StrokeInputBatch::FloatsPerInput(bool has_pressure, bool has_tilt,

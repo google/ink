@@ -47,7 +47,6 @@ struct Triangle {
 };
 
 bool operator==(const Triangle& lhs, const Triangle& rhs);
-bool operator!=(const Triangle& lhs, const Triangle& rhs);
 
 namespace triangle_internal {
 std::string ToFormattedString(const Triangle& t);
@@ -64,9 +63,6 @@ void AbslStringify(Sink& sink, const Triangle& t) {
 
 inline bool operator==(const Triangle& lhs, const Triangle& rhs) {
   return lhs.p0 == rhs.p0 && lhs.p1 == rhs.p1 && lhs.p2 == rhs.p2;
-}
-inline bool operator!=(const Triangle& lhs, const Triangle& rhs) {
-  return !(lhs == rhs);
 }
 
 }  // namespace ink

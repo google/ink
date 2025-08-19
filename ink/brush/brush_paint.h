@@ -303,16 +303,11 @@ struct BrushPaint {
 
 bool operator==(const BrushPaint::TextureKeyframe& lhs,
                 const BrushPaint::TextureKeyframe& rhs);
-bool operator!=(const BrushPaint::TextureKeyframe& lhs,
-                const BrushPaint::TextureKeyframe& rhs);
 
 bool operator==(const BrushPaint::TextureLayer& lhs,
                 const BrushPaint::TextureLayer& rhs);
-bool operator!=(const BrushPaint::TextureLayer& lhs,
-                const BrushPaint::TextureLayer& rhs);
 
 bool operator==(const BrushPaint& lhs, const BrushPaint& rhs);
-bool operator!=(const BrushPaint& lhs, const BrushPaint& rhs);
 
 namespace brush_internal {
 
@@ -398,22 +393,8 @@ H AbslHashValue(H h, const BrushPaint& paint) {
   return H::combine(std::move(h), paint.texture_layers);
 }
 
-inline bool operator!=(const BrushPaint::TextureKeyframe& lhs,
-                       const BrushPaint::TextureKeyframe& rhs) {
-  return !(lhs == rhs);
-}
-
-inline bool operator!=(const BrushPaint::TextureLayer& lhs,
-                       const BrushPaint::TextureLayer& rhs) {
-  return !(lhs == rhs);
-}
-
 inline bool operator==(const BrushPaint& lhs, const BrushPaint& rhs) {
   return lhs.texture_layers == rhs.texture_layers;
-}
-
-inline bool operator!=(const BrushPaint& lhs, const BrushPaint& rhs) {
-  return !(lhs == rhs);
 }
 
 }  // namespace ink

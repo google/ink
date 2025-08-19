@@ -42,11 +42,6 @@ bool operator==(const BrushBehavior::EnabledToolTypes& lhs,
          lhs.touch == rhs.touch && lhs.stylus == rhs.stylus;
 }
 
-bool operator!=(const BrushBehavior::EnabledToolTypes& lhs,
-                const BrushBehavior::EnabledToolTypes& rhs) {
-  return !(lhs == rhs);
-}
-
 bool operator==(const BrushBehavior::SourceNode& lhs,
                 const BrushBehavior::SourceNode& rhs) {
   return lhs.source == rhs.source &&
@@ -54,19 +49,9 @@ bool operator==(const BrushBehavior::SourceNode& lhs,
          lhs.source_value_range == rhs.source_value_range;
 }
 
-bool operator!=(const BrushBehavior::SourceNode& lhs,
-                const BrushBehavior::SourceNode& rhs) {
-  return !(lhs == rhs);
-}
-
 bool operator==(const BrushBehavior::ConstantNode& lhs,
                 const BrushBehavior::ConstantNode& rhs) {
   return lhs.value == rhs.value;
-}
-
-bool operator!=(const BrushBehavior::ConstantNode& lhs,
-                const BrushBehavior::ConstantNode& rhs) {
-  return !(lhs == rhs);
 }
 
 bool operator==(const BrushBehavior::NoiseNode& lhs,
@@ -75,29 +60,14 @@ bool operator==(const BrushBehavior::NoiseNode& lhs,
          lhs.base_period == rhs.base_period;
 }
 
-bool operator!=(const BrushBehavior::NoiseNode& lhs,
-                const BrushBehavior::NoiseNode& rhs) {
-  return !(lhs == rhs);
-}
-
 bool operator==(const BrushBehavior::FallbackFilterNode& lhs,
                 const BrushBehavior::FallbackFilterNode& rhs) {
   return lhs.is_fallback_for == rhs.is_fallback_for;
 }
 
-bool operator!=(const BrushBehavior::FallbackFilterNode& lhs,
-                const BrushBehavior::FallbackFilterNode& rhs) {
-  return !(lhs == rhs);
-}
-
 bool operator==(const BrushBehavior::ToolTypeFilterNode& lhs,
                 const BrushBehavior::ToolTypeFilterNode& rhs) {
   return lhs.enabled_tool_types == rhs.enabled_tool_types;
-}
-
-bool operator!=(const BrushBehavior::ToolTypeFilterNode& lhs,
-                const BrushBehavior::ToolTypeFilterNode& rhs) {
-  return !(lhs == rhs);
 }
 
 bool operator==(const BrushBehavior::DampingNode& lhs,
@@ -106,19 +76,9 @@ bool operator==(const BrushBehavior::DampingNode& lhs,
          lhs.damping_gap == rhs.damping_gap;
 }
 
-bool operator!=(const BrushBehavior::DampingNode& lhs,
-                const BrushBehavior::DampingNode& rhs) {
-  return !(lhs == rhs);
-}
-
 bool operator==(const BrushBehavior::ResponseNode& lhs,
                 const BrushBehavior::ResponseNode& rhs) {
   return lhs.response_curve == rhs.response_curve;
-}
-
-bool operator!=(const BrushBehavior::ResponseNode& lhs,
-                const BrushBehavior::ResponseNode& rhs) {
-  return !(lhs == rhs);
 }
 
 bool operator==(const BrushBehavior::BinaryOpNode& lhs,
@@ -126,19 +86,9 @@ bool operator==(const BrushBehavior::BinaryOpNode& lhs,
   return lhs.operation == rhs.operation;
 }
 
-bool operator!=(const BrushBehavior::BinaryOpNode& lhs,
-                const BrushBehavior::BinaryOpNode& rhs) {
-  return !(lhs == rhs);
-}
-
 bool operator==(const BrushBehavior::InterpolationNode& lhs,
                 const BrushBehavior::InterpolationNode& rhs) {
   return lhs.interpolation == rhs.interpolation;
-}
-
-bool operator!=(const BrushBehavior::InterpolationNode& lhs,
-                const BrushBehavior::InterpolationNode& rhs) {
-  return !(lhs == rhs);
 }
 
 bool operator==(const BrushBehavior::TargetNode& lhs,
@@ -147,28 +97,14 @@ bool operator==(const BrushBehavior::TargetNode& lhs,
          lhs.target_modifier_range == rhs.target_modifier_range;
 }
 
-bool operator!=(const BrushBehavior::TargetNode& lhs,
-                const BrushBehavior::TargetNode& rhs) {
-  return !(lhs == rhs);
-}
-
 bool operator==(const BrushBehavior::PolarTargetNode& lhs,
                 const BrushBehavior::PolarTargetNode& rhs) {
   return lhs.target == rhs.target && lhs.angle_range == rhs.angle_range &&
          lhs.magnitude_range == rhs.magnitude_range;
 }
 
-bool operator!=(const BrushBehavior::PolarTargetNode& lhs,
-                const BrushBehavior::PolarTargetNode& rhs) {
-  return !(lhs == rhs);
-}
-
 bool operator==(const BrushBehavior& lhs, const BrushBehavior& rhs) {
   return lhs.nodes == rhs.nodes;
-}
-
-bool operator!=(const BrushBehavior& lhs, const BrushBehavior& rhs) {
-  return !(lhs == rhs);
 }
 
 namespace brush_internal {

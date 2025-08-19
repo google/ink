@@ -110,7 +110,6 @@ struct BrushTip {
   std::vector<BrushBehavior> behaviors;
 
   bool operator==(const BrushTip& other) const;
-  bool operator!=(const BrushTip& other) const;
 };
 
 namespace brush_internal {

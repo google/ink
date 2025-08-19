@@ -146,7 +146,6 @@ class Color {
   // Returns true if both colors are in the same color space and if the values
   // match exactly in all channels.
   bool operator==(const Color& other) const;
-  bool operator!=(const Color& other) const { return !(*this == other); }
 
   // Returns true if the per-channel difference between `this` and `other`,
   // after conversion of `other` to the color space of `this', is very small.

@@ -95,7 +95,6 @@ Angle Min(Angle a, Angle b);
 Angle Max(Angle a, Angle b);
 
 bool operator==(Angle lhs, Angle rhs);
-bool operator!=(Angle lhs, Angle rhs);
 bool operator<(Angle lhs, Angle rhs);
 bool operator>(Angle lhs, Angle rhs);
 bool operator<=(Angle lhs, Angle rhs);
@@ -142,9 +141,6 @@ inline Angle Max(Angle a, Angle b) {
 
 inline bool operator==(Angle lhs, Angle rhs) {
   return lhs.ValueInRadians() == rhs.ValueInRadians();
-}
-inline bool operator!=(Angle lhs, Angle rhs) {
-  return lhs.ValueInRadians() != rhs.ValueInRadians();
 }
 inline bool operator<(Angle lhs, Angle rhs) {
   return lhs.ValueInRadians() < rhs.ValueInRadians();

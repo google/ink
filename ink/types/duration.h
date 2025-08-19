@@ -101,7 +101,6 @@ class Duration32 {
   bool IsFinite() const;
 
   friend bool operator==(Duration32 a, Duration32 b);
-  friend bool operator!=(Duration32 a, Duration32 b);
   friend bool operator<(Duration32 a, Duration32 b);
   friend bool operator>(Duration32 a, Duration32 b);
   friend bool operator<=(Duration32 a, Duration32 b);
@@ -178,10 +177,6 @@ inline bool Duration32::IsFinite() const {
 
 inline bool operator==(Duration32 a, Duration32 b) {
   return a.value_seconds_ == b.value_seconds_;
-}
-
-inline bool operator!=(Duration32 a, Duration32 b) {
-  return a.value_seconds_ != b.value_seconds_;
 }
 
 inline bool operator<(Duration32 a, Duration32 b) {

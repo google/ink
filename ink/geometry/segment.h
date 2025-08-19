@@ -73,7 +73,6 @@ struct Segment {
 // identical and their ending points are identical. Segments who have the same
 // endpoints but run opposite directions are not considered equivalent.
 bool operator==(const Segment& lhs, const Segment& rhs);
-bool operator!=(const Segment& lhs, const Segment& rhs);
 
 namespace segment_internal {
 std::string ToFormattedString(Segment segment);
@@ -90,10 +89,6 @@ void AbslStringify(Sink& sink, Segment segment) {
 
 inline bool operator==(const Segment& lhs, const Segment& rhs) {
   return lhs.start == rhs.start && lhs.end == rhs.end;
-}
-
-inline bool operator!=(const Segment& lhs, const Segment& rhs) {
-  return lhs.start != rhs.start || lhs.end != rhs.end;
 }
 
 }  // namespace ink

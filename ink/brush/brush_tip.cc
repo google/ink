@@ -39,10 +39,6 @@ bool BrushTip::operator==(const BrushTip& other) const {
          behaviors == other.behaviors;
 }
 
-bool BrushTip::operator!=(const BrushTip& other) const {
-  return !(*this == other);
-}
-
 namespace brush_internal {
 
 absl::Status ValidateBrushTipTopLevel(const BrushTip& tip) {
