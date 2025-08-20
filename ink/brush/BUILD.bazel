@@ -157,8 +157,10 @@ cc_library(
     deps = [
         ":brush_behavior",
         "//ink/geometry:angle",
+        "//ink/geometry:mesh_format",
         "//ink/geometry:vec",
         "//ink/types:duration",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
@@ -266,7 +268,9 @@ cc_library(
     deps = [
         ":color_function",
         "//ink/geometry:angle",
+        "//ink/geometry:mesh_format",
         "//ink/geometry:vec",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
