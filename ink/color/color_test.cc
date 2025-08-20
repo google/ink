@@ -23,6 +23,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/hash/hash_testing.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ink/color/color_space.h"
@@ -49,6 +50,20 @@ constexpr Color::Format kAllFormats[] = {Format::kLinear, Format::kGammaEncoded,
                                          Format::kPremultipliedAlpha};
 constexpr ColorSpace kAllColorSpaces[] = {ColorSpace::kSrgb,
                                           ColorSpace::kDisplayP3};
+
+TEST(ColorTest, ColorSupportsAbslHash) {
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
+      Color::Transparent(),
+      Color::Black(),
+      Color::Red(),
+      Color::Green(),
+      Color::Blue(),
+      Color::FromFloat(1, 0.75, 0.5, 0.25, Color::Format::kGammaEncoded,
+                       ColorSpace::kSrgb),
+      Color::FromFloat(1, 0.75, 0.5, 0.25, Color::Format::kGammaEncoded,
+                       ColorSpace::kDisplayP3),
+  }));
+}
 
 void IdenticalFromFloatsCompareEqual(const std::array<float, 4>& rgba) {
   for (auto format : kAllFormats) {

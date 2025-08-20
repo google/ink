@@ -225,6 +225,11 @@ class Color {
     sink.Append(color.ToFormattedString());
   }
 
+  template <typename H>
+  friend H AbslHashValue(H h, const Color& color) {
+    return H::combine(std::move(h), color.rgba_, color.color_space_);
+  }
+
  private:
   // The four components of the color.
   //

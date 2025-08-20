@@ -35,6 +35,7 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
 #include "ink/color/color.h"
 #include "ink/color/fuzz_domains.h"
@@ -270,6 +271,14 @@ Domain<BrushBehavior::PolarTarget> ArbitraryBrushBehaviorPolarTarget() {
   });
 }
 // LINT.ThenChange(brush_behavior.h:polar_target)
+
+Domain<ColorFunction::OpacityMultiplier> ValidColorFunctionOpacityMultiplier() {
+  return StructOf<ColorFunction::OpacityMultiplier>(FiniteNonNegativeFloat());
+}
+
+Domain<ColorFunction::ReplaceColor> ValidColorFunctionReplaceColor() {
+  return StructOf<ColorFunction::ReplaceColor>(ArbitraryColor());
+}
 
 // LINT.IfChange(predefined)
 Domain<EasingFunction::Predefined> ArbitraryEasingFunctionPredefined() {
@@ -744,6 +753,11 @@ Domain<BrushTip> ValidBrushTip() {
 
 Domain<BrushTip> SerializableBrushTip() {
   return ValidBrushTip(DomainVariant::kValidAndSerializable);
+}
+
+Domain<ColorFunction> ValidColorFunction() {
+  return StructOf<ColorFunction>(VariantOf(
+      ValidColorFunctionOpacityMultiplier(), ValidColorFunctionReplaceColor()));
 }
 
 Domain<EasingFunction> ValidEasingFunction() {
