@@ -326,6 +326,19 @@ TEST(BrushTest, MostlyEmptyTextureLayerProtoDecodesWithDefaultValues) {
       ElementsAre(BrushPaintTextureLayerEq(BrushPaint::TextureLayer{})));
 }
 
+TEST(BrushTest, DecodeBrushPaintWithDuplicateSelfOverlapVisibilityPreferences) {
+  proto::BrushPaint paint_proto;
+  paint_proto.add_self_overlap_visibility_preferences(
+      proto::BrushPaint::SELF_OVERLAP_VISIBILITY_ACCUMULATE);
+  paint_proto.add_self_overlap_visibility_preferences(
+      proto::BrushPaint::SELF_OVERLAP_VISIBILITY_ACCUMULATE);
+  EXPECT_THAT(
+      DecodeBrushPaint(paint_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("`BrushPaint::self_overlap_visibility_preferences` "
+                         "cannot have duplicate entries")));
+}
+
 void DecodeBrushDoesNotCrashOnArbitraryInput(const proto::Brush& brush_proto) {
   DecodeBrush(brush_proto).IgnoreError();
 }
@@ -356,7 +369,9 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .wrap_y = BrushPaint::TextureWrap::kMirror,
                            .size = {10, 15},
-                           .blend_mode = BrushPaint::BlendMode::kSrcIn}}});
+                           .blend_mode = BrushPaint::BlendMode::kSrcIn}},
+       .self_overlap_visibility_preferences = {
+           BrushPaint::SelfOverlapVisibility::kDiscardBasic}});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -409,6 +424,8 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   layer_proto->set_opacity(1.f);
   layer_proto->set_blend_mode(
       proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
+  coat_proto->mutable_paint()->add_self_overlap_visibility_preferences(
+      proto::BrushPaint::SELF_OVERLAP_VISIBILITY_DISCARD_BASIC);
 
   EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto));
   EXPECT_EQ(callback_count, 1);
@@ -427,7 +444,9 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .wrap_y = BrushPaint::TextureWrap::kMirror,
                            .size = {10, 15},
-                           .blend_mode = BrushPaint::BlendMode::kSrcIn}}});
+                           .blend_mode = BrushPaint::BlendMode::kSrcIn}},
+       .self_overlap_visibility_preferences = {
+           BrushPaint::SelfOverlapVisibility::kAccumulate}});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -491,6 +510,8 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   texture_layer_proto->set_opacity(1.f);
   texture_layer_proto->set_blend_mode(
       proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
+  paint_proto->add_self_overlap_visibility_preferences(
+      proto::BrushPaint::SELF_OVERLAP_VISIBILITY_ACCUMULATE);
 
   EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto));
   EXPECT_EQ(callback_count, 1);

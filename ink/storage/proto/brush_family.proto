@@ -417,10 +417,37 @@ message BrushPaint {
     reserved 23;
   }
 
+  // Specifies how parts of the stroke that intersect itself should be treated
+  // during the rendering process. The simplest example of this is with
+  // translucent, solid-color strokes - such as a highlighter - where a later
+  // part of a stroke that overlaps an earlier part of itself may appear with
+  // either double the opacity (self overlap is accumulated) or the same opacity
+  // (self overlap is discarded). More complex examples may involve color or
+  // opacity variations (e.g. with
+  // `BrushBehavior::Target::HUE_OFFSET_IN_RADIANS`), or complex textures (e.g.
+  // with `TextureMapping::kStamping`). LINT.IfChange(self_overlap)
+  enum SelfOverlapVisibility {
+    SELF_OVERLAP_VISIBILITY_UNSPECIFIED = 0;
+    SELF_OVERLAP_VISIBILITY_ACCUMULATE = 1;
+    SELF_OVERLAP_VISIBILITY_DISCARD_BASIC = 2;
+  }
+  // LINT.ThenChange(../../brush/brush_paint.h:self_overlap)
+
   // Zero or more textures to blend together to affect this coat's appearance.
   // Each layer is blended into the next one, and finally into the color of the
   // paint, according to each layer's `blend_mode`.
   repeated TextureLayer texture_layers = 1;
+
+  // The `SelfOverlapVisibility` approaches that should be used for rendering
+  // the stroke coat associated with this paint, in order of preference. The
+  // first one supported by the renderer on the device will be used. An empty
+  // list is recommended - it signifies that the renderer should use what's best
+  // on the device, which may be determined from a combination of the fullest
+  // support of brush features as well as drawing performance. If no item in the
+  // list is supported by the renderer, then it will throw an exception. This
+  // list cannot have duplicate entries.
+  repeated SelfOverlapVisibility self_overlap_visibility_preferences = 2
+      [packed = true];
 }
 
 // A behavior describing how stroke input properties should affect the shape and

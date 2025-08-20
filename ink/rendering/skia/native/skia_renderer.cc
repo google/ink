@@ -76,16 +76,6 @@ SkRect ToSkiaRect(const Rect& rect) {
   return SkRect::MakeLTRB(rect.XMin(), rect.YMin(), rect.XMax(), rect.YMax());
 }
 
-// Returns true if the renderer should use `SkPath` instead of `SkMesh` for
-// rendering.
-//
-// TODO: b/346530293 - Also use the `BrushPaint` for the decision once the paint
-// has a setting for opacity behavior on self-overlap. This would make it
-// possible that a single `Drawable` holds a mix of meshes and paths.
-bool UsePathRendering(GrDirectContext* context, const BrushPaint&) {
-  return context == nullptr;
-}
-
 // Returns the color opacity multiplier when `SkPath` should be used for
 // rendering instead of `SkMesh`.
 float OpacityMultiplierForPath(const Brush& brush, uint32_t coat_index) {
@@ -105,6 +95,15 @@ BrushPaint::TextureMapping GetBrushPaintTextureMapping(
     const BrushPaint& paint) {
   return !paint.texture_layers.empty() ? paint.texture_layers[0].mapping
                                        : BrushPaint::TextureMapping::kTiling;
+}
+
+std::vector<BrushPaint::SelfOverlapVisibility>
+GetSelfOverlapVisibilityPreferences(const BrushPaint& paint) {
+  return !paint.self_overlap_visibility_preferences.empty()
+             ? paint.self_overlap_visibility_preferences
+             : std::vector<BrushPaint::SelfOverlapVisibility>{
+                   BrushPaint::SelfOverlapVisibility::kAccumulate,
+                   BrushPaint::SelfOverlapVisibility::kDiscardBasic};
 }
 
 }  // namespace
@@ -127,53 +126,79 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
   drawables.reserve(num_coats);
   for (uint32_t coat_index = 0; coat_index < num_coats; ++coat_index) {
     if (stroke.GetMeshBounds(coat_index).IsEmpty()) continue;
+    absl::StatusOr<Drawable::Implementation> drawable =
+        CreateDrawableImpl(context, stroke, coat_index, *brush);
+    if (!drawable.ok()) return drawable.status();
+    drawables.push_back(*std::move(drawable));
+  }
+  return Drawable(object_to_canvas, std::move(drawables));
+}
 
-    if (UsePathRendering(context, brush->GetCoats()[coat_index].paint)) {
-      drawables.push_back(PathDrawable(
-          stroke.GetMesh(coat_index), stroke.GetCoatOutlines(coat_index),
-          brush->GetColor(), OpacityMultiplierForPath(*brush, coat_index)));
-      continue;
+absl::StatusOr<SkiaRenderer::Drawable::Implementation>
+SkiaRenderer::CreateDrawableImpl(GrDirectContext* context,
+                                 const InProgressStroke& stroke,
+                                 uint32_t coat_index, const Brush& brush) {
+  const BrushPaint& brush_paint = brush.GetCoats()[coat_index].paint;
+  std::vector<BrushPaint::SelfOverlapVisibility>
+      self_overlap_visibility_preferences =
+          GetSelfOverlapVisibilityPreferences(brush_paint);
+  for (const BrushPaint::SelfOverlapVisibility self_overlap_visibility :
+       self_overlap_visibility_preferences) {
+    switch (self_overlap_visibility) {
+      case BrushPaint::SelfOverlapVisibility::kAccumulate:
+        if (context == nullptr) {
+          continue;
+        }
+        return CreateMeshDrawable(context, stroke, coat_index, brush_paint,
+                                  brush);
+      case BrushPaint::SelfOverlapVisibility::kDiscardBasic:
+        return PathDrawable(
+            stroke.GetMesh(coat_index), stroke.GetCoatOutlines(coat_index),
+            brush.GetColor(), OpacityMultiplierForPath(brush, coat_index));
     }
+  }
+  return absl::InvalidArgumentError(
+      "No supported self-overlap visibility preferences.");
+}
 
-    const BrushPaint& brush_paint = brush->GetCoats()[coat_index].paint;
-    absl::StatusOr<sk_sp<SkShader>> shader = shader_cache_.GetShaderForPaint(
-        brush_paint, brush->GetSize(), stroke.GetInputs());
-    if (!shader.ok()) return shader.status();
+absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
+    GrDirectContext* context, const InProgressStroke& stroke,
+    uint32_t coat_index, const BrushPaint& brush_paint, const Brush& brush) {
+  absl::StatusOr<sk_sp<SkShader>> shader = shader_cache_.GetShaderForPaint(
+      brush_paint, brush.GetSize(), stroke.GetInputs());
+  if (!shader.ok()) return shader.status();
 
-    absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
-        specification_cache_.GetFor(stroke);
-    if (!specification.ok()) return specification.status();
+  absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
+      specification_cache_.GetFor(stroke);
+  if (!specification.ok()) return specification.status();
 
-    const MutableMesh& mesh = stroke.GetMesh(coat_index);
-    if (mesh.VertexCount() >= std::numeric_limits<uint16_t>::max()) {
-      return absl::UnimplementedError(
-          "Strokes requiring at least 2^16 indices are not supported yet.");
-    }
-
-    absl::Span<const std::byte> vertex_data = mesh.RawVertexData();
-    FillTemporaryIndices(mesh, temporary_indices_);
-
-    absl::StatusOr<MeshDrawable> mesh_drawable = MeshDrawable::Create(
-        *std::move(specification),
-        shader_cache_.GetBlenderForPaint(brush_paint), *std::move(shader),
-        {{
-            .vertex_buffer = SkMeshes::MakeVertexBuffer(
-                context, vertex_data.data(), vertex_data.size()),
-            .index_buffer = SkMeshes::MakeIndexBuffer(
-                context, temporary_indices_.data(),
-                temporary_indices_.size() * sizeof(uint16_t)),
-            .vertex_count = static_cast<int32_t>(mesh.VertexCount()),
-            .index_count = static_cast<int32_t>(3 * mesh.TriangleCount()),
-            .bounds = ToSkiaRect(*stroke.GetMeshBounds(coat_index).AsRect()),
-        }});
-    if (!mesh_drawable.ok()) return mesh_drawable.status();
-
-    mesh_drawable->SetBrushColor(brush->GetColor());
-    mesh_drawable->SetTextureMapping(GetBrushPaintTextureMapping(brush_paint));
-    drawables.push_back(*std::move(mesh_drawable));
+  const MutableMesh& mesh = stroke.GetMesh(coat_index);
+  if (mesh.VertexCount() >= std::numeric_limits<uint16_t>::max()) {
+    return absl::UnimplementedError(
+        "Strokes requiring at least 2^16 indices are not supported yet.");
   }
 
-  return Drawable(object_to_canvas, std::move(drawables));
+  absl::Span<const std::byte> vertex_data = mesh.RawVertexData();
+  FillTemporaryIndices(mesh, temporary_indices_);
+
+  absl::StatusOr<MeshDrawable> mesh_drawable = MeshDrawable::Create(
+      *std::move(specification), shader_cache_.GetBlenderForPaint(brush_paint),
+      *std::move(shader),
+      {{
+          .vertex_buffer = SkMeshes::MakeVertexBuffer(
+              context, vertex_data.data(), vertex_data.size()),
+          .index_buffer = SkMeshes::MakeIndexBuffer(
+              context, temporary_indices_.data(),
+              temporary_indices_.size() * sizeof(uint16_t)),
+          .vertex_count = static_cast<int32_t>(mesh.VertexCount()),
+          .index_count = static_cast<int32_t>(3 * mesh.TriangleCount()),
+          .bounds = ToSkiaRect(*stroke.GetMeshBounds(coat_index).AsRect()),
+      }});
+  if (!mesh_drawable.ok()) return mesh_drawable.status();
+
+  mesh_drawable->SetBrushColor(brush.GetColor());
+  mesh_drawable->SetTextureMapping(GetBrushPaintTextureMapping(brush_paint));
+  return mesh_drawable;
 }
 
 absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
@@ -195,61 +220,89 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     absl::Span<const Mesh> meshes = stroke_shape.RenderGroupMeshes(coat_index);
     if (meshes.empty()) continue;
 
-    if (UsePathRendering(context, brush.GetCoats()[coat_index].paint)) {
-      drawables.push_back(
-          PathDrawable(stroke_shape, coat_index, brush.GetColor(),
-                       OpacityMultiplierForPath(brush, coat_index)));
-      continue;
-    }
-
-    const BrushPaint& brush_paint = brush.GetCoats()[coat_index].paint;
-    absl::StatusOr<sk_sp<SkShader>> shader = shader_cache_.GetShaderForPaint(
-        brush_paint, brush.GetSize(), stroke.GetInputs());
-    if (!shader.ok()) return shader.status();
-
-    // TODO: b/284117747 - Pass `brush.GetCoats()[coat_index].paint` to the
-    // `specification_cache_`.
-    absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
-        specification_cache_.GetForStroke(stroke_shape, coat_index);
-    if (!specification.ok()) return specification.status();
-
-    absl::InlinedVector<MeshDrawable::Partition, 1> partitions;
-    partitions.reserve(meshes.size());
-    for (const Mesh& mesh : meshes) {
-      absl::Span<const std::byte> vertex_data = mesh.RawVertexData();
-      absl::Span<const std::byte> index_data = mesh.RawIndexData();
-      partitions.push_back({
-          .vertex_buffer = SkMeshes::MakeVertexBuffer(
-              context, vertex_data.data(), vertex_data.size()),
-          .index_buffer = SkMeshes::MakeIndexBuffer(context, index_data.data(),
-                                                    index_data.size()),
-          .vertex_count = static_cast<int32_t>(mesh.VertexCount()),
-          .index_count = static_cast<int32_t>(3 * mesh.TriangleCount()),
-          .bounds = ToSkiaRect(*mesh.Bounds().AsRect()),
-      });
-    }
-
-    const Mesh& first_mesh = meshes.front();
-    auto get_attribute_unpacking_transform =
-        [&first_mesh](int attribute_index) -> const MeshAttributeCodingParams& {
-      return first_mesh.VertexAttributeUnpackingParams(attribute_index);
-    };
-
-    MeshUniformData uniform_data(**specification,
-                                 first_mesh.Format().Attributes(),
-                                 get_attribute_unpacking_transform);
-    absl::StatusOr<MeshDrawable> mesh_drawable = MeshDrawable::Create(
-        *std::move(specification),
-        shader_cache_.GetBlenderForPaint(brush_paint), *std::move(shader),
-        std::move(partitions), std::move(uniform_data));
-    if (!mesh_drawable.ok()) return mesh_drawable.status();
-
-    mesh_drawable->SetBrushColor(brush.GetColor());
-    mesh_drawable->SetTextureMapping(GetBrushPaintTextureMapping(brush_paint));
-    drawables.push_back(*std::move(mesh_drawable));
+    absl::StatusOr<Drawable::Implementation> drawable =
+        CreateDrawableImpl(context, stroke, coat_index, brush);
+    if (!drawable.ok()) return drawable.status();
+    drawables.push_back(*std::move(drawable));
   }
 
   return Drawable(object_to_canvas, std::move(drawables));
+}
+
+absl::StatusOr<SkiaRenderer::Drawable::Implementation>
+SkiaRenderer::CreateDrawableImpl(GrDirectContext* context, const Stroke& stroke,
+                                 uint32_t coat_index, const Brush& brush) {
+  const BrushPaint& brush_paint = brush.GetCoats()[coat_index].paint;
+  std::vector<BrushPaint::SelfOverlapVisibility>
+      self_overlap_visibility_preferences =
+          GetSelfOverlapVisibilityPreferences(brush_paint);
+  for (const BrushPaint::SelfOverlapVisibility self_overlap_visibility :
+       self_overlap_visibility_preferences) {
+    switch (self_overlap_visibility) {
+      case BrushPaint::SelfOverlapVisibility::kAccumulate:
+        if (context == nullptr) {
+          continue;
+        }
+        return CreateMeshDrawable(context, stroke, coat_index);
+      case BrushPaint::SelfOverlapVisibility::kDiscardBasic:
+        return PathDrawable(stroke.GetShape(), coat_index, brush.GetColor(),
+                            OpacityMultiplierForPath(brush, coat_index));
+    }
+  }
+  return absl::InvalidArgumentError(
+      "No supported self-overlap visibility preferences.");
+}
+
+absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
+    GrDirectContext* context, const Stroke& stroke, uint32_t coat_index) {
+  const Brush& brush = stroke.GetBrush();
+  const PartitionedMesh& stroke_shape = stroke.GetShape();
+  const BrushPaint& brush_paint = brush.GetCoats()[coat_index].paint;
+  absl::Span<const Mesh> meshes = stroke_shape.RenderGroupMeshes(coat_index);
+
+  absl::StatusOr<sk_sp<SkShader>> shader = shader_cache_.GetShaderForPaint(
+      brush_paint, brush.GetSize(), stroke.GetInputs());
+  if (!shader.ok()) return shader.status();
+
+  // TODO: b/284117747 - Pass `brush.GetCoats()[coat_index].paint` to the
+  // `specification_cache_`.
+  absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
+      specification_cache_.GetForStroke(stroke_shape, coat_index);
+  if (!specification.ok()) return specification.status();
+
+  absl::InlinedVector<MeshDrawable::Partition, 1> partitions;
+  partitions.reserve(meshes.size());
+  for (const Mesh& mesh : meshes) {
+    absl::Span<const std::byte> vertex_data = mesh.RawVertexData();
+    absl::Span<const std::byte> index_data = mesh.RawIndexData();
+    partitions.push_back({
+        .vertex_buffer = SkMeshes::MakeVertexBuffer(context, vertex_data.data(),
+                                                    vertex_data.size()),
+        .index_buffer = SkMeshes::MakeIndexBuffer(context, index_data.data(),
+                                                  index_data.size()),
+        .vertex_count = static_cast<int32_t>(mesh.VertexCount()),
+        .index_count = static_cast<int32_t>(3 * mesh.TriangleCount()),
+        .bounds = ToSkiaRect(*mesh.Bounds().AsRect()),
+    });
+  }
+
+  const Mesh& first_mesh = meshes.front();
+  auto get_attribute_unpacking_transform =
+      [&first_mesh](int attribute_index) -> const MeshAttributeCodingParams& {
+    return first_mesh.VertexAttributeUnpackingParams(attribute_index);
+  };
+
+  MeshUniformData uniform_data(**specification,
+                               first_mesh.Format().Attributes(),
+                               get_attribute_unpacking_transform);
+  absl::StatusOr<MeshDrawable> mesh_drawable = MeshDrawable::Create(
+      *std::move(specification), shader_cache_.GetBlenderForPaint(brush_paint),
+      *std::move(shader), std::move(partitions), std::move(uniform_data));
+  if (!mesh_drawable.ok()) return mesh_drawable.status();
+
+  mesh_drawable->SetBrushColor(brush.GetColor());
+  mesh_drawable->SetTextureMapping(GetBrushPaintTextureMapping(brush_paint));
+  return mesh_drawable;
 }
 
 absl::Status SkiaRenderer::Draw(GrDirectContext* context,

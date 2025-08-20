@@ -302,7 +302,45 @@ struct BrushPaint {
     bool operator==(const TextureLayer& rhs) const = default;
   };
 
+  // Specifies how parts of the stroke that intersect itself should be treated
+  // during the rendering process. The simplest example of this is with
+  // translucent, solid-color strokes - such as a highlighter - where a later
+  // part of a stroke that overlaps an earlier part of itself may appear with
+  // either double the opacity (self overlap is accumulated) or the same opacity
+  // (self overlap is discarded). More complex examples may involve color or
+  // opacity variations (e.g. with
+  // BrushBehavior::Target::HUE_OFFSET_IN_RADIANS`), or complex textures (e.g.
+  // with `TextureMapping::kStamping`).
+  //
+  enum class SelfOverlapVisibility {
+    // Self overlap will be accumulated, meaning that both the overlapped
+    // content and the overlapping content will be drawn. For a translucent
+    // color stroke, this typically means that the overlapping portion will
+    // appear with double the opacity of the non-overlapping portions. This
+    // option is most analogous to physical writing and drawing, and it is the
+    // option that best matches the appearance as if the stroke were drawn as
+    // separate, shorter strokes. This is the default behavior for renderers
+    // that use the stroke mesh rather than its outline.
+    kAccumulate,
+    // Self overlap will be drawn in a way that discards the overlapping
+    // content. It has the same limitations as PDF page objects and annotations,
+    // where a stroke can be filled only with a solid color or textures using
+    // `TextureMapping::kTiling`. This is the default behavior for renderers
+    // that use the stroke outline rather than its mesh.
+    kDiscardBasic,
+  };
+
   std::vector<TextureLayer> texture_layers;
+
+  // The `SelfOverlapVisibility` approaches that should be used for rendering
+  // the stroke coat associated with this paint, in order of preference. The
+  // first one supported by the renderer on the device will be used. An empty
+  // list is recommended - it signifies that the renderer should use what's best
+  // on the device, which may be determined from a combination of the fullest
+  // support of brush features as well as drawing performance. If no item in the
+  // list is supported by the renderer, then it will throw an exception. This
+  // list cannot have duplicate entries.
+  std::vector<SelfOverlapVisibility> self_overlap_visibility_preferences;
 
   bool operator==(const BrushPaint& rhs) const = default;
 };
@@ -327,6 +365,8 @@ std::string ToFormattedString(BrushPaint::TextureWrap texture_wrap);
 std::string ToFormattedString(BrushPaint::BlendMode blend_mode);
 std::string ToFormattedString(const BrushPaint::TextureKeyframe& keyframe);
 std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer);
+std::string ToFormattedString(
+    BrushPaint::SelfOverlapVisibility self_overlap_visibility);
 std::string ToFormattedString(const BrushPaint& paint);
 
 }  // namespace brush_internal
@@ -367,6 +407,12 @@ void AbslStringify(Sink& sink, const BrushPaint::TextureLayer& texture_layer) {
 }
 
 template <typename Sink>
+void AbslStringify(Sink& sink,
+                   BrushPaint::SelfOverlapVisibility self_overlap_visibility) {
+  sink.Append(brush_internal::ToFormattedString(self_overlap_visibility));
+}
+
+template <typename Sink>
 void AbslStringify(Sink& sink, const BrushPaint& paint) {
   sink.Append(brush_internal::ToFormattedString(paint));
 }
@@ -388,7 +434,8 @@ H AbslHashValue(H h, const BrushPaint::TextureLayer& layer) {
 
 template <typename H>
 H AbslHashValue(H h, const BrushPaint& paint) {
-  return H::combine(std::move(h), paint.texture_layers);
+  return H::combine(std::move(h), paint.texture_layers,
+                    paint.self_overlap_visibility_preferences);
 }
 
 }  // namespace ink
