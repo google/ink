@@ -64,6 +64,7 @@ using fuzztest::Positive;
 using fuzztest::StructOf;
 using fuzztest::TupleOf;
 using fuzztest::UniqueElementsContainerOf;
+using fuzztest::UniqueElementsVectorOf;
 using fuzztest::VariantOf;
 using fuzztest::VectorOf;
 
@@ -651,6 +652,16 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
                  StructOf<Vec>(FinitePositiveFloat(), FinitePositiveFloat()));
 }
 
+// LINT.IfChange(self_overlap)
+Domain<BrushPaint::SelfOverlapVisibility>
+ArbitraryBrushPaintSelfOverlapVisibility() {
+  return ElementOf({
+      BrushPaint::SelfOverlapVisibility::kAccumulate,
+      BrushPaint::SelfOverlapVisibility::kDiscardBasic,
+  });
+}
+// LINT.ThenChange(brush_paint.h:self_overlap)
+
 fuzztest::Domain<BrushPaint> ValidBrushPaint(DomainVariant variant) {
   return FlatMap(
       [=](BrushPaint::TextureMapping mapping,
@@ -658,10 +669,13 @@ fuzztest::Domain<BrushPaint> ValidBrushPaint(DomainVariant variant) {
           absl::Duration animation_duration) {
         return std::apply(
             [&](int frames, int rows, int columns) {
-              return fuzztest::StructOf<BrushPaint>(VectorOf(
-                  ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
-                      mapping, frames, rows, columns, animation_duration,
-                      variant)));
+              return fuzztest::StructOf<BrushPaint>(
+                  VectorOf(
+                      ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
+                          mapping, frames, rows, columns, animation_duration,
+                          variant)),
+                  UniqueElementsVectorOf(
+                      ArbitraryBrushPaintSelfOverlapVisibility()));
             },
             animation_frames_rows_columns);
       },

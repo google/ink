@@ -15,6 +15,7 @@
 #include "ink/brush/brush_paint.h"
 
 #include <cmath>
+#include <set>
 #include <string>
 
 #include "absl/status/status.h"
@@ -79,6 +80,16 @@ bool IsValidBrushPaintBlendMode(BrushPaint::BlendMode blend_mode) {
     case BrushPaint::BlendMode::kSrcOut:
     case BrushPaint::BlendMode::kDstAtop:
     case BrushPaint::BlendMode::kXor:
+      return true;
+  }
+  return false;
+}
+
+bool IsValidBrushPaintSelfOverlapVisibility(
+    BrushPaint::SelfOverlapVisibility self_overlap_visibility) {
+  switch (self_overlap_visibility) {
+    case BrushPaint::SelfOverlapVisibility::kDiscardBasic:
+    case BrushPaint::SelfOverlapVisibility::kAccumulate:
       return true;
   }
   return false;
@@ -298,6 +309,24 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
       }
     }
   }
+  for (const BrushPaint::SelfOverlapVisibility& self_overlap_visibility :
+       paint.self_overlap_visibility_preferences) {
+    if (!IsValidBrushPaintSelfOverlapVisibility(self_overlap_visibility)) {
+      return absl::InvalidArgumentError(absl::StrFormat(
+          "`BrushPaint::self_overlap_visibility_preferences` holds "
+          "non-enumerator value %d",
+          static_cast<int>(self_overlap_visibility)));
+    }
+  }
+  std::set<BrushPaint::SelfOverlapVisibility> self_overlap_set(
+      paint.self_overlap_visibility_preferences.begin(),
+      paint.self_overlap_visibility_preferences.end());
+  if (self_overlap_set.size() !=
+      paint.self_overlap_visibility_preferences.size()) {
+    return absl::InvalidArgumentError(
+        "`BrushPaint::self_overlap_visibility_preferences` cannot have "
+        "duplicate entries.");
+  }
   return absl::OkStatus();
 }
 
@@ -434,10 +463,23 @@ std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
       ", blend_mode=", ToFormattedString(texture_layer.blend_mode), "}");
 }
 
+std::string ToFormattedString(
+    const BrushPaint::SelfOverlapVisibility self_overlap_visibility) {
+  switch (self_overlap_visibility) {
+    case BrushPaint::SelfOverlapVisibility::kDiscardBasic:
+      return "kDiscardBasic";
+    case BrushPaint::SelfOverlapVisibility::kAccumulate:
+      return "kAccumulate";
+  }
+  return absl::StrCat("SelfOverlapVisibility(",
+                      static_cast<int>(self_overlap_visibility), ")");
+}
+
 std::string ToFormattedString(const BrushPaint& paint) {
-  std::string formatted =
-      absl::StrCat("BrushPaint{texture_layers={",
-                   absl::StrJoin(paint.texture_layers, ", "), "}}");
+  std::string formatted = absl::StrCat(
+      "BrushPaint{texture_layers={", absl::StrJoin(paint.texture_layers, ", "),
+      "}, self_overlap_visibility_preferences={",
+      absl::StrJoin(paint.self_overlap_visibility_preferences, ", "), "}}");
 
   return formatted;
 }
