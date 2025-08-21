@@ -32,6 +32,8 @@ using ::ink::strokes_internal::LegacyVertex;
 using ::ink::strokes_internal::StrokeVertex;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
+using ::testing::IsEmpty;
+using ::testing::SizeIs;
 
 TEST(MutableMeshViewTest, HasMeshData) {
   MutableMeshView mesh_view;
@@ -444,26 +446,25 @@ TEST(MutableMeshViewTest, InsertTriangleIndicesWithNewMesh) {
   EXPECT_THAT(mesh_view.GetTriangleIndices(2), ElementsAreArray({4, 5, 6}));
 }
 
-TEST(MutableMeshViewTest, ResizeWithLegacyVectors) {
+TEST(MutableMeshViewTest, ClearWithNoMeshData) {
+  MutableMeshView mesh_view;
+  EXPECT_FALSE(mesh_view.HasMeshData());
+  mesh_view.Clear();
+  EXPECT_FALSE(mesh_view.HasMeshData());
+}
+
+TEST(MutableMeshViewTest, ClearWithLegacyVectors) {
   std::vector<LegacyVertex> vertices;
   std::vector<uint32_t> indices;
-  MutableMeshView mesh_view(vertices, indices);
-
   vertices.resize(20);
   indices.resize(3 * 12);
 
+  MutableMeshView mesh_view(vertices, indices);
   EXPECT_EQ(mesh_view.VertexCount(), 20);
   EXPECT_EQ(mesh_view.TriangleCount(), 12);
 
-  mesh_view.Resize(28, 16);
-  EXPECT_EQ(mesh_view.VertexCount(), 28);
-  EXPECT_EQ(mesh_view.TriangleCount(), 16);
+  mesh_view.Clear();
 
-  mesh_view.Resize(10, 7);
-  EXPECT_EQ(mesh_view.VertexCount(), 10);
-  EXPECT_EQ(mesh_view.TriangleCount(), 7);
-
-  mesh_view.Resize(0, 0);
   EXPECT_EQ(mesh_view.VertexCount(), 0);
   EXPECT_EQ(mesh_view.TriangleCount(), 0);
 
@@ -471,76 +472,106 @@ TEST(MutableMeshViewTest, ResizeWithLegacyVectors) {
   EXPECT_TRUE(indices.empty());
 }
 
-TEST(MutableMeshViewTest, ResizeWithNewMesh) {
+TEST(MutableMeshViewTest, ClearWithMutableMesh) {
   MutableMesh mesh(StrokeVertex::FullMeshFormat());
-  MutableMeshView mesh_view(mesh);
   mesh.Resize(/* new_vertex_count = */ 20, /* new_triangle_count = */ 12);
 
+  MutableMeshView mesh_view(mesh);
   EXPECT_EQ(mesh_view.VertexCount(), 20);
   EXPECT_EQ(mesh_view.TriangleCount(), 12);
-  EXPECT_EQ(mesh.VertexCount(), mesh_view.VertexCount());
-  EXPECT_EQ(mesh.TriangleCount(), mesh_view.TriangleCount());
 
-  mesh_view.Resize(28, 16);
-  EXPECT_EQ(mesh_view.VertexCount(), 28);
-  EXPECT_EQ(mesh_view.TriangleCount(), 16);
-  EXPECT_EQ(mesh.VertexCount(), mesh_view.VertexCount());
-  EXPECT_EQ(mesh.TriangleCount(), mesh_view.TriangleCount());
+  mesh_view.Clear();
 
-  mesh_view.Resize(10, 7);
-  EXPECT_EQ(mesh_view.VertexCount(), 10);
-  EXPECT_EQ(mesh_view.TriangleCount(), 7);
-  EXPECT_EQ(mesh.VertexCount(), mesh_view.VertexCount());
-  EXPECT_EQ(mesh.TriangleCount(), mesh_view.TriangleCount());
-
-  mesh_view.Resize(0, 0);
   EXPECT_EQ(mesh_view.VertexCount(), 0);
   EXPECT_EQ(mesh_view.TriangleCount(), 0);
-  EXPECT_EQ(mesh.VertexCount(), mesh_view.VertexCount());
+
+  EXPECT_EQ(mesh.VertexCount(), 0);
+  EXPECT_EQ(mesh.TriangleCount(), 0);
+}
+
+TEST(MutableMeshViewTest, TruncateTrianglesWithLegacyVectors) {
+  std::vector<LegacyVertex> vertices;
+  std::vector<uint32_t> indices;
+  vertices.resize(20);
+  indices.resize(3 * 12);
+
+  MutableMeshView mesh_view(vertices, indices);
+  EXPECT_EQ(mesh_view.TriangleCount(), 12);
+
+  mesh_view.TruncateTriangles(15);
+  EXPECT_EQ(mesh_view.TriangleCount(), 12);
+  EXPECT_THAT(indices, SizeIs(3 * 12));
+
+  mesh_view.TruncateTriangles(7);
+  EXPECT_EQ(mesh_view.TriangleCount(), 7);
+  EXPECT_THAT(indices, SizeIs(3 * 7));
+
+  mesh_view.TruncateTriangles(0);
+  EXPECT_EQ(mesh_view.TriangleCount(), 0);
+  EXPECT_THAT(indices, IsEmpty());
+}
+
+TEST(MutableMeshViewTest, TruncateVerticesWithLegacyVectors) {
+  std::vector<LegacyVertex> vertices;
+  std::vector<uint32_t> indices;
+  vertices.resize(20);
+
+  MutableMeshView mesh_view(vertices, indices);
+  EXPECT_EQ(mesh_view.VertexCount(), 20);
+
+  mesh_view.TruncateVertices(25);
+  EXPECT_EQ(mesh_view.VertexCount(), 20);
+  EXPECT_THAT(vertices, SizeIs(20));
+
+  mesh_view.TruncateVertices(13);
+  EXPECT_EQ(mesh_view.VertexCount(), 13);
+  EXPECT_THAT(vertices, SizeIs(13));
+
+  mesh_view.TruncateVertices(0);
+  EXPECT_EQ(mesh_view.VertexCount(), 0);
+  EXPECT_THAT(vertices, IsEmpty());
+}
+
+TEST(MutableMeshViewTest, TruncateTrianglesWithNewMesh) {
+  MutableMesh mesh(StrokeVertex::FullMeshFormat());
+  mesh.Resize(/* new_vertex_count = */ 20, /* new_triangle_count = */ 12);
+
+  MutableMeshView mesh_view(mesh);
+  EXPECT_EQ(mesh_view.TriangleCount(), 12);
+  EXPECT_EQ(mesh.TriangleCount(), mesh_view.TriangleCount());
+
+  mesh_view.TruncateTriangles(16);
+  EXPECT_EQ(mesh_view.TriangleCount(), 12);
+  EXPECT_EQ(mesh.TriangleCount(), mesh_view.TriangleCount());
+
+  mesh_view.TruncateTriangles(7);
+  EXPECT_EQ(mesh_view.TriangleCount(), 7);
+  EXPECT_EQ(mesh.TriangleCount(), mesh_view.TriangleCount());
+
+  mesh_view.TruncateTriangles(0);
+  EXPECT_EQ(mesh_view.TriangleCount(), 0);
   EXPECT_EQ(mesh.TriangleCount(), mesh_view.TriangleCount());
 }
 
-TEST(MutableMeshViewTest, ResizeWithLegacyVectorsInitializesToZero) {
-  std::vector<LegacyVertex> vertices;
-  std::vector<uint32_t> indices;
-  MutableMeshView mesh_view(vertices, indices);
-  mesh_view.AppendVertex({.position = {0, 0}});
-  mesh_view.AppendVertex({.position = {1, 0}});
-  mesh_view.AppendVertex({.position = {1, 1}});
-  mesh_view.AppendTriangleIndices({0, 1, 2});
-
-  mesh_view.Resize(5, 3);
-
-  EXPECT_EQ(mesh_view.GetVertex(0), (ExtrudedVertex{.position = {0, 0}}));
-  EXPECT_EQ(mesh_view.GetVertex(1), (ExtrudedVertex{.position = {1, 0}}));
-  EXPECT_EQ(mesh_view.GetVertex(2), (ExtrudedVertex{.position = {1, 1}}));
-  EXPECT_EQ(mesh_view.GetVertex(3), ExtrudedVertex{});
-  EXPECT_EQ(mesh_view.GetVertex(4), ExtrudedVertex{});
-
-  EXPECT_THAT(mesh_view.GetTriangleIndices(0), ElementsAre(0, 1, 2));
-  EXPECT_THAT(mesh_view.GetTriangleIndices(1), ElementsAre(0, 0, 0));
-  EXPECT_THAT(mesh_view.GetTriangleIndices(2), ElementsAre(0, 0, 0));
-}
-
-TEST(MutableMeshViewTest, ResizeWithNewMeshInitializesToZero) {
+TEST(MutableMeshViewTest, TruncateVerticesWithNewMesh) {
   MutableMesh mesh(StrokeVertex::FullMeshFormat());
+  mesh.Resize(/* new_vertex_count = */ 20, /* new_triangle_count = */ 12);
+
   MutableMeshView mesh_view(mesh);
-  mesh_view.AppendVertex({.position = {0, 0}});
-  mesh_view.AppendVertex({.position = {1, 0}});
-  mesh_view.AppendVertex({.position = {1, 1}});
-  mesh_view.AppendTriangleIndices({0, 1, 2});
+  EXPECT_EQ(mesh_view.VertexCount(), 20);
+  EXPECT_EQ(mesh.VertexCount(), mesh_view.VertexCount());
 
-  mesh_view.Resize(5, 3);
+  mesh_view.TruncateVertices(25);
+  EXPECT_EQ(mesh_view.VertexCount(), 20);
+  EXPECT_EQ(mesh.VertexCount(), mesh_view.VertexCount());
 
-  EXPECT_EQ(mesh_view.GetVertex(0), (ExtrudedVertex{.position = {0, 0}}));
-  EXPECT_EQ(mesh_view.GetVertex(1), (ExtrudedVertex{.position = {1, 0}}));
-  EXPECT_EQ(mesh_view.GetVertex(2), (ExtrudedVertex{.position = {1, 1}}));
-  EXPECT_EQ(mesh_view.GetVertex(3), ExtrudedVertex{});
-  EXPECT_EQ(mesh_view.GetVertex(4), ExtrudedVertex{});
+  mesh_view.TruncateVertices(13);
+  EXPECT_EQ(mesh_view.VertexCount(), 13);
+  EXPECT_EQ(mesh.VertexCount(), mesh_view.VertexCount());
 
-  EXPECT_THAT(mesh_view.GetTriangleIndices(0), ElementsAre(0, 1, 2));
-  EXPECT_THAT(mesh_view.GetTriangleIndices(1), ElementsAre(0, 0, 0));
-  EXPECT_THAT(mesh_view.GetTriangleIndices(2), ElementsAre(0, 0, 0));
+  mesh_view.TruncateVertices(0);
+  EXPECT_EQ(mesh_view.VertexCount(), 0);
+  EXPECT_EQ(mesh.VertexCount(), mesh_view.VertexCount());
 }
 
 TEST(MutableMeshViewTest, MutationTrackingWithLegacyVectors) {
@@ -578,14 +609,10 @@ TEST(MutableMeshViewTest, MutationTrackingWithLegacyVectors) {
   EXPECT_EQ(mesh_view.FirstMutatedVertex(), mesh_view.VertexCount());
   EXPECT_EQ(mesh_view.FirstMutatedTriangle(), mesh_view.TriangleCount());
 
-  mesh_view.Resize(3, 2);
+  mesh_view.TruncateTriangles(2);
+  mesh_view.TruncateVertices(3);
   EXPECT_EQ(mesh_view.FirstMutatedVertex(), mesh_view.VertexCount());
   EXPECT_EQ(mesh_view.FirstMutatedTriangle(), mesh_view.TriangleCount());
-
-  mesh_view.ResetMutationTracking();
-  mesh_view.Resize(5, 3);
-  EXPECT_EQ(mesh_view.FirstMutatedVertex(), 3);
-  EXPECT_EQ(mesh_view.FirstMutatedTriangle(), 2);
 
   // Setting the side and forward derivatives on legacy data should be ignored.
   mesh_view.ResetMutationTracking();
@@ -628,14 +655,10 @@ TEST(MutableMeshViewTest, MutationTrackingWithNewMesh) {
   EXPECT_EQ(mesh_view.FirstMutatedVertex(), mesh_view.VertexCount());
   EXPECT_EQ(mesh_view.FirstMutatedTriangle(), mesh_view.TriangleCount());
 
-  mesh_view.Resize(3, 2);
+  mesh_view.TruncateTriangles(2);
+  mesh_view.TruncateVertices(3);
   EXPECT_EQ(mesh_view.FirstMutatedVertex(), mesh_view.VertexCount());
   EXPECT_EQ(mesh_view.FirstMutatedTriangle(), mesh_view.TriangleCount());
-
-  mesh_view.ResetMutationTracking();
-  mesh_view.Resize(5, 3);
-  EXPECT_EQ(mesh_view.FirstMutatedVertex(), 3);
-  EXPECT_EQ(mesh_view.FirstMutatedTriangle(), 2);
 
   mesh_view.ResetMutationTracking();
   mesh_view.SetSideDerivative(2, {1, 0});

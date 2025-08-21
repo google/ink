@@ -23,6 +23,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/base/nullability.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ink/geometry/envelope.h"
@@ -115,9 +116,13 @@ struct GeometrySavePointState {
   // We expect a small number will need to be saved, but without expected order,
   // so we use maps for simpler bookkeeping during extrusion instead of trying
   // to store a sub-vectors for faster revert.
-  absl::flat_hash_map<MutableMeshView::IndexType, ExtrudedVertex>
-      saved_vertices;
-  absl::flat_hash_map<uint32_t, std::array<MutableMeshView::IndexType, 3>>
+  //
+  // We use `btree_map` rather than `flat_hash_map` for `saved_vertices` and
+  // `saved_triangle_indices`, because when restoring a save point, we need to
+  // be able to re-add removed vertices/triangles in order.
+  absl::btree_map<MutableMeshView::IndexType, ExtrudedVertex> saved_vertices;
+  absl::btree_map<MutableMeshView::IndexType,
+                  std::array<MutableMeshView::IndexType, 3>>
       saved_triangle_indices;
   absl::flat_hash_map<MutableMeshView::IndexType, uint32_t>
       saved_opposite_side_offsets;
@@ -271,10 +276,11 @@ class Geometry {
   // into multiple `MutableMesh` instead of relying on renderers to do the
   // partitioning.
 
-  // For testing: creates a sub-mesh consisting of triangles appended after the
-  // save point. This may not reflect the boundary of the save point with
-  // complete accuracy if intersection handling is ongoing.
-  void DebugMakeMeshAfterSavePoint(MutableMeshView mesh) const;
+  // For testing only: Populates `mesh_out` with a sub-mesh consisting of
+  // triangles appended after this `Geometry`'s save point. This may not reflect
+  // the boundary of the save point with complete accuracy if intersection
+  // handling is ongoing. Any existing data in `mesh_out` is cleared.
+  void DebugMakeMeshAfterSavePoint(MutableMeshView mesh_out) const;
 
  private:
   enum class TriangleWinding {

@@ -48,6 +48,15 @@ MutableMeshView::MutableMeshView(
   ResetMutationTracking();
 }
 
+void MutableMeshView::Clear() {
+  if (LegacyVectors* legacy = std::get_if<LegacyVectors>(&data_)) {
+    legacy->vertices->clear();
+    legacy->indices->clear();
+  } else if (MutableMesh** mutable_mesh = std::get_if<MutableMesh*>(&data_)) {
+    (*mutable_mesh)->Clear();
+  }
+}
+
 uint32_t MutableMeshView::VertexCount() const {
   ABSL_CHECK(HasMeshData());
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
@@ -261,18 +270,27 @@ void MutableMeshView::InsertTriangleIndices(
   first_mutated_triangle_ = std::min(first_mutated_triangle_, triangle);
 }
 
-void MutableMeshView::Resize(uint32_t new_vertex_count,
-                             uint32_t new_triangle_count) {
+void MutableMeshView::TruncateTriangles(uint32_t new_triangle_count) {
+  if (new_triangle_count >= TriangleCount()) return;
   if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
-    legacy->vertices->resize(new_vertex_count);
     legacy->indices->resize(3 * new_triangle_count);
   } else {
-    std::get<MutableMesh*>(data_)->Resize(new_vertex_count, new_triangle_count);
+    MutableMesh* mesh = std::get<MutableMesh*>(data_);
+    mesh->Resize(mesh->VertexCount(), new_triangle_count);
   }
-
-  first_mutated_vertex_ = std::min(first_mutated_vertex_, new_vertex_count);
   first_mutated_triangle_ =
       std::min(first_mutated_triangle_, new_triangle_count);
+}
+
+void MutableMeshView::TruncateVertices(uint32_t new_vertex_count) {
+  if (new_vertex_count >= VertexCount()) return;
+  if (const auto* legacy = std::get_if<LegacyVectors>(&data_)) {
+    legacy->vertices->resize(new_vertex_count);
+  } else {
+    MutableMesh* mesh = std::get<MutableMesh*>(data_);
+    mesh->Resize(new_vertex_count, mesh->TriangleCount());
+  }
+  first_mutated_vertex_ = std::min(first_mutated_vertex_, new_vertex_count);
 }
 
 void MutableMeshView::ResetMutationTracking() {

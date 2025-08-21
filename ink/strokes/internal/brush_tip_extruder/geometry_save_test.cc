@@ -579,6 +579,12 @@ TEST_F(GeometrySaveTest, DebugMeshAfterSavePoint) {
   }
   EXPECT_THAT(envelope.AsRect(),
               Optional(RectEq(Rect::FromCenterAndDimensions({0, 3}, 2, 2))));
+
+  line_geometry.SetSavePoint();
+
+  line_geometry.DebugMakeMeshAfterSavePoint(MakeView(mesh_data_after_save));
+  EXPECT_EQ(mesh_data_after_save.vertices.size(), 0);
+  EXPECT_EQ(mesh_data_after_save.triangle_indices.size(), 0);
 }
 
 TEST_F(GeometrySaveTest,

@@ -82,6 +82,10 @@ class MutableMeshView {
   MutableMeshView(const MutableMeshView&) = default;
   MutableMeshView& operator=(const MutableMeshView&) = default;
 
+  // Removes all triangles and vertices from the underlying mesh data. If
+  // `HasMeshData()` is false, this is a no-op.
+  void Clear();
+
   // Returns true if the view has pointers to vertex and index data (i.e. it was
   // not default constructed).
   //
@@ -155,13 +159,11 @@ class MutableMeshView {
   void InsertTriangleIndices(IndexType triangle,
                              const std::array<IndexType, 3>& indices);
 
-  // Changes the size of the mesh data.
-  //
-  // If `new_vertex_count` > `VertexCount()` or `new_triangle_count` >
-  // `TriangleCount()`, new vertices and/or triangles will be appended at the
-  // end. Newly created vertices and triangles will have all values set to zero;
-  // you must set their values after growing the mesh.
-  void Resize(uint32_t new_vertex_count, uint32_t new_triangle_count);
+  // Removes triangles/vertices from the mesh, if the new count is smaller than
+  // the old. If the new count is greater than or equal to the old, these have
+  // no effect.
+  void TruncateTriangles(uint32_t new_triangle_count);
+  void TruncateVertices(uint32_t new_vertex_count);
 
   // Returns the index of the first new or updated vertex since construction or
   // the last call to `ResetMutationTracking()`.

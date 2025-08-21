@@ -74,10 +74,7 @@ Geometry::Geometry() {
   right_side_.first_triangle_vertex = 1;
 }
 
-Geometry::Geometry(const MutableMeshView& mesh) : Geometry() {
-  mesh_ = mesh;
-  if (mesh_.HasMeshData()) mesh_.Resize(0, 0);
-}
+Geometry::Geometry(const MutableMeshView& mesh) : Geometry() { Reset(mesh); }
 
 void Geometry::SetSavePoint() {
   if (!mesh_.HasMeshData()) return;
@@ -197,25 +194,41 @@ void Geometry::RevertToSavePoint() {
       EnvelopeOfTriangles(mesh_, save_point_state_.n_mesh_triangles));
 
   uint32_t old_vertex_count = mesh_.VertexCount();
-  mesh_.Resize(save_point_state_.n_mesh_vertices,
-               save_point_state_.n_mesh_triangles);
+  uint32_t old_triangle_count = mesh_.TriangleCount();
+
+  // If we're shrinking the mesh, truncate any extra triangles/vertices. (If
+  // we're growing the mesh, the missing vertices/triangles will be added by the
+  // for-loops below.)
+  mesh_.TruncateTriangles(save_point_state_.n_mesh_triangles);
+  mesh_.TruncateVertices(save_point_state_.n_mesh_vertices);
+
+  // Resize these vectors; if any of them are being grown here, we'll fill in
+  // the default-initialized values below.
   vertex_side_ids_.resize(save_point_state_.n_mesh_vertices);
   side_offsets_.resize(save_point_state_.n_mesh_vertices);
   opposite_side_offsets_.resize(save_point_state_.n_mesh_vertices);
 
-  for (const auto& index_vert_pair : save_point_state_.saved_vertices) {
-    // We don't update `envelope_of_removed_geometry_` for vertices that were
-    // just added if the `Resize` call above grew the mesh; their positions
-    // aren't meaningful, they just default to (0, 0).
-    SetVertex(index_vert_pair.first, index_vert_pair.second,
-              /* update_save_state = */ false,
-              /* update_envelope_of_removed_geometry = */
-              index_vert_pair.first < old_vertex_count);
+  // Revert mutated/removed vertices. Note that `saved_vertices` is an ordered
+  // map, so any new vertices will get appended in order.
+  for (const auto& [index, vertex] : save_point_state_.saved_vertices) {
+    if (index < old_vertex_count) {
+      SetVertex(index, vertex, /* update_save_state = */ false,
+                /* update_envelope_of_removed_geometry = */ true);
+    } else {
+      ABSL_DCHECK_EQ(index, mesh_.VertexCount());
+      mesh_.AppendVertex(vertex);
+    }
   }
-  // Revert mutated triangulation:
-  for (const auto& indices_pair : save_point_state_.saved_triangle_indices) {
-    SetTriangleIndices(indices_pair.first, indices_pair.second,
-                       /* update_save_state = */ false);
+  // Revert mutated/removed triangles. Note that `saved_triangle_indices` is an
+  // ordered map, so any new triangles will get appended in order.
+  for (const auto& [triangle, indices] :
+       save_point_state_.saved_triangle_indices) {
+    if (triangle < old_triangle_count) {
+      mesh_.SetTriangleIndices(triangle, indices);
+    } else {
+      ABSL_DCHECK_EQ(triangle, mesh_.TriangleCount());
+      mesh_.AppendTriangleIndices(indices);
+    }
   }
 
   for (const auto& index_offset_pair :
@@ -540,8 +553,11 @@ void Geometry::ClearSinceLastExtrusionBreak() {
   delete_side_geometry(last_extrusion_break_.left_side_info, left_side_);
   delete_side_geometry(last_extrusion_break_.right_side_info, right_side_);
 
-  mesh_.Resize(last_extrusion_break_.vertex_count,
-               last_extrusion_break_.triangle_count);
+  ABSL_DCHECK_LE(last_extrusion_break_.triangle_count, mesh_.TriangleCount());
+  ABSL_DCHECK_LE(last_extrusion_break_.vertex_count, mesh_.VertexCount());
+
+  mesh_.TruncateTriangles(last_extrusion_break_.triangle_count);
+  mesh_.TruncateVertices(last_extrusion_break_.vertex_count);
 
   vertex_side_ids_.resize(last_extrusion_break_.vertex_count);
   side_offsets_.resize(last_extrusion_break_.vertex_count);
@@ -622,9 +638,9 @@ void Geometry::UpdateMeshDerivatives() {
                                     right_indices_to_update, mesh_);
 }
 
-void Geometry::DebugMakeMeshAfterSavePoint(MutableMeshView mesh) const {
-  if (!mesh.HasMeshData()) return;
-  mesh.Resize(0, 0);
+void Geometry::DebugMakeMeshAfterSavePoint(MutableMeshView mesh_out) const {
+  ABSL_CHECK(mesh_out.HasMeshData());
+  mesh_out.Clear();
 
   if (!mesh_.HasMeshData() || !save_point_state_.is_active ||
       save_point_state_.n_mesh_triangles == mesh_.TriangleCount() ||
@@ -651,15 +667,15 @@ void Geometry::DebugMakeMeshAfterSavePoint(MutableMeshView mesh) const {
   }
   for (MutableMeshView::IndexType i = min_index_after_save;
        i < mesh_.VertexCount(); ++i) {
-    mesh.AppendVertex(mesh_.GetVertex(i));
+    mesh_out.AppendVertex(mesh_.GetVertex(i));
   }
   for (uint32_t i = save_point_state_.n_mesh_triangles;
        i < mesh_.TriangleCount(); ++i) {
     std::array<MutableMeshView::IndexType, 3> indices =
         mesh_.GetTriangleIndices(i);
-    mesh.AppendTriangleIndices({indices[0] - min_index_after_save,
-                                indices[1] - min_index_after_save,
-                                indices[2] - min_index_after_save});
+    mesh_out.AppendTriangleIndices({indices[0] - min_index_after_save,
+                                    indices[1] - min_index_after_save,
+                                    indices[2] - min_index_after_save});
   }
 }
 
@@ -700,7 +716,7 @@ void ClearSide(Side& side) {
 
 void Geometry::Reset(const MutableMeshView& mesh) {
   mesh_ = mesh;
-  if (mesh_.HasMeshData()) mesh_.Resize(0, 0);
+  mesh_.Clear();
   vertex_side_ids_.clear();
   side_offsets_.clear();
   opposite_side_offsets_.clear();
