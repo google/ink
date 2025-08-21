@@ -44,7 +44,6 @@ constexpr float kDefaultLoopMitigationInterpolationStrengthAtSpeedUpperBound =
     0.5f;
 const stroke_model::Duration kDefaultLoopMitigationMinSpeedSamplingWindow =
     stroke_model::Duration(0.04);
-constexpr int kDefaultLoopMitigationMinDiscreteSpeedSamples = 10;
 
 void StrokeInputModeler::StartStroke(const BrushFamily::InputModel& input_model,
                                      float brush_epsilon) {
