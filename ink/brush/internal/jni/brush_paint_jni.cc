@@ -64,13 +64,18 @@ BrushPaint::BlendMode JIntToBlendMode(jint val) {
   return static_cast<BrushPaint::BlendMode>(val);
 }
 
+BrushPaint::SelfOverlapVisibility JIntToSelfOverlapVisibility(jint val) {
+  return static_cast<BrushPaint::SelfOverlapVisibility>(val);
+}
+
 }  // namespace
 
 extern "C" {
 
 // Construct a native BrushPaint and return a pointer to it as a long.
 JNI_METHOD(brush, BrushPaintNative, jlong, create)
-(JNIEnv* env, jobject thiz, jlongArray texture_layer_native_pointers_array) {
+(JNIEnv* env, jobject thiz, jlongArray texture_layer_native_pointers_array,
+ jint self_overlap_visibility_int) {
   std::vector<BrushPaint::TextureLayer> texture_layers;
   ABSL_CHECK(texture_layer_native_pointers_array != nullptr);
   const jsize texture_layers_count =
@@ -87,7 +92,10 @@ JNI_METHOD(brush, BrushPaintNative, jlong, create)
       texture_layer_native_pointers_array, texture_layer_native_pointers,
       // No need to copy back the array, which is not modified.
       JNI_ABORT);
-  BrushPaint brush_paint{.texture_layers = std::move(texture_layers)};
+
+  BrushPaint brush_paint{.texture_layers = std::move(texture_layers),
+                         .self_overlap_visibility = JIntToSelfOverlapVisibility(
+                             self_overlap_visibility_int)};
   if (absl::Status status = ValidateBrushPaint(brush_paint); !status.ok()) {
     ThrowExceptionFromStatus(env, status);
     return 0;
@@ -112,6 +120,12 @@ JNI_METHOD(brush, BrushPaintNative, jlong, newCopyOfTextureLayer)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
   const BrushPaint& brush_paint = CastToBrushPaint(native_pointer);
   return NewNativeTextureLayer(brush_paint.texture_layers[index]);
+}
+
+JNI_METHOD(brush, BrushPaintNative, jint, getSelfOverlapVisibilityInt)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  const BrushPaint& brush_paint = CastToBrushPaint(native_pointer);
+  return static_cast<jint>(brush_paint.self_overlap_visibility);
 }
 
 // ************ Native Implementation of BrushPaint TextureLayer ************

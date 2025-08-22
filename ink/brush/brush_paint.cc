@@ -84,6 +84,17 @@ bool IsValidBrushPaintBlendMode(BrushPaint::BlendMode blend_mode) {
   return false;
 }
 
+bool IsValidBrushPaintSelfOverlapVisibility(
+    BrushPaint::SelfOverlapVisibility self_overlap_visibility) {
+  switch (self_overlap_visibility) {
+    case BrushPaint::SelfOverlapVisibility::kAny:
+    case BrushPaint::SelfOverlapVisibility::kAccumulate:
+    case BrushPaint::SelfOverlapVisibility::kDiscard:
+      return true;
+  }
+  return false;
+}
+
 absl::Status ValidateBrushPaintTextureKeyframe(
     BrushPaint::TextureKeyframe keyframe) {
   if (!(keyframe.progress >= 0.f && keyframe.progress <= 1.f)) {
@@ -298,6 +309,12 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
       }
     }
   }
+  if (!IsValidBrushPaintSelfOverlapVisibility(paint.self_overlap_visibility)) {
+    return absl::InvalidArgumentError(
+        absl::StrFormat("`BrushPaint::self_overlap_visibility` holds "
+                        "non-enumerator value %d",
+                        static_cast<int>(paint.self_overlap_visibility)));
+  }
   return absl::OkStatus();
 }
 
@@ -434,10 +451,24 @@ std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
       ", blend_mode=", ToFormattedString(texture_layer.blend_mode), "}");
 }
 
+std::string ToFormattedString(
+    const BrushPaint::SelfOverlapVisibility self_overlap_visibility) {
+  switch (self_overlap_visibility) {
+    case BrushPaint::SelfOverlapVisibility::kAny:
+      return "kAny";
+    case BrushPaint::SelfOverlapVisibility::kDiscard:
+      return "kDiscard";
+    case BrushPaint::SelfOverlapVisibility::kAccumulate:
+      return "kAccumulate";
+  }
+  return absl::StrCat("SelfOverlapVisibility(",
+                      static_cast<int>(self_overlap_visibility), ")");
+}
+
 std::string ToFormattedString(const BrushPaint& paint) {
-  std::string formatted =
-      absl::StrCat("BrushPaint{texture_layers={",
-                   absl::StrJoin(paint.texture_layers, ", "), "}}");
+  std::string formatted = absl::StrCat(
+      "BrushPaint{texture_layers={", absl::StrJoin(paint.texture_layers, ", "),
+      "}, self_overlap_visibility=", paint.self_overlap_visibility, "}");
 
   return formatted;
 }

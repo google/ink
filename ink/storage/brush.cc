@@ -1235,6 +1235,36 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
   return std::move(texture_layer);
 }
 
+proto::BrushPaint::SelfOverlapVisibility EncodeBrushPaintSelfOverlapVisibility(
+    BrushPaint::SelfOverlapVisibility self_overlap_visibility) {
+  switch (self_overlap_visibility) {
+    case BrushPaint::SelfOverlapVisibility::kAny:
+      return proto::BrushPaint::SELF_OVERLAP_VISIBILITY_ANY;
+    case BrushPaint::SelfOverlapVisibility::kAccumulate:
+      return proto::BrushPaint::SELF_OVERLAP_VISIBILITY_ACCUMULATE;
+    case BrushPaint::SelfOverlapVisibility::kDiscard:
+      return proto::BrushPaint::SELF_OVERLAP_VISIBILITY_DISCARD;
+  }
+  return proto::BrushPaint::SELF_OVERLAP_VISIBILITY_UNSPECIFIED;
+}
+
+absl::StatusOr<BrushPaint::SelfOverlapVisibility>
+DecodeBrushPaintSelfOverlapVisibility(
+    proto::BrushPaint::SelfOverlapVisibility self_overlap_visibility_proto) {
+  switch (self_overlap_visibility_proto) {
+    case proto::BrushPaint::SELF_OVERLAP_VISIBILITY_ANY:
+      return BrushPaint::SelfOverlapVisibility::kAny;
+    case proto::BrushPaint::SELF_OVERLAP_VISIBILITY_ACCUMULATE:
+      return BrushPaint::SelfOverlapVisibility::kAccumulate;
+    case proto::BrushPaint::SELF_OVERLAP_VISIBILITY_DISCARD:
+      return BrushPaint::SelfOverlapVisibility::kDiscard;
+    default:
+      return absl::InvalidArgumentError(absl::StrCat(
+          "invalid ink.proto.BrushPaint.SelfOverlapVisibility value, ",
+          self_overlap_visibility_proto));
+  }
+}
+
 void EncodeBrushFamilyInputModel(
     const BrushFamily::SpringModel& model,
     proto::BrushFamily::InputModel& model_proto_out) {
@@ -1340,6 +1370,8 @@ void EncodeBrushPaint(const BrushPaint& paint,
   for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
     EncodeBrushPaintTextureLayer(layer, *paint_proto_out.add_texture_layers());
   }
+  paint_proto_out.set_self_overlap_visibility(
+      EncodeBrushPaintSelfOverlapVisibility(paint.self_overlap_visibility));
 }
 
 absl::StatusOr<BrushPaint> DecodeBrushPaint(
@@ -1356,7 +1388,15 @@ absl::StatusOr<BrushPaint> DecodeBrushPaint(
     }
     layers.push_back(*std::move(layer));
   }
-  BrushPaint paint{.texture_layers = std::move(layers)};
+
+  absl::StatusOr<BrushPaint::SelfOverlapVisibility> self_overlap_visibility =
+      DecodeBrushPaintSelfOverlapVisibility(
+          paint_proto.self_overlap_visibility());
+  if (!self_overlap_visibility.ok()) {
+    return self_overlap_visibility.status();
+  }
+  BrushPaint paint{.texture_layers = std::move(layers),
+                   .self_overlap_visibility = *self_overlap_visibility};
   if (absl::Status status = brush_internal::ValidateBrushPaintTopLevel(paint);
       !status.ok()) {
     return status;
