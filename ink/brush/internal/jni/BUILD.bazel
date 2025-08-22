@@ -27,6 +27,7 @@ cc_library(
         ":brush_jni",
         ":brush_paint_jni",
         ":brush_tip_jni",
+        ":color_function_jni",
         ":easing_function_jni",
     ],
     alwayslink = 1,
@@ -34,6 +35,7 @@ cc_library(
 
 cc_library(
     name = "brush_jni_helper",
+    srcs = ["brush_jni_helper.cc"],
     hdrs = ["brush_jni_helper.h"],
     deps = [
         "//ink/brush",
@@ -42,7 +44,12 @@ cc_library(
         "//ink/brush:brush_family",
         "//ink/brush:brush_paint",
         "//ink/brush:brush_tip",
+        "//ink/brush:color_function",
         "//ink/brush:easing_function",
+        "//ink/color",
+        "//ink/color:color_space",
+        "//ink/color/internal/jni:color_jni_helper",
+        "//ink/jni/internal:jni_jvm_interface",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
@@ -179,12 +186,31 @@ cc_library(
         "//ink/brush",
         "//ink/brush:brush_family",
         "//ink/color",
-        "//ink/color:color_space",
         "//ink/color/internal/jni:color_jni_helper",
         "//ink/jni/internal:jni_defines",
-        "//ink/jni/internal:jni_jvm_interface",
         "//ink/jni/internal:jni_throw_util",
         "@com_google_absl//absl/log:absl_check",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "color_function_jni",
+    srcs = ["color_function_jni.cc"],
+    deps = [
+        ":brush_jni_helper",
+        "//ink/brush:color_function",
+        "//ink/color",
+        "//ink/color/internal/jni:color_jni_helper",
+        "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_throw_util",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [

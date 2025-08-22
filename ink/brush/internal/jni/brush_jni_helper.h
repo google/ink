@@ -24,7 +24,9 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
+#include "ink/color/color.h"
 
 namespace ink::jni {
 
@@ -191,6 +193,27 @@ inline void DeleteNativeBrushBehaviorNode(jlong node_native_pointer) {
   delete reinterpret_cast<BrushBehavior::Node*>(node_native_pointer);
 }
 
+// Creates a new stack-allocated copy of the given ColorFunction and returns a
+// pointer to it as a jlong, suitable for wrapping in a Kotlin ColorFunction.
+inline jlong NewNativeColorFunction(const ColorFunction& color_function) {
+  return reinterpret_cast<jlong>(new ColorFunction(color_function));
+}
+
+// Casts a Kotlin ColorFunction.nativePointer to a C++ ColorFunction. The
+// returned ColorFunction is a const ref as the Kotlin ColorFunction is
+// immutable.
+inline const ColorFunction& CastToColorFunction(
+    jlong color_function_native_pointer) {
+  ABSL_CHECK_NE(color_function_native_pointer, 0);
+  return *reinterpret_cast<ColorFunction*>(color_function_native_pointer);
+}
+
+// Frees a Kotlin ColorFunction.nativePointer.
+inline void DeleteNativeColorFunction(jlong color_function_native_pointer) {
+  if (color_function_native_pointer == 0) return;
+  delete reinterpret_cast<ColorFunction*>(color_function_native_pointer);
+}
+
 // Creates a new stack-allocated copy of the given EasingFunction and returns a
 // pointer to it as a jlong, suitable for wrapping in a Kotlin EasingFunction.
 inline jlong NewNativeEasingFunction(const EasingFunction& easing_function) {
@@ -211,6 +234,9 @@ inline void DeleteNativeEasingFunction(jlong easing_function_native_pointer) {
   if (easing_function_native_pointer == 0) return;
   delete reinterpret_cast<EasingFunction*>(easing_function_native_pointer);
 }
+
+// Converts an Ink `Color` into a Kotlin `ColorLong`.
+jlong ComputeColorLong(JNIEnv* env, const Color& color);
 
 }  // namespace ink::jni
 

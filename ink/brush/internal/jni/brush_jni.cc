@@ -20,10 +20,8 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/color/color.h"
-#include "ink/color/color_space.h"
 #include "ink/color/internal/jni/color_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
-#include "ink/jni/internal/jni_jvm_interface.h"
 #include "ink/jni/internal/jni_throw_util.h"
 
 namespace {
@@ -31,16 +29,12 @@ namespace {
 using ::ink::Brush;
 using ::ink::BrushFamily;
 using ::ink::Color;
-using ::ink::ColorSpace;
 using ::ink::Color::Format::kGammaEncoded;
 using ::ink::jni::CastToBrush;
 using ::ink::jni::CastToBrushFamily;
-using ::ink::jni::ClassBrushNative;
-using ::ink::jni::ColorSpaceIsSupportedInJetpack;
-using ::ink::jni::ColorSpaceToJInt;
+using ::ink::jni::ComputeColorLong;
 using ::ink::jni::DeleteNativeBrush;
 using ::ink::jni::JIntToColorSpace;
-using ::ink::jni::MethodBrushNativeComposeColorLongFromComponents;
 using ::ink::jni::NewNativeBrush;
 using ::ink::jni::NewNativeBrushFamily;
 using ::ink::jni::ThrowExceptionFromStatus;
@@ -76,23 +70,7 @@ JNI_METHOD(brush, BrushNative, void, free)
 
 JNI_METHOD(brush, BrushNative, jlong, computeComposeColorLong)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  const Brush& brush = CastToBrush(native_pointer);
-  const Color& color = brush.GetColor();
-  const ColorSpace& original_color_space = color.GetColorSpace();
-  // This is currently defensive coding, at this time there aren't color
-  // spaces supported here that aren't supported in Ink Jetpack.
-  bool color_space_is_supported =
-      ColorSpaceIsSupportedInJetpack(original_color_space);
-  const Color::RgbaFloat rgba =
-      (color_space_is_supported ? color
-                                : color.InColorSpace(ColorSpace::kDisplayP3))
-          .AsFloat(kGammaEncoded);
-  return env->CallStaticLongMethod(
-      ClassBrushNative(env),
-      MethodBrushNativeComposeColorLongFromComponents(env),
-      ColorSpaceToJInt(color_space_is_supported ? original_color_space
-                                                : ColorSpace::kDisplayP3),
-      rgba.r, rgba.g, rgba.b, rgba.a);
+  return ComputeColorLong(env, CastToBrush(native_pointer).GetColor());
 }
 
 JNI_METHOD(brush, BrushNative, jfloat, getSize)
