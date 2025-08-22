@@ -16,7 +16,6 @@
 #define INK_GEOMETRY_ANGLE_H_
 
 #include <cmath>
-#include <compare>
 #include <cstdlib>
 #include <string>
 

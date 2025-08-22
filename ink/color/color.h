@@ -145,7 +145,7 @@ class Color {
 
   // Returns true if both colors are in the same color space and if the values
   // match exactly in all channels.
-  bool operator==(const Color& other) const = default;
+  friend bool operator==(const Color&, const Color&) = default;
 
   // Returns true if the per-channel difference between `this` and `other`,
   // after conversion of `other` to the color space of `this', is very small.
@@ -189,7 +189,7 @@ class Color {
     float b;
     float a;
 
-    bool operator==(const RgbaFloat& rhs) const = default;
+    friend bool operator==(const RgbaFloat&, const RgbaFloat&) = default;
   };
 
   // Returns the channel values in the format requested, in this Color's color

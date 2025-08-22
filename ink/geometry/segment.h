@@ -72,7 +72,7 @@ struct Segment {
   // identical and their ending points are identical. Segments who have the same
   // endpoints but run opposite directions are not considered equivalent. So
   // this can use the default field-by-field comparison.
-  bool operator==(const Segment& rhs) const = default;
+  friend bool operator==(const Segment&, const Segment&) = default;
 };
 
 namespace segment_internal {

@@ -29,7 +29,7 @@ struct Point {
   // Returns the offset vector from the origin to this point.
   Vec Offset() const { return Vec{x, y}; }
 
-  bool operator==(const Point& rhs) const = default;
+  friend bool operator==(const Point&, const Point&) = default;
 };
 
 inline constexpr Point kOrigin{0, 0};

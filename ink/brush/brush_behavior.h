@@ -375,7 +375,8 @@ struct BrushBehavior {
     bool HasAnyTypes() const;
     bool HasAllTypes() const;
 
-    bool operator==(const EnabledToolTypes& rhs) const = default;
+    friend bool operator==(const EnabledToolTypes&,
+                           const EnabledToolTypes&) = default;
   };
 
   static constexpr EnabledToolTypes kAllToolTypes = {
@@ -462,7 +463,7 @@ struct BrushBehavior {
     OutOfRange source_out_of_range_behavior = OutOfRange::kClamp;
     std::array<float, 2> source_value_range;
 
-    bool operator==(const SourceNode& rhs) const = default;
+    friend bool operator==(const SourceNode&, const SourceNode&) = default;
   };
 
   // Value node for producing a constant value.
@@ -472,7 +473,7 @@ struct BrushBehavior {
   struct ConstantNode {
     float value;
 
-    bool operator==(const ConstantNode& rhs) const = default;
+    friend bool operator==(const ConstantNode&, const ConstantNode&) = default;
   };
 
   // Value node for producing a continuous random noise function with values
@@ -487,7 +488,7 @@ struct BrushBehavior {
     DampingSource vary_over;
     float base_period;
 
-    bool operator==(const NoiseNode& rhs) const = default;
+    friend bool operator==(const NoiseNode&, const NoiseNode&) = default;
   };
 
   //////////////////////////
@@ -504,7 +505,8 @@ struct BrushBehavior {
   struct FallbackFilterNode {
     OptionalInputProperty is_fallback_for;
 
-    bool operator==(const FallbackFilterNode& rhs) const = default;
+    friend bool operator==(const FallbackFilterNode&,
+                           const FallbackFilterNode&) = default;
   };
 
   // Value node for filtering out a branch of a behavior graph unless this
@@ -516,7 +518,8 @@ struct BrushBehavior {
   struct ToolTypeFilterNode {
     EnabledToolTypes enabled_tool_types;
 
-    bool operator==(const ToolTypeFilterNode& rhs) const = default;
+    friend bool operator==(const ToolTypeFilterNode&,
+                           const ToolTypeFilterNode&) = default;
   };
 
   ////////////////////////////
@@ -537,7 +540,7 @@ struct BrushBehavior {
     DampingSource damping_source;
     float damping_gap;
 
-    bool operator==(const DampingNode& rhs) const = default;
+    friend bool operator==(const DampingNode&, const DampingNode&) = default;
   };
 
   // Value node for mapping a value through a response curve.
@@ -549,7 +552,7 @@ struct BrushBehavior {
   struct ResponseNode {
     EasingFunction response_curve;
 
-    bool operator==(const ResponseNode& rhs) const = default;
+    friend bool operator==(const ResponseNode&, const ResponseNode&) = default;
   };
 
   // Value node for combining two other values with a binary operation.
@@ -561,7 +564,7 @@ struct BrushBehavior {
   struct BinaryOpNode {
     BinaryOp operation;
 
-    bool operator==(const BinaryOpNode& rhs) const = default;
+    friend bool operator==(const BinaryOpNode&, const BinaryOpNode&) = default;
   };
 
   // Value node for interpolating to/from a range of two values.
@@ -573,7 +576,8 @@ struct BrushBehavior {
   struct InterpolationNode {
     Interpolation interpolation;
 
-    bool operator==(const InterpolationNode& rhs) const = default;
+    friend bool operator==(const InterpolationNode&,
+                           const InterpolationNode&) = default;
   };
 
   //////////////////////
@@ -594,7 +598,7 @@ struct BrushBehavior {
     Target target;
     std::array<float, 2> target_modifier_range;
 
-    bool operator==(const TargetNode& rhs) const = default;
+    friend bool operator==(const TargetNode&, const TargetNode&) = default;
   };
 
   // Terminal node that consumes two input values (angle and magnitude), forming
@@ -614,7 +618,8 @@ struct BrushBehavior {
     std::array<float, 2> angle_range;
     std::array<float, 2> magnitude_range;
 
-    bool operator==(const PolarTargetNode& rhs) const = default;
+    friend bool operator==(const PolarTargetNode&,
+                           const PolarTargetNode&) = default;
   };
 
   // A single node in a behavior's graph.  Each node type is either a "value
@@ -629,7 +634,7 @@ struct BrushBehavior {
 
   std::vector<Node> nodes;
 
-  bool operator==(const BrushBehavior& rhs) const = default;
+  friend bool operator==(const BrushBehavior&, const BrushBehavior&) = default;
 };
 
 namespace brush_internal {

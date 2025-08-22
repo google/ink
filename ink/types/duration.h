@@ -100,8 +100,8 @@ class Duration32 {
 
   bool IsFinite() const;
 
-  bool operator==(const Duration32& rhs) const = default;
-  auto operator<=>(const Duration32& rhs) const = default;
+  friend bool operator==(const Duration32&, const Duration32&) = default;
+  friend auto operator<=>(const Duration32&, const Duration32&) = default;
 
   friend Duration32 operator-(Duration32 d);
 

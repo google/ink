@@ -227,7 +227,8 @@ struct BrushPaint {
     // will override `TextureLayer::opacity`.
     std::optional<float> opacity;
 
-    bool operator==(const TextureKeyframe& rhs) const = default;
+    friend bool operator==(const TextureKeyframe&,
+                           const TextureKeyframe&) = default;
   };
 
   struct TextureLayer {
@@ -299,12 +300,12 @@ struct BrushPaint {
     // texture layer, then the layer at "index + 1" is the brush color layer.
     BlendMode blend_mode = BlendMode::kModulate;
 
-    bool operator==(const TextureLayer& rhs) const = default;
+    friend bool operator==(const TextureLayer&, const TextureLayer&) = default;
   };
 
   std::vector<TextureLayer> texture_layers;
 
-  bool operator==(const BrushPaint& rhs) const = default;
+  friend bool operator==(const BrushPaint&, const BrushPaint&) = default;
 };
 
 namespace brush_internal {

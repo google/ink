@@ -85,7 +85,7 @@ struct StrokeVertex {
 
     float encoded_value;
 
-    bool operator==(const Label& other) const = default;
+    friend bool operator==(const Label&, const Label&) = default;
   };
 
   // The maximum value of the margin that will be encoded without clipping.
@@ -138,7 +138,8 @@ struct StrokeVertex {
     // Offset for texture animation progress, in the range [0, 1).
     float animation_offset = 0;
 
-    bool operator==(const NonPositionAttributes& other) const = default;
+    friend bool operator==(const NonPositionAttributes&,
+                           const NonPositionAttributes&) = default;
   };
 
   // Indices into `MeshFormat::Attributes()` for each stroke vertex attribute.

@@ -103,7 +103,7 @@ struct Vec {
   //   (b.Direction() - a.Direction()).NormalizedAboutZero();
   static Angle SignedAngleBetween(const Vec& a, const Vec& b);
 
-  bool operator==(const Vec& rhs) const = default;
+  friend bool operator==(const Vec&, const Vec&) = default;
 };
 
 Vec operator+(Vec lhs, Vec rhs);

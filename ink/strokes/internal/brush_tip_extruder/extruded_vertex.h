@@ -42,7 +42,8 @@ struct ExtrudedVertex {
       const strokes_internal::LegacyVertex& vertex);
   strokes_internal::LegacyVertex ToLegacy() const;
 
-  bool operator==(const ExtrudedVertex& other) const = default;
+  friend bool operator==(const ExtrudedVertex&,
+                         const ExtrudedVertex&) = default;
 };
 
 // Computes the linear interpolation between `a` and `b` when `t` is in the

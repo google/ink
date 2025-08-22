@@ -45,7 +45,7 @@ struct Triangle {
   // `index` must be 0, 1, or 2.
   Segment GetEdge(int index) const;
 
-  bool operator==(const Triangle& rhs) const = default;
+  friend bool operator==(const Triangle&, const Triangle&) = default;
 };
 
 namespace triangle_internal {

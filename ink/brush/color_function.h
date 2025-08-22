@@ -35,14 +35,15 @@ struct ColorFunction {
     float multiplier = 1;
 
     Color operator()(const Color& color) const;
-    bool operator==(const OpacityMultiplier& other) const = default;
+    friend bool operator==(const OpacityMultiplier&,
+                           const OpacityMultiplier&) = default;
   };
 
   struct ReplaceColor {
     Color color;
 
     Color operator()(const Color& color) const;
-    bool operator==(const ReplaceColor& other) const = default;
+    friend bool operator==(const ReplaceColor&, const ReplaceColor&) = default;
   };
 
   // Union of possible color function parameters.
@@ -50,7 +51,7 @@ struct ColorFunction {
   Parameters parameters;
 
   Color operator()(const Color& color) const;
-  bool operator==(const ColorFunction& other) const = default;
+  friend bool operator==(const ColorFunction&, const ColorFunction&) = default;
 };
 
 namespace brush_internal {

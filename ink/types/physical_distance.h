@@ -51,8 +51,10 @@ class PhysicalDistance {
 
   bool IsFinite() const;
 
-  bool operator==(const PhysicalDistance& rhs) const = default;
-  auto operator<=>(const PhysicalDistance& rhs) const = default;
+  friend bool operator==(const PhysicalDistance&,
+                         const PhysicalDistance&) = default;
+  friend auto operator<=>(const PhysicalDistance&,
+                          const PhysicalDistance&) = default;
 
   friend PhysicalDistance operator-(PhysicalDistance d);
 
