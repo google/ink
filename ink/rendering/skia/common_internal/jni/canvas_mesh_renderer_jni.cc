@@ -131,12 +131,4 @@ JNI_METHOD(rendering_android_canvas_internal, CanvasMeshRenderer, void,
       env->NewStringUTF(spec_data->fragment_shader_source.c_str()));
 }
 
-// TODO: b/306376686 - add the `BrushPaint` argument to this method to check if
-// it can be used with `raw_ptr_to_mesh_format`.
-JNI_METHOD(rendering_android_canvas_internal, CanvasMeshRenderer, jboolean,
-           nativeIsMeshFormatRenderable)
-(JNIEnv* env, jobject object, jlong raw_ptr_to_mesh_format, jboolean packed) {
-  return GetMeshSpecificationData(raw_ptr_to_mesh_format, packed).ok();
-}
-
 }  // extern "C"
