@@ -335,5 +335,108 @@ TEST(MutableMultiMeshTest, InsertTriangleIndicesCopiesVerticesIntoMesh) {
               TriangleEq(mesh.GetTriangle(1)));
 }
 
+TEST(MutableMultiMeshTest, TruncateTrianglesAndVertices) {
+  // Create a mesh with 25 vertices and 5 triangles across 3 partitions.
+  MutableMultiMesh mesh =
+      MutableMultiMesh(MeshFormat(), /* partition_after= */ 10);
+  for (int i = 0; i < 10; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({0, 1, 2});
+  mesh.AppendTriangleIndices({6, 7, 8});
+  for (int i = 10; i < 20; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({10, 11, 12});
+  mesh.AppendTriangleIndices({16, 17, 18});
+  for (int i = 20; i < 25; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({20, 21, 22});
+  EXPECT_EQ(mesh.VertexCount(), 25);
+  EXPECT_EQ(mesh.TriangleCount(), 5);
+  ASSERT_THAT(mesh.GetMeshes(), SizeIs(3));
+  EXPECT_EQ(mesh.GetMeshes()[0].VertexCount(), 10);
+  EXPECT_EQ(mesh.GetMeshes()[1].VertexCount(), 10);
+  EXPECT_EQ(mesh.GetMeshes()[2].VertexCount(), 5);
+
+  // Truncating to a larger number of triangles should have no effect.
+  mesh.TruncateTriangles(10);
+  EXPECT_EQ(mesh.VertexCount(), 25);
+  EXPECT_EQ(mesh.TriangleCount(), 5);
+  EXPECT_THAT(mesh.GetMeshes(), SizeIs(3));
+
+  // Truncating to a larger number of vertices should have no effect.
+  mesh.TruncateVertices(30);
+  EXPECT_EQ(mesh.VertexCount(), 25);
+  EXPECT_EQ(mesh.TriangleCount(), 5);
+  EXPECT_THAT(mesh.GetMeshes(), SizeIs(3));
+
+  // Truncate down to 2 triangles.
+  mesh.TruncateTriangles(2);
+  EXPECT_EQ(mesh.VertexCount(), 25);
+  EXPECT_EQ(mesh.TriangleCount(), 2);
+  EXPECT_THAT(mesh.GetMeshes(), SizeIs(3));
+
+  // Truncate down to 9 vertices.  Any now-empty partitions should be removed.
+  mesh.TruncateVertices(9);
+  EXPECT_EQ(mesh.VertexCount(), 9);
+  EXPECT_EQ(mesh.TriangleCount(), 2);
+  ASSERT_THAT(mesh.GetMeshes(), SizeIs(1));
+  EXPECT_EQ(mesh.GetMeshes()[0].VertexCount(), 9);
+
+  // Truncate down to empty.
+  mesh.TruncateTriangles(0);
+  mesh.TruncateVertices(0);
+  EXPECT_EQ(mesh.VertexCount(), 0);
+  EXPECT_EQ(mesh.TriangleCount(), 0);
+  EXPECT_THAT(mesh.GetMeshes(), IsEmpty());
+}
+
+TEST(MutableMultiMeshTest, Clear) {
+  // Create a mesh with 15 vertices and 3 triangles across 2 partitions.
+  MutableMultiMesh mesh =
+      MutableMultiMesh(MeshFormat(), /* partition_after= */ 10);
+  for (int i = 0; i < 10; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({0, 1, 2});
+  mesh.AppendTriangleIndices({6, 7, 8});
+  for (int i = 10; i < 15; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({10, 11, 12});
+  EXPECT_EQ(mesh.VertexCount(), 15);
+  EXPECT_EQ(mesh.TriangleCount(), 3);
+  EXPECT_THAT(mesh.GetMeshes(), SizeIs(2));
+
+  mesh.Clear();
+  EXPECT_EQ(mesh.VertexCount(), 0);
+  EXPECT_EQ(mesh.TriangleCount(), 0);
+  EXPECT_THAT(mesh.GetMeshes(), SizeIs(0));
+}
+
+TEST(MutableMultiMeshTest, TruncatingTrianglesMaintainsIndexMappings) {
+  // Create a mesh with 5 triangles across 2 partitions.
+  MutableMultiMesh mesh =
+      MutableMultiMesh(MeshFormat(), /* partition_after= */ 10);
+  for (int i = 0; i < 10; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({0, 1, 2});
+  mesh.AppendTriangleIndices({3, 4, 5});
+  mesh.AppendTriangleIndices({6, 7, 8});
+  for (int i = 10; i < 20; ++i) mesh.AppendVertex({static_cast<float>(i), 0});
+  mesh.AppendTriangleIndices({10, 11, 12});
+  mesh.AppendTriangleIndices({13, 14, 15});
+  EXPECT_EQ(mesh.TriangleCount(), 5);
+  ASSERT_THAT(mesh.GetMeshes(), SizeIs(2));
+  EXPECT_EQ(mesh.GetMeshes()[0].TriangleCount(), 3);
+  EXPECT_EQ(mesh.GetMeshes()[1].TriangleCount(), 2);
+
+  // Truncate down to 2 triangles.
+  mesh.TruncateTriangles(2);
+  EXPECT_EQ(mesh.TriangleCount(), 2);
+  ASSERT_THAT(mesh.GetMeshes(), SizeIs(2));
+  EXPECT_EQ(mesh.GetMeshes()[0].TriangleCount(), 2);
+  EXPECT_EQ(mesh.GetMeshes()[1].TriangleCount(), 0);
+
+  // Now append a new triangle, and verify that the triangle counts (both for
+  // the whole multi-mesh, and for each partition) are still correct.
+  mesh.AppendTriangleIndices({16, 17, 18});
+  EXPECT_EQ(mesh.TriangleCount(), 3);
+  ASSERT_THAT(mesh.GetMeshes(), SizeIs(2));
+  EXPECT_EQ(mesh.GetMeshes()[0].TriangleCount(), 2);
+  EXPECT_EQ(mesh.GetMeshes()[1].TriangleCount(), 1);
+}
+
 }  // namespace
 }  // namespace ink::strokes_internal
