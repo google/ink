@@ -25,6 +25,7 @@ cc_library(
     hdrs = ["mutable_multi_mesh.h"],
     deps = [
         "//ink/geometry:mesh_format",
+        "//ink/geometry:mesh_index_types",
         "//ink/geometry:mutable_mesh",
         "//ink/geometry:point",
         "//ink/geometry:triangle",

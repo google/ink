@@ -25,6 +25,7 @@
 #include "absl/types/span.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/type_matchers.h"
 #include "ink/storage/mesh_format.h"
 #include "ink/storage/numeric_run.h"
@@ -42,10 +43,6 @@ using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
-
-MATCHER_P2(VertexIndexPairEq, mesh_index, vertex_index, "") {
-  return arg.mesh_index == mesh_index && arg.vertex_index == vertex_index;
-}
 
 TEST(PartitionedMeshTest, DecodePartitionedMeshWithGroupCountMismatch) {
   CodedModeledShape shape_proto;
@@ -189,8 +186,7 @@ TEST(PartitionedMeshTest, EncodePartitionedMeshWithOneTriangleMesh) {
       Mesh::Create(*format, {{10, 30, 20}, {5, 5, 25}}, {0, 1, 2});
   ASSERT_EQ(mesh.status(), absl::OkStatus());
 
-  std::vector<PartitionedMesh::VertexIndexPair> outline = {
-      {0, 0}, {0, 1}, {0, 2}};
+  std::vector<VertexIndexPair> outline = {{0, 0}, {0, 1}, {0, 2}};
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMeshes(absl::MakeSpan(&(*mesh), 1), {outline});
   ASSERT_EQ(shape.status(), absl::OkStatus());
@@ -243,8 +239,8 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithOneTriangleMesh) {
   ASSERT_EQ(shape->RenderGroupCount(), 1u);
   ASSERT_EQ(shape->OutlineCount(0), 1u);
   EXPECT_THAT(shape->Outline(0, 0),
-              ElementsAre(VertexIndexPairEq(0, 0), VertexIndexPairEq(0, 1),
-                          VertexIndexPairEq(0, 2)));
+              ElementsAre(VertexIndexPairEq({0, 0}), VertexIndexPairEq({0, 1}),
+                          VertexIndexPairEq({0, 2})));
 }
 
 TEST(PartitionedMeshTest, EncodePartitionedMeshWithTwoTriangleMeshes) {
@@ -263,8 +259,7 @@ TEST(PartitionedMeshTest, EncodePartitionedMeshWithTwoTriangleMeshes) {
   meshes.push_back(*std::move(mesh0));
   meshes.push_back(*std::move(mesh1));
   // The outline goes around the square, with two vertices from each mesh.
-  std::vector<PartitionedMesh::VertexIndexPair> outline = {
-      {0, 0}, {0, 1}, {1, 0}, {1, 1}};
+  std::vector<VertexIndexPair> outline = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
 
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMeshes(absl::MakeSpan(meshes), {outline});
@@ -311,9 +306,10 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoTriangleMeshes) {
   EXPECT_EQ(shape->Meshes()[1].TriangleCount(), 1);
   ASSERT_EQ(shape->RenderGroupCount(), 1u);
   ASSERT_EQ(shape->OutlineCount(0), 1u);
-  EXPECT_THAT(shape->Outline(0, 0),
-              ElementsAre(VertexIndexPairEq(0, 0), VertexIndexPairEq(0, 1),
-                          VertexIndexPairEq(1, 0), VertexIndexPairEq(1, 1)));
+  EXPECT_THAT(
+      shape->Outline(0, 0),
+      ElementsAre(VertexIndexPairEq({0, 0}), VertexIndexPairEq({0, 1}),
+                  VertexIndexPairEq({1, 0}), VertexIndexPairEq({1, 1})));
 }
 
 TEST(PartitionedMeshTest, EncodePartitionedMeshWithTwoGroups) {
@@ -387,12 +383,12 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoGroups) {
   EXPECT_EQ(shape->RenderGroupMeshes(1)[0].TriangleCount(), 1);
   ASSERT_EQ(shape->OutlineCount(0), 1u);
   EXPECT_THAT(shape->Outline(0, 0),
-              ElementsAre(VertexIndexPairEq(0, 0), VertexIndexPairEq(0, 1),
-                          VertexIndexPairEq(0, 2)));
+              ElementsAre(VertexIndexPairEq({0, 0}), VertexIndexPairEq({0, 1}),
+                          VertexIndexPairEq({0, 2})));
   ASSERT_EQ(shape->OutlineCount(1), 1u);
   EXPECT_THAT(shape->Outline(1, 0),
-              ElementsAre(VertexIndexPairEq(0, 0), VertexIndexPairEq(0, 2),
-                          VertexIndexPairEq(0, 1)));
+              ElementsAre(VertexIndexPairEq({0, 0}), VertexIndexPairEq({0, 2}),
+                          VertexIndexPairEq({0, 1})));
 }
 
 void DecodePartitionedMeshDoesNotCrashOnArbitraryInput(

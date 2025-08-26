@@ -8,6 +8,7 @@
 
 #include "absl/log/absl_check.h"
 #include "ink/geometry/mesh_format.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/triangle.h"
@@ -172,7 +173,7 @@ void MutableMultiMesh::AddNewPartition() {
   });
 }
 
-MutableMultiMesh::TriangleIndexPair MutableMultiMesh::GetPartitionTriangle(
+TriangleIndexPair MutableMultiMesh::GetPartitionTriangle(
     uint32_t triangle_index) const {
   // TODO: b/295166196 - Consider using a binary search here.
   for (int partition_index = partitions_.size() - 1; partition_index >= 0;

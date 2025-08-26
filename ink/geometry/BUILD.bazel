@@ -167,6 +167,7 @@ cc_library(
     hdrs = ["intersects.h"],
     deps = [
         ":affine_transform",
+        ":mesh_index_types",
         ":partitioned_mesh",
         ":point",
         ":quad",
@@ -330,6 +331,7 @@ cc_library(
         ":envelope",
         ":mesh",
         ":mesh_format",
+        ":mesh_index_types",
         ":mesh_packing_types",
         ":partitioned_mesh",
         ":point",
@@ -351,6 +353,7 @@ cc_test(
         ":angle",
         ":mesh",
         ":mesh_format",
+        ":mesh_index_types",
         ":mesh_packing_types",
         ":mesh_test_helpers",
         ":partitioned_mesh",
@@ -444,6 +447,12 @@ cc_test(
         "@com_google_fuzztest//fuzztest",
         "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
     ],
+)
+
+cc_library(
+    name = "mesh_index_types",
+    hdrs = ["mesh_index_types.h"],
+    deps = [],
 )
 
 cc_library(
@@ -609,6 +618,7 @@ cc_library(
         ":envelope",
         ":mesh",
         ":mesh_format",
+        ":mesh_index_types",
         ":mesh_packing_types",
         ":mutable_mesh",
         ":point",
@@ -642,6 +652,7 @@ cc_test(
         ":angle",
         ":mesh",
         ":mesh_format",
+        ":mesh_index_types",
         ":mesh_packing_types",
         ":mesh_test_helpers",
         ":mutable_mesh",

@@ -41,6 +41,7 @@
 #include "ink/geometry/internal/static_rtree.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/mesh_packing_types.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
@@ -52,8 +53,7 @@
 namespace ink {
 
 // Convenience alias for the R-Tree.
-using RTree =
-    geometry_internal::StaticRTree<PartitionedMesh::TriangleIndexPair>;
+using RTree = geometry_internal::StaticRTree<TriangleIndexPair>;
 
 PartitionedMesh PartitionedMesh::WithEmptyGroups(uint32_t num_groups) {
   return *PartitionedMesh::FromMeshGroups(std::vector<MeshGroup>(num_groups));
@@ -304,16 +304,14 @@ namespace {
 template <typename QueryType>
 void VisitIntersectedTrianglesHelper(
     const QueryType& query,
-    absl::FunctionRef<
-        PartitionedMesh::FlowControl(PartitionedMesh::TriangleIndexPair)>
-        visitor,
+    absl::FunctionRef<PartitionedMesh::FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this, absl::Span<const Mesh> meshes,
     const RTree& rtree) {
   // This is an `auto` instead of `QueryType` because the `Rect` overload of
   // `AffineTransform::Apply` returns a `Quad`, not a `Rect`.
   auto transformed_query = query_to_this.Apply(query);
   auto visitor_wrapper = [transformed_query, visitor,
-                          &meshes](PartitionedMesh::TriangleIndexPair index) {
+                          &meshes](TriangleIndexPair index) {
     if (!geometry_internal::IntersectsInternal(
             transformed_query,
             meshes[index.mesh_index].GetTriangle(index.triangle_index))) {
@@ -385,8 +383,7 @@ void VisitIntersectedTrianglesWithPartitionedMeshWithInvertibleTransform(
     absl::Span<const Mesh> meshes, const RTree& rtree,
     const PartitionedMesh& query, const AffineTransform& query_to_target,
     const AffineTransform& target_to_query,
-    absl::FunctionRef<
-        PartitionedMesh::FlowControl(PartitionedMesh::TriangleIndexPair)>
+    absl::FunctionRef<PartitionedMesh::FlowControl(TriangleIndexPair)>
         visitor) {
   // To find the intersected triangles, we'll first find all triangles that
   // intersect the bounds of `query`, and then test those triangles to see if
@@ -395,7 +392,7 @@ void VisitIntersectedTrianglesWithPartitionedMeshWithInvertibleTransform(
       *Envelope(query_to_target.Apply(*query.Bounds().AsRect())).AsRect();
 
   auto visitor_wrapper = [&meshes, &query, &target_to_query,
-                          visitor](PartitionedMesh::TriangleIndexPair index) {
+                          visitor](TriangleIndexPair index) {
     // This triangle hits the bounding box of `query`, now we need to check
     // that it actually hits `query` itself. Note that we can't call
     // `IntersectsInternal` here, because it would result in a circular
@@ -405,7 +402,7 @@ void VisitIntersectedTrianglesWithPartitionedMeshWithInvertibleTransform(
     query.VisitIntersectedTriangles(
         meshes[index.mesh_index].GetTriangle(index.triangle_index),
 
-        [&found_intersection](PartitionedMesh::TriangleIndexPair query_index) {
+        [&found_intersection](TriangleIndexPair query_index) {
           found_intersection = true;
           return PartitionedMesh::FlowControl::kBreak;
         },
@@ -463,7 +460,7 @@ float ComputeCoverage(const QueryType& query,
   float covered_area = 0;
   target.VisitIntersectedTriangles(
       query,
-      [&target, &covered_area](const PartitionedMesh::TriangleIndexPair index) {
+      [&target, &covered_area](const TriangleIndexPair index) {
         covered_area += std::abs(target.Meshes()[index.mesh_index]
                                      .GetTriangle(index.triangle_index)
                                      .SignedArea());
@@ -517,8 +514,7 @@ float CoverageIsGreaterThanHelper(const QueryType& query,
   float covered_area = 0;
   target.VisitIntersectedTriangles(
       query,
-      [&target, &covered_area,
-       area_threshold](const PartitionedMesh::TriangleIndexPair index) {
+      [&target, &covered_area, area_threshold](const TriangleIndexPair index) {
         covered_area += std::abs(target.Meshes()[index.mesh_index]
                                      .GetTriangle(index.triangle_index)
                                      .SignedArea());

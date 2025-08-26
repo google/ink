@@ -28,6 +28,7 @@
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/mesh_packing_types.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
@@ -605,13 +606,18 @@ Matcher<Envelope> EnvelopeNear(const Rect& expected, float tolerance) {
 
 Matcher<Mesh> MeshEq(const Mesh& mesh) { return MeshEqMatcher(mesh); }
 
-Matcher<PartitionedMesh::VertexIndexPair> VertexIndexPairEq(
-    PartitionedMesh::VertexIndexPair expected) {
+Matcher<VertexIndexPair> VertexIndexPairEq(VertexIndexPair expected) {
   return AllOf(
-      Field("mesh_index", &PartitionedMesh::VertexIndexPair::mesh_index,
-            expected.mesh_index),
-      Field("vertex_index", &PartitionedMesh::VertexIndexPair::vertex_index,
+      Field("mesh_index", &VertexIndexPair::mesh_index, expected.mesh_index),
+      Field("vertex_index", &VertexIndexPair::vertex_index,
             expected.vertex_index));
+}
+
+Matcher<TriangleIndexPair> TriangleIndexPairEq(TriangleIndexPair expected) {
+  return AllOf(
+      Field("mesh_index", &TriangleIndexPair::mesh_index, expected.mesh_index),
+      Field("triangle_index", &TriangleIndexPair::triangle_index,
+            expected.triangle_index));
 }
 
 Matcher<PartitionedMesh> PartitionedMeshDeepEq(

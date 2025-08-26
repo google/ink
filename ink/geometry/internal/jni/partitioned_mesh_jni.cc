@@ -24,6 +24,7 @@
 #include "ink/geometry/internal/jni/mesh_jni_helper.h"
 #include "ink/geometry/internal/jni/partitioned_mesh_jni_helper.h"
 #include "ink/geometry/mesh.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
@@ -41,6 +42,7 @@ using ::ink::Point;
 using ::ink::Quad;
 using ::ink::Rect;
 using ::ink::Triangle;
+using ::ink::VertexIndexPair;
 using ::ink::jni::CastToPartitionedMesh;
 using ::ink::jni::DeleteNativePartitionedMesh;
 using ::ink::jni::NewNativeMesh;
@@ -99,9 +101,9 @@ JNI_METHOD(geometry, PartitionedMeshNative, void,
  jintArray out_mesh_index_and_mesh_vertex_index) {
   const PartitionedMesh& partitioned_mesh =
       CastToPartitionedMesh(native_pointer);
-  absl::Span<const PartitionedMesh::VertexIndexPair> outline =
+  absl::Span<const VertexIndexPair> outline =
       partitioned_mesh.Outline(group_index, outline_index);
-  PartitionedMesh::VertexIndexPair index_pair = outline[outline_vertex_index];
+  VertexIndexPair index_pair = outline[outline_vertex_index];
   jint mesh_index_and_mesh_vertex_index[] = {index_pair.mesh_index,
                                              index_pair.vertex_index};
   env->SetIntArrayRegion(out_mesh_index_and_mesh_vertex_index, 0, 2,

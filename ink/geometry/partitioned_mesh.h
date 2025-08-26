@@ -35,6 +35,7 @@
 #include "ink/geometry/internal/static_rtree.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/mesh_packing_types.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
@@ -64,23 +65,6 @@ namespace ink {
 // involves copying the `std::shared_ptr`s, making them very cheap.
 class PartitionedMesh {
  public:
-  // A pair of indices identifying a point in an outline, by referring
-  // to a vertex in one of the `Mesh`es.
-  struct VertexIndexPair {
-    // The index of the `Mesh` that the vertex belongs to.
-    uint16_t mesh_index;
-    // The index of the vertex within the `Mesh`.
-    uint16_t vertex_index;
-  };
-
-  // A pair of indices identifying a triangle in one of the `Mesh`es.
-  struct TriangleIndexPair {
-    // The index of the `Mesh` that the triangle belongs to.
-    uint16_t mesh_index;
-    // The index of the triangle within the `Mesh`.
-    uint16_t triangle_index;
-  };
-
   // One render group for a `PartitionedMesh`, expressed using `MutableMesh`.
   struct MutableMeshGroup {
     // TODO: b/295166196 - Once `MutableMesh` always uses 16-bit indices, change
@@ -456,8 +440,8 @@ inline uint32_t PartitionedMesh::OutlineCount(uint32_t group_index) const {
   return data_->Outlines(group_index).size();
 }
 
-inline absl::Span<const PartitionedMesh::VertexIndexPair>
-PartitionedMesh::Outline(uint32_t group_index, uint32_t outline_index) const {
+inline absl::Span<const VertexIndexPair> PartitionedMesh::Outline(
+    uint32_t group_index, uint32_t outline_index) const {
   ABSL_CHECK_LT(outline_index, OutlineCount(group_index));
   return data_->Outlines(group_index)[outline_index];
 }
@@ -515,7 +499,7 @@ inline absl::Span<const Mesh> PartitionedMesh::Data::Meshes() const {
   return meshes_;
 }
 
-inline absl::Span<const std::vector<PartitionedMesh::VertexIndexPair>>
+inline absl::Span<const std::vector<VertexIndexPair>>
 PartitionedMesh::Data::Outlines(uint32_t group_index) const {
   ABSL_CHECK_LT(group_index, RenderGroupCount());
   size_t start = group_first_outline_indices_[group_index];

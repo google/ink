@@ -21,6 +21,7 @@
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/mesh_packing_types.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
@@ -124,8 +125,9 @@ namespace ink {
 // Note that all other `Mesh` properties are derived from these four.
 ::testing::Matcher<Mesh> MeshEq(const Mesh& mesh);
 
-::testing::Matcher<PartitionedMesh::VertexIndexPair> VertexIndexPairEq(
-    PartitionedMesh::VertexIndexPair expected);
+::testing::Matcher<VertexIndexPair> VertexIndexPairEq(VertexIndexPair expected);
+::testing::Matcher<TriangleIndexPair> TriangleIndexPairEq(
+    TriangleIndexPair expected);
 
 // Returns a matcher that compares two `PartitionedMesh`s, which are considered
 // equal iff:

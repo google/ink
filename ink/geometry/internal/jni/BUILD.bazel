@@ -90,6 +90,7 @@ cc_library(
         "//ink/geometry:angle",
         "//ink/geometry:mesh",
         "//ink/geometry:mesh_format",
+        "//ink/geometry:mesh_index_types",
         "//ink/geometry:partitioned_mesh",
         "//ink/geometry:point",
         "//ink/geometry:quad",

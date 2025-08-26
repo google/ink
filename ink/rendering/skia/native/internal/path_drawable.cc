@@ -21,6 +21,7 @@
 #include "ink/color/color.h"
 #include "ink/color/color_space.h"
 #include "ink/geometry/mesh.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
@@ -59,7 +60,7 @@ SkPath MakePolygonPath(const MutableMesh& mesh,
 // from the meshes in `mesh_group`.
 SkPath MakePolygonPath(
     absl::Span<const Mesh> mesh_group,
-    absl::Span<const PartitionedMesh::VertexIndexPair> group_outline_indices) {
+    absl::Span<const VertexIndexPair> group_outline_indices) {
   ABSL_DCHECK(!group_outline_indices.empty());
 
   SkPath path;
@@ -71,7 +72,7 @@ SkPath MakePolygonPath(
   group_outline_indices.remove_prefix(1);
 
   path.moveTo(position.x, position.y);
-  for (PartitionedMesh::VertexIndexPair index_pair : group_outline_indices) {
+  for (VertexIndexPair index_pair : group_outline_indices) {
     position = mesh_group[index_pair.mesh_index].VertexPosition(
         index_pair.vertex_index);
     path.lineTo(position.x, position.y);
@@ -109,7 +110,7 @@ PathDrawable::PathDrawable(const PartitionedMesh& shape,
   absl::Span<const Mesh> mesh_group =
       shape.RenderGroupMeshes(render_group_index);
   for (uint32_t i = 0; i < shape.OutlineCount(render_group_index); ++i) {
-    absl::Span<const PartitionedMesh::VertexIndexPair> indices =
+    absl::Span<const VertexIndexPair> indices =
         shape.Outline(render_group_index, i);
     if (indices.empty()) continue;
 

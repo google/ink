@@ -27,6 +27,7 @@
 #include "ink/geometry/angle.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/mesh_packing_types.h"
 #include "ink/geometry/mesh_test_helpers.h"
 #include "ink/geometry/partitioned_mesh.h"
@@ -415,13 +416,13 @@ TEST(MeshEqTest, Describe) {
 }
 
 TEST(PartitionedMeshEqTest, OutlineIndexPairEquality) {
-  PartitionedMesh::VertexIndexPair pair{.mesh_index = 3, .vertex_index = 5};
+  VertexIndexPair pair{.mesh_index = 3, .vertex_index = 5};
 
-  EXPECT_THAT(pair, VertexIndexPairEq(PartitionedMesh::VertexIndexPair{
-                        .mesh_index = 3, .vertex_index = 5}));
-  EXPECT_THAT(pair, Not(VertexIndexPairEq(PartitionedMesh::VertexIndexPair{
-                        .mesh_index = 999, .vertex_index = 5})));
-  EXPECT_THAT(pair, Not(VertexIndexPairEq(PartitionedMesh::VertexIndexPair{
+  EXPECT_THAT(pair, VertexIndexPairEq(
+                        VertexIndexPair{.mesh_index = 3, .vertex_index = 5}));
+  EXPECT_THAT(pair, Not(VertexIndexPairEq(VertexIndexPair{.mesh_index = 999,
+                                                          .vertex_index = 5})));
+  EXPECT_THAT(pair, Not(VertexIndexPairEq(VertexIndexPair{
                         .mesh_index = 3, .vertex_index = 999})));
 }
 
@@ -453,13 +454,11 @@ TEST(PartitionedMeshEqTest, DifferentMeshes) {
 
   // Equivalent outlines, different number of meshes.
 
-  std::vector<absl::Span<const PartitionedMesh::VertexIndexPair>> outlines;
-  PartitionedMesh::VertexIndexPair index_pair = {.mesh_index = 0,
-                                                 .vertex_index = 7};
+  std::vector<absl::Span<const VertexIndexPair>> outlines;
+  VertexIndexPair index_pair = {.mesh_index = 0, .vertex_index = 7};
   ASSERT_EQ(shape->RenderGroupCount(), 1u);
   for (size_t i = 0; i < shape->OutlineCount(0); ++i) {
-    absl::Span<PartitionedMesh::VertexIndexPair> outline =
-        absl::MakeSpan(&index_pair, 1);
+    absl::Span<VertexIndexPair> outline = absl::MakeSpan(&index_pair, 1);
     outlines.push_back(outline);
   }
   std::vector<Mesh> meshes_twice;  // Add all the meshes twice.
@@ -525,13 +524,11 @@ TEST(PartitionedMeshEqTest, DifferentOutlines) {
               Not(PartitionedMeshDeepEq(*shape)));
 
   // Equivalent meshes, same number of outlines, but different outline contents.
-  PartitionedMesh::VertexIndexPair index_pair = {.mesh_index = 0,
-                                                 .vertex_index = 7};
-  std::vector<absl::Span<const PartitionedMesh::VertexIndexPair>> outlines;
+  VertexIndexPair index_pair = {.mesh_index = 0, .vertex_index = 7};
+  std::vector<absl::Span<const VertexIndexPair>> outlines;
   ASSERT_EQ(shape->RenderGroupCount(), 1u);
   for (size_t i = 0; i < shape->OutlineCount(0); ++i) {
-    absl::Span<PartitionedMesh::VertexIndexPair> outline =
-        absl::MakeSpan(&index_pair, 1);
+    absl::Span<VertexIndexPair> outline = absl::MakeSpan(&index_pair, 1);
     outlines.push_back(outline);
   }
   absl::StatusOr<PartitionedMesh>

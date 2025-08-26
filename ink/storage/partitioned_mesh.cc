@@ -24,6 +24,7 @@
 #include "absl/types/span.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/storage/mesh.h"
 #include "ink/storage/mesh_format.h"
 #include "ink/storage/numeric_run.h"
@@ -34,11 +35,11 @@
 namespace ink {
 namespace {
 
-void EncodeOutline(absl::Span<const PartitionedMesh::VertexIndexPair> outline,
+void EncodeOutline(absl::Span<const VertexIndexPair> outline,
                    ink::proto::CodedNumericRun* outline_proto) {
   std::vector<uint32_t> outline_vector;
   outline_vector.reserve(outline.size());
-  for (PartitionedMesh::VertexIndexPair pair : outline) {
+  for (VertexIndexPair pair : outline) {
     outline_vector.push_back((static_cast<uint32_t>(pair.mesh_index) << 16) |
                              static_cast<uint32_t>(pair.vertex_index));
   }
@@ -46,15 +47,15 @@ void EncodeOutline(absl::Span<const PartitionedMesh::VertexIndexPair> outline,
                       outline_proto);
 }
 
-absl::StatusOr<std::vector<PartitionedMesh::VertexIndexPair>> DecodeOutline(
+absl::StatusOr<std::vector<VertexIndexPair>> DecodeOutline(
     const ink::proto::CodedNumericRun& outline_proto) {
   auto range = DecodeIntNumericRun(outline_proto);
   if (!range.ok()) return range.status();
 
-  std::vector<PartitionedMesh::VertexIndexPair> outline;
+  std::vector<VertexIndexPair> outline;
   outline.reserve(outline_proto.deltas_size());
   for (uint32_t packed : *range) {
-    outline.push_back(PartitionedMesh::VertexIndexPair{
+    outline.push_back(VertexIndexPair{
         .mesh_index = static_cast<uint16_t>(packed >> 16),
         .vertex_index = static_cast<uint16_t>(packed & 0xffff),
     });
@@ -77,17 +78,17 @@ absl::StatusOr<PartitionedMesh> DecodePartitionedMeshGroupless(
     meshes.push_back(*std::move(mesh));
   }
 
-  std::vector<std::vector<PartitionedMesh::VertexIndexPair>> outline_vectors;
+  std::vector<std::vector<VertexIndexPair>> outline_vectors;
   outline_vectors.reserve(shape_proto.outlines_size());
   for (const ink::proto::CodedNumericRun& outline_proto :
        shape_proto.outlines()) {
-    absl::StatusOr<std::vector<PartitionedMesh::VertexIndexPair>> outline =
+    absl::StatusOr<std::vector<VertexIndexPair>> outline =
         DecodeOutline(outline_proto);
     if (!outline.ok()) return outline.status();
     outline_vectors.push_back(*std::move(outline));
   }
 
-  std::vector<absl::Span<const PartitionedMesh::VertexIndexPair>> outline_spans;
+  std::vector<absl::Span<const VertexIndexPair>> outline_spans;
   outline_spans.reserve(outline_vectors.size());
   for (const auto& outline : outline_vectors) {
     outline_spans.push_back(outline);
@@ -194,9 +195,9 @@ absl::StatusOr<PartitionedMesh> DecodePartitionedMesh(
   groups.reserve(num_groups);
   std::vector<Mesh> meshes;
   meshes.reserve(num_meshes);
-  std::vector<std::vector<PartitionedMesh::VertexIndexPair>> outlines;
+  std::vector<std::vector<VertexIndexPair>> outlines;
   outlines.reserve(num_outlines);
-  std::vector<absl::Span<const PartitionedMesh::VertexIndexPair>> outline_spans;
+  std::vector<absl::Span<const VertexIndexPair>> outline_spans;
   outline_spans.reserve(num_outlines);
 
   for (int group_index = 0; group_index < num_groups; ++group_index) {
@@ -227,7 +228,7 @@ absl::StatusOr<PartitionedMesh> DecodePartitionedMesh(
             : shape_proto.group_first_outline_indices(next_group_index);
     for (uint32_t outline_index = outline_index_start;
          outline_index < outline_index_end; ++outline_index) {
-      absl::StatusOr<std::vector<PartitionedMesh::VertexIndexPair>> outline =
+      absl::StatusOr<std::vector<VertexIndexPair>> outline =
           DecodeOutline(shape_proto.outlines(outline_index));
       if (!outline.ok()) return outline.status();
       outlines.push_back(*std::move(outline));

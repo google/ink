@@ -18,6 +18,7 @@
 
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
@@ -48,12 +49,11 @@ bool IntersectsPartitionedMesh(const PartitionedMesh& a,
     // `AffineTransform::Apply` returns a `Quad`, not a `Rect`.
     auto transformed_b = inverse_a_transform->Apply(b);
     bool found_intersection = false;
-    a.VisitIntersectedTriangles(
-        transformed_b,
-        [&found_intersection](const PartitionedMesh::TriangleIndexPair) {
-          found_intersection = true;
-          return PartitionedMesh::FlowControl::kBreak;
-        });
+    a.VisitIntersectedTriangles(transformed_b,
+                                [&found_intersection](const TriangleIndexPair) {
+                                  found_intersection = true;
+                                  return PartitionedMesh::FlowControl::kBreak;
+                                });
     return found_intersection;
   } else {
     // A non-invertible transform collapses the `PartitionedMesh` to a
@@ -103,7 +103,7 @@ std::optional<bool> TryOneWayPartitionedMeshToPartitionedMeshIntersects(
   bool found_intersection = false;
   rhs.VisitIntersectedTriangles(
       lhs,
-      [&found_intersection](const PartitionedMesh::TriangleIndexPair) {
+      [&found_intersection](const TriangleIndexPair) {
         found_intersection = true;
         return PartitionedMesh::FlowControl::kBreak;
       },

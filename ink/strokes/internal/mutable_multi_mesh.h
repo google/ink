@@ -22,6 +22,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
 #include "ink/geometry/mesh_format.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/triangle.h"
@@ -70,16 +71,6 @@ class MutableMultiMesh {
                              const std::array<uint32_t, 3>& vertex_indices);
 
  private:
-  struct VertexIndexPair {
-    uint16_t partition_index;
-    uint16_t vertex_index;
-  };
-
-  struct TriangleIndexPair {
-    uint16_t partition_index;
-    uint16_t triangle_index;
-  };
-
   struct Partition {
     // This vector maps the mesh's 16-bit vertex indices to the 32-bit vertex
     // indices that appear in this partition. Note that the same 32-bit vertex
@@ -122,7 +113,7 @@ inline uint32_t MutableMultiMesh::VertexCount() const {
   return mesh_vertex_indices_.size();
 }
 
-inline MutableMultiMesh::VertexIndexPair MutableMultiMesh::GetPartitionVertex(
+inline VertexIndexPair MutableMultiMesh::GetPartitionVertex(
     uint32_t vertex_index) const {
   ABSL_DCHECK_LT(vertex_index, VertexCount());
   return mesh_vertex_indices_[vertex_index][0];
