@@ -46,6 +46,9 @@ class MutableMultiMesh {
   const MeshFormat& Format() const { return format_; }
   absl::Span<const MutableMesh> GetMeshes() const { return meshes_; }
 
+  // Removes all triangles, vertices, and partitions.
+  void Clear();
+
   // Returns the number of vertices in the multi-mesh. Each vertex may exist in
   // more than one partition, so this may be less than the sum of the vertex
   // counts of `GetMeshes()`.
@@ -69,6 +72,9 @@ class MutableMultiMesh {
                           const std::array<uint32_t, 3>& vertex_indices);
   void InsertTriangleIndices(uint32_t triangle_index,
                              const std::array<uint32_t, 3>& vertex_indices);
+
+  void TruncateTriangles(uint32_t new_triangle_count);
+  void TruncateVertices(uint32_t new_vertex_count);
 
  private:
   struct Partition {

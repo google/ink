@@ -89,6 +89,9 @@ class MutableMesh {
     format_ = format;
   }
 
+  // Returns true if this mesh contains no triangles or vertices.
+  bool IsEmpty() const { return vertex_count_ == 0 && triangle_count_ == 0; }
+
   // Returns the number of vertices in the mesh.
   uint32_t VertexCount() const {
     ABSL_DCHECK_EQ(vertex_data_.size() % VertexStride(), 0u);

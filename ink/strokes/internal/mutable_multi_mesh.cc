@@ -32,6 +32,12 @@ MutableMultiMesh::MutableMultiMesh(const MeshFormat& format,
                                    uint16_t partition_after)
     : format_(format), partition_after_(partition_after) {}
 
+void MutableMultiMesh::Clear() {
+  meshes_.clear();
+  partitions_.clear();
+  mesh_vertex_indices_.clear();
+}
+
 uint32_t MutableMultiMesh::TriangleCount() const {
   ABSL_DCHECK_EQ(meshes_.size(), partitions_.size());
   return meshes_.empty() ? 0
@@ -160,6 +166,72 @@ void MutableMultiMesh::InsertTriangleIndices(
                                                  mesh_vertex_indices);
   for (size_t p = partition_index + 1; p < partitions_.size(); ++p) {
     ++partitions_[p].previous_triangle_count;
+  }
+}
+
+void MutableMultiMesh::TruncateTriangles(uint32_t new_triangle_count) {
+  if (TriangleCount() <= new_triangle_count) return;
+  // `TriangleCount()` is strictly greater than `new_triangle_count`, therefore
+  // strictly greater than zero, therefore there must be at least one partition.
+  ABSL_DCHECK_GT(meshes_.size(), 0);
+  ABSL_DCHECK_EQ(meshes_.size(), partitions_.size());
+  // Starting from the last partition and working backwards, remove all
+  // triangles from each partition until we reach the partition that contains
+  // the `new_triangle_count`th triangle.
+  size_t partition_index = partitions_.size() - 1;
+  while (partitions_[partition_index].previous_triangle_count >
+         new_triangle_count) {
+    // Remove all triangles from this partition.
+    MutableMesh& mesh = meshes_[partition_index];
+    mesh.Resize(mesh.VertexCount(), 0);
+    // This isn't true yet, but by the time we return from this method, the
+    // correct `previous_triangle_count` for this partition will be
+    // `new_triangle_count`.
+    partitions_[partition_index].previous_triangle_count = new_triangle_count;
+    // Before we updated it, `previous_triangle_count` was strictly greater
+    // `new_triangle_count`, therefore strictly greater than zero, therefore
+    // there must be at least one more previous partition.
+    ABSL_DCHECK_GT(partition_index, 0);
+    --partition_index;
+  }
+  // `partition_index` now refers to the partition that contains the
+  // `new_triangle_count`th triangle, so once we truncate this mesh, we're done.
+  MutableMesh& mesh = meshes_[partition_index];
+  uint32_t new_triangle_count_for_this_partition =
+      new_triangle_count - partitions_[partition_index].previous_triangle_count;
+  ABSL_DCHECK_LT(new_triangle_count_for_this_partition, mesh.TriangleCount());
+  mesh.Resize(mesh.VertexCount(), new_triangle_count_for_this_partition);
+}
+
+void MutableMultiMesh::TruncateVertices(uint32_t new_vertex_count) {
+  if (VertexCount() <= new_vertex_count) return;
+  // For each partition, remove vertices from the end of the mesh that
+  // correspond to vertices removed from the multi-mesh. Because vertices can
+  // copied out-of-order into other partitions, it's possible that some vertices
+  // we'd like to remove will be in the middle of the mesh's vertex list, and
+  // won't be removed here. However, we can't easily reorder the vertices in the
+  // mesh, because that would break any triangles that still depend on those
+  // vertices. So any vertices that we fail to remove will just have to be
+  // orphaned; they will be culled later when the `MutableMesh`es are packed
+  // into `Mesh`es.
+  ABSL_DCHECK_EQ(meshes_.size(), partitions_.size());
+  for (uint16_t partition_index = 0; partition_index < partitions_.size();
+       ++partition_index) {
+    Partition& partition = partitions_[partition_index];
+    while (!partition.vertex_indices.empty() &&
+           partition.vertex_indices.back() >= new_vertex_count) {
+      partition.vertex_indices.pop_back();
+    }
+    MutableMesh& mesh = meshes_[partition_index];
+    mesh.Resize(partition.vertex_indices.size(), mesh.TriangleCount());
+  }
+  mesh_vertex_indices_.resize(new_vertex_count);
+
+  // Remove empty partitions:
+  ABSL_DCHECK_EQ(meshes_.size(), partitions_.size());
+  while (!meshes_.empty() && meshes_.back().IsEmpty()) {
+    meshes_.pop_back();
+    partitions_.pop_back();
   }
 }
 
