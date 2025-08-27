@@ -21,6 +21,7 @@
 #include "absl/status/status.h"
 #include "absl/time/time.h"
 #include "ink/brush/brush_paint.h"
+#include "ink/brush/color_function.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/vec.h"
@@ -30,19 +31,22 @@
 
 namespace {
 
-using ink::Angle;
-using ink::BrushPaint;
-using ink::Vec;
-using ink::brush_internal::ValidateBrushPaint;
-using ink::brush_internal::ValidateBrushPaintTextureLayer;
-using ink::jni::CastToBrushPaint;
-using ink::jni::CastToTextureLayer;
-using ink::jni::DeleteNativeBrushPaint;
-using ink::jni::DeleteNativeTextureLayer;
-using ink::jni::JStringToStdString;
-using ink::jni::NewNativeBrushPaint;
-using ink::jni::NewNativeTextureLayer;
-using ink::jni::ThrowExceptionFromStatus;
+using ::ink::Angle;
+using ::ink::BrushPaint;
+using ::ink::ColorFunction;
+using ::ink::Vec;
+using ::ink::brush_internal::ValidateBrushPaint;
+using ::ink::brush_internal::ValidateBrushPaintTextureLayer;
+using ::ink::jni::CastToBrushPaint;
+using ::ink::jni::CastToColorFunction;
+using ::ink::jni::CastToTextureLayer;
+using ::ink::jni::DeleteNativeBrushPaint;
+using ::ink::jni::DeleteNativeTextureLayer;
+using ::ink::jni::JStringToStdString;
+using ::ink::jni::NewNativeBrushPaint;
+using ::ink::jni::NewNativeColorFunction;
+using ::ink::jni::NewNativeTextureLayer;
+using ::ink::jni::ThrowExceptionFromStatus;
 
 BrushPaint::TextureSizeUnit JIntToSizeUnit(jint val) {
   return static_cast<BrushPaint::TextureSizeUnit>(val);
@@ -70,7 +74,8 @@ extern "C" {
 
 // Construct a native BrushPaint and return a pointer to it as a long.
 JNI_METHOD(brush, BrushPaintNative, jlong, create)
-(JNIEnv* env, jobject thiz, jlongArray texture_layer_native_pointers_array) {
+(JNIEnv* env, jobject thiz, jlongArray texture_layer_native_pointers_array,
+ jlongArray color_function_native_pointers_array) {
   std::vector<BrushPaint::TextureLayer> texture_layers;
   ABSL_CHECK(texture_layer_native_pointers_array != nullptr);
   const jsize texture_layers_count =
@@ -87,7 +92,26 @@ JNI_METHOD(brush, BrushPaintNative, jlong, create)
       texture_layer_native_pointers_array, texture_layer_native_pointers,
       // No need to copy back the array, which is not modified.
       JNI_ABORT);
-  BrushPaint brush_paint{.texture_layers = std::move(texture_layers)};
+
+  std::vector<ColorFunction> color_functions;
+  ABSL_CHECK(color_function_native_pointers_array != nullptr);
+  const jsize color_functions_count =
+      env->GetArrayLength(color_function_native_pointers_array);
+  color_functions.reserve(color_functions_count);
+  jlong* color_function_native_pointers =
+      env->GetLongArrayElements(color_function_native_pointers_array, nullptr);
+  ABSL_CHECK(color_function_native_pointers != nullptr);
+  for (int i = 0; i < color_functions_count; ++i) {
+    color_functions.push_back(
+        CastToColorFunction(color_function_native_pointers[i]));
+  }
+  env->ReleaseLongArrayElements(
+      color_function_native_pointers_array, color_function_native_pointers,
+      // No need to copy back the array, which is not modified.
+      JNI_ABORT);
+
+  BrushPaint brush_paint{.texture_layers = std::move(texture_layers),
+                         .color_functions = std::move(color_functions)};
   if (absl::Status status = ValidateBrushPaint(brush_paint); !status.ok()) {
     ThrowExceptionFromStatus(env, status);
     return 0;
@@ -112,6 +136,20 @@ JNI_METHOD(brush, BrushPaintNative, jlong, newCopyOfTextureLayer)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
   const BrushPaint& brush_paint = CastToBrushPaint(native_pointer);
   return NewNativeTextureLayer(brush_paint.texture_layers[index]);
+}
+
+JNI_METHOD(brush, BrushPaintNative, jint, getColorFunctionCount)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  const BrushPaint& brush_paint = CastToBrushPaint(native_pointer);
+  return brush_paint.color_functions.size();
+}
+
+// Returns a pointer to a newly heap-allocated copy of the color function at the
+// given instance on this BrushPaint.
+JNI_METHOD(brush, BrushPaintNative, jlong, newCopyOfColorFunction)
+(JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
+  const BrushPaint& brush_paint = CastToBrushPaint(native_pointer);
+  return NewNativeColorFunction(brush_paint.color_functions[index]);
 }
 
 // ************ Native Implementation of BrushPaint TextureLayer ************

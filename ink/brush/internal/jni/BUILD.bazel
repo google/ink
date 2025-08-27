@@ -112,6 +112,7 @@ cc_library(
     deps = [
         ":brush_jni_helper",
         "//ink/brush:brush_paint",
+        "//ink/brush:color_function",
         "//ink/geometry:angle",
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_defines",

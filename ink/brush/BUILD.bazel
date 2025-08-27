@@ -31,6 +31,7 @@ cc_library(
         ":brush_family",
         ":brush_paint",
         ":brush_tip",
+        ":color_function",
         ":easing_function",
         "//:gtest_for_library_testonly",
         "//ink/geometry:type_matchers",
@@ -261,6 +262,7 @@ cc_library(
     srcs = ["brush_paint.cc"],
     hdrs = ["brush_paint.h"],
     deps = [
+        ":color_function",
         "//ink/geometry:angle",
         "//ink/geometry:vec",
         "@com_google_absl//absl/status",
@@ -275,7 +277,9 @@ cc_test(
     srcs = ["brush_paint_test.cc"],
     deps = [
         ":brush_paint",
+        ":color_function",
         ":fuzz_domains",
+        "//ink/color",
         "//ink/geometry:angle",
         "//ink/geometry:vec",
         "@com_google_absl//absl/hash:hash_testing",

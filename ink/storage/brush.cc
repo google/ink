@@ -34,6 +34,7 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
@@ -564,6 +565,42 @@ DecodeBrushBehaviorOptionalInputProperty(
           "invalid ink.proto.BrushBehavior.OptionalInputProperty value: ",
           optional_input_proto));
   }
+}
+
+void EncodeColorFunctionParameters(
+    const ColorFunction::OpacityMultiplier& opacity,
+    proto::ColorFunction& proto_out) {
+  proto_out.set_opacity_multiplier(opacity.multiplier);
+}
+
+void EncodeColorFunctionParameters(const ColorFunction::ReplaceColor& replace,
+                                   proto::ColorFunction& proto_out) {
+  EncodeColor(replace.color, *proto_out.mutable_replace_color());
+}
+
+void EncodeColorFunction(const ColorFunction& color_function,
+                         proto::ColorFunction& proto_out) {
+  std::visit(
+      [&proto_out](const auto& params) {
+        EncodeColorFunctionParameters(params, proto_out);
+      },
+      color_function.parameters);
+}
+
+absl::StatusOr<ColorFunction> DecodeColorFunction(
+    const proto::ColorFunction& proto) {
+  switch (proto.function_case()) {
+    case proto::ColorFunction::kOpacityMultiplier:
+      return ColorFunction{ColorFunction::OpacityMultiplier{
+          .multiplier = proto.opacity_multiplier()}};
+    case proto::ColorFunction::kReplaceColor:
+      return ColorFunction{ColorFunction::ReplaceColor{
+          .color = DecodeColor(proto.replace_color())}};
+    case proto::ColorFunction::FUNCTION_NOT_SET:
+      break;
+  }
+  return absl::InvalidArgumentError(
+      "ink.proto.ColorFunction must specify a function");
 }
 
 proto::PredefinedEasingFunction EncodeEasingFunctionPredefined(
@@ -1340,6 +1377,9 @@ void EncodeBrushPaint(const BrushPaint& paint,
   for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
     EncodeBrushPaintTextureLayer(layer, *paint_proto_out.add_texture_layers());
   }
+  for (const ColorFunction& color_function : paint.color_functions) {
+    EncodeColorFunction(color_function, *paint_proto_out.add_color_functions());
+  }
 }
 
 absl::StatusOr<BrushPaint> DecodeBrushPaint(
@@ -1356,7 +1396,23 @@ absl::StatusOr<BrushPaint> DecodeBrushPaint(
     }
     layers.push_back(*std::move(layer));
   }
-  BrushPaint paint{.texture_layers = std::move(layers)};
+
+  std::vector<ColorFunction> color_functions;
+  color_functions.reserve(paint_proto.color_functions_size());
+  for (const proto::ColorFunction& color_function_proto :
+       paint_proto.color_functions()) {
+    absl::StatusOr<ColorFunction> color_function =
+        DecodeColorFunction(color_function_proto);
+    if (!color_function.ok()) {
+      return color_function.status();
+    }
+    color_functions.push_back(*std::move(color_function));
+  }
+
+  BrushPaint paint{
+      .texture_layers = std::move(layers),
+      .color_functions = std::move(color_functions),
+  };
   if (absl::Status status = brush_internal::ValidateBrushPaintTopLevel(paint);
       !status.ok()) {
     return status;
