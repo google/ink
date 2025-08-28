@@ -113,7 +113,8 @@ TEST(BrushTest, Stringify) {
       "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
       "opacity=1, animation_frames=1, animation_rows=1, animation_columns=1, "
       "animation_duration=1s, keyframes={TextureKeyframe{progress=0.1, "
-      "rotation=0.25π}}, blend_mode=kDstOut}}}}], "
+      "rotation=0.25π}}, blend_mode=kDstOut}}, "
+      "self_overlap=kAny}}], "
       "client_brush_family_id='big-square'))");
 }
 

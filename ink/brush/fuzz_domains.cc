@@ -660,6 +660,16 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
                  StructOf<Vec>(FinitePositiveFloat(), FinitePositiveFloat()));
 }
 
+// LINT.IfChange(self_overlap)
+Domain<BrushPaint::SelfOverlap> ArbitraryBrushPaintSelfOverlap() {
+  return ElementOf({
+      BrushPaint::SelfOverlap::kAny,
+      BrushPaint::SelfOverlap::kAccumulate,
+      BrushPaint::SelfOverlap::kDiscard,
+  });
+}
+// LINT.ThenChange(brush_paint.h:self_overlap)
+
 fuzztest::Domain<BrushPaint> ValidBrushPaint(DomainVariant variant) {
   return FlatMap(
       [=](BrushPaint::TextureMapping mapping,
@@ -672,7 +682,8 @@ fuzztest::Domain<BrushPaint> ValidBrushPaint(DomainVariant variant) {
                       ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
                           mapping, frames, rows, columns, animation_duration,
                           variant)),
-                  VectorOf(ValidColorFunction()));
+                  VectorOf(ValidColorFunction()),
+                  ArbitraryBrushPaintSelfOverlap());
             },
             animation_frames_rows_columns);
       },

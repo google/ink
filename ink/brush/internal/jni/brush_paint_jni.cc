@@ -68,6 +68,10 @@ BrushPaint::BlendMode JIntToBlendMode(jint val) {
   return static_cast<BrushPaint::BlendMode>(val);
 }
 
+BrushPaint::SelfOverlap JIntToSelfOverlap(jint val) {
+  return static_cast<BrushPaint::SelfOverlap>(val);
+}
+
 }  // namespace
 
 extern "C" {
@@ -75,7 +79,7 @@ extern "C" {
 // Construct a native BrushPaint and return a pointer to it as a long.
 JNI_METHOD(brush, BrushPaintNative, jlong, create)
 (JNIEnv* env, jobject thiz, jlongArray texture_layer_native_pointers_array,
- jlongArray color_function_native_pointers_array) {
+ jlongArray color_function_native_pointers_array, jint self_overlap_int) {
   std::vector<BrushPaint::TextureLayer> texture_layers;
   ABSL_CHECK(texture_layer_native_pointers_array != nullptr);
   const jsize texture_layers_count =
@@ -111,7 +115,8 @@ JNI_METHOD(brush, BrushPaintNative, jlong, create)
       JNI_ABORT);
 
   BrushPaint brush_paint{.texture_layers = std::move(texture_layers),
-                         .color_functions = std::move(color_functions)};
+                         .color_functions = std::move(color_functions),
+                         .self_overlap = JIntToSelfOverlap(self_overlap_int)};
   if (absl::Status status = ValidateBrushPaint(brush_paint); !status.ok()) {
     ThrowExceptionFromStatus(env, status);
     return 0;
@@ -150,6 +155,12 @@ JNI_METHOD(brush, BrushPaintNative, jlong, newCopyOfColorFunction)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
   const BrushPaint& brush_paint = CastToBrushPaint(native_pointer);
   return NewNativeColorFunction(brush_paint.color_functions[index]);
+}
+
+JNI_METHOD(brush, BrushPaintNative, jint, getSelfOverlapInt)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  const BrushPaint& brush_paint = CastToBrushPaint(native_pointer);
+  return static_cast<jint>(brush_paint.self_overlap);
 }
 
 // ************ Native Implementation of BrushPaint TextureLayer ************

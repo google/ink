@@ -360,7 +360,9 @@ MATCHER_P(BrushPaintEqMatcher, expected,
           Field("texture_layers", &BrushPaint::texture_layers,
                 Pointwise(BrushPaintTextureLayerEq(), expected.texture_layers)),
           Field("color_functions", &BrushPaint::color_functions,
-                Pointwise(ColorFunctionEq(), expected.color_functions))),
+                Pointwise(ColorFunctionEq(), expected.color_functions)),
+          Field("self_overlap", &BrushPaint::self_overlap,
+                Eq(expected.self_overlap))),
       arg, result_listener);
 }
 

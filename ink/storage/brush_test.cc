@@ -356,7 +356,8 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .wrap_y = BrushPaint::TextureWrap::kMirror,
                            .size = {10, 15},
-                           .blend_mode = BrushPaint::BlendMode::kSrcIn}}});
+                           .blend_mode = BrushPaint::BlendMode::kSrcIn}},
+       .self_overlap = BrushPaint::SelfOverlap::kDiscard});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -409,6 +410,8 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   layer_proto->set_opacity(1.f);
   layer_proto->set_blend_mode(
       proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
+  coat_proto->mutable_paint()->set_self_overlap(
+      proto::BrushPaint::SELF_OVERLAP_DISCARD);
 
   EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto));
   EXPECT_EQ(callback_count, 1);
@@ -427,7 +430,8 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .wrap_y = BrushPaint::TextureWrap::kMirror,
                            .size = {10, 15},
-                           .blend_mode = BrushPaint::BlendMode::kSrcIn}}});
+                           .blend_mode = BrushPaint::BlendMode::kSrcIn}},
+       .self_overlap = BrushPaint::SelfOverlap::kAccumulate});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -491,6 +495,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   texture_layer_proto->set_opacity(1.f);
   texture_layer_proto->set_blend_mode(
       proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
+  paint_proto->set_self_overlap(proto::BrushPaint::SELF_OVERLAP_ACCUMULATE);
 
   EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto));
   EXPECT_EQ(callback_count, 1);
@@ -519,7 +524,8 @@ TEST(BrushTest, EncodeBrushFamilyTextureMap) {
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .wrap_y = BrushPaint::TextureWrap::kMirror,
                            .size = {10, 15},
-                           .blend_mode = BrushPaint::BlendMode::kSrcIn}}});
+                           .blend_mode = BrushPaint::BlendMode::kSrcIn}},
+       .self_overlap = BrushPaint::SelfOverlap::kDiscard});
   ASSERT_EQ(family.status(), absl::OkStatus());
   ::google::protobuf::Map<std::string, std::string> texture_id_to_bitmap_proto_out;
   int distinct_texture_ids_count = 0;

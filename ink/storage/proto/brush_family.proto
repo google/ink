@@ -419,12 +419,39 @@ message BrushPaint {
     reserved 23;
   }
 
+  // Specifies how parts of the stroke that intersect itself should be treated
+  // during the rendering process. The simplest example of this is with
+  // translucent, solid-color strokes - such as a highlighter - where a later
+  // part of a stroke that overlaps an earlier part of itself may appear with
+  // either double the opacity (self overlap is accumulated) or the same opacity
+  // (self overlap is discarded). More complex examples may involve color or
+  // opacity variations (e.g. with
+  // `BrushBehavior::Target::HUE_OFFSET_IN_RADIANS`), or complex textures (e.g.
+  // with `TextureMapping::kStamping`).
+  // LINT.IfChange(self_overlap)
+  enum SelfOverlap {
+    SELF_OVERLAP_UNSPECIFIED = 0;
+    SELF_OVERLAP_ANY = 1;
+    SELF_OVERLAP_ACCUMULATE = 2;
+    SELF_OVERLAP_DISCARD = 3;
+  }
+  // LINT.ThenChange(../../brush/brush_paint.h:self_overlap)
+
   // Zero or more textures to blend together to affect this coat's appearance.
   // Each layer is blended into the next one, and finally into the color of the
   // paint, according to each layer's `blend_mode`.
   repeated TextureLayer texture_layers = 1;
 
+  // Transforms the brush color to be used as an alternative base color for any
+  // effects or textures in a `BrushCoat`. Each function is applied in the order
+  // they are specified.
+  //
+  // If this list is empty, the brush color will be used unchanged.
   repeated ColorFunction color_functions = 2;
+
+  // How parts of the stroke that intersect itself should be treated during the
+  // rendering process. See `SelfOverlap` for more details.
+  optional SelfOverlap self_overlap = 3 [default = SELF_OVERLAP_ANY];
 }
 
 // A behavior describing how stroke input properties should affect the shape and
@@ -1170,6 +1197,8 @@ message BrushBehavior {
   reserved 1 to 14;
 }
 
+// Transforms the brush color to be used as an alternative base color for any
+// effects or textures in a `BrushCoat`.
 message ColorFunction {
   oneof function {
     float opacity_multiplier = 1;

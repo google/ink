@@ -106,6 +106,7 @@ TEST(BrushPaintTest, BrushPaintSupportsAbslHash) {
       BrushPaint{
           .texture_layers = {{.client_texture_id = id1}},
           .color_functions = {{ColorFunction::ReplaceColor{Color::Red()}}}},
+      BrushPaint{.self_overlap = BrushPaint::SelfOverlap::kAccumulate},
   }));
 }
 
@@ -245,6 +246,10 @@ TEST(BrushPaintTest, BrushPaintEqualAndNotEqual) {
 
   other = paint;
   other.texture_layers.push_back({.client_texture_id = id2});
+  EXPECT_NE(paint, other);
+
+  other = paint;
+  other.self_overlap = BrushPaint::SelfOverlap::kAccumulate;
   EXPECT_NE(paint, other);
 }
 
@@ -427,7 +432,7 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
 }
 
 TEST(BrushPaintTest, StringifyBrushPaint) {
-  EXPECT_EQ(absl::StrCat(BrushPaint{}), "BrushPaint{}");
+  EXPECT_EQ(absl::StrCat(BrushPaint{}), "BrushPaint{self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{.texture_layers = {{}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=, "
@@ -437,7 +442,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "rotation=0π, size_jitter=<0, 0>, offset_jitter=<0, 0>, "
       "rotation_jitter=0π, opacity=1, animation_frames=1, animation_rows=1, "
       "animation_columns=1, animation_duration=1s, keyframes={}, "
-      "blend_mode=kModulate}}}");
+      "blend_mode=kModulate}}, self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(
           BrushPaint{.texture_layers = {{.client_texture_id =
@@ -449,7 +454,8 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "size_jitter=<0, 0>, "
       "offset_jitter=<0, 0>, rotation_jitter=0π, opacity=1, "
       "animation_frames=1, animation_rows=1, animation_columns=1, "
-      "animation_duration=1s, keyframes={}, blend_mode=kModulate}}}");
+      "animation_duration=1s, keyframes={}, blend_mode=kModulate}}, "
+      "self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
@@ -462,7 +468,8 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "size=<1, 1>, offset=<0, 0>, rotation=0π, "
       "size_jitter=<0, 0>, offset_jitter=<0, 0>, rotation_jitter=0π, "
       "opacity=1, animation_frames=1, animation_rows=1, animation_columns=1, "
-      "animation_duration=1s, keyframes={}, blend_mode=kModulate}}}");
+      "animation_duration=1s, keyframes={}, blend_mode=kModulate}}, "
+      "self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
@@ -476,7 +483,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "rotation=0π, size_jitter=<0, 0>, offset_jitter=<0, 0>, "
       "rotation_jitter=0π, opacity=1, animation_frames=1, animation_rows=1, "
       "animation_columns=1, animation_duration=1s, keyframes={}, "
-      "blend_mode=kModulate}}}");
+      "blend_mode=kModulate}}, self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
@@ -488,7 +495,8 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "offset_jitter=<0, 0>, rotation_jitter=0π, opacity=1, "
       "animation_frames=1, animation_rows=1, animation_columns=1, "
       "animation_duration=1s, "
-      "keyframes={}, blend_mode=kModulate}}}");
+      "keyframes={}, blend_mode=kModulate}}, "
+      "self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
@@ -500,7 +508,8 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "size=<3, 5>, offset=<2, 0.2>, rotation=0π, size_jitter=<0, 0>, "
       "offset_jitter=<0, 0>, rotation_jitter=0π, opacity=1, "
       "animation_frames=1, animation_rows=1, animation_columns=1, "
-      "animation_duration=1s, keyframes={}, blend_mode=kModulate}}}");
+      "animation_duration=1s, keyframes={}, blend_mode=kModulate}}, "
+      "self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
@@ -514,7 +523,8 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, size_jitter=<0, 0>, "
       "offset_jitter=<0, 0>, rotation_jitter=0π, opacity=0.6, "
       "animation_frames=1, animation_rows=1, animation_columns=1, "
-      "animation_duration=1s, keyframes={}, blend_mode=kModulate}}}");
+      "animation_duration=1s, keyframes={}, blend_mode=kModulate}}, "
+      "self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
@@ -530,7 +540,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "rotation=0π, size_jitter=<0, 0>, offset_jitter=<0, 0>, "
       "rotation_jitter=0π, opacity=1, animation_frames=1, animation_rows=1, "
       "animation_columns=1, animation_duration=1s, keyframes={}, "
-      "blend_mode=kSrcIn}}}");
+      "blend_mode=kSrcIn}}, self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
@@ -547,7 +557,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "rotation=0.5π, size_jitter=<0, 0>, offset_jitter=<0, 0>, "
       "rotation_jitter=0π, opacity=0.6, animation_frames=1, animation_rows=1, "
       "animation_columns=1, animation_duration=1s, keyframes={}, "
-      "blend_mode=kModulate}}}");
+      "blend_mode=kModulate}}, self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
@@ -568,7 +578,8 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "rotation=0.5π, size_jitter=<0.1, 0.2>, offset_jitter=<0.7, 0.3>, "
       "rotation_jitter=0.125π, opacity=0.6, animation_frames=1, "
       "animation_rows=1, animation_columns=1, animation_duration=1s, "
-      "keyframes={}, blend_mode=kSrcIn}}}");
+      "keyframes={}, blend_mode=kSrcIn}}, "
+      "self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers =
@@ -594,7 +605,8 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "rotation_jitter=0.125π, opacity=0.6, animation_frames=1, "
       "animation_rows=1, animation_columns=1, animation_duration=1s, "
       "keyframes={TextureKeyframe{progress=0.3, size=<4, 6>, offset=<2, 0.2>, "
-      "rotation=0.5π, opacity=0.6}}, blend_mode=kModulate}}}");
+      "rotation=0.5π, opacity=0.6}}, blend_mode=kModulate}}, "
+      "self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers =
@@ -637,10 +649,14 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "animation_columns=1, animation_duration=1s, "
       "keyframes={TextureKeyframe{progress=0.2, size=<2, 5>, rotation=0.125π}, "
       "TextureKeyframe{progress=0.4, offset=<2, 0.2>, opacity=0.4}}, "
-      "blend_mode=kDstIn}}}");
+      "blend_mode=kDstIn}}, self_overlap=kAny}");
+  EXPECT_EQ(absl::StrCat(
+                BrushPaint{.self_overlap = BrushPaint::SelfOverlap::kDiscard}),
+            "BrushPaint{self_overlap=kDiscard}");
   EXPECT_EQ(absl::StrCat(BrushPaint{
                 .color_functions = {{ColorFunction::OpacityMultiplier{0.5}}}}),
-            "BrushPaint{color_functions={OpacityMultiplier{0.5}}}");
+            "BrushPaint{color_functions={OpacityMultiplier{0.5}}, "
+            "self_overlap=kAny}");
   EXPECT_EQ(absl::StrCat(BrushPaint{
                 .texture_layers = {{.client_texture_id =
                                         std::string(kTestTextureId)}},
@@ -652,7 +668,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
             "offset_jitter=<0, 0>, rotation_jitter=0π, opacity=1, "
             "animation_frames=1, animation_rows=1, animation_columns=1, "
             "animation_duration=1s, keyframes={}, blend_mode=kModulate}}, "
-            "color_functions={OpacityMultiplier{0.5}}}");
+            "color_functions={OpacityMultiplier{0.5}}, self_overlap=kAny}");
 }
 
 TEST(BrushPaintTest, InvalidTextureLayerRotation) {
@@ -873,6 +889,14 @@ TEST(BrushPaintTest, MismatchedAnimationDuration) {
       StatusIs(
           absl::StatusCode::kInvalidArgument,
           HasSubstr("TextureLayer::animation_duration` must be the same")));
+}
+
+TEST(BrushPaintTest, InvalidSelfOverlap) {
+  EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
+                  .self_overlap = static_cast<BrushPaint::SelfOverlap>(123)}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("`BrushPaint::self_overlap` "
+                                 "holds non-enumerator value")));
 }
 
 void CanValidateAnyValidBrushPaint(const BrushPaint& paint) {

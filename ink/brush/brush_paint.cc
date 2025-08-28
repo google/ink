@@ -85,6 +85,16 @@ bool IsValidBrushPaintBlendMode(BrushPaint::BlendMode blend_mode) {
   return false;
 }
 
+bool IsValidBrushPaintSelfOverlap(BrushPaint::SelfOverlap self_overlap) {
+  switch (self_overlap) {
+    case BrushPaint::SelfOverlap::kAny:
+    case BrushPaint::SelfOverlap::kAccumulate:
+    case BrushPaint::SelfOverlap::kDiscard:
+      return true;
+  }
+  return false;
+}
+
 absl::Status ValidateBrushPaintTextureKeyframe(
     BrushPaint::TextureKeyframe keyframe) {
   if (!(keyframe.progress >= 0.f && keyframe.progress <= 1.f)) {
@@ -299,6 +309,12 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
       }
     }
   }
+  if (!IsValidBrushPaintSelfOverlap(paint.self_overlap)) {
+    return absl::InvalidArgumentError(
+        absl::StrFormat("`BrushPaint::self_overlap` holds "
+                        "non-enumerator value %d",
+                        static_cast<int>(paint.self_overlap)));
+  }
   return absl::OkStatus();
 }
 
@@ -441,6 +457,18 @@ std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
       ", blend_mode=", ToFormattedString(texture_layer.blend_mode), "}");
 }
 
+std::string ToFormattedString(const BrushPaint::SelfOverlap self_overlap) {
+  switch (self_overlap) {
+    case BrushPaint::SelfOverlap::kAny:
+      return "kAny";
+    case BrushPaint::SelfOverlap::kDiscard:
+      return "kDiscard";
+    case BrushPaint::SelfOverlap::kAccumulate:
+      return "kAccumulate";
+  }
+  return absl::StrCat("SelfOverlap(", static_cast<int>(self_overlap), ")");
+}
+
 std::string ToFormattedString(const BrushPaint& paint) {
   std::string formatted = "BrushPaint{";
   if (!paint.texture_layers.empty()) {
@@ -454,7 +482,11 @@ std::string ToFormattedString(const BrushPaint& paint) {
     absl::StrAppend(&formatted, "color_functions={",
                     absl::StrJoin(paint.color_functions, ", "), "}");
   }
-  absl::StrAppend(&formatted, "}");
+  if (!paint.texture_layers.empty() || !paint.color_functions.empty()) {
+    absl::StrAppend(&formatted, ", ");
+  }
+  absl::StrAppend(&formatted,
+                  "self_overlap=", ToFormattedString(paint.self_overlap), "}");
   return formatted;
 }
 

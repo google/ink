@@ -128,7 +128,8 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
             "opacity=1, animation_frames=1, animation_rows=1, "
             "animation_columns=1, animation_duration=1s, "
             "keyframes={TextureKeyframe{progress=0.1, "
-            "rotation=0.25π}}, blend_mode=kDstIn}}}}])");
+            "rotation=0.25π}}, blend_mode=kDstIn}}, "
+            "self_overlap=kAny}}])");
 }
 
 TEST(BrushFamilyTest, StringifyWithId) {
@@ -148,7 +149,8 @@ TEST(BrushFamilyTest, StringifyWithId) {
             "opacity=1, animation_frames=1, animation_rows=1, "
             "animation_columns=1, animation_duration=1s, "
             "keyframes={TextureKeyframe{progress=0.1, "
-            "rotation=0.25π}}, blend_mode=kDstIn}}}}], "
+            "rotation=0.25π}}, blend_mode=kDstIn}}, "
+            "self_overlap=kAny}}], "
             "client_brush_family_id='big-square')");
 }
 

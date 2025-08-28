@@ -304,11 +304,44 @@ struct BrushPaint {
     friend bool operator==(const TextureLayer&, const TextureLayer&) = default;
   };
 
+  // Specifies how parts of the stroke that intersect itself should be treated
+  // during the rendering process. The simplest example of this is with
+  // translucent, solid-color strokes - such as a highlighter - where a later
+  // part of a stroke that overlaps an earlier part of itself may appear with
+  // either double the opacity (self overlap is accumulated) or the same opacity
+  // (self overlap is discarded). More complex examples may involve color or
+  // opacity variations (e.g. with
+  // BrushBehavior::Target::HUE_OFFSET_IN_RADIANS`), or complex textures (e.g.
+  // with `TextureMapping::kStamping`).
+  //
+  enum class SelfOverlap {
+    // Any of the options listed below may be used, depending on what would be
+    // most efficient and feature-complete for the brush and the device.
+    kAny,
+    // Self overlap will be accumulated, meaning that both the overlapped
+    // content and the overlapping content will be drawn. For a translucent
+    // color stroke, this typically means that the overlapping portion will
+    // appear with double the opacity of the non-overlapping portions. This
+    // option is most analogous to physical writing and drawing, and it is the
+    // option that best matches the appearance as if the stroke were drawn as
+    // separate, shorter strokes. This is the default behavior for renderers
+    // that use the stroke mesh rather than its outline.
+    kAccumulate,
+    // Self overlap will be drawn in a way that discards the overlapping
+    // content. This can be used to make the stroke appear as if it's drawn as a
+    // PDF page object or annotation, where a stroke can be filled only with a
+    // solid color or textures using `TextureMapping::kTiling`. This is the
+    // default behavior for renderers that use the stroke outline rather than
+    // its mesh.
+    kDiscard,
+  };
+
   std::vector<TextureLayer> texture_layers;
   // Transformations to apply to the base brush color (in order) before drawing
   // this coat of paint. When this list is empty, the base brush color will be
   // used unchanged.
   std::vector<ColorFunction> color_functions;
+  SelfOverlap self_overlap;
 
   friend bool operator==(const BrushPaint&, const BrushPaint&) = default;
 };
@@ -333,6 +366,7 @@ std::string ToFormattedString(BrushPaint::TextureWrap texture_wrap);
 std::string ToFormattedString(BrushPaint::BlendMode blend_mode);
 std::string ToFormattedString(const BrushPaint::TextureKeyframe& keyframe);
 std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer);
+std::string ToFormattedString(BrushPaint::SelfOverlap self_overlap);
 std::string ToFormattedString(const BrushPaint& paint);
 
 }  // namespace brush_internal
@@ -373,6 +407,11 @@ void AbslStringify(Sink& sink, const BrushPaint::TextureLayer& texture_layer) {
 }
 
 template <typename Sink>
+void AbslStringify(Sink& sink, BrushPaint::SelfOverlap self_overlap) {
+  sink.Append(brush_internal::ToFormattedString(self_overlap));
+}
+
+template <typename Sink>
 void AbslStringify(Sink& sink, const BrushPaint& paint) {
   sink.Append(brush_internal::ToFormattedString(paint));
 }
@@ -394,7 +433,8 @@ H AbslHashValue(H h, const BrushPaint::TextureLayer& layer) {
 
 template <typename H>
 H AbslHashValue(H h, const BrushPaint& paint) {
-  return H::combine(std::move(h), paint.texture_layers, paint.color_functions);
+  return H::combine(std::move(h), paint.texture_layers, paint.color_functions,
+                    paint.self_overlap);
 }
 
 }  // namespace ink
