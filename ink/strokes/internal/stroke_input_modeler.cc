@@ -29,12 +29,15 @@
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/types/duration.h"
+#include "ink/types/numbers.h"
 #include "ink/types/physical_distance.h"
 #include "ink_stroke_modeler/params.h"
 #include "ink_stroke_modeler/stroke_modeler.h"
 #include "ink_stroke_modeler/types.h"
 
 namespace ink::strokes_internal {
+
+using ::ink::numbers::kPi;
 
 constexpr float kDefaultLoopMitigationSpeedLowerBoundInCmPerSec = 0.0f;
 constexpr float kDefaultLoopMitigationSpeedUpperBoundInCmPerSec = 25.0f;
@@ -44,6 +47,11 @@ constexpr float kDefaultLoopMitigationInterpolationStrengthAtSpeedUpperBound =
     0.5f;
 const stroke_model::Duration kDefaultLoopMitigationMinSpeedSamplingWindow =
     stroke_model::Duration(0.04);
+
+// The minimum output rate was chosen to match legacy behavior, which was
+// in turn chosen to upsample enough to produce relatively smooth-looking
+// curves on 60 Hz touchscreens.
+constexpr double kMinOutputRateHz = 180;
 
 void StrokeInputModeler::StartStroke(const BrushFamily::InputModel& input_model,
                                      float brush_epsilon) {
@@ -68,6 +76,7 @@ void StrokeInputModeler::StartStroke(const BrushFamily::InputModel& input_model,
 namespace {
 
 using stroke_model::PositionModelerParams;
+using stroke_model::SamplingParams;
 using stroke_model::StylusStateModelerParams;
 
 // LINT.IfChange(input_model_types)
@@ -113,7 +122,7 @@ MakeLoopContractionMitigationParameters(
     const BrushFamily::InputModel& input_model,
     std::optional<PhysicalDistance> stroke_unit_length) {
   return std::visit(
-      [stroke_unit_length](auto&& input_model) {
+      [stroke_unit_length](auto& input_model) {
         return LoopContractionParams(input_model, stroke_unit_length);
       },
       input_model);
@@ -132,8 +141,30 @@ StylusStateModelerParams StylusModelerParams(
 StylusStateModelerParams MakeStylusStateModelerParams(
     const BrushFamily::InputModel& input_model) {
   return std::visit(
-      [](auto&& input_model) -> stroke_model::StylusStateModelerParams {
+      [](auto& input_model) -> stroke_model::StylusStateModelerParams {
         return StylusModelerParams(input_model);
+      },
+      input_model);
+}
+
+SamplingParams MakeSamplingParams(const BrushFamily::SpringModel& spring_model,
+                                  float brush_epsilon) {
+  return {.min_output_rate = kMinOutputRateHz,
+          .end_of_stroke_stopping_distance = brush_epsilon,
+          .max_estimated_angle_to_traverse_per_input = kPi / 8};
+}
+
+SamplingParams MakeSamplingParams(
+    const BrushFamily::ExperimentalRawPositionModel& raw_position_model,
+    float brush_epsilon) {
+  return MakeSamplingParams(BrushFamily::SpringModel{}, brush_epsilon);
+}
+
+SamplingParams MakeSamplingParams(const BrushFamily::InputModel& input_model,
+                                  float brush_epsilon) {
+  return std::visit(
+      [&brush_epsilon](auto& input_model) {
+        return MakeSamplingParams(input_model, brush_epsilon);
       },
       input_model);
 }
@@ -144,10 +175,6 @@ void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
                         const BrushFamily::InputModel& input_model,
                         float brush_epsilon,
                         std::optional<PhysicalDistance> stroke_unit_length) {
-  // The minimum output rate was chosen to match legacy behavior, which was
-  // in turn chosen to upsample enough to produce relatively smooth-looking
-  // curves on 60 Hz touchscreens.
-  constexpr double kMinOutputRateHz = 180;
   // We use the defaults for `PositionModelerParams` and
   // `StylusStateModelerParams`.
   ABSL_CHECK_OK(stroke_modeler.Reset(
@@ -163,8 +190,7 @@ void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
        // `brush_epsilon` is used for the stopping distance because once end of
        // the stroke is with `brush_epsilon` of the final input, further changes
        // are not considered visually distinct.
-       .sampling_params = {.min_output_rate = kMinOutputRateHz,
-                           .end_of_stroke_stopping_distance = brush_epsilon},
+       .sampling_params = MakeSamplingParams(input_model, brush_epsilon),
        // If we use loop mitigation, we need to use the new projection method.
        .stylus_state_modeler_params = MakeStylusStateModelerParams(input_model),
        // We disable the internal predictor on the `StrokeModeler`,
