@@ -86,8 +86,7 @@ BrushFamily CreateTestFamily() {
 
 TEST(BrushTest, Stringify) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
-      BrushTip{
-          .scale = {3, 3}, .corner_rounding = 0, .opacity_multiplier = 0.7},
+      BrushTip{.scale = {3, 3}, .corner_rounding = 0},
       {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
                            .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
@@ -105,7 +104,7 @@ TEST(BrushTest, Stringify) {
       "Brush(color=Color({0.000000, 0.000000, 1.000000, 1.000000}, sRGB), "
       "size=3, epsilon=0.1, "
       "family=BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
-      "corner_rounding=0, opacity_multiplier=0.7}, "
+      "corner_rounding=0}, "
       "paint_preferences={BrushPaint{texture_layers={TextureLayer{client_"
       "texture_id=test-texture, mapping=kStamping, "
       "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "

@@ -86,12 +86,6 @@ bool UsePathRendering(GrDirectContext* context, const BrushPaint&) {
   return context == nullptr;
 }
 
-// Returns the color opacity multiplier when `SkPath` should be used for
-// rendering instead of `SkMesh`.
-float OpacityMultiplierForPath(const Brush& brush, uint32_t coat_index) {
-  return brush.GetCoats()[coat_index].tip.opacity_multiplier;
-}
-
 // Returns the `TextureMapping` used by the given `BrushPaint`. Right now, we
 // don't support rendering a `BrushPaint` that mixes different `TextureMapping`
 // modes, so this just returns the `TextureMapping` of the first texture layer,
@@ -134,8 +128,7 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     if (UsePathRendering(context, brush_paint)) {
       PathDrawable drawable(stroke.GetMesh(coat_index),
                             stroke.GetCoatOutlines(coat_index),
-                            brush_paint.color_functions,
-                            OpacityMultiplierForPath(*brush, coat_index));
+                            brush_paint.color_functions);
       drawable.SetBrushColor(brush->GetColor());
       drawables.push_back(std::move(drawable));
       continue;
@@ -206,8 +199,7 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
         brush.GetCoats()[coat_index].paint_preferences[0];
     if (UsePathRendering(context, brush_paint)) {
       PathDrawable drawable(stroke_shape, coat_index,
-                            brush_paint.color_functions,
-                            OpacityMultiplierForPath(brush, coat_index));
+                            brush_paint.color_functions);
       drawable.SetBrushColor(brush.GetColor());
       drawables.push_back(std::move(drawable));
       continue;
