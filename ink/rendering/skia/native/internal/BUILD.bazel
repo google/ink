@@ -102,6 +102,7 @@ cc_library(
     deps = [
         ":mesh_uniform_data",
         "//ink/brush:brush_paint",
+        "//ink/brush:color_function",
         "//ink/color",
         "//ink/geometry:affine_transform",
         "@com_google_absl//absl/container:inlined_vector",
@@ -180,6 +181,7 @@ cc_library(
     srcs = ["path_drawable.cc"],
     hdrs = ["path_drawable.h"],
     deps = [
+        "//ink/brush:color_function",
         "//ink/color",
         "//ink/color:color_space",
         "//ink/geometry:mesh",
