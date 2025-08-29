@@ -128,14 +128,16 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
   for (uint32_t coat_index = 0; coat_index < num_coats; ++coat_index) {
     if (stroke.GetMeshBounds(coat_index).IsEmpty()) continue;
 
-    if (UsePathRendering(context, brush->GetCoats()[coat_index].paint)) {
+    // TODO: b/346530293 - Use the first compatible paint
+    const BrushPaint& brush_paint =
+        brush->GetCoats()[coat_index].paint_preferences[0];
+    if (UsePathRendering(context, brush_paint)) {
       drawables.push_back(PathDrawable(
           stroke.GetMesh(coat_index), stroke.GetCoatOutlines(coat_index),
           brush->GetColor(), OpacityMultiplierForPath(*brush, coat_index)));
       continue;
     }
 
-    const BrushPaint& brush_paint = brush->GetCoats()[coat_index].paint;
     absl::StatusOr<sk_sp<SkShader>> shader = shader_cache_.GetShaderForPaint(
         brush_paint, brush->GetSize(), stroke.GetInputs());
     if (!shader.ok()) return shader.status();
@@ -195,14 +197,16 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     absl::Span<const Mesh> meshes = stroke_shape.RenderGroupMeshes(coat_index);
     if (meshes.empty()) continue;
 
-    if (UsePathRendering(context, brush.GetCoats()[coat_index].paint)) {
+    // TODO: b/346530293 - Use the first compatible paint
+    const BrushPaint& brush_paint =
+        brush.GetCoats()[coat_index].paint_preferences[0];
+    if (UsePathRendering(context, brush_paint)) {
       drawables.push_back(
           PathDrawable(stroke_shape, coat_index, brush.GetColor(),
                        OpacityMultiplierForPath(brush, coat_index)));
       continue;
     }
 
-    const BrushPaint& brush_paint = brush.GetCoats()[coat_index].paint;
     absl::StatusOr<sk_sp<SkShader>> shader = shader_cache_.GetShaderForPaint(
         brush_paint, brush.GetSize(), stroke.GetInputs());
     if (!shader.ok()) return shader.status();

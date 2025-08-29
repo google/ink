@@ -90,7 +90,7 @@ TEST(BrushTest, DecodeBrushProto) {
   proto::BrushCoat* coat_proto = family_proto->add_coats();
   coat_proto->mutable_tip()->set_corner_rounding(0.5f);
   coat_proto->mutable_tip()->set_opacity_multiplier(1.0f);
-  proto::BrushPaint* paint_proto = coat_proto->mutable_paint();
+  proto::BrushPaint* paint_proto = coat_proto->add_paint_preferences();
   proto::BrushPaint::TextureLayer* texture_layer_proto_1 =
       paint_proto->add_texture_layers();
   texture_layer_proto_1->set_client_texture_id(std::string(kTestTextureId1));
@@ -225,6 +225,18 @@ TEST(BrushTest, EmptyBrushCoatProtoDecodesToDefaultBrushCoat) {
   absl::StatusOr<BrushCoat> brush_coat = DecodeBrushCoat(coat_proto);
   ASSERT_EQ(brush_coat.status(), absl::OkStatus());
   EXPECT_THAT(*brush_coat, BrushCoatEq(BrushCoat()));
+}
+
+TEST(BrushTest, EmptyBrushCoatProtoWithDeprecatedPaintDecodesToUseThatPaint) {
+  proto::BrushCoat coat_proto;
+  proto::BrushPaint* paint_proto = coat_proto.mutable_paint();
+  paint_proto->set_self_overlap(proto::BrushPaint::SELF_OVERLAP_ACCUMULATE);
+  absl::StatusOr<BrushCoat> brush_coat = DecodeBrushCoat(coat_proto);
+  ASSERT_EQ(brush_coat.status(), absl::OkStatus());
+  EXPECT_THAT(*brush_coat,
+              BrushCoatEq(BrushCoat{
+                  .paint_preferences = {BrushPaint{
+                      .self_overlap = BrushPaint::SelfOverlap::kAccumulate}}}));
 }
 
 // This test ensures that we set correct proto field defaults when adding new
@@ -392,8 +404,9 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   coat_proto->mutable_tip()->set_opacity_multiplier(0.7f);
   coat_proto->mutable_tip()->set_particle_gap_distance_scale(1);
   coat_proto->mutable_tip()->set_particle_gap_duration_seconds(2);
+  proto::BrushPaint* paint_proto = coat_proto->add_paint_preferences();
   proto::BrushPaint::TextureLayer* layer_proto =
-      coat_proto->mutable_paint()->add_texture_layers();
+      paint_proto->add_texture_layers();
   layer_proto->set_client_texture_id("test-texture-one");
   layer_proto->set_mapping(proto::BrushPaint::TextureLayer::MAPPING_STAMPING);
   layer_proto->set_origin(
@@ -410,8 +423,12 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   layer_proto->set_opacity(1.f);
   layer_proto->set_blend_mode(
       proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
-  coat_proto->mutable_paint()->set_self_overlap(
-      proto::BrushPaint::SELF_OVERLAP_DISCARD);
+  paint_proto->set_self_overlap(proto::BrushPaint::SELF_OVERLAP_DISCARD);
+
+  // TODO: b/346530293 - Remove this once the paint field is deleted/reserved
+  //   rather than just deprecated.
+  proto::BrushPaint* deprecated_paint_proto = coat_proto->mutable_paint();
+  *deprecated_paint_proto = *paint_proto;
 
   EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto));
   EXPECT_EQ(callback_count, 1);
@@ -463,8 +480,9 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
       ->mutable_spring_model();
   brush_proto.mutable_brush_family()->mutable_texture_id_to_bitmap()->insert(
       {std::string(kTestTextureId1), TestPngBytes1x1()});
-  proto::BrushTip* tip_proto =
-      brush_proto.mutable_brush_family()->add_coats()->mutable_tip();
+  proto::BrushCoat* coat_proto =
+      brush_proto.mutable_brush_family()->add_coats();
+  proto::BrushTip* tip_proto = coat_proto->mutable_tip();
   tip_proto->set_scale_x(1.f);
   tip_proto->set_scale_y(1.f);
   tip_proto->set_corner_rounding(0.25f);
@@ -474,8 +492,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   tip_proto->set_opacity_multiplier(0.7f);
   tip_proto->set_particle_gap_distance_scale(1);
   tip_proto->set_particle_gap_duration_seconds(2);
-  proto::BrushPaint* paint_proto =
-      brush_proto.mutable_brush_family()->mutable_coats(0)->mutable_paint();
+  proto::BrushPaint* paint_proto = coat_proto->add_paint_preferences();
   proto::BrushPaint::TextureLayer* texture_layer_proto =
       paint_proto->add_texture_layers();
   texture_layer_proto->set_client_texture_id(kTestTextureId1);
@@ -496,6 +513,11 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   texture_layer_proto->set_blend_mode(
       proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
   paint_proto->set_self_overlap(proto::BrushPaint::SELF_OVERLAP_ACCUMULATE);
+
+  // TODO: b/346530293 - Remove this once the paint field is deleted/reserved
+  //   rather than just deprecated.
+  proto::BrushPaint* deprecated_paint_proto = coat_proto->mutable_paint();
+  *deprecated_paint_proto = *paint_proto;
 
   EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto));
   EXPECT_EQ(callback_count, 1);
@@ -634,7 +656,7 @@ TEST(BrushTest, DecodeBrushFamilyReturnsErrorStatusFromCallback) {
   };
   proto::BrushFamily family_proto;
   family_proto.add_coats()
-      ->mutable_paint()
+      ->add_paint_preferences()
       ->add_texture_layers()
       ->set_client_texture_id(kTestTextureId1);
   absl::StatusOr<BrushFamily> family =

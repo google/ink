@@ -55,7 +55,7 @@ TEST(StrokeShapeBuilderTest, DefaultConstructedIsEmpty) {
 
 TEST(StrokeShapeBuilderTest, FirstStartStrokeHasEmptyMeshAndOutline) {
   StrokeShapeBuilder builder;
-  BrushCoat brush_coat{.tip = BrushTip(), .paint = {}};
+  BrushCoat brush_coat;
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat, 10, 0.1);
 
   EXPECT_EQ(builder.GetMesh().VertexCount(), 0);
@@ -66,7 +66,7 @@ TEST(StrokeShapeBuilderTest, FirstStartStrokeHasEmptyMeshAndOutline) {
 
 TEST(StrokeShapeBuilderTest, EmptyExtendHasEmptyUpdateMeshAndOutline) {
   StrokeShapeBuilder builder;
-  BrushCoat brush_coat{.tip = BrushTip(), .paint = {}};
+  BrushCoat brush_coat;
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat, 10, 0.1);
 
   StrokeShapeUpdate update = builder.ExtendStroke({}, {}, Duration32::Zero());
@@ -83,7 +83,7 @@ TEST(StrokeShapeBuilderTest, EmptyExtendHasEmptyUpdateMeshAndOutline) {
 
 TEST(StrokeShapeBuilderTest, NonEmptyExtend) {
   StrokeShapeBuilder builder;
-  BrushCoat brush_coat{.tip = BrushTip(), .paint = {}};
+  BrushCoat brush_coat;
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat, 10, 0.1);
 
   absl::StatusOr<StrokeInputBatch> real_inputs = StrokeInputBatch::Create({
@@ -133,7 +133,7 @@ TEST(StrokeShapeBuilderTest, NonEmptyExtend) {
 
 TEST(StrokeShapeBuilderTest, StartAfterExtendEmptiesMeshAndOutline) {
   StrokeShapeBuilder builder;
-  BrushCoat brush_coat{.tip = BrushTip(), .paint = {}};
+  BrushCoat brush_coat;
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat, 10, 0.1);
 
   absl::StatusOr<StrokeInputBatch> inputs =
@@ -158,7 +158,7 @@ TEST(StrokeShapeBuilderTest, StartAfterExtendEmptiesMeshAndOutline) {
 
 TEST(StrokeShapeBuilderTest, NonTexturedNonParticleBrushDoesNotHaveSurfaceUvs) {
   StrokeShapeBuilder builder;
-  BrushCoat brush_coat{.tip = BrushTip{}, .paint = {}};
+  BrushCoat brush_coat;
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat,
                       /* brush_size = */ 10, /* brush_epsilon = */ 0.1);
 
@@ -178,8 +178,9 @@ TEST(StrokeShapeBuilderTest, StampingNonParticleBrushDoesNotHaveSurfaceUvs) {
   StrokeShapeBuilder builder;
   BrushCoat brush_coat{
       .tip = BrushTip{},
-      .paint = {.texture_layers = {
-                    {.mapping = BrushPaint::TextureMapping::kStamping}}}};
+      .paint_preferences = {
+          {.texture_layers = {
+               {.mapping = BrushPaint::TextureMapping::kStamping}}}}};
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat,
                       /* brush_size = */ 10, /* brush_epsilon = */ 0.1);
 
@@ -195,11 +196,9 @@ TEST(StrokeShapeBuilderTest, StampingNonParticleBrushDoesNotHaveSurfaceUvs) {
   }
 }
 
-TEST(StrokeShapeBuilderTest,
-     NonTexturedParticleDistanceBrushDoesNotHaveSurfaceUvs) {
+TEST(StrokeShapeBuilderTest, NonTexturedParticleDistanceBrushHasSurfaceUvs) {
   StrokeShapeBuilder builder;
-  BrushCoat brush_coat{.tip = BrushTip{.particle_gap_distance_scale = 0.05},
-                       .paint = {}};
+  BrushCoat brush_coat{.tip = BrushTip{.particle_gap_distance_scale = 0.05}};
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat,
                       /* brush_size = */ 10, /* brush_epsilon = */ 0.1);
 
@@ -209,19 +208,25 @@ TEST(StrokeShapeBuilderTest,
 
   builder.ExtendStroke(*inputs, {}, Duration32::Zero());
 
+  // For strokes that don't use the surface UV, all UV values are set to (0, 0).
+  // We test that this isn't the case by finding the envelope; if its width and
+  // height are both greater than zero, than surface UVs must have been set.
+  Envelope uv_envelope;
   for (uint32_t i = 0; i < builder.GetMesh().VertexCount(); ++i) {
-    EXPECT_THAT(StrokeVertex::GetSurfaceUvFromMesh(builder.GetMesh(), i),
-                PointEq({0, 0}));
+    uv_envelope.Add(StrokeVertex::GetSurfaceUvFromMesh(builder.GetMesh(), i));
   }
+  ASSERT_FALSE(uv_envelope.IsEmpty());
+  EXPECT_GT(uv_envelope.AsRect()->Width(), 0);
+  EXPECT_GT(uv_envelope.AsRect()->Height(), 0);
 }
 
-TEST(StrokeShapeBuilderTest,
-     TiledTextureParticleDistanceBrushDoesNotHaveSurfaceUvs) {
+TEST(StrokeShapeBuilderTest, TiledTextureParticleDistanceBrushHasSurfaceUvs) {
   StrokeShapeBuilder builder;
   BrushCoat brush_coat{
       .tip = BrushTip{.particle_gap_distance_scale = 0.05},
-      .paint = {.texture_layers = {
-                    {.mapping = BrushPaint::TextureMapping::kTiling}}}};
+      .paint_preferences = {
+          {.texture_layers = {
+               {.mapping = BrushPaint::TextureMapping::kTiling}}}}};
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat,
                       /* brush_size = */ 10, /* brush_epsilon = */ 0.1);
 
@@ -231,18 +236,22 @@ TEST(StrokeShapeBuilderTest,
 
   builder.ExtendStroke(*inputs, {}, Duration32::Zero());
 
+  // For strokes that don't use the surface UV, all UV values are set to (0, 0).
+  // We test that this isn't the case by finding the envelope; if its width and
+  // height are both greater than zero, than surface UVs must have been set.
+  Envelope uv_envelope;
   for (uint32_t i = 0; i < builder.GetMesh().VertexCount(); ++i) {
-    EXPECT_THAT(StrokeVertex::GetSurfaceUvFromMesh(builder.GetMesh(), i),
-                PointEq({0, 0}));
+    uv_envelope.Add(StrokeVertex::GetSurfaceUvFromMesh(builder.GetMesh(), i));
   }
+  ASSERT_FALSE(uv_envelope.IsEmpty());
+  EXPECT_GT(uv_envelope.AsRect()->Width(), 0);
+  EXPECT_GT(uv_envelope.AsRect()->Height(), 0);
 }
 
-TEST(StrokeShapeBuilderTest,
-     NonStampingParticleDurationBrushDoesNotHaveSurfaceUvs) {
+TEST(StrokeShapeBuilderTest, NonStampingParticleDurationBrushHasSurfaceUvs) {
   StrokeShapeBuilder builder;
   BrushCoat brush_coat{
-      .tip = BrushTip{.particle_gap_duration = Duration32::Seconds(0.05)},
-      .paint = {}};
+      .tip = BrushTip{.particle_gap_duration = Duration32::Seconds(0.05)}};
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat,
                       /* brush_size = */ 10, /* brush_epsilon = */ 0.1);
 
@@ -252,18 +261,25 @@ TEST(StrokeShapeBuilderTest,
 
   builder.ExtendStroke(*inputs, {}, Duration32::Zero());
 
+  // For strokes that don't use the surface UV, all UV values are set to (0, 0).
+  // We test that this isn't the case by finding the envelope; if its width and
+  // height are both greater than zero, than surface UVs must have been set.
+  Envelope uv_envelope;
   for (uint32_t i = 0; i < builder.GetMesh().VertexCount(); ++i) {
-    EXPECT_THAT(StrokeVertex::GetSurfaceUvFromMesh(builder.GetMesh(), i),
-                PointEq({0, 0}));
+    uv_envelope.Add(StrokeVertex::GetSurfaceUvFromMesh(builder.GetMesh(), i));
   }
+  ASSERT_FALSE(uv_envelope.IsEmpty());
+  EXPECT_GT(uv_envelope.AsRect()->Width(), 0);
+  EXPECT_GT(uv_envelope.AsRect()->Height(), 0);
 }
 
 TEST(StrokeShapeBuilderTest, StampingParticleDistanceBrushHasSurfaceUvs) {
   StrokeShapeBuilder builder;
   BrushCoat brush_coat{
       .tip = BrushTip{.particle_gap_distance_scale = 0.05},
-      .paint = {.texture_layers = {
-                    {.mapping = BrushPaint::TextureMapping::kStamping}}}};
+      .paint_preferences = {
+          {.texture_layers = {
+               {.mapping = BrushPaint::TextureMapping::kStamping}}}}};
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat,
                       /* brush_size = */ 10, /* brush_epsilon = */ 0.1);
 
@@ -289,8 +305,9 @@ TEST(StrokeShapeBuilderTest, StampingParticleDurationBrushHasSurfaceUvs) {
   StrokeShapeBuilder builder;
   BrushCoat brush_coat{
       .tip = BrushTip{.particle_gap_duration = Duration32::Seconds(0.05)},
-      .paint = {.texture_layers = {
-                    {.mapping = BrushPaint::TextureMapping::kStamping}}}};
+      .paint_preferences = {
+          {.texture_layers = {
+               {.mapping = BrushPaint::TextureMapping::kStamping}}}}};
   builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat,
                       /* brush_size = */ 10, /* brush_epsilon = */ 0.1);
 
@@ -314,7 +331,7 @@ TEST(StrokeShapeBuilderTest, StampingParticleDurationBrushHasSurfaceUvs) {
 
 TEST(StrokeShapeBuilderDeathTest, StartWithZeroBrushSize) {
   StrokeShapeBuilder builder;
-  BrushCoat brush_coat{.tip = BrushTip(), .paint = {}};
+  BrushCoat brush_coat{.tip = BrushTip()};
   EXPECT_DEATH_IF_SUPPORTED(
       builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat, 0, 0.1),
       "");
@@ -322,7 +339,7 @@ TEST(StrokeShapeBuilderDeathTest, StartWithZeroBrushSize) {
 
 TEST(StrokeShapeBuilderDeathTest, StartWithZeroBrushEpsilon) {
   StrokeShapeBuilder builder;
-  BrushCoat brush_coat{.tip = BrushTip(), .paint = {}};
+  BrushCoat brush_coat{.tip = BrushTip()};
   EXPECT_DEATH_IF_SUPPORTED(
       builder.StartStroke(BrushFamily::DefaultInputModel(), brush_coat, 1, 0),
       "");

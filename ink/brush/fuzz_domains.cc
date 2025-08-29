@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "fuzztest/fuzztest.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
@@ -57,6 +58,7 @@ using fuzztest::FlatMap;
 using fuzztest::InRange;
 using fuzztest::Just;
 using fuzztest::Map;
+using fuzztest::NonEmpty;
 using fuzztest::NonNegative;
 using fuzztest::OneOf;
 using fuzztest::OptionalOf;
@@ -527,7 +529,13 @@ Domain<BrushBehavior::Node> ValidBrushBehaviorNode(DomainVariant variant) {
 }
 
 Domain<BrushCoat> ValidBrushCoat(DomainVariant variant) {
-  return StructOf<BrushCoat>(ValidBrushTip(variant), ValidBrushPaint(variant));
+  return StructOf<BrushCoat>(ValidBrushTip(variant),
+                             Map(
+                                 [](const std::vector<BrushPaint>& paints) {
+                                   return absl::InlinedVector<BrushPaint, 1>(
+                                       paints.begin(), paints.end());
+                                 },
+                                 NonEmpty(VectorOf(ValidBrushPaint(variant)))));
 }
 
 Domain<BrushFamily> ValidBrushFamily(DomainVariant variant) {

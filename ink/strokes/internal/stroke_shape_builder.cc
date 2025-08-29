@@ -19,7 +19,6 @@
 #include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
-#include "ink/brush/brush_paint.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/brush_tip_extruder.h"
 #include "ink/strokes/internal/brush_tip_modeler.h"
@@ -28,16 +27,6 @@
 #include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
-namespace {
-
-bool IsStampingTextureCoat(const BrushCoat& coat) {
-  // We can only handle stamping textures when there is a single texture layer.
-  return coat.paint.texture_layers.size() == 1 &&
-         coat.paint.texture_layers[0].mapping ==
-             BrushPaint::TextureMapping::kStamping;
-}
-
-}  // namespace
 
 void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
                                      const BrushCoat& coat, float brush_size,
@@ -50,9 +39,7 @@ void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
   mesh_bounds_.Reset();
   outlines_.clear();
 
-  bool is_stamping_texture_brush = IsStampingTextureCoat(coat);
   bool is_stamping_texture_particle_brush =
-      is_stamping_texture_brush &&
       (coat.tip.particle_gap_distance_scale != 0 ||
        coat.tip.particle_gap_duration != Duration32::Zero());
   tip_.modeler.StartStroke(&coat.tip, brush_size, noise_seed);

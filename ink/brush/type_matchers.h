@@ -41,6 +41,7 @@ BrushBehaviorNodeEq();
 ::testing::Matcher<std::tuple<BrushTip, BrushTip>> BrushTipEq();
 
 ::testing::Matcher<BrushPaint> BrushPaintEq(const BrushPaint& expected);
+::testing::Matcher<std::tuple<BrushPaint, BrushPaint>> BrushPaintEq();
 
 ::testing::Matcher<BrushPaint::TextureLayer> BrushPaintTextureLayerEq(
     const BrushPaint::TextureLayer& expected);

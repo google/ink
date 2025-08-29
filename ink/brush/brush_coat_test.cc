@@ -41,18 +41,18 @@ constexpr absl::string_view kTestTextureId = "test-paint";
 TEST(BrushCoatTest, Stringify) {
   EXPECT_EQ(absl::StrCat(BrushCoat{.tip = BrushTip{}}),
             "BrushCoat{tip=BrushTip{scale=<1, 1>, corner_rounding=1}, "
-            "paint=BrushPaint{self_overlap=kAny}}");
+            "paint_preferences={BrushPaint{self_overlap=kAny}}}");
 }
 
 TEST(BrushCoatTest, CoatWithDefaultTipAndPaintIsValid) {
   absl::Status status = brush_internal::ValidateBrushCoat(
-      BrushCoat{.tip = BrushTip{}, .paint = BrushPaint{}});
+      BrushCoat{.tip = BrushTip{}, .paint_preferences = {BrushPaint{}}});
   EXPECT_EQ(status, absl::OkStatus());
 }
 
 TEST(BrushCoatTest, CoatWithInvalidTipIsInvalid) {
-  absl::Status status = brush_internal::ValidateBrushCoat(
-      BrushCoat{.tip = BrushTip{.pinch = -1}, .paint = BrushPaint{}});
+  absl::Status status = brush_internal::ValidateBrushCoat(BrushCoat{
+      .tip = BrushTip{.pinch = -1}, .paint_preferences = {BrushPaint{}}});
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("pinch"));
 }
@@ -123,7 +123,7 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutStampingTextures) {
           .mapping = BrushPaint::TextureMapping::kTiling,
       }},
   };
-  BrushCoat coat = {.tip = BrushTip(), .paint = paint};
+  BrushCoat coat = {.tip = BrushTip(), .paint_preferences = {paint}};
   EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
               Not(Contains(MeshFormat::AttributeId::kSurfaceUv)));
 }
@@ -135,7 +135,7 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithStampingTextures) {
           .mapping = BrushPaint::TextureMapping::kStamping,
       }},
   };
-  BrushCoat coat = {.tip = BrushTip(), .paint = paint};
+  BrushCoat coat = {.tip = BrushTip(), .paint_preferences = {paint}};
   EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
               Contains(MeshFormat::AttributeId::kSurfaceUv));
 }

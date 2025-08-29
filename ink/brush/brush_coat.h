@@ -18,6 +18,7 @@
 #include <string>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
@@ -25,15 +26,18 @@
 
 namespace ink {
 
-// A `BrushCoat` represents one coat of paint applied by a brush. It includes a
-// `BrushPaint` and a `BrushTip` used to apply that paint. Multiple `BrushCoats`
-// can be combined within a single brush; when a stroke drawn by a multi-coat
-// brush is rendered, each coat of paint will be drawn entirely atop the
-// previous coat, even if the stroke crosses over itself, as though each coat
-// were painted in its entirety one at a time.
+// A `BrushCoat` represents one coat of ink applied by a brush. It includes a
+// `BrushTip` that describes the structure of that coat, and a non-empty list of
+// possible `BrushPaint` objects - each one describes how to render the coat
+// structure, and the one `BrushPaint` that is actually used is the first one in
+// the list that is compatible with the device and renderer. Multiple
+// `BrushCoat`s can be combined within a single brush; when a stroke drawn by a
+// multi-coat brush is rendered, each coat of ink will be drawn entirely atop
+// the previous coat, even if the stroke crosses over itself, as though each
+// coat were painted in its entirety one at a time.
 struct BrushCoat {
   BrushTip tip;
-  BrushPaint paint;
+  absl::InlinedVector<BrushPaint, 1> paint_preferences = {BrushPaint{}};
 };
 
 namespace brush_internal {

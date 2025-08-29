@@ -15,9 +15,13 @@
 #include <jni.h>
 
 #include <algorithm>
+#include <utility>
 
+#include "absl/container/inlined_vector.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
+#include "ink/brush/brush_paint.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
 #include "ink/geometry/mesh_format.h"
@@ -26,6 +30,7 @@
 namespace {
 
 using ::ink::BrushCoat;
+using ::ink::BrushPaint;
 using ::ink::MeshFormat;
 using ::ink::brush_internal::GetRequiredAttributeIds;
 using ::ink::jni::CastToBrushCoat;
@@ -44,10 +49,25 @@ extern "C" {
 // Construct a native BrushCoat and return a pointer to it as a long.
 JNI_METHOD(brush, BrushCoatNative, jlong, create)
 (JNIEnv* env, jobject thiz, jlong tip_native_pointer,
- jlong paint_native_pointer) {
+ jlongArray paint_preferences_native_pointers_array) {
+  absl::InlinedVector<BrushPaint, 1> paint_preferences;
+  ABSL_CHECK(paint_preferences_native_pointers_array != nullptr);
+  const jsize paint_preferences_count =
+      env->GetArrayLength(paint_preferences_native_pointers_array);
+  ABSL_CHECK_GT(paint_preferences_count, 0);
+  paint_preferences.reserve(paint_preferences_count);
+  jlong* paint_preferences_native_pointers = env->GetLongArrayElements(
+      paint_preferences_native_pointers_array, nullptr);
+  for (int i = 0; i < paint_preferences_count; ++i) {
+    jlong paint_native_pointer = paint_preferences_native_pointers[i];
+    paint_preferences.push_back(CastToBrushPaint(paint_native_pointer));
+  }
+  env->ReleaseLongArrayElements(paint_preferences_native_pointers_array,
+                                paint_preferences_native_pointers, JNI_ABORT);
+
   return NewNativeBrushCoat(BrushCoat{
       .tip = CastToBrushTip(tip_native_pointer),
-      .paint = CastToBrushPaint(paint_native_pointer),
+      .paint_preferences = std::move(paint_preferences),
   });
 }
 
@@ -78,9 +98,15 @@ JNI_METHOD(brush, BrushCoatNative, jlong, newCopyOfBrushTip)
   return NewNativeBrushTip(CastToBrushCoat(native_pointer).tip);
 }
 
-JNI_METHOD(brush, BrushCoatNative, jlong, newCopyOfBrushPaint)
+JNI_METHOD(brush, BrushCoatNative, jint, getBrushPaintPreferencesCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return NewNativeBrushPaint(CastToBrushCoat(native_pointer).paint);
+  return CastToBrushCoat(native_pointer).paint_preferences.size();
+}
+
+JNI_METHOD(brush, BrushCoatNative, jlong, newCopyOfBrushPaintPreference)
+(JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
+  return NewNativeBrushPaint(
+      CastToBrushCoat(native_pointer).paint_preferences[index]);
 }
 
 }  // extern "C"

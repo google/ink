@@ -366,13 +366,19 @@ MATCHER_P(BrushPaintEqMatcher, expected,
       arg, result_listener);
 }
 
+MATCHER(BrushPaintPointwiseEqMatcher, "") {
+  return ExplainMatchResult(BrushPaintEq(std::get<1>(arg)), std::get<0>(arg),
+                            result_listener);
+}
+
 MATCHER_P(BrushCoatEqMatcher, expected,
           absl::StrCat(negation ? "doesn't equal" : "equals",
                        " BrushCoat (expected: ",
                        ::testing::PrintToString(expected), ")")) {
   return ExplainMatchResult(
       AllOf(Field("tip", &BrushCoat::tip, BrushTipEq(expected.tip)),
-            Field("paint", &BrushCoat::paint, BrushPaintEq(expected.paint))),
+            Field("paint_preferences", &BrushCoat::paint_preferences,
+                  Pointwise(BrushPaintEq(), expected.paint_preferences))),
       arg, result_listener);
 }
 
@@ -459,6 +465,10 @@ Matcher<std::tuple<BrushTip, BrushTip>> BrushTipEq() {
 
 Matcher<BrushPaint> BrushPaintEq(const BrushPaint& expected) {
   return BrushPaintEqMatcher(expected);
+}
+
+Matcher<std::tuple<BrushPaint, BrushPaint>> BrushPaintEq() {
+  return BrushPaintPointwiseEqMatcher();
 }
 
 Matcher<BrushPaint::TextureLayer> BrushPaintTextureLayerEq(

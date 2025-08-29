@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -1524,7 +1525,23 @@ absl::StatusOr<BrushTip> DecodeBrushTip(const proto::BrushTip& tip_proto) {
 
 void EncodeBrushCoat(const BrushCoat& coat, proto::BrushCoat& coat_proto_out) {
   EncodeBrushTip(coat.tip, *coat_proto_out.mutable_tip());
-  EncodeBrushPaint(coat.paint, *coat_proto_out.mutable_paint());
+  coat_proto_out.mutable_paint_preferences()->Clear();
+  coat_proto_out.mutable_paint_preferences()->Reserve(
+      coat.paint_preferences.size());
+  for (const BrushPaint& paint : coat.paint_preferences) {
+    EncodeBrushPaint(paint, *coat_proto_out.add_paint_preferences());
+  }
+  // Write the first paint preference to the deprecated paint field, so that
+  // older clients can still read the value. The older clients may render
+  // strokes in a strange way if the first paint preference is not compatible
+  // with the device or renderer, but that's pretty much equivalent to the
+  // library behavior before paint preferences were introduced.
+  // TODO: b/346530293 - Remove this once the paint field is deleted/reserved
+  //   rather than just deprecated.
+  if (!coat.paint_preferences.empty()) {
+    EncodeBrushPaint(coat.paint_preferences[0],
+                     *coat_proto_out.mutable_paint());
+  }
 }
 
 absl::StatusOr<BrushCoat> DecodeBrushCoat(
@@ -1534,14 +1551,30 @@ absl::StatusOr<BrushCoat> DecodeBrushCoat(
   if (!tip.ok()) {
     return tip.status();
   }
-  absl::StatusOr<BrushPaint> paint =
-      DecodeBrushPaint(coat_proto.paint(), get_client_texture_id);
-  if (!paint.ok()) {
-    return paint.status();
+  absl::InlinedVector<BrushPaint, 1> paint_preferences;
+  paint_preferences.reserve(coat_proto.paint_preferences_size());
+  // Treat the deprecated paint field as the only paint preference if the
+  // paint_preferences field is empty.
+  const proto::BrushPaint* deprecated_paint = &coat_proto.paint();
+  for (const proto::BrushPaint* paint_proto :
+       coat_proto.paint_preferences_size() != 0
+           ? absl::MakeConstSpan(coat_proto.paint_preferences().data(),
+                                 coat_proto.paint_preferences_size())
+           : absl::MakeConstSpan(&deprecated_paint, 1)) {
+    absl::StatusOr<BrushPaint> paint =
+        DecodeBrushPaint(*paint_proto, get_client_texture_id);
+    if (!paint.ok()) {
+      return paint.status();
+    }
+    paint_preferences.push_back(*std::move(paint));
   }
-  // There's no further validation to be done here if the paint and tip are
-  // valid.
-  return BrushCoat{.tip = *std::move(tip), .paint = *std::move(paint)};
+  auto coat = BrushCoat{.tip = *std::move(tip),
+                        .paint_preferences = std::move(paint_preferences)};
+  if (absl::Status status = brush_internal::ValidateBrushCoat(coat);
+      !status.ok()) {
+    return status;
+  }
+  return coat;
 }
 
 void EncodeBrushFamilyTextureMap(
@@ -1552,18 +1585,20 @@ void EncodeBrushFamilyTextureMap(
   // The set of texture ids for which we have already called get_bitmap().
   absl::flat_hash_set<std::string> seen_ids;
   for (const BrushCoat& coat : family.GetCoats()) {
-    for (const BrushPaint::TextureLayer& layer : coat.paint.texture_layers) {
-      if (seen_ids.find(layer.client_texture_id) != seen_ids.end()) {
-        continue;
-      }
+    for (const BrushPaint& paint : coat.paint_preferences) {
+      for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
+        if (seen_ids.find(layer.client_texture_id) != seen_ids.end()) {
+          continue;
+        }
 
-      std::optional<std::string> bitmap = get_bitmap(layer.client_texture_id);
-      seen_ids.insert(layer.client_texture_id);
-      if (!bitmap.has_value()) {
-        continue;
-      }
+        std::optional<std::string> bitmap = get_bitmap(layer.client_texture_id);
+        seen_ids.insert(layer.client_texture_id);
+        if (!bitmap.has_value()) {
+          continue;
+        }
 
-      texture_id_to_bitmap_out.insert({layer.client_texture_id, *bitmap});
+        texture_id_to_bitmap_out.insert({layer.client_texture_id, *bitmap});
+      }
     }
   }
 }

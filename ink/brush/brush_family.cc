@@ -53,7 +53,7 @@ BrushFamily::BrushFamily(absl::Span<const BrushCoat> coats,
 absl::StatusOr<BrushFamily> BrushFamily::Create(
     const BrushTip& tip, const BrushPaint& paint,
     absl::string_view client_brush_family_id, const InputModel& input_model) {
-  BrushCoat coat = {.tip = tip, .paint = paint};
+  BrushCoat coat = {.tip = tip, .paint_preferences = {paint}};
   return BrushFamily::Create(absl::MakeConstSpan(&coat, 1),
                              client_brush_family_id, input_model);
 }

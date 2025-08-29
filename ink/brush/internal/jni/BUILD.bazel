@@ -143,6 +143,7 @@ cc_library(
         "//ink/geometry:mesh_format",
         "//ink/geometry/internal/jni:mesh_format_jni_helper",
         "//ink/jni/internal:jni_defines",
+        "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ] + select({

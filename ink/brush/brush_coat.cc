@@ -19,7 +19,9 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
@@ -53,8 +55,14 @@ absl::Status ValidateBrushCoat(const BrushCoat& coat) {
   if (absl::Status status = ValidateBrushTip(coat.tip); !status.ok()) {
     return status;
   }
-  if (absl::Status status = ValidateBrushPaint(coat.paint); !status.ok()) {
-    return status;
+  if (coat.paint_preferences.empty()) {
+    return absl::InvalidArgumentError(
+        "BrushCoat::paint_preferences must not be empty");
+  }
+  for (const BrushPaint& paint : coat.paint_preferences) {
+    if (absl::Status status = ValidateBrushPaint(paint); !status.ok()) {
+      return status;
+    }
   }
   return absl::OkStatus();
 }
@@ -80,10 +88,12 @@ absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
     ids.insert(MeshFormat::AttributeId::kColorShiftHsl);
   }
 
-  for (const BrushPaint::TextureLayer& layer : coat.paint.texture_layers) {
-    if (layer.mapping == BrushPaint::TextureMapping::kStamping) {
-      ids.insert(MeshFormat::AttributeId::kSurfaceUv);
-      break;
+  for (const BrushPaint& paint : coat.paint_preferences) {
+    for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
+      if (layer.mapping == BrushPaint::TextureMapping::kStamping) {
+        ids.insert(MeshFormat::AttributeId::kSurfaceUv);
+        break;
+      }
     }
   }
 
@@ -91,7 +101,9 @@ absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
 }
 
 std::string ToFormattedString(const BrushCoat& coat) {
-  return absl::StrFormat("BrushCoat{tip=%v, paint=%v}", coat.tip, coat.paint);
+  return absl::StrFormat(
+      "BrushCoat{tip=%v, paint_preferences=%v}", coat.tip,
+      absl::StrCat("{", absl::StrJoin(coat.paint_preferences, ", "), "}"));
 }
 
 }  // namespace brush_internal
