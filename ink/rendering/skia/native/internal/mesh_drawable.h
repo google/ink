@@ -21,7 +21,9 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
+#include "absl/types/span.h"
 #include "ink/brush/brush_paint.h"
+#include "ink/brush/color_function.h"
 #include "ink/color/color.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/rendering/skia/native/internal/mesh_uniform_data.h"
@@ -64,7 +66,8 @@ class MeshDrawable {
   // CHECK-fails if `specification` or any buffer in `partitions` is null.
   static absl::StatusOr<MeshDrawable> Create(
       sk_sp<SkMeshSpecification> specification, sk_sp<SkBlender> blender,
-      sk_sp<SkShader> shader, absl::InlinedVector<Partition, 1> partitions,
+      sk_sp<SkShader> shader, absl::Span<const ColorFunction> color_functions,
+      absl::InlinedVector<Partition, 1> partitions,
       std::optional<MeshUniformData> starting_uniforms = std::nullopt);
 
   MeshDrawable() = default;
@@ -115,12 +118,14 @@ class MeshDrawable {
  private:
   MeshDrawable(sk_sp<SkMeshSpecification> specification,
                sk_sp<SkBlender> blender, sk_sp<SkShader> shader,
+               absl::InlinedVector<ColorFunction, 1> color_functions,
                absl::InlinedVector<Partition, 1> partitions,
                MeshUniformData uniform_data);
 
   sk_sp<SkMeshSpecification> specification_;
   sk_sp<SkBlender> blender_;
   sk_sp<SkShader> shader_;
+  absl::InlinedVector<ColorFunction, 1> color_functions_;
   absl::InlinedVector<Partition, 1> partitions_;
   MeshUniformData uniform_data_;
   sk_sp<SkImageFilter> image_filter_;
@@ -134,7 +139,7 @@ inline bool MeshDrawable::HasBrushColor() const {
 }
 
 inline void MeshDrawable::SetBrushColor(const Color& color) {
-  uniform_data_.SetBrushColor(color);
+  uniform_data_.SetBrushColor(ColorFunction::ApplyAll(color_functions_, color));
 }
 
 inline bool MeshDrawable::HasTextureMapping() const {

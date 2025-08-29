@@ -20,9 +20,19 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "ink/color/color.h"
 
 namespace ink {
+
+Color ColorFunction::ApplyAll(absl::Span<const ColorFunction> functions,
+                              const Color& color) {
+  Color result = color;
+  for (const ColorFunction& function : functions) {
+    result = function(result);
+  }
+  return result;
+}
 
 Color ColorFunction::operator()(const Color& color) const {
   return std::visit([&color](const auto& params) { return params(color); },
