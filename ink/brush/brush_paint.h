@@ -19,10 +19,12 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/time/time.h"
 #include "ink/brush/color_function.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/mesh_format.h"
 #include "ink/geometry/vec.h"
 
 namespace ink {
@@ -358,6 +360,14 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint);
 // used in a `BrushPaint`, and returns an error if not.
 absl::Status ValidateBrushPaintTextureLayer(
     const BrushPaint::TextureLayer& layer);
+
+// Returns the mesh attribute IDs that are required to properly render a mesh
+// with this brush paint. This will always include `kPosition` and certain
+// other attribute IDs (`kSideDerivative`, `kSideLabel`, `kForwardDerivative`,
+// `kForwardLabel`, and `kOpacityShift`), and may also include additional
+// attribute IDs depending on the paint settings.
+absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
+    const BrushPaint& paint);
 
 std::string ToFormattedString(BrushPaint::TextureMapping texture_mapping);
 std::string ToFormattedString(BrushPaint::TextureOrigin texture_origin);

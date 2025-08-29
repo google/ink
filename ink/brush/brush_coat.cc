@@ -29,27 +29,6 @@
 
 namespace ink {
 namespace brush_internal {
-namespace {
-
-bool BrushTipUsesColorShift(const BrushTip& tip) {
-  for (const BrushBehavior& behavior : tip.behaviors) {
-    for (const BrushBehavior::Node& node : behavior.nodes) {
-      if (const auto* output = std::get_if<BrushBehavior::TargetNode>(&node)) {
-        switch (output->target) {
-          case BrushBehavior::Target::kHueOffsetInRadians:
-          case BrushBehavior::Target::kSaturationMultiplier:
-          case BrushBehavior::Target::kLuminosity:
-            return true;
-          default:
-            break;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-}  // namespace
 
 absl::Status ValidateBrushCoat(const BrushCoat& coat) {
   if (absl::Status status = ValidateBrushTip(coat.tip); !status.ok()) {
@@ -69,6 +48,15 @@ absl::Status ValidateBrushCoat(const BrushCoat& coat) {
 
 absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
     const BrushCoat& coat) {
+  absl::flat_hash_set<MeshFormat::AttributeId> ids = GetRequiredAttributeIds();
+  ids.merge(GetRequiredAttributeIds(coat.tip));
+  for (const BrushPaint& paint : coat.paint_preferences) {
+    ids.merge(GetRequiredAttributeIds(paint));
+  }
+  return ids;
+}
+
+absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds() {
   absl::flat_hash_set<MeshFormat::AttributeId> ids = {
       // All meshes must have a kPosition attribute.
       MeshFormat::AttributeId::kPosition,
@@ -83,20 +71,6 @@ absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
       // colors.
       MeshFormat::AttributeId::kOpacityShift,
   };
-
-  if (BrushTipUsesColorShift(coat.tip)) {
-    ids.insert(MeshFormat::AttributeId::kColorShiftHsl);
-  }
-
-  for (const BrushPaint& paint : coat.paint_preferences) {
-    for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
-      if (layer.mapping == BrushPaint::TextureMapping::kStamping) {
-        ids.insert(MeshFormat::AttributeId::kSurfaceUv);
-        break;
-      }
-    }
-  }
-
   return ids;
 }
 

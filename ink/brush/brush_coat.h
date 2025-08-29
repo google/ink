@@ -50,9 +50,13 @@ absl::Status ValidateBrushCoat(const BrushCoat& coat);
 // made with this brush coat. This will always include `kPosition` and certain
 // other attribute IDs (`kSideDerivative`, `kSideLabel`, `kForwardDerivative`,
 // `kForwardLabel`, and `kOpacityShift`), and may also include additional
-// attribute IDs depending on the tip and paint settings.
+// attribute IDs depending on the tip and paint settings. Note that this
+// includes the attributes required by any of the paint preferences, not just
+// the one that would actually be used for rendering.
 absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
     const BrushCoat& coat);
+
+absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds();
 
 std::string ToFormattedString(const BrushCoat& coat);
 

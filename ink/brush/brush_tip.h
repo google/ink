@@ -18,9 +18,11 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/mesh_format.h"
 #include "ink/geometry/vec.h"
 #include "ink/types/duration.h"
 
@@ -117,6 +119,9 @@ namespace brush_internal {
 // Determines whether the given BrushTip struct is valid to be used in a
 // BrushFamily, and returns an error if not.
 absl::Status ValidateBrushTip(const BrushTip& tip);
+
+absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
+    const BrushTip& tip);
 
 std::string ToFormattedString(const BrushTip& tip);
 

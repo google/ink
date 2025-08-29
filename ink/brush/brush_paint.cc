@@ -17,12 +17,14 @@
 #include <cmath>
 #include <string>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/time/time.h"
 #include "ink/brush/color_function.h"
+#include "ink/geometry/mesh_format.h"
 
 namespace ink::brush_internal {
 namespace {
@@ -335,6 +337,18 @@ absl::Status ValidateBrushPaint(const BrushPaint& paint) {
     return status;
   }
   return absl::OkStatus();
+}
+
+absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
+    const BrushPaint& paint) {
+  absl::flat_hash_set<MeshFormat::AttributeId> ids;
+  for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
+    if (layer.mapping == BrushPaint::TextureMapping::kStamping) {
+      ids.insert(MeshFormat::AttributeId::kSurfaceUv);
+      break;
+    }
+  }
+  return ids;
 }
 
 std::string ToFormattedString(BrushPaint::TextureMapping texture_mapping) {
