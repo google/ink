@@ -251,6 +251,7 @@ Stroke InProgressStroke::CopyToStroke(
       custom_packing_arrays(num_coats);
 
   for (uint32_t coat_index = 0; coat_index < num_coats; ++coat_index) {
+    const MeshFormat& format = GetMeshFormat(coat_index);
     switch (retain_attributes) {
       case RetainAttributes::kAll:
         break;
@@ -258,8 +259,7 @@ Stroke InProgressStroke::CopyToStroke(
         absl::flat_hash_set<MeshFormat::AttributeId> required_attributes =
             brush_internal::GetRequiredAttributeIds(
                 brush->GetFamily().GetCoats()[coat_index]);
-        for (MeshFormat::Attribute attribute :
-             GetMesh(coat_index).Format().Attributes()) {
+        for (MeshFormat::Attribute attribute : format.Attributes()) {
           if (!required_attributes.contains(attribute.id)) {
             omit_attributes[coat_index].push_back(attribute.id);
           }
@@ -269,7 +269,7 @@ Stroke InProgressStroke::CopyToStroke(
     }
 
     custom_packing_arrays[coat_index] = StrokeVertex::MakeCustomPackingArray(
-        GetMesh(coat_index).Format(), omit_attributes[coat_index]);
+        format, omit_attributes[coat_index]);
 
     mesh_groups.push_back({
         .mesh = &GetMesh(coat_index),

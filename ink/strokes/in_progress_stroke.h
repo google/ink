@@ -199,6 +199,10 @@ class InProgressStroke {
   // inputs.
   size_t PredictedInputCount() const { return InputCount() - RealInputCount(); }
 
+  // Returns the mesh format used by any meshes generated for the specified coat
+  // of paint.
+  const MeshFormat& GetMeshFormat(uint32_t coat_index) const;
+
   // Returns the currently-generated mesh for the specified coat of paint, which
   // includes geometry generated from all of the real inputs and the current
   // predicted inputs as of the last call to `Start()` or `UpdateShape()`. This
@@ -304,6 +308,12 @@ inline uint32_t InProgressStroke::BrushCoatCount() const {
 
 inline const StrokeInputBatch& InProgressStroke::GetInputs() const {
   return processed_inputs_;
+}
+
+inline const MeshFormat& InProgressStroke::GetMeshFormat(
+    uint32_t coat_index) const {
+  ABSL_CHECK_LT(coat_index, BrushCoatCount());
+  return shape_builders_[coat_index].GetMeshFormat();
 }
 
 inline const MutableMesh& InProgressStroke::GetMesh(uint32_t coat_index) const {

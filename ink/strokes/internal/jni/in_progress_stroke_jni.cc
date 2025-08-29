@@ -303,7 +303,7 @@ JNI_METHOD(strokes, InProgressStrokeNative, jlong, newCopyOfMeshFormat)
   ABSL_CHECK_LT(mesh_index,
                 in_progress_stroke_wrapper.MeshPartitionCount(coat_index));
   return NewNativeMeshFormat(
-      in_progress_stroke_wrapper.Stroke().GetMesh(coat_index).Format());
+      in_progress_stroke_wrapper.Stroke().GetMeshFormat(coat_index));
 }
 
 }  // extern "C"

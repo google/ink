@@ -867,7 +867,7 @@ TEST(InProgressStrokeTest, CopyToStrokeOmitUnneededAttributes) {
   // doesn't need that, it should be omitted from the finished stroke if we use
   // `RetainAttributes::kUsedByThisBrush`.
   ASSERT_EQ(stroke.BrushCoatCount(), 1u);
-  EXPECT_THAT(GetAttributeIds(stroke.GetMesh(0).Format()),
+  EXPECT_THAT(GetAttributeIds(stroke.GetMeshFormat(0)),
               Contains(MeshFormat::AttributeId::kColorShiftHsl));
   Stroke finished_stroke =
       stroke.CopyToStroke(InProgressStroke::RetainAttributes::kUsedByThisBrush);

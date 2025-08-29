@@ -184,12 +184,11 @@ void Stroke::RegenerateShape() {
     // the ones using these sources and getting their maximum range values.
     builder.ExtendStroke(inputs_, StrokeInputBatch(), Duration32::Infinite());
 
-    const MutableMesh& mesh = builder.GetMesh();
     shape_gen.custom_packing_arrays.push_back(
-        StrokeVertex::MakeCustomPackingArray(mesh.Format()));
+        StrokeVertex::MakeCustomPackingArray(builder.GetMeshFormat()));
 
     shape_gen.mesh_groups.push_back({
-        .mesh = &mesh,
+        .mesh = &builder.GetMesh(),
         .outlines = builder.GetOutlines(),
         .packing_params = shape_gen.custom_packing_arrays.back().Values(),
     });

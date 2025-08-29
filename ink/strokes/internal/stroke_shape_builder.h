@@ -86,8 +86,18 @@ class StrokeShapeBuilder {
   // (even in the absence of any new inputs).
   bool HasUnfinishedTimeBehaviors() const;
 
+  // Returns the mesh format used by the mesh being built for the brush coat.
+  const MeshFormat& GetMeshFormat() const;
+
+  // Returns the currently-generated mesh for the brush coat.
+  //
+  // TODO: b/295166196 - Once `MutableMesh` always uses 16-bit indices, rename
+  // this method to `GetMeshes` and change it to return an `absl::Span<const
+  // MutableMesh>`.
   const MutableMesh& GetMesh() const;
 
+  // Returns the bounding region of the current positions in the mesh for the
+  // brush coat.
   const Envelope& GetMeshBounds() const;
 
   // Returns spans of outline indices, one for each of the outlines generated
@@ -121,6 +131,10 @@ class StrokeShapeBuilder {
 
 inline StrokeShapeBuilder::StrokeShapeBuilder()
     : mesh_(StrokeVertex::FullMeshFormat()) {}
+
+inline const MeshFormat& StrokeShapeBuilder::GetMeshFormat() const {
+  return mesh_.Format();
+}
 
 inline const MutableMesh& StrokeShapeBuilder::GetMesh() const { return mesh_; }
 
