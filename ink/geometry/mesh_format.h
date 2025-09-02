@@ -147,7 +147,7 @@ class MeshFormat {
   };
   // LINT.ThenChange(
   //   fuzz_domains.cc:attribute_types,
-  //   ../storage/proto/coded.proto:attribute_types,
+  //   ../storage/proto/mesh.proto:attribute_types,
   // )
 
   // Indicates what a vertex attribute is used for or represents.  `MeshFormat`,
@@ -181,7 +181,7 @@ class MeshFormat {
   };
   // LINT.ThenChange(
   //   fuzz_domains.cc:attribute_id,
-  //   ../storage/proto/coded.proto:attribute_id,
+  //   ../storage/proto/mesh.proto:attribute_id,
   // )
 
   // An attribute stored on the vertex.
