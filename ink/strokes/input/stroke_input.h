@@ -83,7 +83,7 @@ struct StrokeInput {
   //
   // kNoOrientation indicates that orientation is not reported. Note, that this
   // is a separate condition from the orientation being indeterminant when
-  // `tilt` is π/2.
+  // `tilt` is 0.
   Angle orientation = kNoOrientation;
 };
 
