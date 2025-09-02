@@ -132,9 +132,12 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     const BrushPaint& brush_paint =
         brush->GetCoats()[coat_index].paint_preferences[0];
     if (UsePathRendering(context, brush_paint)) {
-      drawables.push_back(PathDrawable(
-          stroke.GetMesh(coat_index), stroke.GetCoatOutlines(coat_index),
-          brush->GetColor(), OpacityMultiplierForPath(*brush, coat_index)));
+      PathDrawable drawable(stroke.GetMesh(coat_index),
+                            stroke.GetCoatOutlines(coat_index),
+                            brush_paint.color_functions,
+                            OpacityMultiplierForPath(*brush, coat_index));
+      drawable.SetBrushColor(brush->GetColor());
+      drawables.push_back(std::move(drawable));
       continue;
     }
 
@@ -158,6 +161,7 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     absl::StatusOr<MeshDrawable> mesh_drawable = MeshDrawable::Create(
         *std::move(specification),
         shader_cache_.GetBlenderForPaint(brush_paint), *std::move(shader),
+        brush_paint.color_functions,
         {{
             .vertex_buffer = SkMeshes::MakeVertexBuffer(
                 context, vertex_data.data(), vertex_data.size()),
@@ -201,9 +205,11 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     const BrushPaint& brush_paint =
         brush.GetCoats()[coat_index].paint_preferences[0];
     if (UsePathRendering(context, brush_paint)) {
-      drawables.push_back(
-          PathDrawable(stroke_shape, coat_index, brush.GetColor(),
-                       OpacityMultiplierForPath(brush, coat_index)));
+      PathDrawable drawable(stroke_shape, coat_index,
+                            brush_paint.color_functions,
+                            OpacityMultiplierForPath(brush, coat_index));
+      drawable.SetBrushColor(brush.GetColor());
+      drawables.push_back(std::move(drawable));
       continue;
     }
 
@@ -242,10 +248,11 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     MeshUniformData uniform_data(**specification,
                                  first_mesh.Format().Attributes(),
                                  get_attribute_unpacking_transform);
-    absl::StatusOr<MeshDrawable> mesh_drawable = MeshDrawable::Create(
-        *std::move(specification),
-        shader_cache_.GetBlenderForPaint(brush_paint), *std::move(shader),
-        std::move(partitions), std::move(uniform_data));
+    absl::StatusOr<MeshDrawable> mesh_drawable =
+        MeshDrawable::Create(*std::move(specification),
+                             shader_cache_.GetBlenderForPaint(brush_paint),
+                             *std::move(shader), brush_paint.color_functions,
+                             std::move(partitions), std::move(uniform_data));
     if (!mesh_drawable.ok()) return mesh_drawable.status();
 
     mesh_drawable->SetBrushColor(brush.GetColor());
@@ -333,18 +340,18 @@ bool SkiaRenderer::Drawable::HasBrushColor() const {
   return false;
 }
 
-void SkiaRenderer::Drawable::SetBrushColor(const Color& color) {
+void SkiaRenderer::Drawable::SetBrushColor(const Color& brush_color) {
   bool has_color = false;
   for (Implementation& drawable_impl : drawable_implementations_) {
     std::visit(absl::Overload(
-                   [&color, &has_color](MeshDrawable& drawable) {
+                   [&brush_color, &has_color](MeshDrawable& drawable) {
                      if (drawable.HasBrushColor()) {
-                       drawable.SetBrushColor(color);
+                       drawable.SetBrushColor(brush_color);
                        has_color = true;
                      }
                    },
-                   [&color, &has_color](PathDrawable& drawable) {
-                     drawable.SetPaintColor(color);
+                   [&brush_color, &has_color](PathDrawable& drawable) {
+                     drawable.SetBrushColor(brush_color);
                      has_color = true;
                    }),
                drawable_impl);

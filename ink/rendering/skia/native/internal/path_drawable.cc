@@ -18,6 +18,7 @@
 
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
+#include "ink/brush/color_function.h"
 #include "ink/color/color.h"
 #include "ink/color/color_space.h"
 #include "ink/geometry/mesh.h"
@@ -92,21 +93,23 @@ void SetPaintDefaultsForPath(SkPaint& paint) {
 PathDrawable::PathDrawable(
     const MutableMesh& mesh,
     absl::Span<const absl::Span<const uint32_t>> index_outlines,
-    const Color& color, float opacity_multiplier)
-    : opacity_multiplier_(opacity_multiplier) {
+    absl::Span<const ColorFunction> color_functions, float opacity_multiplier)
+    : color_functions_(color_functions.begin(), color_functions.end()),
+      opacity_multiplier_(opacity_multiplier) {
   for (absl::Span<const uint32_t> indices : index_outlines) {
     if (indices.empty()) continue;
 
     paths_.push_back(MakePolygonPath(mesh, indices));
   }
   SetPaintDefaultsForPath(paint_);
-  SetPaintColor(color);
 }
 
 PathDrawable::PathDrawable(const PartitionedMesh& shape,
-                           uint32_t render_group_index, const Color& color,
+                           uint32_t render_group_index,
+                           absl::Span<const ColorFunction> color_functions,
                            float opacity_multiplier)
-    : opacity_multiplier_(opacity_multiplier) {
+    : color_functions_(color_functions.begin(), color_functions.end()),
+      opacity_multiplier_(opacity_multiplier) {
   absl::Span<const Mesh> mesh_group =
       shape.RenderGroupMeshes(render_group_index);
   for (uint32_t i = 0; i < shape.OutlineCount(render_group_index); ++i) {
@@ -117,12 +120,12 @@ PathDrawable::PathDrawable(const PartitionedMesh& shape,
     paths_.push_back(MakePolygonPath(mesh_group, indices));
   }
   SetPaintDefaultsForPath(paint_);
-  SetPaintColor(color);
 }
 
-void PathDrawable::SetPaintColor(const Color& color) {
-  Color::RgbaFloat c =
-      color.InColorSpace(ColorSpace::kSrgb).AsFloat(Color::Format::kLinear);
+void PathDrawable::SetBrushColor(const Color& brush_color) {
+  Color::RgbaFloat c = ColorFunction::ApplyAll(color_functions_, brush_color)
+                           .InColorSpace(ColorSpace::kSrgb)
+                           .AsFloat(Color::Format::kLinear);
   sk_sp<SkColorSpace> srgb_linear = SkColorSpace::MakeSRGBLinear();
   paint_.setColor(
       {.fR = c.r, .fG = c.g, .fB = c.b, .fA = c.a * opacity_multiplier_},

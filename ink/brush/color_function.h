@@ -21,6 +21,7 @@
 #include <variant>
 
 #include "absl/status/status.h"
+#include "absl/types/span.h"
 #include "ink/color/color.h"
 
 namespace ink {
@@ -31,6 +32,9 @@ namespace ink {
 // A default-constructed ColorFunction specifies an identity mapping that leaves
 // the input color unchanged.
 struct ColorFunction {
+  static Color ApplyAll(absl::Span<const ColorFunction> functions,
+                        const Color& color);
+
   struct OpacityMultiplier {
     float multiplier = 1;
 

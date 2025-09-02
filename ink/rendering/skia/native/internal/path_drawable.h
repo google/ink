@@ -19,6 +19,7 @@
 
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
+#include "ink/brush/color_function.h"
 #include "ink/color/color.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mutable_mesh.h"
@@ -37,22 +38,19 @@ class PathDrawable {
  public:
   // Constructs the drawable from a `MutableMesh`.
   //
-  // `index_outlines` is used to retrieve path positions from the `mesh`. The
-  // `opacity multiplier` is combined with the `color` to set the color of the
-  // `SkPaint`.
+  // `index_outlines` is used to retrieve path positions from the `mesh`.
   //
   // TODO: b/295166196 - Once `MutableMesh` always uses 16-bit indices, this
   // function will need to change to accept a `span<const MutableMesh>`.
   PathDrawable(const MutableMesh& mesh,
                absl::Span<const absl::Span<const uint32_t>> index_outlines,
-               const Color& color, float opacity_multiplier);
+               absl::Span<const ColorFunction> color_functions,
+               float opacity_multiplier);
 
   // Constructs the drawable from one render group of a `PartitionedMesh`.
-  //
-  // The `opacity multiplier` is combined with the `color` to set the color of
-  // the `SkPaint`.
   PathDrawable(const PartitionedMesh& shape, uint32_t render_group_index,
-               const Color& color, float opacity_multiplier);
+               absl::Span<const ColorFunction> color_functions,
+               float opacity_multiplier);
 
   PathDrawable() = default;
   PathDrawable(const PathDrawable&) = default;
@@ -61,9 +59,11 @@ class PathDrawable {
   PathDrawable& operator=(PathDrawable&&) = default;
   ~PathDrawable() = default;
 
-  // Updates the color of the drawable's `SkPaint` after combining the passed-in
-  // `color` with the `opacity_multiplier` passed in during construction.
-  void SetPaintColor(const Color& color);
+  // Sets the brush color to be used for this drawable. The passed-in
+  // `brush_color` will be transformed by the `color_functions` and
+  // `opacity_multiplier` passed in during construction before being applied to
+  // the underlying `SkPaint`.
+  void SetBrushColor(const Color& brush_color);
 
   void SetImageFilter(sk_sp<SkImageFilter> image_filter);
 
@@ -72,6 +72,7 @@ class PathDrawable {
  private:
   absl::InlinedVector<SkPath, 1> paths_;
   SkPaint paint_;
+  absl::InlinedVector<ColorFunction, 1> color_functions_;
   float opacity_multiplier_;
 };
 

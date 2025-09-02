@@ -21,7 +21,9 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
+#include "absl/types/span.h"
 #include "ink/brush/brush_paint.h"
+#include "ink/brush/color_function.h"
 #include "ink/color/color.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/rendering/skia/native/internal/mesh_uniform_data.h"
@@ -64,7 +66,8 @@ class MeshDrawable {
   // CHECK-fails if `specification` or any buffer in `partitions` is null.
   static absl::StatusOr<MeshDrawable> Create(
       sk_sp<SkMeshSpecification> specification, sk_sp<SkBlender> blender,
-      sk_sp<SkShader> shader, absl::InlinedVector<Partition, 1> partitions,
+      sk_sp<SkShader> shader, absl::Span<const ColorFunction> color_functions,
+      absl::InlinedVector<Partition, 1> partitions,
       std::optional<MeshUniformData> starting_uniforms = std::nullopt);
 
   MeshDrawable() = default;
@@ -77,11 +80,13 @@ class MeshDrawable {
   // Returns true if the drawable has the brush-color uniform.
   bool HasBrushColor() const;
 
-  // Sets the value of the brush-color uniform.
+  // Sets the brush color to be used for this drawable. The passed-in
+  // `brush_color` will be transformed by the `color_functions` passed in during
+  // construction before being blended with any texture layers.
   //
   // CHECK-fails if the drawable was created with an `SkMeshSpecification` that
   // does not have this uniform.
-  void SetBrushColor(const Color& color);
+  void SetBrushColor(const Color& brush_color);
 
   // Returns true if the drawable has the texture-mapping uniform.
   //
@@ -115,12 +120,14 @@ class MeshDrawable {
  private:
   MeshDrawable(sk_sp<SkMeshSpecification> specification,
                sk_sp<SkBlender> blender, sk_sp<SkShader> shader,
+               absl::InlinedVector<ColorFunction, 1> color_functions,
                absl::InlinedVector<Partition, 1> partitions,
                MeshUniformData uniform_data);
 
   sk_sp<SkMeshSpecification> specification_;
   sk_sp<SkBlender> blender_;
   sk_sp<SkShader> shader_;
+  absl::InlinedVector<ColorFunction, 1> color_functions_;
   absl::InlinedVector<Partition, 1> partitions_;
   MeshUniformData uniform_data_;
   sk_sp<SkImageFilter> image_filter_;
@@ -133,8 +140,9 @@ inline bool MeshDrawable::HasBrushColor() const {
   return uniform_data_.HasBrushColor();
 }
 
-inline void MeshDrawable::SetBrushColor(const Color& color) {
-  uniform_data_.SetBrushColor(color);
+inline void MeshDrawable::SetBrushColor(const Color& brush_color) {
+  uniform_data_.SetBrushColor(
+      ColorFunction::ApplyAll(color_functions_, brush_color));
 }
 
 inline bool MeshDrawable::HasTextureMapping() const {

@@ -198,7 +198,7 @@ class SkiaRenderer::Drawable {
   // Sets the value of the brush-color property.
   //
   // CHECK-fails if the drawable does not have the property.
-  void SetBrushColor(const Color& color);
+  void SetBrushColor(const Color& brush_color);
 
   void SetImageFilter(sk_sp<SkImageFilter> image_filter);
 
