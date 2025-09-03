@@ -18,6 +18,7 @@
 #include <variant>
 #include <vector>
 
+#include "absl/functional/overload.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "ink/brush/easing_function.h"
@@ -46,20 +47,6 @@ jlong ValidateAndHoistEasingFunctionOrThrow(
   }
   return NewNativeEasingFunction(std::move(easing_function));
 }
-
-// Helper type for visitor pattern. This is a quick way of constructing a
-// visitor instance with overloaded operator() from an initializer list of
-// lambdas. An advantage of using this approach with visitor is that the
-// compiler will check that the overloads are exhaustive.
-template <class... Ts>
-struct overloads : Ts... {
-  using Ts::operator()...;
-};
-
-// Type-deduction guide required for overloads{...} to work properly as a
-// constructor in some C++ versions.
-template <class... Ts>
-overloads(Ts...) -> overloads<Ts...>;
 
 static constexpr int kPredefined = 0;
 static constexpr int kCubicBezier = 1;
@@ -118,7 +105,7 @@ JNI_METHOD(brush, EasingFunctionNative, void, free)
 
 JNI_METHOD(brush, EasingFunctionNative, jlong, getParametersType)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  constexpr auto visitor = overloads{
+  constexpr auto visitor = absl::Overload{
       [](const EasingFunction::Predefined&) { return kPredefined; },
       [](const EasingFunction::CubicBezier&) { return kCubicBezier; },
       [](const EasingFunction::Steps&) { return kSteps; },

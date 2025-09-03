@@ -19,10 +19,10 @@
 #include <variant>
 #include <vector>
 
+#include "absl/functional/overload.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
-#include "ink/brush/easing_function.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_throw_util.h"
@@ -49,20 +49,6 @@ jlong ValidateAndHoistNodeOrThrow(BrushBehavior::Node node, JNIEnv* env) {
   }
   return NewNativeBrushBehaviorNode(std::move(node));
 }
-
-// Helper type for visitor pattern. This is a quick way of constructing a
-// visitor instance with overloaded operator() from an initializer list of
-// lambdas. An advantage of using this approach with visitor is that the
-// compiler will check that the overloads are exhaustive.
-template <class... Ts>
-struct overloads : Ts... {
-  using Ts::operator()...;
-};
-
-// Type-deduction guide required for overloads{...} to work properly as a
-// constructor in some C++ versions.
-template <class... Ts>
-overloads(Ts...) -> overloads<Ts...>;
 
 static constexpr int kSourceNode = 0;
 static constexpr int kConstantNode = 1;
@@ -249,7 +235,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, void, free)
 
 JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getNodeType)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
-  constexpr auto visitor = overloads{
+  constexpr auto visitor = absl::Overload{
       [](const BrushBehavior::SourceNode&) { return kSourceNode; },
       [](const BrushBehavior::ConstantNode&) { return kConstantNode; },
       [](const BrushBehavior::NoiseNode&) { return kNoiseNode; },

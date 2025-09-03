@@ -70,6 +70,7 @@ cc_library(
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_throw_util",
         "//ink/types:duration",
+        "@com_google_absl//absl/functional:overload",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
     ] + select({
@@ -211,6 +212,7 @@ cc_library(
         "//ink/color/internal/jni:color_jni_helper",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_throw_util",
+        "@com_google_absl//absl/functional:overload",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
     ] + select({
@@ -231,6 +233,7 @@ cc_library(
         "//ink/geometry:point",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_throw_util",
+        "@com_google_absl//absl/functional:overload",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
     ] + select({
