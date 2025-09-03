@@ -1463,7 +1463,6 @@ void EncodeBrushTip(const BrushTip& tip, proto::BrushTip& tip_proto_out) {
   tip_proto_out.set_slant_radians(tip.slant.ValueInRadians());
   tip_proto_out.set_pinch(tip.pinch);
   tip_proto_out.set_rotation_radians(tip.rotation.ValueInRadians());
-  tip_proto_out.set_opacity_multiplier(tip.opacity_multiplier);
   tip_proto_out.set_particle_gap_distance_scale(
       tip.particle_gap_distance_scale);
   tip_proto_out.set_particle_gap_duration_seconds(
@@ -1505,9 +1504,6 @@ absl::StatusOr<BrushTip> DecodeBrushTip(const proto::BrushTip& tip_proto) {
   }
   if (tip_proto.has_rotation_radians()) {
     tip.rotation = Angle::Radians(tip_proto.rotation_radians());
-  }
-  if (tip_proto.has_opacity_multiplier()) {
-    tip.opacity_multiplier = tip_proto.opacity_multiplier();
   }
   if (tip_proto.has_particle_gap_distance_scale()) {
     tip.particle_gap_distance_scale = tip_proto.particle_gap_distance_scale();
@@ -1566,6 +1562,14 @@ absl::StatusOr<BrushCoat> DecodeBrushCoat(
     if (!paint.ok()) {
       return paint.status();
     }
+
+    // For backwards compatibility, emulate the deprecated
+    // `BrushTip.opacity_multiplier` field with a color function.
+    if (coat_proto.tip().opacity_multiplier() != 1) {
+      paint->color_functions.push_back({ColorFunction::OpacityMultiplier{
+          coat_proto.tip().opacity_multiplier()}});
+    }
+
     paint_preferences.push_back(*std::move(paint));
   }
   auto coat = BrushCoat{.tip = *std::move(tip),
