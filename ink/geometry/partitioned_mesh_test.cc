@@ -48,16 +48,12 @@ namespace ink {
 namespace {
 
 using ::absl_testing::IsOk;
-using ::testing::AllOf;
 using ::testing::AnyOf;
 using ::testing::ElementsAre;
 using ::testing::Eq;
-using ::testing::ExplainMatchResult;
-using ::testing::Field;
 using ::testing::FloatNear;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
-using ::testing::Matcher;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
