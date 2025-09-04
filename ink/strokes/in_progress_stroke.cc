@@ -28,7 +28,6 @@
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/geometry/mesh_format.h"
-#include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/strokes/input/internal/stroke_input_validation_helpers.h"
 #include "ink/strokes/input/stroke_input.h"
@@ -256,9 +255,9 @@ Stroke InProgressStroke::CopyToStroke(
       case RetainAttributes::kAll:
         break;
       case RetainAttributes::kUsedByThisBrush: {
-        absl::flat_hash_set<MeshFormat::AttributeId> required_attributes =
-            brush_internal::GetRequiredAttributeIds(
-                brush->GetFamily().GetCoats()[coat_index]);
+        absl::flat_hash_set<MeshFormat::AttributeId> required_attributes;
+        brush_internal::AddAttributeIdsRequiredByCoat(
+            brush->GetFamily().GetCoats()[coat_index], required_attributes);
         for (MeshFormat::Attribute attribute : format.Attributes()) {
           if (!required_attributes.contains(attribute.id)) {
             omit_attributes[coat_index].push_back(attribute.id);

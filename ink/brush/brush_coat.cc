@@ -29,27 +29,6 @@
 
 namespace ink {
 namespace brush_internal {
-namespace {
-
-bool BrushTipUsesColorShift(const BrushTip& tip) {
-  for (const BrushBehavior& behavior : tip.behaviors) {
-    for (const BrushBehavior::Node& node : behavior.nodes) {
-      if (const auto* output = std::get_if<BrushBehavior::TargetNode>(&node)) {
-        switch (output->target) {
-          case BrushBehavior::Target::kHueOffsetInRadians:
-          case BrushBehavior::Target::kSaturationMultiplier:
-          case BrushBehavior::Target::kLuminosity:
-            return true;
-          default:
-            break;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-}  // namespace
 
 absl::Status ValidateBrushCoat(const BrushCoat& coat) {
   if (absl::Status status = ValidateBrushTip(coat.tip); !status.ok()) {
@@ -67,9 +46,19 @@ absl::Status ValidateBrushCoat(const BrushCoat& coat) {
   return absl::OkStatus();
 }
 
-absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
-    const BrushCoat& coat) {
-  absl::flat_hash_set<MeshFormat::AttributeId> ids = {
+void AddAttributeIdsRequiredByCoat(
+    const BrushCoat& coat,
+    absl::flat_hash_set<MeshFormat::AttributeId>& attribute_ids) {
+  AddRequiredAttributeIds(attribute_ids);
+  AddAttributeIdsRequiredByTip(coat.tip, attribute_ids);
+  for (const BrushPaint& paint : coat.paint_preferences) {
+    AddAttributeIdsRequiredByPaint(paint, attribute_ids);
+  }
+}
+
+void AddRequiredAttributeIds(
+    absl::flat_hash_set<MeshFormat::AttributeId>& attribute_ids) {
+  attribute_ids.insert({
       // All meshes must have a kPosition attribute.
       MeshFormat::AttributeId::kPosition,
       // The side/forward attributes are always required, in order to support
@@ -82,22 +71,7 @@ absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
       // brush behavior), in order to support overlap behavior for translucent
       // colors.
       MeshFormat::AttributeId::kOpacityShift,
-  };
-
-  if (BrushTipUsesColorShift(coat.tip)) {
-    ids.insert(MeshFormat::AttributeId::kColorShiftHsl);
-  }
-
-  for (const BrushPaint& paint : coat.paint_preferences) {
-    for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
-      if (layer.mapping == BrushPaint::TextureMapping::kStamping) {
-        ids.insert(MeshFormat::AttributeId::kSurfaceUv);
-        break;
-      }
-    }
-  }
-
-  return ids;
+  });
 }
 
 std::string ToFormattedString(const BrushCoat& coat) {

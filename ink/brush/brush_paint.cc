@@ -17,12 +17,14 @@
 #include <cmath>
 #include <string>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/time/time.h"
 #include "ink/brush/color_function.h"
+#include "ink/geometry/mesh_format.h"
 
 namespace ink::brush_internal {
 namespace {
@@ -335,6 +337,25 @@ absl::Status ValidateBrushPaint(const BrushPaint& paint) {
     return status;
   }
   return absl::OkStatus();
+}
+
+void AddAttributeIdsRequiredByPaint(
+    const BrushPaint& paint,
+    absl::flat_hash_set<MeshFormat::AttributeId>& attribute_ids) {
+  for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
+    if (layer.mapping == BrushPaint::TextureMapping::kStamping) {
+      attribute_ids.insert(MeshFormat::AttributeId::kSurfaceUv);
+      // This is the only attribute that the paint may end up using, so if we
+      // find it then there's no need to check the other layers.
+      break;
+    }
+  }
+}
+
+bool AllowsSelfOverlapMode(const BrushPaint& paint,
+                           BrushPaint::SelfOverlap self_overlap) {
+  return paint.self_overlap == BrushPaint::SelfOverlap::kAny ||
+         paint.self_overlap == self_overlap;
 }
 
 std::string ToFormattedString(BrushPaint::TextureMapping texture_mapping) {

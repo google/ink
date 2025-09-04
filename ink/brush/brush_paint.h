@@ -19,10 +19,12 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/time/time.h"
 #include "ink/brush/color_function.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/mesh_format.h"
 #include "ink/geometry/vec.h"
 
 namespace ink {
@@ -358,6 +360,21 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint);
 // used in a `BrushPaint`, and returns an error if not.
 absl::Status ValidateBrushPaintTextureLayer(
     const BrushPaint::TextureLayer& layer);
+
+// Adds the mesh attribute IDs that are required to properly render a mesh
+// with this brush paint to the given `attribute_ids` set. Note that other
+// attributes may also be required - either for core functionality (see
+// `AddRequiredAttributeIds`), or by the tip (see
+// `AddAttributeIdsRequiredByTip`) and/or other paint preferences.
+void AddAttributeIdsRequiredByPaint(
+    const BrushPaint& paint,
+    absl::flat_hash_set<MeshFormat::AttributeId>& attribute_ids);
+
+// Returns whether the given `paint` can be rendered with the given
+// `self_overlap` mode. If `paint` has `SelfOverlap::kAny`, then it allows all
+// self overlap modes.
+bool AllowsSelfOverlapMode(const BrushPaint& paint,
+                           BrushPaint::SelfOverlap self_overlap);
 
 std::string ToFormattedString(BrushPaint::TextureMapping texture_mapping);
 std::string ToFormattedString(BrushPaint::TextureOrigin texture_origin);

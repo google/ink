@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
@@ -32,7 +33,7 @@ namespace {
 using ::ink::BrushCoat;
 using ::ink::BrushPaint;
 using ::ink::MeshFormat;
-using ::ink::brush_internal::GetRequiredAttributeIds;
+using ::ink::brush_internal::AddAttributeIdsRequiredByCoat;
 using ::ink::jni::CastToBrushCoat;
 using ::ink::jni::CastToBrushPaint;
 using ::ink::jni::CastToBrushTip;
@@ -74,18 +75,18 @@ JNI_METHOD(brush, BrushCoatNative, jlong, create)
 JNI_METHOD(brush, BrushCoatNative, jboolean, isCompatibleWithMeshFormat)
 (JNIEnv* env, jobject obj, jlong native_pointer,
  jlong mesh_format_native_pointer) {
+  // Gather all the attributes that are required by the brush coat.
+  absl::flat_hash_set<MeshFormat::AttributeId> required_attribute_ids;
+  AddAttributeIdsRequiredByCoat(CastToBrushCoat(native_pointer),
+                                required_attribute_ids);
+
+  // Check if all required attributes are present in the mesh format.
   absl::Span<const MeshFormat::Attribute> mesh_attributes =
       CastToMeshFormat(mesh_format_native_pointer).Attributes();
-  for (const MeshFormat::AttributeId& required_attribute_id :
-       GetRequiredAttributeIds(CastToBrushCoat(native_pointer))) {
-    if (std::find_if(mesh_attributes.begin(), mesh_attributes.end(),
-                     [&](const MeshFormat::Attribute& attr) {
-                       return attr.id == required_attribute_id;
-                     }) == mesh_attributes.end()) {
-      return false;
-    }
+  for (const MeshFormat::Attribute& attr : mesh_attributes) {
+    required_attribute_ids.erase(attr.id);
   }
-  return true;
+  return required_attribute_ids.empty();
 }
 
 JNI_METHOD(brush, BrushCoatNative, void, free)

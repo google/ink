@@ -24,6 +24,8 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "ink/brush/brush.h"
+#include "ink/brush/brush_paint.h"
 #include "ink/color/color.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/rendering/skia/native/internal/mesh_drawable.h"
@@ -36,6 +38,7 @@
 #include "include/core/SkCanvas.h"
 #include "include/core/SkImageFilter.h"
 #include "include/core/SkMesh.h"
+#include "include/core/SkRefCnt.h"
 #include "include/gpu/ganesh/GrDirectContext.h"
 
 namespace ink {
@@ -80,7 +83,71 @@ namespace ink {
 //     accumulate opacity when overlapping themselves.
 class SkiaRenderer {
  public:
-  class Drawable;
+  // Type storing all information needed for drawing an Ink object into an
+  // `SkCanvas`.
+  //
+  // Objects of this type are returned by a `SkiaRenderer` on the
+  // `GrDirectContext` thread, and can subsequently be be used to draw into an
+  // `SkCanvas` on the thread of choice. This type is thread-compatible, but
+  // *not* thread-safe. All non-const access to a `Drawable` object must be
+  // externally synchronized.
+  class Drawable {
+   public:
+    Drawable() = default;
+    Drawable(const Drawable&) = default;
+    Drawable(Drawable&&) = default;
+    Drawable& operator=(const Drawable&) = default;
+    Drawable& operator=(Drawable&&) = default;
+    ~Drawable() = default;
+
+    // Returns the complete transform from "object" coordinates to canvas
+    // coordinates.
+    inline const AffineTransform& ObjectToCanvas() const {
+      return object_to_canvas_;
+    }
+
+    // Sets the value of the complete transform from object coordinates to
+    // canvas coordinates.
+    void SetObjectToCanvas(const AffineTransform& object_to_canvas);
+
+    // Draws the mesh-drawable into the provided `canvas` with the currently set
+    // object-to-canvas transform.
+    //
+    // NOTE: This function calls `canvas.setMatrix()`, overwriting any current
+    // matrix state. Callers who wish to make use of the `SkCanvas` matrix state
+    // should wrap calls to this function with calls to `canvas.save()` and
+    // `canvas.restore()`.
+    void Draw(SkCanvas& canvas) const;
+
+    // Returns true if the drawable has a brush-color property.
+    //
+    // All drawables created from an `InProgressStroke` or `Stroke` will have a
+    // brush-color.
+    bool HasBrushColor() const;
+
+    // Sets the value of the brush-color property.
+    //
+    // CHECK-fails if the drawable does not have the property.
+    void SetBrushColor(const Color& brush_color);
+
+    void SetImageFilter(sk_sp<SkImageFilter> image_filter);
+
+   private:
+    friend SkiaRenderer;
+
+    // Union of internal implementation types for drawables.
+    //
+    // A `variant` is used instead of inheritance to save extra allocations /
+    // indirections since a drawable can hold multiple meshes or paths.
+    using Implementation = std::variant<skia_native_internal::MeshDrawable,
+                                        skia_native_internal::PathDrawable>;
+
+    Drawable(const AffineTransform& object_to_canvas,
+             absl::InlinedVector<Implementation, 1> drawable_impls);
+
+    AffineTransform object_to_canvas_;
+    absl::InlinedVector<Implementation, 1> drawable_implementations_;
+  };
 
   explicit SkiaRenderer(absl_nullable std::shared_ptr<TextureBitmapStore>
                             texture_provider = nullptr);
@@ -103,9 +170,11 @@ class SkiaRenderer {
   // data on every call. This data will get cached on the `stroke` inside a
   // Skia implementation of a `RenderCache`, which would get initially attached
   // to the stroke by calling a separate renderer member function.
-  absl::Status Draw(GrDirectContext* context, const InProgressStroke& stroke,
+  absl::Status Draw(GrDirectContext* absl_nullable context,
+                    const InProgressStroke& stroke,
                     const AffineTransform& object_to_canvas, SkCanvas& canvas);
-  absl::Status Draw(GrDirectContext* context, const Stroke& stroke,
+  absl::Status Draw(GrDirectContext* absl_nullable context,
+                    const Stroke& stroke,
                     const AffineTransform& object_to_canvas, SkCanvas& canvas);
 
   // Return a new `Drawable` created from an `InProgressStroke`.
@@ -121,7 +190,7 @@ class SkiaRenderer {
   // NOTE: the drawable will not automatically track changes to the `stroke` and
   // must be manually recreated and/or updated.
   absl::StatusOr<Drawable> CreateDrawable(
-      GrDirectContext* context, const InProgressStroke& stroke,
+      GrDirectContext* absl_nullable context, const InProgressStroke& stroke,
       const AffineTransform& object_to_canvas);
 
   // Returns a new `Drawable` created from the `Stroke`.
@@ -139,7 +208,7 @@ class SkiaRenderer {
   // NOTE: the drawable will not automatically track changes to the `stroke` and
   // must be manually recreated and/or updated.
   absl::StatusOr<Drawable> CreateDrawable(
-      GrDirectContext* context, const Stroke& stroke,
+      GrDirectContext* absl_nullable context, const Stroke& stroke,
       const AffineTransform& object_to_canvas);
 
   // TODO: b/284117747 - Add functions to "update" a `Drawable`.
@@ -153,78 +222,28 @@ class SkiaRenderer {
   // incoming mesh holds 32-bit indices.
   // TODO: b/294561921 - Remove once `InProgressStroke` uses 16-bit indices.
   std::vector<uint16_t> temporary_indices_;
+
+  absl::StatusOr<Drawable::Implementation> CreateDrawableImpl(
+      GrDirectContext* const absl_nullable context,
+      const InProgressStroke& stroke, uint32_t coat_index, const Brush& brush);
+  absl::StatusOr<skia_native_internal::MeshDrawable> CreateMeshDrawable(
+      GrDirectContext* const absl_nonnull context,
+      const InProgressStroke& stroke, uint32_t coat_index,
+      const BrushPaint& brush_paint, const Brush& brush);
+  absl::StatusOr<skia_native_internal::PathDrawable> CreatePathDrawable(
+      const InProgressStroke& stroke, uint32_t coat_index,
+      const BrushPaint& brush_paint, const Brush& brush);
+
+  absl::StatusOr<SkiaRenderer::Drawable::Implementation> CreateDrawableImpl(
+      GrDirectContext* const absl_nullable context, const Stroke& stroke,
+      uint32_t coat_index, const Brush& brush);
+  absl::StatusOr<skia_native_internal::MeshDrawable> CreateMeshDrawable(
+      GrDirectContext* const absl_nonnull context, const Stroke& stroke,
+      uint32_t coat_index, const BrushPaint& brush_paint);
+  absl::StatusOr<skia_native_internal::PathDrawable> CreatePathDrawable(
+      const Stroke& stroke, uint32_t coat_index, const BrushPaint& brush_paint,
+      const Brush& brush);
 };
-
-// Type storing all information needed for drawing an Ink object into an
-// `SkCanvas`.
-//
-// Objects of this type are returned by a `SkiaRenderer` on the
-// `GrDirectContext` thread, and can subsequently be be used to draw into an
-// `SkCanvas` on the thread of choice. This type is thread-compatible, but *not*
-// thread-safe. All non-const access to a `Drawable` object must be externally
-// synchronized.
-class SkiaRenderer::Drawable {
- public:
-  Drawable() = default;
-  Drawable(const Drawable&) = default;
-  Drawable(Drawable&&) = default;
-  Drawable& operator=(const Drawable&) = default;
-  Drawable& operator=(Drawable&&) = default;
-  ~Drawable() = default;
-
-  // Returns the complete transform from "object" coordinates to canvas
-  // coordinates.
-  const AffineTransform& ObjectToCanvas() const;
-
-  // Sets the value of the complete transform from object coordinates to canvas
-  // coordinates.
-  void SetObjectToCanvas(const AffineTransform& object_to_canvas);
-
-  // Draws the mesh-drawable into the provided `canvas` with the currently set
-  // object-to-canvas transform.
-  //
-  // NOTE: This function calls `canvas.setMatrix()`, overwriting any current
-  // matrix state. Callers who wish to make use of the `SkCanvas` matrix state
-  // should wrap calls to this function with calls to `canvas.save()` and
-  // `canvas.restore()`.
-  void Draw(SkCanvas& canvas) const;
-
-  // Returns true if the drawable has a brush-color property.
-  //
-  // All drawables created from an `InProgressStroke` or `Stroke` will have a
-  // brush-color.
-  bool HasBrushColor() const;
-
-  // Sets the value of the brush-color property.
-  //
-  // CHECK-fails if the drawable does not have the property.
-  void SetBrushColor(const Color& brush_color);
-
-  void SetImageFilter(sk_sp<SkImageFilter> image_filter);
-
- private:
-  friend SkiaRenderer;
-
-  // Union of internal implementation types for drawables.
-  //
-  // A `variant` is used instead of inheritance to save extra allocations /
-  // indirections since a drawable can hold multiple meshes or paths.
-  using Implementation = std::variant<skia_native_internal::MeshDrawable,
-                                      skia_native_internal::PathDrawable>;
-
-  Drawable(const AffineTransform& object_to_canvas,
-           absl::InlinedVector<Implementation, 1> drawable_impls);
-
-  AffineTransform object_to_canvas_;
-  absl::InlinedVector<Implementation, 1> drawable_implementations_;
-};
-
-// ---------------------------------------------------------------------------
-//                     Implementation details below
-
-inline const AffineTransform& SkiaRenderer::Drawable::ObjectToCanvas() const {
-  return object_to_canvas_;
-}
 
 }  // namespace ink
 

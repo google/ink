@@ -16,18 +16,43 @@
 
 #include <cmath>
 #include <string>
+#include <variant>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/mesh_format.h"
 #include "ink/geometry/vec.h"
 #include "ink/types/duration.h"
 
 namespace ink::brush_internal {
+
+namespace {
+
+bool BrushTipUsesColorShift(const BrushTip& tip) {
+  for (const BrushBehavior& behavior : tip.behaviors) {
+    for (const BrushBehavior::Node& node : behavior.nodes) {
+      if (const auto* output = std::get_if<BrushBehavior::TargetNode>(&node)) {
+        switch (output->target) {
+          case BrushBehavior::Target::kHueOffsetInRadians:
+          case BrushBehavior::Target::kSaturationMultiplier:
+          case BrushBehavior::Target::kLuminosity:
+            return true;
+          default:
+            break;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+}  // namespace
 
 absl::Status ValidateBrushTipTopLevel(const BrushTip& tip) {
   if (!std::isfinite(tip.scale.x) || !std::isfinite(tip.scale.y) ||
@@ -93,6 +118,14 @@ absl::Status ValidateBrushTip(const BrushTip& tip) {
     }
   }
   return absl::OkStatus();
+}
+
+void AddAttributeIdsRequiredByTip(
+    const BrushTip& tip,
+    absl::flat_hash_set<MeshFormat::AttributeId>& attribute_ids) {
+  if (BrushTipUsesColorShift(tip)) {
+    attribute_ids.insert(MeshFormat::AttributeId::kColorShiftHsl);
+  }
 }
 
 std::string ToFormattedString(const BrushTip& tip) {

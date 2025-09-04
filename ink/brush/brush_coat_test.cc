@@ -19,6 +19,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -63,8 +64,11 @@ void CanValidateValidBrushCoat(const BrushCoat& coat) {
 FUZZ_TEST(EasingFunctionTest, CanValidateValidBrushCoat)
     .WithDomains(ValidBrushCoat());
 
-TEST(BrushCoatTest, GetRequiredAttributeIdsDefaultBrushCoat) {
-  EXPECT_THAT(brush_internal::GetRequiredAttributeIds(BrushCoat()),
+TEST(BrushCoatTest, AddAttributeIdsRequiredByDefaultCoat) {
+  absl::flat_hash_set<MeshFormat::AttributeId> required_attributes;
+  brush_internal::AddAttributeIdsRequiredByCoat(BrushCoat(),
+                                                required_attributes);
+  EXPECT_THAT(required_attributes,
               UnorderedElementsAre(MeshFormat::AttributeId::kPosition,
                                    MeshFormat::AttributeId::kSideDerivative,
                                    MeshFormat::AttributeId::kSideLabel,
@@ -73,7 +77,7 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsDefaultBrushCoat) {
                                    MeshFormat::AttributeId::kOpacityShift));
 }
 
-TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutColorShift) {
+TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithoutColorShift) {
   BrushTip tip = {
       .behaviors = {BrushBehavior{{
           BrushBehavior::SourceNode{
@@ -87,11 +91,13 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutColorShift) {
       }}},
   };
   BrushCoat coat = {.tip = tip};
-  EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
+  absl::flat_hash_set<MeshFormat::AttributeId> required_attributes;
+  brush_internal::AddAttributeIdsRequiredByCoat(coat, required_attributes);
+  EXPECT_THAT(required_attributes,
               Not(Contains(MeshFormat::AttributeId::kColorShiftHsl)));
 }
 
-TEST(BrushCoatTest, GetRequiredAttributeIdsWithColorShift) {
+TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithColorShift) {
   constexpr BrushBehavior::Target kColorShiftTargets[] = {
       BrushBehavior::Target::kHueOffsetInRadians,
       BrushBehavior::Target::kSaturationMultiplier,
@@ -111,12 +117,14 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithColorShift) {
         }}},
     };
     BrushCoat coat = {.tip = tip};
-    EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
+    absl::flat_hash_set<MeshFormat::AttributeId> required_attributes;
+    brush_internal::AddAttributeIdsRequiredByCoat(coat, required_attributes);
+    EXPECT_THAT(required_attributes,
                 Contains(MeshFormat::AttributeId::kColorShiftHsl));
   }
 }
 
-TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutStampingTextures) {
+TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithoutStampingTextures) {
   BrushPaint paint = {
       .texture_layers = {BrushPaint::TextureLayer{
           .client_texture_id = std::string(kTestTextureId),
@@ -124,11 +132,13 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithoutStampingTextures) {
       }},
   };
   BrushCoat coat = {.tip = BrushTip(), .paint_preferences = {paint}};
-  EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
+  absl::flat_hash_set<MeshFormat::AttributeId> required_attributes;
+  brush_internal::AddAttributeIdsRequiredByCoat(coat, required_attributes);
+  EXPECT_THAT(required_attributes,
               Not(Contains(MeshFormat::AttributeId::kSurfaceUv)));
 }
 
-TEST(BrushCoatTest, GetRequiredAttributeIdsWithStampingTextures) {
+TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithStampingTextures) {
   BrushPaint paint = {
       .texture_layers = {BrushPaint::TextureLayer{
           .client_texture_id = std::string(kTestTextureId),
@@ -136,7 +146,9 @@ TEST(BrushCoatTest, GetRequiredAttributeIdsWithStampingTextures) {
       }},
   };
   BrushCoat coat = {.tip = BrushTip(), .paint_preferences = {paint}};
-  EXPECT_THAT(brush_internal::GetRequiredAttributeIds(coat),
+  absl::flat_hash_set<MeshFormat::AttributeId> required_attributes;
+  brush_internal::AddAttributeIdsRequiredByCoat(coat, required_attributes);
+  EXPECT_THAT(required_attributes,
               Contains(MeshFormat::AttributeId::kSurfaceUv));
 }
 

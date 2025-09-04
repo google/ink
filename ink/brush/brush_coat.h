@@ -46,13 +46,24 @@ namespace brush_internal {
 // BrushFamily, and returns an error if not.
 absl::Status ValidateBrushCoat(const BrushCoat& coat);
 
-// Returns the mesh attribute IDs that are required to properly render a mesh
-// made with this brush coat. This will always include `kPosition` and certain
-// other attribute IDs (`kSideDerivative`, `kSideLabel`, `kForwardDerivative`,
-// `kForwardLabel`, and `kOpacityShift`), and may also include additional
-// attribute IDs depending on the tip and paint settings.
-absl::flat_hash_set<MeshFormat::AttributeId> GetRequiredAttributeIds(
-    const BrushCoat& coat);
+// Adds the mesh attribute IDs that are required to properly render a mesh
+// made with this brush coat to the given `attribute_ids` set. This will always
+// include `kPosition` and certain other attribute IDs (`kSideDerivative`,
+// `kSideLabel`, `kForwardDerivative`, `kForwardLabel`, and `kOpacityShift`),
+// and may also include additional attribute IDs depending on the tip and paint
+// settings. Note that this includes the attributes required by any of the paint
+// preferences, not just the one that would actually be used for rendering.
+void AddAttributeIdsRequiredByCoat(
+    const BrushCoat& coat,
+    absl::flat_hash_set<MeshFormat::AttributeId>& attribute_ids);
+
+// Adds the mesh attribute IDs that are required to properly render a mesh
+// made with any brush coat. This will always include `kPosition` and certain
+// other attribute IDs. Note that this does not include the attributes that may
+// be required by a specific tip or paint, which would need to be queried
+// separately.
+void AddRequiredAttributeIds(
+    absl::flat_hash_set<MeshFormat::AttributeId>& attribute_ids);
 
 std::string ToFormattedString(const BrushCoat& coat);
 
