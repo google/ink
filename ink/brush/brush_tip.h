@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/geometry/angle.h"
@@ -88,6 +89,7 @@ struct BrushTip {
   //
   // The multiplier must be in the range [0, 2] and the value ultimately applied
   // can be modified by applicable `brush_behavior`s.
+  ABSL_DEPRECATED("Use brush paint color functions instead.")
   float opacity_multiplier = 1.f;
   // Parameter controlling emission of particles as a function of distance
   // traveled by the stroke inputs. The value must be finite and non-negative.
