@@ -68,8 +68,9 @@ class BrushTipExtruder {
   //     modeled into a shape and extruded. Otherwise, a break-point will be
   //     added as described above.
   //
-  // `is_stamping_texture_particle_brush` indicates whether the stroke is a
-  // particle brush with a winding texture (which may be animated).
+  // `is_particle_brush` indicates whether the stroke is a particle brush. If
+  // so, texture coordinates will be added to the extruded mesh, which are used
+  // to support stamping textures.
   //
   // Extruded mesh data will be added to the target `mesh`, the lifetime of
   // which must extend for all subsequent calls to `ExtendStroke()`
@@ -77,7 +78,7 @@ class BrushTipExtruder {
   //
   // This function must be called at least once after construction before
   // calling `ExtendStroke()`. Any previously extruded stroke data is cleared.
-  void StartStroke(float brush_epsilon, bool is_stamping_texture_particle_brush,
+  void StartStroke(float brush_epsilon, bool is_particle_brush,
                    MutableMesh& mesh);
 
   // Extends the stroke by extruding geometry using new "fixed" and "volatile"
@@ -214,7 +215,7 @@ class BrushTipExtruder {
   float simplification_threshold_ = 0;
   // Indicates whether this is stroke is being extruded with a particle brush
   // with a winding texture (which may be animated).
-  bool is_stamping_texture_particle_brush_;
+  bool is_particle_brush_;
 
   ExtrusionPoints current_extrusion_points_;
   brush_tip_extruder_internal::Geometry geometry_;
