@@ -15,6 +15,7 @@
 #ifndef INK_RENDERING_SKIA_NATIVE_INTERNAL_MESH_UNIFORM_DATA_H_
 #define INK_RENDERING_SKIA_NATIVE_INTERNAL_MESH_UNIFORM_DATA_H_
 
+#include <cstddef>
 #include <cstdint>
 
 #include "absl/functional/function_ref.h"
@@ -98,8 +99,14 @@ class MeshUniformData {
   sk_sp<const SkData> Get() const { return data_; }
 
  private:
+  // Returns a pointer to the writable data in `data_`, first copying that
+  // to an unshared copy if the original is shared.
+  std::byte* WritableData();
+
   // TODO: b/284117747 - Make `data_` "double or triple buffered" to increase
   // the likelihood of finding a unique one and not reallocating every frame.
+  //
+  // Use this via WritableData() above to ensure copy-on-write behavior.
   sk_sp<SkData> data_;
 
   // Offsets in bytes into `data_` for where to copy uniform values.
