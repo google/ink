@@ -15,6 +15,7 @@
 #ifndef INK_RENDERING_SKIA_NATIVE_INTERNAL_MESH_UNIFORM_DATA_H_
 #define INK_RENDERING_SKIA_NATIVE_INTERNAL_MESH_UNIFORM_DATA_H_
 
+#include <cstddef>
 #include <cstdint>
 
 #include "absl/functional/function_ref.h"
@@ -44,6 +45,9 @@ namespace ink::skia_native_internal {
 // information on each uniform.
 class MeshUniformData {
  public:
+  // Constructs an empty uniform data.
+  MeshUniformData();
+
   // Constructs the data to hold the uniforms in `spec`.
   //
   // This allocates the data necessary to hold uniform values, but does not set
@@ -68,7 +72,6 @@ class MeshUniformData {
       absl::FunctionRef<const MeshAttributeCodingParams&(int)>
           get_attribute_unpacking_transform);
 
-  MeshUniformData() = default;
   MeshUniformData(const MeshUniformData&) = default;
   MeshUniformData(MeshUniformData&&) = default;
   MeshUniformData& operator=(const MeshUniformData&) = default;
@@ -98,8 +101,14 @@ class MeshUniformData {
   sk_sp<const SkData> Get() const { return data_; }
 
  private:
+  // Returns a pointer to the writable data in `data_`, first copying that
+  // to an unshared copy if the original is shared.
+  std::byte* WritableData();
+
   // TODO: b/284117747 - Make `data_` "double or triple buffered" to increase
   // the likelihood of finding a unique one and not reallocating every frame.
+  //
+  // Use this via WritableData() above to ensure copy-on-write behavior.
   sk_sp<SkData> data_;
 
   // Offsets in bytes into `data_` for where to copy uniform values.

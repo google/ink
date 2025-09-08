@@ -75,7 +75,7 @@ bazel_dep(name = "rules_jni", version = "0.10.1")
 
 git_repository(
     name = "skia",
-    commit = "515a23f3cbe1e2f54ffa6821e6da6f4891763f47",
+    commit = "fb92a016ef1dd54b027d022e72689497eb5b6c0e",  # Head as of 2025-09-08
     remote = "https://github.com/google/skia.git",
 )
 

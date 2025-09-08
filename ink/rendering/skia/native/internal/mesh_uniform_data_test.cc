@@ -44,7 +44,7 @@ TEST(MeshUniformDataTest, DefaultConstructed) {
 
   EXPECT_FALSE(data.HasObjectToCanvasLinearComponent());
   EXPECT_FALSE(data.HasBrushColor());
-  EXPECT_EQ(data.Get(), nullptr);
+  EXPECT_EQ(data.Get(), SkData::MakeEmpty());
 }
 
 TEST(MeshUniformDataTest, WithoutUniforms) {
@@ -71,7 +71,7 @@ TEST(MeshUniformDataTest, WithoutUniforms) {
 
   EXPECT_FALSE(data.HasObjectToCanvasLinearComponent());
   EXPECT_FALSE(data.HasBrushColor());
-  EXPECT_EQ(data.Get(), nullptr);
+  EXPECT_EQ(data.Get(), SkData::MakeEmpty());
 }
 
 // Returns the stored linear component of an affine transform with the
@@ -283,7 +283,6 @@ TEST(MeshUniformDataTest, WithPositionUnpackingTransform) {
   EXPECT_FALSE(data.HasBrushColor());
 
   sk_sp<const SkData> sk_data = data.Get();
-  ASSERT_NE(sk_data, nullptr);
   EXPECT_EQ(sk_data->size(), format_and_spec.specification->uniformSize());
 
   EXPECT_THAT(GetStoredCodingParams(
@@ -338,7 +337,6 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
 
   data.SetBrushColor(Color::Blue());
   sk_sp<const SkData> first_get_data = data.Get();
-  ASSERT_NE(first_get_data, nullptr);
   EXPECT_THAT(GetStoredColor(first_get_data->bytes() + color_uniform->offset),
               ColorNearlyEquals(Color::Blue()));
 
@@ -346,7 +344,6 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
   // also not modify the value of the stored color:
   data.SetObjectToCanvasLinearComponent(AffineTransform::SkewX(5.0));
   sk_sp<const SkData> second_get_data = data.Get();
-  ASSERT_NE(second_get_data, nullptr);
   EXPECT_THAT(GetStoredAffineTransformLinearComponent(
                   second_get_data->bytes() +
                   object_to_canvas_linear_component_uniform->offset),
@@ -358,7 +355,6 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
   // stored object-to-canvas transform:
   data.SetBrushColor(Color::Cyan());
   sk_sp<const SkData> third_get_data = data.Get();
-  ASSERT_NE(third_get_data, nullptr);
   EXPECT_THAT(GetStoredAffineTransformLinearComponent(
                   third_get_data->bytes() +
                   object_to_canvas_linear_component_uniform->offset),
