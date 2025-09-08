@@ -19,7 +19,6 @@
 #include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
-#include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/brush_tip_extruder.h"
 #include "ink/strokes/internal/brush_tip_modeler.h"
 #include "ink/strokes/internal/stroke_outline.h"
@@ -28,13 +27,10 @@
 
 namespace ink::strokes_internal {
 
-void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
-                                     const BrushCoat& coat, float brush_size,
+void StrokeShapeBuilder::StartStroke(const BrushCoat& coat, float brush_size,
                                      float brush_epsilon, uint32_t noise_seed) {
-  // The `input_modeler_`, `tip_modeler_` and `tip_extruder_` CHECK-validate
-  // `brush_tip` being not null, and `brush_size` and `brush_epsilon` being
-  // greater than zero.
-  input_modeler_.StartStroke(input_model, brush_epsilon);
+  // The `tip_modeler_` and `tip_extruder_` CHECK-validate `brush_size` and
+  // `brush_epsilon` being greater than zero.
 
   mesh_bounds_.Reset();
   outlines_.clear();
@@ -42,27 +38,22 @@ void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
   bool is_particle_brush =
       (coat.tip.particle_gap_distance_scale != 0 ||
        coat.tip.particle_gap_duration != Duration32::Zero());
-  tip_.modeler.StartStroke(&coat.tip, brush_size, noise_seed);
-  tip_.extruder.StartStroke(brush_epsilon, is_particle_brush, mesh_);
+  tip_modeler_.StartStroke(&coat.tip, brush_size, noise_seed);
+  tip_extruder_.StartStroke(brush_epsilon, is_particle_brush, mesh_);
 }
 
 StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
-    const StrokeInputBatch& real_inputs,
-    const StrokeInputBatch& predicted_inputs, Duration32 current_elapsed_time) {
-  input_modeler_.ExtendStroke(real_inputs, predicted_inputs,
-                              current_elapsed_time);
+    const StrokeInputModeler& input_modeler) {
   StrokeShapeUpdate update;
   mesh_bounds_.Reset();
 
   outlines_.clear();
-  BrushTipModeler& tip_modeler = tip_.modeler;
-  BrushTipExtruder& tip_extruder = tip_.extruder;
-  tip_modeler.UpdateStroke(input_modeler_.GetState(),
-                           input_modeler_.GetModeledInputs());
-  update.Add(tip_extruder.ExtendStroke(tip_modeler.NewFixedTipStates(),
-                                       tip_modeler.VolatileTipStates()));
-  mesh_bounds_.Add(tip_extruder.GetBounds());
-  for (const StrokeOutline& outline : tip_extruder.GetOutlines()) {
+  tip_modeler_.UpdateStroke(input_modeler.GetState(),
+                            input_modeler.GetModeledInputs());
+  update.Add(tip_extruder_.ExtendStroke(tip_modeler_.NewFixedTipStates(),
+                                        tip_modeler_.VolatileTipStates()));
+  mesh_bounds_.Add(tip_extruder_.GetBounds());
+  for (const StrokeOutline& outline : tip_extruder_.GetOutlines()) {
     const absl::Span<const uint32_t>& indices = outline.GetIndices();
     if (!indices.empty()) {
       outlines_.push_back(indices);
@@ -72,8 +63,9 @@ StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
   return update;
 }
 
-bool StrokeShapeBuilder::HasUnfinishedTimeBehaviors() const {
-  return tip_.modeler.HasUnfinishedTimeBehaviors(input_modeler_.GetState());
+bool StrokeShapeBuilder::HasUnfinishedTimeBehaviors(
+    const StrokeInputModeler::State& input_modeler_state) const {
+  return tip_modeler_.HasUnfinishedTimeBehaviors(input_modeler_state);
 }
 
 }  // namespace ink::strokes_internal

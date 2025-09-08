@@ -23,13 +23,11 @@
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/mutable_mesh.h"
-#include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/brush_tip_extruder.h"
 #include "ink/strokes/internal/brush_tip_modeler.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/strokes/internal/stroke_shape_update.h"
 #include "ink/strokes/internal/stroke_vertex.h"
-#include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
 
@@ -64,27 +62,18 @@ class StrokeShapeBuilder {
   // duration of the stroke. `brush_size` and `brush_epsilon` must be greater
   // than zero. See also `Brush::Create()` for detailed documentation. This
   // function must be called before calling `ExtendStroke()`.
-  void StartStroke(const BrushFamily::InputModel& input_model,
-                   const BrushCoat& coat, float brush_size, float brush_epsilon,
+  void StartStroke(const BrushCoat& coat, float brush_size, float brush_epsilon,
                    uint32_t noise_seed = 0);
 
-  // Adds new incremental real and predicted inputs to the current stroke.
-  //
-  // The `real_inputs` and `predicted_inputs` parameters must have already been
-  // checked to form a valid input sequence together with any previously
-  // passed-in inputs for the current stroke.
-  //
-  // The `current_elapsed_time` should be the duration from the start of the
-  // stroke until "now". The `elapsed_time` of inputs may be "in the future"
-  // relative to this duration.
-  StrokeShapeUpdate ExtendStroke(const StrokeInputBatch& real_inputs,
-                                 const StrokeInputBatch& predicted_inputs,
-                                 Duration32 current_elapsed_time);
+  // Adds new incremental inputs to the current stroke, using the current
+  // modeled inputs from the given modeler.
+  StrokeShapeUpdate ExtendStroke(const StrokeInputModeler& input_modeler);
 
   // Returns true if the `BrushTip` for this builder has any behaviors whose
   // source values could continue to change with the further passage of time
   // (even in the absence of any new inputs).
-  bool HasUnfinishedTimeBehaviors() const;
+  bool HasUnfinishedTimeBehaviors(
+      const StrokeInputModeler::State& input_modeler_state) const;
 
   // Returns the mesh format used by the mesh being built for the brush coat.
   const MeshFormat& GetMeshFormat() const;
@@ -108,7 +97,6 @@ class StrokeShapeBuilder {
   absl::Span<const absl::Span<const uint32_t>> GetOutlines() const;
 
  private:
-  StrokeInputModeler input_modeler_;
   MutableMesh mesh_;
   Envelope mesh_bounds_;
 
@@ -117,13 +105,8 @@ class StrokeShapeBuilder {
   // The usual case is one tip and one outline per tip.
   absl::InlinedVector<absl::Span<const uint32_t>, 1> outlines_;
 
-  struct BrushTipModelerAndExtruder {
-    BrushTipModeler modeler;
-    BrushTipExtruder extruder;
-  };
-
-  // The modeler/extruder for the brush tip.
-  BrushTipModelerAndExtruder tip_;
+  BrushTipModeler tip_modeler_;
+  BrushTipExtruder tip_extruder_;
 };
 
 // ---------------------------------------------------------------------------

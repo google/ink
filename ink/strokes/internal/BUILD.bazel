@@ -502,7 +502,6 @@ cc_library(
         "//ink/brush:brush_family",
         "//ink/geometry:envelope",
         "//ink/geometry:mutable_mesh",
-        "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/types:span",
@@ -513,6 +512,7 @@ cc_test(
     name = "stroke_shape_builder_test",
     srcs = ["stroke_shape_builder_test.cc"],
     deps = [
+        ":stroke_input_modeler",
         ":stroke_shape_builder",
         ":stroke_shape_update",
         ":stroke_vertex",
@@ -536,6 +536,7 @@ cc_test(
     name = "stroke_shape_builder_benchmark",
     srcs = ["stroke_shape_builder_benchmark.cc"],
     deps = [
+        ":stroke_input_modeler",
         ":stroke_shape_builder",
         ":stroke_shape_update",
         "//ink/brush",
