@@ -39,12 +39,11 @@ void StrokeShapeBuilder::StartStroke(const BrushFamily::InputModel& input_model,
   mesh_bounds_.Reset();
   outlines_.clear();
 
-  bool is_stamping_texture_particle_brush =
+  bool is_particle_brush =
       (coat.tip.particle_gap_distance_scale != 0 ||
        coat.tip.particle_gap_duration != Duration32::Zero());
   tip_.modeler.StartStroke(&coat.tip, brush_size, noise_seed);
-  tip_.extruder.StartStroke(brush_epsilon, is_stamping_texture_particle_brush,
-                            mesh_);
+  tip_.extruder.StartStroke(brush_epsilon, is_particle_brush, mesh_);
 }
 
 StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
