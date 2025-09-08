@@ -219,8 +219,8 @@ absl::StatusOr<sk_sp<SkShader>> ShaderCache::CreateBaseShaderForLayer(
   SkMatrix matrix = ToSkMatrix(
       ComputeTexelToSizeUnitTransform(layer, size.width(), size.height()));
   return SkShaders::Image(*std::move(image), ToSkTileMode(layer.wrap_x),
-                          ToSkTileMode(layer.wrap_y), SkSamplingOptions(),
-                          &matrix);
+                          ToSkTileMode(layer.wrap_y),
+                          SkSamplingOptions(SkFilterMode::kLinear), &matrix);
 }
 
 absl::StatusOr<sk_sp<SkImage>> ShaderCache::GetImageForTexture(
