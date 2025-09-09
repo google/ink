@@ -16,12 +16,15 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <variant>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/log/absl_check.h"
+#include "absl/types/span.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
@@ -36,6 +39,7 @@
 #include "ink_stroke_modeler/types.h"
 
 namespace ink::strokes_internal {
+namespace {
 
 using ::ink::numbers::kPi;
 
@@ -52,28 +56,6 @@ const stroke_model::Duration kDefaultLoopMitigationMinSpeedSamplingWindow =
 // in turn chosen to upsample enough to produce relatively smooth-looking
 // curves on 60 Hz touchscreens.
 constexpr double kMinOutputRateHz = 180;
-
-void StrokeInputModeler::StartStroke(const BrushFamily::InputModel& input_model,
-                                     float brush_epsilon) {
-  // The `stroke_modeler_` cannot be reset until we get the first input in order
-  // to know the `StrokeInput::ToolType`.
-
-  ABSL_CHECK_GT(brush_epsilon, 0);
-  input_model_ = input_model;
-  brush_epsilon_ = brush_epsilon;
-  last_real_stroke_input_.reset();
-  state_.tool_type = StrokeInput::ToolType::kUnknown;
-  state_.stroke_unit_length = std::nullopt;
-  state_.complete_elapsed_time = Duration32::Zero();
-  state_.complete_traveled_distance = 0;
-  state_.stable_input_count = 0;
-  state_.real_input_count = 0;
-  state_.total_real_distance = 0;
-  state_.total_real_elapsed_time = Duration32::Zero();
-  modeled_inputs_.clear();
-}
-
-namespace {
 
 using stroke_model::PositionModelerParams;
 using stroke_model::SamplingParams;
@@ -200,11 +182,67 @@ void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
        .prediction_params = stroke_model::DisabledPredictorParams()}));
 }
 
-}  // namespace
+class SpringBasedInputModeler : public StrokeInputModeler {
+ public:
+  explicit SpringBasedInputModeler(BrushFamily::InputModel input_model)
+      : input_model_(input_model) {}
 
-void StrokeInputModeler::ExtendStroke(const StrokeInputBatch& real_inputs,
-                                      const StrokeInputBatch& predicted_inputs,
-                                      Duration32 current_elapsed_time) {
+  void StartStroke(float brush_epsilon) override;
+  void ExtendStroke(const StrokeInputBatch& real_inputs,
+                    const StrokeInputBatch& predicted_inputs,
+                    Duration32 current_elapsed_time) override;
+  const State& GetState() const override { return state_; }
+  absl::Span<const ModeledStrokeInput> GetModeledInputs() const override {
+    return modeled_inputs_;
+  }
+
+ private:
+  // Models a single `input`.
+  //
+  // The value of `last_input_in_update` indicates whether this is the last
+  // input being modeled from a single call to `ExtendStroke()`. This last input
+  // must always be "unstable".
+  void ModelInput(const StrokeInput& input, bool last_input_in_update);
+
+  // Updates `state_` elapsed time and distance properties.
+  void UpdateStateTimeAndDistance(Duration32 current_elapsed_time);
+
+  BrushFamily::InputModel input_model_ = BrushFamily::DefaultInputModel();
+  // We use `brush_epsilon` to set up the parameters for `stroke_modeler_`, and
+  // to determine the minimum distance that a new `stroke_model::Result` must
+  // travel from the previous accepted one in order to be turned into a
+  // `ModeledStrokeInput`.
+  float brush_epsilon_ = 0;
+  stroke_model::StrokeModeler stroke_modeler_;
+  std::vector<stroke_model::Result> result_buffer_;
+  std::optional<StrokeInput> last_real_stroke_input_;
+  // All modeled inputs for a stroke.
+  std::vector<ModeledStrokeInput> modeled_inputs_;
+  bool stroke_modeler_has_input_ = false;
+  State state_;
+};
+
+void SpringBasedInputModeler::StartStroke(float brush_epsilon) {
+  // The `stroke_modeler_` cannot be reset until we get the first input in order
+  // to know the `StrokeInput::ToolType`.
+
+  ABSL_CHECK_GT(brush_epsilon, 0);
+  brush_epsilon_ = brush_epsilon;
+  last_real_stroke_input_.reset();
+  state_.tool_type = StrokeInput::ToolType::kUnknown;
+  state_.stroke_unit_length = std::nullopt;
+  state_.complete_elapsed_time = Duration32::Zero();
+  state_.complete_traveled_distance = 0;
+  state_.stable_input_count = 0;
+  state_.real_input_count = 0;
+  state_.total_real_distance = 0;
+  state_.total_real_elapsed_time = Duration32::Zero();
+  modeled_inputs_.clear();
+}
+
+void SpringBasedInputModeler::ExtendStroke(
+    const StrokeInputBatch& real_inputs,
+    const StrokeInputBatch& predicted_inputs, Duration32 current_elapsed_time) {
   ABSL_CHECK_GT(brush_epsilon_, 0) << "`StartStroke()` has not been called.";
 
   absl::Cleanup update_time_and_distance = [&]() {
@@ -273,8 +311,8 @@ void StrokeInputModeler::ExtendStroke(const StrokeInputBatch& real_inputs,
   stroke_modeler_has_input_ = stroke_modeler_save_has_input;
 }
 
-void StrokeInputModeler::ModelInput(const StrokeInput& input,
-                                    bool last_input_in_update) {
+void SpringBasedInputModeler::ModelInput(const StrokeInput& input,
+                                         bool last_input_in_update) {
   // The smoothing done by the `stroke_modeler_` causes the modeled results to
   // lag behind the current end of the stroke. This is usually made up for by
   // modeler's internal predictor, but we are disabling that to support external
@@ -343,7 +381,7 @@ void StrokeInputModeler::ModelInput(const StrokeInput& input,
   }
 }
 
-void StrokeInputModeler::UpdateStateTimeAndDistance(
+void SpringBasedInputModeler::UpdateStateTimeAndDistance(
     Duration32 current_elapsed_time) {
   if (modeled_inputs_.empty()) {
     state_.complete_elapsed_time = current_elapsed_time;
@@ -360,6 +398,13 @@ void StrokeInputModeler::UpdateStateTimeAndDistance(
   const auto& last_real_input = modeled_inputs_[state_.real_input_count - 1];
   state_.total_real_distance = last_real_input.traveled_distance;
   state_.total_real_elapsed_time = last_real_input.elapsed_time;
+}
+
+}  // namespace
+
+absl_nonnull std::unique_ptr<StrokeInputModeler> StrokeInputModeler::Create(
+    const BrushFamily::InputModel& input_model) {
+  return std::make_unique<SpringBasedInputModeler>(input_model);
 }
 
 }  // namespace ink::strokes_internal

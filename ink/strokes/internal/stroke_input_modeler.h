@@ -16,9 +16,11 @@
 #define INK_STROKES_INTERNAL_STROKE_INPUT_MODELER_H_
 
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
@@ -124,12 +126,18 @@ class StrokeInputModeler {
     size_t real_input_count = 0;
   };
 
-  StrokeInputModeler() = default;
-  StrokeInputModeler(const StrokeInputModeler&) = delete;
-  StrokeInputModeler& operator=(const StrokeInputModeler&) = delete;
-  StrokeInputModeler(StrokeInputModeler&&) = default;
-  StrokeInputModeler& operator=(StrokeInputModeler&&) = default;
-  ~StrokeInputModeler() = default;
+  // Constructs an appropriate `StrokeInputModeler` instance for the given
+  // `InputModel` specification.
+  static absl_nonnull std::unique_ptr<StrokeInputModeler> Create(
+      const BrushFamily::InputModel& input_model);
+
+  // Constructs a `StrokeInputModeler` instance using the default `InputModel`
+  // specification.
+  static absl_nonnull std::unique_ptr<StrokeInputModeler> CreateDefault() {
+    return Create(BrushFamily::DefaultInputModel());
+  }
+
+  virtual ~StrokeInputModeler() = default;
 
   // Clears any ongoing stroke and sets up the modeler to accept new stroke
   // input.
@@ -137,8 +145,7 @@ class StrokeInputModeler {
   // The value of `brush_epsilon` is CHECK-validated to be greater than zero and
   // is used as the minimum distance between resulting `ModeledStrokeInput`.
   // This function must be called before starting to call `ExtendStroke()`.
-  void StartStroke(const BrushFamily::InputModel& input_model,
-                   float brush_epsilon);
+  virtual void StartStroke(float brush_epsilon) = 0;
 
   // Models new real and predicted inputs and adds them to the current stroke.
   //
@@ -149,39 +156,12 @@ class StrokeInputModeler {
   // This always clears any previously generated unstable modeled inputs. Either
   // or both of `real_inputs` and `predicted_inputs` may be empty. CHECK-fails
   // if `StartStroke()` has not been called at least once.
-  void ExtendStroke(const StrokeInputBatch& real_inputs,
-                    const StrokeInputBatch& predicted_inputs,
-                    Duration32 current_elapsed_time);
+  virtual void ExtendStroke(const StrokeInputBatch& real_inputs,
+                            const StrokeInputBatch& predicted_inputs,
+                            Duration32 current_elapsed_time) = 0;
 
-  const State& GetState() const { return state_; }
-  absl::Span<const ModeledStrokeInput> GetModeledInputs() const {
-    return modeled_inputs_;
-  }
-
- private:
-  // Models a single `input`.
-  //
-  // The value of `last_input_in_update` indicates whether this is the last
-  // input being modeled from a single call to `ExtendStroke()`. This last input
-  // must always be "unstable".
-  void ModelInput(const StrokeInput& input, bool last_input_in_update);
-
-  // Updates `state_` elapsed time and distance properties.
-  void UpdateStateTimeAndDistance(Duration32 current_elapsed_time);
-
-  BrushFamily::InputModel input_model_ = BrushFamily::DefaultInputModel();
-  // We use `brush_epsilon` to set up the parameters for `stroke_modeler_`, and
-  // to determine the minimum distance that a new `stroke_model::Result` must
-  // travel from the previous accepted one in order to be turned into a
-  // `ModeledStrokeInput`.
-  float brush_epsilon_ = 0;
-  stroke_model::StrokeModeler stroke_modeler_;
-  std::vector<stroke_model::Result> result_buffer_;
-  std::optional<StrokeInput> last_real_stroke_input_;
-  // All modeled inputs for a stroke.
-  std::vector<ModeledStrokeInput> modeled_inputs_;
-  bool stroke_modeler_has_input_ = false;
-  State state_;
+  virtual const State& GetState() const = 0;
+  virtual absl::Span<const ModeledStrokeInput> GetModeledInputs() const = 0;
 };
 
 }  // namespace ink::strokes_internal
