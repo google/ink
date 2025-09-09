@@ -68,50 +68,41 @@ class MeshDrawable {
       sk_sp<SkMeshSpecification> specification, sk_sp<SkBlender> blender,
       sk_sp<SkShader> shader, absl::Span<const ColorFunction> color_functions,
       absl::InlinedVector<Partition, 1> partitions,
-      std::optional<MeshUniformData> starting_uniforms = std::nullopt);
+      std::optional<MeshUniformData> uniform_data = std::nullopt);
 
-  MeshDrawable() = default;
   MeshDrawable(const MeshDrawable&) = default;
   MeshDrawable(MeshDrawable&&) = default;
   MeshDrawable& operator=(const MeshDrawable&) = default;
   MeshDrawable& operator=(MeshDrawable&&) = default;
   ~MeshDrawable() = default;
 
-  // Returns true if the drawable has the brush-color uniform.
-  bool HasBrushColor() const;
-
-  // Sets the brush color to be used for this drawable. The passed-in
+  // Sets the brush color to be used for this drawable if present. The passed-in
   // `brush_color` will be transformed by the `color_functions` passed in during
   // construction before being blended with any texture layers.
-  //
-  // CHECK-fails if the drawable was created with an `SkMeshSpecification` that
-  // does not have this uniform.
   void SetBrushColor(const Color& brush_color);
 
-  // Returns true if the drawable has the texture-mapping uniform.
-  //
-  // TODO: b/375203215 - Get rid of this uniform once we are able to mix
-  // different texture mapping modes in a single `BrushPaint`.
-  bool HasTextureMapping() const;
-
-  // Sets the value of the texture-mapping uniform.
-  //
-  // CHECK-fails if the drawable was created with an `SkMeshSpecification` that
-  // does not have this uniform.
+  // Sets the value of the texture-mapping uniform if present.
   //
   // TODO: b/375203215 - Get rid of this uniform once we are able to mix
   // different texture mapping modes in a single `BrushPaint`.
   void SetTextureMapping(BrushPaint::TextureMapping mapping);
 
-  // Returns true if the drawable has an object-to-canvas uniform.
-  bool HasObjectToCanvas() const;
+  // Sets the value of the texture animation progress uniform if present.
+  void SetTextureAnimationProgress(float progress);
 
-  // Sets the value of the object-to-canvas uniform.
-  //
-  // CHECK-fails if the drawable was created with an `SkMeshSpecification` that
-  // does not have this uniform.
+  // Sets the value of the texture animation frame count uniform if present.
+  void SetNumTextureAnimationFrames(int num_frames);
+
+  // Sets the value of the texture animation row count uniform if present.
+  void SetNumTextureAnimationRows(int num_rows);
+
+  // Sets the value of the texture animation column count uniform if present.
+  void SetNumTextureAnimationColumns(int num_columns);
+
+  // Sets the value of the object-to-canvas uniform if present.
   void SetObjectToCanvas(const AffineTransform& transform);
 
+  // Sets the image filter to be used for this drawable.
   void SetImageFilter(sk_sp<SkImageFilter> image_filter);
 
   // Draws the mesh-drawable into the provided `canvas`.
@@ -136,17 +127,9 @@ class MeshDrawable {
 // ---------------------------------------------------------------------------
 //                     Implementation details below
 
-inline bool MeshDrawable::HasBrushColor() const {
-  return uniform_data_.HasBrushColor();
-}
-
 inline void MeshDrawable::SetBrushColor(const Color& brush_color) {
   uniform_data_.SetBrushColor(
       ColorFunction::ApplyAll(color_functions_, brush_color));
-}
-
-inline bool MeshDrawable::HasTextureMapping() const {
-  return uniform_data_.HasTextureMapping();
 }
 
 inline void MeshDrawable::SetTextureMapping(
@@ -154,8 +137,20 @@ inline void MeshDrawable::SetTextureMapping(
   uniform_data_.SetTextureMapping(mapping);
 }
 
-inline bool MeshDrawable::HasObjectToCanvas() const {
-  return uniform_data_.HasObjectToCanvasLinearComponent();
+inline void MeshDrawable::SetTextureAnimationProgress(float progress) {
+  uniform_data_.SetTextureAnimationProgress(progress);
+}
+
+inline void MeshDrawable::SetNumTextureAnimationFrames(int num_frames) {
+  uniform_data_.SetNumTextureAnimationFrames(num_frames);
+}
+
+inline void MeshDrawable::SetNumTextureAnimationRows(int num_rows) {
+  uniform_data_.SetNumTextureAnimationRows(num_rows);
+}
+
+inline void MeshDrawable::SetNumTextureAnimationColumns(int num_columns) {
+  uniform_data_.SetNumTextureAnimationColumns(num_columns);
 }
 
 inline void MeshDrawable::SetObjectToCanvas(const AffineTransform& transform) {

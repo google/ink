@@ -119,15 +119,7 @@ class SkiaRenderer {
     // `canvas.restore()`.
     void Draw(SkCanvas& canvas) const;
 
-    // Returns true if the drawable has a brush-color property.
-    //
-    // All drawables created from an `InProgressStroke` or `Stroke` will have a
-    // brush-color.
-    bool HasBrushColor() const;
-
-    // Sets the value of the brush-color property.
-    //
-    // CHECK-fails if the drawable does not have the property.
+    // Sets the value of the brush-color property if present.
     void SetBrushColor(const Color& brush_color);
 
     void SetImageFilter(sk_sp<SkImageFilter> image_filter);

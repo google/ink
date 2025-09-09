@@ -71,12 +71,6 @@ MeshDrawable::Partition MakeNonEmptyTestPartition(int vertex_stride) {
   };
 }
 
-TEST(MeshDrawableTest, DefaultConstructed) {
-  MeshDrawable drawable;
-  EXPECT_FALSE(drawable.HasObjectToCanvas());
-  EXPECT_FALSE(drawable.HasBrushColor());
-}
-
 TEST(MeshDrawableTest, CreateWithoutPartitionsIsNotAnError) {
   auto drawable =
       MeshDrawable::Create(SpecificationForInProgressStroke(),
@@ -84,8 +78,6 @@ TEST(MeshDrawableTest, CreateWithoutPartitionsIsNotAnError) {
                            /* color_functions = */ {},
                            /* partitions = */ {});
   ASSERT_EQ(absl::OkStatus(), drawable.status());
-  EXPECT_TRUE(drawable->HasObjectToCanvas());
-  EXPECT_TRUE(drawable->HasBrushColor());
 }
 
 TEST(MeshDrawableTest, CreateNonEmptyWithoutUnpackingTransform) {
@@ -97,8 +89,6 @@ TEST(MeshDrawableTest, CreateNonEmptyWithoutUnpackingTransform) {
                            {MakeNonEmptyTestPartition(spec->stride()),
                             MakeNonEmptyTestPartition(spec->stride())});
   ASSERT_EQ(absl::OkStatus(), drawable.status());
-  EXPECT_TRUE(drawable->HasObjectToCanvas());
-  EXPECT_TRUE(drawable->HasBrushColor());
 }
 
 TEST(MeshDrawableTest, CreateSucceedsWithProvidedStartingUniforms) {
@@ -112,8 +102,6 @@ TEST(MeshDrawableTest, CreateSucceedsWithProvidedStartingUniforms) {
                             MakeNonEmptyTestPartition(spec->stride())},
                            starting_uniforms);
   ASSERT_EQ(absl::OkStatus(), drawable.status());
-  EXPECT_TRUE(drawable->HasObjectToCanvas());
-  EXPECT_TRUE(drawable->HasBrushColor());
 }
 
 TEST(MeshDrawableTest, ReturnsSkiaError) {

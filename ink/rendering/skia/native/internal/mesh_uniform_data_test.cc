@@ -41,9 +41,6 @@ namespace {
 
 TEST(MeshUniformDataTest, DefaultConstructed) {
   MeshUniformData data;
-
-  EXPECT_FALSE(data.HasObjectToCanvasLinearComponent());
-  EXPECT_FALSE(data.HasBrushColor());
   EXPECT_EQ(data.Get(), SkData::MakeEmpty());
 }
 
@@ -68,9 +65,6 @@ TEST(MeshUniformDataTest, WithoutUniforms) {
   ASSERT_NE(result.specification, nullptr);
 
   MeshUniformData data(*result.specification);
-
-  EXPECT_FALSE(data.HasObjectToCanvasLinearComponent());
-  EXPECT_FALSE(data.HasBrushColor());
   EXPECT_EQ(data.Get(), SkData::MakeEmpty());
 }
 
@@ -112,9 +106,6 @@ TEST(MeshUniformDataTest, WithObjectToCanvasLinearComponent) {
   ASSERT_EQ(result.specification->uniforms().size(), 1);
 
   MeshUniformData data(*result.specification);
-
-  ASSERT_TRUE(data.HasObjectToCanvasLinearComponent());
-  EXPECT_FALSE(data.HasBrushColor());
 
   // Check that setting the brush color stores the expected bytes:
   data.SetObjectToCanvasLinearComponent(AffineTransform::Rotate(kQuarterTurn));
@@ -180,10 +171,6 @@ TEST(MeshUniformDataTest, WithBrushColor) {
   ASSERT_EQ(result.specification->uniforms().size(), 1);
 
   MeshUniformData data(*result.specification);
-
-  EXPECT_FALSE(data.HasObjectToCanvasLinearComponent());
-  ASSERT_TRUE(data.HasBrushColor());
-
   // Check that setting the brush color stores the expected bytes:
   data.SetBrushColor(Color::Cyan());
 
@@ -279,9 +266,6 @@ TEST(MeshUniformDataTest, WithPositionUnpackingTransform) {
       [&position_params](int /* attribute_index */)
           -> const MeshAttributeCodingParams& { return position_params; });
 
-  EXPECT_FALSE(data.HasObjectToCanvasLinearComponent());
-  EXPECT_FALSE(data.HasBrushColor());
-
   sk_sp<const SkData> sk_data = data.Get();
   EXPECT_EQ(sk_data->size(), format_and_spec.specification->uniformSize());
 
@@ -332,9 +316,6 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
 
   MeshUniformData data(*result.specification);
 
-  ASSERT_TRUE(data.HasObjectToCanvasLinearComponent());
-  ASSERT_TRUE(data.HasBrushColor());
-
   data.SetBrushColor(Color::Blue());
   sk_sp<const SkData> first_get_data = data.Get();
   EXPECT_THAT(GetStoredColor(first_get_data->bytes() + color_uniform->offset),
@@ -361,20 +342,6 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
               AffineTransformEq(AffineTransform::SkewX(5.0)));
   EXPECT_THAT(GetStoredColor(third_get_data->bytes() + color_uniform->offset),
               ColorNearlyEquals(Color::Cyan()));
-}
-
-TEST(MeshUniformDataDeathTest,
-     SetObjectToCanvasLinearComponentWithoutUniformPresent) {
-  MeshUniformData data;
-  ASSERT_FALSE(data.HasObjectToCanvasLinearComponent());
-  EXPECT_DEATH_IF_SUPPORTED(
-      data.SetObjectToCanvasLinearComponent(AffineTransform::Identity()), "");
-}
-
-TEST(MeshUniformDataDeathTest, SetBrushColorWithoutUniformPresent) {
-  MeshUniformData data;
-  ASSERT_FALSE(data.HasBrushColor());
-  EXPECT_DEATH_IF_SUPPORTED(data.SetBrushColor(Color::Blue()), "");
 }
 
 TEST(MeshUniformDataDeathTest,

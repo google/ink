@@ -48,6 +48,7 @@ cc_library(
         "//ink/rendering/skia/native/internal:shader_cache",
         "//ink/strokes:in_progress_stroke",
         "//ink/strokes:stroke",
+        "//ink/strokes/input:stroke_input_batch",
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:inlined_vector",

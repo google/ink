@@ -26,13 +26,6 @@ namespace {
 
 // This test contains the cases that do not require a `GrDirectContext`.
 
-TEST(SkiaRendererDrawableTest, DefaultConstructed) {
-  SkiaRenderer::Drawable drawable;
-  EXPECT_FALSE(drawable.HasBrushColor());
-  EXPECT_THAT(drawable.ObjectToCanvas(),
-              AffineTransformEq(AffineTransform::Identity()));
-}
-
 TEST(SkiaRendererDrawableTest, SetObjectToCanvas) {
   SkiaRenderer::Drawable drawable;
   ASSERT_THAT(drawable.ObjectToCanvas(),
@@ -42,12 +35,6 @@ TEST(SkiaRendererDrawableTest, SetObjectToCanvas) {
       AffineTransform::RotateAboutPoint(kFullTurn / 8, {5, -9});
   drawable.SetObjectToCanvas(transform);
   EXPECT_THAT(drawable.ObjectToCanvas(), AffineTransformEq(transform));
-}
-
-TEST(SkiaRendererDrawableDeathTest, SetObjectToCanvas) {
-  SkiaRenderer::Drawable drawable;
-  ASSERT_FALSE(drawable.HasBrushColor());
-  EXPECT_DEATH_IF_SUPPORTED(drawable.SetBrushColor(Color::GoogleBlue()), "");
 }
 
 }  // namespace

@@ -14,6 +14,7 @@
 
 #include "ink/rendering/skia/native/skia_renderer.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -46,8 +47,10 @@
 #include "ink/rendering/skia/native/internal/mesh_drawable.h"
 #include "ink/rendering/skia/native/internal/mesh_uniform_data.h"
 #include "ink/rendering/skia/native/internal/path_drawable.h"
+#include "ink/rendering/skia/native/internal/shader_cache.h"
 #include "ink/rendering/skia/native/texture_bitmap_store.h"
 #include "ink/strokes/in_progress_stroke.h"
+#include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/stroke.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkM44.h"
@@ -86,21 +89,6 @@ float OpacityMultiplierForPath(const Brush& brush, uint32_t coat_index) {
   return brush.GetCoats()[coat_index].tip.opacity_multiplier;
 }
 
-// Returns the `TextureMapping` used by the given `BrushPaint`. Right now, we
-// don't support rendering a `BrushPaint` that mixes different `TextureMapping`
-// modes, so this just returns the `TextureMapping` of the first texture layer,
-// if any. If the `BrushPaint` has no `TextureLayers`, then the return value
-// doesn't really matter either way, so it just returns `kTiling` (since that
-// mode is marginally easier for the shader to calculate).
-//
-// TODO: b/375203215 - Get rid of this uniform once we are able to mix different
-// texture mapping modes in a single `BrushPaint`.
-BrushPaint::TextureMapping GetBrushPaintTextureMapping(
-    const BrushPaint& paint) {
-  return !paint.texture_layers.empty() ? paint.texture_layers[0].mapping
-                                       : BrushPaint::TextureMapping::kTiling;
-}
-
 // Returns whether the given `paint` is compatible with the given `mesh_format`.
 // This doesn't take a `BrushCoat` because at render time, we need to consider
 // attributes required by just a specific `BrushPaint` preference, not all of
@@ -136,10 +124,47 @@ bool IsMeshRenderingSupported(GrDirectContext* const absl_nullable context,
 
 // Returns whether path rendering is supported for the given `paint`.
 bool IsPathRenderingSupported(const BrushPaint& paint) {
-  return GetBrushPaintTextureMapping(paint) ==
-             BrushPaint::TextureMapping::kTiling &&
+  return std::all_of(paint.texture_layers.begin(), paint.texture_layers.end(),
+                     [](const BrushPaint::TextureLayer& layer) {
+                       return layer.mapping ==
+                              BrushPaint::TextureMapping::kTiling;
+                     }) &&
          brush_internal::AllowsSelfOverlapMode(
              paint, BrushPaint::SelfOverlap::kDiscard);
+}
+
+absl::StatusOr<MeshDrawable> CreateAndInitializeMeshDrawable(
+    const StrokeInputBatch& inputs, const Brush& brush,
+    const BrushPaint& brush_paint,
+    skia_native_internal::ShaderCache& shader_cache,
+    MeshUniformData&& uniform_data, sk_sp<SkMeshSpecification> specification,
+    absl::InlinedVector<MeshDrawable::Partition, 1>&& partitions) {
+  absl::StatusOr<sk_sp<SkShader>> shader =
+      shader_cache.GetShaderForPaint(brush_paint, brush.GetSize(), inputs);
+  if (!shader.ok()) return shader.status();
+  absl::StatusOr<MeshDrawable> mesh_drawable = MeshDrawable::Create(
+      specification, shader_cache.GetBlenderForPaint(brush_paint),
+      *std::move(shader), brush_paint.color_functions, partitions,
+      std::move(uniform_data));
+  if (!mesh_drawable.ok()) return mesh_drawable.status();
+  mesh_drawable->SetBrushColor(brush.GetColor());
+  // Currently, validation enforces that these values are all the same for all
+  // texture layers in a given paint. If there are no texture layers, use the
+  // default "tiling" behavior. When there is no animation, the default of 1 for
+  // frames, rows, and columns are reasonable placeholder values, those will be
+  // set if present in the mesh format.
+  BrushPaint::TextureLayer texture_layer = brush_paint.texture_layers.empty()
+                                               ? BrushPaint::TextureLayer{}
+                                               : brush_paint.texture_layers[0];
+  // TODO: b/375203215 - Get rid of this uniform once we are able to mix
+  // different texture mapping modes in a single `BrushPaint`.
+  mesh_drawable->SetTextureMapping(texture_layer.mapping);
+  mesh_drawable->SetNumTextureAnimationFrames(texture_layer.animation_frames);
+  mesh_drawable->SetNumTextureAnimationRows(texture_layer.animation_rows);
+  mesh_drawable->SetNumTextureAnimationColumns(texture_layer.animation_columns);
+  // Actual updates of this need to be done on draw.
+  mesh_drawable->SetTextureAnimationProgress(0.0f);
+  return *std::move(mesh_drawable);
 }
 
 }  // namespace
@@ -195,10 +220,6 @@ SkiaRenderer::CreateDrawableImpl(GrDirectContext* const absl_nullable context,
 absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
     GrDirectContext* const absl_nonnull context, const InProgressStroke& stroke,
     uint32_t coat_index, const BrushPaint& brush_paint, const Brush& brush) {
-  absl::StatusOr<sk_sp<SkShader>> shader = shader_cache_.GetShaderForPaint(
-      brush_paint, brush.GetSize(), stroke.GetInputs());
-  if (!shader.ok()) return shader.status();
-
   absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
       specification_cache_.GetFor(stroke);
   if (!specification.ok()) return specification.status();
@@ -212,9 +233,10 @@ absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
   absl::Span<const std::byte> vertex_data = mesh.RawVertexData();
   FillTemporaryIndices(mesh, temporary_indices_);
 
-  absl::StatusOr<MeshDrawable> mesh_drawable = MeshDrawable::Create(
-      *std::move(specification), shader_cache_.GetBlenderForPaint(brush_paint),
-      *std::move(shader), brush_paint.color_functions,
+  MeshUniformData uniform_data(**specification);
+  return CreateAndInitializeMeshDrawable(
+      stroke.GetInputs(), brush, brush_paint, shader_cache_,
+      std::move(uniform_data), *std::move(specification),
       {{
           .vertex_buffer = SkMeshes::MakeVertexBuffer(
               context, vertex_data.data(), vertex_data.size()),
@@ -225,11 +247,6 @@ absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
           .index_count = static_cast<int32_t>(3 * mesh.TriangleCount()),
           .bounds = ToSkiaRect(*stroke.GetMeshBounds(coat_index).AsRect()),
       }});
-  if (!mesh_drawable.ok()) return mesh_drawable.status();
-
-  mesh_drawable->SetBrushColor(brush.GetColor());
-  mesh_drawable->SetTextureMapping(GetBrushPaintTextureMapping(brush_paint));
-  return mesh_drawable;
 }
 
 absl::StatusOr<PathDrawable> SkiaRenderer::CreatePathDrawable(
@@ -307,13 +324,8 @@ absl::StatusOr<PathDrawable> SkiaRenderer::CreatePathDrawable(
 absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
     GrDirectContext* const absl_nonnull context, const Stroke& stroke,
     uint32_t coat_index, const BrushPaint& brush_paint) {
-  const Brush& brush = stroke.GetBrush();
   const PartitionedMesh& stroke_shape = stroke.GetShape();
   absl::Span<const Mesh> meshes = stroke_shape.RenderGroupMeshes(coat_index);
-
-  absl::StatusOr<sk_sp<SkShader>> shader = shader_cache_.GetShaderForPaint(
-      brush_paint, brush.GetSize(), stroke.GetInputs());
-  if (!shader.ok()) return shader.status();
 
   // TODO: b/284117747 - Pass `brush.GetCoats()[coat_index].paint` to the
   // `specification_cache_`.
@@ -346,15 +358,11 @@ absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
   MeshUniformData uniform_data(**specification,
                                first_mesh.Format().Attributes(),
                                get_attribute_unpacking_transform);
-  absl::StatusOr<MeshDrawable> mesh_drawable = MeshDrawable::Create(
-      *std::move(specification), shader_cache_.GetBlenderForPaint(brush_paint),
-      *std::move(shader), brush_paint.color_functions, std::move(partitions),
-      std::move(uniform_data));
-  if (!mesh_drawable.ok()) return mesh_drawable.status();
 
-  mesh_drawable->SetBrushColor(brush.GetColor());
-  mesh_drawable->SetTextureMapping(GetBrushPaintTextureMapping(brush_paint));
-  return mesh_drawable;
+  return CreateAndInitializeMeshDrawable(
+      stroke.GetInputs(), stroke.GetBrush(), brush_paint, shader_cache_,
+      std::move(uniform_data), *std::move(specification),
+      std::move(partitions));
 }
 
 absl::Status SkiaRenderer::Draw(GrDirectContext* absl_nullable context,
@@ -414,55 +422,27 @@ void SkiaRenderer::Drawable::SetObjectToCanvas(
     const AffineTransform& object_to_canvas) {
   object_to_canvas_ = object_to_canvas;
   for (Implementation& drawable_impl : drawable_implementations_) {
-    auto* drawable = std::get_if<MeshDrawable>(&drawable_impl);
-    if (drawable != nullptr && drawable->HasObjectToCanvas()) {
-      drawable->SetObjectToCanvas(object_to_canvas);
-    }
+    std::visit(absl::Overload(
+                   [&object_to_canvas](MeshDrawable& drawable) {
+                     drawable.SetObjectToCanvas(object_to_canvas);
+                   },
+                   [](PathDrawable& drawable) {}),
+               drawable_impl);
   }
-}
-
-bool SkiaRenderer::Drawable::HasBrushColor() const {
-  for (const Implementation& drawable_impl : drawable_implementations_) {
-    if (std::visit(absl::Overload(
-                       [](const MeshDrawable& drawable) {
-                         return drawable.HasBrushColor();
-                       },
-                       [](const PathDrawable& drawable) { return true; }),
-                   drawable_impl)) {
-      return true;
-    }
-  }
-  return false;
 }
 
 void SkiaRenderer::Drawable::SetBrushColor(const Color& brush_color) {
-  bool has_color = false;
   for (Implementation& drawable_impl : drawable_implementations_) {
-    std::visit(absl::Overload(
-                   [&brush_color, &has_color](MeshDrawable& drawable) {
-                     if (drawable.HasBrushColor()) {
-                       drawable.SetBrushColor(brush_color);
-                       has_color = true;
-                     }
-                   },
-                   [&brush_color, &has_color](PathDrawable& drawable) {
-                     drawable.SetBrushColor(brush_color);
-                     has_color = true;
-                   }),
-               drawable_impl);
+    std::visit(
+        [&brush_color](auto& drawable) { drawable.SetBrushColor(brush_color); },
+        drawable_impl);
   }
-  ABSL_CHECK(has_color);
 }
 
 void SkiaRenderer::Drawable::SetImageFilter(sk_sp<SkImageFilter> image_filter) {
   for (Implementation& drawable_impl : drawable_implementations_) {
-    std::visit(absl::Overload(
-                   [&image_filter](MeshDrawable& drawable) {
-                     drawable.SetImageFilter(image_filter);
-                   },
-                   [&image_filter](PathDrawable& drawable) {
-                     drawable.SetImageFilter(image_filter);
-                   }),
+    std::visit([&image_filter](
+                   auto& drawable) { drawable.SetImageFilter(image_filter); },
                drawable_impl);
   }
 }

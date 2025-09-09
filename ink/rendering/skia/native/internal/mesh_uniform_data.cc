@@ -103,21 +103,30 @@ MeshUniformData::MeshUniformData(const SkMeshSpecification& spec)
       brush_color_offset_(FindUniformOffset(
           spec, MeshSpecificationData::UniformId::kBrushColor)),
       texture_mapping_offset_(FindUniformOffset(
-          spec, MeshSpecificationData::UniformId::kTextureMapping)) {}
+          spec, MeshSpecificationData::UniformId::kTextureMapping)),
+      texture_animation_progress_offset_(FindUniformOffset(
+          spec, MeshSpecificationData::UniformId::kTextureAnimationProgress)),
+      num_texture_animation_frames_offset_(FindUniformOffset(
+          spec, MeshSpecificationData::UniformId::kNumTextureAnimationFrames)),
+      num_texture_animation_rows_offset_(FindUniformOffset(
+          spec, MeshSpecificationData::UniformId::kNumTextureAnimationRows)),
+      num_texture_animation_columns_offset_(FindUniformOffset(
+          spec,
+          MeshSpecificationData::UniformId::kNumTextureAnimationColumns)) {}
 
 namespace {
 
 template <typename T, size_t N>
-void SetUniform(std::byte* writable_data, int16_t uniform_byte_offset,
-                const std::array<T, N>& array) {
-  ABSL_CHECK_GE(uniform_byte_offset, 0);
+void SetUniformIfPresent(std::byte* writable_data, int16_t uniform_byte_offset,
+                         const std::array<T, N>& array) {
+  if (uniform_byte_offset < 0) return;
   std::memcpy(writable_data + uniform_byte_offset, array.data(), sizeof(T) * N);
 }
 
 template <typename T>
-void SetUniform(std::byte* writable_data, int16_t uniform_byte_offset,
-                const T& value) {
-  ABSL_CHECK_GE(uniform_byte_offset, 0);
+void SetUniformIfPresent(std::byte* writable_data, int16_t uniform_byte_offset,
+                         const T& value) {
+  if (uniform_byte_offset < 0) return;
   std::memcpy(writable_data + uniform_byte_offset, &value, sizeof(T));
 }
 
@@ -161,12 +170,9 @@ void InitializeAttributeUnpackingTransforms(
     if (!uniform_id.has_value() || !IsUnpackingTransform(*uniform_id)) {
       continue;
     }
-    int16_t uniform_byte_offset = FindUniformOffset(spec, *uniform_id);
-    if (uniform_byte_offset == -1) {
-      continue;
-    }
-    SetUniform(writable_data, uniform_byte_offset,
-               UnpackingParamsFloat4(get_attribute_unpacking_transform(i)));
+    SetUniformIfPresent(
+        writable_data, FindUniformOffset(spec, *uniform_id),
+        UnpackingParamsFloat4(get_attribute_unpacking_transform(i)));
   }
 }
 
@@ -186,19 +192,39 @@ void MeshUniformData::SetBrushColor(const Color& color) {
   Color::RgbaFloat rgba =
       color.InColorSpace(ColorSpace::kSrgb).AsFloat(Color::Format::kLinear);
   static_assert(sizeof(rgba) == 4 * sizeof(float));
-  SetUniform(WritableData(), brush_color_offset_, rgba);
+  SetUniformIfPresent(WritableData(), brush_color_offset_, rgba);
 }
 
 void MeshUniformData::SetTextureMapping(BrushPaint::TextureMapping mapping) {
-  SetUniform(WritableData(), texture_mapping_offset_,
-             static_cast<int>(mapping));
+  SetUniformIfPresent(WritableData(), texture_mapping_offset_,
+                      static_cast<int>(mapping));
+}
+
+void MeshUniformData::SetTextureAnimationProgress(float progress) {
+  SetUniformIfPresent(WritableData(), texture_animation_progress_offset_,
+                      progress);
+}
+
+void MeshUniformData::SetNumTextureAnimationFrames(int num_frames) {
+  SetUniformIfPresent(WritableData(), num_texture_animation_frames_offset_,
+                      num_frames);
+}
+
+void MeshUniformData::SetNumTextureAnimationRows(int num_rows) {
+  SetUniformIfPresent(WritableData(), num_texture_animation_rows_offset_,
+                      num_rows);
+}
+
+void MeshUniformData::SetNumTextureAnimationColumns(int num_columns) {
+  SetUniformIfPresent(WritableData(), num_texture_animation_columns_offset_,
+                      num_columns);
 }
 
 void MeshUniformData::SetObjectToCanvasLinearComponent(
     const AffineTransform& transform) {
-  SetUniform(WritableData(), object_to_canvas_linear_component_offset_,
-             std::array<float, 4>{transform.A(), transform.D(), transform.B(),
-                                  transform.E()});
+  SetUniformIfPresent(WritableData(), object_to_canvas_linear_component_offset_,
+                      std::array<float, 4>{transform.A(), transform.D(),
+                                           transform.B(), transform.E()});
 }
 
 std::byte* MeshUniformData::WritableData() {
