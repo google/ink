@@ -40,20 +40,20 @@ JNI_METHOD(geometry, VecNative, void, populateUnitVec)
                                 Vec{vec_X, vec_Y}.AsUnitVec());
 }
 
-JNI_METHOD(geometry, VecNative, jfloat, absoluteAngleBetween)
+JNI_METHOD(geometry, VecNative, jfloat, absoluteAngleBetweenInDegrees)
 (JNIEnv* env, jobject object, jfloat first_vec_X, jfloat first_vec_Y,
  jfloat second_vec_X, jfloat second_vec_Y) {
   return Vec::AbsoluteAngleBetween(Vec{first_vec_X, first_vec_Y},
                                    Vec{second_vec_X, second_vec_Y})
-      .ValueInRadians();
+      .ValueInDegrees();
 }
 
-JNI_METHOD(geometry, VecNative, jfloat, signedAngleBetween)
+JNI_METHOD(geometry, VecNative, jfloat, signedAngleBetweenInDegrees)
 (JNIEnv* env, jobject object, jfloat first_vec_X, jfloat first_vec_Y,
  jfloat second_vec_X, jfloat second_vec_Y) {
   return Vec::SignedAngleBetween(Vec{first_vec_X, first_vec_Y},
                                  Vec{second_vec_X, second_vec_Y})
-      .ValueInRadians();
+      .ValueInDegrees();
 }
 
 }  // extern "C
