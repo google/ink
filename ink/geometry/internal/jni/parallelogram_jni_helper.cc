@@ -29,8 +29,9 @@ jobject CreateJImmutableParallelogramOrThrow(JNIEnv* env, const Quad& quad) {
   if (env->ExceptionCheck()) return nullptr;
   return env->CallStaticObjectMethod(
       ClassImmutableParallelogram(env),
-      MethodImmutableParallelogramFromCenterDimensionsRotationAndSkew(env),
-      center, quad.Width(), quad.Height(), quad.Rotation().ValueInRadians(),
+      MethodImmutableParallelogramFromCenterDimensionsRotationInDegreesAndSkew(
+          env),
+      center, quad.Width(), quad.Height(), quad.Rotation().ValueInDegrees(),
       quad.Skew());
 }
 
@@ -38,9 +39,10 @@ void FillJMutableParallelogramOrThrow(JNIEnv* env, const Quad& quad,
                                       jobject mutable_parallelogram) {
   env->CallObjectMethod(
       mutable_parallelogram,
-      MethodMutableParallelogramSetCenterDimensionsRotationAndSkew(env),
+      MethodMutableParallelogramSetCenterDimensionsRotationInDegreesAndSkew(
+          env),
       quad.Center().x, quad.Center().y, quad.Width(), quad.Height(),
-      quad.Rotation().ValueInRadians(), quad.Skew());
+      quad.Rotation().ValueInDegrees(), quad.Skew());
 }
 
 }  // namespace ink::jni

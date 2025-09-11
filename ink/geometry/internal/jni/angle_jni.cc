@@ -35,4 +35,14 @@ JNI_METHOD(geometry, AngleNative, jfloat, normalizedAboutZeroRadians)
   return Angle::Radians(radians).NormalizedAboutZero().ValueInRadians();
 }
 
+JNI_METHOD(geometry, AngleNative, jfloat, normalizedDegrees)
+(JNIEnv* env, jobject object, jfloat degrees) {
+  return Angle::Degrees(degrees).Normalized().ValueInDegrees();
+}
+
+JNI_METHOD(geometry, AngleNative, jfloat, normalizedAboutZeroDegrees)
+(JNIEnv* env, jobject object, jfloat degrees) {
+  return Angle::Degrees(degrees).NormalizedAboutZero().ValueInDegrees();
+}
+
 }  // extern "C"

@@ -310,12 +310,13 @@ jclass ClassImmutableParallelogram(JNIEnv* env) {
   return class_immutable_parallelogram;
 }
 
-jmethodID MethodImmutableParallelogramFromCenterDimensionsRotationAndSkew(
+jmethodID
+MethodImmutableParallelogramFromCenterDimensionsRotationInDegreesAndSkew(
     JNIEnv* env) {
   if (method_immutable_parallelogram_from_center_dim_rot_skew == nullptr) {
     method_immutable_parallelogram_from_center_dim_rot_skew = GetStaticMethodId(
         env, ClassImmutableParallelogram(env),
-        "fromCenterDimensionsRotationAndSkew",
+        "fromCenterDimensionsRotationInDegreesAndSkew",
         "(L" INK_PACKAGE "/geometry/ImmutableVec;FFFF)L" INK_PACKAGE
         "/geometry/ImmutableParallelogram;");
   }
@@ -330,12 +331,12 @@ jclass ClassMutableParallelogram(JNIEnv* env) {
   return class_mutable_parallelogram;
 }
 
-jmethodID MethodMutableParallelogramSetCenterDimensionsRotationAndSkew(
+jmethodID MethodMutableParallelogramSetCenterDimensionsRotationInDegreesAndSkew(
     JNIEnv* env) {
   if (method_mutable_parallelogram_set_center_dim_rot_shear == nullptr) {
     method_mutable_parallelogram_set_center_dim_rot_shear =
         GetMethodId(env, ClassMutableParallelogram(env),
-                    "setCenterDimensionsRotationAndSkew",
+                    "setCenterDimensionsRotationInDegreesAndSkew",
                     "(FFFFFF)L" INK_PACKAGE "/geometry/MutableParallelogram;");
   }
   return method_mutable_parallelogram_set_center_dim_rot_shear;
