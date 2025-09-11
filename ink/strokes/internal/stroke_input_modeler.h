@@ -62,23 +62,25 @@ struct InputMetrics {
   Duration32 elapsed_time;
 };
 
-// A wrapper over the open-sourced Ink `StrokeModeler` that accepts Strokes API
-// `StrokeInput` and custom raw prediction instead of using the built-in
-// predictors.
+// An abstract interface for modeling (smoothing, de-noising, upsampling, etc.)
+// raw stroke inputs, both "real" and "predicted", to produce a sequence of
+// `ModeledStrokeInput`s that can be fed into Ink's stroke extrusion engine.
 //
 // This type requires that the incremental `StrokeInputBatch` objects are
 // already checked to form a valid input sequence before being passed to
 // `ExtendStroke()`.
 //
-// Each call to `ExtendStroke()` generates some number of `ModeledInput` that
-// are categorized as either "stable" or "unstable". Stable modeled inputs are
-// not modified until the start of a new stroke, and unstable modeled inputs are
-// usually replaced by the next call to `ExtendStroke()`. All stable modeled
-// inputs come as a result of modeling real, as opposed to predicted, input.
-// However, not every real modeled input will be stable.
+// Each call to `ExtendStroke()` generates some number of `ModeledStrokeInput`s
+// that are categorized as either "stable" or "unstable". Stable modeled inputs
+// are not modified for the rest of the stroke, whereas unstable modeled inputs
+// are usually replaced by the next call to `ExtendStroke()`. All stable modeled
+// inputs come as a result of modeling "real" (as opposed to predicted) raw
+// inputs; however, not every real modeled input will necessarily be stable
+// (because the modeler may e.g. take future inputs into account as part of a
+// sliding window).
 class StrokeInputModeler {
  public:
-  // The current state of modeling all `StrokeInput` for a stroke by the
+  // The current state of modeling all `StrokeInput`s so far for a stroke by the
   // `StrokeInputModeler`.
   struct State {
     // The current tool type of the stroke.
@@ -99,30 +101,29 @@ class StrokeInputModeler {
     // or the last modeled input, whichever comes later.
     //
     // This value may be different from the `current_elapsed_time` value passed
-    // to `ExtendStroke()` due to modeling and prediction. If `inputs` is not
-    // empty, this value will always be greater than or equal to
-    // `inputs.back().elapsed_time`.
+    // to `ExtendStroke()` due to modeling and prediction. If
+    // `GetModeledInputs()` is not empty, this value will always be greater than
+    // or equal to `GetModeledInputs().back().elapsed_time`.
     Duration32 complete_elapsed_time = Duration32::Zero();
     // The modeled distance traveled from the start of the stroke to the last
-    // modeled input.
+    // modeled input (including unstable/predicted modeled inputs).
     float complete_traveled_distance = 0;
-    // The total elapsed time for real inputs only.
+    // The total elapsed time for "real" (i.e. non-predicted) inputs only.
     Duration32 total_real_elapsed_time = Duration32::Zero();
-    // The total traveled distance for real inputs only.
+    // The total traveled distance for "real" (i.e. non-predicted) inputs only.
     float total_real_distance = 0;
-    // The number of "stable" elements at the start of `inputs`.
+    // The number of "stable" elements at the start of `GetModeledInputs()`.
     //
     // These will not be removed or modified by subsequent calls to
     // `ExtendStroke()`, which means the values of this member variable over the
     // course of a single stroke will be non-decreasing.
     size_t stable_input_count = 0;
-    // The number of elements at the start of `inputs` above that were
-    // a result of modeling only the `real_inputs`.
+    // The number of elements at the start of `GetModeledInputs()` that were a
+    // result of modeling only the "real" (i.e. non-predicted) inputs.
     //
-    // This number will always be greater than the value of `stable_input_count`
-    // when the stroke is not empty. As with the stable count, the values
-    // of this member variable will be non-decreasing over the course of a
-    // single stroke.
+    // This number will always be greater than or equal to the value of
+    // `stable_input_count`. As with the stable count, the values of this member
+    // variable will be non-decreasing over the course of a single stroke.
     size_t real_input_count = 0;
   };
 
@@ -160,7 +161,12 @@ class StrokeInputModeler {
                             const StrokeInputBatch& predicted_inputs,
                             Duration32 current_elapsed_time) = 0;
 
+  // Returns the current modeling state so far for the current stroke.
   virtual const State& GetState() const = 0;
+
+  // Returns all currently-modeled inputs based on the raw inputs so far.  The
+  // first `GetState().stable_input_count` elements of this list are "stable"
+  // and will not be changed by future calls to `ExtendStroke()`.
   virtual absl::Span<const ModeledStrokeInput> GetModeledInputs() const = 0;
 };
 

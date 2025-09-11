@@ -42,6 +42,9 @@ namespace ink::strokes_internal {
 namespace {
 
 using ::ink::numbers::kPi;
+using ::ink::stroke_model::PositionModelerParams;
+using ::ink::stroke_model::SamplingParams;
+using ::ink::stroke_model::StylusStateModelerParams;
 
 constexpr float kDefaultLoopMitigationSpeedLowerBoundInCmPerSec = 0.0f;
 constexpr float kDefaultLoopMitigationSpeedUpperBoundInCmPerSec = 25.0f;
@@ -56,10 +59,6 @@ const stroke_model::Duration kDefaultLoopMitigationMinSpeedSamplingWindow =
 // in turn chosen to upsample enough to produce relatively smooth-looking
 // curves on 60 Hz touchscreens.
 constexpr double kMinOutputRateHz = 180;
-
-using stroke_model::PositionModelerParams;
-using stroke_model::SamplingParams;
-using stroke_model::StylusStateModelerParams;
 
 // LINT.IfChange(input_model_types)
 
@@ -229,14 +228,7 @@ void SpringBasedInputModeler::StartStroke(float brush_epsilon) {
   ABSL_CHECK_GT(brush_epsilon, 0);
   brush_epsilon_ = brush_epsilon;
   last_real_stroke_input_.reset();
-  state_.tool_type = StrokeInput::ToolType::kUnknown;
-  state_.stroke_unit_length = std::nullopt;
-  state_.complete_elapsed_time = Duration32::Zero();
-  state_.complete_traveled_distance = 0;
-  state_.stable_input_count = 0;
-  state_.real_input_count = 0;
-  state_.total_real_distance = 0;
-  state_.total_real_elapsed_time = Duration32::Zero();
+  state_ = State{};
   modeled_inputs_.clear();
 }
 
