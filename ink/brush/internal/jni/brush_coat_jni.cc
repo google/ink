@@ -14,7 +14,6 @@
 
 #include <jni.h>
 
-#include <algorithm>
 #include <utility>
 
 #include "absl/container/flat_hash_set.h"

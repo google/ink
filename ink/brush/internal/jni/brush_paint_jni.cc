@@ -17,13 +17,17 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/color_function.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
+#include "ink/geometry/mesh_format.h"
 #include "ink/geometry/vec.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_string_util.h"
@@ -34,11 +38,14 @@ namespace {
 using ::ink::Angle;
 using ::ink::BrushPaint;
 using ::ink::ColorFunction;
+using ::ink::MeshFormat;
 using ::ink::Vec;
+using ::ink::brush_internal::AddAttributeIdsRequiredByPaint;
 using ::ink::brush_internal::ValidateBrushPaint;
 using ::ink::brush_internal::ValidateBrushPaintTextureLayer;
 using ::ink::jni::CastToBrushPaint;
 using ::ink::jni::CastToColorFunction;
+using ::ink::jni::CastToMeshFormat;
 using ::ink::jni::CastToTextureLayer;
 using ::ink::jni::DeleteNativeBrushPaint;
 using ::ink::jni::DeleteNativeTextureLayer;
@@ -161,6 +168,23 @@ JNI_METHOD(brush, BrushPaintNative, jint, getSelfOverlapInt)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   const BrushPaint& brush_paint = CastToBrushPaint(native_pointer);
   return static_cast<jint>(brush_paint.self_overlap);
+}
+
+JNI_METHOD(brush, BrushPaintNative, jboolean, isCompatibleWithMeshFormat)
+(JNIEnv* env, jobject obj, jlong native_pointer,
+ jlong mesh_format_native_pointer) {
+  // Gather all the attributes that are required by the brush paint.
+  absl::flat_hash_set<MeshFormat::AttributeId> required_attribute_ids;
+  AddAttributeIdsRequiredByPaint(CastToBrushPaint(native_pointer),
+                                 required_attribute_ids);
+
+  // Check if all required attributes are present in the mesh format.
+  absl::Span<const MeshFormat::Attribute> mesh_attributes =
+      CastToMeshFormat(mesh_format_native_pointer).Attributes();
+  for (const MeshFormat::Attribute& attr : mesh_attributes) {
+    required_attribute_ids.erase(attr.id);
+  }
+  return required_attribute_ids.empty();
 }
 
 // ************ Native Implementation of BrushPaint TextureLayer ************
