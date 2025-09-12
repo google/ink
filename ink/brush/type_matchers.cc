@@ -398,6 +398,12 @@ Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
       _);  // no fields to match
 }
 
+Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
+    const BrushFamily::ExperimentalNaiveModel& input_model) {
+  return VariantWith<BrushFamily::ExperimentalNaiveModel>(
+      _);  // no fields to match
+}
+
 [[maybe_unused]] Matcher<BrushFamily::InputModel> BrushFamilyInputModelEq(
     const BrushFamily::InputModel& expected) {
   return std::visit(

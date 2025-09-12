@@ -1316,6 +1316,12 @@ void EncodeBrushFamilyInputModel(
 }
 
 void EncodeBrushFamilyInputModel(
+    const BrushFamily::ExperimentalNaiveModel& model,
+    proto::BrushFamily::InputModel& model_proto_out) {
+  model_proto_out.mutable_experimental_naive_model();  // no fields to set
+}
+
+void EncodeBrushFamilyInputModel(
     const BrushFamily::InputModel& input_model,
     proto::BrushFamily::InputModel& model_proto_out) {
   std::visit(
@@ -1332,6 +1338,8 @@ absl::StatusOr<BrushFamily::InputModel> DecodeBrushFamilyInputModel(
       return BrushFamily::SpringModel{};
     case proto::BrushFamily::InputModel::kExperimentalRawPositionModel:
       return BrushFamily::ExperimentalRawPositionModel{};
+    case proto::BrushFamily::InputModel::kExperimentalNaiveModel:
+      return BrushFamily::ExperimentalNaiveModel{};
     case proto::BrushFamily::InputModel::INPUT_MODEL_NOT_SET:
       break;
   }

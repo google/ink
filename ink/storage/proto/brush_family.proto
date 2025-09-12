@@ -36,10 +36,17 @@ message BrushFamily {
   // with a later version of the code that has removed this feature.
   message ExperimentalRawPositionModel {}
 
+  // A naive model that passes through raw inputs mostly unchanged.  This is an
+  // experimental configuration which may be adjusted or removed later. Strokes
+  // generated with this input model might change shape if read with a later
+  // version of the code that has removed this feature.
+  message ExperimentalNaiveModel {}
+
   message InputModel {
     oneof input_model {
       SpringModel spring_model = 2;
       ExperimentalRawPositionModel experimental_raw_position_model = 3;
+      ExperimentalNaiveModel experimental_naive_model = 4;
     }
     // Was legacy InputModel type, reserved needs to be outside oneof
     reserved 1;
