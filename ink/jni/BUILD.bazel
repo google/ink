@@ -31,6 +31,7 @@ cc_binary(
     linkstatic = 1,
     deps = [
         ":jni.lds",
+        ":jni_onload",
         "//ink/color/internal/jni:native",
         "//ink/geometry/internal/jni:native",
         "//ink/jni/internal:jni_defines",
