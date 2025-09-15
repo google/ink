@@ -73,7 +73,8 @@ absl::Status ValidateBrushTipTopLevel(const BrushTip& tip) {
       !(tip.slant >= -kQuarterTurn && tip.slant <= kQuarterTurn)) {
     return absl::InvalidArgumentError(
         absl::StrFormat("`BrushTip::slant` must be a finite value in the "
-                        "interval [-π/2, π/2] radians. Got %v",
+                        "interval [-π/2, π/2] radians ([-90, 90] degrees). "
+                        "Got %v",
                         tip.slant));
   }
   if (!(tip.pinch >= 0 && tip.pinch <= 1)) {
