@@ -94,6 +94,20 @@ class StrokeInputBatch {
   // Returns a copy of this `StrokeInputBatch` that initially has unique
   // ownership of its memory. See comment above regarding copy-on-write
   // behavior.
+  //
+  // Usually there is no need to use this method, since `StrokeInputBatch`'s
+  // copy-on-write semantics make normal copies cheap. However, there are a
+  // couple potential reasons to use this method in certain situations:
+  //   1. The new copy returned from this method will not have any excess
+  //      capcity, so using this method can save memory in the long run if the
+  //      new copy isn't going to be mutated, and the original copy will later
+  //      be thrown away or its storage reused.
+  //   2. If one or both copies will later be mutated, making a normal copy
+  //      would mean that that later mutation would require a new allocation
+  //      anyway.  Using `MakeDeepCopy` allows for more explicit control over
+  //      when that allocation happens.
+  // For both of these reasons, `InProgressStroke` objects (which are often
+  // reused) use this method when copying input data into completed `Stroke`s.
   StrokeInputBatch MakeDeepCopy() const;
 
   // Validates and sets the value of the i-th input.
