@@ -26,6 +26,9 @@ struct Point {
   float x = 0;
   float y = 0;
 
+  // Constructs a point located at the given offset from the origin.
+  static Point FromOffset(Vec offset) { return Point{offset.x, offset.y}; }
+
   // Returns the offset vector from the origin to this point.
   Vec Offset() const { return Vec{x, y}; }
 

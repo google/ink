@@ -66,6 +66,10 @@ TEST(PointTest, NearMatcher) {
   EXPECT_THAT((Point{5, 6}), Not(PointNear({4, 6}, .5)));
 }
 
+TEST(PointTest, FromOffset) {
+  EXPECT_THAT(Point::FromOffset(Vec{1, 2}), PointEq({1, 2}));
+}
+
 TEST(PointTest, Offset) {
   EXPECT_THAT((Point{0, 0}).Offset(), VecEq({0, 0}));
   EXPECT_THAT((Point{1, 2}).Offset(), VecEq({1, 2}));
