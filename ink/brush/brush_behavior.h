@@ -107,6 +107,18 @@ struct BrushBehavior {
   //
   // This should match the enum in BrushBehavior.kt and
   // BrushFamilyExtensions.kt.
+  //
+  // Behaviors that consider properties of the stroke input do not consider
+  // alterations to the visible position of that point in the stroke by brush
+  // behaviors that modify that position (e.g.
+  // Target::kPositionOffsetXInMultiplesOfBrushSize). That is, the position,
+  // velocity, and acceleration of the stroke input may not match the
+  // visible position, velocity, and acceleration of that point in the drawn
+  // stroke. The stroke inputs considered by these behaviors are specifically
+  // the "modeled" inputs used to construct the stroke geometry, which may be
+  // upsampled, denoised, or otherwise transformed from the raw stroke input
+  // (see `BrushFamily::InputModel`).
+  //
   enum class Source : int8_t {
     // Stylus or touch pressure with values reported in the range [0, 1].
     kNormalizedPressure,
@@ -122,116 +134,112 @@ struct BrushBehavior {
     kOrientationInRadians,
     // Stylus orientation with values reported in the range (-π, π].
     kOrientationAboutZeroInRadians,
-    // Pointer speed with values >= 0 in distance units per second, where one
-    // distance unit is equal to the brush size.
+    // Absolute speed of the modeled stroke input in multiples of the brush size
+    // per second. Note that this value doesn't take into account brush
+    // behaviors that offset the position of the visual tip of the stroke.
     kSpeedInMultiplesOfBrushSizePerSecond,
-    // Signed x and y components of pointer velocity in distance units per
-    // second, where one distance unit is equal to the brush size.
+    // Signed x and y components of the velocity of the modeled stroke input in
+    // multiples of the brush size per second. Note that this value doesn't take
+    // into account brush behaviors that offset the visible position of that
+    // point in the stroke.
     kVelocityXInMultiplesOfBrushSizePerSecond,
     kVelocityYInMultiplesOfBrushSizePerSecond,
-    // The angle of the stroke's current direction of travel in stroke space,
-    // normalized to the range [0, 2π). A value of 0 indicates the direction of
-    // the positive X-axis in stroke space; a value of π/2 indicates the
-    // direction of the positive Y-axis in stroke space.
+    // Angle of the modeled stroke input's current direction of travel in stroke
+    // coordinate space, normalized to the range [0, 2π). A value of 0 indicates
+    // the direction of the positive x-axis; a value of π/2 indicates the
+    // direction of the positive y-axis.
     kDirectionInRadians,
-    // The angle of the stroke's current direction of travel in stroke space,
-    // normalized to the range (-π, π]. A value of 0 indicates the direction of
-    // the positive X-axis in stroke space; a value of π/2 indicates the
-    // direction of the positive Y-axis in stroke space.
+    // Angle of the modeled stroke input's current direction of travel in stroke
+    // coordinate space, normalized to the range (-π, π]. A value of 0 indicates
+    // the direction of the positive x-axis; a value of π/2 indicates the
+    // direction of the positive y-axis.
     kDirectionAboutZeroInRadians,
-    // Signed x and y components of the normalized travel direction, with values
-    // in the range [-1, 1].
+    // Signed x and y components of the modeled stroke input's current direction
+    // of travel in stroke coordinate space, normalized to the range [-1, 1].
     kNormalizedDirectionX,
     kNormalizedDirectionY,
     // Distance traveled by the inputs of the current stroke, starting at 0 at
     // the first input, where one distance unit is equal to the brush size.
     kDistanceTraveledInMultiplesOfBrushSize,
-    // The time elapsed from when the stroke started to when this part of the
-    // stroke was drawn. The value remains fixed for any given part of the
-    // stroke once drawn.
+    // Time elapsed from the start of the stroke to the current modeled stroke
+    // input. The value remains fixed for any given part of the stroke once
+    // drawn.
     kTimeOfInputInSeconds,
     kTimeOfInputInMillis,
     // Distance traveled by the inputs of the current prediction, starting at 0
-    // at the last non-predicted input, where one distance unit is equal to the
-    // brush size. For cases where prediction hasn't started yet, we don't
-    // return a negative value, but clamp to a min of 0.
+    // at the last non-predicted input, in multiples of the brush size. Zero for
+    // inputs before the predicted portion of the stroke.
     kPredictedDistanceTraveledInMultiplesOfBrushSize,
     // Elapsed time of the prediction, starting at 0 at the last non-predicted
-    // input. For cases where prediction hasn't started yet, we don't
-    // return a negative value, but clamp to a min of 0.
+    // input. Zero for inputs before the predicted portion of the stroke.
     kPredictedTimeElapsedInSeconds,
     kPredictedTimeElapsedInMillis,
-    // The distance left to be traveled from a given input to the current last
-    // input of the stroke, where one distance unit is equal to the brush
-    // size. This value changes for each input as the stroke is drawn.
+    // The distance left to be traveled from a given modeled input to the
+    // current last modeled input of the stroke in multiples of the brush size.
+    // This value changes for each input as the stroke is drawn.
     kDistanceRemainingInMultiplesOfBrushSize,
-    // The amount of time that has elapsed since this part of the stroke was
-    // drawn. This continues to increase even after all stroke inputs have
-    // completed, and can be used to drive stroke animations. These enumerators
-    // are only compatible with a `source_out_of_range_behavior` of `kClamp`, to
-    // ensure that the animation will eventually end.
+    // Time elapsed since the modeled stroke input. This continues to increase
+    // even after all stroke inputs have completed, and can be used to drive
+    // stroke animations. These enumerators are only compatible with a
+    // `source_out_of_range_behavior` of `kClamp`, to ensure that the animation
+    // will eventually end.
     kTimeSinceInputInSeconds,
     kTimeSinceInputInMillis,
-    // Directionless pointer acceleration with values >= 0 in distance units per
-    // second squared, where one distance unit is equal to the brush size.
+    // Absolute acceleration of the modeled stroke input in multiples of the
+    // brush size per second squared. Note that this value doesn't take into
+    // account brush behaviors that offset the position of that visible point in
+    // the stroke.
     kAccelerationInMultiplesOfBrushSizePerSecondSquared,
-    // Signed x and y components of pointer acceleration in distance units per
-    // second squared, where one distance unit is equal to the brush size.
+    // Signed x and y components of the acceleration of the modeled stroke input
+    // in multiples of the brush size per second squared. Note that this value
+    // doesn't take into account brush behaviors that offset the position of
+    // that visible point in the stroke.
     kAccelerationXInMultiplesOfBrushSizePerSecondSquared,
     kAccelerationYInMultiplesOfBrushSizePerSecondSquared,
-    // Pointer acceleration along the current direction of travel in distance
-    // units per second squared, where one distance unit is equal to the brush
-    // size. A positive value indicates that the pointer is accelerating along
-    // the current direction of travel, while a negative value indicates that
-    // the pointer is decelerating.
+    // Signed component of acceleration of the modeled stroke input in the
+    // direction of its velocity in multiples of the brush size per second
+    // squared. Note that this value doesn't take into account brush behaviors
+    // that offset the position of that visible point in the stroke.
     kAccelerationForwardInMultiplesOfBrushSizePerSecondSquared,
-    // Pointer acceleration perpendicular to the current direction of travel in
-    // distance units per second squared, where one distance unit is equal to
-    // the brush size. If the X- and Y-axes of stroke space were rotated so that
-    // the positive X-axis points in the direction of stroke travel, then a
-    // positive value for this source indicates acceleration along the positive
-    // Y-axis (and a negative value indicates acceleration along the negative
-    // Y-axis).
+    // Signed component of acceleration of the modeled stroke input
+    // perpendicular to its velocity, rotated 90 degrees in the direction from
+    // the positive x-axis towards the positive y-axis, in multiples of the
+    // brush size per second squared. Note that this value doesn't take into
+    // account brush behaviors that offset the position of that visible point
+    // in the stroke.
     kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared,
-    // The physical speed of the input pointer at the point in question, in
-    // centimeters per second.
+    // Absolute speed of the modeled stroke input pointer in centimeters per
+    // second.
     kInputSpeedInCentimetersPerSecond,
-    // Signed x and y components of the physical velocity of the input pointer
-    // at the point in question, in centimeters per second.
+    // Signed x and y components of the modeled stroke input pointer velocity
+    // in centimeters per second.
     kInputVelocityXInCentimetersPerSecond,
     kInputVelocityYInCentimetersPerSecond,
-    // The physical distance traveled by the input pointer from the start of the
-    // stroke along the input path to the point in question, in centimeters.
+    // Distance in centimeters traveled by the modeled stroke input pointer
+    // along the input path from the start of the stroke.
     kInputDistanceTraveledInCentimeters,
-    // The physical distance that the input pointer would have to travel from
-    // its actual last real position along its predicted path to reach the
-    // predicted point in question, in centimeters. For points on the stroke
-    // before the predicted portion, this has a value of zero.
+    // Distance in centimeters alonge the input path from the real portion of
+    // the modeled stroke to this input. Zero for inputs before the predicted
+    // portion of the stroke.
     kPredictedInputDistanceTraveledInCentimeters,
-    // The directionless physical acceleration of the input pointer at the point
-    // in question, with values >= 0, in centimeters per second squared.
+    // Absolute acceleration of the modeled stroke input pointer in centimeters
+    // per second squared.
     kInputAccelerationInCentimetersPerSecondSquared,
-    // Signed x and y components of the physical acceleration of the input
-    // pointer, in centimeters per second squared.
+    // Signed x and y components of the acceleration of the modeled stroke input
+    // pointer in centimeters per second squared.
     kInputAccelerationXInCentimetersPerSecondSquared,
     kInputAccelerationYInCentimetersPerSecondSquared,
-    // The physical acceleration of the input pointer along its current
-    // direction of travel at the point in question, in centimeters per second
-    // squared. A positive value indicates that the pointer is accelerating
-    // along the current direction of travel, while a negative value indicates
-    // that the pointer is decelerating.
+    // Signed component of acceleration of the modeled stroke input pointer in
+    // the direction of its velocity in centimeters per second squared.
     kInputAccelerationForwardInCentimetersPerSecondSquared,
-    // The physical acceleration of the input pointer perpendicular to its
-    // current direction of travel at the point in question, in centimeters per
-    // second squared. If the X- and Y-axes of stroke space were rotated so that
-    // the positive X-axis points in the direction of stroke travel, then a
-    // positive value for this source indicates acceleration along the positive
-    // Y-axis (and a negative value indicates acceleration along the negative
-    // Y-axis).
+    // Signed component of acceleration of the modeled stroke input pointer
+    // perpendicular to its velocity, rotated 90 degrees in the direction from
+    // the positive x-axis towards the positive y-axis, in centimeters per
+    // second squared.
     kInputAccelerationLateralInCentimetersPerSecondSquared,
-    // The distance left to be traveled from a given input to the current last
-    // input of the stroke, as a fraction of the current total length of the
-    // stroke. This value changes for each input as the stroke is drawn.
+    // Distance from the current modeled input to the end of the stroke along
+    // the input path, as a fraction of the current total length of the stroke.
+    // This value changes for each input as inputs are added.
     kDistanceRemainingAsFractionOfStrokeLength,
     // TODO: b/336565152 - Add kInputDistanceRemainingInCentimeters (this will
     // require some refactoring for the code that calculates
@@ -270,21 +278,17 @@ struct BrushBehavior {
     // corner rounding value is clamped to [0, 1]. If multiple behaviors have
     // this target, they stack additively.
     kCornerRoundingOffset,
-    // Adds the target modifier to the brush tip x/y position, where one
-    // distance unit is equal to the brush size.
+    // Adds the target modifier to the brush tip x or y position in multiples of
+    // the brush size.
     kPositionOffsetXInMultiplesOfBrushSize,
     kPositionOffsetYInMultiplesOfBrushSize,
-    // Moves the brush tip center forward (or backward, for negative values)
-    // from the input position, in the current direction of stroke travel, where
-    // one distance unit is equal to the brush size.
+    // Moves the brush tip by the target modifier times the brush size in the
+    // direction of the modeled stroke input's velocity (the opposite direction
+    // if the value is negative).
     kPositionOffsetForwardInMultiplesOfBrushSize,
-    // Moves the brush tip center sideways from the input position, relative to
-    // the direction of stroke travel, where one distance unit is equal to the
-    // brush size. If the X- and Y-axes of stroke space were rotated so that the
-    // positive X-axis points in the direction of stroke travel, then a positive
-    // value for this offset moves the brush tip center towards the positive
-    // Y-axis (and a negative value moves the brush tip center towards the
-    // negative Y-axis).
+    // Moves the brush tip by the target modifier times the brush size
+    // perpendicular to the modeled stroke input's velocity, rotated 90 degrees
+    // in the direction from the positive x-axis to the positive y-axis.
     kPositionOffsetLateralInMultiplesOfBrushSize,
     // Adds the target modifier to the initial texture animation progress value
     // of the current particle (which is relevant only for strokes with an
@@ -327,19 +331,19 @@ struct BrushBehavior {
     // Adds the vector to the brush tip's absolute x/y position in stroke space,
     // where the angle input is measured in radians and the magnitude input is
     // measured in units equal to the brush size. An angle of zero indicates an
-    // offset in the direction of the positive X-axis in stroke space; an angle
-    // of π/2 indicates the direction of the positive Y-axis in stroke space.
+    // offset in the direction of the positive x-axis in stroke space; an angle
+    // of π/2 indicates the direction of the positive y-axis in stroke space.
     kPositionOffsetAbsoluteInRadiansAndMultiplesOfBrushSize,
     // Adds the vector to the brush tip's forward/lateral position relative to
     // the current direction of input travel, where the angle input is measured
     // in radians and the magnitude input is measured in units equal to the
     // brush size. An angle of zero indicates a forward offset in the current
     // direction of input travel, while an angle of π indicates a backwards
-    // offset. Meanwhile, if the X- and Y-axes of stroke space were rotated so
-    // that the positive X-axis points in the direction of stroke travel, then
+    // offset. Meanwhile, if the x- and y-axes of stroke space were rotated so
+    // that the positive x-axis points in the direction of stroke travel, then
     // an angle of π/2 would indicate a lateral offset towards the positive
-    // Y-axis, and an angle of -π/2 would indicate a lateral offset towards the
-    // negative Y-axis.
+    // y-axis, and an angle of -π/2 would indicate a lateral offset towards the
+    // negative y-axis.
     kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
   };
 
