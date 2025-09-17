@@ -109,6 +109,43 @@ TEST(VecTest, FromDirectionAndMagnitude) {
       VecEq({5, -5}));
 }
 
+TEST(VecTest, UnitVecWithDirection) {
+  const float half_sqrt2 = 0.5 * std::sqrt(2);
+  EXPECT_THAT(Vec::UnitVecWithDirection(Angle::Degrees(0)), VecEq({1, 0}));
+  EXPECT_THAT(Vec::UnitVecWithDirection(Angle::Degrees(90)),
+              VecNear({0, 1}, .0001));
+  EXPECT_THAT(Vec::UnitVecWithDirection(Angle::Degrees(180)),
+              VecNear({-1, 0}, .0001));
+  EXPECT_THAT(Vec::UnitVecWithDirection(Angle::Degrees(360)),
+              VecNear({1, 0}, .0001));
+  EXPECT_THAT(Vec::UnitVecWithDirection(Angle::Degrees(45)),
+              VecNear({half_sqrt2, half_sqrt2}, .0001));
+  EXPECT_THAT(Vec::UnitVecWithDirection(Angle::Degrees(135)),
+              VecEq({-half_sqrt2, half_sqrt2}));
+  EXPECT_THAT(Vec::UnitVecWithDirection(Angle::Degrees(225)),
+              VecEq({-half_sqrt2, -half_sqrt2}));
+  EXPECT_THAT(Vec::UnitVecWithDirection(Angle::Degrees(315)),
+              VecEq({half_sqrt2, -half_sqrt2}));
+}
+
+void UnitVecWithDirectionMagnitudeIsOne(Angle direction) {
+  EXPECT_FLOAT_EQ(Vec::UnitVecWithDirection(direction).Magnitude(), 1.f)
+      << "Where direction is: " << testing::PrintToString(direction)
+      << "\nAnd Vec::UnitVecWithDirection(direction) is: "
+      << testing::PrintToString(Vec::UnitVecWithDirection(direction));
+}
+FUZZ_TEST(VecTest, UnitVecWithDirectionMagnitudeIsOne)
+    .WithDomains(NormalizedAngle());
+
+void DirectionOfUnitVecWithDirectionIsUnchanged(Angle direction) {
+  EXPECT_THAT(Vec::UnitVecWithDirection(direction).Direction(),
+              NormalizedAngleNear(direction, 0.00001))
+      << "Where Vec::UnitVecWithDirection(direction) is: "
+      << testing::PrintToString(Vec::UnitVecWithDirection(direction));
+}
+FUZZ_TEST(VecTest, DirectionOfUnitVecWithDirectionIsUnchanged)
+    .WithDomains(NormalizedAngle());
+
 TEST(VecTest, Magnitude) {
   EXPECT_FLOAT_EQ((Vec{1, 1}).Magnitude(), std::sqrt(2));
   EXPECT_FLOAT_EQ((Vec{-3, 4}).Magnitude(), 5);
@@ -205,35 +242,35 @@ TEST(VecTest, AsUnitVec) {
   EXPECT_THAT((Vec{-kInfinity, 4}).AsUnitVec(), VecEq({-1, 0}));
   EXPECT_THAT((Vec{-kInfinity, -4}).AsUnitVec(), VecEq({-1, 0}));
   EXPECT_THAT((Vec{kInfinity, kInfinity}).AsUnitVec(),
-              VecEq(Vec::FromDirectionAndMagnitude(Angle::Degrees(45), 1)));
+              VecEq(Vec::UnitVecWithDirection(Angle::Degrees(45))));
   EXPECT_THAT((Vec{-kInfinity, kInfinity}).AsUnitVec(),
-              VecEq(Vec::FromDirectionAndMagnitude(Angle::Degrees(135), 1)));
+              VecEq(Vec::UnitVecWithDirection(Angle::Degrees(135))));
   EXPECT_THAT((Vec{-kInfinity, -kInfinity}).AsUnitVec(),
-              VecEq(Vec::FromDirectionAndMagnitude(Angle::Degrees(-135), 1)));
+              VecEq(Vec::UnitVecWithDirection(Angle::Degrees(-135))));
   EXPECT_THAT((Vec{kInfinity, -kInfinity}).AsUnitVec(),
-              VecEq(Vec::FromDirectionAndMagnitude(Angle::Degrees(-45), 1)));
+              VecEq(Vec::UnitVecWithDirection(Angle::Degrees(-45))));
 
   // Special cases for the zero vector, to maintain equivalence with
-  // Vec::FromDirectionAndMagnitude(v.Direction(), 1):
+  // Vec::UnitVecWithDirection(v.Direction()):
   EXPECT_THAT((Vec{+0.f, 0.f}).AsUnitVec(), VecEq({1, 0}));
   EXPECT_THAT((Vec{-0.f, 0.f}).AsUnitVec(), VecEq({-1, 0}));
 }
 
-void UnitVecMagnitudeIsOne(Vec vec) {
+void AsUnitVecMagnitudeIsOne(Vec vec) {
   EXPECT_FLOAT_EQ(vec.AsUnitVec().Magnitude(), 1.f)
       << "Where vec is: " << testing::PrintToString(vec)
       << "\nAnd vec.AsUnitVec() is: "
       << testing::PrintToString(vec.AsUnitVec());
 }
-FUZZ_TEST(VecTest, UnitVecMagnitudeIsOne).WithDomains(NotNanVec());
+FUZZ_TEST(VecTest, AsUnitVecMagnitudeIsOne).WithDomains(NotNanVec());
 
-void UnitVecDirectionIsUnchanged(Vec vec) {
+void AsUnitVecDirectionIsUnchanged(Vec vec) {
   EXPECT_THAT(vec.AsUnitVec().Direction(), AngleEq(vec.Direction()))
       << "Where vec is: " << testing::PrintToString(vec)
       << "\nAnd vec.AsUnitVec() is: "
       << testing::PrintToString(vec.AsUnitVec());
 }
-FUZZ_TEST(VecTest, UnitVecDirectionIsUnchanged).WithDomains(NotNanVec());
+FUZZ_TEST(VecTest, AsUnitVecDirectionIsUnchanged).WithDomains(NotNanVec());
 
 TEST(VecTest, DotProduct) {
   Vec a{3, 0};

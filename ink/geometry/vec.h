@@ -30,9 +30,14 @@ struct Vec {
   float x = 0;
   float y = 0;
 
-  // Constructs a Vec with the given direction and magnitude.
+  // Constructs a vector with the given direction and magnitude.
   static Vec FromDirectionAndMagnitude(Angle direction, float magnitude) {
     return Vec{magnitude * Cos(direction), magnitude * Sin(direction)};
+  }
+
+  // Constructs a unit-length vector with the given direction.
+  static Vec UnitVecWithDirection(Angle direction) {
+    return Vec{Cos(direction), Sin(direction)};
   }
 
   // Returns the length of the vector.
@@ -57,7 +62,7 @@ struct Vec {
 
   // Returns a vector with the same direction as this one, but with a magnitude
   // of 1.  This is equivalent to (but faster than):
-  //   Vec2::WithDirectionAndMagnitude(v.Direction(), 1);
+  //   Vec2::UnitVecWithDirection(v.Direction());
   //
   // In keeping with the above equivalence, this will return <±1, ±0> for the
   // zero vector, depending on the signs of the zeros.

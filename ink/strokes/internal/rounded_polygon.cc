@@ -47,20 +47,19 @@ RoundedPolygon::RoundedPolygon(absl::Span<const Circle> circles) {
     Angle outgoing_tangent_angle =
         circles[i].GuaranteedRightTangentAngle(circles[i + 1]);
 
-    arcs_.push_back({.circle = circles[i],
-                     .start_unit_vector = Vec::FromDirectionAndMagnitude(
-                         incoming_tangent_angle, 1),
-                     .end_unit_vector = Vec::FromDirectionAndMagnitude(
-                         outgoing_tangent_angle, 1)});
+    arcs_.push_back(
+        {.circle = circles[i],
+         .start_unit_vector = Vec::UnitVecWithDirection(incoming_tangent_angle),
+         .end_unit_vector = Vec::UnitVecWithDirection(outgoing_tangent_angle)});
 
     incoming_tangent_angle = outgoing_tangent_angle;
   }
 
-  arcs_.push_back({.circle = circles.back(),
-                   .start_unit_vector = Vec::FromDirectionAndMagnitude(
-                       incoming_tangent_angle, 1),
-                   .end_unit_vector = Vec::FromDirectionAndMagnitude(
-                       last_to_first_tangent_angle, 1)});
+  arcs_.push_back(
+      {.circle = circles.back(),
+       .start_unit_vector = Vec::UnitVecWithDirection(incoming_tangent_angle),
+       .end_unit_vector =
+           Vec::UnitVecWithDirection(last_to_first_tangent_angle)});
 }
 
 namespace {

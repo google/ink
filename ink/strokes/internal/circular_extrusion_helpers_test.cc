@@ -98,8 +98,7 @@ TEST(MakeCircularTurnExtrusionPointsTest, RapidlyChangingRadius) {
     float dr = radius_change == RadiusChange::kIncrease ? 0.99 : -0.99;
     return MakeCircularTurnExtrusionPoints(
         Circle({0, 0}, 2), Circle({1, 0}, 2 + dr),
-        Circle(Point{1, 0} + Vec::FromDirectionAndMagnitude(turn_angle, 1),
-               2 + 2 * dr),
+        Circle(Point{1, 0} + Vec::UnitVecWithDirection(turn_angle), 2 + 2 * dr),
         .01);
   };
   ExtrusionPoints turn;
