@@ -402,8 +402,7 @@ AffineTransform ComputeParticleSurfaceUvTransform(
          AffineTransform::Scale(1.0f / tip_state.width,
                                 1.0f / tip_state.height) *
          AffineTransform::Rotate(-tip_state.rotation) *
-         AffineTransform::Translate(
-             {-tip_state.position.x, -tip_state.position.y});
+         AffineTransform::Translate(-tip_state.position.Offset());
 }
 
 // Appends and processes new "left" and "right" vertices in `geometry`.

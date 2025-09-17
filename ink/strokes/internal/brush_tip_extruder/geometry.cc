@@ -1935,7 +1935,7 @@ void Geometry::UpdateIntersectionOuterVertices(
   // potentially decrease the overall distance traveled by the texture
   // coordinates.
   float current_distance_covered = 0;
-  Envelope modified_region(Point({current_position.x, current_position.y}));
+  Envelope modified_region(current_position);
   while (*it < last_outside_index) {
     // TODO(b/148543402): Try to interpolate with a smoothstep or similar to
     // ease the transition around the pivot.
