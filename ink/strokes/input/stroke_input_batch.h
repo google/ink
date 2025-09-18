@@ -88,7 +88,7 @@ class StrokeInputBatch {
 
   void Clear();
 
-  size_t Size() const;
+  int Size() const;
   bool IsEmpty() const;
 
   // Returns a copy of this `StrokeInputBatch` that initially has unique
@@ -117,9 +117,9 @@ class StrokeInputBatch {
   // held value.
   //
   // Returns an error and does not modify the batch if validation fails.
-  absl::Status Set(size_t i, const StrokeInput& input);
+  absl::Status Set(int i, const StrokeInput& input);
 
-  StrokeInput Get(size_t i) const;
+  StrokeInput Get(int i) const;
 
   // Validates and appends a new `input`.
   //
@@ -139,7 +139,7 @@ class StrokeInputBatch {
   // If `start` + `count` is greater than `Size()`, then all elements from
   // `start` until the end of the input batch are erased. CHECK-fails if `start`
   // is not less than or equal to `Size()`.
-  void Erase(size_t start, size_t count = std::numeric_limits<size_t>::max());
+  void Erase(int start, int count = std::numeric_limits<int>::max());
 
   // Returns the current input tool type or `StrokeInput::ToolType::kUnknown`
   // if the batch is empty.
@@ -201,7 +201,7 @@ class StrokeInputBatch {
  private:
   void DebugCheckSizeAndFormatAreConsistent() const {
     ABSL_DCHECK_EQ(size_ * FloatsPerInput(),
-                   data_.HasValue() ? data_->size() : 0);
+                   data_.HasValue() ? static_cast<int>(data_->size()) : 0);
   }
 
   // The following helpers return the number of floats needed to store the
@@ -246,7 +246,7 @@ class StrokeInputBatch {
 
   // Store metadata inline so that simple getters do not need an extra branch
   // and pointer indirection:
-  size_t size_ = 0;
+  int size_ = 0;
   StrokeInput::ToolType tool_type_ = StrokeInput::ToolType::kUnknown;
   PhysicalDistance stroke_unit_length_ = StrokeInput::kNoStrokeUnitLength;
   uint32_t noise_seed_ = 0;
@@ -290,7 +290,7 @@ class StrokeInputBatch::ConstIterator {
  private:
   friend class StrokeInputBatch;
 
-  ConstIterator(const StrokeInputBatch& inputs, size_t index) {
+  ConstIterator(const StrokeInputBatch& inputs, int index) {
     if (!inputs.data_.HasValue()) return;
     batch_subdata_ = absl::MakeSpan(inputs.data_.Value())
                          .subspan(index * inputs.FloatsPerInput());
@@ -311,7 +311,7 @@ class StrokeInputBatch::ConstIterator {
 // ---------------------------------------------------------------------------
 //                     Implementation details below
 
-inline size_t StrokeInputBatch::Size() const {
+inline int StrokeInputBatch::Size() const {
   DebugCheckSizeAndFormatAreConsistent();
   return size_;
 }

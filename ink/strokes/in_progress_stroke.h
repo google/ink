@@ -27,6 +27,7 @@
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/geometry/envelope.h"
+#include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
@@ -192,14 +193,14 @@ class InProgressStroke {
   // Returns the count of all current inputs processed in the stroke. This
   // includes all of the real inputs as well as the most-recently-processed
   // sequence of predicted inputs.
-  size_t InputCount() const { return processed_inputs_.Size(); }
+  int InputCount() const { return processed_inputs_.Size(); }
 
   // Returns the count of current inputs excluding predicted inputs.
-  size_t RealInputCount() const { return real_input_count_; }
+  int RealInputCount() const { return real_input_count_; }
 
   // Returns the count of the most-recently-processed sequence of predicted
   // inputs.
-  size_t PredictedInputCount() const { return InputCount() - RealInputCount(); }
+  int PredictedInputCount() const { return InputCount() - RealInputCount(); }
 
   // Returns the mesh format used by any meshes generated for the specified coat
   // of paint.
