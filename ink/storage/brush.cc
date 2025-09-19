@@ -1322,6 +1322,13 @@ void EncodeBrushFamilyInputModel(
 }
 
 void EncodeBrushFamilyInputModel(
+    const BrushFamily::ExperimentalSlidingWindowModel& model,
+    proto::BrushFamily::InputModel& model_proto_out) {
+  model_proto_out
+      .mutable_experimental_sliding_window_model();  // no fields to set
+}
+
+void EncodeBrushFamilyInputModel(
     const BrushFamily::InputModel& input_model,
     proto::BrushFamily::InputModel& model_proto_out) {
   std::visit(
@@ -1340,6 +1347,8 @@ absl::StatusOr<BrushFamily::InputModel> DecodeBrushFamilyInputModel(
       return BrushFamily::ExperimentalRawPositionModel{};
     case proto::BrushFamily::InputModel::kExperimentalNaiveModel:
       return BrushFamily::ExperimentalNaiveModel{};
+    case proto::BrushFamily::InputModel::kExperimentalSlidingWindowModel:
+      return BrushFamily::ExperimentalSlidingWindowModel{};
     case proto::BrushFamily::InputModel::INPUT_MODEL_NOT_SET:
       break;
   }

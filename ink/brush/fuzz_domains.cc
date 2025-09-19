@@ -554,7 +554,8 @@ Domain<BrushFamily> ValidBrushFamily(DomainVariant variant) {
 Domain<BrushFamily::InputModel> ValidBrushFamilyInputModel() {
   return VariantOf(StructOf<BrushFamily::SpringModel>(),
                    StructOf<BrushFamily::ExperimentalRawPositionModel>(),
-                   StructOf<BrushFamily::ExperimentalNaiveModel>());
+                   StructOf<BrushFamily::ExperimentalNaiveModel>(),
+                   StructOf<BrushFamily::ExperimentalSlidingWindowModel>());
 }
 
 namespace {

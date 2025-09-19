@@ -34,8 +34,6 @@ namespace ink {
 // serialization and asset management APIs.
 class BrushFamily {
  public:
-  // LINT.IfChange(input_model_types)
-
   // Spring-based input modeler. Stored in the `InputModel` variant below to
   // allow future input models to be added without changing the shape of
   // existing strokes.
@@ -50,19 +48,22 @@ class BrushFamily {
   // experimental configuration which may be adjusted or removed later.
   struct ExperimentalNaiveModel {};
 
+  // Averages nearby inputs together within a sliding time window.  This is an
+  // experimental configuration which may be adjusted or removed later.
+  struct ExperimentalSlidingWindowModel {};
+
   // Specifies a model for turning a sequence of raw hardware inputs (e.g. from
   // a stylus, touchscreen, or mouse) into a sequence of smoothed, modeled
   // inputs. Raw hardware inputs tend to be noisy, and must be smoothed before
   // being passed into a brush's behaviors and extruded into a mesh in order to
   // get a good-looking stroke.
-  using InputModel = std::variant<SpringModel, ExperimentalRawPositionModel,
-                                  ExperimentalNaiveModel>;
+  using InputModel =
+      std::variant<SpringModel, ExperimentalRawPositionModel,
+                   ExperimentalNaiveModel, ExperimentalSlidingWindowModel>;
 
   // Returns the default `InputModel` that will be used by
   // `BrushFamily::Create()` when none is specified.
   static InputModel DefaultInputModel();
-
-  // LINT.ThenChange(../strokes/internal/stroke_input_modeler.cc:input_model_types)
 
   // Returns the maximum number of `BrushCoat`s that a `BrushFamily` is allowed
   // to have. Note that this limit may increase in the future.

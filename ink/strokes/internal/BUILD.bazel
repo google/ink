@@ -77,11 +77,13 @@ cc_library(
     srcs = [
         "stroke_input_modeler.cc",
         "stroke_input_modeler/naive_input_modeler.cc",
+        "stroke_input_modeler/sliding_window_input_modeler.cc",
         "stroke_input_modeler/spring_based_input_modeler.cc",
     ],
     hdrs = [
         "stroke_input_modeler.h",
         "stroke_input_modeler/naive_input_modeler.h",
+        "stroke_input_modeler/sliding_window_input_modeler.h",
         "stroke_input_modeler/spring_based_input_modeler.h",
     ],
     deps = [
@@ -90,6 +92,7 @@ cc_library(
         "//ink/geometry:distance",
         "//ink/geometry:point",
         "//ink/geometry:vec",
+        "//ink/geometry/internal:algorithms",
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
@@ -98,6 +101,7 @@ cc_library(
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/types:span",
         "@ink_stroke_modeler//ink_stroke_modeler:params",
         "@ink_stroke_modeler//ink_stroke_modeler:stroke_modeler",
@@ -120,6 +124,26 @@ cc_test(
         "//ink/types:type_matchers",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "sliding_window_input_modeler_test",
+    srcs = ["stroke_input_modeler/sliding_window_input_modeler_test.cc"],
+    deps = [
+        ":stroke_input_modeler",
+        "//ink/brush:brush_family",
+        "//ink/geometry:angle",
+        "//ink/geometry:type_matchers",
+        "//ink/strokes/input:stroke_input",
+        "//ink/strokes/input:stroke_input_batch",
+        "//ink/types:duration",
+        "//ink/types:physical_distance",
+        "//ink/types:type_matchers",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_matchers",
         "@com_google_googletest//:gtest_main",
     ],
 )

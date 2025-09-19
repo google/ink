@@ -44,6 +44,7 @@ using ::ink::jni::ThrowExceptionFromStatus;
 constexpr jint kSpringModel = 1;
 constexpr jint kExperimentalRawPositionModel = 2;
 constexpr jint kExperimentalNaiveModel = 3;
+constexpr jint kExperimentalSlidingWindowModel = 4;
 
 BrushFamily::InputModel JIntToInputModel(jint input_model_value) {
   switch (input_model_value) {
@@ -53,6 +54,8 @@ BrushFamily::InputModel JIntToInputModel(jint input_model_value) {
       return BrushFamily::ExperimentalRawPositionModel();
     case kExperimentalNaiveModel:
       return BrushFamily::ExperimentalNaiveModel();
+    case kExperimentalSlidingWindowModel:
+      return BrushFamily::ExperimentalSlidingWindowModel();
     default:
       ABSL_CHECK(false) << "Unknown input model value: " << input_model_value;
   }
@@ -66,6 +69,10 @@ jint InputModelToJInt(BrushFamily::ExperimentalRawPositionModel) {
 
 jint InputModelToJInt(BrushFamily::ExperimentalNaiveModel) {
   return kExperimentalNaiveModel;
+}
+
+jint InputModelToJInt(BrushFamily::ExperimentalSlidingWindowModel) {
+  return kExperimentalSlidingWindowModel;
 }
 
 jint InputModelToJInt(BrushFamily::InputModel input_model) {

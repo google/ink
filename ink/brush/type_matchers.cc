@@ -404,6 +404,12 @@ Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
       _);  // no fields to match
 }
 
+Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
+    const BrushFamily::ExperimentalSlidingWindowModel& input_model) {
+  return VariantWith<BrushFamily::ExperimentalSlidingWindowModel>(
+      _);  // no fields to match
+}
+
 [[maybe_unused]] Matcher<BrushFamily::InputModel> BrushFamilyInputModelEq(
     const BrushFamily::InputModel& expected) {
   return std::visit(
