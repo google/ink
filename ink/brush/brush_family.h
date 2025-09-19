@@ -149,6 +149,15 @@ class BrushFamily {
   InputModel input_model_;
 };
 
+namespace brush_internal {
+std::string ToFormattedString(const BrushFamily::InputModel& model);
+}  // namespace brush_internal
+
+template <typename Sink>
+void AbslStringify(Sink& sink, const BrushFamily::InputModel& model) {
+  sink.Append(brush_internal::ToFormattedString(model));
+}
+
 // ---------------------------------------------------------------------------
 //                     Implementation details below
 

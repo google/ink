@@ -115,7 +115,7 @@ TEST(BrushTest, Stringify) {
       "animation_duration=1s, keyframes={TextureKeyframe{progress=0.1, "
       "rotation=0.25π}}, blend_mode=kDstOut}}, "
       "self_overlap=kAny}}}], "
-      "client_brush_family_id='big-square'))");
+      "client_brush_family_id='big-square', input_model=SpringModel))");
 }
 
 TEST(BrushTest, Create) {

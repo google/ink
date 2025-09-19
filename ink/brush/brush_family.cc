@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -82,8 +83,38 @@ std::string BrushFamily::ToFormattedString() const {
     absl::StrAppend(&formatted, ", client_brush_family_id='",
                     client_brush_family_id_, "'");
   }
-  formatted.push_back(')');
+  absl::StrAppend(&formatted, ", input_model=", input_model_, ")");
   return formatted;
 }
 
+namespace brush_internal {
+namespace {
+
+std::string ToFormattedString(const BrushFamily::SpringModel& model) {
+  return "SpringModel";
+}
+
+std::string ToFormattedString(
+    const BrushFamily::ExperimentalRawPositionModel& model) {
+  return "ExperimentalRawPositionModel";
+}
+
+std::string ToFormattedString(
+    const BrushFamily::ExperimentalNaiveModel& model) {
+  return "ExperimentalNaiveModel";
+}
+
+std::string ToFormattedString(
+    const BrushFamily::ExperimentalSlidingWindowModel& model) {
+  return "ExperimentalSlidingWindowModel";
+}
+
+}  // namespace
+
+std::string ToFormattedString(const BrushFamily::InputModel& model) {
+  return std::visit([](const auto& model) { return ToFormattedString(model); },
+                    model);
+}
+
+}  // namespace brush_internal
 }  // namespace ink

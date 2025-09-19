@@ -107,6 +107,20 @@ BrushCoat CreateTestCoat() {
   };
 }
 
+TEST(BrushFamilyTest, StringifyInputModel) {
+  EXPECT_EQ(absl::StrCat(BrushFamily::InputModel{BrushFamily::SpringModel{}}),
+            "SpringModel");
+  EXPECT_EQ(absl::StrCat(BrushFamily::InputModel{
+                BrushFamily::ExperimentalRawPositionModel{}}),
+            "ExperimentalRawPositionModel");
+  EXPECT_EQ(absl::StrCat(
+                BrushFamily::InputModel{BrushFamily::ExperimentalNaiveModel{}}),
+            "ExperimentalNaiveModel");
+  EXPECT_EQ(absl::StrCat(BrushFamily::InputModel{
+                BrushFamily::ExperimentalSlidingWindowModel{}}),
+            "ExperimentalSlidingWindowModel");
+}
+
 TEST(BrushFamilyTest, StringifyWithNoId) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{.scale = {3, 3},
@@ -129,7 +143,7 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
             "animation_columns=1, animation_duration=1s, "
             "keyframes={TextureKeyframe{progress=0.1, "
             "rotation=0.25π}}, blend_mode=kDstIn}}, "
-            "self_overlap=kAny}}}])");
+            "self_overlap=kAny}}}], input_model=SpringModel)");
 }
 
 TEST(BrushFamilyTest, StringifyWithId) {
@@ -151,7 +165,7 @@ TEST(BrushFamilyTest, StringifyWithId) {
             "keyframes={TextureKeyframe{progress=0.1, "
             "rotation=0.25π}}, blend_mode=kDstIn}}, "
             "self_overlap=kAny}}}], "
-            "client_brush_family_id='big-square')");
+            "client_brush_family_id='big-square', input_model=SpringModel)");
 }
 
 TEST(BrushFamilyTest, CreateWithoutId) {
