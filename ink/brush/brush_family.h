@@ -34,6 +34,8 @@ namespace ink {
 // serialization and asset management APIs.
 class BrushFamily {
  public:
+  // LINT.IfChange(input_model_types)
+
   // Spring-based input modeler. Stored in the `InputModel` variant below to
   // allow future input models to be added without changing the shape of
   // existing strokes.
@@ -60,6 +62,8 @@ class BrushFamily {
   using InputModel =
       std::variant<SpringModel, ExperimentalRawPositionModel,
                    ExperimentalNaiveModel, ExperimentalSlidingWindowModel>;
+
+  // LINT.ThenChange(../strokes/internal/stroke_input_modeler_test.cc:input_model_types)
 
   // Returns the default `InputModel` that will be used by
   // `BrushFamily::Create()` when none is specified.

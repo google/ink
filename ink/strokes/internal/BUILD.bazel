@@ -110,6 +110,27 @@ cc_library(
 )
 
 cc_test(
+    name = "stroke_input_modeler_test",
+    srcs = ["stroke_input_modeler_test.cc"],
+    deps = [
+        ":stroke_input_modeler",
+        "//ink/brush:brush_family",
+        "//ink/geometry:angle",
+        "//ink/geometry:type_matchers",
+        "//ink/strokes/input:stroke_input",
+        "//ink/strokes/input:stroke_input_batch",
+        "//ink/types:duration",
+        "//ink/types:physical_distance",
+        "//ink/types:type_matchers",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_matchers",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
     name = "naive_input_modeler_test",
     srcs = ["stroke_input_modeler/naive_input_modeler_test.cc"],
     deps = [
@@ -124,6 +145,7 @@ cc_test(
         "//ink/types:type_matchers",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_matchers",
         "@com_google_googletest//:gtest_main",
     ],
 )

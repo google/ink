@@ -23,11 +23,13 @@
 #include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/type_matchers.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/types/duration.h"
 #include "ink/types/physical_distance.h"
 #include "ink/types/type_matchers.h"
@@ -35,12 +37,15 @@
 namespace ink::strokes_internal {
 namespace {
 
+using ::absl_testing::IsOk;
 using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::ExplainMatchResult;
 using ::testing::Field;
+using ::testing::FloatEq;
 using ::testing::FloatNear;
 using ::testing::Optional;
+using ::testing::SizeIs;
 
 // Returns a vector of single-input `StrokeInputBatch` that can be used for a
 // single synthetic stroke.
@@ -92,294 +97,28 @@ std::vector<StrokeInputBatch> MakeStylusInputBatchSequence() {
   return batches;
 }
 
-MATCHER_P2(ModeledStrokeInputNearMatcher, expected, tolerance, "") {
-  return ExplainMatchResult(
-      AllOf(Field("position", &ModeledStrokeInput::position,
-                  PointNear(expected.position, tolerance)),
-            Field("velocity", &ModeledStrokeInput::velocity,
-                  VecNear(expected.velocity, tolerance)),
-            Field("acceleration", &ModeledStrokeInput::acceleration,
-                  VecNear(expected.acceleration, tolerance)),
-            Field("traveled_distance", &ModeledStrokeInput::traveled_distance,
-                  FloatNear(expected.traveled_distance, tolerance)),
-            Field("elapsed_time", &ModeledStrokeInput::elapsed_time,
-                  Duration32Near(expected.elapsed_time, tolerance)),
-            Field("pressure", &ModeledStrokeInput::pressure,
-                  FloatNear(expected.pressure, tolerance)),
-            Field("tilt", &ModeledStrokeInput::tilt,
-                  AngleNear(expected.tilt, tolerance)),
-            Field("orientation", &ModeledStrokeInput::orientation,
-                  AngleNear(expected.orientation, tolerance))),
-      arg, result_listener);
-}
-::testing::Matcher<ModeledStrokeInput> ModeledStrokeInputNear(
-    const ModeledStrokeInput& expected, float tolerance) {
-  return ModeledStrokeInputNearMatcher(expected, tolerance);
-}
-
-MATCHER_P(PositionsAreSeparatedByAtLeast, min_distance, "") {
-  for (size_t i = 1; i < arg.size(); ++i) {
-    float distance = (arg[i].position - arg[i - 1].position).Magnitude();
-    if (distance < min_distance) {
-      *result_listener << absl::StrFormat(
-          "Inputs at indices %d and %d, with positions %v and %v, are "
-          "separated by %f",
-          i - 1, i, arg[i - 1].position, arg[i].position, distance);
-      return false;
-    }
+TEST(NaiveInputModelerTest, ModeledInputsMatchRawInputs) {
+  std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
+  StrokeInputBatch synthetic_real_inputs;
+  for (const StrokeInputBatch& input_batch : MakeStylusInputBatchSequence()) {
+    ASSERT_THAT(synthetic_real_inputs.Append(input_batch), IsOk());
   }
-  return true;
-}
-
-TEST(NaiveInputModelerTest, DefaultConstructed) {
-  NaiveInputModeler modeler;
-  EXPECT_EQ(modeler.GetState().tool_type, StrokeInput::ToolType::kUnknown);
-  EXPECT_EQ(modeler.GetState().stroke_unit_length, std::nullopt);
-  EXPECT_EQ(modeler.GetState().complete_elapsed_time, Duration32::Zero());
-  EXPECT_TRUE(modeler.GetModeledInputs().empty());
-  EXPECT_EQ(modeler.GetState().stable_input_count, 0);
-  EXPECT_EQ(modeler.GetState().real_input_count, 0);
-}
-
-TEST(NaiveInputModelerTest, StartOnDefaultConstructed) {
-  NaiveInputModeler modeler;
-  modeler.StartStroke(/* brush_epsilon = */ 0.01);
-
-  EXPECT_EQ(modeler.GetState().tool_type, StrokeInput::ToolType::kUnknown);
-  EXPECT_EQ(modeler.GetState().stroke_unit_length, std::nullopt);
-  EXPECT_EQ(modeler.GetState().complete_elapsed_time, Duration32::Zero());
-  EXPECT_TRUE(modeler.GetModeledInputs().empty());
-
-  EXPECT_EQ(modeler.GetState().stable_input_count, 0);
-  EXPECT_EQ(modeler.GetState().real_input_count, 0);
-}
-
-TEST(NaiveInputModelerTest, FirstExtendWithEmptyInputs) {
-  NaiveInputModeler modeler;
-  modeler.StartStroke(/* brush_epsilon = */ 0.01);
-
-  // This kind of function call is likely to never occur, but we check that the
-  // `current_elapsed_time` parameter is not ignored in this case for
-  // consistency of the API.
-  modeler.ExtendStroke({}, {}, Duration32::Millis(10));
-
-  EXPECT_EQ(modeler.GetState().tool_type, StrokeInput::ToolType::kUnknown);
-  EXPECT_EQ(modeler.GetState().stroke_unit_length, std::nullopt);
-  EXPECT_EQ(modeler.GetState().complete_elapsed_time, Duration32::Millis(10));
-  EXPECT_TRUE(modeler.GetModeledInputs().empty());
-  EXPECT_EQ(modeler.GetState().stable_input_count, 0);
-  EXPECT_EQ(modeler.GetState().real_input_count, 0);
-}
-
-TEST(NaiveInputModelerTest, ExtendWithEmptyPredictedInputs) {
-  std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
 
   NaiveInputModeler modeler;
-  float brush_epsilon = 0.001;
-  modeler.StartStroke(brush_epsilon);
+  modeler.StartStroke(/*brush_epsilon=*/0.001);
+  modeler.ExtendStroke(synthetic_real_inputs, {}, Duration32::Seconds(5));
 
-  StrokeInputBatch synthetic_real_inputs = input_batches[0];
-  ASSERT_EQ(absl::OkStatus(), synthetic_real_inputs.Append(input_batches[1]));
-
-  Duration32 current_elapsed_time = synthetic_real_inputs.Get(1).elapsed_time;
-  modeler.ExtendStroke(synthetic_real_inputs, {}, current_elapsed_time);
-
-  EXPECT_EQ(modeler.GetState().tool_type, StrokeInput::ToolType::kStylus);
-  EXPECT_THAT(modeler.GetState().stroke_unit_length,
-              Optional(PhysicalDistanceEq(PhysicalDistance::Centimeters(1))));
-  EXPECT_THAT(modeler.GetState().complete_elapsed_time.ToSeconds(),
-              FloatNear(current_elapsed_time.ToSeconds(), 0.05));
-
-  // All modeled inputs should be stable.
-  EXPECT_EQ(modeler.GetState().stable_input_count, 2);
-  EXPECT_EQ(modeler.GetState().real_input_count,
-            modeler.GetState().stable_input_count);
-  EXPECT_EQ(modeler.GetModeledInputs().size(),
-            modeler.GetState().real_input_count);
-
-  EXPECT_GT(modeler.GetModeledInputs().back().traveled_distance, 0);
-  EXPECT_GT(modeler.GetModeledInputs().back().elapsed_time, Duration32::Zero());
-
-  EXPECT_THAT(modeler.GetModeledInputs(),
-              PositionsAreSeparatedByAtLeast(brush_epsilon));
-}
-
-TEST(NaiveInputModelerTest, ExtendWithEmptyRealInputs) {
-  std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
-
-  NaiveInputModeler modeler;
-  float brush_epsilon = 0.01;
-  modeler.StartStroke(brush_epsilon);
-
-  StrokeInputBatch synthetic_predicted_inputs = input_batches[0];
-  ASSERT_EQ(absl::OkStatus(),
-            synthetic_predicted_inputs.Append(input_batches[1]));
-  ASSERT_EQ(absl::OkStatus(),
-            synthetic_predicted_inputs.Append(input_batches[2]));
-
-  Duration32 current_elapsed_time = Duration32::Zero();
-  modeler.ExtendStroke({}, synthetic_predicted_inputs, current_elapsed_time);
-
-  EXPECT_EQ(modeler.GetState().tool_type, StrokeInput::ToolType::kStylus);
-  EXPECT_THAT(modeler.GetState().stroke_unit_length,
-              Optional(PhysicalDistanceEq(PhysicalDistance::Centimeters(1))));
-
-  Duration32 predicted_elapsed_time =
-      synthetic_predicted_inputs.Get(synthetic_predicted_inputs.Size() - 1)
-          .elapsed_time;
-  EXPECT_THAT(modeler.GetState().complete_elapsed_time.ToSeconds(),
-              FloatNear(predicted_elapsed_time.ToSeconds(), 0.05));
-
-  EXPECT_FALSE(modeler.GetModeledInputs().empty());
-  EXPECT_EQ(modeler.GetState().stable_input_count, 0);
-  EXPECT_EQ(modeler.GetState().real_input_count, 0);
-
-  EXPECT_GT(modeler.GetModeledInputs().back().traveled_distance, 0);
-  EXPECT_GT(modeler.GetModeledInputs().back().elapsed_time, Duration32::Zero());
-
-  EXPECT_THAT(modeler.GetModeledInputs(),
-              PositionsAreSeparatedByAtLeast(brush_epsilon));
-}
-
-TEST(NaiveInputModelerTest, ExtendWithBothEmptyInputsClearsPrediction) {
-  std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
-
-  NaiveInputModeler modeler;
-  float brush_epsilon = 0.08;
-  modeler.StartStroke(brush_epsilon);
-
-  Duration32 current_elapsed_time = input_batches[0].Get(0).elapsed_time;
-  modeler.ExtendStroke(input_batches[0], {}, current_elapsed_time);
-
-  current_elapsed_time = input_batches[1].Get(0).elapsed_time;
-  modeler.ExtendStroke(input_batches[1], input_batches[4],
-                       current_elapsed_time);
-
-  EXPECT_EQ(modeler.GetState().tool_type, StrokeInput::ToolType::kStylus);
-  EXPECT_THAT(modeler.GetState().stroke_unit_length,
-              Optional(PhysicalDistanceEq(PhysicalDistance::Centimeters(1))));
-  Duration32 predicted_elapsed_time = input_batches[4].Get(0).elapsed_time;
-  EXPECT_THAT(modeler.GetState().complete_elapsed_time.ToSeconds(),
-              FloatNear(predicted_elapsed_time.ToSeconds(), 0.05));
-
-  EXPECT_EQ(modeler.GetState().stable_input_count, 2);
-  EXPECT_EQ(modeler.GetState().real_input_count,
-            modeler.GetState().stable_input_count);
-  EXPECT_GT(modeler.GetModeledInputs().size(),
-            modeler.GetState().real_input_count);
-
-  EXPECT_GT(modeler.GetModeledInputs().back().traveled_distance, 0);
-  EXPECT_GT(modeler.GetModeledInputs().back().elapsed_time, Duration32::Zero());
-
-  size_t last_stable_modeled_count = modeler.GetState().stable_input_count;
-
-  current_elapsed_time += Duration32::Seconds(0.2);
-  modeler.ExtendStroke({}, {}, current_elapsed_time);
-  EXPECT_EQ(modeler.GetState().complete_elapsed_time, current_elapsed_time);
-
-  EXPECT_EQ(modeler.GetState().tool_type, StrokeInput::ToolType::kStylus);
-  EXPECT_THAT(modeler.GetState().stroke_unit_length,
-              Optional(PhysicalDistanceEq(PhysicalDistance::Centimeters(1))));
-
-  EXPECT_EQ(modeler.GetState().stable_input_count, last_stable_modeled_count);
-  EXPECT_EQ(modeler.GetState().real_input_count,
-            modeler.GetState().stable_input_count);
-  EXPECT_EQ(modeler.GetState().real_input_count,
-            modeler.GetModeledInputs().size());
-
-  EXPECT_THAT(modeler.GetModeledInputs(),
-              PositionsAreSeparatedByAtLeast(brush_epsilon));
-}
-
-TEST(NaiveInputModelerTest, ExtendKeepsRealInputAndReplacesPrediction) {
-  std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
-
-  NaiveInputModeler modeler;
-  float brush_epsilon = 0.004;
-  modeler.StartStroke(brush_epsilon);
-
-  Duration32 current_elapsed_time = input_batches[0].Get(0).elapsed_time;
-  modeler.ExtendStroke(input_batches[0], {}, current_elapsed_time);
-
-  current_elapsed_time = input_batches[1].Get(0).elapsed_time;
-  modeler.ExtendStroke(input_batches[1], input_batches[4],
-                       current_elapsed_time);
-
-  EXPECT_EQ(modeler.GetState().stable_input_count, 2);
-  EXPECT_EQ(modeler.GetState().real_input_count,
-            modeler.GetState().stable_input_count);
-  EXPECT_GT(modeler.GetModeledInputs().size(),
-            modeler.GetState().real_input_count);
-
-  EXPECT_GT(modeler.GetModeledInputs().back().traveled_distance, 0);
-  EXPECT_GT(modeler.GetModeledInputs().back().elapsed_time, Duration32::Zero());
-
-  size_t last_real_modeled_count = modeler.GetState().real_input_count;
-  float last_real_distance =
-      modeler.GetModeledInputs()[last_real_modeled_count - 1].traveled_distance;
-  Duration32 last_real_elapsed_time =
-      modeler.GetModeledInputs()[last_real_modeled_count - 1].elapsed_time;
-  float last_total_distance =
-      modeler.GetModeledInputs().back().traveled_distance;
-  Duration32 last_total_elapsed_time =
-      modeler.GetModeledInputs().back().elapsed_time;
-
-  current_elapsed_time = input_batches[2].Get(0).elapsed_time;
-  modeler.ExtendStroke(input_batches[2], input_batches[3],
-                       current_elapsed_time);
-
-  EXPECT_GT(modeler.GetState().real_input_count, last_real_modeled_count);
-  EXPECT_GT(modeler.GetModeledInputs().size(),
-            modeler.GetState().real_input_count);
-
-  // The real traveled_distance and elapsed time of the stroke should increase,
-  // but the totals should decrease as the new prediction is prior to the one
-  // used for the previous extension:
-
-  size_t real_count = modeler.GetState().real_input_count;
-  EXPECT_GT(modeler.GetModeledInputs()[real_count - 1].traveled_distance,
-            last_real_distance);
-  EXPECT_GT(modeler.GetModeledInputs()[real_count - 1].elapsed_time,
-            last_real_elapsed_time);
-
-  EXPECT_LT(modeler.GetModeledInputs().back().traveled_distance,
-            last_total_distance);
-  EXPECT_LT(modeler.GetModeledInputs().back().elapsed_time,
-            last_total_elapsed_time);
-
-  EXPECT_THAT(modeler.GetModeledInputs(),
-              PositionsAreSeparatedByAtLeast(brush_epsilon));
-}
-
-TEST(NaiveInputModelerTest, StartClearsAfterExtending) {
-  std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
-
-  NaiveInputModeler modeler;
-  modeler.StartStroke(/* brush_epsilon = */ 0.01);
-
-  Duration32 current_elapsed_time = input_batches[0].Get(0).elapsed_time;
-  modeler.ExtendStroke(input_batches[0], {}, current_elapsed_time);
-
-  current_elapsed_time = input_batches[1].Get(0).elapsed_time;
-  modeler.ExtendStroke(input_batches[1], input_batches[2],
-                       current_elapsed_time);
-
-  ASSERT_EQ(modeler.GetState().tool_type, StrokeInput::ToolType::kStylus);
-  EXPECT_THAT(modeler.GetState().stroke_unit_length,
-              Optional(PhysicalDistanceEq(PhysicalDistance::Centimeters(1))));
-  ASSERT_NE(modeler.GetState().complete_elapsed_time, Duration32::Zero());
-  ASSERT_FALSE(modeler.GetModeledInputs().empty());
-  ASSERT_NE(modeler.GetState().stable_input_count, 0);
-  ASSERT_NE(modeler.GetState().real_input_count, 0);
-
-  modeler.StartStroke(/* brush_epsilon = */ 0.01);
-  EXPECT_EQ(modeler.GetState().tool_type, StrokeInput::ToolType::kUnknown);
-  EXPECT_EQ(modeler.GetState().stroke_unit_length, std::nullopt);
-  EXPECT_EQ(modeler.GetState().complete_elapsed_time, Duration32::Zero());
-  EXPECT_TRUE(modeler.GetModeledInputs().empty());
-
-  EXPECT_EQ(modeler.GetState().stable_input_count, 0);
-  EXPECT_EQ(modeler.GetState().real_input_count, 0);
+  ASSERT_THAT(modeler.GetModeledInputs(), SizeIs(synthetic_real_inputs.Size()));
+  for (int i = 0; i < synthetic_real_inputs.Size(); ++i) {
+    StrokeInput raw_input = synthetic_real_inputs.Get(i);
+    const ModeledStrokeInput& modeled_input = modeler.GetModeledInputs()[i];
+    EXPECT_THAT(modeled_input.position, PointEq(raw_input.position));
+    EXPECT_THAT(modeled_input.elapsed_time,
+                Duration32Eq(raw_input.elapsed_time));
+    EXPECT_THAT(modeled_input.pressure, FloatEq(raw_input.pressure));
+    EXPECT_THAT(modeled_input.tilt, AngleEq(raw_input.tilt));
+    EXPECT_THAT(modeled_input.orientation, AngleEq(raw_input.orientation));
+  }
 }
 
 }  // namespace
