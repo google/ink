@@ -29,7 +29,6 @@ namespace {
 using ::ink::Brush;
 using ::ink::BrushFamily;
 using ::ink::Color;
-using ::ink::Color::Format::kGammaEncoded;
 using ::ink::jni::CastToBrush;
 using ::ink::jni::CastToBrushFamily;
 using ::ink::jni::ComputeColorLong;
