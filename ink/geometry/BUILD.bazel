@@ -243,6 +243,7 @@ cc_library(
 cc_test(
     name = "rect_test",
     srcs = ["rect_test.cc"],
+    shard_count = 10,
     deps = [
         ":fuzz_domains",
         ":point",
@@ -371,6 +372,7 @@ cc_test(
 cc_test(
     name = "vec_test",
     srcs = ["vec_test.cc"],
+    shard_count = 10,
     deps = [
         ":angle",
         ":fuzz_domains",
