@@ -39,7 +39,6 @@ namespace {
 
 using ::absl_testing::IsOk;
 using ::testing::AllOf;
-using ::testing::ElementsAre;
 using ::testing::ExplainMatchResult;
 using ::testing::Field;
 using ::testing::FloatEq;
