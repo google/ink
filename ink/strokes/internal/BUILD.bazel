@@ -175,6 +175,7 @@ cc_test(
     srcs = ["stroke_input_modeler/spring_based_input_modeler_test.cc"],
     deps = [
         ":stroke_input_modeler",
+        ":type_matchers",
         "//ink/brush:brush_family",
         "//ink/geometry:angle",
         "//ink/geometry:type_matchers",

@@ -97,31 +97,6 @@ std::vector<StrokeInputBatch> MakeStylusInputBatchSequence() {
   return batches;
 }
 
-MATCHER_P2(ModeledStrokeInputNearMatcher, expected, tolerance, "") {
-  return ExplainMatchResult(
-      AllOf(Field("position", &ModeledStrokeInput::position,
-                  PointNear(expected.position, tolerance)),
-            Field("velocity", &ModeledStrokeInput::velocity,
-                  VecNear(expected.velocity, tolerance)),
-            Field("acceleration", &ModeledStrokeInput::acceleration,
-                  VecNear(expected.acceleration, tolerance)),
-            Field("traveled_distance", &ModeledStrokeInput::traveled_distance,
-                  FloatNear(expected.traveled_distance, tolerance)),
-            Field("elapsed_time", &ModeledStrokeInput::elapsed_time,
-                  Duration32Near(expected.elapsed_time, tolerance)),
-            Field("pressure", &ModeledStrokeInput::pressure,
-                  FloatNear(expected.pressure, tolerance)),
-            Field("tilt", &ModeledStrokeInput::tilt,
-                  AngleNear(expected.tilt, tolerance)),
-            Field("orientation", &ModeledStrokeInput::orientation,
-                  AngleNear(expected.orientation, tolerance))),
-      arg, result_listener);
-}
-::testing::Matcher<ModeledStrokeInput> ModeledStrokeInputNear(
-    const ModeledStrokeInput& expected, float tolerance) {
-  return ModeledStrokeInputNearMatcher(expected, tolerance);
-}
-
 struct InputModelTestCase {
   std::string test_name;
   BrushFamily::InputModel input_model;
@@ -375,6 +350,53 @@ TEST_P(StrokeInputModelerTest, StartClearsAfterExtending) {
 
   EXPECT_EQ(modeler->GetState().stable_input_count, 0);
   EXPECT_EQ(modeler->GetState().real_input_count, 0);
+}
+
+TEST_P(StrokeInputModelerTest, CumulativeDistanceTraveled) {
+  std::unique_ptr<StrokeInputModeler> modeler(
+      StrokeInputModeler::Create(GetParam().input_model));
+  modeler->StartStroke(/* brush_epsilon = */ 0.01);
+
+  // Extend the stroke with a bunch of inputs (some real, some predicted) that
+  // move at a constant velocity of 1000 stroke units per second.
+  auto append_input = [](StrokeInputBatch& inputs, int i) {
+    EXPECT_THAT(inputs.Append(StrokeInput{
+                    .position = {static_cast<float>(i), 0},
+                    .elapsed_time = Duration32::Millis(i),
+                }),
+                IsOk());
+  };
+  StrokeInputBatch real_inputs;
+  for (int i = 0; i < 100; ++i) {
+    append_input(real_inputs, i);
+  }
+  StrokeInputBatch predicted_inputs;
+  for (int i = 100; i < 200; ++i) {
+    append_input(predicted_inputs, i);
+  }
+  modeler->ExtendStroke(real_inputs, predicted_inputs, Duration32::Millis(200));
+
+  // After these 200ms of inputs, the total modeled distance traveled should be
+  // on the order of *around* 200 stroke units. Exactly how close the distance
+  // is will depend on the modeler implementation, but it shouldn't be *too* far
+  // off.
+  EXPECT_THAT(modeler->GetState().complete_traveled_distance,
+              FloatNear(200, 25));
+  // Only the first 100ms of inputs were real, so the total real distance should
+  // be *around* 100 stroke units (again, we'll leave a generous margin to allow
+  // for different modeling strategies).
+  EXPECT_THAT(modeler->GetState().total_real_distance, FloatNear(100, 25));
+  // Intermediate elapsed times/distances should also be reasonable.  Different
+  // modeling implementations may have different upsampling strategies, but
+  // given the regularity of these test inputs, it is reasonable to assume that
+  // the modeled inputs should be reasonably evenly spaced in time and space,
+  // and therefore that 25% of the way through the modeled inputs, we should
+  // have traveled *around* 25% of the total distance.
+  size_t index_at_25_percent_progress = modeler->GetModeledInputs().size() / 4;
+  const ModeledStrokeInput& input_at_25_percent_progress =
+      modeler->GetModeledInputs()[index_at_25_percent_progress];
+  EXPECT_THAT(input_at_25_percent_progress.traveled_distance,
+              FloatNear(50, 25));
 }
 
 INSTANTIATE_TEST_SUITE_P(

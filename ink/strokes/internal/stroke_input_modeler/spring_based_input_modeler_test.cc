@@ -27,6 +27,7 @@
 #include "ink/geometry/type_matchers.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/type_matchers.h"
 #include "ink/types/duration.h"
 #include "ink/types/physical_distance.h"
 #include "ink/types/type_matchers.h"
@@ -89,31 +90,6 @@ std::vector<StrokeInputBatch> MakeStylusInputBatchSequence() {
     batches.push_back(*batch);
   }
   return batches;
-}
-
-MATCHER_P2(ModeledStrokeInputNearMatcher, expected, tolerance, "") {
-  return ExplainMatchResult(
-      AllOf(Field("position", &ModeledStrokeInput::position,
-                  PointNear(expected.position, tolerance)),
-            Field("velocity", &ModeledStrokeInput::velocity,
-                  VecNear(expected.velocity, tolerance)),
-            Field("acceleration", &ModeledStrokeInput::acceleration,
-                  VecNear(expected.acceleration, tolerance)),
-            Field("traveled_distance", &ModeledStrokeInput::traveled_distance,
-                  FloatNear(expected.traveled_distance, tolerance)),
-            Field("elapsed_time", &ModeledStrokeInput::elapsed_time,
-                  Duration32Near(expected.elapsed_time, tolerance)),
-            Field("pressure", &ModeledStrokeInput::pressure,
-                  FloatNear(expected.pressure, tolerance)),
-            Field("tilt", &ModeledStrokeInput::tilt,
-                  AngleNear(expected.tilt, tolerance)),
-            Field("orientation", &ModeledStrokeInput::orientation,
-                  AngleNear(expected.orientation, tolerance))),
-      arg, result_listener);
-}
-::testing::Matcher<ModeledStrokeInput> ModeledStrokeInputNear(
-    const ModeledStrokeInput& expected, float tolerance) {
-  return ModeledStrokeInputNearMatcher(expected, tolerance);
 }
 
 MATCHER_P(PositionsAreSeparatedByAtLeast, min_distance, "") {

@@ -188,12 +188,13 @@ void ComputeDerivativeForUnstableInputs(
   }
 }
 
-float DistanceTraveledFromEnd(
-    const std::vector<ModeledStrokeInput>& modeled_inputs, Point position) {
+float DistanceTraveled(const std::vector<ModeledStrokeInput>& modeled_inputs,
+                       Point position) {
   if (modeled_inputs.empty()) {
     return 0;
   }
-  return Distance(modeled_inputs.back().position, position);
+  const ModeledStrokeInput& last_input = modeled_inputs.back();
+  return last_input.traveled_distance + Distance(last_input.position, position);
 }
 
 }  // namespace
@@ -242,8 +243,7 @@ void SlidingWindowInputModeler::ModelUnstableInputPosition(int input_index) {
   if (dt <= 0) {
     modeled_inputs_.push_back(ModeledStrokeInput{
         .position = input.position,
-        .traveled_distance =
-            DistanceTraveledFromEnd(modeled_inputs_, input.position),
+        .traveled_distance = DistanceTraveled(modeled_inputs_, input.position),
         .elapsed_time = input.elapsed_time,
         .pressure = input.pressure,
         .tilt = input.tilt,
@@ -279,7 +279,7 @@ void SlidingWindowInputModeler::ModelUnstableInputPosition(int input_index) {
       .elapsed_time = input.elapsed_time,
   };
   modeled_input.traveled_distance =
-      DistanceTraveledFromEnd(modeled_inputs_, modeled_input.position);
+      DistanceTraveled(modeled_inputs_, modeled_input.position);
   if (sliding_window_.HasPressure()) {
     modeled_input.pressure = integrals.pressure_dt / dt;
   }
