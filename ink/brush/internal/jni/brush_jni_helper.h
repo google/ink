@@ -30,7 +30,7 @@
 
 namespace ink::jni {
 
-// Creates a new stack-allocated copy of the given Brush and returns a pointer
+// Creates a new heap-allocated copy of the given Brush and returns a pointer
 // to it as a jlong, suitable for wrapping in a Kotlin Brush.
 inline jlong NewNativeBrush(const Brush& brush) {
   return reinterpret_cast<jlong>(new Brush(brush));
@@ -49,7 +49,7 @@ inline void DeleteNativeBrush(jlong brush_native_pointer) {
   delete reinterpret_cast<Brush*>(brush_native_pointer);
 }
 
-// Creates a new stack-allocated copy of the given BrushFamily and returns a
+// Creates a new heap-allocated copy of the given BrushFamily and returns a
 // pointer to it as a jlong, suitable for wrapping in a Kotlin BrushFamily.
 inline jlong NewNativeBrushFamily(const BrushFamily& brush_family) {
   return reinterpret_cast<jlong>(new BrushFamily(brush_family));
@@ -68,7 +68,28 @@ inline void DeleteNativeBrushFamily(jlong brush_family_native_pointer) {
   delete reinterpret_cast<BrushFamily*>(brush_family_native_pointer);
 }
 
-// Creates a new stack-allocated copy of the given BrushCoat and returns a
+// Creates a new heap-allocated copy of the given InputModel and returns a
+// pointer to it as a jlong, suitable for wrapping in a Kotlin InputModel.
+inline jlong NewNativeInputModel(const BrushFamily::InputModel& input_model) {
+  return reinterpret_cast<jlong>(new BrushFamily::InputModel(input_model));
+}
+
+// Casts a Kotlin InputModel.nativePointer to a C++ InputModel. The
+// returned InputModel is a const ref as the Kotlin InputModel is immutable.
+inline const BrushFamily::InputModel& CastToInputModel(
+    jlong input_model_native_pointer) {
+  ABSL_CHECK_NE(input_model_native_pointer, 0);
+  return *reinterpret_cast<BrushFamily::InputModel*>(
+      input_model_native_pointer);
+}
+
+// Frees a Kotlin InputModel.nativePointer.
+inline void DeleteNativeInputModel(jlong input_model_native_pointer) {
+  if (input_model_native_pointer == 0) return;
+  delete reinterpret_cast<BrushFamily::InputModel*>(input_model_native_pointer);
+}
+
+// Creates a new heap-allocated copy of the given BrushCoat and returns a
 // pointer to it as a jlong, suitable for wrapping in a Kotlin BrushCoat.
 inline jlong NewNativeBrushCoat(const BrushCoat& brush_coat) {
   return reinterpret_cast<jlong>(new BrushCoat(brush_coat));
@@ -87,7 +108,7 @@ inline void DeleteNativeBrushCoat(jlong brush_coat_native_pointer) {
   delete reinterpret_cast<BrushCoat*>(brush_coat_native_pointer);
 }
 
-// Creates a new stack-allocated copy of the given BrushPaint and returns a
+// Creates a new heap-allocated copy of the given BrushPaint and returns a
 // pointer to it as a jlong, suitable for wrapping in a Kotlin BrushPaint.
 inline jlong NewNativeBrushPaint(const BrushPaint& brush_paint) {
   return reinterpret_cast<jlong>(new BrushPaint(brush_paint));
@@ -106,7 +127,7 @@ inline void DeleteNativeBrushPaint(jlong brush_paint_native_pointer) {
   delete reinterpret_cast<BrushPaint*>(brush_paint_native_pointer);
 }
 
-// Creates a new stack-allocated copy of the given BrushPaint::TextureLayer and
+// Creates a new heap-allocated copy of the given BrushPaint::TextureLayer and
 // returns a pointer to it as a jlong, suitable for wrapping in a Kotlin
 // BrushPaint.TextureLayer.
 inline jlong NewNativeTextureLayer(
@@ -131,7 +152,7 @@ inline void DeleteNativeTextureLayer(jlong texture_layer_native_pointer) {
       texture_layer_native_pointer);
 }
 
-// Creates a new stack-allocated copy of the given BrushTip and returns a
+// Creates a new heap-allocated copy of the given BrushTip and returns a
 // pointer to it as a jlong, suitable for wrapping in a Kotlin BrushTip.
 inline jlong NewNativeBrushTip(const BrushTip& brush_tip) {
   return reinterpret_cast<jlong>(new BrushTip(brush_tip));
@@ -150,7 +171,7 @@ inline void DeleteNativeBrushTip(jlong brush_tip_native_pointer) {
   delete reinterpret_cast<BrushTip*>(brush_tip_native_pointer);
 }
 
-// Creates a new stack-allocated copy of the given BrushBehavior and returns a
+// Creates a new heap-allocated copy of the given BrushBehavior and returns a
 // pointer to it as a jlong, suitable for wrapping in a Kotlin BrushBehavior.
 inline jlong NewNativeBrushBehavior(const BrushBehavior& brush_behavior) {
   return reinterpret_cast<jlong>(new BrushBehavior(brush_behavior));
@@ -171,7 +192,7 @@ inline void DeleteNativeBrushBehavior(jlong brush_behavior_native_pointer) {
   delete reinterpret_cast<BrushBehavior*>(brush_behavior_native_pointer);
 }
 
-// Creates a new stack-allocated copy of the given BrushBehavior::Node and
+// Creates a new heap-allocated copy of the given BrushBehavior::Node and
 // returns a pointer to it as a jlong, suitable for wrapping in a Kotlin
 // BrushBehavior.Node.
 inline jlong NewNativeBrushBehaviorNode(const BrushBehavior::Node& node) {
@@ -193,7 +214,7 @@ inline void DeleteNativeBrushBehaviorNode(jlong node_native_pointer) {
   delete reinterpret_cast<BrushBehavior::Node*>(node_native_pointer);
 }
 
-// Creates a new stack-allocated copy of the given ColorFunction and returns a
+// Creates a new heap-allocated copy of the given ColorFunction and returns a
 // pointer to it as a jlong, suitable for wrapping in a Kotlin ColorFunction.
 inline jlong NewNativeColorFunction(const ColorFunction& color_function) {
   return reinterpret_cast<jlong>(new ColorFunction(color_function));
@@ -214,7 +235,7 @@ inline void DeleteNativeColorFunction(jlong color_function_native_pointer) {
   delete reinterpret_cast<ColorFunction*>(color_function_native_pointer);
 }
 
-// Creates a new stack-allocated copy of the given EasingFunction and returns a
+// Creates a new heap-allocated copy of the given EasingFunction and returns a
 // pointer to it as a jlong, suitable for wrapping in a Kotlin EasingFunction.
 inline jlong NewNativeEasingFunction(const EasingFunction& easing_function) {
   return reinterpret_cast<jlong>(new EasingFunction(easing_function));

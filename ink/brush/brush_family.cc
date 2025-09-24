@@ -73,6 +73,10 @@ absl::StatusOr<BrushFamily> BrushFamily::Create(
       return status;
     }
   }
+  if (absl::Status status = brush_internal::ValidateInputModel(input_model);
+      !status.ok()) {
+    return status;
+  }
   return BrushFamily(coats, client_brush_family_id, input_model);
 }
 
@@ -90,6 +94,32 @@ std::string BrushFamily::ToFormattedString() const {
 namespace brush_internal {
 namespace {
 
+absl::Status ValidateInputModel(const BrushFamily::SpringModel& model) {
+  return absl::OkStatus();
+}
+
+absl::Status ValidateInputModel(
+    const BrushFamily::ExperimentalRawPositionModel& model) {
+  return absl::OkStatus();
+}
+
+absl::Status ValidateInputModel(
+    const BrushFamily::ExperimentalNaiveModel& model) {
+  return absl::OkStatus();
+}
+
+absl::Status ValidateInputModel(
+    const BrushFamily::ExperimentalSlidingWindowModel& model) {
+  if (!model.window_size.IsFinite() ||
+      model.window_size <= Duration32::Zero()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("`ExperimentalSlidingWindowModel::window_size` must be "
+                     "finite and positive. Got: ",
+                     model.window_size));
+  }
+  return absl::OkStatus();
+}
+
 std::string ToFormattedString(const BrushFamily::SpringModel& model) {
   return "SpringModel";
 }
@@ -106,10 +136,16 @@ std::string ToFormattedString(
 
 std::string ToFormattedString(
     const BrushFamily::ExperimentalSlidingWindowModel& model) {
-  return "ExperimentalSlidingWindowModel";
+  return absl::StrCat("ExperimentalSlidingWindowModel(", model.window_size,
+                      ")");
 }
 
 }  // namespace
+
+absl::Status ValidateInputModel(const BrushFamily::InputModel& model) {
+  return std::visit([](const auto& model) { return ValidateInputModel(model); },
+                    model);
+}
 
 std::string ToFormattedString(const BrushFamily::InputModel& model) {
   return std::visit([](const auto& model) { return ToFormattedString(model); },

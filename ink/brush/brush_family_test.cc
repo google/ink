@@ -24,6 +24,7 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -43,6 +44,7 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
@@ -117,8 +119,9 @@ TEST(BrushFamilyTest, StringifyInputModel) {
                 BrushFamily::InputModel{BrushFamily::ExperimentalNaiveModel{}}),
             "ExperimentalNaiveModel");
   EXPECT_EQ(absl::StrCat(BrushFamily::InputModel{
-                BrushFamily::ExperimentalSlidingWindowModel{}}),
-            "ExperimentalSlidingWindowModel");
+                BrushFamily::ExperimentalSlidingWindowModel{
+                    .window_size = Duration32::Millis(125)}}),
+            "ExperimentalSlidingWindowModel(125ms)");
 }
 
 TEST(BrushFamilyTest, StringifyWithNoId) {
@@ -207,6 +210,16 @@ TEST(BrushFamilyTest, CreateWithTooManyCoats) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(coats);
   EXPECT_EQ(family.status().code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(family.status().message(), HasSubstr("coats.size()"));
+}
+
+TEST(BrushFamilyTest, CreateWithInvalidInputModel) {
+  std::vector<BrushCoat> coats = {CreateTestCoat()};
+  BrushFamily::InputModel input_model = {
+      BrushFamily::ExperimentalSlidingWindowModel{.window_size =
+                                                      Duration32::Zero()}};
+  EXPECT_THAT(
+      BrushFamily::Create(coats, "", input_model),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("window_size")));
 }
 
 TEST(BrushFamilyTest, CreateWithInvalidTipScale) {

@@ -18,6 +18,7 @@
 #include <variant>
 #include <vector>
 
+#include "absl/functional/overload.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
@@ -27,17 +28,22 @@
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_string_util.h"
 #include "ink/jni/internal/jni_throw_util.h"
+#include "ink/types/duration.h"
 
 namespace {
 
 using ::ink::BrushCoat;
 using ::ink::BrushFamily;
+using ::ink::Duration32;
 using ::ink::jni::CastToBrushCoat;
 using ::ink::jni::CastToBrushFamily;
+using ::ink::jni::CastToInputModel;
 using ::ink::jni::DeleteNativeBrushFamily;
+using ::ink::jni::DeleteNativeInputModel;
 using ::ink::jni::JStringView;
 using ::ink::jni::NewNativeBrushCoat;
 using ::ink::jni::NewNativeBrushFamily;
+using ::ink::jni::NewNativeInputModel;
 using ::ink::jni::ThrowExceptionFromStatus;
 
 // 0 is reserved for internal use.
@@ -46,7 +52,7 @@ constexpr jint kExperimentalRawPositionModel = 2;
 constexpr jint kExperimentalNaiveModel = 3;
 constexpr jint kExperimentalSlidingWindowModel = 4;
 
-BrushFamily::InputModel JIntToInputModel(jint input_model_value) {
+BrushFamily::InputModel TypeToInputModel(jint input_model_value) {
   switch (input_model_value) {
     case kSpringModel:
       return BrushFamily::SpringModel();
@@ -61,23 +67,20 @@ BrushFamily::InputModel JIntToInputModel(jint input_model_value) {
   }
 }
 
-jint InputModelToJInt(BrushFamily::SpringModel) { return kSpringModel; }
-
-jint InputModelToJInt(BrushFamily::ExperimentalRawPositionModel) {
-  return kExperimentalRawPositionModel;
-}
-
-jint InputModelToJInt(BrushFamily::ExperimentalNaiveModel) {
-  return kExperimentalNaiveModel;
-}
-
-jint InputModelToJInt(BrushFamily::ExperimentalSlidingWindowModel) {
-  return kExperimentalSlidingWindowModel;
-}
-
-jint InputModelToJInt(BrushFamily::InputModel input_model) {
-  return std::visit([](const auto& model) { return InputModelToJInt(model); },
-                    input_model);
+jint InputModelType(const BrushFamily::InputModel& input_model) {
+  constexpr auto visitor = absl::Overload{
+      [](const BrushFamily::SpringModel&) { return kSpringModel; },
+      [](const BrushFamily::ExperimentalRawPositionModel&) {
+        return kExperimentalRawPositionModel;
+      },
+      [](const BrushFamily::ExperimentalNaiveModel&) {
+        return kExperimentalNaiveModel;
+      },
+      [](const BrushFamily::ExperimentalSlidingWindowModel&) {
+        return kExperimentalSlidingWindowModel;
+      },
+  };
+  return std::visit(visitor, input_model);
 }
 
 }  // namespace
@@ -88,7 +91,7 @@ extern "C" {
 JNI_METHOD(brush, BrushFamilyNative, jlong,
            create)(JNIEnv* env, jobject object,
                    jlongArray coat_native_pointer_array,
-                   jstring client_brush_family_id, jint input_model_value) {
+                   jstring client_brush_family_id, jlong input_model_pointer) {
   std::vector<BrushCoat> coats;
   const jsize num_coats = env->GetArrayLength(coat_native_pointer_array);
   coats.reserve(num_coats);
@@ -105,7 +108,7 @@ JNI_METHOD(brush, BrushFamilyNative, jlong,
 
   absl::StatusOr<BrushFamily> brush_family = BrushFamily::Create(
       coats, JStringView(env, client_brush_family_id).string_view(),
-      JIntToInputModel(input_model_value));
+      CastToInputModel(input_model_pointer));
   if (!brush_family.ok()) {
     ThrowExceptionFromStatus(env, brush_family.status());
     return 0;  // Unused return value.
@@ -125,11 +128,6 @@ JNI_METHOD(brush, BrushFamilyNative, jstring, getClientBrushFamilyId)
   return env->NewStringUTF(brush_family.GetClientBrushFamilyId().c_str());
 }
 
-JNI_METHOD(brush, BrushFamilyNative, jboolean, getInputModelInt)
-(JNIEnv* env, jobject object, jlong native_pointer) {
-  return InputModelToJInt(CastToBrushFamily(native_pointer).GetInputModel());
-}
-
 JNI_METHOD(brush, BrushFamilyNative, jlong, getBrushCoatCount)
 (JNIEnv* env, jobject object, jlong native_pointer) {
   const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
@@ -140,6 +138,41 @@ JNI_METHOD(brush, BrushFamilyNative, jlong, newCopyOfBrushCoat)
 (JNIEnv* env, jobject object, jlong native_pointer, jint index) {
   const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
   return NewNativeBrushCoat(brush_family.GetCoats()[index]);
+}
+
+JNI_METHOD(brush, BrushFamilyNative, jlong, newCopyOfInputModel)
+(JNIEnv* env, jobject object, jlong native_pointer, jint index) {
+  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
+  return NewNativeInputModel(brush_family.GetInputModel());
+}
+
+JNI_METHOD(brush, InputModelNative, jlong, createNoParametersModel)
+(JNIEnv* env, jobject object, jint type) {
+  return NewNativeInputModel(TypeToInputModel(type));
+}
+
+JNI_METHOD(brush, InputModelNative, jlong, createSlidingWindowModel)
+(JNIEnv* env, jobject object, jlong window_size_millis) {
+  return NewNativeInputModel({BrushFamily::ExperimentalSlidingWindowModel{
+      .window_size = Duration32::Millis(window_size_millis)}});
+}
+
+JNI_METHOD(brush, InputModelNative, void, free)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  DeleteNativeInputModel(native_pointer);
+}
+
+JNI_METHOD(brush, InputModelNative, jint, getType)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  return InputModelType(CastToInputModel(native_pointer));
+}
+
+JNI_METHOD(brush, InputModelNative, jlong, getSlidingWindowDurationMillis)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  return static_cast<jlong>(
+      std::get<BrushFamily::ExperimentalSlidingWindowModel>(
+          CastToInputModel(native_pointer))
+          .window_size.ToMillis());
 }
 
 }  // extern "C"

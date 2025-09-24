@@ -22,7 +22,6 @@
 #include "ink/strokes/internal/stroke_input_modeler/naive_input_modeler.h"
 #include "ink/strokes/internal/stroke_input_modeler/sliding_window_input_modeler.h"
 #include "ink/strokes/internal/stroke_input_modeler/spring_based_input_modeler.h"
-#include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
 namespace {
@@ -45,8 +44,9 @@ absl_nonnull std::unique_ptr<StrokeInputModeler> CreateInputModeler(
 }
 
 absl_nonnull std::unique_ptr<StrokeInputModeler> CreateInputModeler(
-    const BrushFamily::ExperimentalSlidingWindowModel& naive_model) {
-  return std::make_unique<SlidingWindowInputModeler>(Duration32::Millis(10));
+    const BrushFamily::ExperimentalSlidingWindowModel& sliding_window_model) {
+  return std::make_unique<SlidingWindowInputModeler>(
+      sliding_window_model.window_size);
 }
 
 }  // namespace

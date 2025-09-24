@@ -46,7 +46,9 @@ message BrushFamily {
   // experimental configuration which may be adjusted or removed later. Strokes
   // generated with this input model might change shape if read with a later
   // version of the code that has removed this feature.
-  message ExperimentalSlidingWindowModel {}
+  message ExperimentalSlidingWindowModel {
+    optional float window_size_seconds = 1 [default = 0.02];
+  }
 
   message InputModel {
     oneof input_model {

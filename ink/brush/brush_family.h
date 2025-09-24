@@ -26,6 +26,7 @@
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/types/duration.h"
 
 namespace ink {
 
@@ -50,9 +51,12 @@ class BrushFamily {
   // experimental configuration which may be adjusted or removed later.
   struct ExperimentalNaiveModel {};
 
-  // Averages nearby inputs together within a sliding time window.  This is an
+  // Averages nearby inputs together within a sliding time window. To be valid,
+  // the window size must be finite and strictly positive. This is an
   // experimental configuration which may be adjusted or removed later.
-  struct ExperimentalSlidingWindowModel {};
+  struct ExperimentalSlidingWindowModel {
+    Duration32 window_size;
+  };
 
   // Specifies a model for turning a sequence of raw hardware inputs (e.g. from
   // a stylus, touchscreen, or mouse) into a sequence of smoothed, modeled
@@ -154,7 +158,11 @@ class BrushFamily {
 };
 
 namespace brush_internal {
+
+absl::Status ValidateInputModel(const BrushFamily::InputModel& model);
+
 std::string ToFormattedString(const BrushFamily::InputModel& model);
+
 }  // namespace brush_internal
 
 template <typename Sink>

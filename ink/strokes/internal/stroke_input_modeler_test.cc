@@ -25,7 +25,6 @@
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
-#include "absl/strings/str_cat.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/type_matchers.h"
@@ -123,14 +122,19 @@ MATCHER_P2(ModeledStrokeInputNearMatcher, expected, tolerance, "") {
   return ModeledStrokeInputNearMatcher(expected, tolerance);
 }
 
+struct InputModelTestCase {
+  std::string test_name;
+  BrushFamily::InputModel input_model;
+};
+
 // Suite of tests that should pass for any conforming StrokeInputModel
 // implementation.
 class StrokeInputModelerTest
-    : public ::testing::TestWithParam<BrushFamily::InputModel> {};
+    : public ::testing::TestWithParam<InputModelTestCase> {};
 
 TEST_P(StrokeInputModelerTest, InitialState) {
   std::unique_ptr<StrokeInputModeler> modeler(
-      StrokeInputModeler::Create(GetParam()));
+      StrokeInputModeler::Create(GetParam().input_model));
 
   EXPECT_EQ(modeler->GetState().tool_type, StrokeInput::ToolType::kUnknown);
   EXPECT_EQ(modeler->GetState().stroke_unit_length, std::nullopt);
@@ -142,7 +146,7 @@ TEST_P(StrokeInputModelerTest, InitialState) {
 
 TEST_P(StrokeInputModelerTest, StartOnDefaultConstructed) {
   std::unique_ptr<StrokeInputModeler> modeler(
-      StrokeInputModeler::Create(GetParam()));
+      StrokeInputModeler::Create(GetParam().input_model));
   modeler->StartStroke(/* brush_epsilon = */ 0.01);
 
   EXPECT_EQ(modeler->GetState().tool_type, StrokeInput::ToolType::kUnknown);
@@ -155,7 +159,7 @@ TEST_P(StrokeInputModelerTest, StartOnDefaultConstructed) {
 
 TEST_P(StrokeInputModelerTest, FirstExtendWithEmptyInputs) {
   std::unique_ptr<StrokeInputModeler> modeler(
-      StrokeInputModeler::Create(GetParam()));
+      StrokeInputModeler::Create(GetParam().input_model));
   modeler->StartStroke(/* brush_epsilon = */ 0.01);
 
   // This kind of function call is likely to never occur, but we check that the
@@ -175,7 +179,7 @@ TEST_P(StrokeInputModelerTest, ExtendWithEmptyPredictedInputs) {
   std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
 
   std::unique_ptr<StrokeInputModeler> modeler(
-      StrokeInputModeler::Create(GetParam()));
+      StrokeInputModeler::Create(GetParam().input_model));
   float brush_epsilon = 0.001;
   modeler->StartStroke(brush_epsilon);
 
@@ -205,7 +209,7 @@ TEST_P(StrokeInputModelerTest, ExtendWithEmptyRealInputs) {
   std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
 
   std::unique_ptr<StrokeInputModeler> modeler(
-      StrokeInputModeler::Create(GetParam()));
+      StrokeInputModeler::Create(GetParam().input_model));
   float brush_epsilon = 0.01;
   modeler->StartStroke(brush_epsilon);
 
@@ -239,7 +243,7 @@ TEST_P(StrokeInputModelerTest, ExtendWithBothEmptyInputsClearsPrediction) {
   std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
 
   std::unique_ptr<StrokeInputModeler> modeler(
-      StrokeInputModeler::Create(GetParam()));
+      StrokeInputModeler::Create(GetParam().input_model));
   float brush_epsilon = 0.08;
   modeler->StartStroke(brush_epsilon);
 
@@ -287,7 +291,7 @@ TEST_P(StrokeInputModelerTest, ExtendKeepsRealInputAndReplacesPrediction) {
   std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
 
   std::unique_ptr<StrokeInputModeler> modeler(
-      StrokeInputModeler::Create(GetParam()));
+      StrokeInputModeler::Create(GetParam().input_model));
   float brush_epsilon = 0.004;
   modeler->StartStroke(brush_epsilon);
 
@@ -346,7 +350,7 @@ TEST_P(StrokeInputModelerTest, StartClearsAfterExtending) {
   std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
 
   std::unique_ptr<StrokeInputModeler> modeler(
-      StrokeInputModeler::Create(GetParam()));
+      StrokeInputModeler::Create(GetParam().input_model));
   modeler->StartStroke(/* brush_epsilon = */ 0.01);
 
   Duration32 current_elapsed_time = input_batches[0].Get(0).elapsed_time;
@@ -373,20 +377,21 @@ TEST_P(StrokeInputModelerTest, StartClearsAfterExtending) {
   EXPECT_EQ(modeler->GetState().real_input_count, 0);
 }
 
-std::string MakeTestName(
-    const ::testing::TestParamInfo<BrushFamily::InputModel>& info) {
-  return absl::StrCat(info.param);
-}
-
 INSTANTIATE_TEST_SUITE_P(
     TestInputModels, StrokeInputModelerTest,
     // LINT.IfChange(input_model_types)
-    ::testing::Values(
-        BrushFamily::InputModel{BrushFamily::SpringModel{}},
-        BrushFamily::InputModel{BrushFamily::ExperimentalRawPositionModel{}},
-        BrushFamily::InputModel{BrushFamily::ExperimentalNaiveModel{}}),
+    ::testing::ValuesIn<InputModelTestCase>({
+        {"SpringModel", {BrushFamily::SpringModel{}}},
+        {"RawPositionModel", {BrushFamily::ExperimentalRawPositionModel{}}},
+        {"NaiveModel", {BrushFamily::ExperimentalNaiveModel{}}},
+        {"SlidingWindowModel_250ms",
+         {BrushFamily::ExperimentalSlidingWindowModel{
+             .window_size = Duration32::Millis(250)}}},
+    }),
     // LINT.ThenChange(../../brush/brush_family.h:input_model_types)
-    MakeTestName);
+    [](const ::testing::TestParamInfo<InputModelTestCase>& info) {
+      return info.param.test_name;
+    });
 
 }  // namespace
 }  // namespace ink::strokes_internal

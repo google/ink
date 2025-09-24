@@ -1324,8 +1324,8 @@ void EncodeBrushFamilyInputModel(
 void EncodeBrushFamilyInputModel(
     const BrushFamily::ExperimentalSlidingWindowModel& model,
     proto::BrushFamily::InputModel& model_proto_out) {
-  model_proto_out
-      .mutable_experimental_sliding_window_model();  // no fields to set
+  model_proto_out.mutable_experimental_sliding_window_model()
+      ->set_window_size_seconds(model.window_size.ToSeconds());
 }
 
 void EncodeBrushFamilyInputModel(
@@ -1348,7 +1348,11 @@ absl::StatusOr<BrushFamily::InputModel> DecodeBrushFamilyInputModel(
     case proto::BrushFamily::InputModel::kExperimentalNaiveModel:
       return BrushFamily::ExperimentalNaiveModel{};
     case proto::BrushFamily::InputModel::kExperimentalSlidingWindowModel:
-      return BrushFamily::ExperimentalSlidingWindowModel{};
+      return BrushFamily::ExperimentalSlidingWindowModel{
+          .window_size = Duration32::Seconds(
+              model_proto.experimental_sliding_window_model()
+                  .window_size_seconds()),
+      };
     case proto::BrushFamily::InputModel::INPUT_MODEL_NOT_SET:
       break;
   }
