@@ -26,8 +26,13 @@ namespace ink::strokes_internal {
 
 class SlidingWindowInputModeler : public StrokeInputModeler {
  public:
-  explicit SlidingWindowInputModeler(Duration32 window_size)
-      : half_window_size_(window_size * 0.5) {}
+  explicit SlidingWindowInputModeler(
+      Duration32 window_size,
+      // TODO: b/396173107 - Plumb this up to the `InputModel` spec and remove
+      //   the default.
+      Duration32 upsampling_period = Duration32::Seconds(1.0 / 180.0))
+      : half_window_size_(window_size * 0.5),
+        upsampling_period_(upsampling_period) {}
 
   void StartStroke(float brush_epsilon) override;
   void ExtendStroke(const StrokeInputBatch& real_inputs,
@@ -40,24 +45,35 @@ class SlidingWindowInputModeler : public StrokeInputModeler {
 
  private:
   // Helper method for `ExtendStroke()`. Erases all unstable inputs from
-  // `modeled_inputs_` and `sliding_window_`.
-  void EraseUnstableInputs();
+  // `modeled_inputs_`.
+  void EraseUnstableModeledInputs();
 
-  // Helper method for `ExtendStroke()` and `AppendRealInputsToSlidingWindow()`.
-  // Appends raw inputs to `sliding_window_`, upsampling as necessary. Also
-  // initializes `state_.tool_type` and `state_.stroke_unit_length` as
-  // necessary.
-  void AppendInputsToSlidingWindow(const StrokeInputBatch& inputs);
+  // Helper method for `ExtendStroke()`. Appends the given raw inputs to
+  // `sliding_window_`, and initializes `state_.tool_type` and
+  // `state_.stroke_unit_length` as necessary.
+  void AppendRawInputsToSlidingWindow(const StrokeInputBatch& raw_inputs);
 
-  // Helper method for `ExtendStroke()`. Models each unstable input and appends
-  // it to `modeled_inputs_`.
-  void ModelUnstableInputs();
+  // Helper method for `ExtendStroke()`. Fully models each unstable input and
+  // appends it to `modeled_inputs_`, updating `state_.real_input_count`
+  // appropriately.
+  void ModelUnstableInputs(int sliding_window_real_input_count);
 
-  // Helper method for `ModelUnstableInputs()`. Models the stroke input at
-  // `input_index` within `sliding_window_`, (computing only position and
-  // pressure/tilt/orientation for now), and appends the new modeled input to
-  // the end of `modeled_inputs_`.
-  void ModelUnstableInputPosition(int input_index);
+  // Helper method for `ModelUnstableInputs()`. Models each unstable input
+  // (computing only position and pressure/tilt/orientation for now) and appends
+  // it to `modeled_inputs_`.  Also updates `state_.real_input_cutoff` to the
+  // number of modeled inputs with `elapsed_time` no later than
+  // `real_input_cutoff`.
+  void ModelUnstableInputPositions(Duration32 real_input_cutoff);
+
+  // Helper method for `ModelUnstableInputPositions()`. Appends a new modeled
+  // input (computing only position and pressure/tilt/orientation for now) at
+  // `elapsed_time`.  When this returns, `start_index` and `end_index` will be
+  // the indices into `sliding_window_` of the first raw input before the window
+  // and the last raw input after the window; before calling this, `start_index`
+  // and `end_index` must be no larger than those indices, as they are only ever
+  // marched forward.
+  void ModelUnstableInputPosition(Duration32 elapsed_time, int& start_index,
+                                  int& end_index);
 
   // Helper method for `ExtendStroke()`. Updates `state_` fields for
   // `total_real` and `complete` distance and time, based on current
@@ -65,24 +81,22 @@ class SlidingWindowInputModeler : public StrokeInputModeler {
   void UpdateRealAndCompleteDistanceAndTime(Duration32 current_elapsed_time);
 
   // Helper method for `ExtendStroke()`. Marks stable all real modeled inputs
-  // that are at least `half_window_size_` away from the last real input (and
-  // which will therefore not change further when further real inputs are added
-  // later), updating `state_.stable_input_count` and
-  // `stable_sliding_window_input_count_` accordingly.
-  void MarkInputsStable();
+  // that are at least `half_window_size_` before
+  // `state_.total_real_elapsed_time` (and which will therefore not change
+  // further when further real raw inputs are added later).
+  void MarkStableModeledInputs();
 
-  // Helper method for `ExtendStroke()`. Removes all predicted stroke inputs
+  // Helper method for `ExtendStroke()`. Removes all predicted raw stroke inputs
   // from the end of `sliding_window_`, and removes from the start of
-  // `sliding_window_` all stable stroke inputs that are no longer needed for
-  // modeling the remaining unstable inputs (updating
-  // `stable_sliding_window_input_count_` accordingly).
-  void TrimSlidingWindow();
+  // `sliding_window_` all raw stroke inputs that are no longer needed for
+  // remodeling the remaining unstable modeled inputs.
+  void TrimSlidingWindow(int sliding_window_real_input_count);
 
   std::vector<ModeledStrokeInput> modeled_inputs_;
   State state_;
   StrokeInputBatch sliding_window_;
-  int stable_sliding_window_input_count_ = 0;
   Duration32 half_window_size_;
+  Duration32 upsampling_period_;
 };
 
 }  // namespace ink::strokes_internal

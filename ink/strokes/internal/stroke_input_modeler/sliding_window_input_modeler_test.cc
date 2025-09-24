@@ -24,6 +24,8 @@
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
+#include "absl/status/statusor.h"
+#include "absl/types/span.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/type_matchers.h"
@@ -93,7 +95,7 @@ std::vector<StrokeInputBatch> MakeStylusInputBatchSequence() {
 
   std::vector<StrokeInputBatch> batches;
   for (const StrokeInput& input : inputs) {
-    auto batch = StrokeInputBatch::Create({input});
+    absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create({input});
     ABSL_CHECK_OK(batch);
     batches.push_back(*batch);
   }
@@ -103,7 +105,7 @@ std::vector<StrokeInputBatch> MakeStylusInputBatchSequence() {
 TEST(SlidingWindowInputModelerTest, EraseInitialPredictionWithNoRealInputs) {
   std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
 
-  SlidingWindowInputModeler modeler(Duration32::Millis(20));
+  SlidingWindowInputModeler modeler(/* window_size= */ Duration32::Millis(20));
   modeler.StartStroke(/* brush_epsilon = */ 0.01);
 
   // Start off with some predicted inputs, but no real inputs (this doesn't
@@ -125,7 +127,7 @@ TEST(SlidingWindowInputModelerTest, EraseInitialPredictionWithNoRealInputs) {
 }
 
 TEST(SlidingWindowInputModelerTest, ConstantVelocityRawInputs) {
-  SlidingWindowInputModeler modeler(Duration32::Millis(20));
+  SlidingWindowInputModeler modeler(/* window_size= */ Duration32::Millis(20));
   modeler.StartStroke(/* brush_epsilon = */ 0.01);
 
   // Extend the stroke with a bunch of inputs that move at a constant velocity
@@ -143,7 +145,7 @@ TEST(SlidingWindowInputModelerTest, ConstantVelocityRawInputs) {
   // All modeled inputs (even the first and last one) should have a modeled
   // velocity of about 1000 stroke units per second, and a modeled acceleration
   // of (roughly) zero.
-  EXPECT_THAT(modeler.GetModeledInputs(), SizeIs(100));
+  EXPECT_THAT(modeler.GetModeledInputs(), SizeIs(Ge(100)));
   EXPECT_THAT(modeler.GetModeledInputs(),
               Each(Field("velocity", &ModeledStrokeInput::velocity,
                          VecNear({1000, 0}, 0.001))));
@@ -153,7 +155,7 @@ TEST(SlidingWindowInputModelerTest, ConstantVelocityRawInputs) {
 }
 
 TEST(SlidingWindowInputModelerTest, Orientation) {
-  SlidingWindowInputModeler modeler(Duration32::Millis(10));
+  SlidingWindowInputModeler modeler(/* window_size= */ Duration32::Millis(10));
   modeler.StartStroke(/* brush_epsilon = */ 0.01);
 
   // Extend the stroke with a bunch of inputs with an orientation of 10°, then
@@ -172,13 +174,57 @@ TEST(SlidingWindowInputModelerTest, Orientation) {
   // All modeled inputs should have an orientation (roughly) between ±10° when
   // normalized about zero; they shouldn't be naively averaged between 10° and
   // 350° to get ~180°.
-  EXPECT_THAT(modeler.GetModeledInputs(), SizeIs(100));
+  EXPECT_THAT(modeler.GetModeledInputs(), SizeIs(Ge(100)));
   for (const ModeledStrokeInput& modeled_input : modeler.GetModeledInputs()) {
     ASSERT_NE(modeled_input.orientation, StrokeInput::kNoOrientation);
     EXPECT_THAT(
         modeled_input.orientation.NormalizedAboutZero(),
         AllOf(Ge(Angle::Degrees(-10.0001)), Le(Angle::Degrees(10.0001))));
   }
+}
+
+TEST(SlidingWindowInputModelerTest, Upsampling) {
+  SlidingWindowInputModeler modeler(
+      /* window_size= */ Duration32::Millis(10),
+      /* upsampling_period= */ Duration32::Millis(1));
+  modeler.StartStroke(/* brush_epsilon = */ 0.01);
+
+  // Extend the stroke with three raw inputs, spaced 10 ms apart.
+  absl::StatusOr<StrokeInputBatch> inputs = StrokeInputBatch::Create({
+      {.position = {0, 0}, .elapsed_time = Duration32::Millis(0)},
+      {.position = {100, 0}, .elapsed_time = Duration32::Millis(10)},
+      {.position = {100, 100}, .elapsed_time = Duration32::Millis(20)},
+  });
+  ASSERT_THAT(inputs, IsOk());
+  modeler.ExtendStroke(*inputs, {}, Duration32::Millis(20));
+
+  // Since the upsampling period is 1 ms, we should end up with 21 modeled
+  // inputs.
+  absl::Span<const ModeledStrokeInput> modeled = modeler.GetModeledInputs();
+  ASSERT_THAT(modeled, SizeIs(21));
+  // The modeled positions should move in a smooth curve near the corner of the
+  // L shaped formed by the raw inputs.
+  EXPECT_THAT(modeled[0].position, PointNear({0.0, 0.0}, 0.1));
+  EXPECT_THAT(modeled[1].position, PointNear({10.0, 0.0}, 0.1));
+  EXPECT_THAT(modeled[2].position, PointNear({20.0, 0.0}, 0.1));
+  EXPECT_THAT(modeled[3].position, PointNear({30.0, 0.0}, 0.1));
+  EXPECT_THAT(modeled[4].position, PointNear({40.0, 0.0}, 0.1));
+  EXPECT_THAT(modeled[5].position, PointNear({50.0, 0.0}, 0.1));
+  EXPECT_THAT(modeled[6].position, PointNear({59.5, 0.5}, 0.1));
+  EXPECT_THAT(modeled[7].position, PointNear({68.0, 2.0}, 0.1));
+  EXPECT_THAT(modeled[8].position, PointNear({75.5, 4.5}, 0.1));
+  EXPECT_THAT(modeled[9].position, PointNear({82.0, 8.0}, 0.1));
+  EXPECT_THAT(modeled[10].position, PointNear({87.5, 12.5}, 0.1));
+  EXPECT_THAT(modeled[11].position, PointNear({92.0, 18.0}, 0.1));
+  EXPECT_THAT(modeled[12].position, PointNear({95.5, 24.5}, 0.1));
+  EXPECT_THAT(modeled[13].position, PointNear({98.0, 32.0}, 0.1));
+  EXPECT_THAT(modeled[14].position, PointNear({99.5, 40.5}, 0.1));
+  EXPECT_THAT(modeled[15].position, PointNear({100.0, 50.0}, 0.1));
+  EXPECT_THAT(modeled[16].position, PointNear({100.0, 60.0}, 0.1));
+  EXPECT_THAT(modeled[17].position, PointNear({100.0, 70.0}, 0.1));
+  EXPECT_THAT(modeled[18].position, PointNear({100.0, 80.0}, 0.1));
+  EXPECT_THAT(modeled[19].position, PointNear({100.0, 90.0}, 0.1));
+  EXPECT_THAT(modeled[20].position, PointNear({100.0, 100.0}, 0.1));
 }
 
 }  // namespace
