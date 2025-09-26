@@ -406,9 +406,14 @@ INSTANTIATE_TEST_SUITE_P(
         {"SpringModel", {BrushFamily::SpringModel{}}},
         {"RawPositionModel", {BrushFamily::ExperimentalRawPositionModel{}}},
         {"NaiveModel", {BrushFamily::ExperimentalNaiveModel{}}},
-        {"SlidingWindowModel_250ms",
+        {"SlidingWindowModel_250ms_100ms",
          {BrushFamily::ExperimentalSlidingWindowModel{
-             .window_size = Duration32::Millis(250)}}},
+             .window_size = Duration32::Millis(250),
+             .upsampling_period = Duration32::Millis(100)}}},
+        {"SlidingWindowModel_1500ms_inf",
+         {BrushFamily::ExperimentalSlidingWindowModel{
+             .window_size = Duration32::Millis(1500),
+             .upsampling_period = Duration32::Infinite()}}},
     }),
     // LINT.ThenChange(../../brush/brush_family.h:input_model_types)
     [](const ::testing::TestParamInfo<InputModelTestCase>& info) {

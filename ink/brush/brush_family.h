@@ -52,10 +52,20 @@ class BrushFamily {
   struct ExperimentalNaiveModel {};
 
   // Averages nearby inputs together within a sliding time window. To be valid,
-  // the window size must be finite and strictly positive. This is an
-  // experimental configuration which may be adjusted or removed later.
+  // the window size must be finite and strictly positive, and the upsampling
+  // period must be strictly positive (but may be infinte, to completely disable
+  // upsampling). This is an experimental configuration which may be adjusted or
+  // removed later.
   struct ExperimentalSlidingWindowModel {
+    // The duration over which to average together nearby raw inputs. Typically
+    // this should be somewhere in the 1 ms to 100 ms range, with 20 ms being a
+    // reasonable default.
     Duration32 window_size;
+    // The maximum duration between modeled inputs; if raw inputs are spaced
+    // more than this far apart in time, then additional modeled inputs will be
+    // inserted between them. Set this to `Duration32::Infinite()` to disable
+    // upsampling.
+    Duration32 upsampling_period;
   };
 
   // Specifies a model for turning a sequence of raw hardware inputs (e.g. from

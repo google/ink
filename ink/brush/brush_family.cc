@@ -117,6 +117,12 @@ absl::Status ValidateInputModel(
                      "finite and positive. Got: ",
                      model.window_size));
   }
+  if (model.upsampling_period <= Duration32::Zero()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("`ExperimentalSlidingWindowModel::upsampling_period` must "
+                     "be positive. Got: ",
+                     model.upsampling_period));
+  }
   return absl::OkStatus();
 }
 
@@ -136,8 +142,9 @@ std::string ToFormattedString(
 
 std::string ToFormattedString(
     const BrushFamily::ExperimentalSlidingWindowModel& model) {
-  return absl::StrCat("ExperimentalSlidingWindowModel(", model.window_size,
-                      ")");
+  return absl::StrCat(
+      "ExperimentalSlidingWindowModel(window_size=", model.window_size,
+      ", upsampling_period=", model.upsampling_period, ")");
 }
 
 }  // namespace

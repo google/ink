@@ -47,7 +47,15 @@ message BrushFamily {
   // generated with this input model might change shape if read with a later
   // version of the code that has removed this feature.
   message ExperimentalSlidingWindowModel {
+    // The duration over which to average together nearby raw inputs. Typically
+    // this should be somewhere in the 1 ms to 100 ms range. The default value
+    // is 20 ms.
     optional float window_size_seconds = 1 [default = 0.02];
+    // The maximum duration between modeled inputs; if raw inputs are spaced
+    // more than this far apart in time, then additional modeled inputs will be
+    // inserted between them. Set this to infinity to disable upsampling.  The
+    // default value is 1/180 seconds.
+    optional float upsampling_period_seconds = 2 [default = 0.00555555555];
   }
 
   message InputModel {

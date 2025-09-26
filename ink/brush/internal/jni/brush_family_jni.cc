@@ -14,6 +14,8 @@
 
 #include <jni.h>
 
+#include <algorithm>
+#include <limits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -152,9 +154,15 @@ JNI_METHOD(brush, InputModelNative, jlong, createNoParametersModel)
 }
 
 JNI_METHOD(brush, InputModelNative, jlong, createSlidingWindowModel)
-(JNIEnv* env, jobject object, jlong window_size_millis) {
+(JNIEnv* env, jobject object, jlong window_size_millis,
+ jint upsampling_frequency_hz) {
   return NewNativeInputModel({BrushFamily::ExperimentalSlidingWindowModel{
-      .window_size = Duration32::Millis(window_size_millis)}});
+      .window_size = Duration32::Millis(window_size_millis),
+      .upsampling_period = upsampling_frequency_hz > 0
+                               ? Duration32::Seconds(1) /
+                                     static_cast<float>(upsampling_frequency_hz)
+                               : Duration32::Infinite(),
+  }});
 }
 
 JNI_METHOD(brush, InputModelNative, void, free)
@@ -173,6 +181,17 @@ JNI_METHOD(brush, InputModelNative, jlong, getSlidingWindowDurationMillis)
       std::get<BrushFamily::ExperimentalSlidingWindowModel>(
           CastToInputModel(native_pointer))
           .window_size.ToMillis());
+}
+
+JNI_METHOD(brush, InputModelNative, jint, getSlidingUpsamplingFrequencyHz)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  float upsampling_period_seconds =
+      std::get<BrushFamily::ExperimentalSlidingWindowModel>(
+          CastToInputModel(native_pointer))
+          .upsampling_period.ToSeconds();
+  return static_cast<jint>(
+      std::min(1.0f / upsampling_period_seconds,
+               static_cast<float>(std::numeric_limits<jint>::max())));
 }
 
 }  // extern "C"

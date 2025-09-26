@@ -556,7 +556,7 @@ Domain<BrushFamily::InputModel> ValidBrushFamilyInputModel() {
                    StructOf<BrushFamily::ExperimentalRawPositionModel>(),
                    StructOf<BrushFamily::ExperimentalNaiveModel>(),
                    StructOf<BrushFamily::ExperimentalSlidingWindowModel>(
-                       FinitePositiveDuration32()));
+                       FinitePositiveDuration32(), PositiveDuration32()));
 }
 
 namespace {

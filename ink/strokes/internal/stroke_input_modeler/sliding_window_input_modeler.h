@@ -26,13 +26,8 @@ namespace ink::strokes_internal {
 
 class SlidingWindowInputModeler : public StrokeInputModeler {
  public:
-  explicit SlidingWindowInputModeler(
-      Duration32 window_size,
-      // TODO: b/396173107 - Plumb this up to the `InputModel` spec and remove
-      //   the default.
-      Duration32 upsampling_period = Duration32::Seconds(1.0 / 180.0))
-      : half_window_size_(window_size * 0.5),
-        upsampling_period_(upsampling_period) {}
+  SlidingWindowInputModeler(Duration32 window_size,
+                            Duration32 upsampling_period);
 
   void StartStroke(float brush_epsilon) override;
   void ExtendStroke(const StrokeInputBatch& real_inputs,

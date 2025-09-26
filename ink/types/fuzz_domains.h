@@ -29,6 +29,9 @@ fuzztest::Domain<Duration32> ArbitraryDuration32();
 fuzztest::Domain<Duration32> FiniteNonNegativeDuration32();
 // The domain of all durations that are finite and strictly positive.
 fuzztest::Domain<Duration32> FinitePositiveDuration32();
+// The domain of all durations that are strictly positive, and possibly
+// infinite.
+fuzztest::Domain<Duration32> PositiveDuration32();
 
 // The domain of all physical distances, including NaN and negative and/or
 // infinite distances.

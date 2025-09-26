@@ -120,8 +120,10 @@ TEST(BrushFamilyTest, StringifyInputModel) {
             "ExperimentalNaiveModel");
   EXPECT_EQ(absl::StrCat(BrushFamily::InputModel{
                 BrushFamily::ExperimentalSlidingWindowModel{
-                    .window_size = Duration32::Millis(125)}}),
-            "ExperimentalSlidingWindowModel(125ms)");
+                    .window_size = Duration32::Millis(125),
+                    .upsampling_period = Duration32::Infinite()}}),
+            "ExperimentalSlidingWindowModel(window_size=125ms, "
+            "upsampling_period=inf)");
 }
 
 TEST(BrushFamilyTest, StringifyWithNoId) {

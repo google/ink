@@ -105,7 +105,9 @@ std::vector<StrokeInputBatch> MakeStylusInputBatchSequence() {
 TEST(SlidingWindowInputModelerTest, EraseInitialPredictionWithNoRealInputs) {
   std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
 
-  SlidingWindowInputModeler modeler(/* window_size= */ Duration32::Millis(20));
+  SlidingWindowInputModeler modeler(
+      /* window_size= */ Duration32::Millis(20),
+      /* upsampling_period= */ Duration32::Millis(5));
   modeler.StartStroke(/* brush_epsilon = */ 0.01);
 
   // Start off with some predicted inputs, but no real inputs (this doesn't
@@ -127,7 +129,9 @@ TEST(SlidingWindowInputModelerTest, EraseInitialPredictionWithNoRealInputs) {
 }
 
 TEST(SlidingWindowInputModelerTest, ConstantVelocityRawInputs) {
-  SlidingWindowInputModeler modeler(/* window_size= */ Duration32::Millis(20));
+  SlidingWindowInputModeler modeler(
+      /* window_size= */ Duration32::Millis(20),
+      /* upsampling_period= */ Duration32::Millis(5));
   modeler.StartStroke(/* brush_epsilon = */ 0.01);
 
   // Extend the stroke with a bunch of inputs that move at a constant velocity
@@ -155,7 +159,9 @@ TEST(SlidingWindowInputModelerTest, ConstantVelocityRawInputs) {
 }
 
 TEST(SlidingWindowInputModelerTest, Orientation) {
-  SlidingWindowInputModeler modeler(/* window_size= */ Duration32::Millis(10));
+  SlidingWindowInputModeler modeler(
+      /* window_size= */ Duration32::Millis(10),
+      /* upsampling_period= */ Duration32::Millis(5));
   modeler.StartStroke(/* brush_epsilon = */ 0.01);
 
   // Extend the stroke with a bunch of inputs with an orientation of 10°, then

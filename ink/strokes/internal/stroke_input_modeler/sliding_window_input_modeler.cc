@@ -200,6 +200,13 @@ float DistanceTraveled(const std::vector<ModeledStrokeInput>& modeled_inputs,
 
 }  // namespace
 
+SlidingWindowInputModeler::SlidingWindowInputModeler(
+    Duration32 window_size, Duration32 upsampling_period)
+    : half_window_size_(window_size * 0.5),
+      upsampling_period_(upsampling_period) {
+  ABSL_DCHECK_GT(upsampling_period_, Duration32::Zero());
+}
+
 void SlidingWindowInputModeler::StartStroke(float brush_epsilon) {
   modeled_inputs_.clear();
   state_ = State{};

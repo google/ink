@@ -31,9 +31,11 @@ fuzztest::Domain<Duration32> FiniteNonNegativeDuration32() {
 }
 
 fuzztest::Domain<Duration32> FinitePositiveDuration32() {
-  return fuzztest::Filter(
-      &Duration32::IsFinite,
-      fuzztest::Map(&Duration32::Seconds, fuzztest::Positive<float>()));
+  return fuzztest::Filter(&Duration32::IsFinite, PositiveDuration32());
+}
+
+fuzztest::Domain<Duration32> PositiveDuration32() {
+  return fuzztest::Map(&Duration32::Seconds, fuzztest::Positive<float>());
 }
 
 fuzztest::Domain<PhysicalDistance> ArbitraryPhysicalDistance() {
