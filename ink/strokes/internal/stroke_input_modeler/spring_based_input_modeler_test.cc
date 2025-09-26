@@ -15,13 +15,11 @@
 #include "ink/strokes/internal/stroke_input_modeler/spring_based_input_modeler.h"
 
 #include <cstddef>
-#include <optional>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
-#include "absl/status/status.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/type_matchers.h"
