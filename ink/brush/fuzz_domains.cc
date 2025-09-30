@@ -555,7 +555,7 @@ Domain<BrushFamily::InputModel> ValidBrushFamilyInputModel() {
   return VariantOf(StructOf<BrushFamily::SpringModel>(),
                    StructOf<BrushFamily::ExperimentalRawPositionModel>(),
                    StructOf<BrushFamily::ExperimentalNaiveModel>(),
-                   StructOf<BrushFamily::ExperimentalSlidingWindowModel>(
+                   StructOf<BrushFamily::SlidingWindowModel>(
                        FinitePositiveDuration32(), PositiveDuration32()));
 }
 

@@ -118,12 +118,11 @@ TEST(BrushFamilyTest, StringifyInputModel) {
   EXPECT_EQ(absl::StrCat(
                 BrushFamily::InputModel{BrushFamily::ExperimentalNaiveModel{}}),
             "ExperimentalNaiveModel");
-  EXPECT_EQ(absl::StrCat(BrushFamily::InputModel{
-                BrushFamily::ExperimentalSlidingWindowModel{
-                    .window_size = Duration32::Millis(125),
-                    .upsampling_period = Duration32::Infinite()}}),
-            "ExperimentalSlidingWindowModel(window_size=125ms, "
-            "upsampling_period=inf)");
+  EXPECT_EQ(
+      absl::StrCat(BrushFamily::InputModel{BrushFamily::SlidingWindowModel{
+          .window_size = Duration32::Millis(125),
+          .upsampling_period = Duration32::Infinite()}}),
+      "SlidingWindowModel(window_size=125ms, upsampling_period=inf)");
 }
 
 TEST(BrushFamilyTest, StringifyWithNoId) {
@@ -217,8 +216,7 @@ TEST(BrushFamilyTest, CreateWithTooManyCoats) {
 TEST(BrushFamilyTest, CreateWithInvalidInputModel) {
   std::vector<BrushCoat> coats = {CreateTestCoat()};
   BrushFamily::InputModel input_model = {
-      BrushFamily::ExperimentalSlidingWindowModel{.window_size =
-                                                      Duration32::Zero()}};
+      BrushFamily::SlidingWindowModel{.window_size = Duration32::Zero()}};
   EXPECT_THAT(
       BrushFamily::Create(coats, "", input_model),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("window_size")));

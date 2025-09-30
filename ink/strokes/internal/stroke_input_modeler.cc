@@ -44,7 +44,7 @@ absl_nonnull std::unique_ptr<StrokeInputModeler> CreateInputModeler(
 }
 
 absl_nonnull std::unique_ptr<StrokeInputModeler> CreateInputModeler(
-    const BrushFamily::ExperimentalSlidingWindowModel& sliding_window_model) {
+    const BrushFamily::SlidingWindowModel& sliding_window_model) {
   return std::make_unique<SlidingWindowInputModeler>(
       sliding_window_model.window_size, sliding_window_model.upsampling_period);
 }

@@ -406,11 +406,11 @@ INSTANTIATE_TEST_SUITE_P(
         {"RawPositionModel", {BrushFamily::ExperimentalRawPositionModel{}}},
         {"NaiveModel", {BrushFamily::ExperimentalNaiveModel{}}},
         {"SlidingWindowModel_250ms_100ms",
-         {BrushFamily::ExperimentalSlidingWindowModel{
+         {BrushFamily::SlidingWindowModel{
              .window_size = Duration32::Millis(250),
              .upsampling_period = Duration32::Millis(100)}}},
         {"SlidingWindowModel_1500ms_inf",
-         {BrushFamily::ExperimentalSlidingWindowModel{
+         {BrushFamily::SlidingWindowModel{
              .window_size = Duration32::Millis(1500),
              .upsampling_period = Duration32::Infinite()}}},
     }),

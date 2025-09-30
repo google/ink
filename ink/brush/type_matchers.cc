@@ -405,10 +405,10 @@ Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
 }
 
 Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
-    const BrushFamily::ExperimentalSlidingWindowModel& input_model) {
-  return VariantWith<BrushFamily::ExperimentalSlidingWindowModel>(Field(
-      "window_size", &BrushFamily::ExperimentalSlidingWindowModel::window_size,
-      Duration32Eq(input_model.window_size)));
+    const BrushFamily::SlidingWindowModel& input_model) {
+  return VariantWith<BrushFamily::SlidingWindowModel>(
+      Field("window_size", &BrushFamily::SlidingWindowModel::window_size,
+            Duration32Eq(input_model.window_size)));
 }
 
 [[maybe_unused]] Matcher<BrushFamily::InputModel> BrushFamilyInputModelEq(

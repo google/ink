@@ -28,6 +28,7 @@
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/types/duration.h"
 
 namespace ink {
 
@@ -108,20 +109,17 @@ absl::Status ValidateInputModel(
   return absl::OkStatus();
 }
 
-absl::Status ValidateInputModel(
-    const BrushFamily::ExperimentalSlidingWindowModel& model) {
+absl::Status ValidateInputModel(const BrushFamily::SlidingWindowModel& model) {
   if (!model.window_size.IsFinite() ||
       model.window_size <= Duration32::Zero()) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("`ExperimentalSlidingWindowModel::window_size` must be "
-                     "finite and positive. Got: ",
-                     model.window_size));
+    return absl::InvalidArgumentError(absl::StrCat(
+        "`SlidingWindowModel::window_size` must be finite and positive. Got: ",
+        model.window_size));
   }
   if (model.upsampling_period <= Duration32::Zero()) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("`ExperimentalSlidingWindowModel::upsampling_period` must "
-                     "be positive. Got: ",
-                     model.upsampling_period));
+    return absl::InvalidArgumentError(absl::StrCat(
+        "`SlidingWindowModel::upsampling_period` must be positive. Got: ",
+        model.upsampling_period));
   }
   return absl::OkStatus();
 }
@@ -140,11 +138,9 @@ std::string ToFormattedString(
   return "ExperimentalNaiveModel";
 }
 
-std::string ToFormattedString(
-    const BrushFamily::ExperimentalSlidingWindowModel& model) {
-  return absl::StrCat(
-      "ExperimentalSlidingWindowModel(window_size=", model.window_size,
-      ", upsampling_period=", model.upsampling_period, ")");
+std::string ToFormattedString(const BrushFamily::SlidingWindowModel& model) {
+  return absl::StrCat("SlidingWindowModel(window_size=", model.window_size,
+                      ", upsampling_period=", model.upsampling_period, ")");
 }
 
 }  // namespace

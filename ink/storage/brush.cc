@@ -1322,12 +1322,12 @@ void EncodeBrushFamilyInputModel(
 }
 
 void EncodeBrushFamilyInputModel(
-    const BrushFamily::ExperimentalSlidingWindowModel& model,
+    const BrushFamily::SlidingWindowModel& model,
     proto::BrushFamily::InputModel& model_proto_out) {
-  proto::BrushFamily::ExperimentalSlidingWindowModel* sliding_window_model =
-      model_proto_out.mutable_experimental_sliding_window_model();
+  proto::BrushFamily::SlidingWindowModel* sliding_window_model =
+      model_proto_out.mutable_sliding_window_model();
   sliding_window_model->set_window_size_seconds(model.window_size.ToSeconds());
-  sliding_window_model->set_upsampling_period_seconds(
+  sliding_window_model->set_experimental_upsampling_period_seconds(
       model.upsampling_period.ToSeconds());
 }
 
@@ -1350,14 +1350,13 @@ absl::StatusOr<BrushFamily::InputModel> DecodeBrushFamilyInputModel(
       return BrushFamily::ExperimentalRawPositionModel{};
     case proto::BrushFamily::InputModel::kExperimentalNaiveModel:
       return BrushFamily::ExperimentalNaiveModel{};
-    case proto::BrushFamily::InputModel::kExperimentalSlidingWindowModel:
-      return BrushFamily::ExperimentalSlidingWindowModel{
+    case proto::BrushFamily::InputModel::kSlidingWindowModel:
+      return BrushFamily::SlidingWindowModel{
           .window_size = Duration32::Seconds(
-              model_proto.experimental_sliding_window_model()
-                  .window_size_seconds()),
+              model_proto.sliding_window_model().window_size_seconds()),
           .upsampling_period = Duration32::Seconds(
-              model_proto.experimental_sliding_window_model()
-                  .upsampling_period_seconds()),
+              model_proto.sliding_window_model()
+                  .experimental_upsampling_period_seconds()),
       };
     case proto::BrushFamily::InputModel::INPUT_MODEL_NOT_SET:
       break;

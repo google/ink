@@ -57,7 +57,7 @@ class BrushFamily {
   // period must be strictly positive (but may be infinte, to completely disable
   // upsampling). This is an experimental configuration which may be adjusted or
   // removed later.
-  struct ExperimentalSlidingWindowModel {
+  struct SlidingWindowModel {
     // The duration over which to average together nearby raw inputs. Typically
     // this should be somewhere in the 1 ms to 100 ms range, with 20 ms being a
     // reasonable default.
@@ -74,9 +74,8 @@ class BrushFamily {
   // inputs. Raw hardware inputs tend to be noisy, and must be smoothed before
   // being passed into a brush's behaviors and extruded into a mesh in order to
   // get a good-looking stroke.
-  using InputModel =
-      std::variant<SpringModel, ExperimentalRawPositionModel,
-                   ExperimentalNaiveModel, ExperimentalSlidingWindowModel>;
+  using InputModel = std::variant<SpringModel, ExperimentalRawPositionModel,
+                                  ExperimentalNaiveModel, SlidingWindowModel>;
 
   // LINT.ThenChange(../strokes/internal/stroke_input_modeler_test.cc:input_model_types)
 
