@@ -16,7 +16,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <vector>
 
 #include "absl/log/absl_check.h"

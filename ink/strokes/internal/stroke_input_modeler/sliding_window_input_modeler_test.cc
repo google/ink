@@ -14,15 +14,11 @@
 
 #include "ink/strokes/internal/stroke_input_modeler/sliding_window_input_modeler.h"
 
-#include <cstddef>
-#include <memory>
-#include <optional>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
-#include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"

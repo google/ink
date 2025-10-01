@@ -16,14 +16,11 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <memory>
 #include <optional>
-#include <variant>
 #include <vector>
 
 #include "absl/cleanup/cleanup.h"
 #include "absl/log/absl_check.h"
-#include "absl/types/span.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
