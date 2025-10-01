@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_index_types.h"
