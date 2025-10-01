@@ -18,6 +18,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "fuzztest/fuzztest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
@@ -25,6 +26,7 @@
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/type_matchers.h"
+#include "ink/strokes/input/fuzz_domains.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/types/duration.h"
@@ -228,6 +230,25 @@ TEST(SlidingWindowInputModelerTest, Upsampling) {
   EXPECT_THAT(modeled[19].position, PointNear({100.0, 90.0}, 0.1));
   EXPECT_THAT(modeled[20].position, PointNear({100.0, 100.0}, 0.1));
 }
+
+void CanModelAnyStrokeInputBatch(const StrokeInputBatch& inputs) {
+  SlidingWindowInputModeler modeler(
+      /* window_size= */ Duration32::Millis(10),
+      /* upsampling_period= */ Duration32::Millis(5));
+  modeler.StartStroke(/*brush_epsilon=*/1);
+  modeler.ExtendStroke(inputs, {}, Duration32::Zero());
+  if (inputs.IsEmpty()) {
+    EXPECT_THAT(modeler.GetModeledInputs(), IsEmpty());
+  } else {
+    EXPECT_THAT(modeler.GetModeledInputs(), Not(IsEmpty()));
+  }
+  EXPECT_EQ(modeler.GetState().real_input_count,
+            modeler.GetModeledInputs().size());
+  EXPECT_LE(modeler.GetState().stable_input_count,
+            modeler.GetState().real_input_count);
+}
+FUZZ_TEST(SlidingWindowInputModelerTest, CanModelAnyStrokeInputBatch)
+    .WithDomains(ArbitraryStrokeInputBatch());
 
 }  // namespace
 }  // namespace ink::strokes_internal

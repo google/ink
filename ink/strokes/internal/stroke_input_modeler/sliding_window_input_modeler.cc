@@ -33,6 +33,15 @@
 namespace ink::strokes_internal {
 namespace {
 
+/// When upsampling, don't subdivide the gap between raw inputs into more than
+/// this many segments. The value chosen here is mostly arbitrary, but should be
+/// (1) high enough that we shouldn't get anywhere near this limit in typical
+/// cases (e.g. upsampling 30 Hz input to 180 Hz requires only 6 divisions), and
+/// (2) low enough to prevent memory usage from completely exploding in unusual
+/// cases (e.g. long gaps between two inputs due to, say, the system clock
+/// updating in the middle of a stroke).
+constexpr int kMaxUpsampleDivisions = 100;
+
 // Holds time-weighted sums of `StrokeInput` fields, for computing average
 // values over a window of time.
 struct StrokeInputIntegrals {
@@ -334,11 +343,12 @@ void SlidingWindowInputModeler::ModelUnstableInputPositions(
     // the last one and the one that corresponds to this raw input.
     if (prev_modeled_input_time.IsFinite()) {
       Duration32 dt = raw_input_time - prev_modeled_input_time;
-      int num_intermediate_points =
-          static_cast<int>(std::ceil(dt / upsampling_period_)) - 1;
-      if (num_intermediate_points > 0) {
-        Duration32 period = dt / (num_intermediate_points + 1);
-        for (int i = 1; i <= num_intermediate_points; ++i) {
+      int num_divisions =
+          static_cast<int>(std::min(std::ceil(dt / upsampling_period_),
+                                    static_cast<float>(kMaxUpsampleDivisions)));
+      if (num_divisions > 1) {
+        Duration32 period = dt / num_divisions;
+        for (int i = 1; i < num_divisions; ++i) {
           Duration32 elapsed_time = prev_modeled_input_time + period * i;
           ModelUnstableInputPosition(elapsed_time, start_index, end_index);
         }
@@ -415,7 +425,7 @@ void SlidingWindowInputModeler::MarkStableModeledInputs() {
   ABSL_DCHECK_LE(state_.real_input_count, modeled_inputs_.size());
   while (state_.stable_input_count < state_.real_input_count &&
          modeled_inputs_[state_.stable_input_count].elapsed_time +
-                 half_window_size_ <=
+                 half_window_size_ <
              state_.total_real_elapsed_time) {
     ++state_.stable_input_count;
   }

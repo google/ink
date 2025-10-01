@@ -18,11 +18,13 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "fuzztest/fuzztest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status_matchers.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/type_matchers.h"
+#include "ink/strokes/input/fuzz_domains.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
@@ -115,6 +117,23 @@ TEST(NaiveInputModelerTest, ModeledInputsMatchRawInputs) {
     EXPECT_THAT(modeled_input.orientation, AngleEq(raw_input.orientation));
   }
 }
+
+void CanModelAnyStrokeInputBatch(const StrokeInputBatch& inputs) {
+  NaiveInputModeler modeler;
+  modeler.StartStroke(/*brush_epsilon=*/1);
+  modeler.ExtendStroke(inputs, {}, Duration32::Zero());
+  // The `NaiveInputModeler` always produces exactly one modeled input for each
+  // raw input.
+  EXPECT_EQ(modeler.GetModeledInputs().size(), inputs.Size());
+  // Since there were no predicted inputs, all modeled inputs should be real.
+  EXPECT_EQ(modeler.GetState().real_input_count,
+            modeler.GetModeledInputs().size());
+  // For the `NaiveInputModeler`, all real modeled inputs are always stable.
+  EXPECT_EQ(modeler.GetState().stable_input_count,
+            modeler.GetState().real_input_count);
+}
+FUZZ_TEST(NaiveInputModelerTest, CanModelAnyStrokeInputBatch)
+    .WithDomains(ArbitraryStrokeInputBatch());
 
 }  // namespace
 }  // namespace ink::strokes_internal

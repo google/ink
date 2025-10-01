@@ -68,8 +68,10 @@ void NaiveInputModeler::AppendInputs(const StrokeInputBatch& inputs) {
                           Distance(last_input.position, input.position);
       float delta_seconds =
           (input.elapsed_time - last_input.elapsed_time).ToSeconds();
-      velocity = (input.position - last_input.position) / delta_seconds;
-      acceleration = (velocity - last_input.velocity) / delta_seconds;
+      if (delta_seconds > 0) {
+        velocity = (input.position - last_input.position) / delta_seconds;
+        acceleration = (velocity - last_input.velocity) / delta_seconds;
+      }
     }
     state_.tool_type = input.tool_type;
     state_.complete_elapsed_time = input.elapsed_time;
