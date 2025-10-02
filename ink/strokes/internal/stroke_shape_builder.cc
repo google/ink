@@ -21,6 +21,8 @@
 #include "ink/brush/brush_family.h"
 #include "ink/strokes/internal/brush_tip_extruder.h"
 #include "ink/strokes/internal/brush_tip_modeler.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
+#include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/strokes/internal/stroke_outline.h"
 #include "ink/strokes/internal/stroke_shape_update.h"
 #include "ink/types/duration.h"
@@ -64,7 +66,7 @@ StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
 }
 
 bool StrokeShapeBuilder::HasUnfinishedTimeBehaviors(
-    const StrokeInputModeler::State& input_modeler_state) const {
+    const InputModelerState& input_modeler_state) const {
   return tip_modeler_.HasUnfinishedTimeBehaviors(input_modeler_state);
 }
 

@@ -27,6 +27,7 @@
 #include "ink/geometry/vec.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/types/duration.h"
 #include "ink/types/numbers.h"
 #include "ink/types/physical_distance.h"
@@ -155,7 +156,7 @@ void SpringBasedInputModeler::StartStroke(float brush_epsilon) {
   ABSL_CHECK_GT(brush_epsilon, 0);
   brush_epsilon_ = brush_epsilon;
   last_real_stroke_input_.reset();
-  state_ = State{};
+  state_ = InputModelerState{};
   modeled_inputs_.clear();
 }
 

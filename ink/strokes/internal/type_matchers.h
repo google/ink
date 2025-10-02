@@ -18,7 +18,7 @@
 #include "gtest/gtest.h"
 #include "ink/strokes/internal/brush_tip_shape.h"
 #include "ink/strokes/internal/brush_tip_state.h"
-#include "ink/strokes/internal/stroke_input_modeler.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 
 namespace ink::strokes_internal {
 

@@ -28,39 +28,13 @@
 #include "ink/geometry/vec.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/types/duration.h"
 #include "ink/types/physical_distance.h"
 #include "ink_stroke_modeler/stroke_modeler.h"
 #include "ink_stroke_modeler/types.h"
 
 namespace ink::strokes_internal {
-
-// The result of modeling `StrokeInput` by the `StrokeInputModeler`.
-//
-// The `velocity` and `acceleration` are the modeled instantaneous
-// velocity/acceleration of the input, and `traveled_distance` is the modeled
-// total distance traveled since the start of the stroke. The other members are
-// the modeled analogues of member variables of `StrokeInput` with the same
-// names.
-struct ModeledStrokeInput {
-  Point position;
-  Vec velocity;
-  Vec acceleration;
-  float traveled_distance = 0;
-  Duration32 elapsed_time;
-  float pressure = StrokeInput::kNoPressure;
-  Angle tilt = StrokeInput::kNoTilt;
-  Angle orientation = StrokeInput::kNoOrientation;
-};
-
-// Measures the input distance/time from one point on the stroke input to
-// another.
-struct InputMetrics {
-  // The distance traveled by the input pointer, in stroke space units.
-  float traveled_distance = 0;
-  // The input time elapsed.
-  Duration32 elapsed_time;
-};
 
 // An abstract interface for modeling (smoothing, de-noising, upsampling, etc.)
 // raw stroke inputs, both "real" and "predicted", to produce a sequence of
@@ -80,53 +54,6 @@ struct InputMetrics {
 // sliding window).
 class StrokeInputModeler {
  public:
-  // The current state of modeling all `StrokeInput`s so far for a stroke by the
-  // `StrokeInputModeler`.
-  struct State {
-    // The current tool type of the stroke.
-    //
-    // When the current stroke has no inputs, the return value is `kUnknown`.
-    StrokeInput::ToolType tool_type = StrokeInput::ToolType::kUnknown;
-    // The physical distance that the pointer must travel in order to produce an
-    // input motion of one stroke unit. For stylus/touch, this is the real-world
-    // distance that the stylus/fingertip must move in physical space; for
-    // mouse, this is the visual distance that the mouse pointer must travel
-    // along the surface of the display.
-    //
-    // A value of `std::nullopt` indicates that the relationship between stroke
-    // space and physical space is unknown (possibly because the current stroke
-    // has no inputs yet) or ill-defined.
-    std::optional<PhysicalDistance> stroke_unit_length;
-    // The modeled time elapsed from the start of the stroke until either "now"
-    // or the last modeled input, whichever comes later.
-    //
-    // This value may be different from the `current_elapsed_time` value passed
-    // to `ExtendStroke()` due to modeling and prediction. If
-    // `GetModeledInputs()` is not empty, this value will always be greater than
-    // or equal to `GetModeledInputs().back().elapsed_time`.
-    Duration32 complete_elapsed_time = Duration32::Zero();
-    // The modeled distance traveled from the start of the stroke to the last
-    // modeled input (including unstable/predicted modeled inputs).
-    float complete_traveled_distance = 0;
-    // The total elapsed time for "real" (i.e. non-predicted) inputs only.
-    Duration32 total_real_elapsed_time = Duration32::Zero();
-    // The total traveled distance for "real" (i.e. non-predicted) inputs only.
-    float total_real_distance = 0;
-    // The number of "stable" elements at the start of `GetModeledInputs()`.
-    //
-    // These will not be removed or modified by subsequent calls to
-    // `ExtendStroke()`, which means the values of this member variable over the
-    // course of a single stroke will be non-decreasing.
-    size_t stable_input_count = 0;
-    // The number of elements at the start of `GetModeledInputs()` that were a
-    // result of modeling only the "real" (i.e. non-predicted) inputs.
-    //
-    // This number will always be greater than or equal to the value of
-    // `stable_input_count`. As with the stable count, the values of this member
-    // variable will be non-decreasing over the course of a single stroke.
-    size_t real_input_count = 0;
-  };
-
   // Constructs an appropriate `StrokeInputModeler` instance for the given
   // `InputModel` specification.
   static absl_nonnull std::unique_ptr<StrokeInputModeler> Create(
@@ -162,7 +89,7 @@ class StrokeInputModeler {
                             Duration32 current_elapsed_time) = 0;
 
   // Returns the current modeling state so far for the current stroke.
-  virtual const State& GetState() const = 0;
+  virtual const InputModelerState& GetState() const = 0;
 
   // Returns all currently-modeled inputs based on the raw inputs so far.  The
   // first `GetState().stable_input_count` elements of this list are "stable"

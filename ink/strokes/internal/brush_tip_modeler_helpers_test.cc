@@ -30,8 +30,8 @@
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/easing_implementation.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/strokes/internal/noise_generator.h"
-#include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/strokes/internal/type_matchers.h"
 #include "ink/types/duration.h"
 #include "ink/types/physical_distance.h"
@@ -49,7 +49,7 @@ MATCHER(NullNodeValueMatcher, "") { return IsNullBehaviorNodeValue(arg); }
 
 class ProcessBehaviorNodeTest : public ::testing::Test {
  protected:
-  StrokeInputModeler::State input_modeler_state_;
+  InputModelerState input_modeler_state_;
   ModeledStrokeInput current_input_;
   std::vector<float> stack_;
   BehaviorNodeContext context_ = {

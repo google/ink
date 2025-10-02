@@ -27,6 +27,7 @@
 #include "ink/geometry/vec.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/types/duration.h"
 
@@ -217,7 +218,7 @@ SlidingWindowInputModeler::SlidingWindowInputModeler(
 
 void SlidingWindowInputModeler::StartStroke(float brush_epsilon) {
   modeled_inputs_.clear();
-  state_ = State{};
+  state_ = InputModelerState{};
   sliding_window_.Clear();
 }
 

@@ -27,7 +27,7 @@
 #include "ink/geometry/type_matchers.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/internal/brush_tip_state.h"
-#include "ink/strokes/internal/stroke_input_modeler.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
@@ -69,7 +69,7 @@ TEST(BrushTipModelerTest, DefaultConstructed) {
   BrushTipModeler modeler;
   EXPECT_TRUE(modeler.NewFixedTipStates().empty());
   EXPECT_TRUE(modeler.VolatileTipStates().empty());
-  EXPECT_FALSE(modeler.HasUnfinishedTimeBehaviors(StrokeInputModeler::State{}));
+  EXPECT_FALSE(modeler.HasUnfinishedTimeBehaviors(InputModelerState{}));
 }
 
 TEST(BrushTipModelerTest, StartDefaultConstructed) {
@@ -78,7 +78,7 @@ TEST(BrushTipModelerTest, StartDefaultConstructed) {
   modeler.StartStroke(&brush_tip, 1);
   EXPECT_TRUE(modeler.NewFixedTipStates().empty());
   EXPECT_TRUE(modeler.VolatileTipStates().empty());
-  EXPECT_FALSE(modeler.HasUnfinishedTimeBehaviors(StrokeInputModeler::State{}));
+  EXPECT_FALSE(modeler.HasUnfinishedTimeBehaviors(InputModelerState{}));
 }
 
 TEST(BrushTipModelerTest, StartWithTipWithTimeSinceBehavior) {
@@ -97,9 +97,9 @@ TEST(BrushTipModelerTest, StartWithTipWithTimeSinceBehavior) {
   };
   modeler.StartStroke(&brush_tip, 1);
   EXPECT_TRUE(modeler.HasUnfinishedTimeBehaviors(
-      StrokeInputModeler::State{.complete_elapsed_time = Duration32::Zero()}));
-  EXPECT_FALSE(modeler.HasUnfinishedTimeBehaviors(StrokeInputModeler::State{
-      .complete_elapsed_time = Duration32::Seconds(1.1)}));
+      InputModelerState{.complete_elapsed_time = Duration32::Zero()}));
+  EXPECT_FALSE(modeler.HasUnfinishedTimeBehaviors(
+      InputModelerState{.complete_elapsed_time = Duration32::Seconds(1.1)}));
 }
 
 TEST(BrushTipModelerTest, UpdateWithEmptyState) {
@@ -130,7 +130,7 @@ TEST(BrushTipModelerTest, UpdateWithAllStableInputs) {
   std::vector<ModeledStrokeInput> inputs = {
       {.position = {1, 3}, .elapsed_time = Duration32::Zero()},
       {.position = {2, 3}, .elapsed_time = Duration32::Seconds(1 / 180.f)}};
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .stable_input_count = 2,
   };
   modeler.UpdateStroke(input_modeler_state, inputs);
@@ -165,7 +165,7 @@ TEST(BrushTipModelerTest, UpdateWithNoStableInputs) {
   std::vector<ModeledStrokeInput> inputs = {
       {.position = {1, 3}, .elapsed_time = Duration32::Zero()},
       {.position = {2, 3}, .elapsed_time = Duration32::Seconds(1 / 180.f)}};
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .stable_input_count = 0,
   };
   modeler.UpdateStroke(input_modeler_state, inputs);
@@ -200,7 +200,7 @@ TEST(BrushTipModelerTest, UpdateClearsPreviousStableStates) {
       {.position = {1, 3}, .elapsed_time = Duration32::Zero()},
       {.position = {2, 3}, .elapsed_time = Duration32::Seconds(1 / 180.f)},
       {.position = {3, 3}, .elapsed_time = Duration32::Seconds(2 / 180.f)}};
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .stable_input_count = 2,
   };
   modeler.UpdateStroke(input_modeler_state, inputs);
@@ -245,7 +245,7 @@ TEST(BrushTipModelerTest, StartStrokeOver) {
       {.position = {1, 3}, .elapsed_time = Duration32::Zero()},
       {.position = {2, 3}, .elapsed_time = Duration32::Seconds(1 / 180.f)},
       {.position = {2.5, 3.5}, .elapsed_time = Duration32::Seconds(2 / 180.f)}};
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .stable_input_count = 2,
   };
   modeler.UpdateStroke(input_modeler_state, inputs);
@@ -325,7 +325,7 @@ TEST(BrushTipModelerTest, TipWithBehaviors) {
        .elapsed_time = Duration32::Seconds(0.5),
        .pressure = 0,
        .tilt = kQuarterTurn}};
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .stable_input_count = 4,
   };
   modeler.UpdateStroke(input_modeler_state, inputs);
@@ -404,7 +404,7 @@ TEST(BrushTipModelerTest, TipWithFallbackFilter) {
        .elapsed_time = Duration32::Millis(100),
        .pressure = 0.5},
   };
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .stable_input_count = 2,
   };
   modeler.UpdateStroke(input_modeler_state, inputs);
@@ -444,7 +444,7 @@ TEST(BrushTipModelerTest, TipWithToolTypeFilter) {
        .elapsed_time = Duration32::Millis(10),
        .pressure = 0.5},
   };
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .tool_type = StrokeInput::ToolType::kStylus,
       .stable_input_count = 2,
   };
@@ -483,7 +483,7 @@ TEST(BrushTipModelerTest, TipWithBinaryOpNode) {
   std::vector<ModeledStrokeInput> inputs = {
       {.pressure = 0.25, .tilt = Angle::Radians(0.5)},
   };
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .stable_input_count = 1,
   };
   modeler.UpdateStroke(input_modeler_state, inputs);
@@ -524,7 +524,7 @@ TEST(BrushTipModelerTest, TipWithClampedDistanceRemainingBehavior) {
       {.position = {0, 9.5}, .traveled_distance = 9.5},
       {.position = {0, 9.7}, .traveled_distance = 9.7},
   };
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .stable_input_count = 5,
   };
   modeler.UpdateStroke(input_modeler_state, inputs);
@@ -578,7 +578,7 @@ TEST(BrushTipModelerTest, TipWithNonClampedDistanceRemainingBehavior) {
       {.position = {0, 9}, .traveled_distance = 9},
       {.position = {0, 100000}, .traveled_distance = 100000},
   };
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .stable_input_count = 5,
   };
   modeler.UpdateStroke(input_modeler_state, inputs);
@@ -642,7 +642,7 @@ TEST(BrushTipModelerTest, TipWithMultipleDistanceRemainingBehaviors) {
       {.position = {0, 12}, .traveled_distance = 12},
       {.position = {0, 14}, .traveled_distance = 14},
   };
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .stable_input_count = 5,
   };
   modeler.UpdateStroke(input_modeler_state, inputs);
@@ -697,7 +697,7 @@ TEST(BrushTipModelerTest, StartStrokeWithDistanceRemainingBehaviorsOver) {
       {.position = {0, 4}, .traveled_distance = 4},
       {.position = {0, 6}, .traveled_distance = 6},
   };
-  StrokeInputModeler::State state = {.stable_input_count = inputs.size()};
+  InputModelerState state = {.stable_input_count = inputs.size()};
   modeler.UpdateStroke(state, inputs);
 
   // The modeler should create 2 fixed and 2 volatile tip states, because:
@@ -746,7 +746,7 @@ TEST(BrushTipModelerTest, TipWithSecondsRemainingBehavior) {
        .elapsed_time = Duration32::Seconds(10)},  // Last stable input
       {.position = {0, 5}, .elapsed_time = Duration32::Seconds(13)},
   };
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .complete_elapsed_time = Duration32::Seconds(13),
       .stable_input_count = 5,
   };
@@ -791,7 +791,7 @@ TEST(BrushTipModelerTest, TipWithMillisecondsRemainingBehavior) {
       {.position = {0, 3}, .elapsed_time = Duration32::Seconds(8.4)},
       {.position = {0, 4}, .elapsed_time = Duration32::Seconds(10)},
   };
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .complete_elapsed_time = Duration32::Seconds(14),
 
       .stable_input_count = 5,
@@ -853,7 +853,7 @@ TEST(BrushTipModelerTest, TipWithMultipleTimeSinceInputBehaviors) {
        .elapsed_time = Duration32::Seconds(5)},  // Last stable input
       {.position = {0, 6}, .elapsed_time = Duration32::Seconds(6)},
   };
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .complete_elapsed_time = Duration32::Seconds(7.5),
 
       .stable_input_count = 6,
@@ -875,7 +875,7 @@ TEST(BrushTipModelerTest, TipWithNonZeroParticleGapDistance) {
   BrushTip brush_tip = {.particle_gap_distance_scale = 1.f};
   modeler.StartStroke(&brush_tip, /* brush_size = */ 3);
 
-  StrokeInputModeler::State input_modeler_state;
+  InputModelerState input_modeler_state;
   std::vector<ModeledStrokeInput> inputs = {
       {.position = Point{0, 0}, .traveled_distance = 0},
   };
@@ -949,7 +949,7 @@ TEST(BrushTipModelerTest, TipWithNonZeroParticleGapDuration) {
   BrushTip brush_tip = {.particle_gap_duration = Duration32::Millis(100)};
   modeler.StartStroke(&brush_tip, /* brush_size = */ 1);
 
-  StrokeInputModeler::State input_modeler_state;
+  InputModelerState input_modeler_state;
   std::vector<ModeledStrokeInput> inputs = {
       {.position = Point{0, 0}, .elapsed_time = Duration32::Zero()},
   };
@@ -1028,7 +1028,7 @@ TEST(BrushTipModelerTest, TipWithNonZeroParticleGapDistanceAndDuration) {
                         .particle_gap_duration = Duration32::Millis(50)};
   modeler.StartStroke(&brush_tip, /* brush_size = */ 2);
 
-  StrokeInputModeler::State input_modeler_state;
+  InputModelerState input_modeler_state;
   std::vector<ModeledStrokeInput> inputs = {
       {.position = Point{0, 0},
        .traveled_distance = 0,
@@ -1123,7 +1123,7 @@ TEST(BrushTipModelerTest, UnstableTargetModifierReplacedWithNull) {
   std::vector<ModeledStrokeInput> inputs = {
       {.tilt = Angle::Degrees(1), .orientation = Angle::Degrees(0)},
       {.tilt = Angle::Degrees(1), .orientation = Angle::Degrees(180)}};
-  StrokeInputModeler::State input_modeler_state = {
+  InputModelerState input_modeler_state = {
       .stable_input_count = 1,
   };
   modeler.UpdateStroke(input_modeler_state, inputs);
@@ -1168,7 +1168,7 @@ TEST_P(BrushTipModelerSourceParamTest, LastStableInputCreatesVolatileTipState) {
   modeler.StartStroke(&brush_tip, 1);
 
   std::vector<ModeledStrokeInput> inputs;
-  StrokeInputModeler::State input_modeler_state = {};
+  InputModelerState input_modeler_state = {};
 
   // A single stable input should be used to create a single volatile tip state:
   inputs.resize(1);

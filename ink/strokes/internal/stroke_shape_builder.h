@@ -25,6 +25,7 @@
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/strokes/internal/brush_tip_extruder.h"
 #include "ink/strokes/internal/brush_tip_modeler.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/strokes/internal/stroke_shape_update.h"
 #include "ink/strokes/internal/stroke_vertex.h"
@@ -73,7 +74,7 @@ class StrokeShapeBuilder {
   // source values could continue to change with the further passage of time
   // (even in the absence of any new inputs).
   bool HasUnfinishedTimeBehaviors(
-      const StrokeInputModeler::State& input_modeler_state) const;
+      const InputModelerState& input_modeler_state) const;
 
   // Returns the mesh format used by the mesh being built for the brush coat.
   const MeshFormat& GetMeshFormat() const;

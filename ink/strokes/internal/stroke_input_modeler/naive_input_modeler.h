@@ -19,6 +19,7 @@
 
 #include "absl/types/span.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/types/duration.h"
 
@@ -37,7 +38,7 @@ class NaiveInputModeler : public StrokeInputModeler {
                     const StrokeInputBatch& predicted_inputs,
                     Duration32 current_elapsed_time) override;
 
-  const State& GetState() const override { return state_; }
+  const InputModelerState& GetState() const override { return state_; }
 
   absl::Span<const ModeledStrokeInput> GetModeledInputs() const override {
     return modeled_inputs_;
@@ -47,7 +48,7 @@ class NaiveInputModeler : public StrokeInputModeler {
   void AppendInputs(const StrokeInputBatch& inputs);
 
   std::vector<ModeledStrokeInput> modeled_inputs_;
-  State state_;
+  InputModelerState state_;
 };
 
 }  // namespace ink::strokes_internal

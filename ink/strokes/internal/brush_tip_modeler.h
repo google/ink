@@ -27,19 +27,19 @@
 #include "ink/geometry/angle.h"
 #include "ink/strokes/internal/brush_tip_modeler_helpers.h"
 #include "ink/strokes/internal/brush_tip_state.h"
-#include "ink/strokes/internal/stroke_input_modeler.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
 
-// The `BrushTipModeler` uses the `StrokeInputModeler::State` for a stroke to
+// The `BrushTipModeler` uses the `InputModelerState` for a stroke to
 // model a moving `BrushTip` with a particular brush size.
 //
 // Modeling the brush tip consists of
 //   1. Calling `StartStroke()` to set up the modeler and select the `BrushTip`
 //      and size.
 //   2. Updating the ongoing stroke by:
-//      a) Passing the current `StrokeInputModeler::State` to `UpdateStroke()`.
+//      a) Passing the current `InputModelerState` to `UpdateStroke()`.
 //      b) Consuming the generated `BrushTipState`s for each update returned by
 //         `NewFixedTipStates()` and `VolatileTipStates()`.
 //   3. Preferrably reusing the tip modeler for the next stroke by going back to
@@ -83,19 +83,19 @@ class BrushTipModeler {
   void StartStroke(const BrushTip* absl_nonnull brush_tip, float brush_size,
                    uint32_t noise_seed = 0);
 
-  // Updates the tip modeler with the current `StrokeInputModeler::State` and
+  // Updates the tip modeler with the current `InputModelerState` and
   // current inputs.
   //
   // Requires that `StartStroke()` has been called at least once since this
   // modeler was constructed.
-  void UpdateStroke(const StrokeInputModeler::State& input_modeler_state,
+  void UpdateStroke(const InputModelerState& input_modeler_state,
                     absl::Span<const ModeledStrokeInput> inputs);
 
   // Returns true if the brush tip has any behaviors whose source values could
   // continue to change with the further passage of time (even in the absence of
   // any new inputs).
   bool HasUnfinishedTimeBehaviors(
-      const StrokeInputModeler::State& input_modeler_state) const;
+      const InputModelerState& input_modeler_state) const;
 
   // Returns tip states that have become fixed as a result of the most recent
   // call to `UpdateStroke()`.
@@ -130,13 +130,13 @@ class BrushTipModeler {
   // Returns the maximum values of distance traveled and time elapsed for
   // modeled inputs that can be used to generate fixed tip states.
   InputMetrics CalculateMaxFixedInputMetrics(
-      const StrokeInputModeler::State& input_modeler_state,
+      const InputModelerState& input_modeler_state,
       absl::Span<const ModeledStrokeInput> inputs) const;
 
   // Processes a single `ModeledStrokeInput` and sets up particle emission if
   // enabled.
   void ProcessSingleInput(
-      const StrokeInputModeler::State& input_modeler_state,
+      const InputModelerState& input_modeler_state,
       const ModeledStrokeInput& current_input,
       std::optional<Angle> current_travel_direction,
       const ModeledStrokeInput* absl_nullable previous_input,
@@ -145,7 +145,7 @@ class BrushTipModeler {
   // Appends a single new element to the `saved_tip_states_` based on the
   // current `input`.
   void AddNewTipState(
-      const StrokeInputModeler::State& input_modeler_state,
+      const InputModelerState& input_modeler_state,
       const ModeledStrokeInput& input, std::optional<Angle> travel_direction,
       std::optional<InputMetrics> previous_input_metrics,
       std::optional<InputMetrics>& last_modeled_tip_state_metrics);

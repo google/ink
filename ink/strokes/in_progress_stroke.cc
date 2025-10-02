@@ -33,6 +33,7 @@
 #include "ink/strokes/input/internal/stroke_input_validation_helpers.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/strokes/internal/stroke_shape_update.h"
 #include "ink/strokes/internal/stroke_vertex.h"
@@ -179,7 +180,7 @@ bool InProgressStroke::NeedsUpdate() const {
 
 bool InProgressStroke::ChangesWithTime() const {
   if (input_modeler_ == nullptr) return false;
-  const strokes_internal::StrokeInputModeler::State& input_modeler_state =
+  const strokes_internal::InputModelerState& input_modeler_state =
       input_modeler_->GetState();
   uint32_t num_coats = BrushCoatCount();
   for (uint32_t coat_index = 0; coat_index < num_coats; ++coat_index) {

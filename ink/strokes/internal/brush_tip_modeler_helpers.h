@@ -30,8 +30,8 @@
 #include "ink/geometry/point.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/easing_implementation.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/strokes/internal/noise_generator.h"
-#include "ink/strokes/internal/stroke_input_modeler.h"
 
 namespace ink::strokes_internal {
 
@@ -97,7 +97,7 @@ using BehaviorNodeImplementation =
 // Holds references to stroke data needed by `ProcessBehaviorNode()`, as well as
 // references to mutable state that that function will need to update.
 struct BehaviorNodeContext {
-  const StrokeInputModeler::State& input_modeler_state;
+  const InputModelerState& input_modeler_state;
   const ModeledStrokeInput& current_input;
   std::optional<Angle> current_travel_direction;
   float brush_size;

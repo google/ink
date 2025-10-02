@@ -114,6 +114,7 @@ cc_library(
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/strokes/input/internal:stroke_input_validation_helpers",
+        "//ink/strokes/internal:modeled_stroke_input",
         "//ink/strokes/internal:stroke_input_modeler",
         "//ink/strokes/internal:stroke_shape_builder",
         "//ink/strokes/internal:stroke_shape_update",

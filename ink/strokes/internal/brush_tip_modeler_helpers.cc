@@ -34,8 +34,8 @@
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/easing_implementation.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/strokes/internal/noise_generator.h"
-#include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/types/duration.h"
 #include "ink/types/physical_distance.h"
 
@@ -77,29 +77,27 @@ std::optional<float> GetTiltY(Angle tilt, Angle orientation) {
 }
 
 float GetPredictedDistanceTraveledInStrokeUnits(
-    const StrokeInputModeler::State& input_modeler_state,
+    const InputModelerState& input_modeler_state,
     const ModeledStrokeInput& input) {
   return std::max(
       0.f, input.traveled_distance - input_modeler_state.total_real_distance);
 }
 
-Duration32 GetPredictedTimeElapsed(
-    const StrokeInputModeler::State& input_modeler_state,
-    const ModeledStrokeInput& input) {
+Duration32 GetPredictedTimeElapsed(const InputModelerState& input_modeler_state,
+                                   const ModeledStrokeInput& input) {
   return std::max(
       Duration32::Zero(),
       input.elapsed_time - input_modeler_state.total_real_elapsed_time);
 }
 
-Duration32 GetTimeSinceInput(
-    const StrokeInputModeler::State& input_modeler_state,
-    const ModeledStrokeInput& input) {
+Duration32 GetTimeSinceInput(const InputModelerState& input_modeler_state,
+                             const ModeledStrokeInput& input) {
   return input_modeler_state.complete_elapsed_time - input.elapsed_time;
 }
 
 std::optional<float> GetSourceValue(
     const ModeledStrokeInput& input, std::optional<Angle> travel_direction,
-    float brush_size, const StrokeInputModeler::State& input_modeler_state,
+    float brush_size, const InputModelerState& input_modeler_state,
     BrushBehavior::Source source) {
   switch (source) {
     case BrushBehavior::Source::kNormalizedPressure:

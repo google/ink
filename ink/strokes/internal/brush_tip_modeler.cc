@@ -34,7 +34,7 @@
 #include "ink/geometry/point.h"
 #include "ink/strokes/internal/brush_tip_modeler_helpers.h"
 #include "ink/strokes/internal/easing_implementation.h"
-#include "ink/strokes/internal/stroke_input_modeler.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
@@ -284,8 +284,7 @@ bool SourceDependsOnNextModeledInput(BrushBehavior::Source source) {
   return false;
 }
 
-Duration32 TimeSinceLastInput(
-    const StrokeInputModeler::State& input_modeler_state) {
+Duration32 TimeSinceLastInput(const InputModelerState& input_modeler_state) {
   // TODO: b/287041801 - Do we need to consider predicted inputs here too?
   return input_modeler_state.complete_elapsed_time -
          input_modeler_state.total_real_elapsed_time;
@@ -452,7 +451,7 @@ std::optional<Angle> GetTravelDirection(
 }  // namespace
 
 void BrushTipModeler::UpdateStroke(
-    const StrokeInputModeler::State& input_modeler_state,
+    const InputModelerState& input_modeler_state,
     absl::Span<const ModeledStrokeInput> inputs) {
   ABSL_CHECK_NE(brush_tip_, nullptr);
 
@@ -527,20 +526,20 @@ void BrushTipModeler::UpdateStroke(
 }
 
 bool BrushTipModeler::HasUnfinishedTimeBehaviors(
-    const StrokeInputModeler::State& input_modeler_state) const {
+    const InputModelerState& input_modeler_state) const {
   return TimeSinceLastInput(input_modeler_state) <
          time_remaining_behavior_upper_bound_;
 }
 
 InputMetrics BrushTipModeler::CalculateMaxFixedInputMetrics(
-    const StrokeInputModeler::State& input_modeler_state,
+    const InputModelerState& input_modeler_state,
     absl::Span<const ModeledStrokeInput> inputs) const {
   if (input_modeler_state.stable_input_count == 0) {
     return {.traveled_distance = 0, .elapsed_time = Duration32::Zero()};
   }
 
   // Measure from the last stable input, because all unstable inputs in the
-  // `StrokeInputModeler::State` may be removed in future updates. We can only
+  // `InputModelerState` may be removed in future updates. We can only
   // count on the last stable properties to be non-decreasing.
   const ModeledStrokeInput& last_stable_input =
       inputs[input_modeler_state.stable_input_count - 1];
@@ -556,7 +555,7 @@ InputMetrics BrushTipModeler::CalculateMaxFixedInputMetrics(
 }
 
 void BrushTipModeler::ProcessSingleInput(
-    const StrokeInputModeler::State& input_modeler_state,
+    const InputModelerState& input_modeler_state,
     const ModeledStrokeInput& current_input,
     std::optional<Angle> current_travel_direction,
     const ModeledStrokeInput* absl_nullable previous_input,
@@ -639,7 +638,7 @@ void BrushTipModeler::ProcessSingleInput(
 }
 
 void BrushTipModeler::AddNewTipState(
-    const StrokeInputModeler::State& input_modeler_state,
+    const InputModelerState& input_modeler_state,
     const ModeledStrokeInput& input, std::optional<Angle> travel_direction,
     std::optional<InputMetrics> previous_input_metrics,
     std::optional<InputMetrics>& last_modeled_tip_state_metrics) {

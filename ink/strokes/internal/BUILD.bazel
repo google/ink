@@ -73,6 +73,21 @@ cc_test(
 )
 
 cc_library(
+    name = "modeled_stroke_input",
+    hdrs = [
+        "modeled_stroke_input.h",
+    ],
+    deps = [
+        "//ink/geometry:angle",
+        "//ink/geometry:point",
+        "//ink/geometry:vec",
+        "//ink/strokes/input:stroke_input",
+        "//ink/types:duration",
+        "//ink/types:physical_distance",
+    ],
+)
+
+cc_library(
     name = "stroke_input_modeler",
     srcs = [
         "stroke_input_modeler.cc",
@@ -87,6 +102,7 @@ cc_library(
         "stroke_input_modeler/spring_based_input_modeler.h",
     ],
     deps = [
+        ":modeled_stroke_input",
         "//ink/brush:brush_family",
         "//ink/geometry:angle",
         "//ink/geometry:distance",
@@ -143,7 +159,6 @@ cc_test(
         "//ink/types:physical_distance",
         "//ink/types:type_matchers",
         "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:status_matchers",
         "@com_google_fuzztest//fuzztest",
         "@com_google_googletest//:gtest_main",
@@ -165,7 +180,6 @@ cc_test(
         "//ink/types:physical_distance",
         "//ink/types:type_matchers",
         "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:status_matchers",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/types:span",
@@ -189,7 +203,6 @@ cc_test(
         "//ink/types:physical_distance",
         "//ink/types:type_matchers",
         "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -224,8 +237,8 @@ cc_library(
     deps = [
         ":brush_tip_state",
         ":easing_implementation",
+        ":modeled_stroke_input",
         ":noise_generator",
-        ":stroke_input_modeler",
         "//ink/brush:brush_behavior",
         "//ink/brush:brush_tip",
         "//ink/geometry:angle",
@@ -248,8 +261,8 @@ cc_test(
         ":brush_tip_modeler_helpers",
         ":brush_tip_state",
         ":easing_implementation",
+        ":modeled_stroke_input",
         ":noise_generator",
-        ":stroke_input_modeler",
         ":type_matchers",
         "//ink/brush:brush_behavior",
         "//ink/brush:brush_tip",
@@ -274,7 +287,7 @@ cc_library(
         ":brush_tip_modeler_helpers",
         ":brush_tip_state",
         ":easing_implementation",
-        ":stroke_input_modeler",
+        ":modeled_stroke_input",
         "//ink/brush:brush_behavior",
         "//ink/brush:brush_tip",
         "//ink/geometry:angle",
@@ -294,7 +307,7 @@ cc_test(
     deps = [
         ":brush_tip_modeler",
         ":brush_tip_state",
-        ":stroke_input_modeler",
+        ":modeled_stroke_input",
         "//ink/brush:brush_behavior",
         "//ink/brush:brush_tip",
         "//ink/brush:easing_function",
@@ -574,6 +587,7 @@ cc_library(
     deps = [
         ":brush_tip_extruder",
         ":brush_tip_modeler",
+        ":modeled_stroke_input",
         ":stroke_input_modeler",
         ":stroke_outline",
         ":stroke_shape_update",
@@ -583,9 +597,7 @@ cc_library(
         "//ink/geometry:envelope",
         "//ink/geometry:mutable_mesh",
         "//ink/types:duration",
-        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -712,7 +724,7 @@ cc_library(
     deps = [
         ":brush_tip_shape",
         ":brush_tip_state",
-        ":stroke_input_modeler",
+        ":modeled_stroke_input",
         "//:gtest_for_library_testonly",
         "//ink/geometry:type_matchers",
         "//ink/geometry/internal:circle",
