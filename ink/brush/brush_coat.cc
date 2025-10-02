@@ -15,7 +15,6 @@
 #include "ink/brush/brush_coat.h"
 
 #include <string>
-#include <variant>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
