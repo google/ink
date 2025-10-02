@@ -45,6 +45,13 @@ constexpr float kNan = std::numeric_limits<float>::quiet_NaN();
 constexpr float kInfinity = std::numeric_limits<float>::infinity();
 constexpr absl::string_view kTestTextureId = "test-texture";
 
+TEST(BrushPaintTest, DefaultValues) {
+  BrushPaint paint;
+  EXPECT_EQ(paint.texture_layers.size(), 0);
+  EXPECT_EQ(paint.color_functions.size(), 0);
+  EXPECT_EQ(paint.self_overlap, BrushPaint::SelfOverlap::kAny);
+}
+
 TEST(BrushPaintTest, TextureKeyframeSupportsAbslHash) {
   EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
       BrushPaint::TextureKeyframe{.progress = 0},

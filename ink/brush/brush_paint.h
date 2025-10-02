@@ -343,7 +343,7 @@ struct BrushPaint {
   // this coat of paint. When this list is empty, the base brush color will be
   // used unchanged.
   std::vector<ColorFunction> color_functions;
-  SelfOverlap self_overlap;
+  SelfOverlap self_overlap = SelfOverlap::kAny;
 
   friend bool operator==(const BrushPaint&, const BrushPaint&) = default;
 };
