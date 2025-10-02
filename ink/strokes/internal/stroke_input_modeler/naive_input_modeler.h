@@ -20,7 +20,7 @@
 #include "absl/types/span.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/modeled_stroke_input.h"
-#include "ink/strokes/internal/stroke_input_modeler.h"
+#include "ink/strokes/internal/stroke_input_modeler/input_model_impl.h"
 #include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
@@ -28,27 +28,19 @@ namespace ink::strokes_internal {
 // A naive model that passes through raw inputs mostly unchanged, with no
 // smoothing or upsampling. Velocity and acceleration for modeled inputs are
 // calculated in a very simple way from the adjacent input points.
-class NaiveInputModeler : public StrokeInputModeler {
+class NaiveInputModeler : public InputModelImpl {
  public:
   NaiveInputModeler() = default;
 
-  void StartStroke(float brush_epsilon) override;
-
-  void ExtendStroke(const StrokeInputBatch& real_inputs,
-                    const StrokeInputBatch& predicted_inputs,
-                    Duration32 current_elapsed_time) override;
-
-  const InputModelerState& GetState() const override { return state_; }
-
-  absl::Span<const ModeledStrokeInput> GetModeledInputs() const override {
-    return modeled_inputs_;
-  }
+  void ExtendStroke(InputModelerState& state,
+                    std::vector<ModeledStrokeInput>& modeled_inputs,
+                    const StrokeInputBatch& real_inputs,
+                    const StrokeInputBatch& predicted_inputs) override;
 
  private:
-  void AppendInputs(const StrokeInputBatch& inputs);
-
-  std::vector<ModeledStrokeInput> modeled_inputs_;
-  InputModelerState state_;
+  void AppendInputs(InputModelerState& state,
+                    std::vector<ModeledStrokeInput>& modeled_inputs,
+                    const StrokeInputBatch& inputs);
 };
 
 }  // namespace ink::strokes_internal
