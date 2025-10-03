@@ -101,8 +101,9 @@ TEST(NaiveInputModelerTest, ModeledInputsMatchRawInputs) {
     ASSERT_THAT(synthetic_real_inputs.Append(input_batch), IsOk());
   }
 
-  NaiveInputModeler modeler;
-  modeler.StartStroke(/*brush_epsilon=*/0.001);
+  StrokeInputModeler modeler;
+  modeler.StartStroke(BrushFamily::ExperimentalNaiveModel{},
+                      /*brush_epsilon=*/0.001);
   modeler.ExtendStroke(synthetic_real_inputs, {}, Duration32::Seconds(5));
 
   ASSERT_THAT(modeler.GetModeledInputs(), SizeIs(synthetic_real_inputs.Size()));
@@ -119,8 +120,9 @@ TEST(NaiveInputModelerTest, ModeledInputsMatchRawInputs) {
 }
 
 void CanModelAnyStrokeInputBatch(const StrokeInputBatch& inputs) {
-  NaiveInputModeler modeler;
-  modeler.StartStroke(/*brush_epsilon=*/1);
+  StrokeInputModeler modeler;
+  modeler.StartStroke(BrushFamily::ExperimentalNaiveModel{},
+                      /*brush_epsilon=*/1);
   modeler.ExtendStroke(inputs, {}, Duration32::Zero());
   // The `NaiveInputModeler` always produces exactly one modeled input for each
   // raw input.

@@ -15,7 +15,6 @@
 #include "ink/strokes/stroke.h"
 
 #include <cstddef>
-#include <memory>
 #include <utility>
 #include <vector>
 
@@ -139,6 +138,7 @@ namespace {
 // Resources for stroke shape generation grouped into a struct for simpler
 // `thread_local` variable creation in `RegenerateShape()` below.
 struct ShapeGenerationResources {
+  StrokeInputModeler input_modeler;
   std::vector<StrokeShapeBuilder> builders;
   std::vector<StrokeVertex::CustomPackingArray> custom_packing_arrays;
   std::vector<PartitionedMesh::MutableMeshGroup> mesh_groups;
@@ -179,17 +179,16 @@ void Stroke::RegenerateShape() {
   // Passing an infinite duration to `ExtendStroke()` achieves this, in an
   // equivalent but simpler way than looping through each behavior and finding
   // the ones using these sources and getting their maximum range values.
-  std::unique_ptr<StrokeInputModeler> input_modeler =
-      StrokeInputModeler::Create(brush_.GetFamily().GetInputModel());
-  input_modeler->StartStroke(brush_.GetEpsilon());
-  input_modeler->ExtendStroke(inputs_, StrokeInputBatch(),
-                              Duration32::Infinite());
+  shape_gen.input_modeler.StartStroke(brush_.GetFamily().GetInputModel(),
+                                      brush_.GetEpsilon());
+  shape_gen.input_modeler.ExtendStroke(inputs_, StrokeInputBatch(),
+                                       Duration32::Infinite());
 
   for (size_t i = 0; i < num_coats; ++i) {
     StrokeShapeBuilder& builder = shape_gen.builders[i];
     builder.StartStroke(coats[i], brush_.GetSize(), brush_.GetEpsilon(),
                         inputs_.GetNoiseSeed());
-    builder.ExtendStroke(*input_modeler);
+    builder.ExtendStroke(shape_gen.input_modeler);
 
     shape_gen.custom_packing_arrays.push_back(
         StrokeVertex::MakeCustomPackingArray(builder.GetMeshFormat()));

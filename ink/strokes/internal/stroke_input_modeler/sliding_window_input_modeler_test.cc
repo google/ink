@@ -29,6 +29,7 @@
 #include "ink/strokes/input/fuzz_domains.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/types/duration.h"
 #include "ink/types/physical_distance.h"
 #include "ink/types/type_matchers.h"
@@ -96,37 +97,14 @@ std::vector<StrokeInputBatch> MakeStylusInputBatchSequence() {
   return batches;
 }
 
-TEST(SlidingWindowInputModelerTest, EraseInitialPredictionWithNoRealInputs) {
-  std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
-
-  SlidingWindowInputModeler modeler(
-      /* window_size= */ Duration32::Millis(20),
-      /* upsampling_period= */ Duration32::Millis(5));
-  modeler.StartStroke(/* brush_epsilon = */ 0.01);
-
-  // Start off with some predicted inputs, but no real inputs (this doesn't
-  // generally occur in practice, but is a legal usage of the API). There should
-  // be some modeled inputs, with nonzero elapsed time and distance traveled.
-  StrokeInputBatch synthetic_predicted_inputs = input_batches[0];
-  ASSERT_THAT(synthetic_predicted_inputs.Append(input_batches[1]), IsOk());
-  modeler.ExtendStroke({}, synthetic_predicted_inputs, Duration32::Zero());
-  EXPECT_THAT(modeler.GetModeledInputs(), Not(IsEmpty()));
-  EXPECT_GT(modeler.GetState().complete_elapsed_time, Duration32::Zero());
-  EXPECT_GT(modeler.GetState().complete_traveled_distance, 0);
-
-  // Now erase the prediction, still with no real inputs. Elapsed time and
-  // distance traveled should go back to zero.
-  modeler.ExtendStroke({}, {}, Duration32::Zero());
-  EXPECT_THAT(modeler.GetModeledInputs(), IsEmpty());
-  EXPECT_EQ(modeler.GetState().complete_elapsed_time, Duration32::Zero());
-  EXPECT_EQ(modeler.GetState().complete_traveled_distance, 0);
-}
-
 TEST(SlidingWindowInputModelerTest, ConstantVelocityRawInputs) {
-  SlidingWindowInputModeler modeler(
-      /* window_size= */ Duration32::Millis(20),
-      /* upsampling_period= */ Duration32::Millis(5));
-  modeler.StartStroke(/* brush_epsilon = */ 0.01);
+  StrokeInputModeler modeler;
+  modeler.StartStroke(
+      BrushFamily::SlidingWindowModel{
+          .window_size = Duration32::Millis(20),
+          .upsampling_period = Duration32::Millis(5),
+      },
+      /* brush_epsilon = */ 0.01);
 
   // Extend the stroke with a bunch of inputs that move at a constant velocity
   // of 1000 stroke units per second.
@@ -153,10 +131,13 @@ TEST(SlidingWindowInputModelerTest, ConstantVelocityRawInputs) {
 }
 
 TEST(SlidingWindowInputModelerTest, Orientation) {
-  SlidingWindowInputModeler modeler(
-      /* window_size= */ Duration32::Millis(10),
-      /* upsampling_period= */ Duration32::Millis(5));
-  modeler.StartStroke(/* brush_epsilon = */ 0.01);
+  StrokeInputModeler modeler;
+  modeler.StartStroke(
+      BrushFamily::SlidingWindowModel{
+          .window_size = Duration32::Millis(10),
+          .upsampling_period = Duration32::Millis(5),
+      },
+      /* brush_epsilon = */ 0.01);
 
   // Extend the stroke with a bunch of inputs with an orientation of 10°, then
   // a bunch of inputs with an orientation of 350°.
@@ -184,10 +165,13 @@ TEST(SlidingWindowInputModelerTest, Orientation) {
 }
 
 TEST(SlidingWindowInputModelerTest, Upsampling) {
-  SlidingWindowInputModeler modeler(
-      /* window_size= */ Duration32::Millis(10),
-      /* upsampling_period= */ Duration32::Millis(1));
-  modeler.StartStroke(/* brush_epsilon = */ 0.01);
+  StrokeInputModeler modeler;
+  modeler.StartStroke(
+      BrushFamily::SlidingWindowModel{
+          .window_size = Duration32::Millis(10),
+          .upsampling_period = Duration32::Millis(1),
+      },
+      /* brush_epsilon = */ 0.01);
 
   // Extend the stroke with three raw inputs, spaced 10 ms apart.
   absl::StatusOr<StrokeInputBatch> inputs = StrokeInputBatch::Create({
@@ -228,10 +212,13 @@ TEST(SlidingWindowInputModelerTest, Upsampling) {
 }
 
 void CanModelAnyStrokeInputBatch(const StrokeInputBatch& inputs) {
-  SlidingWindowInputModeler modeler(
-      /* window_size= */ Duration32::Millis(10),
-      /* upsampling_period= */ Duration32::Millis(5));
-  modeler.StartStroke(/*brush_epsilon=*/1);
+  StrokeInputModeler modeler;
+  modeler.StartStroke(
+      BrushFamily::SlidingWindowModel{
+          .window_size = Duration32::Millis(10),
+          .upsampling_period = Duration32::Millis(5),
+      },
+      /*brush_epsilon=*/1);
   modeler.ExtendStroke(inputs, {}, Duration32::Zero());
   if (inputs.IsEmpty()) {
     EXPECT_THAT(modeler.GetModeledInputs(), IsEmpty());

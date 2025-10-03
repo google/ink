@@ -149,52 +149,36 @@ void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
 
 }  // namespace
 
-void SpringBasedInputModeler::StartStroke(float brush_epsilon) {
+SpringBasedInputModeler::SpringBasedInputModeler(Version version,
+                                                 float brush_epsilon)
+    : version_(version), brush_epsilon_(brush_epsilon) {
   // The `stroke_modeler_` cannot be reset until we get the first input in order
   // to know the `StrokeInput::ToolType`.
-
   ABSL_CHECK_GT(brush_epsilon, 0);
-  brush_epsilon_ = brush_epsilon;
-  last_real_stroke_input_.reset();
-  state_ = InputModelerState{};
-  modeled_inputs_.clear();
 }
 
 void SpringBasedInputModeler::ExtendStroke(
+    InputModelerState& state, std::vector<ModeledStrokeInput>& modeled_inputs,
     const StrokeInputBatch& real_inputs,
-    const StrokeInputBatch& predicted_inputs, Duration32 current_elapsed_time) {
-  ABSL_CHECK_GT(brush_epsilon_, 0) << "`StartStroke()` has not been called.";
-
+    const StrokeInputBatch& predicted_inputs) {
   absl::Cleanup update_time_and_distance = [&]() {
-    UpdateStateTimeAndDistance(current_elapsed_time);
+    UpdateStateTimeAndDistance(state, modeled_inputs);
   };
 
-  if (real_inputs.IsEmpty() && predicted_inputs.IsEmpty() &&
-      state_.real_input_count == modeled_inputs_.size()) {
-    // We can return early, because there are no new inputs, and none of the
-    // modeled inputs came from previous `predicted_inputs`. This allows us to
-    // skip re-modeling the `last_real_stroke_input_`.
-    return;
-  }
-
   if (!last_real_stroke_input_.has_value()) {
-    state_.tool_type = real_inputs.IsEmpty() ? predicted_inputs.GetToolType()
-                                             : real_inputs.GetToolType();
-    state_.stroke_unit_length = real_inputs.IsEmpty()
-                                    ? predicted_inputs.GetStrokeUnitLength()
-                                    : real_inputs.GetStrokeUnitLength();
     ResetStrokeModeler(stroke_modeler_, version_, brush_epsilon_,
-                       real_inputs.GetStrokeUnitLength());
+                       state.stroke_unit_length);
     stroke_modeler_has_input_ = false;
   }
 
   // Clear any "unstable" modeled inputs.
-  modeled_inputs_.resize(state_.stable_input_count);
+  modeled_inputs.resize(state.stable_input_count);
 
   // Re-model the current last real input as "stable" only if there are new
   // real inputs to process:
   if (last_real_stroke_input_.has_value() && !real_inputs.IsEmpty()) {
-    ModelInput(*last_real_stroke_input_, /* last_input_in_update = */ false);
+    ModelInput(modeled_inputs, *last_real_stroke_input_,
+               /* last_input_in_update = */ false);
   }
 
   // Model all except the last new real input as "stable". The last one must
@@ -202,28 +186,29 @@ void SpringBasedInputModeler::ExtendStroke(
   // `predicted_inputs` are non-empty, because a future update might have no new
   // predicted inputs.
   for (size_t i = 0; i + 1 < real_inputs.Size(); ++i) {
-    ModelInput(real_inputs.Get(i), /* last_input_in_update = */ false);
+    ModelInput(modeled_inputs, real_inputs.Get(i),
+               /* last_input_in_update = */ false);
   }
 
   // Save the state of the stroke modeler and model the remaining inputs as
   // "unstable".
   stroke_modeler_.Save();
   bool stroke_modeler_save_has_input = stroke_modeler_has_input_;
-  state_.stable_input_count = modeled_inputs_.size();
+  state.stable_input_count = modeled_inputs.size();
 
   if (!real_inputs.IsEmpty()) {
     last_real_stroke_input_ = real_inputs.Get(real_inputs.Size() - 1);
-    ModelInput(*last_real_stroke_input_,
+    ModelInput(modeled_inputs, *last_real_stroke_input_,
                /* last_input_in_update = */ predicted_inputs.IsEmpty());
   } else if (last_real_stroke_input_.has_value()) {
-    ModelInput(*last_real_stroke_input_,
+    ModelInput(modeled_inputs, *last_real_stroke_input_,
                /* last_input_in_update = */ predicted_inputs.IsEmpty());
   }
 
-  state_.real_input_count = modeled_inputs_.size();
+  state.real_input_count = modeled_inputs.size();
 
   for (size_t i = 0; i < predicted_inputs.Size(); ++i) {
-    ModelInput(predicted_inputs.Get(i),
+    ModelInput(modeled_inputs, predicted_inputs.Get(i),
                /* last_input_in_update = */ i == predicted_inputs.Size() - 1);
   }
 
@@ -231,8 +216,9 @@ void SpringBasedInputModeler::ExtendStroke(
   stroke_modeler_has_input_ = stroke_modeler_save_has_input;
 }
 
-void SpringBasedInputModeler::ModelInput(const StrokeInput& input,
-                                         bool last_input_in_update) {
+void SpringBasedInputModeler::ModelInput(
+    std::vector<ModeledStrokeInput>& modeled_inputs, const StrokeInput& input,
+    bool last_input_in_update) {
   // The smoothing done by the `stroke_modeler_` causes the modeled results to
   // lag behind the current end of the stroke. This is usually made up for by
   // modeler's internal predictor, but we are disabling that to support external
@@ -270,9 +256,9 @@ void SpringBasedInputModeler::ModelInput(const StrokeInput& input,
 
   std::optional<Point> previous_position;
   float traveled_distance = 0;
-  if (!modeled_inputs_.empty()) {
-    previous_position = modeled_inputs_.back().position;
-    traveled_distance = modeled_inputs_.back().traveled_distance;
+  if (!modeled_inputs.empty()) {
+    previous_position = modeled_inputs.back().position;
+    traveled_distance = modeled_inputs.back().traveled_distance;
   }
 
   for (const stroke_model::Result& result : result_buffer_) {
@@ -285,7 +271,7 @@ void SpringBasedInputModeler::ModelInput(const StrokeInput& input,
       traveled_distance += delta;
     }
 
-    modeled_inputs_.push_back({
+    modeled_inputs.push_back({
         .position = position,
         .velocity = {.x = result.velocity.x, .y = result.velocity.y},
         .acceleration = {.x = result.acceleration.x,
@@ -302,22 +288,21 @@ void SpringBasedInputModeler::ModelInput(const StrokeInput& input,
 }
 
 void SpringBasedInputModeler::UpdateStateTimeAndDistance(
-    Duration32 current_elapsed_time) {
-  if (modeled_inputs_.empty()) {
-    state_.complete_elapsed_time = current_elapsed_time;
+    InputModelerState& state, std::vector<ModeledStrokeInput>& modeled_inputs) {
+  if (modeled_inputs.empty()) {
     return;
   }
 
-  const auto& last_input = modeled_inputs_.back();
-  state_.complete_elapsed_time =
-      std::max(last_input.elapsed_time, current_elapsed_time);
-  state_.complete_traveled_distance = last_input.traveled_distance;
+  const ModeledStrokeInput& last_input = modeled_inputs.back();
+  state.complete_elapsed_time = last_input.elapsed_time;
+  state.complete_traveled_distance = last_input.traveled_distance;
 
-  if (state_.real_input_count == 0) return;
+  if (state.real_input_count == 0) return;
 
-  const auto& last_real_input = modeled_inputs_[state_.real_input_count - 1];
-  state_.total_real_distance = last_real_input.traveled_distance;
-  state_.total_real_elapsed_time = last_real_input.elapsed_time;
+  const ModeledStrokeInput& last_real_input =
+      modeled_inputs[state.real_input_count - 1];
+  state.total_real_distance = last_real_input.traveled_distance;
+  state.total_real_elapsed_time = last_real_input.elapsed_time;
 }
 
 }  // namespace ink::strokes_internal

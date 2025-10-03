@@ -15,7 +15,6 @@
 #include "ink/strokes/in_progress_stroke.h"
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 
 #include "absl/container/flat_hash_set.h"
@@ -71,9 +70,8 @@ void InProgressStroke::Start(const Brush& brush, uint32_t noise_seed) {
     shape_builders_.resize(num_coats);
   }
 
-  input_modeler_ = strokes_internal::StrokeInputModeler::Create(
-      brush_->GetFamily().GetInputModel());
-  input_modeler_->StartStroke(brush_->GetEpsilon());
+  input_modeler_.StartStroke(brush_->GetFamily().GetInputModel(),
+                             brush_->GetEpsilon());
   for (uint32_t i = 0; i < num_coats; ++i) {
     shape_builders_[i].StartStroke(coats[i], brush_->GetSize(),
                                    brush_->GetEpsilon(), noise_seed);
@@ -121,8 +119,6 @@ absl::Status InProgressStroke::UpdateShape(Duration32 current_elapsed_time) {
         "`Start()` must be called at least once prior to calling "
         "`UpdateShape()`.");
   }
-  // If `brush_` is non-null, then `input_modeler_` should be as well.
-  ABSL_DCHECK(input_modeler_);
 
   if (auto status = ValidateNewElapsedTime(current_elapsed_time);
       !status.ok()) {
@@ -155,11 +151,11 @@ absl::Status InProgressStroke::UpdateShape(Duration32 current_elapsed_time) {
 
   current_elapsed_time_ = current_elapsed_time;
 
-  input_modeler_->ExtendStroke(queued_real_inputs_, queued_predicted_inputs_,
-                               current_elapsed_time);
+  input_modeler_.ExtendStroke(queued_real_inputs_, queued_predicted_inputs_,
+                              current_elapsed_time);
   uint32_t num_coats = BrushCoatCount();
   for (uint32_t i = 0; i < num_coats; ++i) {
-    StrokeShapeUpdate update = shape_builders_[i].ExtendStroke(*input_modeler_);
+    StrokeShapeUpdate update = shape_builders_[i].ExtendStroke(input_modeler_);
 
     updated_region_.Add(update.region);
     // TODO: b/286547863 - Pass `update.first_vertex_offset` and
@@ -179,9 +175,8 @@ bool InProgressStroke::NeedsUpdate() const {
 }
 
 bool InProgressStroke::ChangesWithTime() const {
-  if (input_modeler_ == nullptr) return false;
   const strokes_internal::InputModelerState& input_modeler_state =
-      input_modeler_->GetState();
+      input_modeler_.GetState();
   uint32_t num_coats = BrushCoatCount();
   for (uint32_t coat_index = 0; coat_index < num_coats; ++coat_index) {
     if (shape_builders_[coat_index].HasUnfinishedTimeBehaviors(
