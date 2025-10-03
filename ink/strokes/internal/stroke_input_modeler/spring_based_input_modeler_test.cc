@@ -33,12 +33,7 @@
 namespace ink::strokes_internal {
 namespace {
 
-using ::testing::AllOf;
 using ::testing::ElementsAre;
-using ::testing::ExplainMatchResult;
-using ::testing::Field;
-using ::testing::FloatNear;
-using ::testing::Optional;
 
 // Returns a vector of single-input `StrokeInputBatch` that can be used for a
 // single synthetic stroke.

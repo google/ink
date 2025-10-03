@@ -39,15 +39,11 @@ namespace {
 using ::absl_testing::IsOk;
 using ::testing::AllOf;
 using ::testing::Each;
-using ::testing::ElementsAre;
-using ::testing::ExplainMatchResult;
 using ::testing::Field;
-using ::testing::FloatNear;
 using ::testing::Ge;
 using ::testing::IsEmpty;
 using ::testing::Le;
 using ::testing::Not;
-using ::testing::Optional;
 using ::testing::SizeIs;
 
 // Returns a vector of single-input `StrokeInputBatch` that can be used for a
