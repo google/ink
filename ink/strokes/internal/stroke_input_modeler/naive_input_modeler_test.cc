@@ -101,8 +101,9 @@ TEST(NaiveInputModelerTest, ModeledInputsMatchRawInputs) {
     ASSERT_THAT(synthetic_real_inputs.Append(input_batch), IsOk());
   }
 
-  NaiveInputModeler modeler;
-  modeler.StartStroke(/*brush_epsilon=*/0.001);
+  StrokeInputModeler modeler;
+  modeler.StartStroke(BrushFamily::ExperimentalNaiveModel{},
+                      /*brush_epsilon=*/0.001);
   modeler.ExtendStroke(synthetic_real_inputs, {}, Duration32::Seconds(5));
 
   ASSERT_THAT(modeler.GetModeledInputs(), SizeIs(synthetic_real_inputs.Size()));
@@ -118,9 +119,24 @@ TEST(NaiveInputModelerTest, ModeledInputsMatchRawInputs) {
   }
 }
 
+TEST(NaiveInputModelerTest, RealAndCompleteElapsedTime) {
+  std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
+
+  StrokeInputModeler modeler;
+  modeler.StartStroke(BrushFamily::ExperimentalNaiveModel{},
+                      /*brush_epsilon=*/0.001);
+  modeler.ExtendStroke(input_batches[1], input_batches[2], Duration32::Zero());
+
+  EXPECT_THAT(modeler.GetState().total_real_elapsed_time,
+              Duration32Eq(Duration32::Seconds(1)));
+  EXPECT_THAT(modeler.GetState().complete_elapsed_time,
+              Duration32Eq(Duration32::Seconds(2)));
+}
+
 void CanModelAnyStrokeInputBatch(const StrokeInputBatch& inputs) {
-  NaiveInputModeler modeler;
-  modeler.StartStroke(/*brush_epsilon=*/1);
+  StrokeInputModeler modeler;
+  modeler.StartStroke(BrushFamily::ExperimentalNaiveModel{},
+                      /*brush_epsilon=*/1);
   modeler.ExtendStroke(inputs, {}, Duration32::Zero());
   // The `NaiveInputModeler` always produces exactly one modeled input for each
   // raw input.

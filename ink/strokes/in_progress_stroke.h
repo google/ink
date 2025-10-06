@@ -17,7 +17,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <optional>
 
 #include "absl/base/nullability.h"
@@ -278,8 +277,7 @@ class InProgressStroke {
   // `Start()`.
   Duration32 current_elapsed_time_ = Duration32::Zero();
   // A single input modeler for the stroke, which is used for all brush coats.
-  absl_nullable std::unique_ptr<strokes_internal::StrokeInputModeler>
-      input_modeler_;
+  strokes_internal::StrokeInputModeler input_modeler_;
   // A vector with at least one `StrokeShapeBuilder` for each `BrushCoat` in the
   // current brush (and potentially more; in order to cache allocations, we
   // never shrink this vector).

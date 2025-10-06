@@ -15,30 +15,22 @@
 #ifndef INK_STROKES_INTERNAL_STROKE_INPUT_MODELER_H_
 #define INK_STROKES_INTERNAL_STROKE_INPUT_MODELER_H_
 
-#include <cstddef>
 #include <memory>
-#include <optional>
 #include <vector>
 
 #include "absl/base/nullability.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_family.h"
-#include "ink/geometry/angle.h"
-#include "ink/geometry/point.h"
-#include "ink/geometry/vec.h"
-#include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/modeled_stroke_input.h"
+#include "ink/strokes/internal/stroke_input_modeler/input_model_impl.h"
 #include "ink/types/duration.h"
-#include "ink/types/physical_distance.h"
-#include "ink_stroke_modeler/stroke_modeler.h"
-#include "ink_stroke_modeler/types.h"
 
 namespace ink::strokes_internal {
 
-// An abstract interface for modeling (smoothing, de-noising, upsampling, etc.)
-// raw stroke inputs, both "real" and "predicted", to produce a sequence of
-// `ModeledStrokeInput`s that can be fed into Ink's stroke extrusion engine.
+// A `StrokeInputModeler` handles modeling (smoothing, de-noising, upsampling,
+// etc.)  raw stroke inputs, both "real" and "predicted", to produce a sequence
+// of `ModeledStrokeInput`s that can be fed into Ink's stroke extrusion engine.
 //
 // This type requires that the incremental `StrokeInputBatch` objects are
 // already checked to form a valid input sequence before being passed to
@@ -54,18 +46,12 @@ namespace ink::strokes_internal {
 // sliding window).
 class StrokeInputModeler {
  public:
-  // Constructs an appropriate `StrokeInputModeler` instance for the given
-  // `InputModel` specification.
-  static absl_nonnull std::unique_ptr<StrokeInputModeler> Create(
-      const BrushFamily::InputModel& input_model);
-
-  // Constructs a `StrokeInputModeler` instance using the default `InputModel`
-  // specification.
-  static absl_nonnull std::unique_ptr<StrokeInputModeler> CreateDefault() {
-    return Create(BrushFamily::DefaultInputModel());
-  }
-
-  virtual ~StrokeInputModeler() = default;
+  StrokeInputModeler() = default;
+  StrokeInputModeler(const StrokeInputModeler&) = delete;
+  StrokeInputModeler& operator=(const StrokeInputModeler&) = delete;
+  StrokeInputModeler(StrokeInputModeler&&) = default;
+  StrokeInputModeler& operator=(StrokeInputModeler&&) = default;
+  ~StrokeInputModeler() = default;
 
   // Clears any ongoing stroke and sets up the modeler to accept new stroke
   // input.
@@ -73,7 +59,8 @@ class StrokeInputModeler {
   // The value of `brush_epsilon` is CHECK-validated to be greater than zero and
   // is used as the minimum distance between resulting `ModeledStrokeInput`.
   // This function must be called before starting to call `ExtendStroke()`.
-  virtual void StartStroke(float brush_epsilon) = 0;
+  void StartStroke(const BrushFamily::InputModel& input_model,
+                   float brush_epsilon);
 
   // Models new real and predicted inputs and adds them to the current stroke.
   //
@@ -84,17 +71,33 @@ class StrokeInputModeler {
   // This always clears any previously generated unstable modeled inputs. Either
   // or both of `real_inputs` and `predicted_inputs` may be empty. CHECK-fails
   // if `StartStroke()` has not been called at least once.
-  virtual void ExtendStroke(const StrokeInputBatch& real_inputs,
-                            const StrokeInputBatch& predicted_inputs,
-                            Duration32 current_elapsed_time) = 0;
+  void ExtendStroke(const StrokeInputBatch& real_inputs,
+                    const StrokeInputBatch& predicted_inputs,
+                    Duration32 current_elapsed_time);
 
   // Returns the current modeling state so far for the current stroke.
-  virtual const InputModelerState& GetState() const = 0;
+  const InputModelerState& GetState() const { return state_; }
 
   // Returns all currently-modeled inputs based on the raw inputs so far.  The
   // first `GetState().stable_input_count` elements of this list are "stable"
   // and will not be changed by future calls to `ExtendStroke()`.
-  virtual absl::Span<const ModeledStrokeInput> GetModeledInputs() const = 0;
+  absl::Span<const ModeledStrokeInput> GetModeledInputs() const {
+    return modeled_inputs_;
+  }
+
+ private:
+  // Helper method for `ExtendStroke()`. Erases all predicted inputs from
+  // `modeled_inputs_`, and updates `state_` accordingly.
+  void ErasePredictedModeledInputs();
+
+  // Helper method for `ExtendStroke()`. Sets `state_.tool_type` and
+  // `state_.stroke_unit_length` from the inputs (if they are non-empty).
+  void SetToolTypeAndStrokeUnitLength(const StrokeInputBatch& real_inputs,
+                                      const StrokeInputBatch& predicted_inputs);
+
+  InputModelerState state_;
+  std::vector<ModeledStrokeInput> modeled_inputs_;
+  absl_nullable std::unique_ptr<InputModelImpl> input_model_impl_;
 };
 
 }  // namespace ink::strokes_internal
