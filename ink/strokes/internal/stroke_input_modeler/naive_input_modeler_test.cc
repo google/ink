@@ -36,12 +36,7 @@ namespace ink::strokes_internal {
 namespace {
 
 using ::absl_testing::IsOk;
-using ::testing::AllOf;
-using ::testing::ExplainMatchResult;
-using ::testing::Field;
 using ::testing::FloatEq;
-using ::testing::FloatNear;
-using ::testing::Optional;
 using ::testing::SizeIs;
 
 // Returns a vector of single-input `StrokeInputBatch` that can be used for a
