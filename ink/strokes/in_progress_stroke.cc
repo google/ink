@@ -200,9 +200,9 @@ absl::Status InProgressStroke::ValidateNewInputs(
     const StrokeInput& last_old_real_input =
         queued_real_inputs_.IsEmpty()
             ? processed_inputs_.Get(real_input_count_ - 1)
-            : queued_real_inputs_.Get(queued_real_inputs_.Size() - 1);
+            : queued_real_inputs_.Last();
     const StrokeInput& first_new_input =
-        real_inputs.IsEmpty() ? predicted_inputs.Get(0) : real_inputs.Get(0);
+        real_inputs.IsEmpty() ? predicted_inputs.First() : real_inputs.First();
     if (absl::Status status =
             ValidateConsecutiveInputs(last_old_real_input, first_new_input);
         !status.ok()) {
@@ -214,7 +214,7 @@ absl::Status InProgressStroke::ValidateNewInputs(
   // predicted input is valid against the last real input.
   if (!real_inputs.IsEmpty() && !predicted_inputs.IsEmpty()) {
     if (absl::Status status = ValidateConsecutiveInputs(
-            real_inputs.Get(real_inputs.Size() - 1), predicted_inputs.Get(0));
+            real_inputs.Last(), predicted_inputs.First());
         !status.ok()) {
       return status;
     }

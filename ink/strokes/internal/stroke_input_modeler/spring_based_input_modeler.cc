@@ -197,7 +197,7 @@ void SpringBasedInputModeler::ExtendStroke(
   state.stable_input_count = modeled_inputs.size();
 
   if (!real_inputs.IsEmpty()) {
-    last_real_stroke_input_ = real_inputs.Get(real_inputs.Size() - 1);
+    last_real_stroke_input_ = real_inputs.Last();
     ModelInput(modeled_inputs, *last_real_stroke_input_,
                /* last_input_in_update = */ predicted_inputs.IsEmpty());
   } else if (last_real_stroke_input_.has_value()) {

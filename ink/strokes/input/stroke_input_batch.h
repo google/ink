@@ -119,7 +119,17 @@ class StrokeInputBatch {
   // Returns an error and does not modify the batch if validation fails.
   absl::Status Set(int i, const StrokeInput& input);
 
+  // Returns the `StrokeInput` at index `i`. CHECK-fails if `i < 0` or if `i >=
+  // Size()`.
   StrokeInput Get(int i) const;
+
+  // Returns the first `StrokeInput` in the batch. CHECK-fails if the batch is
+  // empty.
+  StrokeInput First() const;
+
+  // Returns the last `StrokeInput` in the batch. CHECK-fails if the batch is
+  // empty.
+  StrokeInput Last() const;
 
   // Validates and appends a new `input`.
   //
@@ -317,6 +327,10 @@ inline int StrokeInputBatch::Size() const {
 }
 
 inline bool StrokeInputBatch::IsEmpty() const { return Size() == 0; }
+
+inline StrokeInput StrokeInputBatch::First() const { return Get(0); }
+
+inline StrokeInput StrokeInputBatch::Last() const { return Get(Size() - 1); }
 
 inline StrokeInputBatch::ConstIterator StrokeInputBatch::begin() const {
   return StrokeInputBatch::ConstIterator(*this, 0);

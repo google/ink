@@ -615,7 +615,8 @@ void CanAppendAnyValidStrokeInputToAnEmptyBatch(const StrokeInput& input) {
   StrokeInputBatch batch;
   EXPECT_EQ(absl::OkStatus(), batch.Append(input));
   EXPECT_EQ(batch.Size(), 1);
-  EXPECT_THAT(batch.Get(0), StrokeInputEq(input));
+  EXPECT_THAT(batch.First(), StrokeInputEq(input));
+  EXPECT_THAT(batch.Last(), StrokeInputEq(input));
 }
 FUZZ_TEST(StrokeInputBatchTest, CanAppendAnyValidStrokeInputToAnEmptyBatch)
     .WithDomains(ValidStrokeInput());
@@ -642,8 +643,7 @@ TEST(StrokeInputBatchTest, SetCausingDecreasingTime) {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(initial_inputs);
     ASSERT_EQ(batch.status(), absl::OkStatus());
-    ASSERT_GT(input_vector[4].elapsed_time,
-              batch->Get(batch->Size() - 1).elapsed_time);
+    ASSERT_GT(input_vector[4].elapsed_time, batch->Last().elapsed_time);
 
     absl::Status decreating_time = batch->Set(1, input_vector[4]);
     EXPECT_EQ(decreating_time.code(), absl::StatusCode::kInvalidArgument);
@@ -670,8 +670,7 @@ TEST(StrokeInputBatchTest, AppendDecreasingTime) {
       {input_vector[0], input_vector[1], input_vector[3]});
   ASSERT_EQ(batch.status(), absl::OkStatus());
 
-  ASSERT_GT(batch->Get(batch->Size() - 1).elapsed_time,
-            input_vector[2].elapsed_time);
+  ASSERT_GT(batch->Last().elapsed_time, input_vector[2].elapsed_time);
   absl::Status decreasing_time = batch->Append(input_vector[2]);
   EXPECT_EQ(decreasing_time.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(decreasing_time.message(), HasSubstr("elapsed_time"));
@@ -1564,6 +1563,16 @@ TEST(StrokeInputBatchDeathTest, GetWithIndexOutOfBounds) {
       StrokeInputBatch::Create(MakeValidTestInputSequence());
   ASSERT_EQ(batch.status(), absl::OkStatus());
   EXPECT_DEATH_IF_SUPPORTED(batch->Get(batch->Size()), "");
+}
+
+TEST(StrokeInputBatchDeathTest, FirstOnEmptyBatch) {
+  StrokeInputBatch batch;
+  EXPECT_DEATH_IF_SUPPORTED(batch.First(), "");
+}
+
+TEST(StrokeInputBatchDeathTest, LastOnEmptyBatch) {
+  StrokeInputBatch batch;
+  EXPECT_DEATH_IF_SUPPORTED(batch.Last(), "");
 }
 
 TEST(StrokeInputBatchDeathTest, EraseWithStartOutOfBounds) {

@@ -268,8 +268,7 @@ absl::Status StrokeInputBatch::Append(const StrokeInput& input) {
   }
 
   if (!IsEmpty()) {
-    if (status = ValidateConsecutiveInputs(Get(Size() - 1), input);
-        !status.ok()) {
+    if (status = ValidateConsecutiveInputs(Last(), input); !status.ok()) {
       return status;
     }
   } else {
@@ -293,7 +292,7 @@ absl::Status StrokeInputBatch::Append(absl::Span<const StrokeInput> inputs) {
     return status;
   }
   if (!IsEmpty()) {
-    if (status = ValidateConsecutiveInputs(Get(Size() - 1), inputs.front());
+    if (status = ValidateConsecutiveInputs(Last(), inputs.front());
         !status.ok()) {
       return status;
     }
@@ -340,8 +339,7 @@ absl::Status StrokeInputBatch::Append(const StrokeInputBatch& inputs) {
     return absl::OkStatus();
   }
 
-  if (absl::Status status =
-          ValidateConsecutiveInputs(Get(Size() - 1), inputs.Get(0));
+  if (absl::Status status = ValidateConsecutiveInputs(Last(), inputs.First());
       !status.ok()) {
     return status;
   }
@@ -379,7 +377,7 @@ void StrokeInputBatch::Erase(int start, int count) {
 
 Duration32 StrokeInputBatch::GetDuration() const {
   if (IsEmpty()) return Duration32::Zero();
-  return Get(Size() - 1).elapsed_time - Get(0).elapsed_time;
+  return Last().elapsed_time - First().elapsed_time;
 }
 
 void StrokeInputBatch::Transform(const AffineTransform& transform,

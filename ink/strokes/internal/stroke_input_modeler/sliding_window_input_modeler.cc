@@ -248,11 +248,10 @@ void SlidingWindowInputModeler::ModelUnstableInputPosition(
   int sliding_window_input_count = sliding_window_.Size();
   ABSL_DCHECK_GT(sliding_window_input_count, 0);
 
-  Duration32 half_window_size = std::min(
+  Duration32 half_window_size =
       std::min(half_window_size_,
-               elapsed_time - sliding_window_.Get(0).elapsed_time),
-      sliding_window_.Get(sliding_window_input_count - 1).elapsed_time -
-          elapsed_time);
+               std::min(elapsed_time - sliding_window_.First().elapsed_time,
+                        sliding_window_.Last().elapsed_time - elapsed_time));
   Duration32 start_time = elapsed_time - half_window_size;
   Duration32 end_time = elapsed_time + half_window_size;
 

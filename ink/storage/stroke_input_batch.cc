@@ -74,7 +74,7 @@ void EncodeStrokeInputBatch(const StrokeInputBatch& input_batch,
   // Determine the envelope for the input positions and the maximum input time
   // value.
   Rect stroke_space_bounds =
-      Rect::FromCenterAndDimensions(input_batch.Get(0).position, 0, 0);
+      Rect::FromCenterAndDimensions(input_batch.First().position, 0, 0);
   float elapsed_time_seconds_max = 0.0f;
   for (auto input : input_batch) {
     stroke_space_bounds.Join(input.position);
@@ -277,7 +277,7 @@ absl::StatusOr<StrokeInputBatch> DecodeStrokeInputBatch(
   // TODO: b/355637257 - Add a StrokeInputBatch::Reserve member function.
   for (const auto& input : *range) {
     if (!batch.IsEmpty()) {
-      StrokeInput previous = batch.Get(batch.Size() - 1);
+      StrokeInput previous = batch.Last();
       if (input.position_stroke_space == previous.position &&
           input.elapsed_time == previous.elapsed_time) {
         continue;

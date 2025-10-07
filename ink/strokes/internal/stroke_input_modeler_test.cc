@@ -189,8 +189,7 @@ TEST_P(StrokeInputModelerTest, ExtendWithEmptyRealInputs) {
               Optional(PhysicalDistanceEq(PhysicalDistance::Centimeters(1))));
 
   Duration32 predicted_elapsed_time =
-      synthetic_predicted_inputs.Get(synthetic_predicted_inputs.Size() - 1)
-          .elapsed_time;
+      synthetic_predicted_inputs.Last().elapsed_time;
   EXPECT_THAT(modeler.GetState().complete_elapsed_time.ToSeconds(),
               FloatNear(predicted_elapsed_time.ToSeconds(), 0.05));
 
@@ -209,17 +208,17 @@ TEST_P(StrokeInputModelerTest, ExtendWithBothEmptyInputsClearsPrediction) {
   float brush_epsilon = 0.08;
   modeler.StartStroke(GetParam().input_model, brush_epsilon);
 
-  Duration32 current_elapsed_time = input_batches[0].Get(0).elapsed_time;
+  Duration32 current_elapsed_time = input_batches[0].Last().elapsed_time;
   modeler.ExtendStroke(input_batches[0], {}, current_elapsed_time);
 
-  current_elapsed_time = input_batches[1].Get(0).elapsed_time;
+  current_elapsed_time = input_batches[1].Last().elapsed_time;
   modeler.ExtendStroke(input_batches[1], input_batches[4],
                        current_elapsed_time);
 
   EXPECT_EQ(modeler.GetState().tool_type, StrokeInput::ToolType::kStylus);
   EXPECT_THAT(modeler.GetState().stroke_unit_length,
               Optional(PhysicalDistanceEq(PhysicalDistance::Centimeters(1))));
-  Duration32 predicted_elapsed_time = input_batches[4].Get(0).elapsed_time;
+  Duration32 predicted_elapsed_time = input_batches[4].Last().elapsed_time;
   EXPECT_THAT(modeler.GetState().complete_elapsed_time.ToSeconds(),
               FloatNear(predicted_elapsed_time.ToSeconds(), 0.05));
 
@@ -255,10 +254,10 @@ TEST_P(StrokeInputModelerTest, ExtendKeepsRealInputAndReplacesPrediction) {
   float brush_epsilon = 0.004;
   modeler.StartStroke(GetParam().input_model, brush_epsilon);
 
-  Duration32 current_elapsed_time = input_batches[0].Get(0).elapsed_time;
+  Duration32 current_elapsed_time = input_batches[0].Last().elapsed_time;
   modeler.ExtendStroke(input_batches[0], {}, current_elapsed_time);
 
-  current_elapsed_time = input_batches[1].Get(0).elapsed_time;
+  current_elapsed_time = input_batches[1].Last().elapsed_time;
   modeler.ExtendStroke(input_batches[1], input_batches[4],
                        current_elapsed_time);
 
@@ -280,7 +279,7 @@ TEST_P(StrokeInputModelerTest, ExtendKeepsRealInputAndReplacesPrediction) {
   Duration32 last_total_elapsed_time =
       modeler.GetModeledInputs().back().elapsed_time;
 
-  current_elapsed_time = input_batches[2].Get(0).elapsed_time;
+  current_elapsed_time = input_batches[2].Last().elapsed_time;
   modeler.ExtendStroke(input_batches[2], input_batches[3],
                        current_elapsed_time);
 
@@ -310,10 +309,10 @@ TEST_P(StrokeInputModelerTest, StartClearsAfterExtending) {
   StrokeInputModeler modeler;
   modeler.StartStroke(GetParam().input_model, /* brush_epsilon = */ 0.01);
 
-  Duration32 current_elapsed_time = input_batches[0].Get(0).elapsed_time;
+  Duration32 current_elapsed_time = input_batches[0].Last().elapsed_time;
   modeler.ExtendStroke(input_batches[0], {}, current_elapsed_time);
 
-  current_elapsed_time = input_batches[1].Get(0).elapsed_time;
+  current_elapsed_time = input_batches[1].Last().elapsed_time;
   modeler.ExtendStroke(input_batches[1], input_batches[2],
                        current_elapsed_time);
 

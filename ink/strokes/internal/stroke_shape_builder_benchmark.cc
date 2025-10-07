@@ -55,9 +55,8 @@ void BuildStrokeShapeIncrementally(
   builder.StartStroke(brush.GetCoats()[0], brush.GetSize(), brush.GetEpsilon());
   benchmark::DoNotOptimize(builder);
   for (const auto& [real_inputs, predicted_inputs] : inputs) {
-    input_modeler.ExtendStroke(
-        real_inputs, predicted_inputs,
-        real_inputs.Get(real_inputs.Size() - 1).elapsed_time);
+    input_modeler.ExtendStroke(real_inputs, predicted_inputs,
+                               real_inputs.Last().elapsed_time);
     benchmark::DoNotOptimize(input_modeler);
     StrokeShapeUpdate update = builder.ExtendStroke(input_modeler);
     benchmark::DoNotOptimize(builder);

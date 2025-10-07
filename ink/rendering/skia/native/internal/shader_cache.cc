@@ -159,13 +159,13 @@ AffineTransform ComputeSizeUnitToStrokeSpaceTransform(
     case BrushPaint::TextureOrigin::kFirstStrokeInput:
       if (!inputs.IsEmpty()) {
         stroke_space_offset =
-            AffineTransform::Translate(inputs.Get(0).position.Offset());
+            AffineTransform::Translate(inputs.First().position.Offset());
       }
       break;
     case BrushPaint::TextureOrigin::kLastStrokeInput:
       if (!inputs.IsEmpty()) {
-        stroke_space_offset = AffineTransform::Translate(
-            inputs.Get(inputs.Size() - 1).position.Offset());
+        stroke_space_offset =
+            AffineTransform::Translate(inputs.Last().position.Offset());
       }
       break;
   }

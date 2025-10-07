@@ -337,7 +337,7 @@ TEST(StrokeTest, ConstructorBrushStrokeInputBatchShape) {
   ASSERT_EQ(shape_out.RenderGroupCount(), 1u);
   EXPECT_EQ(shape_out.OutlineCount(0), 2u);
   EXPECT_EQ(inputs_out.Size(), inputs.Size());
-  EXPECT_THAT(inputs_out.Get(0).position, PointEq(inputs.Get(0).position));
+  EXPECT_THAT(inputs_out.First().position, PointEq(inputs.First().position));
   EXPECT_THAT(stroke.GetBrush(), BrushEq(brush));
 }
 
