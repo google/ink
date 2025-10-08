@@ -26,8 +26,10 @@
 
 namespace ink {
 
-// A `ColorFunction` defines a mapping over colors.
-// TODO: b/351867634 - Mention how this is used by `BrushPaint`.
+// A `ColorFunction` defines a mapping over colors. This is used by `BrushPaint`
+// to transform the brush color for a given coat of paint, for example to apply
+// opacity for one of the brush's coats, or to force one coat to a specific
+// color.
 //
 // A default-constructed ColorFunction specifies an identity mapping that leaves
 // the input color unchanged.
