@@ -28,7 +28,7 @@ namespace ink::strokes_internal {
 class SlidingWindowInputModeler : public InputModelImpl {
  public:
   SlidingWindowInputModeler(Duration32 window_size,
-                            Duration32 upsampling_period);
+                            Duration32 upsampling_period, float brush_epsilon);
 
   void ExtendStroke(InputModelerState& state,
                     std::vector<ModeledStrokeInput>& modeled_inputs,
@@ -66,11 +66,12 @@ class SlidingWindowInputModeler : public InputModelImpl {
 
   // Helper method for `ModelUnstableInputPositions()`. Appends a new modeled
   // input (computing only position and pressure/tilt/orientation for now) at
-  // `elapsed_time`.  When this returns, `start_index` and `end_index` will be
-  // the indices into `sliding_window_` of the first raw input before the window
-  // and the last raw input after the window; before calling this, `start_index`
-  // and `end_index` must be no larger than those indices, as they are only ever
-  // marched forward.
+  // `elapsed_time`, unless it would be within `brush_epsilon_` of the previous
+  // modeled input. Either way, when this returns, `start_index` and `end_index`
+  // will be the indices into `sliding_window_` of the first raw input before
+  // the window and the last raw input after the window; before calling this,
+  // `start_index` and `end_index` must be no larger than those indices, as they
+  // are only ever marched forward.
   void ModelUnstableInputPosition(
       std::vector<ModeledStrokeInput>& modeled_inputs, Duration32 elapsed_time,
       int& start_index, int& end_index);
@@ -97,9 +98,14 @@ class SlidingWindowInputModeler : public InputModelImpl {
                          std::vector<ModeledStrokeInput>& modeled_inputs,
                          int sliding_window_real_input_count);
 
+  bool IsWithinEpsilonOfLastInput(
+      const std::vector<ModeledStrokeInput>& modeled_inputs,
+      Point position) const;
+
   StrokeInputBatch sliding_window_;
   Duration32 half_window_size_;
   Duration32 upsampling_period_;
+  float brush_epsilon_;
 };
 
 }  // namespace ink::strokes_internal
