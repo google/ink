@@ -211,6 +211,31 @@ TEST(SlidingWindowInputModelerTest, Upsampling) {
   EXPECT_THAT(modeled[20].position, PointNear({100.0, 100.0}, 0.1));
 }
 
+TEST(SlidingWindowInputModelerTest, PruneModeledInputsWithinEpsilon) {
+  StrokeInputModeler modeler;
+  modeler.StartStroke(
+      BrushFamily::SlidingWindowModel{
+          .window_size = Duration32::Millis(10),
+          .upsampling_period = Duration32::Millis(5),
+      },
+      /*brush_epsilon=*/0.01);
+
+  // Extend the stroke with three raw inputs, spaced 100 ms apart, but all with
+  // the same position.
+  absl::StatusOr<StrokeInputBatch> inputs = StrokeInputBatch::Create({
+      {.position = {12, 34}, .elapsed_time = Duration32::Millis(0)},
+      {.position = {12, 34}, .elapsed_time = Duration32::Millis(100)},
+      {.position = {12, 34}, .elapsed_time = Duration32::Millis(200)},
+  });
+  ASSERT_THAT(inputs, IsOk());
+  modeler.ExtendStroke(*inputs, {}, Duration32::Millis(200));
+
+  // Since all positions are within `brush_epsilon`, there should only be a
+  // single modeled input; all others should get pruned.
+  EXPECT_THAT(modeler.GetModeledInputs(), SizeIs(1));
+  EXPECT_EQ(modeler.GetState().real_input_count, 1);
+}
+
 void CanModelAnyStrokeInputBatch(const StrokeInputBatch& inputs) {
   StrokeInputModeler modeler;
   modeler.StartStroke(

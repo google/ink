@@ -55,7 +55,8 @@ absl_nonnull std::unique_ptr<InputModelImpl> CreateInputModeler(
     const BrushFamily::SlidingWindowModel& sliding_window_model,
     float brush_epsilon) {
   return std::make_unique<SlidingWindowInputModeler>(
-      sliding_window_model.window_size, sliding_window_model.upsampling_period);
+      sliding_window_model.window_size, sliding_window_model.upsampling_period,
+      brush_epsilon);
 }
 
 }  // namespace
