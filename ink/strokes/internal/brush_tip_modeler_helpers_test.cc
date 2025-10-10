@@ -1398,7 +1398,6 @@ BrushTip MakeBaseBrushTip() {
       .slant = -kFullTurn / 8,
       .pinch = 0.3,
       .rotation = -kQuarterTurn,
-      .opacity_multiplier = 0.7f,
   };
 }
 
@@ -1414,7 +1413,6 @@ TEST(CreateTipStateTest, HasBasePropertiesWithoutBehaviors) {
   EXPECT_THAT(state.slant, AngleEq(brush_tip.slant));
   EXPECT_FLOAT_EQ(state.pinch, brush_tip.pinch);
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
-  EXPECT_FLOAT_EQ(state.opacity_multiplier, brush_tip.opacity_multiplier);
 }
 
 TEST(CreateTipStateTest, WithBehaviorTargetingWidth) {
@@ -1650,8 +1648,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingOpacity) {
       {0, 0}, Angle(), brush_tip, brush_size,
       {BrushBehavior::Target::kOpacityMultiplier}, {opacity_multiplier});
 
-  EXPECT_FLOAT_EQ(state.opacity_multiplier,
-                  brush_tip.opacity_multiplier * opacity_multiplier);
+  EXPECT_FLOAT_EQ(state.opacity_multiplier, opacity_multiplier);
   EXPECT_FLOAT_EQ(state.width, brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height, brush_tip.scale.y * brush_size);
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));

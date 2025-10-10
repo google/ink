@@ -129,15 +129,14 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{.scale = {3, 3},
                .corner_rounding = 0,
-               .opacity_multiplier = 0.7,
                .particle_gap_distance_scale = 0.1,
                .particle_gap_duration = Duration32::Seconds(2)},
       CreateTestPaint());
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_EQ(absl::StrCat(*family),
             "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
-            "corner_rounding=0, opacity_multiplier=0.7, "
-            "particle_gap_distance_scale=0.1, particle_gap_duration=2s}, "
+            "corner_rounding=0, particle_gap_distance_scale=0.1, "
+            "particle_gap_duration=2s}, "
             "paint_preferences={BrushPaint{texture_layers={TextureLayer{"
             "client_texture_id=test-paint, mapping=kStamping, "
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
@@ -151,14 +150,13 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
 }
 
 TEST(BrushFamilyTest, StringifyWithId) {
-  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
-      BrushTip{
-          .scale = {3, 3}, .corner_rounding = 0, .opacity_multiplier = 0.7},
-      CreateTestPaint(), "big-square");
+  absl::StatusOr<BrushFamily> family =
+      BrushFamily::Create(BrushTip{.scale = {3, 3}, .corner_rounding = 0},
+                          CreateTestPaint(), "big-square");
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_EQ(absl::StrCat(*family),
             "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
-            "corner_rounding=0, opacity_multiplier=0.7}, "
+            "corner_rounding=0}, "
             "paint_preferences={BrushPaint{texture_layers={TextureLayer{client_"
             "texture_id=test-paint, mapping=kStamping, "
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
@@ -350,39 +348,6 @@ TEST(BrushFamilyTest, CreateWithInvalidTipRotation) {
         BrushFamily::Create({.rotation = -Angle::Radians(kNan)}, {}).status();
     EXPECT_EQ(status.code(), kInvalidArgument);
     EXPECT_THAT(status.message(), HasSubstr("rotation"));
-  }
-}
-
-TEST(BrushFamilyTest, CreateWithInvalidTipOpacityMultiplier) {
-  {
-    absl::Status status =
-        BrushFamily::Create({.opacity_multiplier = -kInfinity}, {}).status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("opacity_multiplier"));
-  }
-  {
-    absl::Status status =
-        BrushFamily::Create({.opacity_multiplier = kInfinity}, {}).status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("opacity_multiplier"));
-  }
-  {
-    absl::Status status =
-        BrushFamily::Create({.opacity_multiplier = kNan}, {}).status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("opacity_multiplier"));
-  }
-  {
-    absl::Status status =
-        BrushFamily::Create({.opacity_multiplier = -1}, {}).status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("opacity_multiplier"));
-  }
-  {
-    absl::Status status =
-        BrushFamily::Create({.opacity_multiplier = 5}, {}).status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("opacity_multiplier"));
   }
 }
 

@@ -86,12 +86,6 @@ absl::Status ValidateBrushTipTopLevel(const BrushTip& tip) {
     return absl::InvalidArgumentError(absl::StrFormat(
         "`BrushTip::rotation` must be finite. Got %v", tip.rotation));
   }
-  if (!(tip.opacity_multiplier >= 0 && tip.opacity_multiplier <= 2)) {
-    return absl::InvalidArgumentError(
-        absl::StrFormat("`BrushTip::opacity_multiplier` must be a value in the "
-                        "interval [0, 2]. Got %f",
-                        tip.opacity_multiplier));
-  }
   if (!std::isfinite(tip.particle_gap_distance_scale) ||
       tip.particle_gap_distance_scale < 0) {
     return absl::InvalidArgumentError(
@@ -140,10 +134,6 @@ std::string ToFormattedString(const BrushTip& tip) {
   }
   if (tip.rotation != Angle()) {
     absl::StrAppend(&formatted, ", rotation=", tip.rotation);
-  }
-  if (tip.opacity_multiplier != 1.f) {
-    absl::StrAppend(&formatted,
-                    ", opacity_multiplier=", tip.opacity_multiplier);
   }
   if (tip.particle_gap_distance_scale != 0) {
     absl::StrAppend(&formatted, ", particle_gap_distance_scale=",

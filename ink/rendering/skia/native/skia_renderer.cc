@@ -83,12 +83,6 @@ SkRect ToSkiaRect(const Rect& rect) {
   return SkRect::MakeLTRB(rect.XMin(), rect.YMin(), rect.XMax(), rect.YMax());
 }
 
-// Returns the color opacity multiplier when `SkPath` should be used for
-// rendering instead of `SkMesh`.
-float OpacityMultiplierForPath(const Brush& brush, uint32_t coat_index) {
-  return brush.GetCoats()[coat_index].tip.opacity_multiplier;
-}
-
 // Returns whether the given `paint` is compatible with the given `mesh_format`.
 // This doesn't take a `BrushCoat` because at render time, we need to consider
 // attributes required by just a specific `BrushPaint` preference, not all of
@@ -252,9 +246,9 @@ absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
 absl::StatusOr<PathDrawable> SkiaRenderer::CreatePathDrawable(
     const InProgressStroke& stroke, uint32_t coat_index,
     const BrushPaint& brush_paint, const Brush& brush) {
-  PathDrawable drawable(
-      stroke.GetMesh(coat_index), stroke.GetCoatOutlines(coat_index),
-      brush_paint.color_functions, OpacityMultiplierForPath(brush, coat_index));
+  PathDrawable drawable(stroke.GetMesh(coat_index),
+                        stroke.GetCoatOutlines(coat_index),
+                        brush_paint.color_functions);
   drawable.SetBrushColor(brush.GetColor());
   return drawable;
 }
@@ -315,8 +309,7 @@ absl::StatusOr<PathDrawable> SkiaRenderer::CreatePathDrawable(
     const Stroke& stroke, uint32_t coat_index, const BrushPaint& brush_paint,
     const Brush& brush) {
   PathDrawable drawable(stroke.GetShape(), coat_index,
-                        brush_paint.color_functions,
-                        OpacityMultiplierForPath(brush, coat_index));
+                        brush_paint.color_functions);
   drawable.SetBrushColor(brush.GetColor());
   return drawable;
 }

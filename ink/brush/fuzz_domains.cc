@@ -716,9 +716,8 @@ Domain<BrushTip> ValidBrushTip(DomainVariant variant) {
       Filter([](Vec scale) { return scale != Vec(); },
              StructOf<Vec>(FiniteNonNegativeFloat(), FiniteNonNegativeFloat())),
       InRange<float>(0.f, 1.f), AngleInRange(-kQuarterTurn, kQuarterTurn),
-      InRange<float>(0.f, 1.f), FiniteAngle(), InRange<float>(0.f, 2.f),
-      FiniteNonNegativeFloat(), FiniteNonNegativeDuration32(),
-      VectorOf(ValidBrushBehavior(variant)));
+      InRange<float>(0.f, 1.f), FiniteAngle(), FiniteNonNegativeFloat(),
+      FiniteNonNegativeDuration32(), VectorOf(ValidBrushBehavior(variant)));
 }
 
 }  // namespace

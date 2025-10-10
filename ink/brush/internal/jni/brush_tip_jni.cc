@@ -52,8 +52,8 @@ extern "C" {
 JNI_METHOD(brush, BrushTipNative, jlong, create)
 (JNIEnv* env, jobject thiz, jfloat scale_x, jfloat scale_y,
  jfloat corner_rounding, jfloat slant_degrees, jfloat pinch,
- jfloat rotation_degrees, jfloat opacity_multiplier,
- jfloat particle_gap_distance_scale, jlong particle_gap_duration_millis,
+ jfloat rotation_degrees, jfloat particle_gap_distance_scale,
+ jlong particle_gap_duration_millis,
  jlongArray behavior_native_pointers_array) {
   std::vector<BrushBehavior> behaviors;
   const jsize num_behaviors =
@@ -74,7 +74,6 @@ JNI_METHOD(brush, BrushTipNative, jlong, create)
       .slant = Angle::Degrees(slant_degrees),
       .pinch = pinch,
       .rotation = Angle::Degrees(rotation_degrees),
-      .opacity_multiplier = opacity_multiplier,
       .particle_gap_distance_scale = particle_gap_distance_scale,
       .particle_gap_duration = Duration32::Millis(particle_gap_duration_millis),
       .behaviors = behaviors};
@@ -118,11 +117,6 @@ JNI_METHOD(brush, BrushTipNative, jfloat, getPinch)
 JNI_METHOD(brush, BrushTipNative, jfloat, getRotationDegrees)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return CastToBrushTip(native_pointer).rotation.ValueInDegrees();
-}
-
-JNI_METHOD(brush, BrushTipNative, jfloat, getOpacityMultiplier)
-(JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return CastToBrushTip(native_pointer).opacity_multiplier;
 }
 
 JNI_METHOD(brush, BrushTipNative, jfloat, getParticleGapDistanceScale)

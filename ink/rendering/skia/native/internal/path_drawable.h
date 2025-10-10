@@ -44,13 +44,11 @@ class PathDrawable {
   // function will need to change to accept a `span<const MutableMesh>`.
   PathDrawable(const MutableMesh& mesh,
                absl::Span<const absl::Span<const uint32_t>> index_outlines,
-               absl::Span<const ColorFunction> color_functions,
-               float opacity_multiplier);
+               absl::Span<const ColorFunction> color_functions);
 
   // Constructs the drawable from one render group of a `PartitionedMesh`.
   PathDrawable(const PartitionedMesh& shape, uint32_t render_group_index,
-               absl::Span<const ColorFunction> color_functions,
-               float opacity_multiplier);
+               absl::Span<const ColorFunction> color_functions);
 
   PathDrawable() = default;
   PathDrawable(const PathDrawable&) = default;
@@ -60,9 +58,8 @@ class PathDrawable {
   ~PathDrawable() = default;
 
   // Sets the brush color to be used for this drawable. The passed-in
-  // `brush_color` will be transformed by the `color_functions` and
-  // `opacity_multiplier` passed in during construction before being applied to
-  // the underlying `SkPaint`.
+  // `brush_color` will be transformed by the `color_functions` passed in during
+  // construction before being applied to the underlying `SkPaint`.
   void SetBrushColor(const Color& brush_color);
 
   void SetImageFilter(sk_sp<SkImageFilter> image_filter);
@@ -73,7 +70,6 @@ class PathDrawable {
   absl::InlinedVector<SkPath, 1> paths_;
   SkPaint paint_;
   absl::InlinedVector<ColorFunction, 1> color_functions_;
-  float opacity_multiplier_;
 };
 
 }  // namespace ink::skia_native_internal

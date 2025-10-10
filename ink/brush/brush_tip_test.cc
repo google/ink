@@ -32,15 +32,13 @@ TEST(BrushTipTest, Stringify) {
                 .slant = Angle::Degrees(45),
                 .pinch = 0.75f,
                 .rotation = Angle::Degrees(90),
-                .opacity_multiplier = 0.7f,
             }),
             "BrushTip{scale=<0.5, 2>, corner_rounding=0.25, slant=0.25π, "
-            "pinch=0.75, rotation=0.5π, opacity_multiplier=0.7}");
+            "pinch=0.75, rotation=0.5π}");
   EXPECT_EQ(
       absl::StrCat(BrushTip{
           .scale = {1.25f, 0.75f},
           .corner_rounding = 0.f,
-          .opacity_multiplier = 0.7f,
           .behaviors =
               {
                   BrushBehavior{{
@@ -65,7 +63,7 @@ TEST(BrushTipTest, Stringify) {
                   }},
               },
       }),
-      "BrushTip{scale=<1.25, 0.75>, corner_rounding=0, opacity_multiplier=0.7, "
+      "BrushTip{scale=<1.25, 0.75>, corner_rounding=0, "
       "behaviors={BrushBehavior{nodes={SourceNode{source=kTimeOfInputInMillis, "
       "source_value_range={0, 250}}, TargetNode{target=kWidthMultiplier, "
       "target_modifier_range={1.5, 2}}}}, "
@@ -81,7 +79,6 @@ TEST(BrushTipTest, EqualAndNotEqual) {
       .slant = Angle::Degrees(45),
       .pinch = 0.75f,
       .rotation = Angle::Degrees(90),
-      .opacity_multiplier = 0.7f,
       .particle_gap_distance_scale = 0.5f,
       .particle_gap_duration = Duration32::Seconds(0.5),
       .behaviors = {
@@ -105,7 +102,6 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .slant = Angle::Degrees(45),
            .pinch = 0.75f,
            .rotation = Angle::Degrees(90),
-           .opacity_multiplier = 0.7f,
            .particle_gap_distance_scale = 0.5f,
            .particle_gap_duration = Duration32::Seconds(0.5),
            .behaviors = {
@@ -127,7 +123,6 @@ TEST(BrushTipTest, EqualAndNotEqual) {
                 .slant = Angle::Degrees(45),
                 .pinch = 0.75f,
                 .rotation = Angle::Degrees(90),
-                .opacity_multiplier = 0.7f,
                 .particle_gap_distance_scale = 0.5f,
                 .particle_gap_duration = Duration32::Seconds(0.5),
                 .behaviors = {BrushBehavior{{
@@ -148,7 +143,6 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .slant = Angle::Degrees(45),
            .pinch = 0.75f,
            .rotation = Angle::Degrees(90),
-           .opacity_multiplier = 0.7f,
            .particle_gap_distance_scale = 0.5f,
            .particle_gap_duration = Duration32::Seconds(0.5),
            .behaviors = {
@@ -171,7 +165,6 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .slant = Angle::Degrees(33),  // Modified
            .pinch = 0.75f,
            .rotation = Angle::Degrees(90),
-           .opacity_multiplier = 0.7f,
            .particle_gap_distance_scale = 0.5f,
            .particle_gap_duration = Duration32::Seconds(0.5),
            .behaviors = {
@@ -194,7 +187,6 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .slant = Angle::Degrees(45),
            .pinch = 0.88f,  // Modified
            .rotation = Angle::Degrees(90),
-           .opacity_multiplier = 0.7f,
            .particle_gap_distance_scale = 0.5f,
            .particle_gap_duration = Duration32::Seconds(0.5),
            .behaviors = {
@@ -217,7 +209,6 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .slant = Angle::Degrees(45),
            .pinch = 0.75f,
            .rotation = Angle::Degrees(22),  // Modified
-           .opacity_multiplier = 0.7f,
            .particle_gap_distance_scale = 0.5f,
            .particle_gap_duration = Duration32::Seconds(0.5),
            .behaviors = {
@@ -240,30 +231,6 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .slant = Angle::Degrees(45),
            .pinch = 0.75f,
            .rotation = Angle::Degrees(90),
-           .opacity_multiplier = 0.9f,  // Modified
-           .particle_gap_distance_scale = 0.5f,
-           .particle_gap_duration = Duration32::Seconds(0.5),
-           .behaviors = {
-               BrushBehavior{{
-                   BrushBehavior::SourceNode{
-                       .source = BrushBehavior::Source::kTimeOfInputInMillis,
-                       .source_value_range = {0, 250},
-                   },
-                   BrushBehavior::TargetNode{
-                       .target = BrushBehavior::Target::kWidthMultiplier,
-                       .target_modifier_range = {1.5, 2},
-                   },
-               }},
-           }}));
-  EXPECT_NE(
-      brush_tip,
-      BrushTip(
-          {.scale = {1.25f, 0.75f},
-           .corner_rounding = 0.25f,
-           .slant = Angle::Degrees(45),
-           .pinch = 0.75f,
-           .rotation = Angle::Degrees(90),
-           .opacity_multiplier = 0.7f,
            .particle_gap_distance_scale = 0,  // Modified
            .particle_gap_duration = Duration32::Seconds(0.5),
            .behaviors = {
@@ -286,7 +253,6 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .slant = Angle::Degrees(45),
            .pinch = 0.75f,
            .rotation = Angle::Degrees(90),
-           .opacity_multiplier = 0.7f,
            .particle_gap_distance_scale = 0.5f,
            .particle_gap_duration = Duration32::Zero(),  // Modified
            .behaviors = {
@@ -309,7 +275,6 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .slant = Angle::Degrees(45),
            .pinch = 0.75f,
            .rotation = Angle::Degrees(90),
-           .opacity_multiplier = 0.7f,
            .particle_gap_distance_scale = 0.5f,
            .particle_gap_duration = Duration32::Seconds(0.5),
            // Modified:

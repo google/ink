@@ -33,6 +33,7 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
 #include "ink/brush/fuzz_domains.h"
 #include "ink/brush/type_matchers.h"
@@ -50,6 +51,7 @@ namespace ink {
 namespace {
 
 using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
 using ::absl_testing::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
@@ -89,7 +91,6 @@ TEST(BrushTest, DecodeBrushProto) {
       {std::string(kTestTextureId2), test_bitmap_2});
   proto::BrushCoat* coat_proto = family_proto->add_coats();
   coat_proto->mutable_tip()->set_corner_rounding(0.5f);
-  coat_proto->mutable_tip()->set_opacity_multiplier(1.0f);
   proto::BrushPaint* paint_proto = coat_proto->add_paint_preferences();
   proto::BrushPaint::TextureLayer* texture_layer_proto_1 =
       paint_proto->add_texture_layers();
@@ -359,7 +360,6 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{
           .corner_rounding = 0.25f,
-          .opacity_multiplier = 0.7f,
           .particle_gap_distance_scale = 1,
           .particle_gap_duration = Duration32::Seconds(2),
       },
@@ -401,7 +401,6 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   coat_proto->mutable_tip()->set_slant_radians(0.f);
   coat_proto->mutable_tip()->set_pinch(0.f);
   coat_proto->mutable_tip()->set_rotation_radians(0.f);
-  coat_proto->mutable_tip()->set_opacity_multiplier(0.7f);
   coat_proto->mutable_tip()->set_particle_gap_distance_scale(1);
   coat_proto->mutable_tip()->set_particle_gap_duration_seconds(2);
   proto::BrushPaint* paint_proto = coat_proto->add_paint_preferences();
@@ -438,7 +437,6 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{
           .corner_rounding = 0.25f,
-          .opacity_multiplier = 0.7f,
           .particle_gap_distance_scale = 1,
           .particle_gap_duration = Duration32::Seconds(2),
       },
@@ -489,7 +487,6 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   tip_proto->set_slant_radians(0.f);
   tip_proto->set_pinch(0.f);
   tip_proto->set_rotation_radians(0.f);
-  tip_proto->set_opacity_multiplier(0.7f);
   tip_proto->set_particle_gap_distance_scale(1);
   tip_proto->set_particle_gap_duration_seconds(2);
   proto::BrushPaint* paint_proto = coat_proto->add_paint_preferences();
@@ -525,10 +522,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
 
 TEST(BrushTest, EncodeBrushFamilyTextureMap) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
-      BrushTip{
-          .corner_rounding = 0.25f,
-          .opacity_multiplier = 0.7f,
-      },
+      BrushTip{.corner_rounding = 0.25f},
       {.texture_layers = {{.client_texture_id = std::string(kTestTextureId1),
                            .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,

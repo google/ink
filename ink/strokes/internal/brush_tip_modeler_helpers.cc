@@ -705,7 +705,6 @@ BrushTipState CreateTipState(Point position, std::optional<Angle> direction,
       .rotation = brush_tip.rotation,
       .slant = brush_tip.slant,
       .pinch = brush_tip.pinch,
-      .opacity_multiplier = brush_tip.opacity_multiplier,
   };
   ApplyModifiersToTipState(tip_state_modifiers, tip_state);
   return tip_state;

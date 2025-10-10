@@ -93,9 +93,8 @@ void SetPaintDefaultsForPath(SkPaint& paint) {
 PathDrawable::PathDrawable(
     const MutableMesh& mesh,
     absl::Span<const absl::Span<const uint32_t>> index_outlines,
-    absl::Span<const ColorFunction> color_functions, float opacity_multiplier)
-    : color_functions_(color_functions.begin(), color_functions.end()),
-      opacity_multiplier_(opacity_multiplier) {
+    absl::Span<const ColorFunction> color_functions)
+    : color_functions_(color_functions.begin(), color_functions.end()) {
   for (absl::Span<const uint32_t> indices : index_outlines) {
     if (indices.empty()) continue;
 
@@ -106,10 +105,8 @@ PathDrawable::PathDrawable(
 
 PathDrawable::PathDrawable(const PartitionedMesh& shape,
                            uint32_t render_group_index,
-                           absl::Span<const ColorFunction> color_functions,
-                           float opacity_multiplier)
-    : color_functions_(color_functions.begin(), color_functions.end()),
-      opacity_multiplier_(opacity_multiplier) {
+                           absl::Span<const ColorFunction> color_functions)
+    : color_functions_(color_functions.begin(), color_functions.end()) {
   absl::Span<const Mesh> mesh_group =
       shape.RenderGroupMeshes(render_group_index);
   for (uint32_t i = 0; i < shape.OutlineCount(render_group_index); ++i) {
@@ -127,9 +124,8 @@ void PathDrawable::SetBrushColor(const Color& brush_color) {
                            .InColorSpace(ColorSpace::kSrgb)
                            .AsFloat(Color::Format::kLinear);
   sk_sp<SkColorSpace> srgb_linear = SkColorSpace::MakeSRGBLinear();
-  paint_.setColor(
-      {.fR = c.r, .fG = c.g, .fB = c.b, .fA = c.a * opacity_multiplier_},
-      srgb_linear.get());
+  paint_.setColor({.fR = c.r, .fG = c.g, .fB = c.b, .fA = c.a},
+                  srgb_linear.get());
 }
 
 void PathDrawable::SetImageFilter(sk_sp<SkImageFilter> image_filter) {

@@ -86,13 +86,6 @@ struct BrushTip {
   // Angle specifying the initial rotation of the tip shape after applying
   // `scale`, `pinch`, and `slant`.
   Angle rotation = Angle::Radians(0);
-  // Scales the opacity of the base brush color for this tip, independent of
-  // `brush_behavior`s. A possible example application is a highlighter brush.
-  //
-  // The multiplier must be in the range [0, 2] and the value ultimately applied
-  // can be modified by applicable `brush_behavior`s.
-  ABSL_DEPRECATED("Use brush paint color functions instead.")
-  float opacity_multiplier = 1.f;
   // Parameter controlling emission of particles as a function of distance
   // traveled by the stroke inputs. The value must be finite and non-negative.
   //
