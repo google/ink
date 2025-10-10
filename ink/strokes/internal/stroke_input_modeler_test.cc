@@ -15,7 +15,6 @@
 #include "ink/strokes/internal/stroke_input_modeler.h"
 
 #include <cstddef>
-#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
