@@ -14,7 +14,6 @@
 
 #include "ink/strokes/internal/stroke_input_modeler/naive_input_modeler.h"
 
-#include <algorithm>
 #include <cstddef>
 #include <vector>
 

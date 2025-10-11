@@ -14,7 +14,6 @@
 
 #include "ink/strokes/internal/stroke_input_modeler/spring_based_input_modeler.h"
 
-#include <algorithm>
 #include <cstddef>
 #include <optional>
 #include <vector>
