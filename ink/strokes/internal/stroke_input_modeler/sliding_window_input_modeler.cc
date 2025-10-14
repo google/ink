@@ -209,9 +209,12 @@ float DistanceTraveled(const std::vector<ModeledStrokeInput>& modeled_inputs,
 }  // namespace
 
 SlidingWindowInputModeler::SlidingWindowInputModeler(
-    Duration32 window_size, Duration32 upsampling_period)
+    Duration32 window_size, Duration32 upsampling_period,
+    float position_epsilon)
     : half_window_size_(window_size * 0.5),
-      upsampling_period_(upsampling_period) {
+      upsampling_period_(upsampling_period),
+      position_epsilon_(position_epsilon) {
+  ABSL_DCHECK_GE(window_size, Duration32::Zero());
   ABSL_DCHECK_GT(upsampling_period_, Duration32::Zero());
 }
 
@@ -219,6 +222,7 @@ void SlidingWindowInputModeler::ExtendStroke(
     InputModelerState& state, std::vector<ModeledStrokeInput>& modeled_inputs,
     const StrokeInputBatch& real_inputs,
     const StrokeInputBatch& predicted_inputs) {
+  if (real_inputs.IsEmpty() && predicted_inputs.IsEmpty()) return;
   EraseUnstableModeledInputs(state, modeled_inputs);
   AppendRawInputsToSlidingWindow(state, real_inputs);
   int sliding_window_real_input_count = sliding_window_.Size();
@@ -237,7 +241,6 @@ void SlidingWindowInputModeler::EraseUnstableModeledInputs(
 
 void SlidingWindowInputModeler::AppendRawInputsToSlidingWindow(
     InputModelerState& state, const StrokeInputBatch& raw_inputs) {
-  if (raw_inputs.IsEmpty()) return;
   absl::Status status = sliding_window_.Append(raw_inputs);
   ABSL_DCHECK(status.ok());
 }
@@ -269,6 +272,9 @@ void SlidingWindowInputModeler::ModelUnstableInputPosition(
   float dt = (end_time - start_time).ToSeconds();
   if (dt <= 0) {
     StrokeInput input = sliding_window_.Get(start_index);
+    if (IsWithinEpsilonOfLastInput(modeled_inputs, input.position)) {
+      return;
+    }
     modeled_inputs.push_back(ModeledStrokeInput{
         .position = input.position,
         .traveled_distance = DistanceTraveled(modeled_inputs, input.position),
@@ -298,12 +304,15 @@ void SlidingWindowInputModeler::ModelUnstableInputPosition(
     Integrate(integrals, input1, input2);
   }
 
+  Point position = Point::FromOffset(integrals.position_dt / dt);
+  if (IsWithinEpsilonOfLastInput(modeled_inputs, position)) {
+    return;
+  }
   ModeledStrokeInput modeled_input = {
-      .position = Point::FromOffset(integrals.position_dt / dt),
+      .position = position,
+      .traveled_distance = DistanceTraveled(modeled_inputs, position),
       .elapsed_time = elapsed_time,
   };
-  modeled_input.traveled_distance =
-      DistanceTraveled(modeled_inputs, modeled_input.position);
   if (sliding_window_.HasPressure()) {
     modeled_input.pressure = integrals.pressure_dt / dt;
   }
@@ -409,6 +418,7 @@ void SlidingWindowInputModeler::UpdateRealAndCompleteDistanceAndTime(
 
 void SlidingWindowInputModeler::MarkStableModeledInputs(
     InputModelerState& state, std::vector<ModeledStrokeInput>& modeled_inputs) {
+  ABSL_DCHECK_LE(state.stable_input_count, state.real_input_count);
   ABSL_DCHECK_LE(state.real_input_count, modeled_inputs.size());
   while (state.stable_input_count < state.real_input_count &&
          modeled_inputs[state.stable_input_count].elapsed_time +
@@ -448,6 +458,16 @@ void SlidingWindowInputModeler::TrimSlidingWindow(
   }
   int num_sliding_inputs_to_trim = next_input_index - 1;
   sliding_window_.Erase(0, num_sliding_inputs_to_trim);
+}
+
+bool SlidingWindowInputModeler::IsWithinEpsilonOfLastInput(
+    const std::vector<ModeledStrokeInput>& modeled_inputs,
+    Point position) const {
+  if (modeled_inputs.empty()) {
+    return false;
+  }
+  const ModeledStrokeInput& last_input = modeled_inputs.back();
+  return Distance(last_input.position, position) <= position_epsilon_;
 }
 
 }  // namespace ink::strokes_internal

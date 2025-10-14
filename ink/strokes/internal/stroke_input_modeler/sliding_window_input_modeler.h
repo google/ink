@@ -27,8 +27,24 @@ namespace ink::strokes_internal {
 
 class SlidingWindowInputModeler : public InputModelImpl {
  public:
+  // Constructs a SlidingWindowInputModeler for a new stroke.
+  //
+  // * `window_size` is the duration over which raw inputs will be averaged
+  //   together. Typically this should be somewhere in the 1 ms to 100 ms range,
+  //   with 20 ms as a reasonable default. CHECK-fails if this is negative.
+  // * `upsampling_period` is the maximum desired duration between modeled
+  //   inputs; if raw inputs are spaced more than this far apart in time, then
+  //   additional modeled inputs will be inserted between them (unless this
+  //   would violate the `position_epsilon`). Set this to infinity to disable
+  //   upsampling. 1/180 seconds is a reasonable default. CHECK-fails if this is
+  //   zero or less.
+  // * `position_epsilon` is the minimum distance between positions of
+  //   consecutive modeled inputs. If two consecutive modeled inputs would be
+  //   closer together than this, then one of them will be elided (even if this
+  //   results in a time gap larger than `upsampling_period`).
   SlidingWindowInputModeler(Duration32 window_size,
-                            Duration32 upsampling_period);
+                            Duration32 upsampling_period,
+                            float position_epsilon);
 
   void ExtendStroke(InputModelerState& state,
                     std::vector<ModeledStrokeInput>& modeled_inputs,
@@ -66,11 +82,12 @@ class SlidingWindowInputModeler : public InputModelImpl {
 
   // Helper method for `ModelUnstableInputPositions()`. Appends a new modeled
   // input (computing only position and pressure/tilt/orientation for now) at
-  // `elapsed_time`.  When this returns, `start_index` and `end_index` will be
-  // the indices into `sliding_window_` of the first raw input before the window
-  // and the last raw input after the window; before calling this, `start_index`
-  // and `end_index` must be no larger than those indices, as they are only ever
-  // marched forward.
+  // `elapsed_time`, unless it would be within `position_epsilon_` of the
+  // previous modeled input. Either way, when this returns, `start_index` and
+  // `end_index` will be the indices into `sliding_window_` of the first raw
+  // input before the window and the last raw input after the window; before
+  // calling this, `start_index` and `end_index` must be no larger than those
+  // indices, as they are only ever marched forward.
   void ModelUnstableInputPosition(
       std::vector<ModeledStrokeInput>& modeled_inputs, Duration32 elapsed_time,
       int& start_index, int& end_index);
@@ -97,9 +114,14 @@ class SlidingWindowInputModeler : public InputModelImpl {
                          std::vector<ModeledStrokeInput>& modeled_inputs,
                          int sliding_window_real_input_count);
 
+  bool IsWithinEpsilonOfLastInput(
+      const std::vector<ModeledStrokeInput>& modeled_inputs,
+      Point position) const;
+
   StrokeInputBatch sliding_window_;
   Duration32 half_window_size_;
   Duration32 upsampling_period_;
+  float position_epsilon_;
 };
 
 }  // namespace ink::strokes_internal
