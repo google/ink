@@ -14,6 +14,7 @@
 
 #include "ink/storage/stroke_input_batch.h"
 
+#include <cstdint>
 #include <utility>
 
 #include "gmock/gmock.h"
@@ -404,5 +405,24 @@ FUZZ_TEST(StrokeInputBatchFuzzTest, StrokeInputBatchRoundTrip)
     .WithDomains(StrokeInputBatchInRect(
         Rect::FromCenterAndDimensions(kOrigin, 1e30f, 1e30f)));
 
+void EncodeDecodeRoundtripIsIdempotent(const StrokeInputBatch& input) {
+  CodedStrokeInputBatch proto;
+  EncodeStrokeInputBatch(input, proto);
+  absl::StatusOr<StrokeInputBatch> first_roundtrip =
+      DecodeStrokeInputBatch(proto);
+  ASSERT_EQ(first_roundtrip.status(), absl::OkStatus());
+
+  // While the first encoding may be lossy, the subsequent encoding/decoding
+  // roundtrips should stabilize.
+
+  EncodeStrokeInputBatch(*first_roundtrip, proto);
+  absl::StatusOr<StrokeInputBatch> second_roundtrip =
+      DecodeStrokeInputBatch(proto);
+  ASSERT_EQ(second_roundtrip.status(), absl::OkStatus());
+  EXPECT_THAT(*first_roundtrip, StrokeInputBatchEq(*second_roundtrip));
+}
+FUZZ_TEST(StrokeInputBatchFuzzTest, EncodeDecodeRoundtripIsIdempotent)
+    .WithDomains(StrokeInputBatchInRect(
+        Rect::FromCenterAndDimensions(kOrigin, 1e30f, 1e30f)));
 }  // namespace
 }  // namespace ink
