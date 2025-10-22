@@ -20,7 +20,6 @@ package ink.proto;
 
 option java_package = "com.google.ink.proto";
 option java_outer_classname = "ColorProto";
-option objc_class_prefix = "INKPB";
 
 // LINT.IfChange(color_space)
 enum ColorSpace {
