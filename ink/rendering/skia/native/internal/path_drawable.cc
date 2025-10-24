@@ -29,6 +29,8 @@
 #include "include/core/SkCanvas.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkPaint.h"
+#include "include/core/SkPath.h"
+#include "include/core/SkPathBuilder.h"
 #include "include/core/SkPathTypes.h"
 #include "include/core/SkRefCnt.h"
 
@@ -41,7 +43,7 @@ SkPath MakePolygonPath(const MutableMesh& mesh,
                        absl::Span<const uint32_t> outline_indices) {
   ABSL_DCHECK(!outline_indices.empty());
 
-  SkPath path;
+  SkPathBuilder path;
   path.setFillType(SkPathFillType::kWinding);
 
   Point position = mesh.VertexPosition(outline_indices.front());
@@ -54,7 +56,7 @@ SkPath MakePolygonPath(const MutableMesh& mesh,
   }
   path.close();
 
-  return path;
+  return path.detach();
 }
 
 // Creates an `SkPath` using `group_outline_indices` to retrieve path positions
@@ -64,7 +66,7 @@ SkPath MakePolygonPath(
     absl::Span<const VertexIndexPair> group_outline_indices) {
   ABSL_DCHECK(!group_outline_indices.empty());
 
-  SkPath path;
+  SkPathBuilder path;
   path.setFillType(SkPathFillType::kWinding);
 
   Point position =
@@ -80,7 +82,7 @@ SkPath MakePolygonPath(
   }
   path.close();
 
-  return path;
+  return path.detach();
 }
 
 void SetPaintDefaultsForPath(SkPaint& paint) {
