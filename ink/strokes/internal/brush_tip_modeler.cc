@@ -456,19 +456,6 @@ void BrushTipModeler::AppendBehaviorNode(
   fixed_target_modifiers_.push_back(initial_modifier_y);
 }
 
-namespace {
-
-std::optional<Angle> GetTravelDirection(
-    absl::Span<const ModeledStrokeInput> inputs, size_t i) {
-  const Point& start = i > 0 ? inputs[i - 1].position : inputs[i].position;
-  const Point& end =
-      i + 1 < inputs.size() ? inputs[i + 1].position : inputs[i].position;
-  if (start == end) return std::nullopt;
-  return (end - start).Direction();
-}
-
-}  // namespace
-
 void BrushTipModeler::UpdateStroke(
     const InputModelerState& input_modeler_state,
     absl::Span<const ModeledStrokeInput> inputs) {
@@ -513,10 +500,8 @@ void BrushTipModeler::UpdateStroke(
       break;
     }
 
-    ProcessSingleInput(
-        input_modeler_state, current_input,
-        GetTravelDirection(inputs, input_index_for_next_fixed_state_),
-        previous_input, last_modeled_tip_state_metrics);
+    ProcessSingleInput(input_modeler_state, current_input, previous_input,
+                       last_modeled_tip_state_metrics);
     previous_input = &current_input;
     ++input_index_for_next_fixed_state_;
   }
@@ -537,8 +522,7 @@ void BrushTipModeler::UpdateStroke(
   for (size_t i = input_index_for_next_fixed_state_; i < inputs.size(); ++i) {
     const ModeledStrokeInput& current_input = inputs[i];
 
-    ProcessSingleInput(input_modeler_state, current_input,
-                       GetTravelDirection(inputs, i), previous_input,
+    ProcessSingleInput(input_modeler_state, current_input, previous_input,
                        last_modeled_tip_state_metrics);
     previous_input = &current_input;
   }
@@ -576,7 +560,6 @@ InputMetrics BrushTipModeler::CalculateMaxFixedInputMetrics(
 void BrushTipModeler::ProcessSingleInput(
     const InputModelerState& input_modeler_state,
     const ModeledStrokeInput& current_input,
-    std::optional<Angle> current_travel_direction,
     const ModeledStrokeInput* absl_nullable previous_input,
     std::optional<InputMetrics>& last_modeled_tip_state_metrics) {
   bool do_continuous_extrusion =
@@ -591,7 +574,7 @@ void BrushTipModeler::ProcessSingleInput(
     //      which should always result in emitting a single particle.
 
     AddNewTipState(
-        input_modeler_state, current_input, current_travel_direction,
+        input_modeler_state, current_input,
         previous_input == nullptr
             ? std::nullopt
             : std::optional<InputMetrics>({
@@ -646,7 +629,7 @@ void BrushTipModeler::ProcessSingleInput(
                           input_delta.elapsed_time);
     }
     ModeledStrokeInput lerped_input = Lerp(current_input, *previous_input, t);
-    AddNewTipState(input_modeler_state, lerped_input, current_travel_direction,
+    AddNewTipState(input_modeler_state, lerped_input,
                    // Use `last_modeled_tip_state_metrics` as the "previous
                    // input" metrics (copied by value):
                    last_modeled_tip_state_metrics,
@@ -660,14 +643,13 @@ void BrushTipModeler::ProcessSingleInput(
 
 void BrushTipModeler::AddNewTipState(
     const InputModelerState& input_modeler_state,
-    const ModeledStrokeInput& input, std::optional<Angle> travel_direction,
+    const ModeledStrokeInput& input,
     std::optional<InputMetrics> previous_input_metrics,
     std::optional<InputMetrics>& last_modeled_tip_state_metrics) {
   ABSL_CHECK_NE(brush_tip_, nullptr);
   BehaviorNodeContext context = {
       .input_modeler_state = input_modeler_state,
       .current_input = input,
-      .current_travel_direction = travel_direction,
       .brush_size = brush_size_,
       .previous_input_metrics = previous_input_metrics,
       .stack = behavior_stack_,
@@ -682,7 +664,7 @@ void BrushTipModeler::AddNewTipState(
   ABSL_DCHECK(behavior_stack_.empty());
 
   saved_tip_states_.push_back(
-      CreateTipState(input.position, travel_direction, *brush_tip_, brush_size_,
+      CreateTipState(input.position, input.velocity, *brush_tip_, brush_size_,
                      behavior_targets_, current_target_modifiers_));
   last_modeled_tip_state_metrics = {
       .traveled_distance = input.traveled_distance,
