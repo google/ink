@@ -59,14 +59,13 @@ class BrushFamily {
   // removed later.
   struct SlidingWindowModel {
     // The duration over which to average together nearby raw inputs. Typically
-    // this should be somewhere in the 1 ms to 100 ms range, with 20 ms being a
-    // reasonable default.
-    Duration32 window_size;
+    // this should be somewhere in the 1 ms to 100 ms range.
+    Duration32 window_size = Duration32::Millis(20);
     // The maximum duration between modeled inputs; if raw inputs are spaced
     // more than this far apart in time, then additional modeled inputs will be
     // inserted between them. Set this to `Duration32::Infinite()` to disable
     // upsampling.
-    Duration32 upsampling_period;
+    Duration32 upsampling_period = Duration32::Seconds(1.0 / 180.0);
   };
 
   // Specifies a model for turning a sequence of raw hardware inputs (e.g. from

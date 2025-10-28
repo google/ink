@@ -165,6 +165,12 @@ JNI_METHOD(brush, InputModelNative, jlong, createSlidingWindowModel)
   }});
 }
 
+JNI_METHOD(brush, InputModelNative, jlong,
+           createSlidingWindowModelWithDefaultParameters)
+(JNIEnv* env, jobject object) {
+  return NewNativeInputModel({BrushFamily::SlidingWindowModel{}});
+}
+
 JNI_METHOD(brush, InputModelNative, void, free)
 (JNIEnv* env, jobject object, jlong native_pointer) {
   DeleteNativeInputModel(native_pointer);

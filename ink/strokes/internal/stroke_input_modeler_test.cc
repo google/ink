@@ -423,6 +423,7 @@ INSTANTIATE_TEST_SUITE_P(
         {"SpringModel", {BrushFamily::SpringModel{}}},
         {"RawPositionModel", {BrushFamily::ExperimentalRawPositionModel{}}},
         {"NaiveModel", {BrushFamily::ExperimentalNaiveModel{}}},
+        {"SlidingWindowModel_default", {BrushFamily::SlidingWindowModel{}}},
         {"SlidingWindowModel_250ms_100ms",
          {BrushFamily::SlidingWindowModel{
              .window_size = Duration32::Millis(250),
