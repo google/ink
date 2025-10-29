@@ -24,15 +24,13 @@ git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "g
 #################################################################################
 
 bazel_dep(name = "platforms", version = "0.0.11")
-bazel_dep(name = "rules_cc", version = "0.1.1")
-bazel_dep(name = "toolchains_llvm", version = "1.2.0")
+bazel_dep(name = "rules_cc", version = "0.2.2")
+bazel_dep(name = "toolchains_llvm", version = "1.5.0")
 
 # Configure and register the LLVM toolchain for host builds.
 
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
-llvm.toolchain(
-    llvm_version = "16.0.0",
-)
+llvm.toolchain(llvm_version = "19.1.0")
 use_repo(llvm, "llvm_toolchain")
 
 register_toolchains("@llvm_toolchain//:all")
@@ -71,7 +69,7 @@ git_repository(
 
 bazel_dep(name = "protobuf", version = "31.1")
 bazel_dep(name = "rules_android", version = "0.6.0")
-bazel_dep(name = "rules_jni", version = "0.10.1")
+bazel_dep(name = "rules_jni", version = "0.11.1")
 
 git_repository(
     name = "skia",
