@@ -38,14 +38,6 @@ absl_nonnull std::unique_ptr<InputModelImpl> CreateInputModeler(
 }
 
 absl_nonnull std::unique_ptr<InputModelImpl> CreateInputModeler(
-    const BrushFamily::ExperimentalRawPositionModel& raw_position_model,
-    float brush_epsilon) {
-  return std::make_unique<SpringBasedInputModeler>(
-      SpringBasedInputModeler::Version::kExperimentalRawPositionModel,
-      brush_epsilon);
-}
-
-absl_nonnull std::unique_ptr<InputModelImpl> CreateInputModeler(
     const BrushFamily::ExperimentalNaiveModel& naive_model,
     float brush_epsilon) {
   return std::make_unique<NaiveInputModeler>();

@@ -100,11 +100,6 @@ absl::Status ValidateInputModel(const BrushFamily::SpringModel& model) {
 }
 
 absl::Status ValidateInputModel(
-    const BrushFamily::ExperimentalRawPositionModel& model) {
-  return absl::OkStatus();
-}
-
-absl::Status ValidateInputModel(
     const BrushFamily::ExperimentalNaiveModel& model) {
   return absl::OkStatus();
 }
@@ -126,11 +121,6 @@ absl::Status ValidateInputModel(const BrushFamily::SlidingWindowModel& model) {
 
 std::string ToFormattedString(const BrushFamily::SpringModel& model) {
   return "SpringModel";
-}
-
-std::string ToFormattedString(
-    const BrushFamily::ExperimentalRawPositionModel& model) {
-  return "ExperimentalRawPositionModel";
 }
 
 std::string ToFormattedString(

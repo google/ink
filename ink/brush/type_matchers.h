@@ -54,6 +54,9 @@ BrushPaintTextureLayerEq();
 
 ::testing::Matcher<BrushFamily> BrushFamilyEq(const BrushFamily& expected);
 
+::testing::Matcher<BrushFamily::InputModel> BrushFamilyInputModelEq(
+    const BrushFamily::InputModel& expected);
+
 ::testing::Matcher<Brush> BrushEq(const Brush& expected);
 
 ::testing::Matcher<ColorFunction> ColorFunctionEq(

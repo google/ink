@@ -112,9 +112,6 @@ BrushCoat CreateTestCoat() {
 TEST(BrushFamilyTest, StringifyInputModel) {
   EXPECT_EQ(absl::StrCat(BrushFamily::InputModel{BrushFamily::SpringModel{}}),
             "SpringModel");
-  EXPECT_EQ(absl::StrCat(BrushFamily::InputModel{
-                BrushFamily::ExperimentalRawPositionModel{}}),
-            "ExperimentalRawPositionModel");
   EXPECT_EQ(absl::StrCat(
                 BrushFamily::InputModel{BrushFamily::ExperimentalNaiveModel{}}),
             "ExperimentalNaiveModel");

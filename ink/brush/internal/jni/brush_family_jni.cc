@@ -50,7 +50,7 @@ using ::ink::jni::ThrowExceptionFromStatus;
 
 // 0 is reserved for internal use.
 constexpr jint kSpringModel = 1;
-constexpr jint kExperimentalRawPositionModel = 2;
+// 2 is reserved (was previously the experimental "raw position" model).
 constexpr jint kExperimentalNaiveModel = 3;
 constexpr jint kSlidingWindowModel = 4;
 
@@ -58,8 +58,6 @@ BrushFamily::InputModel TypeToInputModel(jint input_model_value) {
   switch (input_model_value) {
     case kSpringModel:
       return BrushFamily::SpringModel();
-    case kExperimentalRawPositionModel:
-      return BrushFamily::ExperimentalRawPositionModel();
     case kExperimentalNaiveModel:
       return BrushFamily::ExperimentalNaiveModel();
     case kSlidingWindowModel:
@@ -72,9 +70,6 @@ BrushFamily::InputModel TypeToInputModel(jint input_model_value) {
 jint InputModelType(const BrushFamily::InputModel& input_model) {
   constexpr auto visitor = absl::Overload{
       [](const BrushFamily::SpringModel&) { return kSpringModel; },
-      [](const BrushFamily::ExperimentalRawPositionModel&) {
-        return kExperimentalRawPositionModel;
-      },
       [](const BrushFamily::ExperimentalNaiveModel&) {
         return kExperimentalNaiveModel;
       },

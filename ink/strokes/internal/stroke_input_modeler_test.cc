@@ -421,7 +421,6 @@ INSTANTIATE_TEST_SUITE_P(
     // LINT.IfChange(input_model_types)
     ::testing::ValuesIn<InputModelTestCase>({
         {"SpringModel", {BrushFamily::SpringModel{}}},
-        {"RawPositionModel", {BrushFamily::ExperimentalRawPositionModel{}}},
         {"NaiveModel", {BrushFamily::ExperimentalNaiveModel{}}},
         {"SlidingWindowModel_default", {BrushFamily::SlidingWindowModel{}}},
         {"SlidingWindowModel_250ms_100ms",

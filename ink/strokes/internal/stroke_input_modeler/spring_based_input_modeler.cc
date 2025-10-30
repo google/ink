@@ -83,15 +83,6 @@ MakeLoopContractionMitigationParameters(
               kDefaultLoopMitigationMinSpeedSamplingWindow,
       };
     }
-    case SpringBasedInputModeler::Version::kExperimentalRawPositionModel:
-      return {
-          .is_enabled = true,
-          .speed_lower_bound = 0.0f,
-          .speed_upper_bound = 0.0f,
-          .interpolation_strength_at_speed_lower_bound = 0.0f,
-          .interpolation_strength_at_speed_upper_bound = 0.0f,
-          .min_speed_sampling_window = stroke_model::Duration(0),
-      };
   }
 }
 
@@ -99,7 +90,6 @@ StylusStateModelerParams MakeStylusStateModelerParams(
     SpringBasedInputModeler::Version version) {
   switch (version) {
     case SpringBasedInputModeler::Version::kSpringModel:
-    case SpringBasedInputModeler::Version::kExperimentalRawPositionModel:
       return {.use_stroke_normal_projection = true};
   }
 }
@@ -108,7 +98,6 @@ SamplingParams MakeSamplingParams(SpringBasedInputModeler::Version version,
                                   float brush_epsilon) {
   switch (version) {
     case SpringBasedInputModeler::Version::kSpringModel:
-    case SpringBasedInputModeler::Version::kExperimentalRawPositionModel:
       return {.min_output_rate = kMinOutputRateHz,
               .end_of_stroke_stopping_distance = brush_epsilon,
               .max_estimated_angle_to_traverse_per_input = kPi / 8};

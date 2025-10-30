@@ -43,11 +43,6 @@ class BrushFamily {
   // existing strokes.
   struct SpringModel {};
 
-  // Model that attempts to preserve input positions as closely as possible.
-  // This is an experimental configuration which may be adjusted or removed
-  // later.
-  struct ExperimentalRawPositionModel {};
-
   // A naive model that passes through raw inputs mostly unchanged.  This is an
   // experimental configuration which may be adjusted or removed later.
   struct ExperimentalNaiveModel {};
@@ -73,8 +68,8 @@ class BrushFamily {
   // inputs. Raw hardware inputs tend to be noisy, and must be smoothed before
   // being passed into a brush's behaviors and extruded into a mesh in order to
   // get a good-looking stroke.
-  using InputModel = std::variant<SpringModel, ExperimentalRawPositionModel,
-                                  ExperimentalNaiveModel, SlidingWindowModel>;
+  using InputModel =
+      std::variant<SpringModel, ExperimentalNaiveModel, SlidingWindowModel>;
 
   // LINT.ThenChange(../strokes/internal/stroke_input_modeler_test.cc:input_model_types)
 

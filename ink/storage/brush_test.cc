@@ -617,28 +617,8 @@ TEST(BrushTest, DecodeBrushFamilyWithNoInputModel) {
   family_proto.add_coats()->mutable_tip();
   absl::StatusOr<BrushFamily> family = DecodeBrushFamily(family_proto);
   ASSERT_THAT(family, IsOk());
-  EXPECT_TRUE(std::holds_alternative<BrushFamily::SpringModel>(
-      family->GetInputModel()));
-}
-
-TEST(BrushTest, DecodeBrushFamilyWithRawPositionInputModel) {
-  proto::BrushFamily family_proto;
-  family_proto.add_coats()->mutable_tip();
-  family_proto.mutable_input_model()->mutable_experimental_raw_position_model();
-  absl::StatusOr<BrushFamily> family = DecodeBrushFamily(family_proto);
-  ASSERT_THAT(family, IsOk());
-  EXPECT_TRUE(std::holds_alternative<BrushFamily::ExperimentalRawPositionModel>(
-      family->GetInputModel()));
-}
-
-TEST(BrushTest, EncodeDecodeBrushFamilyWithRawPositionInputModel) {
-  absl::StatusOr<BrushFamily> family =
-      BrushFamily::Create(BrushTip{}, BrushPaint{}, "test_id",
-                          BrushFamily::ExperimentalRawPositionModel{});
-  ASSERT_THAT(family, IsOk());
-  proto::BrushFamily family_proto;
-  EncodeBrushFamily(*family, family_proto);
-  EXPECT_TRUE(family_proto.input_model().has_experimental_raw_position_model());
+  EXPECT_THAT(family->GetInputModel(),
+              BrushFamilyInputModelEq(BrushFamily::DefaultInputModel()));
 }
 
 TEST(BrushTest, DecodeBrushFamilyReturnsErrorStatusFromCallback) {

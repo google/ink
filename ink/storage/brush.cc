@@ -1309,13 +1309,6 @@ void EncodeBrushFamilyInputModel(
 }
 
 void EncodeBrushFamilyInputModel(
-    const BrushFamily::ExperimentalRawPositionModel& model,
-    proto::BrushFamily::InputModel& model_proto_out) {
-  model_proto_out
-      .mutable_experimental_raw_position_model();  // no fields to set
-}
-
-void EncodeBrushFamilyInputModel(
     const BrushFamily::ExperimentalNaiveModel& model,
     proto::BrushFamily::InputModel& model_proto_out) {
   model_proto_out.mutable_experimental_naive_model();  // no fields to set
@@ -1346,8 +1339,6 @@ absl::StatusOr<BrushFamily::InputModel> DecodeBrushFamilyInputModel(
   switch (model_proto.input_model_case()) {
     case proto::BrushFamily::InputModel::kSpringModel:
       return BrushFamily::SpringModel{};
-    case proto::BrushFamily::InputModel::kExperimentalRawPositionModel:
-      return BrushFamily::ExperimentalRawPositionModel{};
     case proto::BrushFamily::InputModel::kExperimentalNaiveModel:
       return BrushFamily::ExperimentalNaiveModel{};
     case proto::BrushFamily::InputModel::kSlidingWindowModel:
@@ -1361,8 +1352,11 @@ absl::StatusOr<BrushFamily::InputModel> DecodeBrushFamilyInputModel(
     case proto::BrushFamily::InputModel::INPUT_MODEL_NOT_SET:
       break;
   }
-  return absl::InvalidArgumentError(
-      "ink.proto.BrushFamily.InputModel must specify an input model");
+  // If no input model is set, then either this brush proto is so old that it
+  // predates the input model field, or it is using an older input model that
+  // was later deprecated and removed. Either way, rather than reject the proto
+  // and render the brush unloadable, just use the default input model.
+  return BrushFamily::DefaultInputModel();
 }
 
 }  // namespace
@@ -1700,14 +1694,13 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
   if (!coats.ok()) {
     return coats.status();
   }
+
   absl::StatusOr<BrushFamily::InputModel> input_model =
-      BrushFamily::SpringModel{};
-  if (family_proto.has_input_model()) {
-    input_model = DecodeBrushFamilyInputModel(family_proto.input_model());
-  }
+      DecodeBrushFamilyInputModel(family_proto.input_model());
   if (!input_model.ok()) {
     return input_model.status();
   }
+
   // BrushFamily::Create() validates the BrushFamily.
   return BrushFamily::Create(absl::MakeConstSpan(*coats),
                              family_proto.client_brush_family_id(),

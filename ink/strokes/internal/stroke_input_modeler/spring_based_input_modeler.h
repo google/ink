@@ -33,7 +33,6 @@ class SpringBasedInputModeler : public InputModelImpl {
  public:
   enum class Version {
     kSpringModel,
-    kExperimentalRawPositionModel,
   };
 
   SpringBasedInputModeler(Version version, float brush_epsilon);

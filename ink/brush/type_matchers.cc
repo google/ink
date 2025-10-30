@@ -19,6 +19,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/functional/overload.h"
 #include "absl/strings/str_cat.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
@@ -386,35 +387,29 @@ MATCHER(BrushCoatPointwiseEqMatcher, "") {
 }
 
 Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
-    const BrushFamily::SpringModel& input_model) {
-  return VariantWith<BrushFamily::SpringModel>(_);  // no fields to match
-}
-
-Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
-    const BrushFamily::ExperimentalRawPositionModel& input_model) {
-  return VariantWith<BrushFamily::ExperimentalRawPositionModel>(
-      _);  // no fields to match
-}
-
-Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
-    const BrushFamily::ExperimentalNaiveModel& input_model) {
-  return VariantWith<BrushFamily::ExperimentalNaiveModel>(
-      _);  // no fields to match
-}
-
-Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
-    const BrushFamily::SlidingWindowModel& input_model) {
-  return VariantWith<BrushFamily::SlidingWindowModel>(
-      Field("window_size", &BrushFamily::SlidingWindowModel::window_size,
-            Duration32Eq(input_model.window_size)));
-}
-
-[[maybe_unused]] Matcher<BrushFamily::InputModel> BrushFamilyInputModelEq(
     const BrushFamily::InputModel& expected) {
   return std::visit(
-      [](const auto& expected) {
-        return BrushFamilyInputModelEqMatcher(expected);
-      },
+      absl::Overload(
+          [](const BrushFamily::SpringModel& input_model)
+              -> Matcher<BrushFamily::InputModel> {
+            // no fields to match
+            return VariantWith<BrushFamily::SpringModel>(_);
+          },
+          [](const BrushFamily::ExperimentalNaiveModel& input_model)
+              -> Matcher<BrushFamily::InputModel> {
+            // no fields to match
+            return VariantWith<BrushFamily::ExperimentalNaiveModel>(_);
+          },
+          [](const BrushFamily::SlidingWindowModel& input_model)
+              -> Matcher<BrushFamily::InputModel> {
+            return VariantWith<BrushFamily::SlidingWindowModel>(
+                AllOf(Field("window_size",
+                            &BrushFamily::SlidingWindowModel::window_size,
+                            Duration32Eq(input_model.window_size)),
+                      Field("upsampling_period",
+                            &BrushFamily::SlidingWindowModel::upsampling_period,
+                            Duration32Eq(input_model.upsampling_period))));
+          }),
       expected);
 }
 
@@ -502,6 +497,11 @@ Matcher<std::tuple<BrushCoat, BrushCoat>> BrushCoatEq() {
 
 Matcher<BrushFamily> BrushFamilyEq(const BrushFamily& expected) {
   return BrushFamilyEqMatcher(expected);
+}
+
+Matcher<BrushFamily::InputModel> BrushFamilyInputModelEq(
+    const BrushFamily::InputModel& expected) {
+  return BrushFamilyInputModelEqMatcher(expected);
 }
 
 Matcher<Brush> BrushEq(const Brush& expected) {

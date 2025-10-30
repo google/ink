@@ -36,6 +36,7 @@ cc_library(
         "//:gtest_for_library_testonly",
         "//ink/geometry:type_matchers",
         "//ink/types:type_matchers",
+        "@com_google_absl//absl/functional:overload",
         "@com_google_absl//absl/strings",
     ],
 )
