@@ -93,9 +93,8 @@ class CodedNumericRunIterator {
           value, static_cast<int64_t>(std::numeric_limits<T>::min()),
           static_cast<int64_t>(std::numeric_limits<T>::max())));
     } else {
-      value_ =
-          static_cast<T>(run_->offset()) +
-          static_cast<T>(run_->scale()) * static_cast<T>(cumulative_delta_);
+      value_ = static_cast<T>(run_->offset() +
+                              (double)run_->scale() * cumulative_delta_);
     }
   }
 

@@ -23,8 +23,6 @@
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/geometry/angle.h"
-#include "ink/geometry/point.h"
-#include "ink/geometry/rect.h"
 #include "ink/storage/numeric_run.h"
 #include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/strokes/input/fuzz_domains.h"
@@ -397,12 +395,7 @@ void StrokeInputBatchRoundTrip(const StrokeInputBatch& inputs) {
   EXPECT_EQ(decoded->GetNoiseSeed(), inputs.GetNoiseSeed());
 }
 FUZZ_TEST(StrokeInputBatchFuzzTest, StrokeInputBatchRoundTrip)
-    // TODO: b/349965543 - Currently, extreme input position values sometimes
-    // get quantized to infinity on encoding, and then don't decode
-    // successfully. Once that gets fixed, change this to use
-    // `ArbitraryStrokeInputBatch()`.
-    .WithDomains(StrokeInputBatchInRect(
-        Rect::FromCenterAndDimensions(kOrigin, 1e30f, 1e30f)));
+    .WithDomains(ArbitraryStrokeInputBatch());
 
 void EncodeDecodeRoundtripIsIdempotent(const StrokeInputBatch& input) {
   CodedStrokeInputBatch proto;
@@ -421,7 +414,6 @@ void EncodeDecodeRoundtripIsIdempotent(const StrokeInputBatch& input) {
   EXPECT_THAT(*first_roundtrip, StrokeInputBatchEq(*second_roundtrip));
 }
 FUZZ_TEST(StrokeInputBatchFuzzTest, EncodeDecodeRoundtripIsIdempotent)
-    .WithDomains(StrokeInputBatchInRect(
-        Rect::FromCenterAndDimensions(kOrigin, 1e30f, 1e30f)));
+    .WithDomains(ArbitraryStrokeInputBatch());
 }  // namespace
 }  // namespace ink

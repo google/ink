@@ -74,8 +74,6 @@ cc_test(
         ":numeric_run",
         ":stroke_input_batch",
         "//ink/geometry:angle",
-        "//ink/geometry:point",
-        "//ink/geometry:rect",
         "//ink/storage/proto:stroke_input_batch_cc_proto",
         "//ink/strokes/input:fuzz_domains",
         "//ink/strokes/input:stroke_input",
