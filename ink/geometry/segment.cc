@@ -23,12 +23,6 @@
 
 namespace ink {
 
-Point Segment::Lerp(float ratio) const {
-  const float reverse = 1.0f - ratio;
-  return Point{start.x * reverse + end.x * ratio,
-               start.y * reverse + end.y * ratio};
-}
-
 std::optional<float> Segment::Project(Point point) const {
   if (start == end) {
     return std::nullopt;

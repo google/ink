@@ -51,17 +51,6 @@ std::optional<std::array<float, 3>> GetBarycentricCoordinates(
   return std::array<float, 3>({b0, b1, 1 - b0 - b1});
 }
 
-Vec SpiralLerp(Vec a, Vec b, float t) {
-  if (t == 0) return a;
-  if (t == 1) return b;
-
-  Angle direction = a.Direction() + t * Vec::SignedAngleBetween(a, b);
-  // Note that magnitude can lerp to a negative value, which evaluates to the
-  // desired reflection through the origin.
-  float magnitude = (1 - t) * a.Magnitude() + t * b.Magnitude();
-  return Vec::FromDirectionAndMagnitude(direction, magnitude);
-}
-
 Envelope CalculateEnvelope(const MutableMesh& mesh) {
   Envelope envelope;
   for (uint32_t i = 0; i < mesh.VertexCount(); ++i) {
@@ -101,21 +90,14 @@ std::optional<Vec> VectorFromPointToSegmentProjection(Point point,
          base_vector.Orthogonal();
 }
 
-float Lerp(float a, float b, float t) { return a + (b - a) * t; }
-
-Point Lerp(Point a, Point b, float t) {
-  return Segment{.start = a, .end = b}.Lerp(t);
-}
-
 Color::RgbaFloat Lerp(const Color::RgbaFloat& a, const Color::RgbaFloat& b,
                       float t) {
-  return {.r = a.r * (1 - t) + b.r * t,
-          .g = a.g * (1 - t) + b.g * t,
-          .b = a.b * (1 - t) + b.b * t,
-          .a = a.a * (1 - t) + b.a * t};
+  return {.r = Lerp(a.r, b.r, t),
+          .g = Lerp(a.g, b.g, t),
+          .b = Lerp(a.b, b.b, t),
+          .a = Lerp(a.a, b.a, t)};
 }
 
-Angle Lerp(Angle a, Angle b, float t) { return (1 - t) * a + t * b; }
 Angle NormalizedAngleLerp(Angle a, Angle b, float t) {
   return (a + Lerp(Angle(), (b - a).NormalizedAboutZero(), t)).Normalized();
 }
