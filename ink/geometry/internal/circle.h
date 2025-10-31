@@ -33,7 +33,7 @@ class Circle {
   Circle() = default;
 
   // Constructs with the given `center` and `radius`. CHECK-fails if `radius` is
-  // not greater than or equal to zero.
+  // negative or NaN.
   Circle(Point center, float radius);
 
   Circle(const Circle&) = default;
@@ -41,6 +41,9 @@ class Circle {
   ~Circle() = default;
 
   Point Center() const;
+
+  // Returns the radius of the circle. This is guaranteed to be non-negative
+  // (and not NaN), but may be infinite.
   float Radius() const;
 
   // Returns the point on the circle at the given `angle`.
