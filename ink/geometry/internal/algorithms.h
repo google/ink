@@ -42,19 +42,6 @@ namespace ink::geometry_internal {
 std::optional<std::array<float, 3>> GetBarycentricCoordinates(
     const Triangle& triangle, Point position);
 
-// Interpolates from `a` to `b` by separately interpolating or extrapolating
-// the direction and magnitude based on the parameter `t`.
-//
-//   * When `a` and `b` have different magnitudes and directions, this produces
-//     points on an Archimedean spiral containing `a`, `b`, and the origin.
-//   * When `a` and `b` have the same direction, this is equivalent to a regular
-//     linear interpolation or extrapolation. This is a degenerate spiral with
-//     infinite radial separation between loops.
-//   * When `a` and `b` have the same magnitude, this is equivalent to the 2D
-//     case of spherical interpolation (https://en.wikipedia.org/wiki/Slerp).
-//     This is a degenerate spiral with zero radial separation between loops.
-Vec SpiralLerp(Vec a, Vec b, float t);
-
 // Returns the `Envelope` of `mesh` positions.
 //
 // Vertex positions contribute to the envelope by just being in the `mesh` and
@@ -78,8 +65,8 @@ std::optional<Vec> VectorFromPointToSegmentProjection(Point point,
 // Linearly interpolates between `a` and `b`. Extrapolates when `t` is not in
 // [0, 1].
 //
-// In the case where `a` == `b` the function will return `a` for any value of
-// `t`.
+// In the case where `a` == `b` the function will return `a` for any finite
+// value of `t`.
 //
 // Note that the `Angle` overload simply interpolates the value of the `Angle`;
 // it does not have any special case logic for congruent angles. I.e., for
@@ -154,6 +141,16 @@ std::optional<Point> SegmentIntersection(const Segment& a, const Segment& b);
 Segment CalculateCollapsedSegment(
     absl::Span<const Mesh> meshes, const Rect& bounds,
     const AffineTransform& non_invertible_transform);
+
+////////////////////////////////////////////////////////////////////////////////
+// Inline function definitions
+////////////////////////////////////////////////////////////////////////////////
+
+inline float Lerp(float a, float b, float t) { return std::lerp(a, b, t); }
+inline Point Lerp(Point a, Point b, float t) { return Segment{a, b}.Lerp(t); }
+inline Angle Lerp(Angle a, Angle b, float t) {
+  return Angle::Radians(Lerp(a.ValueInRadians(), b.ValueInRadians(), t));
+}
 
 }  // namespace ink::geometry_internal
 

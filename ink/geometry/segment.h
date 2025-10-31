@@ -84,6 +84,15 @@ void AbslStringify(Sink& sink, Segment segment) {
   sink.Append(segment_internal::ToFormattedString(segment));
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Inline function definitions
+////////////////////////////////////////////////////////////////////////////////
+
+inline Point Segment::Lerp(float ratio) const {
+  return Point{std::lerp(start.x, end.x, ratio),
+               std::lerp(start.y, end.y, ratio)};
+}
+
 }  // namespace ink
 
 #endif  // INK_GEOMETRY_SEGMENT_H_
