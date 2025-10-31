@@ -41,9 +41,11 @@ void Circle::AppendArcToPolyline(Angle start, Angle arc_angle,
 
   Angle max_step_angle = GetArcAngleForChordHeight(max_chord_height);
 
-  int32_t steps =
-      std::clamp<float>(std::ceil(std::abs(arc_angle / max_step_angle)), 1,
-                        std::numeric_limits<int16_t>::max());
+  float unclamped_steps = std::ceil(std::abs(arc_angle / max_step_angle));
+  int32_t steps = std::isnan(unclamped_steps)
+                      ? 1
+                      : std::clamp<float>(unclamped_steps, 1,
+                                          std::numeric_limits<int16_t>::max());
   Angle step_angle = arc_angle / steps;
 
   // We do not call `vector::reserve` because we expect cases with multiple

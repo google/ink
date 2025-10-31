@@ -15,6 +15,7 @@
 #include "ink/geometry/internal/circle.h"
 
 #include <cmath>
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -34,6 +35,10 @@ using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::ExplainMatchResult;
 using ::testing::FloatNear;
+using ::testing::Ge;
+using ::testing::SizeIs;
+
+constexpr float kNan = std::numeric_limits<float>::quiet_NaN();
 
 // Matcher for checking that every `Point` in the `arg` array lies on the
 // `circle`.
@@ -331,6 +336,30 @@ TEST(CircleTest, AppendArcToPolylineKeepsPriorContents) {
   circle.AppendArcToPolyline(-kQuarterTurn, kHalfTurn, 0.01, polyline);
   EXPECT_THAT(polyline, ElementsAre(PointEq({-1, -1}), PointEq({0, 3}),
                                     PointEq({5, 6}), PointEq({5, 6})));
+}
+
+TEST(CircleTest, AppendArcToPolylineWithNanStartingAngle) {
+  Circle circle({0, 0}, 1);
+  std::vector<Point> polyline;
+  circle.AppendArcToPolyline(Angle::Radians(kNan), kQuarterTurn, 0.01,
+                             polyline);
+  // The starting angle isn't well-defined, so the start and end points are also
+  // not well-defined.
+  ASSERT_THAT(polyline, SizeIs(Ge(2)));
+  EXPECT_THAT(polyline.front(), NanSensitivePointEq({kNan, kNan}));
+  EXPECT_THAT(polyline.back(), NanSensitivePointEq({kNan, kNan}));
+}
+
+TEST(CircleTest, AppendArcToPolylineWithNanArcAngle) {
+  Circle circle({0, 0}, 1);
+  std::vector<Point> polyline;
+  circle.AppendArcToPolyline(kQuarterTurn, Angle::Radians(kNan), 0.01,
+                             polyline);
+  // The arc angle isn't well-defined, so we shouldn't subdivide the arc into
+  // steps. Instead we should just include the start and end point (the latter
+  // of which is isn't well-defined).
+  EXPECT_THAT(polyline, ElementsAre(PointNear({0, 1}, 0.001),
+                                    NanSensitivePointEq({kNan, kNan})));
 }
 
 TEST(CircleTest, GetArcAngleForChordHeightZeroRadius) {
