@@ -20,14 +20,22 @@
 
 namespace ink::stroke_input_internal {
 
+// Validates that an ordered pair of inputs have non-decreasing
+// `elapsed_time` and do not have duplicate `x`, `y`, `elapsed_time` values.
+absl::Status ValidateAdvancingXYT(const StrokeInput& first,
+                                  const StrokeInput& second);
+
+// Validates that a pair of inputs have the same tool type and the same
+// format of reported `stroke_unit_length`, `pressure`, `tilt`, and
+// `orientation`.
+absl::Status ValidateConsistentAttributes(const StrokeInput& first,
+                                          const StrokeInput& second);
+
 // Validates that a pair of inputs can be consecutive in a `StrokeInputBatch`.
 //
 // This includes checking that `first` and `second`:
-//   * Have the same `tool_type`
-//   * Do not have duplicate `x`, `y`, `elapsed_time`
-//   * Have non-decreasing `elapsed_time`
-//   * Have the same format of reported optional `pressure`, `tilt`, and
-//     `orientation`
+//   * Have advancing `x`, `y`, and `elapsed_time`.
+//   * Have consistent tool type and attribute format.
 absl::Status ValidateConsecutiveInputs(const StrokeInput& first,
                                        const StrokeInput& second);
 

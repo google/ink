@@ -21,14 +21,8 @@
 
 namespace ink::stroke_input_internal {
 
-absl::Status ValidateConsecutiveInputs(const StrokeInput& first,
-                                       const StrokeInput& second) {
-  if (first.tool_type != second.tool_type) {
-    return absl::InvalidArgumentError(absl::Substitute(
-        "All inputs must report the same value of `tool_type`. Got $0 and $1",
-        static_cast<int>(first.tool_type), static_cast<int>(second.tool_type)));
-  }
-
+absl::Status ValidateAdvancingXYT(const StrokeInput& first,
+                                  const StrokeInput& second) {
   if (first.position == second.position &&
       first.elapsed_time == second.elapsed_time) {
     return absl::InvalidArgumentError(
@@ -42,6 +36,16 @@ absl::Status ValidateConsecutiveInputs(const StrokeInput& first,
         "Inputs must have non-decreasing `elapsed_time`. Got: "
         "$0, to be followed by: $1",
         first.elapsed_time.ToSeconds(), second.elapsed_time.ToSeconds()));
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidateConsistentAttributes(const StrokeInput& first,
+                                          const StrokeInput& second) {
+  if (first.tool_type != second.tool_type) {
+    return absl::InvalidArgumentError(absl::Substitute(
+        "All inputs must report the same value of `tool_type`. Got $0 and $1",
+        static_cast<int>(first.tool_type), static_cast<int>(second.tool_type)));
   }
 
   if (first.stroke_unit_length != second.stroke_unit_length) {
@@ -68,6 +72,15 @@ absl::Status ValidateConsecutiveInputs(const StrokeInput& first,
   }
 
   return absl::OkStatus();
+}
+
+absl::Status ValidateConsecutiveInputs(const StrokeInput& first,
+                                       const StrokeInput& second) {
+  if (absl::Status status = ValidateAdvancingXYT(first, second); !status.ok()) {
+    return status;
+  }
+
+  return ValidateConsistentAttributes(first, second);
 }
 
 }  // namespace ink::stroke_input_internal
