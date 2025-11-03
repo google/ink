@@ -14,6 +14,8 @@
 
 #include "ink/strokes/internal/brush_tip_shape.h"
 
+#include <limits>
+
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/strings/str_cat.h"
@@ -31,9 +33,13 @@ namespace {
 using ::ink::geometry_internal::Circle;
 using ::ink::geometry_internal::CircleEq;
 using ::ink::geometry_internal::CircleNear;
+using ::testing::Each;
 using ::testing::ElementsAre;
+using ::testing::Eq;
+using ::testing::Property;
 
 constexpr float kEpsilon = 1e-5;
+constexpr float kInfinity = std::numeric_limits<float>::infinity();
 
 BrushTipShape ShapeWithZeroMinRadiusAndSeparation(BrushTipState state) {
   return BrushTipShape(state, 0);
@@ -458,6 +464,25 @@ TEST(BrushTipShapeTest, ConstructedWithZeroHeight) {
   EXPECT_THAT(
       shape.PerimeterCircles(),
       ElementsAre(CircleEq(Circle({2, 0}, 0)), CircleEq(Circle({-2, 0}, 0))));
+}
+
+TEST(BrushTipShapeTest, ConstructedWithInfiniteWidthAndHeightAndZeroRadius) {
+  // It's possible for a valid brush to end up with an infinitely-large tip
+  // state, due to float overflow. We should be able to construct a tip shape
+  // from that without crashing.
+  BrushTipState state = {
+      .position = {5, 3},
+      .width = kInfinity,
+      .height = kInfinity,
+      .percent_radius = 0,
+  };
+  BrushTipShape shape = ShapeWithZeroMinRadiusAndSeparation(state);
+  // Even though the tip shape is infinitely large, it should still have a
+  // well-defined center.
+  EXPECT_THAT(shape.Center(), PointEq({5, 3}));
+  // A `percent_radius` of exactly zero should always result in circles of zero
+  // radius (even though the size is infinite, and zero times infinity is NaN).
+  EXPECT_THAT(shape.PerimeterCircles(), Each(Property(&Circle::Radius, Eq(0))));
 }
 
 TEST(BrushTipShapeDeathTest, ConstructedWithPercentRadiusLessThanZero) {

@@ -54,11 +54,28 @@ using ::ink::geometry_internal::SegmentIntersection;
 float CalculateCircleRadius(float percent_radius, float half_width,
                             float half_height,
                             float min_nonzero_radius_and_separation) {
+  ABSL_DCHECK_GE(percent_radius, 0);
+  ABSL_DCHECK_LE(percent_radius, 1);
+  ABSL_DCHECK_GE(half_width, 0);
+  ABSL_DCHECK_GE(half_height, 0);
+  ABSL_DCHECK_GE(min_nonzero_radius_and_separation, 0);
+
+  // If `percent_radius` is exactly zero, we should always return zero, even if
+  // `half_width` and `half_height` are infinite (which can happen due to float
+  // overflow in an earlier calculation). This special case prevents multiplying
+  // zero times infinity below and getting a radius of NaN (which would then
+  // CHECK-fail when passed to the `Circle` constructor).
+  if (percent_radius == 0) {
+    return 0;
+  }
+
   float min_half_dimension = std::min(half_width, half_height);
   float unmodified_radius = percent_radius * min_half_dimension;
+  ABSL_DCHECK_GE(unmodified_radius, 0);
 
-  // This will result in the shape control circles to be points.
-  if (unmodified_radius < min_nonzero_radius_and_separation) return 0;
+  if (unmodified_radius < min_nonzero_radius_and_separation) {
+    return 0;
+  }
 
   return unmodified_radius;
 }

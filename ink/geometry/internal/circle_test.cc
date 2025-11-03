@@ -38,6 +38,7 @@ using ::testing::FloatNear;
 using ::testing::Ge;
 using ::testing::SizeIs;
 
+constexpr float kInfinity = std::numeric_limits<float>::infinity();
 constexpr float kNan = std::numeric_limits<float>::quiet_NaN();
 
 // Matcher for checking that every `Point` in the `arg` array lies on the
@@ -123,6 +124,12 @@ TEST(CircleTest, ConstructWithZeroRadius) {
   Circle c({-4, 7}, 0);
   EXPECT_THAT(c.Center(), PointEq({-4, 7}));
   EXPECT_EQ(c.Radius(), 0);
+}
+
+TEST(CircleTest, ConstructWithInfiniteRadius) {
+  Circle c({-4, 7}, kInfinity);
+  EXPECT_THAT(c.Center(), PointEq({-4, 7}));
+  EXPECT_EQ(c.Radius(), kInfinity);
 }
 
 TEST(CircleTest, GetPoint) {
@@ -403,6 +410,10 @@ TEST(CircleTest, Contains) {
 
 TEST(CircleDeathTest, ConstructWithNegativeRadius) {
   EXPECT_DEATH_IF_SUPPORTED(Circle circle({1, 2}, -1), "");
+}
+
+TEST(CircleDeathTest, ConstructWithNanRadius) {
+  EXPECT_DEATH_IF_SUPPORTED(Circle circle({1, 2}, kNan), "");
 }
 
 TEST(CircleDeathTest, AppendArcToPolylineZeroChordHeight) {
