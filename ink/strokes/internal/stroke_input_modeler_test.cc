@@ -21,14 +21,18 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "fuzztest/fuzztest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status_matchers.h"
 #include "ink/brush/brush_family.h"
+#include "ink/brush/fuzz_domains.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/type_matchers.h"
+#include "ink/strokes/input/fuzz_domains.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/types/duration.h"
+#include "ink/types/fuzz_domains.h"
 #include "ink/types/physical_distance.h"
 #include "ink/types/type_matchers.h"
 
@@ -436,6 +440,22 @@ INSTANTIATE_TEST_SUITE_P(
     [](const ::testing::TestParamInfo<InputModelTestCase>& info) {
       return info.param.test_name;
     });
+
+void CanModelAnyStrokeInputBatch(const BrushFamily::InputModel& input_model,
+                                 float brush_epsilon,
+                                 const StrokeInputBatch& input_batch,
+                                 Duration32 elapsed_time) {
+  StrokeInputModeler modeler;
+  modeler.StartStroke(input_model, brush_epsilon);
+  modeler.ExtendStroke(input_batch, StrokeInputBatch(), elapsed_time);
+  EXPECT_LE(modeler.GetState().stable_input_count,
+            modeler.GetState().real_input_count);
+  EXPECT_LE(modeler.GetState().real_input_count,
+            modeler.GetModeledInputs().size());
+}
+FUZZ_TEST(StrokeInputModelerFuzzTest, CanModelAnyStrokeInputBatch)
+    .WithDomains(ValidBrushFamilyInputModel(), ValidBrushEpsilon(),
+                 ArbitraryStrokeInputBatch(), FiniteNonNegativeDuration32());
 
 }  // namespace
 }  // namespace ink::strokes_internal

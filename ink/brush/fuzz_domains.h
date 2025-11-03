@@ -47,6 +47,9 @@ fuzztest::Domain<BrushCoat> ValidBrushCoat();
 // The domain of all valid brush coats that can be serialized to proto.
 fuzztest::Domain<BrushCoat> SerializableBrushCoat();
 
+// The domain of all valid brush epsilon values.
+fuzztest::Domain<float> ValidBrushEpsilon();
+
 // The domain of all valid brush families.
 fuzztest::Domain<BrushFamily> ValidBrushFamily();
 // The domain of all valid brush families that can be serialized to proto.

@@ -626,7 +626,7 @@ Domain<BrushPaint::TextureKeyframe> ValidBrushPaintTextureKeyframe() {
       OptionalOf(FiniteAngle()), OptionalOf(InRange(0.f, 1.f)));
 }
 
-fuzztest::Domain<BrushPaint::TextureLayer>
+Domain<BrushPaint::TextureLayer>
 ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
     BrushPaint::TextureMapping mapping, int animation_frames,
     int animation_rows, int animation_columns,
@@ -680,7 +680,7 @@ Domain<BrushPaint::SelfOverlap> ArbitraryBrushPaintSelfOverlap() {
 }
 // LINT.ThenChange(brush_paint.h:self_overlap)
 
-fuzztest::Domain<BrushPaint> ValidBrushPaint(DomainVariant variant) {
+Domain<BrushPaint> ValidBrushPaint(DomainVariant variant) {
   return FlatMap(
       [=](BrushPaint::TextureMapping mapping,
           std::tuple<int, int, int> animation_frames_rows_columns,
@@ -721,11 +721,9 @@ Domain<BrushTip> ValidBrushTip(DomainVariant variant) {
 
 }  // namespace
 
-fuzztest::Domain<Brush> ValidBrush() {
-  return ValidBrush(DomainVariant::kValid);
-}
+Domain<Brush> ValidBrush() { return ValidBrush(DomainVariant::kValid); }
 
-fuzztest::Domain<Brush> SerializableBrush() {
+Domain<Brush> SerializableBrush() {
   return ValidBrush(DomainVariant::kValidAndSerializable);
 }
 
@@ -753,19 +751,21 @@ Domain<BrushCoat> SerializableBrushCoat() {
   return ValidBrushCoat(DomainVariant::kValidAndSerializable);
 }
 
-fuzztest::Domain<BrushFamily> ValidBrushFamily() {
+Domain<float> ValidBrushEpsilon() { return FinitePositiveFloat(); }
+
+Domain<BrushFamily> ValidBrushFamily() {
   return ValidBrushFamily(DomainVariant::kValid);
 }
 
-fuzztest::Domain<BrushFamily> SerializableBrushFamily() {
+Domain<BrushFamily> SerializableBrushFamily() {
   return ValidBrushFamily(DomainVariant::kValidAndSerializable);
 }
 
-fuzztest::Domain<BrushPaint> ValidBrushPaint() {
+Domain<BrushPaint> ValidBrushPaint() {
   return ValidBrushPaint(DomainVariant::kValid);
 }
 
-fuzztest::Domain<BrushPaint> SerializableBrushPaint() {
+Domain<BrushPaint> SerializableBrushPaint() {
   return ValidBrushPaint(DomainVariant::kValidAndSerializable);
 }
 

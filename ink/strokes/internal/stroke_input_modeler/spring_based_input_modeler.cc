@@ -232,15 +232,18 @@ void SpringBasedInputModeler::ModelInput(
   result_buffer_.clear();
 
   // `StrokeInputBatch` and `InProgressStroke` are designed to perform all the
-  // necessary validation so that this operation should not fail.
-  ABSL_CHECK_OK(stroke_modeler_.Update(
-      {.event_type = event_type,
-       .position = {input.position.x, input.position.y},
-       .time = stroke_model::Time(input.elapsed_time.ToSeconds()),
-       .pressure = input.pressure,
-       .tilt = input.tilt.ValueInRadians(),
-       .orientation = input.orientation.ValueInRadians()},
-      result_buffer_));
+  // necessary validation so that this operation should mostly not
+  // fail. However, the spring-based modeler will still fail on very large input
+  // values. If that happens, just ignore the error rather than crashing.
+  stroke_modeler_
+      .Update({.event_type = event_type,
+               .position = {input.position.x, input.position.y},
+               .time = stroke_model::Time(input.elapsed_time.ToSeconds()),
+               .pressure = input.pressure,
+               .tilt = input.tilt.ValueInRadians(),
+               .orientation = input.orientation.ValueInRadians()},
+              result_buffer_)
+      .IgnoreError();
 
   std::optional<Point> previous_position;
   float traveled_distance = 0;
