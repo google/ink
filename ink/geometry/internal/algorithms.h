@@ -42,19 +42,6 @@ namespace ink::geometry_internal {
 std::optional<std::array<float, 3>> GetBarycentricCoordinates(
     const Triangle& triangle, Point position);
 
-// Interpolates from `a` to `b` by separately interpolating or extrapolating
-// the direction and magnitude based on the parameter `t`.
-//
-//   * When `a` and `b` have different magnitudes and directions, this produces
-//     points on an Archimedean spiral containing `a`, `b`, and the origin.
-//   * When `a` and `b` have the same direction, this is equivalent to a regular
-//     linear interpolation or extrapolation. This is a degenerate spiral with
-//     infinite radial separation between loops.
-//   * When `a` and `b` have the same magnitude, this is equivalent to the 2D
-//     case of spherical interpolation (https://en.wikipedia.org/wiki/Slerp).
-//     This is a degenerate spiral with zero radial separation between loops.
-Vec SpiralLerp(Vec a, Vec b, float t);
-
 // Returns the `Envelope` of `mesh` positions.
 //
 // Vertex positions contribute to the envelope by just being in the `mesh` and

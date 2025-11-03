@@ -51,17 +51,6 @@ std::optional<std::array<float, 3>> GetBarycentricCoordinates(
   return std::array<float, 3>({b0, b1, 1 - b0 - b1});
 }
 
-Vec SpiralLerp(Vec a, Vec b, float t) {
-  if (t == 0) return a;
-  if (t == 1) return b;
-
-  Angle direction = a.Direction() + t * Vec::SignedAngleBetween(a, b);
-  // Note that magnitude can lerp to a negative value, which evaluates to the
-  // desired reflection through the origin.
-  float magnitude = (1 - t) * a.Magnitude() + t * b.Magnitude();
-  return Vec::FromDirectionAndMagnitude(direction, magnitude);
-}
-
 Envelope CalculateEnvelope(const MutableMesh& mesh) {
   Envelope envelope;
   for (uint32_t i = 0; i < mesh.VertexCount(); ++i) {

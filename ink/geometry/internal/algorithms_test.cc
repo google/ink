@@ -108,60 +108,6 @@ TEST(GetBarycentricCoordinatesTest, DegenerateTriangle) {
               Eq(std::nullopt));
 }
 
-TEST(SpiralLerpTest, NonZeroInputVectorsWithDifferentDirections) {
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, 5}, -5), VecNear({0, 1}, 0.001));
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, 5}, -4), VecNear({0, 0}, 0.001));
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, 5}, -1), VecNear({0, -3}, 0.001));
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, 5}, 0), VecEq({4, 0}));
-  EXPECT_THAT(
-      SpiralLerp({4, 0}, {0, 5}, 0.5),
-      VecNear(Vec::FromDirectionAndMagnitude(kFullTurn / 8, 4.5), 0.001));
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, 5}, 1), VecEq({0, 5}));
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, 5}, 3), VecNear({0, -7}, 0.001));
-
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, -3}, -1), VecNear({0, 5}, 0.001));
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, -3}, 0), VecEq({4, 0}));
-  EXPECT_THAT(
-      SpiralLerp({4, 0}, {0, -3}, 0.5),
-      VecNear(Vec::FromDirectionAndMagnitude(-kFullTurn / 8, 3.5), 0.001));
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, -3}, 1), VecEq({0, -3}));
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, -3}, 4), VecNear({0, 0}, 0.001));
-  EXPECT_THAT(SpiralLerp({4, 0}, {0, -3}, 5), VecNear({0, 1}, 0.001));
-}
-
-TEST(SpiralLerpTest, NonZeroInputVectorsWithSameDirection) {
-  EXPECT_THAT(SpiralLerp({1, 1}, {3, 3}, -1), VecNear({-1, -1}, 0.001));
-  EXPECT_THAT(SpiralLerp({1, 1}, {3, 3}, 0), VecEq({1, 1}));
-  EXPECT_THAT(SpiralLerp({1, 1}, {3, 3}, 0.5), VecNear({2, 2}, 0.001));
-  EXPECT_THAT(SpiralLerp({1, 1}, {3, 3}, 1), VecEq({3, 3}));
-  EXPECT_THAT(SpiralLerp({1, 1}, {3, 3}, 2), VecNear({5, 5}, 0.001));
-}
-
-TEST(SpiralLerpTest, ZeroInputVectors) {
-  // Note that the "direction" of (0, 0) is toward the positive x-axis as given
-  // by IEEE atan2.
-
-  EXPECT_THAT(SpiralLerp({0, 0}, {0, 2}, -1), VecNear({0, 2}, 0.001));
-  EXPECT_THAT(SpiralLerp({0, 0}, {0, 2}, 0), VecEq({0, 0}));
-  EXPECT_THAT(
-      SpiralLerp({0, 0}, {0, 2}, 0.75),
-      VecNear(Vec::FromDirectionAndMagnitude(3 * kFullTurn / 16, 1.5), 0.001));
-  EXPECT_THAT(SpiralLerp({0, 0}, {0, 2}, 1), VecEq({0, 2}));
-  EXPECT_THAT(SpiralLerp({0, 0}, {0, 2}, 2), VecNear({-4, 0}, 0.001));
-
-  EXPECT_THAT(SpiralLerp({-3, 0}, {0, 0}, -1), VecNear({6, 0}, 0.001));
-  EXPECT_THAT(SpiralLerp({-3, 0}, {0, 0}, 0), VecEq({-3, 0}));
-  EXPECT_THAT(SpiralLerp({-3, 0}, {0, 0}, 0.5), VecNear({0, -1.5}, 0.001));
-  EXPECT_THAT(SpiralLerp({-3, 0}, {0, 0}, 1), VecEq({0, 0}));
-  EXPECT_THAT(SpiralLerp({-3, 0}, {0, 0}, 2), VecNear({3, 0}, 0.001));
-
-  EXPECT_THAT(SpiralLerp({0, 0}, {0, 0}, -1), VecEq({0, 0}));
-  EXPECT_THAT(SpiralLerp({0, 0}, {0, 0}, 0), VecEq({0, 0}));
-  EXPECT_THAT(SpiralLerp({0, 0}, {0, 0}, 0.2), VecEq({0, 0}));
-  EXPECT_THAT(SpiralLerp({0, 0}, {0, 0}, 1), VecEq({0, 0}));
-  EXPECT_THAT(SpiralLerp({0, 0}, {0, 0}, 2), VecEq({0, 0}));
-}
-
 TEST(CalculateEnvelopeTest, EmptyMesh) {
   MutableMesh mesh;
   EXPECT_TRUE(CalculateEnvelope(mesh).IsEmpty());
