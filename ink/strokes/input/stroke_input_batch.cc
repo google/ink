@@ -357,6 +357,35 @@ absl::Status StrokeInputBatch::Append(const StrokeInputBatch& inputs) {
   return absl::OkStatus();
 }
 
+absl::Status StrokeInputBatch::Append(const StrokeInputBatch& inputs,
+                                      int start_index, int end_index) {
+  ABSL_CHECK_GE(start_index, 0);
+  ABSL_CHECK_LE(end_index, inputs.Size());
+  ABSL_CHECK_LE(start_index, end_index);
+
+  if (start_index == end_index) return absl::OkStatus();
+
+  if (!IsEmpty()) {
+    if (absl::Status status =
+            ValidateConsecutiveInputs(Last(), inputs.Get(start_index));
+        !status.ok()) {
+      return status;
+    }
+  } else {
+    if (!data_.HasValue()) data_.Emplace();
+    SetInlineFormatMetadata(inputs.Get(start_index));
+  }
+
+  std::vector<float>& data = data_.MutableValue();
+  const std::vector<float>& append_data = inputs.data_.Value();
+  int stride = inputs.FloatsPerInput();
+  data.insert(data.end(), append_data.begin() + start_index * stride,
+              append_data.begin() + end_index * stride);
+  size_ += end_index - start_index;
+
+  return absl::OkStatus();
+}
+
 void StrokeInputBatch::Erase(int start, int count) {
   ABSL_DCHECK_GE(start, 0);
   ABSL_CHECK_LE(start, Size());

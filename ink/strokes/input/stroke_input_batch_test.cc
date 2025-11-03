@@ -1582,5 +1582,129 @@ TEST(StrokeInputBatchDeathTest, EraseWithStartOutOfBounds) {
   EXPECT_DEATH_IF_SUPPORTED(batch->Erase(batch->Size() + 1, 1), "");
 }
 
+TEST(StrokeInputBatchTest, AppendRangeToEmptyBatch) {
+  std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
+  absl::StatusOr<StrokeInputBatch> source_batch =
+      StrokeInputBatch::Create(input_vector);
+  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+
+  StrokeInputBatch batch;
+  EXPECT_EQ(absl::OkStatus(), batch.Append(*source_batch, 1, 4));
+  EXPECT_THAT(batch,
+              StrokeInputBatchIsArray(absl::MakeSpan(&input_vector[1], 3)));
+}
+
+TEST(StrokeInputBatchTest, AppendRangeToNonEmptyBatch) {
+  std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
+  absl::StatusOr<StrokeInputBatch> source_batch =
+      StrokeInputBatch::Create(input_vector);
+  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+
+  absl::StatusOr<StrokeInputBatch> batch =
+      StrokeInputBatch::Create({input_vector[0]});
+  ASSERT_EQ(batch.status(), absl::OkStatus());
+  EXPECT_EQ(absl::OkStatus(), batch->Append(*source_batch, 1, 3));
+  EXPECT_THAT(*batch,
+              StrokeInputBatchIsArray(absl::MakeSpan(&input_vector[0], 3)));
+}
+
+TEST(StrokeInputBatchTest, AppendEmptyRange) {
+  std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
+  absl::StatusOr<StrokeInputBatch> source_batch =
+      StrokeInputBatch::Create(input_vector);
+  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+
+  absl::StatusOr<StrokeInputBatch> batch =
+      StrokeInputBatch::Create({input_vector[0]});
+  ASSERT_EQ(batch.status(), absl::OkStatus());
+  EXPECT_EQ(absl::OkStatus(), batch->Append(*source_batch, 2, 2));
+  EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
+}
+
+TEST(StrokeInputBatchTest, AppendFullRange) {
+  std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
+  absl::StatusOr<StrokeInputBatch> source_batch =
+      StrokeInputBatch::Create(input_vector);
+  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+
+  StrokeInputBatch batch;
+  EXPECT_EQ(absl::OkStatus(),
+            batch.Append(*source_batch, 0, source_batch->Size()));
+  EXPECT_THAT(batch, StrokeInputBatchEq(*source_batch));
+}
+
+TEST(StrokeInputBatchTest, AppendRangeWithoutOptionalAttributes) {
+  StrokeInputBatch batch;
+  absl::StatusOr<StrokeInputBatch> source_batch =
+      StrokeInputBatch::Create({{.tool_type = StrokeInput::ToolType::kStylus,
+                                 .position = {10, 20},
+                                 .elapsed_time = Duration32::Seconds(5)},
+                                {.tool_type = StrokeInput::ToolType::kStylus,
+                                 .position = {20, 30},
+                                 .elapsed_time = Duration32::Seconds(5)},
+                                {.tool_type = StrokeInput::ToolType::kStylus,
+                                 .position = {30, 40},
+                                 .elapsed_time = Duration32::Seconds(5)}});
+  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+  EXPECT_EQ(absl::OkStatus(), batch.Append(*source_batch, 1, 2));
+  EXPECT_THAT(batch, StrokeInputBatchIsArray({source_batch->Get(1)}));
+}
+
+TEST(StrokeInputBatchTest, AppendRangeWithDecreasingTime) {
+  std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
+  absl::StatusOr<StrokeInputBatch> source_batch =
+      StrokeInputBatch::Create(input_vector);
+  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+
+  // Attempt to append a range that fails validation due to non-decreasing
+  // `elapsed_time`.
+  absl::StatusOr<StrokeInputBatch> batch =
+      StrokeInputBatch::Create({input_vector[3]});
+  ASSERT_EQ(batch.status(), absl::OkStatus());
+  absl::Status status = batch->Append(*source_batch, 1, 3);
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("non-decreasing `elapsed_time`"));
+  EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[3]}));
+}
+
+TEST(StrokeInputBatchTest, AppendRangeWithIncompatibleFormat) {
+  std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
+  absl::StatusOr<StrokeInputBatch> source_batch =
+      StrokeInputBatch::Create(input_vector);
+  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+
+  // Append a range with an incompatible format.
+  absl::StatusOr<StrokeInputBatch> batch =
+      StrokeInputBatch::Create({input_vector[0]});
+  ASSERT_EQ(batch.status(), absl::OkStatus());
+
+  std::vector<StrokeInput> different_format_vector =
+      MakeValidTestInputSequence(StrokeInput::ToolType::kMouse);
+  absl::StatusOr<StrokeInputBatch> different_format_batch =
+      StrokeInputBatch::Create(different_format_vector);
+  ASSERT_EQ(different_format_batch.status(), absl::OkStatus());
+
+  absl::Status status = batch->Append(*different_format_batch, 1, 3);
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("tool_type"));
+  EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
+}
+
+TEST(StrokeInputBatchTest, AppendRangeWithIndexOutOfBounds) {
+  std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
+  absl::StatusOr<StrokeInputBatch> source_batch =
+      StrokeInputBatch::Create(input_vector);
+  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+
+  StrokeInputBatch batch;
+  EXPECT_DEATH_IF_SUPPORTED(auto status = batch.Append(*source_batch, -1, 1),
+                            "");
+  EXPECT_DEATH_IF_SUPPORTED(
+      auto status = batch.Append(*source_batch, 0, source_batch->Size() + 1),
+      "");
+  EXPECT_DEATH_IF_SUPPORTED(auto status = batch.Append(*source_batch, 5, 0),
+                            "");
+}
+
 }  // namespace
 }  // namespace ink

@@ -144,6 +144,11 @@ class StrokeInputBatch {
   absl::Status Append(absl::Span<const StrokeInput> inputs);
   absl::Status Append(const StrokeInputBatch& inputs);
 
+  // Validates and appends the range of `inputs` from `start_index` (inclusive)
+  // to `end_index` (exclusive).
+  absl::Status Append(const StrokeInputBatch& inputs, int start_index,
+                      int end_index);
+
   // Erases `count` elements beginning at `start`.
   //
   // If `start` + `count` is greater than `Size()`, then all elements from
