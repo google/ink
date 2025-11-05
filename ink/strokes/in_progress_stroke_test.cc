@@ -524,117 +524,91 @@ TEST(InProgressStrokeTest, EnqueueInputsWithDifferentToolTypes) {
   EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
-TEST(InProgressStrokeTest, EnqueueInputsDuplicatePositionAndTime) {
-  InProgressStroke stroke;
+TEST(InProgressStrokeTest, EnqueuingInputsWithOverlappingTimeIntervals) {
   Brush brush = CreateRectangularTestBrush();
-  stroke.Start(brush);
 
-  absl::StatusOr<StrokeInputBatch> input = StrokeInputBatch::Create(
-      {{.position = {1, 2}, .elapsed_time = Duration32::Seconds(1)}});
-  ASSERT_EQ(input.status(), absl::OkStatus());
-
-  EXPECT_THAT(stroke.EnqueueInputs(*input, *input),
-              IsInvalidArgumentErrorThat(HasSubstr("duplicate")));
-  EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
-  EXPECT_FALSE(stroke.ChangesWithTime());
-
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *input));
-  EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
-  EXPECT_FALSE(stroke.ChangesWithTime());
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(1)));
-
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*input, {}));
-  EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
-  EXPECT_FALSE(stroke.ChangesWithTime());
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(1)));
-
-  EXPECT_THAT(stroke.EnqueueInputs({}, *input),
-              IsInvalidArgumentErrorThat(HasSubstr("duplicate")));
-  EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
-  EXPECT_FALSE(stroke.ChangesWithTime());
-
-  EXPECT_THAT(stroke.EnqueueInputs(*input, {}),
-              IsInvalidArgumentErrorThat(HasSubstr("duplicate")));
-  EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
-  EXPECT_FALSE(stroke.ChangesWithTime());
-}
-
-TEST(InProgressStrokeTest,
-     EnqueueInputsDuplicatePositionAndTimeOnSubsequentUpdate) {
-  InProgressStroke stroke;
-  Brush brush = CreateRectangularTestBrush();
-  stroke.Start(brush);
-
-  absl::StatusOr<StrokeInputBatch> first = StrokeInputBatch::Create(
-      {{.position = {1, 2}, .elapsed_time = Duration32::Seconds(1)}});
-  ASSERT_EQ(first.status(), absl::OkStatus());
-  absl::StatusOr<StrokeInputBatch> second = StrokeInputBatch::Create(
-      {{.position = {3, 4}, .elapsed_time = Duration32::Seconds(2)}});
-
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*first, {}));
-  EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
-  EXPECT_FALSE(stroke.ChangesWithTime());
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(1)));
-
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*second, {}));
-  EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
-  EXPECT_FALSE(stroke.ChangesWithTime());
-  // But not actually doing an update yet. We reject updates that would
-  // duplicate against the last real input, which is currently queued.
-  EXPECT_THAT(stroke.EnqueueInputs(*second, {}),
-              IsInvalidArgumentErrorThat(HasSubstr("duplicate")));
-  EXPECT_THAT(stroke.EnqueueInputs({}, *second),
-              IsInvalidArgumentErrorThat(HasSubstr("duplicate")));
-}
-
-TEST(InProgressStrokeTest, EnqueueInputsWithDecreasingElapsedTime) {
-  InProgressStroke stroke;
-  Brush brush = CreateRectangularTestBrush();
-  stroke.Start(brush);
-
-  absl::StatusOr<StrokeInputBatch> first_inputs = StrokeInputBatch::Create({
-      {.elapsed_time = Duration32::Seconds(0)},
-      {.elapsed_time = Duration32::Seconds(1)},
-      {.elapsed_time = Duration32::Seconds(2)},
-      {.elapsed_time = Duration32::Seconds(3)},
-  });
+  absl::StatusOr<StrokeInputBatch> first_inputs = StrokeInputBatch::Create(
+      {{.position = {1, 2}, .elapsed_time = Duration32::Seconds(0)},
+       {.position = {1, 2}, .elapsed_time = Duration32::Seconds(1)},
+       {.position = {1, 2}, .elapsed_time = Duration32::Seconds(2)}});
   ASSERT_EQ(first_inputs.status(), absl::OkStatus());
-  absl::StatusOr<StrokeInputBatch> second_inputs = StrokeInputBatch::Create({
-      {.elapsed_time = Duration32::Seconds(2)},
-      {.elapsed_time = Duration32::Seconds(3)},
-      {.elapsed_time = Duration32::Seconds(4)},
-  });
+
+  absl::StatusOr<StrokeInputBatch> second_inputs = StrokeInputBatch::Create(
+      {{.position = {3, 4}, .elapsed_time = Duration32::Seconds(1)},
+       {.position = {3, 4}, .elapsed_time = Duration32::Seconds(2)},
+       {.position = {3, 4}, .elapsed_time = Duration32::Seconds(3)}});
   ASSERT_EQ(second_inputs.status(), absl::OkStatus());
 
-  // We can't add real inputs while simultanously predicting further inputs
-  // whose start time takes place in the middle of the real inputs.
-  EXPECT_THAT(stroke.EnqueueInputs(*first_inputs, *second_inputs),
-              IsInvalidArgumentErrorThat(HasSubstr("non-decreasing")));
-  EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
-  EXPECT_FALSE(stroke.ChangesWithTime());
+  {
+    InProgressStroke stroke;
+    stroke.Start(brush);
+    // Enqueuing inputs with times that overlap is valid; we drop the new
+    // inputs with timestamps earlier than latest previously queued input.
+    // Note also that we allow inputs with the same time but different position.
+    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*first_inputs, {}));
+    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*second_inputs, {}));
+    EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(3)));
+    EXPECT_THAT(
+        stroke.GetInputs(),
+        StrokeInputBatchIsArray(
+            {{.position = {1, 2}, .elapsed_time = Duration32::Seconds(0)},
+             {.position = {1, 2}, .elapsed_time = Duration32::Seconds(1)},
+             {.position = {1, 2}, .elapsed_time = Duration32::Seconds(2)},
+             {.position = {3, 4}, .elapsed_time = Duration32::Seconds(2)},
+             {.position = {3, 4}, .elapsed_time = Duration32::Seconds(3)}}));
+  }
 
-  // We *can* enqueue just the prediction...
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *second_inputs));
-  EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
-  EXPECT_FALSE(stroke.ChangesWithTime());
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(3)));
-  // ...and then later replace it with the real inputs.
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*first_inputs, {}));
-  EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
-  EXPECT_FALSE(stroke.ChangesWithTime());
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(4)));
+  {
+    InProgressStroke stroke;
+    stroke.Start(brush);
+    // Similarly, predictions with overlap is valid; the predictions are
+    // overwritten.
+    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *first_inputs));
+    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *second_inputs));
+    EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(4)));
+    EXPECT_THAT(
+        stroke.GetInputs(),
+        StrokeInputBatchIsArray(
+            {{.position = {3, 4}, .elapsed_time = Duration32::Seconds(1)},
+             {.position = {3, 4}, .elapsed_time = Duration32::Seconds(2)},
+             {.position = {3, 4}, .elapsed_time = Duration32::Seconds(3)}}));
+  }
 
-  // But now that we've added the real inputs, we can't then add a prediction
-  // whose start time takes place in the middle of those real inputs...
-  EXPECT_THAT(stroke.EnqueueInputs({}, *second_inputs),
-              IsInvalidArgumentErrorThat(HasSubstr("non-decreasing")));
-  EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
-  EXPECT_FALSE(stroke.ChangesWithTime());
-  // ...nor can we add those overlapping inputs as additional real inputs.
-  EXPECT_THAT(stroke.EnqueueInputs(*second_inputs, {}),
-              IsInvalidArgumentErrorThat(HasSubstr("non-decreasing")));
-  EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
-  EXPECT_FALSE(stroke.ChangesWithTime());
+  {
+    InProgressStroke stroke;
+    stroke.Start(brush);
+    // Enqueuing real inputs and subsequently predictions with
+    // overlap is valid; we drop the predictions with timestamps earlier than
+    // the queued inputs.
+    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*first_inputs, {}));
+    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *second_inputs));
+    EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(4)));
+    EXPECT_THAT(
+        stroke.GetInputs(),
+        StrokeInputBatchIsArray(
+            {{.position = {1, 2}, .elapsed_time = Duration32::Seconds(0)},
+             {.position = {1, 2}, .elapsed_time = Duration32::Seconds(1)},
+             {.position = {1, 2}, .elapsed_time = Duration32::Seconds(2)},
+             {.position = {3, 4}, .elapsed_time = Duration32::Seconds(2)},
+             {.position = {3, 4}, .elapsed_time = Duration32::Seconds(3)}}));
+  }
+
+  {
+    InProgressStroke stroke;
+    stroke.Start(brush);
+    // Enqueuing predictions and subsequently queued real inputs with overlap
+    // is valid; the predictions are reset.
+    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *second_inputs));
+    EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(3)));
+    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*first_inputs, {}));
+    EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(4)));
+    EXPECT_THAT(
+        stroke.GetInputs(),
+        StrokeInputBatchIsArray(
+            {{.position = {1, 2}, .elapsed_time = Duration32::Seconds(0)},
+             {.position = {1, 2}, .elapsed_time = Duration32::Seconds(1)},
+             {.position = {1, 2}, .elapsed_time = Duration32::Seconds(2)}}));
+  }
 }
 
 TEST(InProgressStrokeTest, EnqueueInputsWithDifferentOptionalPropertyFormats) {

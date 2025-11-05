@@ -41,7 +41,8 @@
 
 namespace ink {
 
-using ::ink::stroke_input_internal::ValidateConsecutiveInputs;
+using ::ink::stroke_input_internal::ValidateAdvancingXYT;
+using ::ink::stroke_input_internal::ValidateConsistentAttributes;
 using ::ink::strokes_internal::StrokeShapeUpdate;
 using ::ink::strokes_internal::StrokeVertex;
 
@@ -96,20 +97,19 @@ absl::Status InProgressStroke::EnqueueInputs(
   // `StrokeInputBatch::Append` below always succeed. This helps ensure that we
   // don't modify the `InProgressStroke` if an error occurs. Since we expect
   // the subsequent calls to `Append` to succeed, we log an error if they don't.
-  if (auto status = ValidateNewInputs(real_inputs, predicted_inputs);
+  if (auto status = ValidateNewInputsAttributes(real_inputs, predicted_inputs);
       !status.ok()) {
     return status;
   }
 
-  if (absl::Status status = queued_real_inputs_.Append(real_inputs);
-      !status.ok()) {
-    ABSL_LOG(ERROR) << "Failed to append new real inputs to queued real inputs "
-                       "after validation: "
-                    << status;
-    return status;
-  }
+  ABSL_CHECK_OK(queued_real_inputs_.Append(
+      real_inputs, GetFirstValidInput(real_inputs), real_inputs.Size()));
 
-  queued_predicted_inputs_ = predicted_inputs;
+  queued_predicted_inputs_.Clear();
+  ABSL_CHECK_OK(queued_predicted_inputs_.Append(
+      predicted_inputs, GetFirstValidInput(predicted_inputs),
+      predicted_inputs.Size()));
+
   return absl::OkStatus();
 }
 
@@ -187,7 +187,25 @@ bool InProgressStroke::ChangesWithTime() const {
   return false;
 }
 
-absl::Status InProgressStroke::ValidateNewInputs(
+int InProgressStroke::GetFirstValidInput(
+    const StrokeInputBatch& new_inputs) const {
+  if (queued_real_inputs_.IsEmpty() && real_input_count_ == 0) return 0;
+
+  const StrokeInput& last_old_real_input =
+      queued_real_inputs_.IsEmpty()
+          ? processed_inputs_.Get(real_input_count_ - 1)
+          : queued_real_inputs_.Last();
+
+  for (int i = 0; i < new_inputs.Size(); ++i) {
+    if (ValidateAdvancingXYT(last_old_real_input, new_inputs.Get(i)).ok()) {
+      return i;
+    }
+  }
+
+  return new_inputs.Size();
+}
+
+absl::Status InProgressStroke::ValidateNewInputsAttributes(
     const StrokeInputBatch& real_inputs,
     const StrokeInputBatch& predicted_inputs) const {
   // If there are no new inputs, there's nothing to validate.
@@ -204,7 +222,7 @@ absl::Status InProgressStroke::ValidateNewInputs(
     const StrokeInput& first_new_input =
         real_inputs.IsEmpty() ? predicted_inputs.First() : real_inputs.First();
     if (absl::Status status =
-            ValidateConsecutiveInputs(last_old_real_input, first_new_input);
+            ValidateConsistentAttributes(last_old_real_input, first_new_input);
         !status.ok()) {
       return status;
     }
@@ -213,7 +231,7 @@ absl::Status InProgressStroke::ValidateNewInputs(
   // If there are both new real and predicted inputs, check that the first
   // predicted input is valid against the last real input.
   if (!real_inputs.IsEmpty() && !predicted_inputs.IsEmpty()) {
-    if (absl::Status status = ValidateConsecutiveInputs(
+    if (absl::Status status = ValidateConsistentAttributes(
             real_inputs.Last(), predicted_inputs.First());
         !status.ok()) {
       return status;

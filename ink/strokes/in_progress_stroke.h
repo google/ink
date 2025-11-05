@@ -101,20 +101,21 @@ class InProgressStroke {
   void Start(const Brush& brush, uint32_t noise_seed = 0);
 
   // Enqueues the incremental `real_inputs` and sets the prediction to
-  // `predicted_inputs`, overwriting any previous prediction. Queued inputs will
-  // be processed on the next call to `UpdateShape()`.
+  // `predicted_inputs`, overwriting any previous prediction. Only adds the
+  // inputs with valid position and time with respect to the existing
+  // `InProgressStroke` (see also comments in `StrokeInputBatch::Append` and
+  // input_validation_helpers.h for additional details).
   //
   // This method requires that:
   //   * `Start()` has been previously called to set the current `Brush`.
   //   * `FinishInputs()` has not been called since the last call to `Start()`.
-  //   * `real_inputs` and `predicted_inputs` must form a valid stroke input
-  //     sequence together with previously added real input. See comments on
-  //     `StrokeInputBatch::Append(const StrokeInputBatch&)` for details.
+  //   * `real_inputs` and `predicted_inputs` have the same tooltype and
+  //      format for optional attributes as the previously added real input.
   //
-  // If the above requirements are not satisfied, an error is returned and this
-  // object is left in the state it had prior to the call.
+  // Note that either one or both of `real_inputs` and `predicted_inputs` may be
+  // empty.
   //
-  // Either one or both of `real_inputs` and `predicted_inputs` may be empty.
+  // Queued inputs will be processed on the next call to `UpdateShape()`.
   absl::Status EnqueueInputs(const StrokeInputBatch& real_inputs,
                              const StrokeInputBatch& predicted_inputs);
 
@@ -255,9 +256,18 @@ class InProgressStroke {
       RetainAttributes retain_attributes = RetainAttributes::kAll) const;
 
  private:
-  absl::Status ValidateNewInputs(
+  // Validates that `real_inputs` and `predicted_inputs` have consistent
+  // attributes with the `InProgressStroke`.
+  absl::Status ValidateNewInputsAttributes(
       const StrokeInputBatch& real_inputs,
       const StrokeInputBatch& predicted_inputs) const;
+
+  // Returns the index of the first input in `new_inputs` that has a position
+  // and time that is valid with respect to the last input in the
+  // `InProgressStroke`.
+  // The returned index is in [0, new_inputs.Size()]. A value of
+  // new_inputs.Size() indicates that none of the inputs are valid.
+  int GetFirstValidInput(const StrokeInputBatch& new_inputs) const;
 
   absl::Status ValidateNewElapsedTime(Duration32 current_elapsed_time) const;
 
