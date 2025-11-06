@@ -19,7 +19,10 @@
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 
 package(
-    default_visibility = ["//visibility:public"],
+    default_visibility = [
+        "//java/com/google/android/gms/cast/proto/sharecast:__pkg__",
+        "//visibility:public",
+    ],
 )
 
 proto_library(
