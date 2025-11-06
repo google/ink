@@ -43,7 +43,7 @@ absl::StatusOr<MeshSpecificationData> GetMeshSpecificationData(
 
 extern "C" {
 
-JNI_METHOD(rendering_android_canvas_internal, CanvasMeshRenderer, void,
+JNI_METHOD(rendering_android_canvas_internal, CanvasMeshRendererNative, void,
            fillSkiaMeshSpecData)
 (JNIEnv* env, jobject object, jlong raw_ptr_to_mesh_format, jboolean packed,
  jintArray attribute_types_out, jintArray attribute_offsets_out,
