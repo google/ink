@@ -33,7 +33,6 @@
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/internal/legacy_segment_intersection.h"
-#include "ink/geometry/internal/legacy_triangle_contains.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/segment.h"
 #include "ink/geometry/triangle.h"
@@ -54,7 +53,6 @@ namespace brush_tip_extruder_internal {
 namespace {
 
 using ::ink::geometry_internal::LegacyIntersects;
-using ::ink::geometry_internal::LegacyTriangleContains;
 using ::ink::strokes_internal::BrushTipState;
 using ::ink::strokes_internal::LegacyVertex;
 using ::ink::strokes_internal::StrokeVertex;
@@ -1029,7 +1027,7 @@ std::optional<uint32_t> Geometry::FindLastTriangleContainingSegmentEnd(
     }
 
     Triangle triangle = mesh_.GetTriangle(i - 1);
-    if (LegacyTriangleContains(triangle, segment.end)) return i - 1;
+    if (triangle.Contains(segment.end)) return i - 1;
 
     // See if we can end the search already:
     if (i - 1 <= max_early_exit_triangle &&
@@ -1439,10 +1437,10 @@ void Geometry::UndoIntersectionRetriangulation(
         triangle_stack.back();
 
     if (stop_at_position.has_value() &&
-        LegacyTriangleContains(Triangle{.p0 = mesh_.GetPosition(indices[0]),
-                                        .p1 = mesh_.GetPosition(indices[1]),
-                                        .p2 = mesh_.GetPosition(indices[2])},
-                               *stop_at_position)) {
+        Triangle{.p0 = mesh_.GetPosition(indices[0]),
+                 .p1 = mesh_.GetPosition(indices[1]),
+                 .p2 = mesh_.GetPosition(indices[2])}
+            .Contains(*stop_at_position)) {
       // Once we reach an old triangle that contains the position at which to
       // stop, we know this triangle should remain broken up.
       break;
@@ -1519,10 +1517,10 @@ Side::IndexOffsetRanges Geometry::GetIntersectionTriangleFanOffsetRanges(
         intersecting_side.intersection->undo_triangulation_stack;
     for (auto it = undo_stack.rbegin(); it != undo_stack.rend(); ++it) {
       if (TriangleIndicesAreLeftRightConforming(*it) &&
-          LegacyTriangleContains({.p0 = mesh_.GetPosition((*it)[0]),
-                                  .p1 = mesh_.GetPosition((*it)[1]),
-                                  .p2 = mesh_.GetPosition((*it)[2])},
-                                 intersection_vertex.position)) {
+          Triangle{.p0 = mesh_.GetPosition((*it)[0]),
+                   .p1 = mesh_.GetPosition((*it)[1]),
+                   .p2 = mesh_.GetPosition((*it)[2])}
+              .Contains(intersection_vertex.position)) {
         undo_stack_triangle_found = true;
         triangle_indices = *it;
         break;

@@ -95,28 +95,6 @@ cc_test(
 )
 
 cc_library(
-    name = "legacy_triangle_contains",
-    srcs = ["legacy_triangle_contains.cc"],
-    hdrs = ["legacy_triangle_contains.h"],
-    deps = [
-        ":legacy_vector_utils",
-        "//ink/geometry:point",
-        "//ink/geometry:triangle",
-    ],
-)
-
-cc_test(
-    name = "legacy_triangle_contains_test",
-    srcs = ["legacy_triangle_contains_test.cc"],
-    deps = [
-        ":legacy_triangle_contains",
-        "//ink/geometry:point",
-        "//ink/geometry:triangle",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_library(
     name = "legacy_vector_utils",
     srcs = ["legacy_vector_utils.cc"],
     hdrs = ["legacy_vector_utils.h"],

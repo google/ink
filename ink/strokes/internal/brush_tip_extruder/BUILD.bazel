@@ -235,7 +235,6 @@ cc_library(
         "//ink/geometry:vec",
         "//ink/geometry/internal:algorithms",
         "//ink/geometry/internal:legacy_segment_intersection",
-        "//ink/geometry/internal:legacy_triangle_contains",
         "//ink/strokes/internal:brush_tip_state",
         "//ink/strokes/internal:legacy_vertex",
         "//ink/strokes/internal:stroke_vertex",
