@@ -34,6 +34,7 @@
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/internal/legacy_segment_intersection.h"
 #include "ink/geometry/internal/legacy_triangle_contains.h"
+#include "ink/geometry/internal/lerp.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/segment.h"
 #include "ink/geometry/triangle.h"

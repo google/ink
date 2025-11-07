@@ -25,9 +25,7 @@ cc_library(
     hdrs = ["algorithms.h"],
     deps = [
         ":intersects_internal",
-        "//ink/color",
         "//ink/geometry:affine_transform",
-        "//ink/geometry:angle",
         "//ink/geometry:envelope",
         "//ink/geometry:mesh",
         "//ink/geometry:mutable_mesh",
@@ -46,8 +44,6 @@ cc_test(
     srcs = ["algorithms_test.cc"],
     deps = [
         ":algorithms",
-        "//ink/color",
-        "//ink/color:type_matchers",
         "//ink/geometry:affine_transform",
         "//ink/geometry:angle",
         "//ink/geometry:envelope",
@@ -132,6 +128,37 @@ cc_test(
     deps = [
         ":legacy_vector_utils",
         "//ink/geometry:point",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "lerp",
+    srcs = ["lerp.cc"],
+    hdrs = ["lerp.h"],
+    deps = [
+        "//ink/color",
+        "//ink/geometry:angle",
+        "//ink/geometry:point",
+        "//ink/geometry:vec",
+        "//ink/types:duration",
+    ],
+)
+
+cc_test(
+    name = "lerp_test",
+    srcs = ["lerp_test.cc"],
+    deps = [
+        ":lerp",
+        "//ink/color",
+        "//ink/color:type_matchers",
+        "//ink/geometry:angle",
+        "//ink/geometry:point",
+        "//ink/geometry:type_matchers",
+        "//ink/geometry:vec",
+        "//ink/types:duration",
+        "//ink/types:type_matchers",
+        "@com_google_fuzztest//fuzztest",
         "@com_google_googletest//:gtest_main",
     ],
 )

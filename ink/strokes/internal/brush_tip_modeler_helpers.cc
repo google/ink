@@ -27,7 +27,7 @@
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_tip.h"
 #include "ink/geometry/angle.h"
-#include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/internal/lerp.h"
 #include "ink/geometry/internal/modulo.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
@@ -44,6 +44,7 @@ namespace {
 
 using ::ink::geometry_internal::InverseLerp;
 using ::ink::geometry_internal::Lerp;
+using ::ink::geometry_internal::NormalizedAngleLerp;
 
 bool IsToolTypeEnabled(BrushBehavior::EnabledToolTypes enabled_tool_types,
                        StrokeInput::ToolType tool_type) {
@@ -712,18 +713,16 @@ BrushTipState CreateTipState(Point position, std::optional<Angle> direction,
 
 ModeledStrokeInput Lerp(const ModeledStrokeInput& a,
                         const ModeledStrokeInput& b, float t) {
-  return {.position = geometry_internal::Lerp(a.position, b.position, t),
-          .velocity = geometry_internal::Lerp(a.velocity, b.velocity, t),
-          .acceleration =
-              geometry_internal::Lerp(a.acceleration, b.acceleration, t),
-          .traveled_distance = geometry_internal::Lerp(a.traveled_distance,
-                                                       b.traveled_distance, t),
-          .elapsed_time = Duration32::Millis(geometry_internal::Lerp(
-              a.elapsed_time.ToMillis(), b.elapsed_time.ToMillis(), t)),
-          .pressure = geometry_internal::Lerp(a.pressure, b.pressure, t),
-          .tilt = geometry_internal::Lerp(a.tilt, b.tilt, t),
-          .orientation = geometry_internal::NormalizedAngleLerp(
-              a.orientation, b.orientation, t)};
+  return {
+      .position = Lerp(a.position, b.position, t),
+      .velocity = Lerp(a.velocity, b.velocity, t),
+      .acceleration = Lerp(a.acceleration, b.acceleration, t),
+      .traveled_distance = Lerp(a.traveled_distance, b.traveled_distance, t),
+      .elapsed_time = Lerp(a.elapsed_time, b.elapsed_time, t),
+      .pressure = Lerp(a.pressure, b.pressure, t),
+      .tilt = Lerp(a.tilt, b.tilt, t),
+      .orientation = NormalizedAngleLerp(a.orientation, b.orientation, t),
+  };
 }
 
 }  // namespace ink::strokes_internal

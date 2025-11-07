@@ -15,10 +15,10 @@
 #ifndef INK_GEOMETRY_SEGMENT_H_
 #define INK_GEOMETRY_SEGMENT_H_
 
-#include <cmath>
 #include <optional>
 #include <string>
 
+#include "ink/geometry/internal/lerp.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 
@@ -82,6 +82,14 @@ std::string ToFormattedString(Segment segment);
 template <typename Sink>
 void AbslStringify(Sink& sink, Segment segment) {
   sink.Append(segment_internal::ToFormattedString(segment));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Inline function definitions
+////////////////////////////////////////////////////////////////////////////////
+
+inline Point Segment::Lerp(float ratio) const {
+  return geometry_internal::Lerp(start, end, ratio);
 }
 
 }  // namespace ink

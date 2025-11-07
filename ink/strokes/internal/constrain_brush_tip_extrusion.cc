@@ -18,7 +18,7 @@
 
 #include "absl/log/absl_check.h"
 #include "ink/geometry/distance.h"
-#include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/internal/lerp.h"
 #include "ink/strokes/internal/brush_tip_extrusion.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 

@@ -20,6 +20,7 @@
 #include "absl/log/absl_check.h"
 #include "ink/color/color.h"
 #include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/internal/lerp.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/triangle.h"
 #include "ink/strokes/internal/stroke_vertex.h"

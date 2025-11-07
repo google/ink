@@ -14,16 +14,16 @@
 
 #include "ink/strokes/internal/brush_tip_state.h"
 
-#include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/internal/lerp.h"
 
 namespace ink::strokes_internal {
+
+using ::ink::geometry_internal::Lerp;
+using ::ink::geometry_internal::NormalizedAngleLerp;
 
 BrushTipState BrushTipState::LerpShapeAttributes(const BrushTipState& a,
                                                  const BrushTipState& b,
                                                  float t) {
-  using ::ink::geometry_internal::Lerp;
-  using ::ink::geometry_internal::NormalizedAngleLerp;
-
   return {
       .position = b.position,
       .width = Lerp(a.width, b.width, t),

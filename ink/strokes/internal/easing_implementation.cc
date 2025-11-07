@@ -26,7 +26,7 @@
 #include "absl/log/absl_log.h"
 #include "absl/strings/str_cat.h"
 #include "ink/brush/easing_function.h"
-#include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/internal/lerp.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 

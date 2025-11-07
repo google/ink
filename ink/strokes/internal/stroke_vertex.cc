@@ -26,7 +26,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
-#include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/internal/lerp.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_packing_types.h"
 #include "ink/geometry/mutable_mesh.h"

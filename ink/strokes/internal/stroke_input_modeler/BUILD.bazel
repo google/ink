@@ -76,7 +76,7 @@ cc_library(
         "//ink/geometry:distance",
         "//ink/geometry:point",
         "//ink/geometry:vec",
-        "//ink/geometry/internal:algorithms",
+        "//ink/geometry/internal:lerp",
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/strokes/internal:modeled_stroke_input",

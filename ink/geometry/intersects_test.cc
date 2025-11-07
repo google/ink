@@ -1922,7 +1922,7 @@ TEST(IntersectsTest,
   PartitionedMesh ring_at_origin = MakeCoiledRingPartitionedMesh(12, 6);
 
   // This transform collapses all shapes to the line y = x / 5.
-  AffineTransform transform0{5, 5, 0, 1, 1, 0};
+  AffineTransform transform0{5, 5, -1, 1, 1, -1};
   // This transform collapses all shapes to the line x = 0.
   AffineTransform transform1{0, 0, 0, 0, 10, 5};
   // This transform collapses all shapes to the line x = 2.

@@ -136,7 +136,7 @@ cc_library(
     deps = [
         "//ink/geometry:angle",
         "//ink/geometry:point",
-        "//ink/geometry/internal:algorithms",
+        "//ink/geometry/internal:lerp",
     ],
 )
 
@@ -166,7 +166,7 @@ cc_library(
         "//ink/geometry:angle",
         "//ink/geometry:point",
         "//ink/geometry:vec",
-        "//ink/geometry/internal:algorithms",
+        "//ink/geometry/internal:lerp",
         "//ink/geometry/internal:modulo",
         "//ink/strokes/input:stroke_input",
         "//ink/types:duration",
@@ -250,7 +250,7 @@ cc_library(
         "//ink/brush:easing_function",
         "//ink/geometry:point",
         "//ink/geometry:vec",
-        "//ink/geometry/internal:algorithms",
+        "//ink/geometry/internal:lerp",
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/functional:overload",
         "@com_google_absl//absl/log:absl_check",
@@ -277,7 +277,7 @@ cc_library(
     srcs = ["noise_generator.cc"],
     hdrs = ["noise_generator.h"],
     deps = [
-        "//ink/geometry/internal:algorithms",
+        "//ink/geometry/internal:lerp",
         "@com_google_absl//absl/log:absl_check",
     ],
 )
@@ -452,7 +452,7 @@ cc_library(
         "//ink/geometry:mutable_mesh",
         "//ink/geometry:point",
         "//ink/geometry:vec",
-        "//ink/geometry/internal:algorithms",
+        "//ink/geometry/internal:lerp",
         "//ink/types:small_array",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/log:absl_check",
@@ -620,7 +620,7 @@ cc_library(
         ":brush_tip_extrusion",
         ":brush_tip_state",
         "//ink/geometry:distance",
-        "//ink/geometry/internal:algorithms",
+        "//ink/geometry/internal:lerp",
         "@com_google_absl//absl/log:absl_check",
     ],
 )

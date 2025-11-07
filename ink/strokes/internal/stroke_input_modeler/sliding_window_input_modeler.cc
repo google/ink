@@ -22,7 +22,7 @@
 #include "absl/status/status.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/distance.h"
-#include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/internal/lerp.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 #include "ink/strokes/input/stroke_input.h"
