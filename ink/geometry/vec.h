@@ -44,7 +44,7 @@ struct Vec {
   float Magnitude() const { return std::hypot(x, y); }
 
   // Returns the squared length of the vector.
-  float MagnitudeSquared() const { return x * x + y * y; }
+  float MagnitudeSquared() const;
 
   // Returns the direction of the vector, represented as the angle between the
   // positive x-axis and this vector. If either component of the vector is NaN,
@@ -73,9 +73,7 @@ struct Vec {
   //   a ⋅ b = ‖a‖ * ‖b‖ * cos(θ)
   // where ‖v‖ is the magnitude of the vector, and θ is the angle
   // from a to b.
-  static float DotProduct(const Vec& lhs, const Vec& rhs) {
-    return lhs.x * rhs.x + lhs.y * rhs.y;
-  }
+  static float DotProduct(const Vec& lhs, const Vec& rhs);
 
   // Returns the determinant (×) of the two vectors. The determinant
   // can be thought of as the z-component of the 3D cross product of
@@ -85,9 +83,7 @@ struct Vec {
   //   a × b = ‖a‖ * ‖b‖ * sin(θ)
   // where ‖v‖ is the magnitude of the vector, and θ is the signed
   // angle from a to b.
-  static float Determinant(const Vec& a, const Vec& b) {
-    return a.x * b.y - a.y * b.x;
-  }
+  static float Determinant(const Vec& a, const Vec& b);
 
   // Returns the absolute angle between the given vectors. If either component
   // of either vector is NaN, this returns a NaN angle; otherwise, the return
@@ -176,6 +172,25 @@ inline Vec& operator/=(Vec& lhs, float scalar) {
   lhs.x /= scalar;
   lhs.y /= scalar;
   return lhs;
+}
+
+// Disable FMA optimizations for this function, as they cause some of our
+// geometry tests to fail on iOS ARM64. See b/458398909 for context.
+#pragma STDC FP_CONTRACT OFF
+inline float Vec::MagnitudeSquared() const { return x * x + y * y; }
+
+// Disable FMA optimizations for this function, as they cause some of our
+// geometry tests to fail on iOS ARM64. See b/458398909 for context.
+#pragma STDC FP_CONTRACT OFF
+inline float Vec::DotProduct(const Vec& lhs, const Vec& rhs) {
+  return lhs.x * rhs.x + lhs.y * rhs.y;
+}
+
+// Disable FMA optimizations for this function, as they cause some of our
+// geometry tests to fail on iOS ARM64. See b/458398909 for context.
+#pragma STDC FP_CONTRACT OFF
+inline float Vec::Determinant(const Vec& a, const Vec& b) {
+  return a.x * b.y - a.y * b.x;
 }
 
 }  // namespace ink

@@ -1276,9 +1276,9 @@ TEST(MutableMeshTest, AsMeshesWithCustomPackingParams) {
   EXPECT_THAT((*meshes)[0].FloatVertexAttribute(1, 0).Values(),
               Pointwise(FloatNear(1e-6), std::vector{0, 1, 0, 1}));
   EXPECT_THAT((*meshes)[0].FloatVertexAttribute(2, 0).Values(),
-              Pointwise(FloatEq(), std::vector{0, 0, 1, 1}));
+              Pointwise(FloatNear(1e-6), std::vector{0, 0, 1, 1}));
   EXPECT_THAT((*meshes)[0].FloatVertexAttribute(3, 0).Values(),
-              Pointwise(FloatEq(), std::vector{0.5, 0.5, 0.5, 0.5}));
+              Pointwise(FloatNear(1e-6), std::vector{0.5, 0.5, 0.5, 0.5}));
 
   // The chosen packing transforms can represent these values exactly.
   EXPECT_THAT((*meshes)[0].VertexPosition(0), PointEq({0, 0}));
