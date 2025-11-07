@@ -95,7 +95,7 @@ TEST(BrushTest, Stringify) {
                            .keyframes = {{.progress = 0.1,
                                           .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kDstOut}}},
-      "big-square");
+      "big-square", BrushFamily::ExperimentalNaiveModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Blue(), 3, .1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -113,8 +113,8 @@ TEST(BrushTest, Stringify) {
       "opacity=1, animation_frames=1, animation_rows=1, animation_columns=1, "
       "animation_duration=1s, keyframes={TextureKeyframe{progress=0.1, "
       "rotation=0.25π}}, blend_mode=kDstOut}}, "
-      "self_overlap=kAny}}}], "
-      "client_brush_family_id='big-square', input_model=SpringModel))");
+      "self_overlap=kAny}}}], client_brush_family_id='big-square', "
+      "input_model=ExperimentalNaiveModel))");
 }
 
 TEST(BrushTest, Create) {

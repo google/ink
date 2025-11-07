@@ -71,7 +71,8 @@ Brush CreateBrush() {
                            .keyframes = {{.progress = 0.1,
                                           .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
-      "//test/brush-family:awesome-rectangular-brush");
+      "//test/brush-family:awesome-rectangular-brush",
+      BrushFamily::SpringModel{});
   ABSL_CHECK_OK(family);
   Color color;
   float brush_size = 10;

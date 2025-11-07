@@ -128,7 +128,7 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
                .corner_rounding = 0,
                .particle_gap_distance_scale = 0.1,
                .particle_gap_duration = Duration32::Seconds(2)},
-      CreateTestPaint());
+      CreateTestPaint(), "", BrushFamily::ExperimentalNaiveModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_EQ(absl::StrCat(*family),
             "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
@@ -143,13 +143,13 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
             "animation_columns=1, animation_duration=1s, "
             "keyframes={TextureKeyframe{progress=0.1, "
             "rotation=0.25π}}, blend_mode=kDstIn}}, "
-            "self_overlap=kAny}}}], input_model=SpringModel)");
+            "self_overlap=kAny}}}], input_model=ExperimentalNaiveModel)");
 }
 
 TEST(BrushFamilyTest, StringifyWithId) {
-  absl::StatusOr<BrushFamily> family =
-      BrushFamily::Create(BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-                          CreateTestPaint(), "big-square");
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
+      BrushTip{.scale = {3, 3}, .corner_rounding = 0}, CreateTestPaint(),
+      "big-square", BrushFamily::ExperimentalNaiveModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_EQ(absl::StrCat(*family),
             "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
@@ -163,8 +163,8 @@ TEST(BrushFamilyTest, StringifyWithId) {
             "animation_columns=1, animation_duration=1s, "
             "keyframes={TextureKeyframe{progress=0.1, "
             "rotation=0.25π}}, blend_mode=kDstIn}}, "
-            "self_overlap=kAny}}}], "
-            "client_brush_family_id='big-square', input_model=SpringModel)");
+            "self_overlap=kAny}}}], client_brush_family_id='big-square', "
+            "input_model=ExperimentalNaiveModel)");
 }
 
 TEST(BrushFamilyTest, CreateWithoutId) {

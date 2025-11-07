@@ -84,7 +84,7 @@ TEST(BrushTest, DecodeBrushProto) {
   brush_proto.mutable_color()->set_color_space(
       proto::ColorSpace::COLOR_SPACE_SRGB);
   proto::BrushFamily* family_proto = brush_proto.mutable_brush_family();
-  family_proto->mutable_input_model()->mutable_spring_model();
+  family_proto->mutable_input_model()->mutable_experimental_naive_model();
   family_proto->mutable_texture_id_to_bitmap()->insert(
       {std::string(kTestTextureId1), test_bitmap_1});
   family_proto->mutable_texture_id_to_bitmap()->insert(
@@ -135,25 +135,26 @@ TEST(BrushTest, DecodeBrushProto) {
   // Expected brush family.
   absl::StatusOr<BrushFamily> expected_family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.5f},
-      {.texture_layers = {
-           {.client_texture_id = std::string(kTestTextureId1Decoded),
-            .mapping = BrushPaint::TextureMapping::kStamping,
-            .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
-            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-            .size = {10, 15},
-            .blend_mode = BrushPaint::BlendMode::kDstOut},
-           {.client_texture_id = std::string(kTestTextureId2Decoded),
-            .mapping = BrushPaint::TextureMapping::kStamping,
-            .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
-            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-            .size = {4, 10},
-            .blend_mode = BrushPaint::BlendMode::kDstOut},
-           {.client_texture_id = std::string(kTestTextureId1Decoded),
-            .mapping = BrushPaint::TextureMapping::kStamping,
-            .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
-            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-            .size = {1, 2},
-            .blend_mode = BrushPaint::BlendMode::kDstOut}}});
+      {.texture_layers =
+           {{.client_texture_id = std::string(kTestTextureId1Decoded),
+             .mapping = BrushPaint::TextureMapping::kStamping,
+             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
+             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
+             .size = {10, 15},
+             .blend_mode = BrushPaint::BlendMode::kDstOut},
+            {.client_texture_id = std::string(kTestTextureId2Decoded),
+             .mapping = BrushPaint::TextureMapping::kStamping,
+             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
+             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
+             .size = {4, 10},
+             .blend_mode = BrushPaint::BlendMode::kDstOut},
+            {.client_texture_id = std::string(kTestTextureId1Decoded),
+             .mapping = BrushPaint::TextureMapping::kStamping,
+             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
+             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
+             .size = {1, 2},
+             .blend_mode = BrushPaint::BlendMode::kDstOut}}},
+      "", BrushFamily::ExperimentalNaiveModel{});
 
   ASSERT_EQ(expected_family.status(), absl::OkStatus());
   absl::StatusOr<Brush> expected_brush =
@@ -369,7 +370,8 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
                            .wrap_y = BrushPaint::TextureWrap::kMirror,
                            .size = {10, 15},
                            .blend_mode = BrushPaint::BlendMode::kSrcIn}},
-       .self_overlap = BrushPaint::SelfOverlap::kDiscard});
+       .self_overlap = BrushPaint::SelfOverlap::kDiscard},
+      "", BrushFamily::SpringModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -446,7 +448,8 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
                            .wrap_y = BrushPaint::TextureWrap::kMirror,
                            .size = {10, 15},
                            .blend_mode = BrushPaint::BlendMode::kSrcIn}},
-       .self_overlap = BrushPaint::SelfOverlap::kAccumulate});
+       .self_overlap = BrushPaint::SelfOverlap::kAccumulate},
+      "", BrushFamily::SpringModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
   ASSERT_EQ(brush.status(), absl::OkStatus());

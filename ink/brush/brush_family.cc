@@ -33,7 +33,7 @@
 namespace ink {
 
 BrushFamily::InputModel BrushFamily::DefaultInputModel() {
-  return SpringModel{};
+  return SlidingWindowModel{};
 }
 
 uint32_t BrushFamily::MaxBrushCoats() {
