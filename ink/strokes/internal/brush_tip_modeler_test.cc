@@ -40,9 +40,12 @@ using ::testing::ExplainMatchResult;
 using ::testing::Field;
 using ::testing::FloatEq;
 using ::testing::FloatNear;
+using ::testing::Gt;
 using ::testing::IsEmpty;
+using ::testing::Le;
 using ::testing::Ne;
 using ::testing::Pointwise;
+using ::testing::SizeIs;
 
 // Matcher that compares all fields of two tip states for equality except the
 // positions.
@@ -1100,6 +1103,60 @@ TEST(BrushTipModelerTest, TipWithNonZeroParticleGapDistanceAndDuration) {
                   AllOf(Field("width", &BrushTipState::width, Eq(0)),
                         Field("height", &BrushTipState::height, Eq(0)))));
   EXPECT_THAT(modeler.VolatileTipStates(), IsEmpty());
+}
+
+TEST(BrushTipModelerTest, SmallParticleGapDistanceWithLongInputDistance) {
+  // Create a brush tip with a particle gap of 1 unit, and a set of modeled
+  // inputs that travels a distance of 10^30 units.
+  BrushTip brush_tip = {.particle_gap_distance_scale = 1};
+  InputModelerState input_modeler_state;
+  std::vector<ModeledStrokeInput> inputs = {
+      {.position = Point{0, 0},
+       .traveled_distance = 0,
+       .elapsed_time = Duration32::Zero()},
+      {.position = Point{1e30, 0},
+       .traveled_distance = 1e30,
+       .elapsed_time = Duration32::Seconds(1)},
+  };
+  input_modeler_state.real_input_count = inputs.size();
+  input_modeler_state.stable_input_count = inputs.size();
+  // In theory, the tip modeler should be forced to create 10^30 particle tip
+  // states, which would definitely cause us to run out of memory and crash.
+  BrushTipModeler modeler;
+  modeler.StartStroke(&brush_tip, /* brush_size = */ 2);
+  modeler.UpdateStroke(input_modeler_state, inputs);
+  // The tip modeler should impose some kind of limitation to prevent this. This
+  // particular test has no strong opinions on what that limit should be, other
+  // than that tip modeling should complete successfully, and result in some
+  // nonzero number of tip states that isn't "millions".
+  EXPECT_THAT(modeler.NewFixedTipStates(), SizeIs(AllOf(Gt(0), Le(1000000))));
+}
+
+TEST(BrushTipModelerTest, SmallParticleGapDurationWithLongInputDuration) {
+  // Create a brush tip with a particle duration gap of 1 femtosecond, and a set
+  // of modeled inputs that spans a duration of 1 second.
+  BrushTip brush_tip = {.particle_gap_duration = Duration32::Seconds(1e-15)};
+  InputModelerState input_modeler_state;
+  std::vector<ModeledStrokeInput> inputs = {
+      {.position = Point{0, 0},
+       .traveled_distance = 0,
+       .elapsed_time = Duration32::Zero()},
+      {.position = Point{1, 0},
+       .traveled_distance = 1,
+       .elapsed_time = Duration32::Seconds(1)},
+  };
+  input_modeler_state.real_input_count = inputs.size();
+  input_modeler_state.stable_input_count = inputs.size();
+  // In theory, the tip modeler should be forced to create 10^15 particle tip
+  // states, which would definitely cause us to run out of memory and crash.
+  BrushTipModeler modeler;
+  modeler.StartStroke(&brush_tip, /* brush_size = */ 2);
+  modeler.UpdateStroke(input_modeler_state, inputs);
+  // The tip modeler should impose some kind of limitation to prevent this. This
+  // particular test has no strong opinions on what that limit should be, other
+  // than that tip modeling should complete successfully, and result in some
+  // nonzero number of tip states that isn't "millions".
+  EXPECT_THAT(modeler.NewFixedTipStates(), SizeIs(AllOf(Gt(0), Le(1000000))));
 }
 
 TEST(BrushTipModelerTest, UnstableTargetModifierReplacedWithNull) {

@@ -40,6 +40,24 @@
 namespace ink::strokes_internal {
 namespace {
 
+// Arbitrary limit on the number of particles we are willing to emit between
+// subsequent modeled inputs. Setting *some* limit helps prevent us from locking
+// up or running out of memory if a brush's particle gap is far smaller than the
+// distance/time between two modeled inputs (which should generally not be the
+// case for well-designed brushes and realistic inputs, but can easily happen in
+// fuzz tests).
+//
+// Justification for the current value of 1000: Typically, the gap between
+// modeled inputs should be smaller than the gap between particles, so any limit
+// greater than 1 is already moderately generous. At a typical modeled input
+// rate of 180 Hz, a brush that was hitting this limit would be emitting
+// thousands of new particles per frame, which is likely to already be a big
+// performance problem, so this limit seems generous enough. On the other hand,
+// hitting this limit every input for 20 seconds straight (quite a long stroke)
+// would still result in only a few million tip states, well within memory
+// capacity, so this limit seems strict enough.
+constexpr int kMaxParticlesPerModeledInput = 1000;
+
 std::pair<BrushBehavior::Target, BrushBehavior::Target> PolarTargetXyPair(
     BrushBehavior::PolarTarget polar_target) {
   switch (polar_target) {
@@ -295,6 +313,7 @@ Duration32 TimeSinceLastInput(const InputModelerState& input_modeler_state) {
 void BrushTipModeler::StartStroke(const BrushTip* absl_nonnull brush_tip,
                                   float brush_size, uint32_t noise_seed) {
   ABSL_CHECK_NE(brush_tip, nullptr);
+  ABSL_DCHECK_OK(brush_internal::ValidateBrushTip(*brush_tip));
   ABSL_CHECK(std::isfinite(brush_size));
   ABSL_CHECK_GT(brush_size, 0);
 
@@ -603,7 +622,9 @@ void BrushTipModeler::ProcessSingleInput(
       .elapsed_time = current_input.elapsed_time - previous_input->elapsed_time,
   };
 
-  while ((current_input.traveled_distance -
+  int num_particles_emitted = 0;
+  while (num_particles_emitted < kMaxParticlesPerModeledInput &&
+         (current_input.traveled_distance -
           last_modeled_tip_state_metrics->traveled_distance) >=
              particle_gap_metrics_.traveled_distance &&
          (current_input.elapsed_time -
@@ -632,8 +653,8 @@ void BrushTipModeler::ProcessSingleInput(
                    // Mutable reference out-param to replace
                    // `last_modeled_tip_state_metrics` with updated metrics:
                    last_modeled_tip_state_metrics);
-
     AppendParticleGapTipState();
+    ++num_particles_emitted;
   }
 }
 
