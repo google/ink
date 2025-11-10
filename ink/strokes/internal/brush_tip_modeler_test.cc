@@ -19,15 +19,21 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "fuzztest/fuzztest.h"
 #include "ink/brush/brush_behavior.h"
+#include "ink/brush/brush_family.h"
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/easing_function.h"
+#include "ink/brush/fuzz_domains.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/type_matchers.h"
+#include "ink/strokes/input/fuzz_domains.h"
 #include "ink/strokes/input/stroke_input.h"
+#include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/modeled_stroke_input.h"
+#include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
@@ -1287,6 +1293,28 @@ TEST(BrushTipModelerDeathTest, NanBrushSize) {
   EXPECT_DEATH_IF_SUPPORTED(
       modeler.StartStroke(&tip, std::numeric_limits<float>::quiet_NaN()), "");
 }
+
+void CanModelAnyValidBrushTipAndInputs(const BrushTip& brush_tip,
+                                       const StrokeInputBatch& input_batch) {
+  float brush_size = 1;
+  float brush_epsilon = 0.01;
+  // Run an arbitrary `StrokeInputBatch` through the naive input modeler as a
+  // way of getting a mostly-arbitrary (but valid) input modeler state and
+  // sequence of modeled inputs.
+  StrokeInputModeler input_modeler;
+  input_modeler.StartStroke(BrushFamily::ExperimentalNaiveModel{},
+                            brush_epsilon);
+  input_modeler.ExtendStroke(input_batch, StrokeInputBatch(),
+                             Duration32::Zero());
+  // We should be able to apply the `BrushTipModeler` to any valid brush tip and
+  // input sequence, and not crash.
+  BrushTipModeler tip_modeler;
+  tip_modeler.StartStroke(&brush_tip, brush_size);
+  tip_modeler.UpdateStroke(input_modeler.GetState(),
+                           input_modeler.GetModeledInputs());
+}
+FUZZ_TEST(BrushTipModelerFuzzTest, CanModelAnyValidBrushTipAndInputs)
+    .WithDomains(ValidBrushTip(), ArbitraryStrokeInputBatch());
 
 }  // namespace
 }  // namespace ink::strokes_internal

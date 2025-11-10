@@ -96,6 +96,8 @@ Duration32 GetTimeSinceInput(const InputModelerState& input_modeler_state,
   return input_modeler_state.complete_elapsed_time - input.elapsed_time;
 }
 
+// Returns the value of the given `Source` at the given modeled input, or
+// `std::nullopt` if the source value is indeterminate at that input.
 std::optional<float> GetSourceValue(
     const ModeledStrokeInput& input, std::optional<Angle> travel_direction,
     float brush_size, const InputModelerState& input_modeler_state,
@@ -313,14 +315,19 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::SourceNode& node,
     return;
   }
 
-  context.stack.push_back(ApplyOutOfRangeBehavior(
+  float value = ApplyOutOfRangeBehavior(
       node.source_out_of_range_behavior,
       InverseLerp(node.source_value_range[0], node.source_value_range[1],
-                  *source_value)));
+                  *source_value));
+  if (!std::isfinite(value)) {
+    value = kNullBehaviorNodeValue;
+  }
+  context.stack.push_back(value);
 }
 
 void ProcessBehaviorNodeImpl(const BrushBehavior::ConstantNode& node,
                              const BehaviorNodeContext& context) {
+  ABSL_DCHECK(std::isfinite(node.value));
   context.stack.push_back(node.value);
 }
 
@@ -364,7 +371,12 @@ void ProcessBehaviorNodeImpl(const NoiseNodeImplementation& node,
     } break;
   }
   NoiseGenerator& generator = context.noise_generators[node.generator_index];
-  generator.AdvanceInputBy(advance_by);
+  // If the above calculation produces an undefined `advance_by` value (e.g. due
+  // to extreme input values overflowing and producing ill-defined computed
+  // values), just don't advance the noise generator.
+  if (!std::isnan(advance_by)) {
+    generator.AdvanceInputBy(advance_by);
+  }
   context.stack.push_back(generator.CurrentOutputValue());
 }
 
@@ -389,17 +401,19 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::ToolTypeFilterNode& node,
 void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
                              const BehaviorNodeContext& context) {
   ABSL_DCHECK(!context.stack.empty());
-  float& damped_value = context.damped_values[node.damping_index];
+  float old_damped_value = context.damped_values[node.damping_index];
+  float new_damped_value = kNullBehaviorNodeValue;
   float input = context.stack.back();
   if (IsNullBehaviorNodeValue(input)) {
     // Input is null, so use previous damped value unchanged.
-  } else if (IsNullBehaviorNodeValue(damped_value) ||
+    new_damped_value = old_damped_value;
+  } else if (IsNullBehaviorNodeValue(old_damped_value) ||
              node.damping_gap == 0.0f) {
     // Input is non-null.  If previous damped value is null, then this is the
     // first non-null input, so snap the damped value to the input.  Or, if the
     // damping_gap is zero, then there's no damping to be done, so also snap the
     // damped value to the input.
-    damped_value = input;
+    new_damped_value = input;
   } else {
     // Input and previous damped value are both non-null, so move the damped
     // value towards the input according to the damping settings.  Note that a
@@ -411,7 +425,7 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
         // If no mapping from stroke units to physical units is available, then
         // don't perform any damping (i.e. snap damped value to input).
         if (!context.input_modeler_state.stroke_unit_length.has_value()) {
-          damped_value = input;
+          new_damped_value = input;
           break;
         }
         PhysicalDistance damping_distance =
@@ -420,34 +434,49 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
             *context.input_modeler_state.stroke_unit_length *
             (context.current_input.traveled_distance -
              context.previous_input_metrics->traveled_distance);
-        damped_value = DampOffsetTransition(
-            input, damped_value, traveled_distance_delta, damping_distance);
+        new_damped_value = DampOffsetTransition(
+            input, old_damped_value, traveled_distance_delta, damping_distance);
       } break;
       case BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize: {
         float damping_distance = context.brush_size * node.damping_gap;
         float traveled_distance_delta =
             context.current_input.traveled_distance -
             context.previous_input_metrics->traveled_distance;
-        damped_value = DampOffsetTransition(
-            input, damped_value, traveled_distance_delta, damping_distance);
+        new_damped_value = DampOffsetTransition(
+            input, old_damped_value, traveled_distance_delta, damping_distance);
       } break;
       case BrushBehavior::DampingSource::kTimeInSeconds: {
         Duration32 damping_time = Duration32::Seconds(node.damping_gap);
         Duration32 elapsed_time_delta =
             context.current_input.elapsed_time -
             context.previous_input_metrics->elapsed_time;
-        damped_value = DampOffsetTransition(input, damped_value,
-                                            elapsed_time_delta, damping_time);
+        new_damped_value = DampOffsetTransition(
+            input, old_damped_value, elapsed_time_delta, damping_time);
       } break;
     }
   }
-  context.stack.back() = damped_value;
+  // If the calculation above produced a null or non-finite damped value
+  // (e.g. due to float overflow or a null input), then leave the old damped
+  // value unchanged.
+  if (!std::isfinite(new_damped_value)) {
+    new_damped_value = old_damped_value;
+  }
+  context.damped_values[node.damping_index] = new_damped_value;
+  context.stack.back() = new_damped_value;
 }
 
 void ProcessBehaviorNodeImpl(const EasingImplementation& node,
                              const BehaviorNodeContext& context) {
   ABSL_DCHECK(!context.stack.empty());
-  context.stack.back() = node.GetY(context.stack.back());
+  float input = context.stack.back();
+  float* result = &context.stack.back();
+  if (IsNullBehaviorNodeValue(input)) return;
+  *result = node.GetY(input);
+  // If the easing function resulted in a non-finite value (e.g. due to overflow
+  // to infinity), treat the result as null.
+  if (!std::isfinite(*result)) {
+    *result = kNullBehaviorNodeValue;
+  }
 }
 
 void ProcessBehaviorNodeImpl(const BrushBehavior::BinaryOpNode& node,
@@ -515,8 +544,14 @@ void ProcessBehaviorNodeImpl(const TargetNodeImplementation& node,
   float input = context.stack.back();
   context.stack.pop_back();
   if (IsNullBehaviorNodeValue(input)) return;
-  context.target_modifiers[node.target_index] =
+
+  float modifier =
       Lerp(node.target_modifier_range[0], node.target_modifier_range[1], input);
+  // If the new modifier is non-finite (e.g. due to float overflow), then leave
+  // the previous modifier unchanged.
+  if (!std::isfinite(modifier)) return;
+
+  context.target_modifiers[node.target_index] = modifier;
 }
 
 void ProcessBehaviorNodeImpl(const PolarTargetNodeImplementation& node,
@@ -530,10 +565,15 @@ void ProcessBehaviorNodeImpl(const PolarTargetNodeImplementation& node,
       IsNullBehaviorNodeValue(magnitude_input)) {
     return;
   }
+
   Vec modifier = Vec::FromDirectionAndMagnitude(
       Angle::Radians(
           Lerp(node.angle_range[0], node.angle_range[1], angle_input)),
       Lerp(node.magnitude_range[0], node.magnitude_range[1], magnitude_input));
+  // If the new modifier vector is non-finite (e.g. due to float overflow), then
+  // leave the previous modifier vector unchanged.
+  if (!std::isfinite(modifier.x) || !std::isfinite(modifier.y)) return;
+
   context.target_modifiers[node.target_x_index] = modifier.x;
   context.target_modifiers[node.target_y_index] = modifier.y;
 }
