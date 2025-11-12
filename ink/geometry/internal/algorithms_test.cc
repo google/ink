@@ -15,7 +15,6 @@
 #include "ink/geometry/internal/algorithms.h"
 
 #include <optional>
-#include <utility>
 #include <vector>
 
 #include "gmock/gmock.h"

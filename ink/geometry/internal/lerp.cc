@@ -14,8 +14,8 @@
 
 #include "ink/geometry/internal/lerp.h"
 
-#include <algorithm>
 #include <cmath>
+#include <utility>
 
 #include "ink/color/color.h"
 #include "ink/geometry/angle.h"
