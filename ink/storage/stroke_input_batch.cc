@@ -98,7 +98,10 @@ void EncodeStrokeInputBatch(const StrokeInputBatch& input_batch,
       bounds_semi_width > 0.f
           ? (0.5f * kInverseEnvelopeXScale) / bounds_semi_width
           : 1.f;
-  x_stroke_space->set_scale(1.f / inverse_x_scale);
+  // Recompute 1.0/inverse_x_scale to avoid floating point precision loss.
+  x_stroke_space->set_scale(bounds_semi_width > 0.f ? 2.0 * bounds_semi_width /
+                                                          kInverseEnvelopeXScale
+                                                    : 1.f);
   x_stroke_space->set_offset(stroke_space_bounds.XMin());
   x_stroke_space->mutable_deltas()->Clear();
   x_stroke_space->mutable_deltas()->Reserve(input_batch.Size());
@@ -111,7 +114,11 @@ void EncodeStrokeInputBatch(const StrokeInputBatch& input_batch,
       bounds_semi_height > 0.f
           ? (0.5f * kInverseEnvelopeYScale) / bounds_semi_height
           : 1.f;
-  y_stroke_space->set_scale(1.f / inverse_y_scale);
+  // Recompute 1.0/inverse_y_scale to avoid floating point precision loss.
+  y_stroke_space->set_scale(bounds_semi_height > 0.f
+                                ? 2.0 * bounds_semi_height /
+                                      kInverseEnvelopeYScale
+                                : 1.f);
   y_stroke_space->set_offset(stroke_space_bounds.YMin());
   y_stroke_space->mutable_deltas()->Clear();
   y_stroke_space->mutable_deltas()->Reserve(input_batch.Size());
