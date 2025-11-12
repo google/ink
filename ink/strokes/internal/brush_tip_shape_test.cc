@@ -18,6 +18,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "fuzztest/fuzztest.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ink/geometry/angle.h"
@@ -26,6 +27,7 @@
 #include "ink/geometry/type_matchers.h"
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/extrusion_points.h"
+#include "ink/strokes/internal/fuzz_domains.h"
 
 namespace ink::strokes_internal {
 namespace {
@@ -1476,6 +1478,14 @@ TEST(BrushTipShapeTest, ContainsWithRoundedTriangleEdgeCase) {
 
   EXPECT_FALSE(rounded_triangle.Contains(circle));
 }
+
+void CanConstructFromAnyValidTipState(const BrushTipState& tip_state,
+                                      float min_nonzero_radius_and_separation) {
+  BrushTipShape tip_shape(tip_state, min_nonzero_radius_and_separation);
+  EXPECT_THAT(tip_shape.Center(), NanSensitivePointEq(tip_state.position));
+}
+FUZZ_TEST(BrushTipShapeTest, CanConstructFromAnyValidTipState)
+    .WithDomains(ValidBrushTipState(), fuzztest::NonNegative<float>());
 
 }  // namespace
 }  // namespace ink::strokes_internal

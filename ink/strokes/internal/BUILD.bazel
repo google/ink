@@ -20,6 +20,19 @@ package(
 )
 
 cc_library(
+    name = "fuzz_domains",
+    testonly = 1,
+    srcs = ["fuzz_domains.cc"],
+    hdrs = ["fuzz_domains.h"],
+    deps = [
+        ":brush_tip_state",
+        "//ink/geometry:angle",
+        "//ink/geometry:fuzz_domains",
+        "@com_google_fuzztest//fuzztest",
+    ],
+)
+
+cc_library(
     name = "mutable_multi_mesh",
     srcs = ["mutable_multi_mesh.cc"],
     hdrs = ["mutable_multi_mesh.h"],
@@ -365,12 +378,14 @@ cc_test(
         ":brush_tip_shape",
         ":brush_tip_state",
         ":extrusion_points",
+        ":fuzz_domains",
         "//ink/geometry:angle",
         "//ink/geometry:type_matchers",
         "//ink/geometry/internal:circle",
         "//ink/geometry/internal:test_matchers",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
+        "@com_google_fuzztest//fuzztest",
         "@com_google_googletest//:gtest_main",
     ],
 )
