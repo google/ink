@@ -255,8 +255,10 @@ class StrokeInputBatch {
   //   * tilt in radians, only if `has_tilt_`
   //   * orientation in radians, only if `has_orientation_`
   //
-  // TODO: b/295885521 - Replace with either `CopyOnWrite<T[]>` or a
-  // `CopyOnWriteArray` to remove the extra indirection.
+  // By using `CopyOnWrite<T>` with a vector rather than `CopyOnWrite<T[]>`, we
+  // trade a pointer indirection for memory management done by std::vector.
+  // Since we will be growing the vector as we collect more inputs, this is most
+  // likely worth it.
   ink_internal::CopyOnWrite<std::vector<float>> data_;
 
   // Store metadata inline so that simple getters do not need an extra branch
