@@ -20,6 +20,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
@@ -277,26 +278,25 @@ void DecodeMeshDoesNotCrashOnArbitraryInput(const CodedMesh& coded_mesh) {
 }
 FUZZ_TEST(MeshTest, DecodeMeshDoesNotCrashOnArbitraryInput);
 
-// TODO: b/294865374 - Replace this test with a less-trivial one once we can
-// round-trip a wider class of meshes.
-void EncodeEmptyPositionOnlyMeshRoundTrip(
-    MeshFormat::AttributeType position_type) {
-  absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{position_type, MeshFormat::AttributeId::kPosition}},
-                         MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
-  absl::StatusOr<Mesh> mesh = Mesh::Create(*format, {{}, {}}, {});
-  ASSERT_EQ(mesh.status(), absl::OkStatus());
+void EncodePositionOnlyMeshRoundTrip(const MutableMesh& mutable_mesh) {
+  // Create a packed mesh from the mutable_mesh.
+  absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes = mutable_mesh.AsMeshes();
+  ASSERT_EQ(meshes.status(), absl::OkStatus());
+
+  // Encode the mesh.
   CodedMesh mesh_proto;
-  EncodeMesh(*mesh, mesh_proto);
+  EncodeMesh((*meshes)[0], mesh_proto);
 
+  // Decode the mesh.
   absl::StatusOr<Mesh> mesh_out = DecodeMesh(mesh_proto);
-  ASSERT_EQ(mesh_out.status(), absl::OkStatus());
+  EXPECT_EQ(mesh_out.status(), absl::OkStatus());
 
-  EXPECT_THAT(*mesh_out, MeshEq(*mesh));
+  // The decoded mesh should equal the initial packed mesh.
+  EXPECT_THAT(*mesh_out, MeshEq((*meshes)[0]));
 }
-FUZZ_TEST(MeshTest, EncodeEmptyPositionOnlyMeshRoundTrip)
-    .WithDomains(PositionMeshAttributeType());
-
+FUZZ_TEST(MeshTest, EncodePositionOnlyMeshRoundTrip)
+    .WithDomains(ValidPackableNonEmptyPositionOnlyMutableMesh(
+        MeshFormat::AttributeType::kFloat2PackedInOneFloat,
+        MeshFormat::IndexFormat::k32BitUnpacked16BitPacked));
 }  // namespace
 }  // namespace ink

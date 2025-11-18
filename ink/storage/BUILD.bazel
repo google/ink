@@ -159,6 +159,7 @@ cc_test(
         "//ink/geometry:type_matchers",
         "//ink/storage/proto:mesh_cc_proto",
         "//ink/types:iterator_range",
+        "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:status_matchers",
         "@com_google_absl//absl/status:statusor",
