@@ -694,7 +694,7 @@ void ApplyModifiersToTipState(const BrushTipStateModifiers& modifiers,
   }
   if (modifiers.rotation_offset != Angle()) {
     tip_state.rotation =
-        (tip_state.rotation + modifiers.rotation_offset).Normalized();
+        (tip_state.rotation + modifiers.rotation_offset).NormalizedAboutZero();
   }
   if (modifiers.corner_rounding_offset != 0) {
     tip_state.percent_radius = std::clamp(
@@ -743,7 +743,7 @@ BrushTipState CreateTipState(Point position, std::optional<Angle> direction,
       .width = brush_size * brush_tip.scale.x,
       .height = brush_size * brush_tip.scale.y,
       .percent_radius = brush_tip.corner_rounding,
-      .rotation = brush_tip.rotation,
+      .rotation = brush_tip.rotation.NormalizedAboutZero(),
       .slant = brush_tip.slant,
       .pinch = brush_tip.pinch,
   };

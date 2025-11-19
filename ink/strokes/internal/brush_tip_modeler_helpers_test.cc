@@ -1544,7 +1544,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingRotation) {
   EXPECT_THAT(
       state.rotation,
       AngleEq((brush_tip.rotation + Angle::Radians(rotation_offset_in_radians))
-                  .Normalized()));
+                  .NormalizedAboutZero()));
 }
 
 TEST(CreateTipStateTest, WithBehaviorTargetingCornerRounding) {

@@ -31,7 +31,8 @@ struct BrushTipState {
   // The current corner rounding of the brush tip shape, from 0 (fully square)
   // to 1 (fully circular).
   float percent_radius;
-  // The current rotation angle of the brush tip shape.
+  // The current rotation angle of the brush tip shape, in the range [-π, π]
+  // radians.
   Angle rotation;
   // The current slant of the brush tip shape, in the range [-π/2, π/2] radians.
   Angle slant;
