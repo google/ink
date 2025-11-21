@@ -23,6 +23,7 @@
 #include "absl/hash/hash_testing.h"
 #include "absl/strings/str_cat.h"
 #include "ink/geometry/fuzz_domains.h"
+#include "ink/geometry/type_matchers.h"
 #include "ink/types/numbers.h"
 
 namespace ink {
@@ -33,6 +34,9 @@ using ::testing::Ge;
 using ::testing::Gt;
 using ::testing::Le;
 using ::testing::Lt;
+
+constexpr float kInfinity = std::numeric_limits<float>::infinity();
+constexpr float kNan = std::numeric_limits<float>::quiet_NaN();
 
 TEST(AngleTest, Stringify) {
   EXPECT_EQ(absl::StrCat(Angle()), "0π");
@@ -147,6 +151,14 @@ TEST(AngleTest, Normalized) {
   EXPECT_EQ(Angle::Radians(-1.4e-45f).Normalized(), Angle());
 }
 
+TEST(AngleTest, NonFiniteAngleNormalized) {
+  // Non-finite angles can't be normalized to any well-defined value, so
+  // attempting to do so should return a NaN angle.
+  EXPECT_THAT(Angle::Radians(kNan).Normalized(), IsNanAngle());
+  EXPECT_THAT(Angle::Radians(kInfinity).Normalized(), IsNanAngle());
+  EXPECT_THAT(Angle::Radians(-kInfinity).Normalized(), IsNanAngle());
+}
+
 void NormalizedAngleIsBetweenZeroInclusiveAndTwoPiExclusive(Angle angle) {
   EXPECT_THAT(angle.Normalized(), AllOf(Ge(Angle()), Lt(kFullTurn)))
       << "Where angle is: " << testing::PrintToString(angle);
@@ -190,6 +202,14 @@ TEST(AngleTest, NormalizedAboutZero) {
                   .NormalizedAboutZero()
                   .ValueInRadians(),
               tolerance);
+}
+
+TEST(AngleTest, NonFiniteAngleNormalizedAboutZero) {
+  // Non-finite angles can't be normalized to any well-defined value, so
+  // attempting to do so should return a NaN angle.
+  EXPECT_THAT(Angle::Radians(kNan).NormalizedAboutZero(), IsNanAngle());
+  EXPECT_THAT(Angle::Radians(kInfinity).NormalizedAboutZero(), IsNanAngle());
+  EXPECT_THAT(Angle::Radians(-kInfinity).NormalizedAboutZero(), IsNanAngle());
 }
 
 void NormalizedAboutZeroIsBetweenMinusPiExclusiveAndPiInclusive(Angle angle) {
