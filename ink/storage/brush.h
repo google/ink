@@ -71,6 +71,8 @@ void EncodeBrushCoat(const BrushCoat& coat, proto::BrushCoat& coat_proto_out);
 void EncodeBrushPaint(const BrushPaint& paint,
                       proto::BrushPaint& paint_proto_out);
 void EncodeBrushTip(const BrushTip& tip, proto::BrushTip& tip_proto_out);
+void EncodeBrushBehavior(const BrushBehavior& behavior,
+                         proto::BrushBehavior& behavior_proto_out);
 void EncodeBrushBehaviorNode(const BrushBehavior::Node& node,
                              proto::BrushBehavior::Node& node_proto_out);
 
@@ -99,6 +101,8 @@ absl::StatusOr<BrushPaint> DecodeBrushPaint(
 absl::StatusOr<BrushTip> DecodeBrushTip(const proto::BrushTip& tip_proto);
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNode(
     const proto::BrushBehavior::Node& node_proto);
+absl::StatusOr<BrushBehavior> DecodeBrushBehavior(
+    const proto::BrushBehavior& behavior_proto);
 
 }  // namespace ink
 
