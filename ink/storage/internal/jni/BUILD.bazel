@@ -58,6 +58,7 @@ cc_library(
     srcs = ["brush_serialization_jni.cc"],
     deps = [
         "//ink/brush",
+        "//ink/brush:brush_behavior",
         "//ink/brush:brush_coat",
         "//ink/brush:brush_family",
         "//ink/brush:brush_paint",

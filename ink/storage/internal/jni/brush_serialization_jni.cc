@@ -23,6 +23,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ink/brush/brush.h"
+#include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
@@ -39,21 +40,25 @@
 namespace {
 
 using ::ink::Brush;
+using ::ink::BrushBehavior;
 using ::ink::BrushCoat;
 using ::ink::BrushFamily;
 using ::ink::BrushPaint;
 using ::ink::BrushTip;
 using ::ink::DecodeBrush;
+using ::ink::DecodeBrushBehavior;
 using ::ink::DecodeBrushCoat;
 using ::ink::DecodeBrushFamily;
 using ::ink::DecodeBrushPaint;
 using ::ink::DecodeBrushTip;
 using ::ink::EncodeBrush;
+using ::ink::EncodeBrushBehavior;
 using ::ink::EncodeBrushCoat;
 using ::ink::EncodeBrushFamily;
 using ::ink::EncodeBrushPaint;
 using ::ink::EncodeBrushTip;
 using ::ink::jni::CastToBrush;
+using ::ink::jni::CastToBrushBehavior;
 using ::ink::jni::CastToBrushCoat;
 using ::ink::jni::CastToBrushFamily;
 using ::ink::jni::CastToBrushPaint;
@@ -61,6 +66,7 @@ using ::ink::jni::CastToBrushTip;
 using ::ink::jni::JByteArrayToStdString;
 using ::ink::jni::JStringToStdString;
 using ::ink::jni::NewNativeBrush;
+using ::ink::jni::NewNativeBrushBehavior;
 using ::ink::jni::NewNativeBrushCoat;
 using ::ink::jni::NewNativeBrushFamily;
 using ::ink::jni::NewNativeBrushPaint;
@@ -124,6 +130,15 @@ JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushCoat)
   ink::proto::BrushCoat brush_coat_proto;
   EncodeBrushCoat(CastToBrushCoat(brush_coat_native_pointer), brush_coat_proto);
   return SerializeProto(env, brush_coat_proto);
+}
+
+JNI_METHOD(storage, BrushSerializationNative, jbyteArray,
+           serializeBrushBehavior)
+(JNIEnv* env, jobject object, jlong brush_behavior_native_pointer) {
+  ink::proto::BrushBehavior brush_behavior_proto;
+  EncodeBrushBehavior(CastToBrushBehavior(brush_behavior_native_pointer),
+                      brush_behavior_proto);
+  return SerializeProto(env, brush_behavior_proto);
 }
 
 JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushTip)
@@ -239,6 +254,26 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushCoatFromProto)
     return 0;
   }
   return NewNativeBrushCoat(*std::move(brush_coat));
+}
+
+JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushBehaviorFromProto)
+(JNIEnv* env, jobject object, jobject brush_behavior_direct_byte_buffer,
+ jbyteArray brush_behavior_byte_array, jint offset, jint length) {
+  ink::proto::BrushBehavior brush_behavior_proto;
+  if (absl::Status status = ParseProtoFromEither(
+          env, brush_behavior_direct_byte_buffer, brush_behavior_byte_array,
+          offset, length, brush_behavior_proto);
+      !status.ok()) {
+    ThrowExceptionFromStatus(env, status);
+    return 0;
+  }
+  absl::StatusOr<BrushBehavior> brush_behavior =
+      DecodeBrushBehavior(brush_behavior_proto);
+  if (!brush_behavior.ok()) {
+    ThrowExceptionFromStatus(env, brush_behavior.status());
+    return 0;
+  }
+  return NewNativeBrushBehavior(*std::move(brush_behavior));
 }
 
 JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushTipFromProto)
