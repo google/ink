@@ -121,7 +121,6 @@ cc_library(
         "//ink/geometry:mesh",
         "//ink/geometry:mesh_format",
         "//ink/geometry:mesh_packing_types",
-        "//ink/geometry:point",
         "//ink/jni/internal:jni_defines",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",

@@ -24,7 +24,6 @@
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_packing_types.h"
-#include "ink/geometry/point.h"
 #include "ink/jni/internal/jni_defines.h"
 
 namespace {
