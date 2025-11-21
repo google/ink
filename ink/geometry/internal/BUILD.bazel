@@ -65,32 +65,6 @@ cc_test(
 )
 
 cc_library(
-    name = "legacy_segment_intersection",
-    srcs = ["legacy_segment_intersection.cc"],
-    hdrs = ["legacy_segment_intersection.h"],
-    deps = [
-        ":legacy_vector_utils",
-        "//ink/geometry:point",
-        "//ink/geometry:segment",
-        "//ink/geometry:vec",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_test(
-    name = "legacy_segment_intersection_test",
-    srcs = ["legacy_segment_intersection_test.cc"],
-    deps = [
-        ":legacy_segment_intersection",
-        "//ink/geometry:point",
-        "//ink/geometry:segment",
-        "//ink/geometry:type_matchers",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_library(
     name = "legacy_triangle_contains",
     srcs = ["legacy_triangle_contains.cc"],
     hdrs = ["legacy_triangle_contains.h"],
