@@ -47,6 +47,10 @@ proto_library(
 proto_library(
     name = "stroke_input_batch_proto",
     srcs = ["stroke_input_batch.proto"],
+    visibility = [
+        "//java/com/google/android/gms/cast/proto/sharecast:__pkg__",
+        "//visibility:public",
+    ],
     deps = [
         ":coded_numeric_run_proto",
     ],
