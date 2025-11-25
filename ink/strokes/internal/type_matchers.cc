@@ -17,6 +17,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/container/inlined_vector.h"
+#include "ink/geometry/angle.h"
 #include "ink/geometry/internal/circle.h"
 #include "ink/geometry/internal/test_matchers.h"
 #include "ink/geometry/type_matchers.h"
@@ -33,8 +34,11 @@ using ::testing::ExplainMatchResult;
 using ::testing::Field;
 using ::testing::FloatEq;
 using ::testing::FloatNear;
+using ::testing::Ge;
+using ::testing::Le;
 using ::testing::Matcher;
 using ::testing::PrintToString;
+using ::testing::Property;
 
 MATCHER_P(BrushTipStateEqMatcher, expected,
           absl::StrCat(negation ? "doesn't equal" : "equals",
@@ -93,6 +97,33 @@ MATCHER_P2(BrushTipStateNearMatcher, expected, tolerance,
                 FloatNear(expected.luminosity_shift, tolerance)),
           Field("opacity_multiplier", &BrushTipState::opacity_multiplier,
                 FloatNear(expected.opacity_multiplier, tolerance))),
+      arg, result_listener);
+}
+
+MATCHER(ValidBrushTipStateMatcher,
+        absl::StrCat(negation ? "isn't" : "is", " a valid BrushTipState")) {
+  return ExplainMatchResult(
+      AllOf(
+          Field("width", &BrushTipState::width, Ge(0)),
+          Field("height", &BrushTipState::height, Ge(0)),
+          Field("percent_radius", &BrushTipState::percent_radius,
+                AllOf(Ge(0), Le(1))),
+          Field("rotation", &BrushTipState::rotation,
+                AllOf(Ge(-kHalfTurn), Le(kHalfTurn))),
+          Field("slant", &BrushTipState::slant,
+                AllOf(Ge(-kQuarterTurn), Le(kQuarterTurn))),
+          Field("pinch", &BrushTipState::pinch, AllOf(Ge(0), Le(1))),
+          Field("texture_animation_progress_offset",
+                &BrushTipState::texture_animation_progress_offset,
+                AllOf(Ge(0), Le(1))),
+          Field("hue_offset_in_full_turns",
+                &BrushTipState::hue_offset_in_full_turns, AllOf(Ge(0), Le(1))),
+          Field("saturation_multiplier", &BrushTipState::saturation_multiplier,
+                AllOf(Ge(0), Le(2))),
+          Field("luminosity_shift", &BrushTipState::luminosity_shift,
+                AllOf(Ge(-1), Le(1))),
+          Field("opacity_multiplier", &BrushTipState::opacity_multiplier,
+                AllOf(Ge(0), Le(2)))),
       arg, result_listener);
 }
 
@@ -180,6 +211,9 @@ Matcher<BrushTipState> BrushTipStateEq(const BrushTipState& expected) {
 Matcher<BrushTipState> BrushTipStateNear(const BrushTipState& expected,
                                          float tolerance) {
   return BrushTipStateNearMatcher(expected, tolerance);
+}
+Matcher<BrushTipState> IsValidBrushTipState() {
+  return ValidBrushTipStateMatcher();
 }
 Matcher<BrushTipShape> BrushTipShapeEq(const BrushTipShape& expected) {
   return BrushTipShapeEqMatcher(expected);

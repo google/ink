@@ -26,6 +26,7 @@ namespace ink::strokes_internal {
     const BrushTipState& expected);
 ::testing::Matcher<BrushTipState> BrushTipStateNear(
     const BrushTipState& expected, float tolerance);
+::testing::Matcher<BrushTipState> IsValidBrushTipState();
 
 ::testing::Matcher<BrushTipShape> BrushTipShapeEq(
     const BrushTipShape& expected);

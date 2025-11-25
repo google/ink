@@ -15,6 +15,7 @@
 #include "ink/strokes/internal/brush_tip_modeler_helpers.h"
 
 #include <cmath>
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -44,6 +45,8 @@ using ::testing::ElementsAre;
 using ::testing::FloatEq;
 using ::testing::FloatNear;
 using ::testing::IsEmpty;
+
+constexpr float kFloatMax = std::numeric_limits<float>::max();
 
 MATCHER(NullNodeValueMatcher, "") { return IsNullBehaviorNodeValue(arg); }
 
@@ -1544,7 +1547,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingRotation) {
   EXPECT_THAT(
       state.rotation,
       AngleEq((brush_tip.rotation + Angle::Radians(rotation_offset_in_radians))
-                  .Normalized()));
+                  .NormalizedAboutZero()));
 }
 
 TEST(CreateTipStateTest, WithBehaviorTargetingCornerRounding) {
@@ -1728,6 +1731,40 @@ TEST(CreateTipStateTest, HeightIsClampedZeroToTwiceBaseValue) {
                                  {1.2f, 1.9f})
                       .height,
                   2 * brush_tip.scale.y * brush_size);
+}
+
+TEST(CreateTipStateTest, RotationOffsetOverflow) {
+  BrushTip brush_tip = MakeBaseBrushTip();
+  float brush_size = 1.f;
+  BrushTipState tip_state =
+      CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+                     {BrushBehavior::Target::kRotationOffsetInRadians,
+                      BrushBehavior::Target::kRotationOffsetInRadians},
+                     {kFloatMax, kFloatMax});
+  EXPECT_THAT(tip_state, IsValidBrushTipState());
+}
+
+TEST(CreateTipStateTest, TextureAnimationProgressOffsetOverflow) {
+  BrushTip brush_tip = MakeBaseBrushTip();
+  float brush_size = 1.f;
+  BrushTipState tip_state =
+      CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+                     {BrushBehavior::Target::kTextureAnimationProgressOffset,
+                      BrushBehavior::Target::kTextureAnimationProgressOffset},
+                     {kFloatMax, kFloatMax});
+  EXPECT_THAT(tip_state, IsValidBrushTipState());
+  EXPECT_EQ(tip_state.texture_animation_progress_offset, 0.f);
+}
+
+TEST(CreateTipStateTest, HueOffsetOverflow) {
+  BrushTip brush_tip = MakeBaseBrushTip();
+  float brush_size = 1.f;
+  BrushTipState tip_state =
+      CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+                     {BrushBehavior::Target::kHueOffsetInRadians,
+                      BrushBehavior::Target::kHueOffsetInRadians},
+                     {kFloatMax, kFloatMax});
+  EXPECT_THAT(tip_state, IsValidBrushTipState());
 }
 
 TEST(ModeledStrokeInputLerpTest, ZeroT) {

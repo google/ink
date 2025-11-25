@@ -34,6 +34,7 @@
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
+#include "ink/strokes/internal/type_matchers.h"
 #include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
@@ -1312,6 +1313,9 @@ void CanModelAnyValidBrushTipAndInputs(const BrushTip& brush_tip,
   tip_modeler.StartStroke(&brush_tip, brush_size);
   tip_modeler.UpdateStroke(input_modeler.GetState(),
                            input_modeler.GetModeledInputs());
+  // All resulting tip states should be valid.
+  EXPECT_THAT(tip_modeler.VolatileTipStates(), Each(IsValidBrushTipState()));
+  EXPECT_THAT(tip_modeler.NewFixedTipStates(), Each(IsValidBrushTipState()));
 }
 FUZZ_TEST(BrushTipModelerFuzzTest, CanModelAnyValidBrushTipAndInputs)
     .WithDomains(ValidBrushTip(), ArbitraryStrokeInputBatch());

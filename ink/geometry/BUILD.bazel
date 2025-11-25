@@ -73,6 +73,7 @@ cc_test(
     deps = [
         ":angle",
         ":fuzz_domains",
+        ":type_matchers",
         "//ink/types:numbers",
         "@com_google_absl//absl/hash:hash_testing",
         "@com_google_absl//absl/strings",

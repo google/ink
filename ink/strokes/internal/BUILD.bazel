@@ -158,9 +158,11 @@ cc_test(
     srcs = ["brush_tip_state_test.cc"],
     deps = [
         ":brush_tip_state",
+        ":fuzz_domains",
         ":type_matchers",
         "//ink/geometry:angle",
         "//ink/geometry:type_matchers",
+        "@com_google_fuzztest//fuzztest",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -239,12 +241,12 @@ cc_library(
 cc_test(
     name = "brush_tip_modeler_test",
     srcs = ["brush_tip_modeler_test.cc"],
-    args = ["--fuzztest_time_limit_per_input=1s"],
     deps = [
         ":brush_tip_modeler",
         ":brush_tip_state",
         ":modeled_stroke_input",
         ":stroke_input_modeler",
+        ":type_matchers",
         "//ink/brush:brush_behavior",
         "//ink/brush:brush_family",
         "//ink/brush:brush_tip",
@@ -670,6 +672,7 @@ cc_library(
         ":brush_tip_state",
         ":modeled_stroke_input",
         "//:gtest_for_library_testonly",
+        "//ink/geometry:angle",
         "//ink/geometry:type_matchers",
         "//ink/geometry/internal:circle",
         "//ink/geometry/internal:test_matchers",

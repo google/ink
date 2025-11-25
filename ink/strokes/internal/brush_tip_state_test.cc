@@ -16,8 +16,10 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "fuzztest/fuzztest.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/type_matchers.h"
+#include "ink/strokes/internal/fuzz_domains.h"
 #include "ink/strokes/internal/type_matchers.h"
 
 namespace ink::strokes_internal {
@@ -217,6 +219,12 @@ TEST(BrushTipStateTest, LerpShapeAttributesRotationAboutBoundary) {
   EXPECT_THAT(BrushTipState::LerpShapeAttributes(a, b, 0.5).rotation,
               AngleNear(Angle::Radians(0), 0.001));
 }
+
+void ValidBrushTipStateIsValid(const BrushTipState& tip_state) {
+  EXPECT_THAT(tip_state, IsValidBrushTipState());
+}
+FUZZ_TEST(BrushTipStateTest, ValidBrushTipStateIsValid)
+    .WithDomains(ValidBrushTipState());
 
 }  // namespace
 }  // namespace ink::strokes_internal
