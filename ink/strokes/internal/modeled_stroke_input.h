@@ -46,6 +46,11 @@ struct ModeledStrokeInput {
   Angle orientation = StrokeInput::kNoOrientation;
 };
 
+// Computes the linear interpolation between `a` and `b` when `t` is in the
+// range [0, 1], and the linear extrapolation otherwise.
+ModeledStrokeInput Lerp(const ModeledStrokeInput& a,
+                        const ModeledStrokeInput& b, float t);
+
 // Measures the input distance/time from one point on the stroke input to
 // another.
 struct InputMetrics {

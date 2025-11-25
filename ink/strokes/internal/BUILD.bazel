@@ -87,16 +87,30 @@ cc_test(
 
 cc_library(
     name = "modeled_stroke_input",
-    hdrs = [
-        "modeled_stroke_input.h",
-    ],
+    srcs = ["modeled_stroke_input.cc"],
+    hdrs = ["modeled_stroke_input.h"],
     deps = [
         "//ink/geometry:angle",
         "//ink/geometry:point",
         "//ink/geometry:vec",
+        "//ink/geometry/internal:lerp",
         "//ink/strokes/input:stroke_input",
         "//ink/types:duration",
         "//ink/types:physical_distance",
+    ],
+)
+
+cc_test(
+    name = "modeled_stroke_input_test",
+    srcs = ["modeled_stroke_input_test.cc"],
+    deps = [
+        ":modeled_stroke_input",
+        ":type_matchers",
+        "//ink/geometry:angle",
+        "//ink/geometry:type_matchers",
+        "//ink/types:duration",
+        "//ink/types:type_matchers",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 

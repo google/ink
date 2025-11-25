@@ -129,11 +129,6 @@ BrushTipState CreateTipState(Point position, std::optional<Angle> direction,
                              absl::Span<const BrushBehavior::Target> targets,
                              absl::Span<const float> target_modifiers);
 
-// Computes the linear interpolation between `a` and `b` when `t` is in the
-// range [0, 1], and the linear extrapolation otherwise.
-ModeledStrokeInput Lerp(const ModeledStrokeInput& a,
-                        const ModeledStrokeInput& b, float t);
-
 }  // namespace ink::strokes_internal
 
 #endif  // INK_STROKES_INTERNAL_BRUSH_TIP_MODELER_HELPERS_H_

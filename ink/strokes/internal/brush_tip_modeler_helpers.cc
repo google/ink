@@ -45,7 +45,6 @@ namespace {
 using ::ink::geometry_internal::FloatModulo;
 using ::ink::geometry_internal::InverseLerp;
 using ::ink::geometry_internal::Lerp;
-using ::ink::geometry_internal::NormalizedAngleLerp;
 
 bool IsToolTypeEnabled(BrushBehavior::EnabledToolTypes enabled_tool_types,
                        StrokeInput::ToolType tool_type) {
@@ -754,20 +753,6 @@ BrushTipState CreateTipState(Point position, std::optional<Angle> direction,
   };
   ApplyModifiersToTipState(tip_state_modifiers, tip_state);
   return tip_state;
-}
-
-ModeledStrokeInput Lerp(const ModeledStrokeInput& a,
-                        const ModeledStrokeInput& b, float t) {
-  return {
-      .position = Lerp(a.position, b.position, t),
-      .velocity = Lerp(a.velocity, b.velocity, t),
-      .acceleration = Lerp(a.acceleration, b.acceleration, t),
-      .traveled_distance = Lerp(a.traveled_distance, b.traveled_distance, t),
-      .elapsed_time = Lerp(a.elapsed_time, b.elapsed_time, t),
-      .pressure = Lerp(a.pressure, b.pressure, t),
-      .tilt = Lerp(a.tilt, b.tilt, t),
-      .orientation = NormalizedAngleLerp(a.orientation, b.orientation, t),
-  };
 }
 
 }  // namespace ink::strokes_internal
