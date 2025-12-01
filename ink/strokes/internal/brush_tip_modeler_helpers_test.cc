@@ -1733,6 +1733,19 @@ TEST(CreateTipStateTest, HeightIsClampedZeroToTwiceBaseValue) {
                   2 * brush_tip.scale.y * brush_size);
 }
 
+TEST(CreateTipStateTest, WidthMultiplierOverflowTimesZeroModifier) {
+  BrushTip brush_tip = MakeBaseBrushTip();
+  float brush_size = 1.f;
+  BrushTipState tip_state =
+      CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+                     {BrushBehavior::Target::kWidthMultiplier,
+                      BrushBehavior::Target::kWidthMultiplier,
+                      BrushBehavior::Target::kWidthMultiplier},
+                     {kFloatMax, kFloatMax, 0});
+  EXPECT_THAT(tip_state, IsValidBrushTipState());
+  EXPECT_EQ(tip_state.width, 0);
+}
+
 TEST(CreateTipStateTest, RotationOffsetOverflow) {
   BrushTip brush_tip = MakeBaseBrushTip();
   float brush_size = 1.f;

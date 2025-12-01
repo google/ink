@@ -605,6 +605,14 @@ struct BrushTipStateModifiers {
   float opacity_multiplier = 1;
 };
 
+// Multiplies two non-NaN values, except that zero times infinity results in
+// zero instead of NaN.
+float NanSafeMultiply(float a, float b) {
+  ABSL_DCHECK(!std::isnan(a));
+  ABSL_DCHECK(!std::isnan(b));
+  return (a == 0 || b == 0) ? 0 : a * b;
+}
+
 // Adds `modifier` to the appropriate member of `tip_state_modifiers` according
 // to the `target` enum.
 void ApplyModifierToTarget(float modifier, BrushBehavior::Target target,
@@ -614,14 +622,18 @@ void ApplyModifierToTarget(float modifier, BrushBehavior::Target target,
   ABSL_DCHECK(std::isfinite(modifier));
   switch (target) {
     case BrushBehavior::Target::kWidthMultiplier:
-      tip_state_modifiers.width_multiplier *= modifier;
+      tip_state_modifiers.width_multiplier =
+          NanSafeMultiply(tip_state_modifiers.width_multiplier, modifier);
       break;
     case BrushBehavior::Target::kHeightMultiplier:
-      tip_state_modifiers.height_multiplier *= modifier;
+      tip_state_modifiers.height_multiplier =
+          NanSafeMultiply(tip_state_modifiers.height_multiplier, modifier);
       break;
     case BrushBehavior::Target::kSizeMultiplier:
-      tip_state_modifiers.width_multiplier *= modifier;
-      tip_state_modifiers.height_multiplier *= modifier;
+      tip_state_modifiers.width_multiplier =
+          NanSafeMultiply(tip_state_modifiers.width_multiplier, modifier);
+      tip_state_modifiers.height_multiplier =
+          NanSafeMultiply(tip_state_modifiers.height_multiplier, modifier);
       break;
     case BrushBehavior::Target::kSlantOffsetInRadians:
       tip_state_modifiers.slant_offset += Angle::Radians(modifier);
@@ -669,13 +681,15 @@ void ApplyModifierToTarget(float modifier, BrushBehavior::Target target,
               .Normalized();
       break;
     case BrushBehavior::Target::kSaturationMultiplier:
-      tip_state_modifiers.saturation_multiplier *= modifier;
+      tip_state_modifiers.saturation_multiplier =
+          NanSafeMultiply(tip_state_modifiers.saturation_multiplier, modifier);
       break;
     case BrushBehavior::Target::kLuminosity:
       tip_state_modifiers.luminosity += modifier;
       break;
     case BrushBehavior::Target::kOpacityMultiplier:
-      tip_state_modifiers.opacity_multiplier *= modifier;
+      tip_state_modifiers.opacity_multiplier =
+          NanSafeMultiply(tip_state_modifiers.opacity_multiplier, modifier);
       break;
   }
 }
