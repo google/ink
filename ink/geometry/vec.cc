@@ -47,17 +47,25 @@ Vec Vec::AsUnitVec() const {
   }
 
   // If both components are zero, then the unit vector is mathematically
-  // undefined.  However, perhaps surprisingly, std::atan2 defines a direction
+  // undefined. However, perhaps surprisingly, std::atan2 defines a direction
   // for such a vector, so return a unit vector with that direction.
   if (x == 0 && y == 0) {
     return Vec{std::copysign(1.f, x), std::copysign(0.f, y)};
   }
 
-  // Finally, we have the finite, nonzero case.  In theory, we can just divide
-  // the vector by its magnitude, but the magnitude can overflow to infinity if
-  // e.g. x and y are both very large finite floats.  We can avoid this by
-  // pre-scaling the vector before normalizing.
-  Vec scaled = 0.5f * *this;
+  // Finally, we have the finite, nonzero case. In theory, we can just divide
+  // the vector by its magnitude. However, the magnitude can overflow to
+  // infinity if e.g. x and y are both very large finite floats; we can avoid
+  // this by pre-scaling the vector by 0.5 before normalizing. On the other
+  // hand, if x and y are both subnormal floats, then that pre-scaling could
+  // potentially underflow the magnitude to zero, which would make the vector
+  // division crash; in fact, in this case we must instead pre-scale upwards
+  // significantly to ensure enough precision that the final result ends up
+  // having a magnitude close to 1.
+  float factor =
+      ((std::isnormal(x) || std::isnormal(y)) ? 0.5f
+                                              : static_cast<float>(1 << 20));
+  Vec scaled = factor * *this;
   return scaled / scaled.Magnitude();
 }
 

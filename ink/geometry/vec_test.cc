@@ -39,6 +39,8 @@ using ::testing::Not;
 
 constexpr float kInfinity = std::numeric_limits<float>::infinity();
 constexpr float kNan = std::numeric_limits<float>::quiet_NaN();
+constexpr float kFloatMax = std::numeric_limits<float>::max();
+constexpr float kFloatMin = std::numeric_limits<float>::denorm_min();
 
 TEST(VecTest, Stringify) {
   EXPECT_EQ(absl::StrCat(Vec()), "<0, 0>");
@@ -254,6 +256,14 @@ TEST(VecTest, AsUnitVec) {
   // Vec::UnitVecWithDirection(v.Direction()):
   EXPECT_THAT((Vec{+0.f, 0.f}).AsUnitVec(), VecEq({1, 0}));
   EXPECT_THAT((Vec{-0.f, 0.f}).AsUnitVec(), VecEq({-1, 0}));
+
+  // Avoid overflow:
+  EXPECT_THAT((Vec{kFloatMax, kFloatMax}).AsUnitVec(),
+              VecEq(Vec::UnitVecWithDirection(Angle::Degrees(45))));
+
+  // Avoid underflow:
+  EXPECT_THAT((Vec{kFloatMin, kFloatMin}).AsUnitVec(),
+              VecEq(Vec::UnitVecWithDirection(Angle::Degrees(45))));
 }
 
 void AsUnitVecMagnitudeIsOne(Vec vec) {
