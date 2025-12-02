@@ -257,6 +257,16 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, fillOutlinePosition)
   FillJMutableVecFromPointOrThrow(env, out_position, position);
 }
 
+JNI_METHOD(strokes, InProgressStrokeNative, void, fillPosition)
+(JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
+ jint partition_index, jint vertex_index, jobject out_position) {
+  const InProgressStroke& in_progress_stroke =
+      CastToInProgressStrokeWrapper(native_pointer).Stroke();
+  Point position =
+      in_progress_stroke.GetMesh(coat_index).VertexPosition(vertex_index);
+  FillJMutableVecFromPointOrThrow(env, out_position, position);
+}
+
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getMeshPartitionCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index) {
   return CastToInProgressStrokeWrapper(native_pointer)
