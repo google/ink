@@ -1003,27 +1003,6 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorPolarTargetNode(
   };
 }
 
-void EncodeBrushBehavior(const BrushBehavior& behavior,
-                         proto::BrushBehavior& behavior_proto_out) {
-  behavior_proto_out.clear_nodes();
-  for (const BrushBehavior::Node& node : behavior.nodes) {
-    EncodeBrushBehaviorNode(node, *behavior_proto_out.add_nodes());
-  }
-}
-
-absl::StatusOr<BrushBehavior> DecodeBrushBehavior(
-    const proto::BrushBehavior& behavior_proto) {
-  std::vector<BrushBehavior::Node> nodes;
-  nodes.reserve(behavior_proto.nodes_size());
-  for (const proto::BrushBehavior::Node& node_proto : behavior_proto.nodes()) {
-    absl::StatusOr<BrushBehavior::Node> node =
-        DecodeBrushBehaviorNode(node_proto);
-    if (!node.ok()) return node.status();
-    nodes.push_back(*std::move(node));
-  }
-  return BrushBehavior{.nodes = std::move(nodes)};
-}
-
 proto::BrushPaint::TextureLayer::Mapping EncodeBrushPaintTextureMapping(
     BrushPaint::TextureMapping mapping) {
   switch (mapping) {
@@ -1537,6 +1516,27 @@ absl::StatusOr<BrushTip> DecodeBrushTip(const proto::BrushTip& tip_proto) {
     return status;
   }
   return tip;
+}
+
+void EncodeBrushBehavior(const BrushBehavior& behavior,
+                         proto::BrushBehavior& behavior_proto_out) {
+  behavior_proto_out.clear_nodes();
+  for (const BrushBehavior::Node& node : behavior.nodes) {
+    EncodeBrushBehaviorNode(node, *behavior_proto_out.add_nodes());
+  }
+}
+
+absl::StatusOr<BrushBehavior> DecodeBrushBehavior(
+    const proto::BrushBehavior& behavior_proto) {
+  std::vector<BrushBehavior::Node> nodes;
+  nodes.reserve(behavior_proto.nodes_size());
+  for (const proto::BrushBehavior::Node& node_proto : behavior_proto.nodes()) {
+    absl::StatusOr<BrushBehavior::Node> node =
+        DecodeBrushBehaviorNode(node_proto);
+    if (!node.ok()) return node.status();
+    nodes.push_back(*std::move(node));
+  }
+  return BrushBehavior{.nodes = std::move(nodes)};
 }
 
 void EncodeBrushCoat(const BrushCoat& coat, proto::BrushCoat& coat_proto_out) {
