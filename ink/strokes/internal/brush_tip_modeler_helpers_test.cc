@@ -47,6 +47,7 @@ using ::testing::FloatNear;
 using ::testing::IsEmpty;
 
 constexpr float kFloatMax = std::numeric_limits<float>::max();
+constexpr float kInfinity = std::numeric_limits<float>::infinity();
 
 MATCHER(NullNodeValueMatcher, "") { return IsNullBehaviorNodeValue(arg); }
 
@@ -1744,6 +1745,31 @@ TEST(CreateTipStateTest, WidthMultiplierOverflowTimesZeroModifier) {
                      {kFloatMax, kFloatMax, 0});
   EXPECT_THAT(tip_state, IsValidBrushTipState());
   EXPECT_EQ(tip_state.width, 0);
+}
+
+TEST(CreateTipStateTest, BrushSizeOverflowWithZeroModifier) {
+  // Make a brush tip with a base width/height scale factor of 2.
+  BrushTip brush_tip = MakeBaseBrushTip();
+  brush_tip.scale = {2, 2};
+
+  // Applying a large enough (finite) brush size will cause the base tip size to
+  // overflow to infinity.
+  float brush_size = kFloatMax;
+  BrushTipState tip_state =
+      CreateTipState({0, 0}, Angle(), brush_tip, brush_size, {}, {});
+  EXPECT_THAT(tip_state, IsValidBrushTipState());
+  EXPECT_EQ(tip_state.width, kInfinity);
+  EXPECT_EQ(tip_state.height, kInfinity);
+
+  // Try again, but this time apply a size multiplier behavior modifier of zero.
+  tip_state = CreateTipState({0, 0}, Angle(), brush_tip, brush_size,
+                             {BrushBehavior::Target::kSizeMultiplier}, {0});
+  // Normally, infinity times zero is NaN, which would be an invalid tip state
+  // width/height. Instead, we should produce a size of zero, effectively
+  // allowing the zero size multiplier to take precedence over the overflow.
+  EXPECT_THAT(tip_state, IsValidBrushTipState());
+  EXPECT_EQ(tip_state.width, 0);
+  EXPECT_EQ(tip_state.height, 0);
 }
 
 TEST(CreateTipStateTest, RotationOffsetOverflow) {

@@ -698,10 +698,12 @@ void ApplyModifiersToTipState(const BrushTipStateModifiers& modifiers,
                               BrushTipState& tip_state) {
   tip_state.position += modifiers.position_offset_in_stroke_units;
   if (modifiers.width_multiplier != 1) {
-    tip_state.width *= std::clamp(modifiers.width_multiplier, 0.f, 2.f);
+    tip_state.width = NanSafeMultiply(
+        tip_state.width, std::clamp(modifiers.width_multiplier, 0.f, 2.f));
   }
   if (modifiers.height_multiplier != 1) {
-    tip_state.height *= std::clamp(modifiers.height_multiplier, 0.f, 2.f);
+    tip_state.height = NanSafeMultiply(
+        tip_state.height, std::clamp(modifiers.height_multiplier, 0.f, 2.f));
   }
   if (modifiers.slant_offset != Angle()) {
     tip_state.slant = std::clamp(tip_state.slant + modifiers.slant_offset,
