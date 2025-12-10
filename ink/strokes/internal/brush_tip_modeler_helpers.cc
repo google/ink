@@ -99,8 +99,8 @@ Duration32 GetTimeSinceInput(const InputModelerState& input_modeler_state,
 // Returns the value of the given `Source` at the given modeled input, or
 // `std::nullopt` if the source value is indeterminate at that input.
 std::optional<float> GetSourceValue(
-    const ModeledStrokeInput& input, std::optional<Angle> travel_direction,
-    float brush_size, const InputModelerState& input_modeler_state,
+    const ModeledStrokeInput& input, float brush_size,
+    const InputModelerState& input_modeler_state,
     BrushBehavior::Source source) {
   switch (source) {
     case BrushBehavior::Source::kNormalizedPressure:
@@ -136,17 +136,17 @@ std::optional<float> GetSourceValue(
     case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:
       return input.velocity.y / brush_size;
     case BrushBehavior::Source::kDirectionInRadians:
-      if (!travel_direction.has_value()) break;
-      return travel_direction->Normalized().ValueInRadians();
+      if (input.velocity == Vec()) break;
+      return input.velocity.Direction().Normalized().ValueInRadians();
     case BrushBehavior::Source::kDirectionAboutZeroInRadians:
-      if (!travel_direction.has_value()) break;
-      return travel_direction->ValueInRadians();
+      if (input.velocity == Vec()) break;
+      return input.velocity.Direction().ValueInRadians();
     case BrushBehavior::Source::kNormalizedDirectionX:
-      if (!travel_direction.has_value()) break;
-      return Cos(*travel_direction);
+      if (input.velocity == Vec()) break;
+      return input.velocity.AsUnitVec().x;
     case BrushBehavior::Source::kNormalizedDirectionY:
-      if (!travel_direction.has_value()) break;
-      return Sin(*travel_direction);
+      if (input.velocity == Vec()) break;
+      return input.velocity.AsUnitVec().y;
     case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
       return input.traveled_distance / brush_size;
     case BrushBehavior::Source::kTimeOfInputInSeconds:
@@ -307,9 +307,9 @@ inline float DampOffsetTransition(float target_offset, float previous_offset,
 
 void ProcessBehaviorNodeImpl(const BrushBehavior::SourceNode& node,
                              const BehaviorNodeContext& context) {
-  std::optional<float> source_value = GetSourceValue(
-      context.current_input, context.current_travel_direction,
-      context.brush_size, context.input_modeler_state, node.source);
+  std::optional<float> source_value =
+      GetSourceValue(context.current_input, context.brush_size,
+                     context.input_modeler_state, node.source);
   if (!source_value.has_value()) {
     context.stack.push_back(kNullBehaviorNodeValue);
     return;
@@ -746,11 +746,16 @@ void ApplyModifiersToTipState(const BrushTipStateModifiers& modifiers,
 
 }  // namespace
 
-BrushTipState CreateTipState(Point position, std::optional<Angle> direction,
+BrushTipState CreateTipState(Point position, Vec velocity,
                              const BrushTip& brush_tip, float brush_size,
                              absl::Span<const BrushBehavior::Target> targets,
                              absl::Span<const float> target_modifiers) {
   ABSL_DCHECK_EQ(targets.size(), target_modifiers.size());
+
+  std::optional<Angle> direction;
+  if (velocity != Vec()) {
+    direction = velocity.Direction();
+  }
 
   BrushTipStateModifiers tip_state_modifiers = {};
   for (size_t i = 0; i < targets.size(); ++i) {

@@ -138,7 +138,6 @@ class BrushTipModeler {
   void ProcessSingleInput(
       const InputModelerState& input_modeler_state,
       const ModeledStrokeInput& current_input,
-      std::optional<Angle> current_travel_direction,
       const ModeledStrokeInput* absl_nullable previous_input,
       std::optional<InputMetrics>& last_modeled_tip_state_metrics);
 
@@ -146,7 +145,7 @@ class BrushTipModeler {
   // current `input`.
   void AddNewTipState(
       const InputModelerState& input_modeler_state,
-      const ModeledStrokeInput& input, std::optional<Angle> travel_direction,
+      const ModeledStrokeInput& input,
       std::optional<InputMetrics> previous_input_metrics,
       std::optional<InputMetrics>& last_modeled_tip_state_metrics);
 
