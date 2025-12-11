@@ -53,7 +53,7 @@ namespace ink {
 // This behavior would be represented by the list {Source, Target}. An example
 // of such a behavior defined in C++ would be:
 //
-//    BrushBeahvior behavior = {
+//    BrushBehavior behavior = {
 //        .nodes = {
 //            BrushBehavior::SourceNode{
 //                .source = BrushBehavior::Source::kPressure,

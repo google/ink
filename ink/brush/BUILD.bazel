@@ -335,6 +335,38 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "stock_brushes",
+    srcs = ["stock_brushes.cc"],
+    hdrs = ["stock_brushes.h"],
+    deps = [
+        ":brush_behavior",
+        ":brush_coat",
+        ":brush_family",
+        ":brush_paint",
+        ":brush_tip",
+        ":easing_function",
+        "//ink/geometry:angle",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "stock_brushes_test",
+    srcs = ["stock_brushes_test.cc"],
+    deps = [
+        ":brush_behavior",
+        ":brush_tip",
+        ":stock_brushes",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 cc_test(
     name = "fuzz_domains_test",
     srcs = ["fuzz_domains_test.cc"],

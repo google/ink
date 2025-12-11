@@ -29,6 +29,7 @@ cc_library(
         ":brush_tip_jni",
         ":color_function_jni",
         ":easing_function_jni",
+        ":stock_brushes_jni",
     ],
     alwayslink = 1,
 )
@@ -151,6 +152,35 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/types:span",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "stock_brushes_jni",
+    srcs = ["stock_brushes_jni.cc"],
+    deps = [
+        ":brush_coat_jni",
+        ":brush_jni_helper",
+        "//ink/brush",
+        "//ink/brush:brush_coat",
+        "//ink/brush:brush_family",
+        "//ink/brush:brush_paint",
+        "//ink/brush:brush_tip",
+        "//ink/brush:stock_brushes",
+        "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_string_util",
+        "//ink/jni/internal:jni_throw_util",
+        "//ink/types:duration",
+        "@com_google_absl//absl/functional:overload",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/types:span",
     ] + select({
         "@platforms//os:android": [],
