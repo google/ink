@@ -14,7 +14,6 @@
 
 #include "ink/brush/fuzz_domains.h"
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -25,6 +24,7 @@
 #include <vector>
 
 #include "fuzztest/fuzztest.h"
+#include "absl/algorithm/container.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
@@ -305,8 +305,8 @@ Domain<EasingFunction::CubicBezier> ValidEasingFunctionCubicBezier() {
 Domain<EasingFunction::Linear> ValidEasingFunctionLinear() {
   return StructOf<EasingFunction::Linear>(Map(
       [](std::vector<Point> points) {
-        std::stable_sort(points.begin(), points.end(),
-                         [](Point lhs, Point rhs) { return lhs.x < rhs.x; });
+        absl::c_stable_sort(points,
+                            [](Point lhs, Point rhs) { return lhs.x < rhs.x; });
         return points;
       },
       VectorOf(StructOf<Point>(InRange(0.f, 1.f), Finite<float>()))));
