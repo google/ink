@@ -42,7 +42,6 @@ fuzztest::Domain<float> NotNanFloat() {
                           fuzztest::Arbitrary<float>());
 }
 
-// LINT.IfChange(attribute_id)
 fuzztest::Domain<MeshFormat::AttributeId> StandardAttributeId() {
   return fuzztest::ElementOf({
       MeshFormat::AttributeId::kPosition,
@@ -71,7 +70,6 @@ fuzztest::Domain<MeshFormat::AttributeId> CustomAttributeId() {
       MeshFormat::AttributeId::kCustom9,
   });
 }
-// LINT.ThenChange(mesh_format.h:attribute_id)
 
 fuzztest::Domain<MeshFormat::AttributeId> ArbitraryAttributeId() {
   return fuzztest::OneOf(StandardAttributeId(), CustomAttributeId());
@@ -105,7 +103,6 @@ fuzztest::Domain<Angle> NormalizedAngle() {
                           AngleInRange(Angle(), kFullTurn));
 }
 
-// LINT.IfChange(attribute_types)
 fuzztest::Domain<MeshFormat::AttributeType> ArbitraryMeshAttributeType() {
   return fuzztest::ElementOf({
       MeshFormat::AttributeType::kFloat1Unpacked,
@@ -130,7 +127,6 @@ fuzztest::Domain<MeshFormat::AttributeType> PositionMeshAttributeType() {
       MeshFormat::AttributeType::kFloat2PackedInOneFloat,
   });
 }
-// LINT.ThenChange(mesh_format.h:attribute_types)
 
 fuzztest::Domain<MeshFormat> ArbitraryMeshFormat() {
   return fuzztest::FlatMap(
@@ -172,14 +168,12 @@ fuzztest::Domain<MeshFormat> ArbitraryMeshFormat() {
       fuzztest::InRange<uint8_t>(1, MeshFormat::MaxAttributes()));
 }
 
-// LINT.IfChange(index_formats)
 fuzztest::Domain<MeshFormat::IndexFormat> ArbitraryMeshIndexFormat() {
   return fuzztest::ElementOf({
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked,
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked,
   });
 }
-// LINT.ThenChange()
 
 fuzztest::Domain<Point> ArbitraryPoint() {
   return fuzztest::StructOf<Point>(fuzztest::Arbitrary<float>(),

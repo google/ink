@@ -21,7 +21,6 @@ package ink.proto;
 option java_package = "com.google.ink.proto";
 option java_outer_classname = "ColorProto";
 
-// LINT.IfChange(color_space)
 enum ColorSpace {
   // UNSPECIFIED exists only to signal unset instances; client code should never
   // set a ColorSpace to this value.
@@ -34,7 +33,6 @@ enum ColorSpace {
   // Display P3, which uses the DCI-P3 primaries and sRGB transfer function.
   COLOR_SPACE_DISPLAY_P3 = 2;
 }
-// LINT.ThenChange(../../color/color_space.h:color_space)
 
 // WARNING: Unless you're an expert, DO NOT populate this proto manually. The
 // color channel values stored here are linear, whereas typical human-readable

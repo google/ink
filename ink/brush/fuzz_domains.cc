@@ -123,16 +123,13 @@ Domain<BrushBehavior::EnabledToolTypes> ValidBrushBehaviorEnabledToolTypes() {
           Arbitrary<bool>()));
 }
 
-// LINT.IfChange(binary_op)
 Domain<BrushBehavior::BinaryOp> ArbitraryBrushBehaviorBinaryOp() {
   return ElementOf({
       BrushBehavior::BinaryOp::kProduct,
       BrushBehavior::BinaryOp::kSum,
   });
 }
-// LINT.ThenChange(brush_behavior.h:binary_op)
 
-// LINT.IfChange(damping_source)
 Domain<BrushBehavior::DampingSource> ArbitraryBrushBehaviorDampingSource() {
   return ElementOf({
       BrushBehavior::DampingSource::kDistanceInCentimeters,
@@ -140,18 +137,14 @@ Domain<BrushBehavior::DampingSource> ArbitraryBrushBehaviorDampingSource() {
       BrushBehavior::DampingSource::kTimeInSeconds,
   });
 }
-// LINT.ThenChange(brush_behavior.h:damping_source)
 
-// LINT.IfChange(interpolation)
 Domain<BrushBehavior::Interpolation> ArbitraryBrushBehaviorInterpolation() {
   return ElementOf({
       BrushBehavior::Interpolation::kLerp,
       BrushBehavior::Interpolation::kInverseLerp,
   });
 }
-// LINT.ThenChange(brush_behavior.h:interpolation)
 
-// LINT.IfChange(optional_input_property)
 Domain<BrushBehavior::OptionalInputProperty>
 ArbitraryBrushBehaviorOptionalInputProperty() {
   return ElementOf({
@@ -161,9 +154,7 @@ ArbitraryBrushBehaviorOptionalInputProperty() {
       BrushBehavior::OptionalInputProperty::kTiltXAndY,
   });
 }
-// LINT.ThenChange(brush_behavior.h:optional_input_property)
 
-// LINT.IfChange(out_of_range)
 Domain<BrushBehavior::OutOfRange> ArbitraryBrushBehaviorOutOfRange() {
   return ElementOf({
       BrushBehavior::OutOfRange::kClamp,
@@ -181,9 +172,7 @@ Domain<BrushBehavior::OutOfRange> ValidBrushBehaviorOutOfRangeForSource(
       return ArbitraryBrushBehaviorOutOfRange();
   }
 }
-// LINT.ThenChange(brush_behavior.h:out_of_range)
 
-// LINT.IfChange(source)
 Domain<BrushBehavior::Source> ArbitraryBrushBehaviorSource() {
   return ElementOf({
       BrushBehavior::Source::kNormalizedPressure,
@@ -233,9 +222,7 @@ Domain<BrushBehavior::Source> ArbitraryBrushBehaviorSource() {
       BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength,
   });
 }
-// LINT.ThenChange(brush_behavior.h:source)
 
-// LINT.IfChange(target)
 Domain<BrushBehavior::Target> ArbitraryBrushBehaviorTarget(
     DomainVariant variant) {
   std::vector<BrushBehavior::Target> targets = {
@@ -261,9 +248,7 @@ Domain<BrushBehavior::Target> ArbitraryBrushBehaviorTarget(
   }
   return ElementOf(targets);
 }
-// LINT.ThenChange(brush_behavior.h:target)
 
-// LINT.IfChange(polar_target)
 Domain<BrushBehavior::PolarTarget> ArbitraryBrushBehaviorPolarTarget() {
   return ElementOf({
       BrushBehavior::PolarTarget::
@@ -272,7 +257,6 @@ Domain<BrushBehavior::PolarTarget> ArbitraryBrushBehaviorPolarTarget() {
           kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize,
   });
 }
-// LINT.ThenChange(brush_behavior.h:polar_target)
 
 Domain<ColorFunction::OpacityMultiplier> ValidColorFunctionOpacityMultiplier() {
   return StructOf<ColorFunction::OpacityMultiplier>(FiniteNonNegativeFloat());
@@ -282,7 +266,6 @@ Domain<ColorFunction::ReplaceColor> ValidColorFunctionReplaceColor() {
   return StructOf<ColorFunction::ReplaceColor>(ArbitraryColor());
 }
 
-// LINT.IfChange(predefined)
 Domain<EasingFunction::Predefined> ArbitraryEasingFunctionPredefined() {
   return ElementOf({
       EasingFunction::Predefined::kLinear,
@@ -294,7 +277,6 @@ Domain<EasingFunction::Predefined> ArbitraryEasingFunctionPredefined() {
       EasingFunction::Predefined::kStepEnd,
   });
 }
-// LINT.ThenChange(easing_function.h:predefined)
 
 Domain<EasingFunction::CubicBezier> ValidEasingFunctionCubicBezier() {
   return StructOf<EasingFunction::CubicBezier>(
@@ -323,12 +305,10 @@ Domain<EasingFunction::Steps> ValidEasingFunctionSteps() {
                                      .step_position = step_position};
       },
       InRange<int32_t>(1, std::numeric_limits<int32_t>::max()),
-      // LINT.IfChange(step_position)
       ElementOf({EasingFunction::StepPosition::kJumpEnd,
                  EasingFunction::StepPosition::kJumpStart,
                  EasingFunction::StepPosition::kJumpNone,
                  EasingFunction::StepPosition::kJumpBoth}));
-  // LINT.ThenChange(easing_function.h:step_position)
 }
 
 Domain<BrushBehavior::SourceNode> ValidBrushBehaviorSourceNode() {
@@ -560,25 +540,20 @@ Domain<BrushFamily::InputModel> ValidBrushFamilyInputModel() {
 
 namespace {
 
-// LINT.IfChange(texture_size_unit)
 Domain<BrushPaint::TextureSizeUnit> ArbitraryBrushPaintTextureSizeUnit() {
   return ElementOf({
       BrushPaint::TextureSizeUnit::kBrushSize,
       BrushPaint::TextureSizeUnit::kStrokeCoordinates,
   });
 }
-// LINT.ThenChange(brush_paint.h:texture_size_unit)
 
-// LINT.IfChange(texture_mapping)
 Domain<BrushPaint::TextureMapping> ArbitraryBrushPaintTextureMapping() {
   return ElementOf({
       BrushPaint::TextureMapping::kTiling,
       BrushPaint::TextureMapping::kStamping,
   });
 }
-// LINT.ThenChange(brush_paint.h:texture_mapping)
 
-// LINT.IfChange(texture_origin)
 Domain<BrushPaint::TextureOrigin> ArbitraryBrushPaintTextureOrigin() {
   return ElementOf({
       BrushPaint::TextureOrigin::kStrokeSpaceOrigin,
@@ -586,9 +561,7 @@ Domain<BrushPaint::TextureOrigin> ArbitraryBrushPaintTextureOrigin() {
       BrushPaint::TextureOrigin::kLastStrokeInput,
   });
 }
-// LINT.ThenChange(brush_paint.h:texture_origin)
 
-// LINT.IfChange(texture_wrap)
 Domain<BrushPaint::TextureWrap> ArbitraryBrushPaintTextureWrap() {
   return ElementOf({
       BrushPaint::TextureWrap::kRepeat,
@@ -596,9 +569,7 @@ Domain<BrushPaint::TextureWrap> ArbitraryBrushPaintTextureWrap() {
       BrushPaint::TextureWrap::kClamp,
   });
 }
-// LINT.ThenChange(brush_paint.h:texture_wrap)
 
-// LINT.IfChange(blend_mode)
 Domain<BrushPaint::BlendMode> ArbitraryBrushPaintBlendMode() {
   return ElementOf({
       BrushPaint::BlendMode::kModulate,
@@ -615,7 +586,6 @@ Domain<BrushPaint::BlendMode> ArbitraryBrushPaintBlendMode() {
       BrushPaint::BlendMode::kXor,
   });
 }
-// LINT.ThenChange(brush_paint.h:blend_mode)
 
 Domain<BrushPaint::TextureKeyframe> ValidBrushPaintTextureKeyframe() {
   return StructOf<BrushPaint::TextureKeyframe>(
@@ -670,7 +640,6 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
                  StructOf<Vec>(FinitePositiveFloat(), FinitePositiveFloat()));
 }
 
-// LINT.IfChange(self_overlap)
 Domain<BrushPaint::SelfOverlap> ArbitraryBrushPaintSelfOverlap() {
   return ElementOf({
       BrushPaint::SelfOverlap::kAny,
@@ -678,7 +647,6 @@ Domain<BrushPaint::SelfOverlap> ArbitraryBrushPaintSelfOverlap() {
       BrushPaint::SelfOverlap::kDiscard,
   });
 }
-// LINT.ThenChange(brush_paint.h:self_overlap)
 
 Domain<BrushPaint> ValidBrushPaint(DomainVariant variant) {
   return FlatMap(
