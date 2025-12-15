@@ -14,12 +14,9 @@
 
 #include "ink/strokes/internal/stroke_input_modeler/sliding_window_input_modeler.h"
 
-#include <vector>
-
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
-#include "absl/log/absl_check.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
@@ -29,10 +26,9 @@
 #include "ink/strokes/input/fuzz_domains.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/types/duration.h"
-#include "ink/types/physical_distance.h"
-#include "ink/types/type_matchers.h"
 
 namespace ink::strokes_internal {
 namespace {
@@ -46,56 +42,6 @@ using ::testing::IsEmpty;
 using ::testing::Le;
 using ::testing::Not;
 using ::testing::SizeIs;
-
-// Returns a vector of single-input `StrokeInputBatch` that can be used for a
-// single synthetic stroke.
-std::vector<StrokeInputBatch> MakeStylusInputBatchSequence() {
-  StrokeInput::ToolType tool_type = StrokeInput::ToolType::kStylus;
-  PhysicalDistance stroke_unit_length = PhysicalDistance::Centimeters(1);
-  std::vector<StrokeInput> inputs = {{.tool_type = tool_type,
-                                      .position = {10, 20},
-                                      .elapsed_time = Duration32::Zero(),
-                                      .stroke_unit_length = stroke_unit_length,
-                                      .pressure = 0.4,
-                                      .tilt = Angle::Radians(1),
-                                      .orientation = Angle::Radians(2)},
-                                     {.tool_type = tool_type,
-                                      .position = {10, 23},
-                                      .elapsed_time = Duration32::Seconds(1),
-                                      .stroke_unit_length = stroke_unit_length,
-                                      .pressure = 0.3,
-                                      .tilt = Angle::Radians(0.9),
-                                      .orientation = Angle::Radians(0.9)},
-                                     {.tool_type = tool_type,
-                                      .position = {10, 17},
-                                      .elapsed_time = Duration32::Seconds(2),
-                                      .stroke_unit_length = stroke_unit_length,
-                                      .pressure = 0.5,
-                                      .tilt = Angle::Radians(0.8),
-                                      .orientation = Angle::Radians(1.1)},
-                                     {.tool_type = tool_type,
-                                      .position = {5, 5},
-                                      .elapsed_time = Duration32::Seconds(3),
-                                      .stroke_unit_length = stroke_unit_length,
-                                      .pressure = 0.8,
-                                      .tilt = Angle::Radians(1.5),
-                                      .orientation = Angle::Radians(1.3)},
-                                     {.tool_type = tool_type,
-                                      .position = {4, 3},
-                                      .elapsed_time = Duration32::Seconds(5),
-                                      .stroke_unit_length = stroke_unit_length,
-                                      .pressure = 1.0,
-                                      .tilt = Angle::Radians(1.3),
-                                      .orientation = Angle::Radians(1.5)}};
-
-  std::vector<StrokeInputBatch> batches;
-  for (const StrokeInput& input : inputs) {
-    absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create({input});
-    ABSL_CHECK_OK(batch);
-    batches.push_back(*batch);
-  }
-  return batches;
-}
 
 TEST(SlidingWindowInputModelerTest, ConstantVelocityRawInputs) {
   StrokeInputModeler modeler;
