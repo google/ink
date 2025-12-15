@@ -60,7 +60,6 @@ class Color {
   // the raw premultiplied values do not specify the coordinates of the point in
   // the color space's gamut that corresponds to the actual color described.
   //
-  // LINT.IfChange(color_format)
   enum class Format {
     // Linear channel values with no alpha premultiplication. This format is for
     // graphics computations.
@@ -76,7 +75,6 @@ class Color {
     // gamma encoding is for presentation to human end-users, while
     // premultiplication is for use in shader code.
   };
-  // LINT.ThenChange(fuzz_domains.cc:color_format)
 
   // Constructs a Color from float values in the nominal range [0.0, 1.0]. By
   // default, this constructor accepts gamma-encoded values, since this is the

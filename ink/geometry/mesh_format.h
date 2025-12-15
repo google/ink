@@ -75,7 +75,6 @@ class MeshFormat {
   // recommended to use packed attribute types only, since otherwise the
   // serialization will be lossy.
   //
-  // LINT.IfChange(attribute_types)
   enum class AttributeType : uint8_t {
     // One float, stored unchanged and losslessly, even in a packed mesh.
     kFloat1Unpacked,
@@ -145,10 +144,6 @@ class MeshFormat {
     // [3] : 0x000000, 0x000000, 0x03FFFF
     kFloat4PackedInThreeFloats,
   };
-  // LINT.ThenChange(
-  //   fuzz_domains.cc:attribute_types,
-  //   ../storage/proto/mesh.proto:attribute_types,
-  // )
 
   // Indicates what a vertex attribute is used for or represents.  `MeshFormat`,
   // `Mesh`, and `MutableMesh` do not actually interact with attribute ID values
@@ -156,7 +151,6 @@ class MeshFormat {
   //
   // The `kCustomN` values may be used for custom, client-specific IDs.
   //
-  // LINT.IfChange(attribute_id)
   enum class AttributeId : uint8_t {
     kPosition,
     kColorShiftHsl,
@@ -179,10 +173,6 @@ class MeshFormat {
     kCustom8,
     kCustom9,
   };
-  // LINT.ThenChange(
-  //   fuzz_domains.cc:attribute_id,
-  //   ../storage/proto/mesh.proto:attribute_id,
-  // )
 
   // An attribute stored on the vertex.
   struct Attribute {
@@ -204,12 +194,10 @@ class MeshFormat {
   // e.g. `k32BitUnpacked16BitPacked` means that `MutableMesh` uses 32-bit
   // indices and `Mesh` uses 16-bit indices.
   // TODO: b/295166196 - Delete this once `MutableMesh` uses 16-bit indices.
-  // LINT.IfChange(index_formats)
   enum class IndexFormat : uint8_t {
     k16BitUnpacked16BitPacked,
     k32BitUnpacked16BitPacked,
   };
-  // LINT.ThenChange(fuzz_domains.cc:index_formats)
 
   // Constructs a `MeshFormat` with a single attribute with type
   // `kFloat2Unpacked` and ID `kPosition`, and index format

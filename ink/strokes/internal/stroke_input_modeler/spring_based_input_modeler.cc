@@ -56,8 +56,6 @@ const stroke_model::Duration kDefaultLoopMitigationMinSpeedSamplingWindow =
 // curves on 60 Hz touchscreens.
 constexpr double kMinOutputRateHz = 180;
 
-// LINT.IfChange(input_model_types)
-
 PositionModelerParams::LoopContractionMitigationParameters
 MakeLoopContractionMitigationParameters(
     SpringBasedInputModeler::Version version,
@@ -103,8 +101,6 @@ SamplingParams MakeSamplingParams(SpringBasedInputModeler::Version version,
               .max_estimated_angle_to_traverse_per_input = kPi / 8};
   }
 }
-
-// LINT.ThenChange(../../../brush/brush_family.h:input_model_types)
 
 void ResetStrokeModeler(stroke_model::StrokeModeler& stroke_modeler,
                         SpringBasedInputModeler::Version version,

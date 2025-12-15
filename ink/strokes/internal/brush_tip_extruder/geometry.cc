@@ -2325,7 +2325,6 @@ Geometry::TriangleBuilder::TriangleBuilder(
       intersection_travel_limit_(intersection_travel_limit),
       retriangulation_travel_threshold_(retriangulation_travel_threshold) {}
 
-// LINT.IfChange
 bool Geometry::TriangleBuilder::SidesTouch(const SlowPathTriangleInfo& info) {
   return DistanceBetween(info.proposed_vertex.position,
                          info.opposite_position) == 0 ||
@@ -2997,7 +2996,6 @@ void Geometry::TriangleBuilder::HandleNonCcwBothSidesIntersectingTriangle(
         *info.opposite_side, end_intersection_vertex, start_opposite_outline);
   }
 }
-// LINT.ThenChange(./line_mesh_generation.md)
 
 void Geometry::SetVertex(MutableMeshView::IndexType index,
                          const ExtrudedVertex& new_vertex,

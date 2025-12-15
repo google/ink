@@ -399,19 +399,13 @@ struct BrushBehavior {
   };
 
   // A binary operation for combining two values in a `BinaryOpNode`.
-  // LINT.IfChange(binary_op)
   enum class BinaryOp {
     kProduct,  // A * B, or null if either is null
     kSum,      // A + B, or null if either is null
   };
-  // LINT.ThenChange(
-  //   fuzz_domains.cc:binary_op,
-  //   ../storage/proto/brush_family.proto:binary_op,
-  // )
 
   // Dimensions/units for measuring the `damping_gap` field of a
   // `DampingNode`.
-  // LINT.IfChange(damping_source)
   enum class DampingSource {
     // Value damping occurs over distance traveled by the input pointer, and the
     // `damping_gap` is measured in centimeters. If the input data does not
@@ -427,14 +421,9 @@ struct BrushBehavior {
     // seconds.
     kTimeInSeconds,
   };
-  // LINT.ThenChange(
-  //   fuzz_domains.cc:damping_source,
-  //   ../storage/proto/brush_family.proto:damping_source,
-  // )
 
   // An interpolation function for combining three values in an
   // `InterpolationNode`.
-  // LINT.IfChange(interpolation)
   enum class Interpolation {
     // Linear interpolation. Uses parameter A to interpolate between B (when
     // A=0) and C (when A=1).
@@ -443,10 +432,6 @@ struct BrushBehavior {
     // interpolating linearly in between. Outputs null if B=C.
     kInverseLerp,
   };
-  // LINT.ThenChange(
-  //   fuzz_domains.cc:interpolation,
-  //   ../storage/proto/brush_family.proto:interpolation,
-  // )
 
   ////////////////////////
   /// LEAF VALUE NODES ///

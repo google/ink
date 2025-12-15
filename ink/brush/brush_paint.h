@@ -115,7 +115,6 @@ struct BrushPaint {
 
   // Setting for how an incoming ("source" / "src") color should be combined
   // with the already present ("destination" / "dst") color at a given pixel.
-  // LINT.IfChange(blend_mode)
   enum class BlendMode {
     // Source and destination are component-wise multiplied, including opacity.
     //
@@ -209,10 +208,6 @@ struct BrushPaint {
     // modes. For Android graphics.Canvas, properly supporting these won't be
     // possible until Android W at the earliest due to b/267164444.
   };
-  // LINT.ThenChange(
-  //   ../storage/proto/brush_family.proto:blend_mode,
-  //   fuzz_domains.cc:blend_mode,
-  // )
 
   // Keyframe values used by `TextureLayer` below.
   struct TextureKeyframe {
