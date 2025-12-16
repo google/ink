@@ -276,6 +276,12 @@ class InProgressStroke {
   // `EnqueueInputs()` since the last call to `UpdateShape()`.
   StrokeInputBatch queued_real_inputs_;
   StrokeInputBatch queued_predicted_inputs_;
+  // True if `EnqueueInputs()` has been called since the last call to
+  // `UpdateShape()`. Used to distinguish between the cases where
+  // `UpdateShape()` is called with no new inputs (e.g. to advance animations)
+  // vs. explicitly calling `EnqueueInputs()` with empty inputs to clear
+  // previously predicted inputs.
+  bool queued_inputs_since_last_update_shape_ = false;
   // Inputs (combined real and predicted) that have already been processed by a
   // call to `UpdateShape()`, and are reflected in the current
   // `StrokeShapeBuilder` geometry.

@@ -431,6 +431,39 @@ TEST(InProgressStrokeTest, NonEmptyInputs) {
                   Rect::FromTwoPoints({-0.88, -2.88}, {5.88, 5.87}), 0.01)));
 }
 
+TEST(InProgressStrokeTest,
+     UpdateWithEmptyPredictedAndEmptyRealClearsPredictions) {
+  InProgressStroke stroke;
+  stroke.Start(CreateCircularTestBrush());
+
+  absl::StatusOr<StrokeInputBatch> real_inputs_0 = StrokeInputBatch::Create({
+      {.position = {1, 2}, .elapsed_time = Duration32::Seconds(0.0)},
+      {.position = {3, 2}, .elapsed_time = Duration32::Seconds(0.1)},
+  });
+  ASSERT_EQ(real_inputs_0.status(), absl::OkStatus());
+  absl::StatusOr<StrokeInputBatch> predicted_inputs = StrokeInputBatch::Create(
+      {{.position = {3, 4}, .elapsed_time = Duration32::Seconds(0.2)}});
+  ASSERT_EQ(predicted_inputs.status(), absl::OkStatus());
+
+  EXPECT_EQ(absl::OkStatus(),
+            stroke.EnqueueInputs(*real_inputs_0, *predicted_inputs));
+  EXPECT_TRUE(stroke.NeedsUpdate());
+  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.15)));
+  EXPECT_FALSE(stroke.NeedsUpdate());
+
+  StrokeInputBatch combined_inputs = *real_inputs_0;
+  ASSERT_EQ(absl::OkStatus(), combined_inputs.Append(*predicted_inputs));
+
+  EXPECT_THAT(stroke.GetInputs(), StrokeInputBatchEq(combined_inputs));
+
+  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, {}));
+  EXPECT_TRUE(stroke.NeedsUpdate());
+  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.2)));
+
+  EXPECT_THAT(stroke.GetInputs(), StrokeInputBatchEq(*real_inputs_0));
+  EXPECT_FALSE(stroke.NeedsUpdate());
+}
+
 TEST(InProgressStrokeTest, ExtendWithEmptyPredictedButNonEmptyReal) {
   InProgressStroke stroke;
   stroke.Start(CreateCircularTestBrush());

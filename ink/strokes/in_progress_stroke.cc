@@ -110,6 +110,8 @@ absl::Status InProgressStroke::EnqueueInputs(
       predicted_inputs, GetFirstValidInput(predicted_inputs),
       predicted_inputs.Size()));
 
+  queued_inputs_since_last_update_shape_ = true;
+
   return absl::OkStatus();
 }
 
@@ -125,7 +127,8 @@ absl::Status InProgressStroke::UpdateShape(Duration32 current_elapsed_time) {
     return status;
   }
   if (inputs_are_finished_ || !queued_real_inputs_.IsEmpty() ||
-      !queued_predicted_inputs_.IsEmpty()) {
+      !queued_predicted_inputs_.IsEmpty() ||
+      (queued_inputs_since_last_update_shape_ && PredictedInputCount() > 0)) {
     // Erase any old predicted inputs.
     processed_inputs_.Erase(real_input_count_);
   }
@@ -164,11 +167,14 @@ absl::Status InProgressStroke::UpdateShape(Duration32 current_elapsed_time) {
 
   queued_real_inputs_.Clear();
   queued_predicted_inputs_.Clear();
+  queued_inputs_since_last_update_shape_ = false;
   return absl::OkStatus();
 }
 
 bool InProgressStroke::NeedsUpdate() const {
-  if (!queued_real_inputs_.IsEmpty() || !queued_predicted_inputs_.IsEmpty()) {
+  if (!queued_real_inputs_.IsEmpty() || !queued_predicted_inputs_.IsEmpty() ||
+      // There are processed predicted inputs to be cleared.
+      (queued_inputs_since_last_update_shape_ && PredictedInputCount() > 0)) {
     return true;
   }
   return ChangesWithTime();
