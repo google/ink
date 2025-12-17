@@ -54,7 +54,6 @@ namespace ink {
 namespace brush_tip_extruder_internal {
 namespace {
 
-using ::ink::geometry_internal::LegacyIntersects;
 using ::ink::geometry_internal::LegacyTriangleContains;
 using ::ink::strokes_internal::BrushTipState;
 using ::ink::strokes_internal::LegacyVertex;
@@ -1039,7 +1038,7 @@ std::optional<uint32_t> Geometry::FindLastTriangleContainingSegmentEnd(
       // that means a portion of the segment lies outside of the partition and
       // we should stop.
       Segment triangle_edge = triangle.GetEdge(0);
-      if (!LegacyIntersects(segment, triangle_edge)) break;
+      if (!Intersects(segment, triangle_edge)) break;
     }
   }
   return std::nullopt;
