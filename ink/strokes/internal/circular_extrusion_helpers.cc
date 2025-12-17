@@ -71,8 +71,10 @@ void AppendCircularTurnExtrusionPoints(
 
   // This is guaranteed by the fact that the consecutive circles do not contain
   // one another.
-  ABSL_CHECK(incoming_angles.has_value());
-  ABSL_CHECK(outgoing_angles.has_value());
+  ABSL_CHECK(incoming_angles.has_value())
+      << "start=" << start << " middle=" << middle;
+  ABSL_CHECK(outgoing_angles.has_value())
+      << "middle=" << middle << " end=" << end;
 
   // Snap nearly-collinear angles together, to prevent adding an unnecessary
   // loop. The chosen tolerance is just a bit over four times machine precision

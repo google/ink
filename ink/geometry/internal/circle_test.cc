@@ -21,6 +21,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
@@ -130,6 +131,14 @@ TEST(CircleTest, ConstructWithInfiniteRadius) {
   Circle c({-4, 7}, kInfinity);
   EXPECT_THAT(c.Center(), PointEq({-4, 7}));
   EXPECT_EQ(c.Radius(), kInfinity);
+}
+
+TEST(CircleTest, Stringify) {
+  EXPECT_EQ(absl::StrCat(Circle()), "Circle((0, 0), 1)");
+  EXPECT_EQ(absl::StrCat(Circle({1, 2}, 3)), "Circle((1, 2), 3)");
+  EXPECT_EQ(absl::StrCat(Circle({-1, -2}, 0)), "Circle((-1, -2), 0)");
+  EXPECT_EQ(absl::StrCat(Circle({kNan, kNan}, kInfinity)),
+            "Circle((nan, nan), inf)");
 }
 
 TEST(CircleTest, GetPoint) {

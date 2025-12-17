@@ -113,7 +113,15 @@ class Circle {
   // the two circles coincide.
   bool Contains(const Circle& other) const;
 
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const Circle& circle) {
+    sink.Append(circle.ToFormattedString());
+  }
+
  private:
+  // Implementation helper for AbslStringify.
+  std::string ToFormattedString() const;
+
   Point center_ = {0, 0};
   float radius_ = 1;
 };

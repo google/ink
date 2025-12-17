@@ -20,9 +20,11 @@
 #include <cstdlib>
 #include <limits>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "absl/log/absl_check.h"
+#include "absl/strings/str_cat.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
@@ -80,6 +82,10 @@ std::optional<Circle::TangentAngles> Circle::GetTangentAngles(
 Angle Circle::GetArcAngleForChordHeight(float chord_height) const {
   if (radius_ == 0) return Angle();
   return 2 * Acos(std::clamp(1 - chord_height / radius_, -1.f, 1.f));
+}
+
+std::string Circle::ToFormattedString() const {
+  return absl::StrCat("Circle(", center_, ", ", radius_, ")");
 }
 
 }  // namespace ink::geometry_internal
