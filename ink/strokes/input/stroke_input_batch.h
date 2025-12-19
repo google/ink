@@ -131,6 +131,10 @@ class StrokeInputBatch {
   // empty.
   StrokeInput Last() const;
 
+  // Reserves space for at least `size` inputs, using the format of
+  // `sample_input`.
+  void Reserve(int size, const StrokeInput& sample_input);
+
   // Validates and appends a new `input`.
   //
   // Returns an error and does not modify the batch if validation fails.
@@ -214,6 +218,8 @@ class StrokeInputBatch {
   }
 
  private:
+  absl::Status PrepareForAppend(const StrokeInput& first_new_input);
+
   void DebugCheckSizeAndFormatAreConsistent() const {
     ABSL_DCHECK_EQ(size_ * FloatsPerInput(),
                    data_.HasValue() ? static_cast<int>(data_->size()) : 0);

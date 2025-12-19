@@ -261,24 +261,32 @@ StrokeInput StrokeInputBatch::Get(int i) const {
                                           : StrokeInput::kNoOrientation};
 }
 
-absl::Status StrokeInputBatch::Append(const StrokeInput& input) {
-  absl::Status status = ValidateSingleInput(input);
-  if (!status.ok()) {
-    return status;
-  }
-
-  if (!IsEmpty()) {
-    if (status = ValidateConsecutiveInputs(Last(), input); !status.ok()) {
+absl::Status StrokeInputBatch::PrepareForAppend(
+    const StrokeInput& first_new_input) {
+  if (IsEmpty()) {
+    if (!data_.HasValue()) {
+      data_.Emplace();
+    }
+    SetInlineFormatMetadata(first_new_input);
+  } else {
+    if (absl::Status status =
+            ValidateConsecutiveInputs(Last(), first_new_input);
+        !status.ok()) {
       return status;
     }
-  } else {
-    if (!data_.HasValue()) data_.Emplace();
-    SetInlineFormatMetadata(input);
   }
+  return absl::OkStatus();
+}
 
+absl::Status StrokeInputBatch::Append(const StrokeInput& input) {
+  if (absl::Status status = ValidateSingleInput(input); !status.ok()) {
+    return status;
+  }
+  if (absl::Status status = PrepareForAppend(input); !status.ok()) {
+    return status;
+  }
   AppendInputToFloatVector(input, data_.MutableValue());
   ++size_;
-
   return absl::OkStatus();
 }
 
@@ -286,26 +294,17 @@ absl::Status StrokeInputBatch::Append(absl::Span<const StrokeInput> inputs) {
   if (inputs.empty()) {
     return absl::OkStatus();
   }
-
-  absl::Status status = ValidateInputSequence(inputs);
-  if (!status.ok()) {
+  if (absl::Status status = ValidateInputSequence(inputs); !status.ok()) {
     return status;
   }
-  if (!IsEmpty()) {
-    if (status = ValidateConsecutiveInputs(Last(), inputs.front());
-        !status.ok()) {
-      return status;
-    }
-  } else {
-    if (!data_.HasValue()) data_.Emplace();
-    SetInlineFormatMetadata(inputs.front());
+  if (absl::Status status = PrepareForAppend(inputs.front()); !status.ok()) {
+    return status;
   }
 
   // We don't call `vector::reserve` on purpose. Depending on the STL
   // implementation, it could degrade performance given the expectation that
   // this function will be called repeatedly with relatively small batches of
   // new inputs.
-
   std::vector<float>& data = data_.MutableValue();
   for (const StrokeInput& input : inputs) {
     AppendInputToFloatVector(input, data);
@@ -315,13 +314,18 @@ absl::Status StrokeInputBatch::Append(absl::Span<const StrokeInput> inputs) {
   return absl::OkStatus();
 }
 
+void StrokeInputBatch::Reserve(int size, const StrokeInput& sample_input) {
+  if (size <= 0) return;
+  if (!data_.HasValue()) data_.Emplace();
+  data_.MutableValue().reserve(size * FloatsPerInput(sample_input));
+}
+
 absl::StatusOr<StrokeInputBatch> StrokeInputBatch::Create(
     absl::Span<const StrokeInput> inputs, uint32_t noise_seed) {
   StrokeInputBatch batch;
 
   if (!inputs.empty()) {
-    batch.data_.Emplace().reserve(inputs.size() *
-                                  FloatsPerInput(inputs.front()));
+    batch.Reserve(inputs.size(), inputs.front());
     if (absl::Status status = batch.Append(inputs); !status.ok()) {
       return status;
     }

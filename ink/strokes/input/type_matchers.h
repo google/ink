@@ -25,6 +25,9 @@ namespace ink {
 
 ::testing::Matcher<StrokeInput> StrokeInputEq(const StrokeInput& expected);
 
+::testing::Matcher<StrokeInput> StrokeInputNear(const StrokeInput& expected,
+                                                float tolerance);
+
 ::testing::Matcher<StrokeInputBatch> StrokeInputBatchIsArray(
     absl::Span<const StrokeInput> expected);
 

@@ -17,14 +17,13 @@
 
 #include <cstddef>
 #include <iterator>
-#include <optional>
 
 #include "absl/status/statusor.h"
-#include "ink/geometry/point.h"
 #include "ink/storage/numeric_run.h"
 #include "ink/storage/proto/stroke_input_batch.pb.h"
-#include "ink/types/duration.h"
+#include "ink/strokes/input/stroke_input.h"
 #include "ink/types/iterator_range.h"
+#include "ink/types/physical_distance.h"
 
 namespace ink {
 
@@ -41,18 +40,10 @@ namespace ink {
 // `reference` is an alias to the value type, not a true reference.
 class CodedStrokeInputBatchIterator {
  public:
-  struct ValueType {
-    Point position_stroke_space;
-    Duration32 elapsed_time;
-    std::optional<float> pressure;
-    std::optional<float> tilt;
-    std::optional<float> orientation;
-  };
-
   using difference_type = ptrdiff_t;
-  using value_type = ValueType;
-  using pointer = const ValueType*;
-  using reference = const ValueType;
+  using value_type = StrokeInput;
+  using pointer = const StrokeInput*;
+  using reference = const StrokeInput;
   using iterator_category = std::input_iterator_tag;
 
   // NOLINTNEXTLINE - Suppress ClangTidy const-return-type.
@@ -80,6 +71,7 @@ class CodedStrokeInputBatchIterator {
 
  private:
   CodedStrokeInputBatchIterator(
+      StrokeInput::ToolType tool_type, PhysicalDistance stroke_unit_length,
       CodedNumericRunIterator<float> x_stroke_space,
       CodedNumericRunIterator<float> y_stroke_space,
       CodedNumericRunIterator<float> elapsed_time_seconds,
@@ -89,20 +81,22 @@ class CodedStrokeInputBatchIterator {
 
   void UpdateValue();
 
+  StrokeInput::ToolType tool_type_;
+  PhysicalDistance stroke_unit_length_;
   CodedNumericRunIterator<float> x_stroke_space_;
   CodedNumericRunIterator<float> y_stroke_space_;
   CodedNumericRunIterator<float> elapsed_time_seconds_;
   CodedNumericRunIterator<float> pressure_;
   CodedNumericRunIterator<float> tilt_;
   CodedNumericRunIterator<float> orientation_;
-  ValueType value_;
+  StrokeInput value_;
 
   friend absl::StatusOr<iterator_range<CodedStrokeInputBatchIterator>>
   DecodeStrokeInputBatchProto(const proto::CodedStrokeInputBatch& input);
 };
 
 // Given a CodedStrokeInputBatch proto, returns an iterator range over the
-// decoded sequence of input points.  The proto object must outlive the returned
+// decoded sequence of StrokeInputs.  The proto object must outlive the returned
 // range. Returns an error if the proto is invalid (e.g. if any of its
 // constituent numeric runs are invalid or of unequal lengths).
 absl::StatusOr<iterator_range<CodedStrokeInputBatchIterator>>

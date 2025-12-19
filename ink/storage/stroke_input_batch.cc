@@ -251,25 +251,6 @@ void EncodeStrokeInputBatch(const StrokeInputBatch& input_batch,
   input_proto.set_noise_seed(input_batch.GetNoiseSeed());
 }
 
-namespace {
-
-StrokeInput::ToolType ToStrokeInputToolType(
-    CodedStrokeInputBatch::ToolType type) {
-  switch (type) {
-    case CodedStrokeInputBatch::MOUSE:
-      return StrokeInput::ToolType::kMouse;
-    case CodedStrokeInputBatch::TOUCH:
-      return StrokeInput::ToolType::kTouch;
-    case CodedStrokeInputBatch::STYLUS:
-      return StrokeInput::ToolType::kStylus;
-    case CodedStrokeInputBatch::UNKNOWN_TYPE:
-    default:
-      return StrokeInput::ToolType::kUnknown;
-  }
-}
-
-}  // namespace
-
 absl::StatusOr<StrokeInputBatch> DecodeStrokeInputBatch(
     const CodedStrokeInputBatch& input_proto) {
   absl::StatusOr<iterator_range<CodedStrokeInputBatchIterator>> range =
@@ -277,35 +258,19 @@ absl::StatusOr<StrokeInputBatch> DecodeStrokeInputBatch(
   if (!range.ok()) {
     return range.status();
   }
-
-  StrokeInput::ToolType tool_type =
-      ToStrokeInputToolType(input_proto.tool_type());
-  PhysicalDistance stroke_unit_length = PhysicalDistance::Centimeters(
-      input_proto.stroke_unit_length_in_centimeters());
-
   StrokeInputBatch batch;
-  // TODO: b/355637257 - Add a StrokeInputBatch::Reserve member function.
-  for (const auto& input : *range) {
+  if (!range->empty()) {
+    batch.Reserve(input_proto.x_stroke_space().deltas_size(), *range->begin());
+  }
+  for (const StrokeInput& input : *range) {
     if (!batch.IsEmpty()) {
       StrokeInput previous = batch.Last();
-      if (input.position_stroke_space == previous.position &&
+      if (input.position == previous.position &&
           input.elapsed_time == previous.elapsed_time) {
         continue;
       }
     }
-
-    absl::Status status = batch.Append(
-        {.tool_type = tool_type,
-         .position = input.position_stroke_space,
-         .elapsed_time = input.elapsed_time,
-         .stroke_unit_length = stroke_unit_length,
-         .pressure = input.pressure.value_or(StrokeInput::kNoPressure),
-         .tilt = input.tilt.has_value() ? Angle::Radians(*input.tilt)
-                                        : StrokeInput::kNoTilt,
-         .orientation = input.orientation.has_value()
-                            ? Angle::Radians(*input.orientation)
-                            : StrokeInput::kNoOrientation});
-    if (!status.ok()) {
+    if (absl::Status status = batch.Append(input); !status.ok()) {
       return status;
     }
   }

@@ -22,11 +22,15 @@
 #include "gtest/gtest.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "ink/geometry/angle.h"
 #include "ink/geometry/type_matchers.h"
 #include "ink/storage/proto/stroke_input_batch.pb.h"
+#include "ink/strokes/input/stroke_input.h"
+#include "ink/strokes/input/type_matchers.h"
+#include "ink/types/duration.h"
 #include "ink/types/iterator_range.h"
 #include "ink/types/numbers.h"
-#include "ink/types/type_matchers.h"
+#include "ink/types/physical_distance.h"
 #include "google/protobuf/text_format.h"
 
 namespace ink {
@@ -35,109 +39,137 @@ namespace {
 using ::ink::numbers::kPi;
 using ::google::protobuf::TextFormat;
 using ::testing::ElementsAre;
-using ::testing::FloatEq;
-using ::testing::FloatNear;
 using ::testing::HasSubstr;
-using ::testing::Optional;
 
 TEST(CodedStrokeInputBatchIteratorTest, DecodeStylusStrokeInputBatch) {
   proto::CodedStrokeInputBatch coded;
-  ASSERT_TRUE(TextFormat::ParseFromString(R"pb(
-                                            x_stroke_space {
-                                              scale: 2.5
-                                              deltas: [ 1, 2, 1 ]
-                                            }
-                                            y_stroke_space {
-                                              scale: 2.5
-                                              deltas: [ 1, -1, 1 ]
-                                            }
-                                            elapsed_time_seconds {
-                                              scale: 0.001
-                                              deltas: [ 0, 30, 30 ]
-                                            }
-                                            pressure {
-                                              scale: 0.01
-                                              deltas: [ 25, 50, -25 ]
-                                            }
-                                            tilt {
-                                              scale: 0.0314159
-                                              deltas: [ 10, 10, 10 ]
-                                            }
-                                            orientation {
-                                              scale: 0.0314159
-                                              deltas: [ 25, -50, 25 ]
-                                            }
-                                          )pb",
-                                          &coded));
+  ASSERT_TRUE(TextFormat::ParseFromString(
+      R"pb(
+        tool_type: STYLUS
+        stroke_unit_length_in_centimeters: 1.0
+        x_stroke_space {
+          scale: 2.5
+          deltas: [ 1, 2, 1 ]
+        }
+        y_stroke_space {
+          scale: 2.5
+          deltas: [ 1, -1, 1 ]
+        }
+        elapsed_time_seconds {
+          scale: 0.001
+          deltas: [ 0, 30, 30 ]
+        }
+        pressure {
+          scale: 0.01
+          deltas: [ 25, 50, -25 ]
+        }
+        tilt {
+          scale: 0.0314159
+          deltas: [ 10, 10, 10 ]
+        }
+        orientation {
+          scale: 0.0314159
+          deltas: [ 25, -50, 25 ]
+        }
+      )pb",
+      &coded));
 
   absl::StatusOr<iterator_range<CodedStrokeInputBatchIterator>> range =
       DecodeStrokeInputBatchProto(coded);
   ASSERT_EQ(range.status(), absl::OkStatus());
-  std::vector<CodedStrokeInputBatchIterator::ValueType> values(range->begin(),
-                                                               range->end());
-  ASSERT_EQ(values.size(), 3);
-
-  EXPECT_THAT(values[0].position_stroke_space, PointEq({2.5f, 2.5f}));
-  EXPECT_THAT(values[1].position_stroke_space, PointEq({7.5f, 0.0f}));
-  EXPECT_THAT(values[2].position_stroke_space, PointEq({10.0f, 2.5f}));
-
-  EXPECT_THAT(values[0].elapsed_time, Duration32Seconds(FloatEq(0.000f)));
-  EXPECT_THAT(values[1].elapsed_time, Duration32Seconds(FloatEq(0.030f)));
-  EXPECT_THAT(values[2].elapsed_time, Duration32Seconds(FloatEq(0.060f)));
-
-  EXPECT_THAT(values[0].pressure, Optional(FloatEq(0.25f)));
-  EXPECT_THAT(values[1].pressure, Optional(FloatEq(0.75f)));
-  EXPECT_THAT(values[2].pressure, Optional(FloatEq(0.50f)));
-
-  EXPECT_THAT(values[0].tilt, Optional(FloatNear(1 * kPi / 10, 1e-5f)));
-  EXPECT_THAT(values[1].tilt, Optional(FloatNear(2 * kPi / 10, 1e-5f)));
-  EXPECT_THAT(values[2].tilt, Optional(FloatNear(3 * kPi / 10, 1e-5f)));
-
-  EXPECT_THAT(values[0].orientation, Optional(FloatNear(kPi / 4, 1e-5f)));
-  EXPECT_THAT(values[1].orientation, Optional(FloatNear(-kPi / 4, 1e-5f)));
-  EXPECT_THAT(values[2].orientation, Optional(FloatNear(0.0f, 1e-5f)));
+  std::vector<StrokeInput> values(range->begin(), range->end());
+  EXPECT_THAT(
+      values,
+      ElementsAre(
+          StrokeInputNear(
+              {
+                  .tool_type = StrokeInput::ToolType::kStylus,
+                  .position = {2.5f, 2.5f},
+                  .elapsed_time = Duration32::Seconds(0.000f),
+                  .stroke_unit_length = PhysicalDistance::Centimeters(1.0f),
+                  .pressure = 0.25f,
+                  .tilt = Angle::Radians(kPi / 10),
+                  .orientation = Angle::Radians(kPi / 4),
+              },
+              1e-5f),
+          StrokeInputNear(
+              {
+                  .tool_type = StrokeInput::ToolType::kStylus,
+                  .position = {7.5f, 0.0f},
+                  .elapsed_time = Duration32::Seconds(0.030f),
+                  .stroke_unit_length = PhysicalDistance::Centimeters(1.0f),
+                  .pressure = 0.75f,
+                  .tilt = Angle::Radians(2 * kPi / 10),
+                  .orientation = Angle::Radians(-kPi / 4),
+              },
+              1e-5f),
+          StrokeInputNear(
+              {
+                  .tool_type = StrokeInput::ToolType::kStylus,
+                  .position = {10.0f, 2.5f},
+                  .elapsed_time = Duration32::Seconds(0.060f),
+                  .stroke_unit_length = PhysicalDistance::Centimeters(1.0f),
+                  .pressure = 0.50f,
+                  .tilt = Angle::Radians(3 * kPi / 10),
+                  .orientation = Angle::Radians(0.0f),
+              },
+              1e-5f)));
 }
 
 TEST(CodedStrokeInputBatchIteratorTest, DecodeMouseStrokeInputBatch) {
   // Pressure/tilt/orientation are optional and may be omitted (e.g. for mouse
   // input).
   proto::CodedStrokeInputBatch coded;
-  ASSERT_TRUE(TextFormat::ParseFromString(R"pb(
-                                            x_stroke_space {
-                                              scale: 2.5
-                                              deltas: [ 1, 2, 1 ]
-                                            }
-                                            y_stroke_space {
-                                              scale: 2.5
-                                              deltas: [ 1, -1, 1 ]
-                                            }
-                                            elapsed_time_seconds {
-                                              scale: 0.001
-                                              deltas: [ 0, 30, 30 ]
-                                            }
-                                          )pb",
-                                          &coded));
+  ASSERT_TRUE(TextFormat::ParseFromString(
+      R"pb(
+        tool_type: MOUSE
+        x_stroke_space {
+          scale: 2.5
+          deltas: [ 1, 2, 1 ]
+        }
+        y_stroke_space {
+          scale: 2.5
+          deltas: [ 1, -1, 1 ]
+        }
+        elapsed_time_seconds {
+          scale: 0.001
+          deltas: [ 0, 30, 30 ]
+        }
+      )pb",
+      &coded));
 
   absl::StatusOr<iterator_range<CodedStrokeInputBatchIterator>> range =
       DecodeStrokeInputBatchProto(coded);
   ASSERT_EQ(range.status(), absl::OkStatus());
-  std::vector<CodedStrokeInputBatchIterator::ValueType> values(range->begin(),
-                                                               range->end());
-  ASSERT_EQ(values.size(), 3);
-
-  EXPECT_THAT(values[0].position_stroke_space, PointEq({2.5f, 2.5f}));
-  EXPECT_THAT(values[1].position_stroke_space, PointEq({7.5f, 0.0f}));
-  EXPECT_THAT(values[2].position_stroke_space, PointEq({10.0f, 2.5f}));
-
-  EXPECT_THAT(values[0].elapsed_time, Duration32Seconds(FloatEq(0.000f)));
-  EXPECT_THAT(values[1].elapsed_time, Duration32Seconds(FloatEq(0.030f)));
-  EXPECT_THAT(values[2].elapsed_time, Duration32Seconds(FloatEq(0.060f)));
-
-  for (const auto& value : values) {
-    EXPECT_EQ(value.pressure, std::nullopt);
-    EXPECT_EQ(value.tilt, std::nullopt);
-    EXPECT_EQ(value.orientation, std::nullopt);
-  }
+  std::vector<StrokeInput> values(range->begin(), range->end());
+  ASSERT_THAT(values,
+              ElementsAre(StrokeInputEq({
+                              .tool_type = StrokeInput::ToolType::kMouse,
+                              .position = {2.5f, 2.5f},
+                              .elapsed_time = Duration32::Seconds(0.000f),
+                              .stroke_unit_length = PhysicalDistance::Zero(),
+                              .pressure = StrokeInput::kNoPressure,
+                              .tilt = StrokeInput::kNoTilt,
+                              .orientation = StrokeInput::kNoOrientation,
+                          }),
+                          StrokeInputEq({
+                              .tool_type = StrokeInput::ToolType::kMouse,
+                              .position = {7.5f, 0.0f},
+                              .elapsed_time = Duration32::Seconds(0.030f),
+                              .stroke_unit_length = PhysicalDistance::Zero(),
+                              .pressure = StrokeInput::kNoPressure,
+                              .tilt = StrokeInput::kNoTilt,
+                              .orientation = StrokeInput::kNoOrientation,
+                          }),
+                          StrokeInputEq({
+                              .tool_type = StrokeInput::ToolType::kMouse,
+                              .position = {10.0f, 2.5f},
+                              .elapsed_time = Duration32::Seconds(0.060f),
+                              .stroke_unit_length = PhysicalDistance::Zero(),
+                              .pressure = StrokeInput::kNoPressure,
+                              .tilt = StrokeInput::kNoTilt,
+                              .orientation = StrokeInput::kNoOrientation,
+                          })));
 }
 
 TEST(CodedStrokeInputBatchIteratorTest, IteratorPostIncrement) {
@@ -158,9 +190,9 @@ TEST(CodedStrokeInputBatchIteratorTest, IteratorPostIncrement) {
   const CodedStrokeInputBatchIterator iter1 = iter++;
   const CodedStrokeInputBatchIterator iter2 = iter++;
 
-  EXPECT_THAT(iter0->position_stroke_space, PointEq({1, 1}));
-  EXPECT_THAT(iter1->position_stroke_space, PointEq({3, 0}));
-  EXPECT_THAT(iter2->position_stroke_space, PointEq({4, 1}));
+  EXPECT_THAT(iter0->position, PointEq({1, 1}));
+  EXPECT_THAT(iter1->position, PointEq({3, 0}));
+  EXPECT_THAT(iter2->position, PointEq({4, 1}));
   EXPECT_EQ(iter, range->end());
 }
 

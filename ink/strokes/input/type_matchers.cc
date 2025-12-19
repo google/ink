@@ -32,10 +32,10 @@ using ::testing::Eq;
 using ::testing::ExplainMatchResult;
 using ::testing::Field;
 using ::testing::FloatEq;
+using ::testing::FloatNear;
 
 MATCHER_P(StrokeInputEqMatcher, expected,
-          absl::StrCat(negation ? "isn't" : "is", " approximately ",
-                       expected)) {
+          absl::StrCat(negation ? "isn't" : "is", " equal to ", expected)) {
   return ExplainMatchResult(
       AllOf(
           Field("tool_type", &StrokeInput::tool_type, Eq(expected.tool_type)),
@@ -48,6 +48,26 @@ MATCHER_P(StrokeInputEqMatcher, expected,
           Field("tilt", &StrokeInput::tilt, AngleEq(expected.tilt)),
           Field("orientation", &StrokeInput::orientation,
                 AngleEq(expected.orientation))),
+      arg, result_listener);
+}
+
+MATCHER_P2(StrokeInputNearMatcher, expected, tolerance,
+           absl::StrCat(negation ? "isn't" : "is", " approximately ",
+                        expected)) {
+  return ExplainMatchResult(
+      AllOf(Field("tool_type", &StrokeInput::tool_type, Eq(expected.tool_type)),
+            Field("position", &StrokeInput::position,
+                  PointNear(expected.position, tolerance)),
+            Field("elapsed_time", &StrokeInput::elapsed_time,
+                  Duration32Near(expected.elapsed_time, tolerance)),
+            Field("stroke_unit_length", &StrokeInput::stroke_unit_length,
+                  PhysicalDistanceEq(expected.stroke_unit_length)),
+            Field("pressure", &StrokeInput::pressure,
+                  FloatNear(expected.pressure, tolerance)),
+            Field("tilt", &StrokeInput::tilt,
+                  AngleNear(expected.tilt, tolerance)),
+            Field("orientation", &StrokeInput::orientation,
+                  AngleNear(expected.orientation, tolerance))),
       arg, result_listener);
 }
 
@@ -88,6 +108,11 @@ MATCHER_P(StrokeInputBatchEqMatcher, expected, "") {
 
 ::testing::Matcher<StrokeInput> StrokeInputEq(const StrokeInput& expected) {
   return StrokeInputEqMatcher(expected);
+}
+
+::testing::Matcher<StrokeInput> StrokeInputNear(const StrokeInput& expected,
+                                                float tolerance) {
+  return StrokeInputNearMatcher(expected, tolerance);
 }
 
 ::testing::Matcher<StrokeInputBatch> StrokeInputBatchIsArray(
