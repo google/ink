@@ -51,6 +51,7 @@
  */
 
 namespace ink::stock_brushes {
+
 /** Version option for the [marker] stock brush factory function. */
 enum class MarkerVersion {
   /** Initial version of a simple, circular fixed-width brush. */
