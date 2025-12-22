@@ -14,21 +14,35 @@
 
 #include "ink/strokes/input/recorded_test_inputs.h"
 
+#include <fstream>
+#include <ios>
+#include <iterator>
+#include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
+#include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
-#include "ink/strokes/input/recorded_test_inputs_data.h"
+#include "ink/storage/proto/incremental_stroke_inputs.pb.h"
+#include "ink/storage/stroke_input_batch.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 
 namespace ink {
 
 namespace {
+
+const absl::string_view kRecordedInputsDirectory =
+    "_main/ink/strokes/input/testdata/";
 
 // Gets the bounding box for both real and predicted input.
 Rect GetBoundingBox(
@@ -94,34 +108,55 @@ StrokeInputBatch GetRealCombinedInputs(
   return real_inputs;
 }
 
+absl::StatusOr<std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>>>
+LoadRawIncrementalStrokeInputs(absl::string_view filename) {
+  const std::string& filepath =
+      absl::StrCat(testing::SrcDir(), kRecordedInputsDirectory, filename);
+
+  std::ifstream file(std::string(filepath), std::ios::binary);
+  if (!file.is_open()) {
+    return absl::NotFoundError(absl::StrCat("Failed to open file: ", filepath));
+  }
+  std::string str((std::istreambuf_iterator<char>(file)),
+                  std::istreambuf_iterator<char>());
+  file.close();
+
+  ink::proto::IncrementalStrokeInputs inputs_proto;
+  if (!inputs_proto.ParseFromString(str)) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Failed to parse file: ", filepath));
+  }
+
+  std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>> inputs;
+
+  for (const auto& input : inputs_proto.inputs()) {
+    auto real = DecodeStrokeInputBatch(input.real());
+    if (!real.ok()) return real.status();
+    auto predicted = DecodeStrokeInputBatch(input.predicted());
+    if (!predicted.ok()) return predicted.status();
+    inputs.push_back({*real, *predicted});
+  }
+
+  return inputs;
+}
 }  // namespace
 
-std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>>
-MakeIncrementalStraightLineInputs(const Rect& bounds) {
-  auto batches = MakeStraightLineRaw();
-  BoundTestInputs(bounds, batches);
+absl::StatusOr<std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>>>
+LoadIncrementalStrokeInputs(absl::string_view filename,
+                            std::optional<Rect> bounds) {
+  auto batches = LoadRawIncrementalStrokeInputs(filename);
+  if (!batches.ok()) return batches.status();
+  if (bounds.has_value()) BoundTestInputs(*bounds, *batches);
   return batches;
 }
 
-StrokeInputBatch MakeCompleteStraightLineInputs(const Rect& bounds) {
-  auto batches = MakeStraightLineRaw();
-  StrokeInputBatch combined_batch = GetRealCombinedInputs(batches);
-  BoundTestInputs(bounds, combined_batch);
-  return combined_batch;
-}
-
-std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>>
-MakeIncrementalSpringShapeInputs(const Rect& bounds) {
-  auto batches = MakeSpringShapeRaw();
-  BoundTestInputs(bounds, batches);
-  return batches;
-}
-
-StrokeInputBatch MakeCompleteSpringShapeInputs(const Rect& bounds) {
-  auto batches = MakeSpringShapeRaw();
-  StrokeInputBatch combined_batch = GetRealCombinedInputs(batches);
-  BoundTestInputs(bounds, combined_batch);
-  return combined_batch;
+absl::StatusOr<StrokeInputBatch> LoadCompleteStrokeInputs(
+    absl::string_view filename, std::optional<Rect> bounds) {
+  auto batches = LoadRawIncrementalStrokeInputs(filename);
+  if (!batches.ok()) return batches.status();
+  ink::StrokeInputBatch batch = GetRealCombinedInputs(*batches);
+  if (bounds.has_value()) BoundTestInputs(*bounds, batch);
+  return batch;
 }
 
 }  // namespace ink

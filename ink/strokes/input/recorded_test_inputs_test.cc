@@ -20,6 +20,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/status/status_matchers.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/rect.h"
 #include "ink/geometry/type_matchers.h"
@@ -28,6 +29,8 @@
 
 namespace ink {
 namespace {
+
+using ::absl_testing::IsOk;
 
 Envelope GetEnvelope(const StrokeInputBatch& inputs) {
   Envelope envelope;
@@ -47,95 +50,56 @@ Envelope GetEnvelope(
   return envelope;
 }
 
-TEST(RecordedTestInputsTest, MakeIncrementalStraightLineInputsHasPrediction) {
-  Rect bounds = Rect::FromTwoPoints({0, 0}, {1, 1});
-  auto straight_line_incremental = MakeIncrementalStraightLineInputs(bounds);
+TEST(RecordedTestInputsTest, IncrementalInputsHasPrediction) {
+  for (const auto& filename : kTestDataFiles) {
+    auto incremental_inputs = LoadIncrementalStrokeInputs(filename);
+    EXPECT_THAT(incremental_inputs, IsOk());
 
-  // Make sure we have some predicted inputs
-  bool has_predicted_inputs = false;
-  for (const auto& [real, predicted] : straight_line_incremental) {
-    if (predicted.Size() > 0) {
-      has_predicted_inputs = true;
-      break;
+    bool has_predicted_inputs = false;
+    for (const auto& [real, predicted] : *incremental_inputs) {
+      if (predicted.Size() > 0) {
+        has_predicted_inputs = true;
+        break;
+      }
     }
+    EXPECT_TRUE(has_predicted_inputs);
   }
-
-  EXPECT_TRUE(has_predicted_inputs);
 }
 
-TEST(RecordedTestInputsTest, MakeIncrementalStraightLineInputsRespectsBounds) {
-  Rect bounds = Rect::FromTwoPoints({0, 1}, {2, 3});
-  auto straight_line_incremental = MakeIncrementalStraightLineInputs(bounds);
-  auto envelope = GetEnvelope(straight_line_incremental);
-
-  EXPECT_THAT(envelope, EnvelopeNear(bounds, 0.001f));
-}
-
-TEST(RecordedTestInputsTest, MakeCompleteStraightLineInputs) {
-  Rect bounds = Rect::FromTwoPoints({0, 0}, {1, 1});
-  StrokeInputBatch straight_line_complete =
-      MakeCompleteStraightLineInputs(bounds);
-
-  auto straight_line_incremental = MakeIncrementalStraightLineInputs(bounds);
-  size_t points = 0;
-  for (const auto& [real, predicted] : straight_line_incremental) {
-    points += real.Size();
+TEST(RecordedTestInputsTest, IncrementalInputsRespectsBounds) {
+  for (const auto& filename : kTestDataFiles) {
+    Rect bounds = Rect::FromTwoPoints({0, 1}, {2, 3});
+    auto incremental_inputs = LoadIncrementalStrokeInputs(filename, bounds);
+    EXPECT_THAT(incremental_inputs, IsOk());
+    auto envelope = GetEnvelope(*incremental_inputs);
+    EXPECT_THAT(envelope, EnvelopeNear(bounds, 0.001f));
   }
-
-  EXPECT_EQ(straight_line_complete.Size(), points);
 }
 
-TEST(RecordedTestInputsTest, MakeCompleteStraightLineInputsRespectsBounds) {
-  Rect bounds = Rect::FromTwoPoints({0, 1}, {2, 3});
-  auto straight_line_complete = MakeCompleteStraightLineInputs(bounds);
-  auto envelope = GetEnvelope(straight_line_complete);
+TEST(RecordedTestInputsTest, CompleteInputsWorks) {
+  for (const auto& filename : kTestDataFiles) {
+    auto incremental_inputs = LoadIncrementalStrokeInputs(filename);
+    EXPECT_THAT(incremental_inputs, IsOk());
+    auto complete_inputs = LoadCompleteStrokeInputs(filename);
+    EXPECT_THAT(complete_inputs, IsOk());
 
-  EXPECT_THAT(envelope, EnvelopeNear(bounds, 0.001f));
-}
-
-TEST(RecordedTestInputsTest, MakeIncrementalSpringShapeInputsHasPrediction) {
-  Rect bounds = Rect::FromTwoPoints({0, 0}, {1, 1});
-  auto spiral_incremental = MakeIncrementalSpringShapeInputs(bounds);
-
-  // Make sure we have some predicted inputs
-  bool has_predicted_inputs = false;
-  for (const auto& [real, predicted] : spiral_incremental) {
-    if (predicted.Size() > 0) {
-      has_predicted_inputs = true;
-      break;
+    size_t points = 0;
+    for (const auto& [real, predicted] : *incremental_inputs) {
+      points += real.Size();
     }
+
+    EXPECT_EQ(complete_inputs->Size(), points);
   }
-
-  EXPECT_TRUE(has_predicted_inputs);
 }
 
-TEST(RecordedTestInputsTest, MakeIncrementalSpringShapeInputsRespectsBounds) {
-  Rect bounds = Rect::FromTwoPoints({0, 1}, {2, 3});
-  auto spiral_incremental = MakeIncrementalSpringShapeInputs(bounds);
-  auto envelope = GetEnvelope(spiral_incremental);
-
-  EXPECT_THAT(envelope, EnvelopeNear(bounds, 0.001f));
-}
-
-TEST(RecordedTestInputsTest, MakeCompleteSpringShapeInputs) {
-  Rect bounds = Rect::FromTwoPoints({0, 0}, {1, 1});
-  StrokeInputBatch spiral_complete = MakeCompleteSpringShapeInputs(bounds);
-
-  auto spiral_incremental = MakeIncrementalSpringShapeInputs(bounds);
-  size_t points = 0;
-  for (const auto& [real, predicted] : spiral_incremental) {
-    points += real.Size();
+TEST(RecordedTestInputsTest, CompleteInputsRespectsBounds) {
+  for (const auto& filename : kTestDataFiles) {
+    Rect bounds = Rect::FromTwoPoints({0, 1}, {2, 3});
+    auto complete_inputs = LoadCompleteStrokeInputs(filename, bounds);
+    EXPECT_THAT(complete_inputs, IsOk());
+    auto envelope = GetEnvelope(*complete_inputs);
+    EXPECT_THAT(envelope, EnvelopeNear(bounds, 0.001f));
   }
-
-  EXPECT_EQ(spiral_complete.Size(), points);
-}
-
-TEST(RecordedTestInputsTest, MakeCompleteSpringShapeInputsRespectsBounds) {
-  Rect bounds = Rect::FromTwoPoints({0, 1}, {2, 3});
-  StrokeInputBatch spiral_complete = MakeCompleteSpringShapeInputs(bounds);
-  auto envelope = GetEnvelope(spiral_complete);
-
-  EXPECT_THAT(envelope, EnvelopeNear(bounds, 0.001f));
 }
 
 }  // namespace

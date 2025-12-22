@@ -95,7 +95,8 @@ cc_test(
         "//ink/strokes/input:stroke_input_batch",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_benchmark//:benchmark_main",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 

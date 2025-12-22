@@ -15,9 +15,9 @@
 #include <utility>
 #include <vector>
 
+#include "benchmark/benchmark.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
-#include "benchmark/benchmark.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_family.h"
@@ -39,12 +39,15 @@ constexpr float kInputBoundsHeight = 200;
 constexpr float kBrushEpsilon = 0.01;
 
 std::vector<StrokeInputBatch> MakeInputBatches() {
+  std::vector<StrokeInputBatch> inputs;
   Rect bounds =
       Rect::FromTwoPoints({0, 0}, {kInputBoundsWidth, kInputBoundsHeight});
-  return {
-      MakeCompleteStraightLineInputs(bounds),
-      MakeCompleteSpringShapeInputs(bounds),
-  };
+  for (const auto& filename : kTestDataFiles) {
+    auto complete_inputs = LoadCompleteStrokeInputs(filename, bounds);
+    ABSL_CHECK_OK(complete_inputs);
+    inputs.push_back(*std::move(complete_inputs));
+  }
+  return inputs;
 }
 
 Brush MakeBrush(BrushTip brush_tip, float brush_size) {

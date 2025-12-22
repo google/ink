@@ -15,10 +15,10 @@
 #include <utility>
 #include <vector>
 
+#include "benchmark/benchmark.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "benchmark/benchmark.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_family.h"
@@ -232,6 +232,32 @@ StrokeInputBatch MakeSyntheticStraightLineInputs(
   absl::StatusOr<StrokeInputBatch> result = StrokeInputBatch::Create(inputs);
   ABSL_CHECK_OK(result);
   return *std::move(result);
+}
+
+std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>>
+MakeIncrementalStraightLineInputs(const Rect& bounds) {
+  auto inputs = LoadIncrementalStrokeInputs("straight_line.binarypb", bounds);
+  ABSL_CHECK_OK(inputs);
+  return *std::move(inputs);
+}
+
+StrokeInputBatch MakeCompleteStraightLineInputs(const Rect& bounds) {
+  auto inputs = LoadCompleteStrokeInputs("straight_line.binarypb", bounds);
+  ABSL_CHECK_OK(inputs);
+  return *std::move(inputs);
+}
+
+std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>>
+MakeIncrementalSpringShapeInputs(const Rect& bounds) {
+  auto inputs = LoadIncrementalStrokeInputs("spring_shape.binarypb", bounds);
+  ABSL_CHECK_OK(inputs);
+  return *std::move(inputs);
+}
+
+StrokeInputBatch MakeCompleteSpringShapeInputs(const Rect& bounds) {
+  auto inputs = LoadCompleteStrokeInputs("spring_shape.binarypb", bounds);
+  ABSL_CHECK_OK(inputs);
+  return *std::move(inputs);
 }
 
 // ********************** Benchmark Tests **********************************

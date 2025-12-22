@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2024-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INK_STROKES_INPUT_RECORDED_TEST_INPUTS_DATA_H_
-#define INK_STROKES_INPUT_RECORDED_TEST_INPUTS_DATA_H_
+syntax = "proto2";
 
-#include <utility>
-#include <vector>
+package ink.proto;
 
-#include "ink/strokes/input/stroke_input_batch.h"
+import "ink/storage/proto/stroke_input_batch.proto";
 
-namespace ink {
+// Represents an incremental input stream for a stroke, consisting of a sequence
+// of real and predicted input batches.
+//
+// This is only intended for use in testing or debugging.
+message IncrementalStrokeInputs {
+  message IncrementalStrokeInput {
+    optional CodedStrokeInputBatch real = 1;
+    optional CodedStrokeInputBatch predicted = 2;
+  }
 
-std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>>
-MakeStraightLineRaw();
-
-std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>> MakeSpringShapeRaw();
-
-}  // namespace ink
-
-#endif  // INK_STROKES_INPUT_RECORDED_TEST_INPUTS_DATA_H_
+  repeated IncrementalStrokeInput inputs = 1;
+}

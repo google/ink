@@ -65,6 +65,19 @@ proto_library(
     srcs = ["coded_numeric_run.proto"],
 )
 
+proto_library(
+    name = "incremental_stroke_inputs_proto",
+    srcs = ["incremental_stroke_inputs.proto"],
+    visibility = ["//ink:__subpackages__"],
+    deps = [":stroke_input_batch_proto"],
+)
+
+cc_proto_library(
+    name = "incremental_stroke_inputs_cc_proto",
+    visibility = ["//ink:__subpackages__"],
+    deps = [":incremental_stroke_inputs_proto"],
+)
+
 cc_proto_library(
     name = "brush_cc_proto",
     deps = [":brush_proto"],

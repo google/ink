@@ -187,24 +187,24 @@ cc_test(
 cc_library(
     name = "recorded_test_inputs",
     testonly = 1,
-    srcs = [
-        "recorded_test_inputs.cc",
-        "recorded_test_inputs_data.cc",
-        "recorded_test_inputs_data.h",
-    ],
+    srcs = ["recorded_test_inputs.cc"],
     hdrs = ["recorded_test_inputs.h"],
+    data = ["//ink/strokes/input/testdata"],
     deps = [
         ":stroke_input",
         ":stroke_input_batch",
+        "//:gtest_for_library_testonly",
         "//ink/geometry:affine_transform",
-        "//ink/geometry:angle",
         "//ink/geometry:envelope",
         "//ink/geometry:point",
         "//ink/geometry:rect",
-        "//ink/types:duration",
+        "//ink/storage:stroke_input_batch",
+        "//ink/storage/proto:incremental_stroke_inputs_cc_proto",
         "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/types:span",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
     ],
 )
 
@@ -220,6 +220,7 @@ cc_test(
         "//ink/geometry:envelope",
         "//ink/geometry:rect",
         "//ink/geometry:type_matchers",
+        "@com_google_absl//absl/status:status_matchers",
         "@com_google_googletest//:gtest_main",
     ],
 )
