@@ -101,7 +101,7 @@ class BrushFamily {
   //    - size_jitter components must be smaller than or equal to their size
   //      counterparts.
   //    - offset_jitter must be in interval [0, 1].
-  //    - rotation jitter must be a finite.
+  //    - rotation_jitter must be finite.
   //    - opacity must be in interval [0, 1].
   //    - animation_frames must be greater than 0.
   //    - For each TextureKeyframe the following must hold:
@@ -138,7 +138,7 @@ class BrushFamily {
 
   // Returns the ID for this brush family specified by the client that
   // originally created it, or an empty string if no ID was specified. This is
-  // considered when comparing `BrushFaily` objects for equality, but it is
+  // considered when comparing `BrushFamily` objects for equality, but it is
   // not assumed that two `BrushFamily` objects with the same IDs are
   // equivalent, and the ID is not otherwise used internally by Ink.
   const std::string& GetClientBrushFamilyId() const;
