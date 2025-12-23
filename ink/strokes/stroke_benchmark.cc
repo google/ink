@@ -18,185 +18,86 @@
 #include "benchmark/benchmark.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ink/brush/brush.h"
-#include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
-#include "ink/brush/easing_function.h"
 #include "ink/color/color.h"
-#include "ink/geometry/angle.h"
-#include "ink/geometry/rect.h"
+#include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/input/recorded_test_inputs.h"
-#include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/stroke.h"
 
 namespace ink {
 namespace {
 
-constexpr float kInputBoundsWidth = 200;
-constexpr float kInputBoundsHeight = 200;
+using ::benchmark::internal::Benchmark;
 constexpr float kBrushEpsilon = 0.01;
 
-std::vector<StrokeInputBatch> MakeInputBatches() {
-  std::vector<StrokeInputBatch> inputs;
-  Rect bounds =
-      Rect::FromTwoPoints({0, 0}, {kInputBoundsWidth, kInputBoundsHeight});
-  for (const auto& filename : kTestDataFiles) {
-    auto complete_inputs = LoadCompleteStrokeInputs(filename, bounds);
-    ABSL_CHECK_OK(complete_inputs);
-    inputs.push_back(*std::move(complete_inputs));
-  }
-  return inputs;
-}
-
-Brush MakeBrush(BrushTip brush_tip, float brush_size) {
-  absl::StatusOr<BrushFamily> family =
-      BrushFamily::Create(brush_tip, BrushPaint{});
+Brush MakeCircleBrush(float brush_size, float brush_epsilon) {
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
+      BrushTip{.scale = {1, 1}, .corner_rounding = 1}, BrushPaint{});
   ABSL_CHECK_OK(family);
   absl::StatusOr<Brush> brush = Brush::Create(
-      *std::move(family), Color::Black(), brush_size, kBrushEpsilon);
+      *std::move(family), Color::Black(), brush_size, brush_epsilon);
   ABSL_CHECK_OK(brush);
   return *std::move(brush);
 }
 
-void BM_CircleBrushWithSize(benchmark::State& state) {
-  std::vector<StrokeInputBatch> input_batches = MakeInputBatches();
-  Brush brush = MakeBrush(BrushTip{.scale = {1, 1}, .corner_rounding = 1},
-                          state.range(0));
+// TODO(b/374775850): Include test cases for stock brushes.
+void BenchmarkTestCases(Benchmark* b) {
+  std::vector<int> brush_sizes;
+  int num_test_files = kTestDataFiles.size();
+  for (int test_file = 0; test_file < num_test_files; ++test_file) {
+    for (int brush_size = 1; brush_size <= 32; brush_size *= 2) {
+      b->Args({brush_size, test_file});
+    }
+  }
+}
 
-  while (state.KeepRunningBatch(input_batches.size())) {
-    for (const StrokeInputBatch& inputs : input_batches) {
-      Stroke stroke(brush, inputs);
+void BM_Stroke(benchmark::State& state) {
+  const float brush_size = state.range(0);
+  auto brush = MakeCircleBrush(brush_size, kBrushEpsilon);
+
+  absl::string_view test_inputs_name = kTestDataFiles[state.range(1)];
+  auto inputs = LoadCompleteStrokeInputs(test_inputs_name);
+  ABSL_CHECK_OK(inputs);
+
+  state.SetLabel(absl::StrFormat("stroke: %s, brush size: %f", test_inputs_name,
+                                 brush_size));
+
+  for (auto s : state) {
+    Stroke stroke(brush, *inputs);
+    benchmark::DoNotOptimize(stroke);
+  }
+}
+BENCHMARK(BM_Stroke)->Apply(BenchmarkTestCases);
+
+void BM_InProgressStroke(benchmark::State& state) {
+  const float brush_size = state.range(0);
+  auto brush = MakeCircleBrush(brush_size, kBrushEpsilon);
+
+  absl::string_view test_inputs_name = kTestDataFiles[state.range(1)];
+  auto inputs = LoadIncrementalStrokeInputs(test_inputs_name);
+  ABSL_CHECK_OK(inputs);
+
+  state.SetLabel(absl::StrFormat("stroke: %s, brush size: %f", test_inputs_name,
+                                 brush_size));
+
+  for (auto s : state) {
+    InProgressStroke stroke;
+    stroke.Start(brush);
+    for (const auto& [real, predicted] : *inputs) {
+      ABSL_CHECK_OK(stroke.EnqueueInputs(real, predicted));
+      if (!real.IsEmpty()) {
+        ABSL_CHECK_OK(stroke.UpdateShape(real.Last().elapsed_time));
+      }
       benchmark::DoNotOptimize(stroke);
     }
   }
 }
-BENCHMARK(BM_CircleBrushWithSize)->RangeMultiplier(4)->Range(1, 32);
-
-void BM_RoundedRectangleBrushWithSize(benchmark::State& state) {
-  std::vector<StrokeInputBatch> input_batches = MakeInputBatches();
-  Brush brush = MakeBrush(BrushTip{.scale = {0.1, 1.0}, .corner_rounding = 0.2},
-                          state.range(0));
-
-  while (state.KeepRunningBatch(input_batches.size())) {
-    for (const StrokeInputBatch& inputs : input_batches) {
-      Stroke stroke(brush, inputs);
-      benchmark::DoNotOptimize(stroke);
-    }
-  }
-}
-BENCHMARK(BM_RoundedRectangleBrushWithSize)->RangeMultiplier(4)->Range(1, 32);
-
-void BM_CircleBrushWithSizeSingleBehavior(benchmark::State& state) {
-  std::vector<StrokeInputBatch> input_batches = MakeInputBatches();
-  BrushTip brush_tip = {
-      .scale = {1, 1},
-      .corner_rounding = 1,
-      .behaviors = {BrushBehavior{{
-          BrushBehavior::SourceNode{
-              .source = BrushBehavior::Source::
-                  kDistanceTraveledInMultiplesOfBrushSize,
-              .source_out_of_range_behavior =
-                  BrushBehavior::OutOfRange::kRepeat,
-              .source_value_range = {1, 10},
-          },
-          BrushBehavior::ResponseNode{
-              .response_curve = {EasingFunction::Steps{
-                  .step_count = 2,
-                  .step_position = EasingFunction::StepPosition::kJumpNone,
-              }},
-          },
-          BrushBehavior::TargetNode{
-              .target = BrushBehavior::Target::kSizeMultiplier,
-              .target_modifier_range = {0, 100},
-          },
-      }}}};
-  Brush brush = MakeBrush(brush_tip, state.range(0));
-
-  while (state.KeepRunningBatch(input_batches.size())) {
-    for (const StrokeInputBatch& inputs : input_batches) {
-      Stroke stroke(brush, inputs);
-      benchmark::DoNotOptimize(stroke);
-    }
-  }
-}
-BENCHMARK(BM_CircleBrushWithSizeSingleBehavior)
-    ->RangeMultiplier(4)
-    ->Range(1, 32);
-
-void BM_RoundedRectangleBrushWithSizeMultipleBehavior(benchmark::State& state) {
-  std::vector<StrokeInputBatch> input_batches = MakeInputBatches();
-  BrushTip brush_tip = {
-      .scale = {0.1, 1.0},
-      .corner_rounding = 0.2,
-      .behaviors = {
-          BrushBehavior{{
-              BrushBehavior::SourceNode{
-                  .source = BrushBehavior::Source::
-                      kDistanceTraveledInMultiplesOfBrushSize,
-                  .source_out_of_range_behavior =
-                      BrushBehavior::OutOfRange::kMirror,
-                  .source_value_range = {0, 3},
-              },
-              BrushBehavior::ResponseNode{
-                  .response_curve = {EasingFunction::Linear{
-                      {{0.2, 0.5}, {0.5, 0.5}}}},
-              },
-              BrushBehavior::TargetNode{
-                  .target = BrushBehavior::Target::kSizeMultiplier,
-                  .target_modifier_range = {0, 1},
-              },
-          }},
-          BrushBehavior{{
-              BrushBehavior::SourceNode{
-                  .source = BrushBehavior::Source::
-                      kDistanceTraveledInMultiplesOfBrushSize,
-                  .source_out_of_range_behavior =
-                      BrushBehavior::OutOfRange::kRepeat,
-                  .source_value_range = {1, 10},
-              },
-              BrushBehavior::ResponseNode{
-                  .response_curve = {EasingFunction::Steps{
-                      .step_count = 2,
-                      .step_position = EasingFunction::StepPosition::kJumpNone,
-                  }},
-              },
-              BrushBehavior::TargetNode{
-                  .target = BrushBehavior::Target::kSizeMultiplier,
-                  .target_modifier_range = {0, 100},
-              },
-          }},
-          BrushBehavior{{
-              BrushBehavior::SourceNode{
-                  .source = BrushBehavior::Source::
-                      kDistanceTraveledInMultiplesOfBrushSize,
-                  .source_out_of_range_behavior =
-                      BrushBehavior::OutOfRange::kRepeat,
-                  .source_value_range = {0, 10},
-              },
-              BrushBehavior::ResponseNode{
-                  .response_curve = {EasingFunction::CubicBezier{
-                      .x1 = 0.3, .y1 = 0.2, .x2 = 0.2, .y2 = 1.4}},
-              },
-              BrushBehavior::TargetNode{
-                  .target = BrushBehavior::Target::kHueOffsetInRadians,
-                  .target_modifier_range = {0, kHalfTurn.ValueInRadians()},
-              },
-          }},
-      }};
-  Brush brush = MakeBrush(brush_tip, state.range(0));
-
-  while (state.KeepRunningBatch(input_batches.size())) {
-    for (const StrokeInputBatch& inputs : input_batches) {
-      Stroke stroke(brush, inputs);
-      benchmark::DoNotOptimize(stroke);
-    }
-  }
-}
-BENCHMARK(BM_RoundedRectangleBrushWithSizeMultipleBehavior)
-    ->RangeMultiplier(4)
-    ->Range(1, 32);
+BENCHMARK(BM_InProgressStroke)->Apply(BenchmarkTestCases);
 
 }  // namespace
 }  // namespace ink
