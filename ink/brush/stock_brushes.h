@@ -224,26 +224,6 @@ BrushCoat MiniEmojiCoat(
     float position_offset_range_end, float distance_traveled_range_start,
     float distance_traveled_range_end, float luminosity_range_start,
     float luminosity_range_end);
-
-/** The client texture ID for the background of the version-1 pencil brush. */
-static constexpr char kPencilUnstableBackgroundTextureId[] =
-    "androidx.ink.brush.StockBrushes.pencil_background_unstable";
-
-/**
- * A development version of a brush that looks like pencil marks on subtly
- * textured paper.
- *
- * In order to use this brush, the [TextureBitmapStore] provided to your
- * renderer must map the [kPencilUnstableBackgroundTextureId] to a bitmap;
- * otherwise, no texture will be visible. Android callers may want to use
- * [StockTextureBitmapStore] to provide this mapping.
- *
- * The behavior of this [BrushFamily] may change significantly in future
- * releases. Once it has stabilized, it will be renamed to `pencilV1`.
- */
-// TODO: b/373587591 - Change this to be consistent with the other brush
-// factory functions before release.
-BrushFamily PencilUnstable();
 }  // namespace ink::stock_brushes
 
 #endif  // INK_BRUSH_STOCK_BRUSHES_H_

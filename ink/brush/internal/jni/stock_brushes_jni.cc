@@ -38,7 +38,6 @@ using ::ink::stock_brushes::Highlighter;
 using ::ink::stock_brushes::HighlighterVersion;
 using ::ink::stock_brushes::Marker;
 using ::ink::stock_brushes::MarkerVersion;
-using ::ink::stock_brushes::PencilUnstable;
 using ::ink::stock_brushes::PredictionFadeOutBehavior;
 using ::ink::stock_brushes::PressurePen;
 using ::ink::stock_brushes::PressurePenVersion;
@@ -78,12 +77,6 @@ JNI_METHOD(brush, StockBrushesNative, jlong, emojiHighlighter)
       JStringToStdString(env, client_texture_id), show_mini_emoji_trail,
       static_cast<BrushPaint::SelfOverlap>(self_overlap),
       EmojiHighlighterVersion(version));
-  return NewNativeBrushFamily(std::move(family));
-}
-
-JNI_METHOD(brush, StockBrushesNative, jlong, pencilUnstable)
-(JNIEnv* env, jobject object) {
-  BrushFamily family = PencilUnstable();
   return NewNativeBrushFamily(std::move(family));
 }
 

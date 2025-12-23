@@ -361,22 +361,6 @@ BrushFamily DashedLine(const DashedLineVersion& version) {
   }
 }
 
-BrushFamily PencilUnstable() {
-  static const absl::NoDestructor<absl::StatusOr<BrushFamily>> pencil_unstable(
-      BrushFamily::Create(
-          BrushTip{.behaviors = {PredictionFadeOutBehavior()}},
-          BrushPaint{
-              .texture_layers = {BrushPaint::TextureLayer{
-                  .client_texture_id = kPencilUnstableBackgroundTextureId,
-                  .mapping = BrushPaint::TextureMapping::kTiling,
-                  .size_unit = BrushPaint::TextureSizeUnit::kStrokeCoordinates,
-                  .size = {512.0f, 512.0f},
-              }}},
-          "", StockInputModel()));
-  ABSL_CHECK_OK(*pencil_unstable);
-  return **pencil_unstable;
-}
-
 BrushCoat MiniEmojiCoat(
     std::string client_texture_id, float tip_scale, float tip_rotation_degrees,
     float tip_particle_gap_distance_scale, float position_offset_range_start,

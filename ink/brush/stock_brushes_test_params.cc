@@ -15,7 +15,6 @@ std::vector<stock_brushes::StockBrushesTestParam> GetParams() {
       {"highlighter_1",
        Highlighter(BrushPaint::SelfOverlap::kAny, HighlighterVersion::kV1)},
       {"dashed_line_1", DashedLine(DashedLineVersion::kV1)},
-      {"pencil_1", PencilUnstable()},
       {"heart_emoji_highlighter_1",
        EmojiHighlighter("emoji_heart", true, BrushPaint::SelfOverlap::kAny,
                         EmojiHighlighterVersion::kV1)},
