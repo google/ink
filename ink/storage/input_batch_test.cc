@@ -15,7 +15,6 @@
 #include "ink/storage/input_batch.h"
 
 #include <limits>
-#include <optional>
 #include <vector>
 
 #include "gmock/gmock.h"
