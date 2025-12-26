@@ -19,6 +19,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "ink/geometry/rect.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 
