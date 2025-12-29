@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstddef>
 #include <utility>
 #include <vector>
 
@@ -22,8 +23,7 @@
 #include "absl/strings/string_view.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_family.h"
-#include "ink/brush/brush_paint.h"
-#include "ink/brush/brush_tip.h"
+#include "ink/brush/stock_brushes_test_params.h"
 #include "ink/color/color.h"
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/input/recorded_test_inputs.h"
@@ -35,37 +35,44 @@ namespace {
 using ::benchmark::internal::Benchmark;
 constexpr float kBrushEpsilon = 0.01;
 
-Brush MakeCircleBrush(float brush_size, float brush_epsilon) {
-  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
-      BrushTip{.scale = {1, 1}, .corner_rounding = 1}, BrushPaint{});
-  ABSL_CHECK_OK(family);
-  absl::StatusOr<Brush> brush = Brush::Create(
-      *std::move(family), Color::Black(), brush_size, brush_epsilon);
+Brush MakeBrush(const BrushFamily& family, float brush_size,
+                float brush_epsilon) {
+  absl::StatusOr<Brush> brush =
+      Brush::Create(family, Color::Black(), brush_size, brush_epsilon);
   ABSL_CHECK_OK(brush);
   return *std::move(brush);
 }
 
-// TODO(b/374775850): Include test cases for stock brushes.
 void BenchmarkTestCases(Benchmark* b) {
   std::vector<int> brush_sizes;
   int num_test_files = kTestDataFiles.size();
+  std::vector<stock_brushes::StockBrushesTestParam> stock_brushes_test_params =
+      stock_brushes::GetParams();
+  // TODO(b/374775850)) Add test cases for unique brushes that test individual
+  // parts of the family structure.
   for (int test_file = 0; test_file < num_test_files; ++test_file) {
     for (int brush_size = 1; brush_size <= 32; brush_size *= 2) {
-      b->Args({brush_size, test_file});
+      for (size_t brush = 0; brush < stock_brushes_test_params.size();
+           brush++) {
+        b->Args({brush_size, test_file, static_cast<int>(brush)});
+      }
     }
   }
 }
 
 void BM_Stroke(benchmark::State& state) {
   const float brush_size = state.range(0);
-  auto brush = MakeCircleBrush(brush_size, kBrushEpsilon);
+  const BrushFamily brush_family =
+      stock_brushes::GetParams()[state.range(2)].second;
+  auto brush = MakeBrush(brush_family, brush_size, kBrushEpsilon);
 
   absl::string_view test_inputs_name = kTestDataFiles[state.range(1)];
   auto inputs = LoadCompleteStrokeInputs(test_inputs_name);
   ABSL_CHECK_OK(inputs);
 
-  state.SetLabel(absl::StrFormat("stroke: %s, brush size: %f", test_inputs_name,
-                                 brush_size));
+  state.SetLabel(absl::StrFormat(
+      "stroke: %s, brush size: %f, brush: %s", test_inputs_name, brush_size,
+      stock_brushes::GetParams()[state.range(2)].first));
 
   for (auto s : state) {
     Stroke stroke(brush, *inputs);
@@ -76,14 +83,17 @@ BENCHMARK(BM_Stroke)->Apply(BenchmarkTestCases);
 
 void BM_InProgressStroke(benchmark::State& state) {
   const float brush_size = state.range(0);
-  auto brush = MakeCircleBrush(brush_size, kBrushEpsilon);
+  const BrushFamily brush_family =
+      stock_brushes::GetParams()[state.range(2)].second;
+  auto brush = MakeBrush(brush_family, brush_size, kBrushEpsilon);
 
   absl::string_view test_inputs_name = kTestDataFiles[state.range(1)];
   auto inputs = LoadIncrementalStrokeInputs(test_inputs_name);
   ABSL_CHECK_OK(inputs);
 
-  state.SetLabel(absl::StrFormat("stroke: %s, brush size: %f", test_inputs_name,
-                                 brush_size));
+  state.SetLabel(absl::StrFormat(
+      "stroke: %s, brush size: %f, brush: %s", test_inputs_name, brush_size,
+      stock_brushes::GetParams()[state.range(2)].first));
 
   for (auto s : state) {
     InProgressStroke stroke;
