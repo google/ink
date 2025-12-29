@@ -16,19 +16,35 @@
 
 #include <cmath>
 #include <cstdint>
+#include <fstream>
+#include <ios>
+#include <iterator>
+#include <string>
 #include <utility>
 
+#include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
+#include "ink/storage/mesh.h"
+#include "ink/storage/proto/mesh.pb.h"
 
 namespace ink {
+
+namespace {
+const absl::string_view kGeometryTestDataDirectory =
+    "_main/ink/geometry/testdata/";
+}  // namespace
 
 MeshFormat MakeSinglePackedPositionFormat() {
   auto format =
@@ -122,6 +138,27 @@ PartitionedMesh MakeStarPartitionedMesh(
       MakeStarMutableMesh(n_triangles, format, vertex_transform));
   ABSL_CHECK_OK(shape);
   return *std::move(shape);
+}
+
+absl::StatusOr<Mesh> LoadMesh(absl::string_view filename) {
+  const std::string& filepath =
+      absl::StrCat(testing::SrcDir(), kGeometryTestDataDirectory, filename);
+
+  std::ifstream file(std::string(filepath), std::ios::binary);
+  if (!file.is_open()) {
+    return absl::NotFoundError(absl::StrCat("Failed to open file: ", filepath));
+  }
+  std::string str((std::istreambuf_iterator<char>(file)),
+                  std::istreambuf_iterator<char>());
+  file.close();
+
+  ink::proto::CodedMesh mesh_proto;
+  if (!mesh_proto.ParseFromString(str)) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Failed to parse file: ", filepath));
+  }
+
+  return DecodeMesh(mesh_proto);
 }
 
 }  // namespace ink

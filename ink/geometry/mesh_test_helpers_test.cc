@@ -19,6 +19,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -34,6 +35,7 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
 using ::testing::Each;
 using ::testing::ElementsAre;
 using ::testing::ExplainMatchResult;
@@ -392,6 +394,14 @@ TEST(MeshTestHelpersTest, MakeStarMutableMeshWithTransform) {
   EXPECT_THAT(m.TriangleIndices(0), ElementsAre(0, 1, 2));
   EXPECT_THAT(m.TriangleIndices(1), ElementsAre(2, 3, 4));
   EXPECT_THAT(m.TriangleIndices(2), ElementsAre(4, 5, 6));
+}
+
+TEST(MeshTestHelpersTest, LoadedMeshesHaveTriangles) {
+  for (const auto& filename : kTestMeshFiles) {
+    auto mesh = LoadMesh(filename);
+    EXPECT_THAT(mesh.status(), IsOk());
+    EXPECT_GT(mesh->TriangleCount(), 0);
+  }
 }
 
 }  // namespace
