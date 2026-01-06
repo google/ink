@@ -728,6 +728,24 @@ cc_library(
 )
 
 cc_test(
+    name = "mutable_mesh_benchmark",
+    srcs = ["mutable_mesh_benchmark.cc"],
+    deps = [
+        ":mesh",
+        ":mesh_test_helpers",
+        ":mutable_mesh",
+        ":point",
+        "//ink/types:small_array",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
     name = "tessellator_test",
     srcs = ["tessellator_test.cc"],
     deps = [
