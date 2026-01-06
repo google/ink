@@ -17,6 +17,8 @@
 
 #include <cstdint>
 
+#include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mutable_mesh.h"
