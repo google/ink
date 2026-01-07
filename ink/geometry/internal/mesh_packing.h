@@ -99,6 +99,21 @@ void PackAttribute(MeshFormat::AttributeType type,
                    const SmallArray<float, 4>& unpacked_value,
                    absl::Span<std::byte> packed_bytes);
 
+// Packs the quantized mesh-attribute value `quantized_value` of into a byte
+// array representation stored in `packed_bytes`.
+//
+// This expects:
+// - `type` is a packed type.
+// - `quantized_value` and `packed_bytes` have lengths consistent with `type`.
+// - `quantized_value` should (componentwise) be within the range
+//   [0, 2^`MeshFormat::PackedBitsPerComponent(type)` - 1].
+//
+// See `MeshFormat::AttributeType` for more details on how each attribute is
+// packed, and the comment at the top of this file for an overview of packing.
+void PackQuantizedAttribute(MeshFormat::AttributeType type,
+                            const SmallArray<uint32_t, 4>& quantized_value,
+                            absl::Span<std::byte> packed_bytes);
+
 // Unpacks a mesh attribute value from a packed integer representation stored in
 // one or more floats (`packed_value`). See `PackAttribute` for more details;
 // all the same warnings and restrictions apply here. In addition:

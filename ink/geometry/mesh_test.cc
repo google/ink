@@ -49,10 +49,6 @@ using ::testing::Pointwise;
 using AttrType = MeshFormat::AttributeType;
 using AttrId = MeshFormat::AttributeId;
 
-constexpr int kMax6Bits = mesh_internal::MaxValueForBits(6);
-constexpr int kMax12Bits = mesh_internal::MaxValueForBits(12);
-constexpr int kMax16Bits = mesh_internal::MaxValueForBits(16);
-
 TEST(MeshTest, DefaultCtor) {
   Mesh m;
   EXPECT_EQ(m.VertexCount(), 0);
@@ -137,19 +133,19 @@ TEST(MeshTest, CreateWithCustomFormat) {
 
   EXPECT_THAT(m->VertexAttributeUnpackingParams(0),
               MeshAttributeCodingParamsEq(
-                  {{{{.offset = -200, .scale = 700. / kMax16Bits},
-                     {.offset = 4, .scale = 2. / kMax16Bits},
-                     {.offset = -5, .scale = 30. / kMax16Bits}}}}));
+                  {{{{.offset = -200, .scale = 700. / 65535.f},
+                     {.offset = 4, .scale = 2. / 65535.f},
+                     {.offset = -5, .scale = 30. / 65535.f}}}}));
   EXPECT_THAT(
       m->VertexAttributeUnpackingParams(1),
-      MeshAttributeCodingParamsEq({{{{.offset = 0, .scale = 1. / kMax6Bits},
-                                     {.offset = 0.1, .scale = 0.8 / kMax6Bits},
-                                     {.offset = 0.5, .scale = 0.5 / kMax6Bits},
+      MeshAttributeCodingParamsEq({{{{.offset = 0, .scale = 1. / 63.f},
+                                     {.offset = 0.1, .scale = 0.8 / 63.f},
+                                     {.offset = 0.5, .scale = 0.5 / 63.f},
                                      {.offset = 1, .scale = 1}}}}));
   EXPECT_THAT(m->VertexAttributeUnpackingParams(2),
               MeshAttributeCodingParamsEq(
-                  {{{{.offset = -12, .scale = 29. / kMax12Bits},
-                     {.offset = 123, .scale = 666. / kMax12Bits}}}}));
+                  {{{{.offset = -12, .scale = 29. / 4095.f},
+                     {.offset = 123, .scale = 666. / 4095.f}}}}));
 
   EXPECT_THAT(m->TriangleIndices(0), ElementsAre(0, 1, 2));
 
@@ -396,18 +392,19 @@ TEST(MeshTest, CreateWithSomePackingParams) {
 
   EXPECT_THAT(m->VertexAttributeUnpackingParams(0),
               MeshAttributeCodingParamsEq(
-                  {{{{.offset = -200, .scale = 700. / kMax16Bits},
-                     {.offset = 4, .scale = 2. / kMax16Bits},
-                     {.offset = -5, .scale = 30. / kMax16Bits}}}}));
-  EXPECT_THAT(m->VertexAttributeUnpackingParams(1),
-              MeshAttributeCodingParamsEq({{{.offset = 0, .scale = 0.1},
-                                            {.offset = 0, .scale = 0.1},
-                                            {.offset = 0, .scale = 0.1},
-                                            {.offset = 0, .scale = 0.1}}}));
+                  {{{{.offset = -200, .scale = 700.f / 65535.f},
+                     {.offset = 4, .scale = 2.f / 65535.f},
+                     {.offset = -5, .scale = 30.f / 65535.f}}}}));
+  EXPECT_THAT(
+      m->VertexAttributeUnpackingParams(1),
+      MeshAttributeCodingParamsEq({{{{.offset = 0.f, .scale = 0.1f},
+                                     {.offset = 0.f, .scale = 0.1f},
+                                     {.offset = 0.f, .scale = 0.1f},
+                                     {.offset = 0.f, .scale = 0.1f}}}}));
   EXPECT_THAT(m->VertexAttributeUnpackingParams(2),
               MeshAttributeCodingParamsEq(
-                  {{{{.offset = -12, .scale = 29. / kMax12Bits},
-                     {.offset = 123, .scale = 666. / kMax12Bits}}}}));
+                  {{{{.offset = -12, .scale = 29.f / 4095.f},
+                     {.offset = 123, .scale = 666.f / 4095.f}}}}));
 
   EXPECT_THAT(m->TriangleIndices(0), ElementsAre(0, 1, 2));
 
@@ -932,6 +929,96 @@ TEST(MeshDeathTest, TriangleIndexOutOfBounds) {
 #else
   GTEST_SKIP() << "This tests behavior that is disabled in opt builds.";
 #endif
+}
+
+TEST(MeshTest, CreateFromQuantizedData) {
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kCustom0}},
+      MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_EQ(format.status(), absl::OkStatus());
+
+  std::vector<MeshAttributeCodingParams> coding_params = {
+      {{{.offset = 10, .scale = 10.f / 4095.f},
+        {.offset = 20, .scale = 10.f / 4095.f}}},
+      {{{.offset = -1, .scale = 2.f / 63.f},
+        {.offset = -1, .scale = 2.f / 63.f},
+        {.offset = -1, .scale = 2.f / 63.f},
+        {.offset = -1, .scale = 2.f / 63.f}}},
+      {{{.offset = 0, .scale = 100.f / 255.f}}}};
+  const std::vector<uint32_t> x = {0, 2048, 4095};
+  const std::vector<uint32_t> y = {0, 4095, 2048};
+  const std::vector<uint32_t> h0 = {0, 32, 16};
+  const std::vector<uint32_t> h1 = {16, 0, 32};
+  const std::vector<uint32_t> h2 = {32, 0, 63};
+  const std::vector<uint32_t> h3 = {32, 32, 32};
+  const std::vector<uint32_t> c0 = {0, 64, 128};
+
+  const std::vector<uint32_t> triangles = {0, 1, 2};
+
+  absl::StatusOr<Mesh> m = Mesh::CreateFromQuantizedData(
+      *format, {x, y, h0, h1, h2, h3, c0}, triangles, coding_params);
+  EXPECT_EQ(m.status(), absl::OkStatus());
+
+  EXPECT_THAT(m->Format(), MeshFormatEq(*format));
+
+  EXPECT_EQ(m->VertexCount(), 3);
+  EXPECT_THAT(m->VertexPosition(0), PointNear({10.f, 20.f}, 1e-2));
+  EXPECT_THAT(m->VertexPosition(1), PointNear({15.f, 30.f}, 1e-2));
+  EXPECT_THAT(m->VertexPosition(2), PointNear({20.f, 25.f}, 1e-2));
+
+  EXPECT_EQ(m->TriangleCount(), 1);
+  EXPECT_THAT(m->TriangleIndices(0), ElementsAre(0, 1, 2));
+
+  EXPECT_THAT(m->FloatVertexAttribute(0, 1).Values(),
+              Pointwise(FloatNear(2e-2), {-1.f, -.5f, 0.f, 0.f}));
+  EXPECT_THAT(m->FloatVertexAttribute(1, 1).Values(),
+              Pointwise(FloatNear(2e-2), {0.f, -1.f, -1.f, 0.f}));
+  EXPECT_THAT(m->FloatVertexAttribute(2, 1).Values(),
+              Pointwise(FloatNear(2e-2), {-.5f, 0.f, 1.f, 0.f}));
+
+  EXPECT_THAT(m->FloatVertexAttribute(0, 2).Values(),
+              Pointwise(FloatNear(2e-1), {0.f}));
+  EXPECT_THAT(m->FloatVertexAttribute(1, 2).Values(),
+              Pointwise(FloatNear(2e-1), {25.f}));
+  EXPECT_THAT(m->FloatVertexAttribute(2, 2).Values(),
+              Pointwise(FloatNear(2e-1), {50.f}));
+}
+
+TEST(MeshTest, CreateFromQuantizedDataErrorsWithUnpackedFormat) {
+  absl::StatusOr<MeshFormat> format =
+      MeshFormat::Create({{AttrType::kFloat2Unpacked, AttrId::kPosition}},
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_EQ(format.status(), absl::OkStatus());
+
+  absl::Status status =
+      Mesh::CreateFromQuantizedData(
+          *format, {{1}, {1}}, {},
+          {MeshAttributeCodingParams{
+              {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}}})
+          .status();
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("packed"));
+}
+
+TEST(MeshTest, CreateFromQuantizedDataErrorsWithAttributeOutOfBounds) {
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_EQ(format.status(), absl::OkStatus());
+
+  std::vector<MeshAttributeCodingParams> coding_params = {
+      {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}};
+
+  absl::Status status = Mesh::CreateFromQuantizedData(*format,
+                                                      {// kPosition
+                                                       {5000},
+                                                       {1}},
+                                                      {}, coding_params)
+                            .status();
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(), HasSubstr("range"));
 }
 
 }  // namespace
