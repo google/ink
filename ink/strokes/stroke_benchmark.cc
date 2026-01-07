@@ -33,7 +33,6 @@ namespace ink {
 namespace {
 
 using ::benchmark::internal::Benchmark;
-constexpr float kBrushEpsilon = 0.01;
 
 Brush MakeBrush(const BrushFamily& family, float brush_size,
                 float brush_epsilon) {
@@ -64,7 +63,7 @@ void BM_Stroke(benchmark::State& state) {
   const float brush_size = state.range(0);
   const BrushFamily brush_family =
       stock_brushes::GetParams()[state.range(2)].second;
-  auto brush = MakeBrush(brush_family, brush_size, kBrushEpsilon);
+  auto brush = MakeBrush(brush_family, brush_size, kTestBrushEpsilon);
 
   absl::string_view test_inputs_name = kTestDataFiles[state.range(1)];
   auto inputs = LoadCompleteStrokeInputs(test_inputs_name);
@@ -85,7 +84,7 @@ void BM_InProgressStroke(benchmark::State& state) {
   const float brush_size = state.range(0);
   const BrushFamily brush_family =
       stock_brushes::GetParams()[state.range(2)].second;
-  auto brush = MakeBrush(brush_family, brush_size, kBrushEpsilon);
+  auto brush = MakeBrush(brush_family, brush_size, kTestBrushEpsilon);
 
   absl::string_view test_inputs_name = kTestDataFiles[state.range(1)];
   auto inputs = LoadIncrementalStrokeInputs(test_inputs_name);

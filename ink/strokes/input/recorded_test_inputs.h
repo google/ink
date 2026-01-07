@@ -26,8 +26,14 @@
 
 namespace ink {
 
+// The test inputs were recorded with the Stylus Showcase App. The inputs use
+// pixels as stroke-space units. They have a typical scale of O(100) pixels, and
+// typical durations of O(.1) seconds.
 constexpr std::array<absl::string_view, 2> kTestDataFiles = {
     "spring_shape.binarypb", "straight_line.binarypb"};
+
+// The typical brush epsilon used by Stylus Showcase to render the inputs.
+constexpr float kTestBrushEpsilon = 0.1;
 
 // Returns incremental inputs loaded from the given `IncrementalStrokeInputs`
 // binary proto test file, rescaled to fit to `bounds` if provided. Each
