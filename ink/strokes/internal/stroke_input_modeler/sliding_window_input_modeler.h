@@ -59,17 +59,17 @@ class SlidingWindowInputModeler : public InputModelImpl {
       std::vector<ModeledStrokeInput>& modeled_inputs);
 
   // Helper method for `ExtendStroke()`. Appends the given raw inputs to
-  // `sliding_window_`, and initializes `state.tool_type` and
+  // `raw_input_queue_`, and initializes `state.tool_type` and
   // `state.stroke_unit_length` as necessary.
-  void AppendRawInputsToSlidingWindow(InputModelerState& state,
-                                      const StrokeInputBatch& raw_inputs);
+  void AppendRawInputsToQueue(InputModelerState& state,
+                              const StrokeInputBatch& raw_inputs);
 
   // Helper method for `ExtendStroke()`. Fully models each unstable input and
   // appends it to `modeled_inputs`, updating `state.real_input_count`
   // appropriately.
   void ModelUnstableInputs(InputModelerState& state,
                            std::vector<ModeledStrokeInput>& modeled_inputs,
-                           int sliding_window_real_input_count);
+                           int raw_input_queue_real_input_count);
 
   // Helper method for `ModelUnstableInputs()`. Models each unstable input
   // (computing only position and pressure/tilt/orientation for now) and appends
@@ -84,7 +84,7 @@ class SlidingWindowInputModeler : public InputModelImpl {
   // input (computing only position and pressure/tilt/orientation for now) at
   // `elapsed_time`, unless it would be within `position_epsilon_` of the
   // previous modeled input. Either way, when this returns, `start_index` and
-  // `end_index` will be the indices into `sliding_window_` of the first raw
+  // `end_index` will be the indices into `raw_input_queue_` of the first raw
   // input before the window and the last raw input after the window; before
   // calling this, `start_index` and `end_index` must be no larger than those
   // indices, as they are only ever marched forward.
@@ -107,12 +107,12 @@ class SlidingWindowInputModeler : public InputModelImpl {
                                std::vector<ModeledStrokeInput>& modeled_inputs);
 
   // Helper method for `ExtendStroke()`. Removes all predicted raw stroke inputs
-  // from the end of `sliding_window_`, and removes from the start of
-  // `sliding_window_` all raw stroke inputs that are no longer needed for
+  // from the end of `raw_input_queue_`, and removes from the start of
+  // `raw_input_queue_` all raw stroke inputs that are no longer needed for
   // remodeling the remaining unstable modeled inputs.
-  void TrimSlidingWindow(InputModelerState& state,
+  void TrimRawInputQueue(InputModelerState& state,
                          std::vector<ModeledStrokeInput>& modeled_inputs,
-                         int sliding_window_real_input_count);
+                         int raw_input_queue_real_input_count);
 
   bool IsWithinEpsilonOfLastInput(
       const std::vector<ModeledStrokeInput>& modeled_inputs,
@@ -123,7 +123,7 @@ class SlidingWindowInputModeler : public InputModelImpl {
   // of each `ExtendStroke` call, all predicted inputs are trimmed from the end
   // of the queue, and real inputs are trimmed from the front if they are too
   // old to be able to affect any new modeled inputs in the future.
-  StrokeInputBatch sliding_window_;
+  StrokeInputBatch raw_input_queue_;
 
   // Modeling parameters provided to the constructor:
   Duration32 half_window_size_;
