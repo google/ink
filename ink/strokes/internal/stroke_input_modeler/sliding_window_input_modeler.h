@@ -118,7 +118,14 @@ class SlidingWindowInputModeler : public InputModelImpl {
       const std::vector<ModeledStrokeInput>& modeled_inputs,
       Point position) const;
 
+  // A rolling queue of raw inputs. New real/predicted raw inputs are added to
+  // the end of the queue at the start of each `ExtendStroke` call. At the end
+  // of each `ExtendStroke` call, all predicted inputs are trimmed from the end
+  // of the queue, and real inputs are trimmed from the front if they are too
+  // old to be able to affect any new modeled inputs in the future.
   StrokeInputBatch sliding_window_;
+
+  // Modeling parameters provided to the constructor:
   Duration32 half_window_size_;
   Duration32 upsampling_period_;
   float position_epsilon_;
