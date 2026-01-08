@@ -278,6 +278,27 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "brush_tip_modeler_benchmark",
+    testonly = 1,
+    srcs = ["brush_tip_modeler_benchmark.cc"],
+    deps = [
+        ":brush_tip_modeler",
+        ":stroke_input_modeler",
+        "//ink/brush",
+        "//ink/brush:brush_family",
+        "//ink/brush:stock_brushes_test_params",
+        "//ink/color",
+        "//ink/strokes/input:recorded_test_inputs",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "easing_implementation",
     srcs = ["easing_implementation.cc"],
