@@ -422,7 +422,6 @@ TEST_P(StrokeInputModelerTest, StartWithZeroEpsilon) {
 
 INSTANTIATE_TEST_SUITE_P(
     TestInputModels, StrokeInputModelerTest,
-    // LINT.IfChange(input_model_types)
     ::testing::ValuesIn<InputModelTestCase>({
         {"SpringModel", {BrushFamily::SpringModel{}}},
         {"NaiveModel", {BrushFamily::ExperimentalNaiveModel{}}},
@@ -436,7 +435,6 @@ INSTANTIATE_TEST_SUITE_P(
              .window_size = Duration32::Millis(1500),
              .upsampling_period = Duration32::Infinite()}}},
     }),
-    // LINT.ThenChange(../../brush/brush_family.h:input_model_types)
     [](const ::testing::TestParamInfo<InputModelTestCase>& info) {
       return info.param.test_name;
     });

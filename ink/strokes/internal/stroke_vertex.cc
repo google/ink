@@ -39,7 +39,6 @@ namespace {
 using ::ink::geometry_internal::Lerp;
 using ::ink::geometry_internal::LinearMap;
 
-// LINT.IfChange(margin_encoding)
 // The code below specifies how a vertex category and margin are encoded
 // together inside a `float`. The implementation below currently does encoding
 // and decoding linearly.
@@ -70,8 +69,6 @@ float StrokeVertex::Label::DecodeMargin() const {
   return LinearMap(std::abs(encoded_value), kRangeOfEncodedMarginValues,
                    {0.f, kMaximumMargin});
 }
-// LINT.ThenChange(
-//     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:margin_encoding)
 
 namespace {
 
@@ -85,45 +82,30 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
   // Color-shift components are each stored unpacked in the range [-1, 1]. In
   // order to accurately store 0, we only use 2^N - 2 values instead of the full
   // 2^N - 1 representable by the N packed bits.
-  // LINT.IfChange(opacity_packing)
   constexpr MeshAttributeCodingParams::ComponentCodingParams
       kOpacityCodingParams8bit = {.offset = -1, .scale = 2.f / 254};
-  // LINT.ThenChange(
-  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:opacity_packing)
-  // LINT.IfChange(hsl_packing)
   constexpr MeshAttributeCodingParams::ComponentCodingParams
       kHslCodingParams10bit = {.offset = -1, .scale = 2.f / 1022};
-  // LINT.ThenChange(
-  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:hsl_packing)
 
-  // LINT.IfChange(label_packing)
   // Vertex labels are already represented with 1 byte's worth of integral
   // values, but in the range [-127, 127]. They only need to be shifted to fit
   // in [0, 255].
   constexpr MeshAttributeCodingParams::ComponentCodingParams
       kLabelCodingParams = {.offset = -128, .scale = 1};
-  // LINT.ThenChange(
-  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:label_packing)
 
-  // LINT.IfChange(uv_packing)
   constexpr MeshAttributeCodingParams::ComponentCodingParams
       kSurfaceUCodingParams12bit = {.scale = 1.f / 4095};
   constexpr MeshAttributeCodingParams::ComponentCodingParams
       kSurfaceVCodingParams12bit = {.scale = 1.f / 4095};
   constexpr MeshAttributeCodingParams::ComponentCodingParams
       kSurfaceVCodingParams20bit = {.scale = 1.f / 1048575};
-  // LINT.ThenChange(
-  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:uv_packing)
 
   // Animation offsets are stored unpacked in the range [0, 1). It's tempting to
   // use 1/256 as the scale here, since a value of 1 does not need to be
   // representable, but due to rounding this would make values just less than 1
   // also unrepresentable (see b/432526862), so we use 1/255 instead.
-  // LINT.IfChange(anim_packing)
   constexpr MeshAttributeCodingParams::ComponentCodingParams
       kAnimationCodingParams8bit = {.scale = 1.f / 255};
-  // LINT.ThenChange(
-  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:anim_packing)
 
   switch (attribute.id) {
     case MeshFormat::AttributeId::kOpacityShift:

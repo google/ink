@@ -94,10 +94,7 @@ struct StrokeVertex {
   // most that a vertex can be moved as a multiple of approximate stroke width.
   // In other words, the position outset distance will be capped once the stroke
   // is as small as 1/kMaximumMargin-th of a pixel.
-  // LINT.IfChange(margin_encoding)
   static constexpr float kMaximumMargin = 4;
-  // LINT.ThenChange(
-  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:margin_encoding)
 
   // Constant value used by interior vertices.
   static constexpr Label kInteriorLabel = {0};

@@ -23,13 +23,6 @@ namespace ink {
 // A color space, which gives concrete meaning to raw color channel values.
 //
 // This should match the platform enum in ColorExtensions.kt.
-enum class ColorSpace {
-  // sRGB.
-  kSrgb,
-
-  // Display P3, which uses the DCI-P3 primaries and sRGB transfer function.
-  kDisplayP3
-};
 
 // Decodes a nonlinear perceptual lightness value to a linear luminance using
 // a color space's "gamma" function. This operation is also called the EOTF:
