@@ -34,8 +34,8 @@ jlong ComputeColorLong(JNIEnv* env, const Color& color) {
                                 : color.InColorSpace(ColorSpace::kDisplayP3))
           .AsFloat(Color::Format::kGammaEncoded);
   return env->CallStaticLongMethod(
-      ClassBrushNative(env),
-      MethodBrushNativeComposeColorLongFromComponents(env),
+      ClassColorNative(env),
+      MethodColorNativeComposeColorLongFromComponents(env),
       ColorSpaceToJInt(color_space_is_supported ? original_color_space
                                                 : ColorSpace::kDisplayP3),
       rgba.r, rgba.g, rgba.b, rgba.a);
