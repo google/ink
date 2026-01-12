@@ -69,8 +69,8 @@ jclass ClassMutableParallelogram(JNIEnv* env);
 jmethodID MethodMutableParallelogramSetCenterDimensionsRotationInDegreesAndSkew(
     JNIEnv* env);
 
-jclass ClassBrushNative(JNIEnv* env);
-jmethodID MethodBrushNativeComposeColorLongFromComponents(JNIEnv* env);
+jclass ClassColorNative(JNIEnv* env);
+jmethodID MethodColorNativeComposeColorLongFromComponents(JNIEnv* env);
 
 jclass ClassInputToolType(JNIEnv* env);
 jmethodID MethodInputToolTypeFromInt(JNIEnv* env);
