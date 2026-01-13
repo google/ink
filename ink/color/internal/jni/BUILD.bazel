@@ -19,15 +19,6 @@ package(
 )
 
 cc_library(
-    name = "native",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":color_jni_helper",
-    ],
-    alwayslink = 1,
-)
-
-cc_library(
     name = "color_jni_helper",
     srcs = ["color_jni_helper.cc"],
     hdrs = ["color_jni_helper.h"],

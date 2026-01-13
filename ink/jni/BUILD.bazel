@@ -32,13 +32,13 @@ cc_binary(
     deps = [
         ":jni.lds",
         ":jni_onload",
-        "//ink/color/internal/jni:native",
-        "//ink/geometry/internal/jni:native",
+        "//ink/brush/internal/jni",
+        "//ink/geometry/internal/jni",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_jvm_interface",
-        "//ink/rendering/skia/common_internal/jni:native",
-        "//ink/storage/internal/jni:native",
-        "//ink/strokes/internal/jni:native",
+        "//ink/rendering/android/internal/jni",
+        "//ink/storage/internal/jni",
+        "//ink/strokes/internal/jni",
     ],
 )
 

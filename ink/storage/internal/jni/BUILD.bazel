@@ -19,7 +19,7 @@ package(
 )
 
 cc_library(
-    name = "native",
+    name = "jni",
     visibility = ["//visibility:public"],
     deps = [
         ":brush_serialization_jni",

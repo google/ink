@@ -20,14 +20,13 @@ package(
 )
 
 cc_library(
-    name = "native",
+    name = "jni",
     visibility = ["//visibility:public"],
     deps = [
         ":in_progress_stroke_jni",
         ":mesh_creation_jni",
         ":stroke_input_batch_jni",
         ":stroke_jni",
-        "//ink/brush/internal/jni:native",
     ],
     alwayslink = 1,
 )

@@ -19,7 +19,7 @@ package(
 )
 
 cc_library(
-    name = "native",
+    name = "jni",
     deps = [
         ":brush_behavior_jni",
         ":brush_coat_jni",
