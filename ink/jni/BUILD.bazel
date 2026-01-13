@@ -45,6 +45,7 @@ cc_binary(
 cc_library(
     name = "jni_onload",
     srcs = ["jni_onload.cc"],
+    visibility = ["//ink:__subpackages__"],
     deps = [
         "//ink/jni/internal:jni_jvm_interface",
         "@com_google_absl//absl/log:absl_check",
