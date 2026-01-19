@@ -96,6 +96,18 @@ class Mesh {
       absl::Span<const std::optional<MeshAttributeCodingParams>>
           packing_params = {});
 
+  // An overload of `Create`, this constructs a mesh given vertex attributes
+  // that are already quantized according to the `coding_params`.
+  //
+  // This expects that all attributes in `format` are packed and all vertex
+  // attribute values are within the range specified by `format`, in addition
+  // to all the preconditions of `Create`.
+  static absl::StatusOr<Mesh> CreateFromQuantizedData(
+      const MeshFormat& format,
+      absl::Span<const absl::Span<const uint32_t>> vertex_attributes,
+      absl::Span<const uint32_t> triangle_indices,
+      absl::Span<const MeshAttributeCodingParams> coding_params);
+
   // Constructs an empty mesh, with a default-constructed `MeshFormat`. Note
   // that, since `Mesh` is read-only, you can't do much with an empty mesh. See
   // `Mesh::Create` and `MutableMesh::ConvertToMeshes` for creating non-empty

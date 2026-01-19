@@ -14,11 +14,13 @@
 
 #include "ink/geometry/mesh.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <optional>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -37,6 +39,41 @@
 
 namespace ink {
 namespace {
+
+// Returns bounds for vertex attributes given in quantized form, by decoding
+// the min/max quantized values of each component using `coding_params`.
+std::optional<mesh_internal::AttributeBoundsArray> ComputeAttributeBounds(
+    const MeshFormat& format,
+    absl::Span<const MeshAttributeCodingParams> coding_params,
+    absl::Span<const absl::Span<const uint32_t>> vertex_attributes) {
+  if (vertex_attributes.empty() || vertex_attributes[0].empty())
+    return std::nullopt;
+
+  int n_attrs = format.Attributes().size();
+  mesh_internal::AttributeBoundsArray bounds_array(n_attrs);
+
+  int span_idx = 0;
+  for (int attr_idx = 0; attr_idx < n_attrs; ++attr_idx) {
+    const MeshFormat::Attribute& attr = format.Attributes()[attr_idx];
+    MeshAttributeBounds& b = bounds_array[attr_idx];
+
+    int n_components = MeshFormat::ComponentCount(attr.type);
+    b.minimum.Resize(n_components);
+    b.maximum.Resize(n_components);
+    for (int c_idx = 0; c_idx < n_components; ++c_idx) {
+      auto [min_it, max_it] =
+          absl::c_minmax_element(vertex_attributes[span_idx + c_idx]);
+      float offset = coding_params[attr_idx].components[c_idx].offset;
+      float scale = coding_params[attr_idx].components[c_idx].scale;
+      float bound1 = offset + scale * static_cast<float>(*min_it);
+      float bound2 = offset + scale * static_cast<float>(*max_it);
+      b.minimum[c_idx] = std::min(bound1, bound2);
+      b.maximum[c_idx] = std::max(bound1, bound2);
+    }
+    span_idx += n_components;
+  }
+  return bounds_array;
+}
 
 std::optional<mesh_internal::AttributeBoundsArray> ComputeAttributeBounds(
     const MeshFormat& format,
@@ -82,13 +119,10 @@ mesh_internal::CodingParamsArray MakeCodingParamsArrayForEmptyMesh(
   return coding_params_array;
 }
 
-}  // namespace
-
-absl::StatusOr<Mesh> Mesh::Create(
-    const MeshFormat& format,
-    absl::Span<const absl::Span<const float>> vertex_attributes,
-    absl::Span<const uint32_t> triangle_indices,
-    absl::Span<const std::optional<MeshAttributeCodingParams>> packing_params) {
+template <typename T>
+absl::Status ValidateCreateMeshParameters(
+    const MeshFormat& format, absl::Span<const absl::Span<T>> vertex_attributes,
+    absl::Span<const uint32_t> triangle_indices, int bytes_per_index) {
   size_t total_attr_components = format.TotalComponentCount();
   if (total_attr_components != vertex_attributes.size()) {
     return absl::InvalidArgumentError(
@@ -98,8 +132,7 @@ absl::StatusOr<Mesh> Mesh::Create(
   }
   // The check above should ensure that `vertex_attributes` is not empty.
   ABSL_DCHECK_GT(vertex_attributes.size(), 0);
-
-  constexpr int kMaxVertices = 1 << (8 * kBytesPerIndex);
+  const int kMaxVertices = 1 << (8 * bytes_per_index);
   size_t n_vertices = vertex_attributes[0].size();
   if (n_vertices > kMaxVertices) {
     return absl::InvalidArgumentError(
@@ -115,10 +148,12 @@ absl::StatusOr<Mesh> Mesh::Create(
           i, vertex_attributes[i].size(), n_vertices));
     }
   }
-  for (size_t i = 0; i < vertex_attributes.size(); ++i) {
-    if (!absl::c_all_of(vertex_attributes[i], ink_internal::IsFinite)) {
-      return absl::InvalidArgumentError(absl::Substitute(
-          "Non-finite value found in vertex attribute span at index $0", i));
+  if constexpr (std::is_floating_point_v<T>) {
+    for (size_t i = 0; i < vertex_attributes.size(); ++i) {
+      if (!absl::c_all_of(vertex_attributes[i], ink_internal::IsFinite)) {
+        return absl::InvalidArgumentError(absl::Substitute(
+            "Non-finite value found in vertex attribute span at index $0", i));
+      }
     }
   }
   if (triangle_indices.size() % 3 != 0) {
@@ -134,6 +169,122 @@ absl::StatusOr<Mesh> Mesh::Create(
                          n_vertices));
   }
 
+  if constexpr (std::is_same_v<T, const uint32_t>) {
+    // Ensure that if quantized attributes are passed, all of that attributes
+    // are packed.
+    for (const MeshFormat::Attribute& attr : format.Attributes()) {
+      if (MeshFormat::IsUnpackedType(attr.type)) {
+        return absl::InvalidArgumentError(
+            absl::Substitute("Attribute $0 is not packed", attr.id));
+      }
+    }
+
+    // Check that all attributes are within range.
+    if (n_vertices > 0) {
+      int span_idx = 0;
+      for (const MeshFormat::Attribute& attr : format.Attributes()) {
+        std::optional<SmallArray<uint8_t, 4>> bits_per_component =
+            MeshFormat::PackedBitsPerComponent(attr.type);
+        for (uint8_t num_bits : bits_per_component->Values()) {
+          uint32_t max_value = mesh_internal::MaxValueForBits(num_bits);
+          auto [min_it, max_it] =
+              absl::c_minmax_element(vertex_attributes[span_idx]);
+          if (*max_it > max_value) {
+            return absl::InvalidArgumentError(absl::Substitute(
+                "Quantized value $0 in attribute span $1 is out of range for "
+                "$2-bit attribute component (max value $3)",
+                *max_it, span_idx, num_bits, max_value));
+          }
+          span_idx++;
+        }
+      }
+    }
+  }
+
+  return absl::OkStatus();
+}
+
+std::vector<std::byte> PackIndexByteData(
+    absl::Span<const uint32_t> triangle_indices, int bytes_per_index) {
+  std::vector<std::byte> index_data;
+  index_data.resize(bytes_per_index * triangle_indices.size());
+  size_t n_triangles = triangle_indices.size() / 3;
+  for (size_t i = 0; i < n_triangles; ++i) {
+    mesh_internal::WriteTriangleIndicesToByteArray(
+        i, bytes_per_index, triangle_indices.subspan(3 * i, 3), index_data);
+  }
+  return index_data;
+}
+
+std::vector<std::byte> PackQuantizedVertexByteData(
+    const MeshFormat& format,
+    absl::Span<const absl::Span<const uint32_t>> vertex_attributes) {
+  size_t n_vertices = vertex_attributes[0].size();
+  std::vector<std::byte> vertex_data(n_vertices * format.PackedVertexStride());
+
+  int n_attrs = format.Attributes().size();
+  for (size_t vertex_idx = 0; vertex_idx < n_vertices; ++vertex_idx) {
+    size_t vertex_offset = vertex_idx * format.PackedVertexStride();
+    int span_idx = 0;
+    for (int attr_idx = 0; attr_idx < n_attrs; ++attr_idx) {
+      const MeshFormat::Attribute attr = format.Attributes()[attr_idx];
+      int n_components = MeshFormat::ComponentCount(attr.type);
+      SmallArray<uint32_t, 4> quantized(n_components);
+      for (int component_idx = 0; component_idx < n_components;
+           ++component_idx, ++span_idx) {
+        quantized[component_idx] = vertex_attributes[span_idx][vertex_idx];
+      }
+      absl::Span<std::byte> packed_value = absl::MakeSpan(
+          &vertex_data[vertex_offset + attr.packed_offset], attr.packed_width);
+
+      mesh_internal::PackQuantizedAttribute(attr.type, quantized, packed_value);
+    }
+  }
+
+  return vertex_data;
+}
+}  // namespace
+
+absl::StatusOr<Mesh> Mesh::CreateFromQuantizedData(
+    const MeshFormat& format,
+    absl::Span<const absl::Span<const uint32_t>> vertex_attributes,
+    absl::Span<const uint32_t> triangle_indices,
+    absl::Span<const MeshAttributeCodingParams> coding_params) {
+  absl::Status validate_parameters = ValidateCreateMeshParameters(
+      format, vertex_attributes, triangle_indices, kBytesPerIndex);
+  if (!validate_parameters.ok()) return validate_parameters;
+
+  size_t num_attrs = format.Attributes().size();
+  if (coding_params.size() != num_attrs) {
+    return absl::InvalidArgumentError(
+        absl::Substitute("Wrong number of coding params; expected $0, found $1",
+                         format.Attributes().size(), coding_params.size()));
+  }
+  mesh_internal::CodingParamsArray coding_params_array(num_attrs);
+  for (size_t i = 0; i < num_attrs; ++i) {
+    coding_params_array[i] = coding_params[i];
+  }
+
+  std::optional<mesh_internal::AttributeBoundsArray> attribute_bounds =
+      ComputeAttributeBounds(format, coding_params, vertex_attributes);
+  std::vector<std::byte> vertex_data =
+      PackQuantizedVertexByteData(format, vertex_attributes);
+  std::vector<std::byte> index_data =
+      PackIndexByteData(triangle_indices, kBytesPerIndex);
+
+  return Mesh(format, coding_params_array, attribute_bounds,
+              std::move(vertex_data), std::move(index_data));
+}
+
+absl::StatusOr<Mesh> Mesh::Create(
+    const MeshFormat& format,
+    absl::Span<const absl::Span<const float>> vertex_attributes,
+    absl::Span<const uint32_t> triangle_indices,
+    absl::Span<const std::optional<MeshAttributeCodingParams>> packing_params) {
+  absl::Status validate_parameters = ValidateCreateMeshParameters(
+      format, vertex_attributes, triangle_indices, kBytesPerIndex);
+  if (!validate_parameters.ok()) return validate_parameters;
+
   std::optional<mesh_internal::AttributeBoundsArray> attribute_bounds =
       ComputeAttributeBounds(format, vertex_attributes);
   mesh_internal::CodingParamsArray coding_params_array;
@@ -147,16 +298,11 @@ absl::StatusOr<Mesh> Mesh::Create(
   } else {
     coding_params_array = MakeCodingParamsArrayForEmptyMesh(format);
   }
+
   std::vector<std::byte> vertex_data =
       PackVertexByteData(format, vertex_attributes, coding_params_array);
-
-  std::vector<std::byte> index_data;
-  index_data.resize(kBytesPerIndex * triangle_indices.size());
-  size_t n_triangles = triangle_indices.size() / 3;
-  for (size_t i = 0; i < n_triangles; ++i) {
-    mesh_internal::WriteTriangleIndicesToByteArray(
-        i, kBytesPerIndex, triangle_indices.subspan(3 * i, 3), index_data);
-  }
+  std::vector<std::byte> index_data =
+      PackIndexByteData(triangle_indices, kBytesPerIndex);
 
   return Mesh(format, std::move(coding_params_array),
               std::move(attribute_bounds), std::move(vertex_data),
