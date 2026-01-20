@@ -101,7 +101,6 @@ message CodedModeledShape {
 
 // A format specification for mesh data.
 message MeshFormat {
-  // LINT.IfChange(attribute_types)
   enum AttributeType {
     ATTR_TYPE_UNSPECIFIED = 0;
     ATTR_TYPE_FLOAT1_UNPACKED = 1;
@@ -119,9 +118,7 @@ message MeshFormat {
     ATTR_TYPE_FLOAT1_PACKED_IN_ONE_BYTE = 13;
     ATTR_TYPE_FLOAT3_PACKED_IN_FOUR_BYTES_XYZ10 = 14;
   }
-  // LINT.ThenChange(../../geometry/mesh_format.h:attribute_types)
 
-  // LINT.IfChange(attribute_id)
   enum AttributeId {
     ATTR_ID_UNSPECIFIED = 0;
     ATTR_ID_POSITION = 1;
@@ -151,7 +148,6 @@ message MeshFormat {
     ATTR_ID_CUSTOM9 = 73;
     reserved 74 to 127;  // Reserved for future custom attribute IDs.
   }
-  // LINT.ThenChange(../../geometry/mesh_format.h:attribute_id)
 
   // The size/type of each vertex attribute. This must, at the very least,
   // include a 2-component position attribute.

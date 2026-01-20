@@ -123,7 +123,6 @@ fuzztest::Domain<StrokeInputBatch> StrokeInputBatchWithPositionsAndMinSize(
 
 }  // namespace
 
-// LINT.IfChange(tool_types)
 fuzztest::Domain<StrokeInput::ToolType> ArbitraryToolType() {
   return fuzztest::ElementOf({
       StrokeInput::ToolType::kUnknown,
@@ -132,7 +131,6 @@ fuzztest::Domain<StrokeInput::ToolType> ArbitraryToolType() {
       StrokeInput::ToolType::kStylus,
   });
 }
-// LINT.ThenChange(stroke_input.h:tool_types)
 
 fuzztest::Domain<StrokeInput> ValidStrokeInput() {
   return fuzztest::StructOf<StrokeInput>(

@@ -106,14 +106,10 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     // See comments on `calculateAntialiasingAndPositionOutset()` below for some
     // more information on the definitions of "side", "forward" and "margin".
     //
-    // LINT.IfChange(margin_encoding)
     R"(
     float2 decodeMargins(const float2 labels) {
       return (4.0 / 126.0) * max(abs(labels) - float2(1.0), float2(0.0));
     })"
-    // LINT.ThenChange(
-    //     ../../../strokes/internal/stroke_vertex.cc:margin_encoding,
-    //     ../../../strokes/internal/stroke_vertex.h:margin_encoding)
 
     // Computes per-vertex properties needed for antialiasing and returns an
     // offset that should be added to `varyings.position`.
@@ -321,7 +317,6 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
 
     // Unpacks a combined position-and-opacity value into a `float3` from one of
     // the "packed" types supported.
-    // LINT.IfChange(opacity_packing)
     R"(
     float3 unpackPositionAndOpacityShift(const float4 unpackingTransform,
                                          const float2 packedValue) {
@@ -335,12 +330,9 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
           unpackFloat2PackedIntoUByte3(unpackingTransform, packedValue.xyz),
           (255.0 / 127.0) * packedValue.w - 1.0);
     })"
-    // LINT.ThenChange(
-    //     ../../../strokes/internal/stroke_vertex.cc:margin_encoding)
 
     // Unpacks a combined derivative-and-label value into a `float3` from one of
     // the supported "packed" types.
-    // LINT.IfChange(label_packing)
     R"(
     float3 unpackDerivativeAndLabel(const float4 unusedUnpackingTransform,
                                     const float3 unpackedValue) {
@@ -352,12 +344,9 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
           unpackFloat2PackedIntoUByte3(unpackingTransform, packedValue.xyz),
           255.0 * packedValue.w - 128.0);
     })"
-    // LINT.ThenChange(
-    //     ../../../strokes/internal/stroke_vertex.cc:label_packing)
 
     // Unpacks an HSL color-shift value into a `float3` from one of the
     // supported "packed" types.
-    // LINT.IfChange(hsl_packing)
     R"(
     float3 unpackHSLColorShift(const float3 unpackedValue) {
       return unpackedValue;
@@ -371,12 +360,9 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
                  511.0 -
              float3(1.0);
     })"
-    // LINT.ThenChange(
-    //     ../../../strokes/internal/stroke_vertex.cc:hsl_packing)
 
     // Unpacks a surface UV value into a `float2` from one of the supported
     // "packed" types.
-    // LINT.IfChange(uv_packing)
     R"(
     float2 unpackSurfaceUv(const float2 unpackedValue) {
       return unpackedValue;
@@ -430,12 +416,9 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
                      65280.0 * float(packedValue.z) +
                      255.0 * float(packedValue.w)) / 1048575.0);
     })"
-    // LINT.ThenChange(
-    //     ../../../strokes/internal/stroke_vertex.cc:uv_packing)
 
     // Unpacks an animation offset value into a `float` from one of the
     // supported "packed" types.
-    // LINT.IfChange(anim_packing)
     R"(
     float unpackAnimationOffset(const float unpackedValue) {
       return unpackedValue;
@@ -450,8 +433,6 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     float unpackAnimationOffset(const half packedValue) {
       return float(packedValue);
     })"
-    // LINT.ThenChange(
-    //     ../../../strokes/internal/stroke_vertex.cc:anim_packing)
     "";
 
 }  // namespace ink::skia_common_internal

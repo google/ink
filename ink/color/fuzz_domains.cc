@@ -42,14 +42,12 @@ Domain<std::array<float, 4>> FourFloatsInZeroOne() {
                  InRange(0.0f, 1.0f));
 }
 
-// LINT.IfChange(color_space)
 Domain<ColorSpace> ArbitraryColorSpace() {
   return ElementOf({
       ColorSpace::kSrgb,
       ColorSpace::kDisplayP3,
   });
 }
-// LINT.ThenChange(color_space.h:color_space)
 
 Domain<Color> ArbitraryColor() {
   return Map(
@@ -70,7 +68,6 @@ Domain<Color> ArbitraryColor() {
       InRange(0.0f, 1.0f), ArbitraryColorSpace());
 }
 
-// LINT.IfChange(color_format)
 Domain<Color::Format> ArbitraryColorFormat() {
   return ElementOf({
       Color::Format::kLinear,
@@ -78,7 +75,6 @@ Domain<Color::Format> ArbitraryColorFormat() {
       Color::Format::kPremultipliedAlpha,
   });
 }
-// LINT.ThenChange(color.h:color_format)
 
 Domain<Color> InGamutSrgbColor() {
   return Map(
