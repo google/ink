@@ -44,6 +44,8 @@ using ::ink::proto::CodedMesh;
 using ::google::protobuf::TextFormat;
 using ::testing::ElementsAre;
 using ::testing::FloatNear;
+using AttrType = MeshFormat::AttributeType;
+using AttrId = MeshFormat::AttributeId;
 
 TEST(MeshTest, EncodeEmptyMesh) {
   // Start with a non-empty CodedMesh.
@@ -136,10 +138,9 @@ TEST(MeshTest, EncodePackedTriangleMesh) {
   std::vector<float> position_y = {2, 4, 6};
   std::vector<uint32_t> triangles = {0, 1, 2};
 
-  absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
-                           MeshFormat::AttributeId::kPosition}},
-                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_EQ(format.status(), absl::OkStatus());
   absl::StatusOr<Mesh> mesh =
       Mesh::Create(*format, {position_x, position_y}, triangles);
@@ -202,12 +203,10 @@ TEST(MeshTest, EncodeSingleVertexMesh) {
 
 TEST(MeshTest, EncodeAndDecodeMeshWithCustomFormat) {
   // Create a mesh format with custom, non-position attributes.
-  absl::StatusOr<MeshFormat> format =
-      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
-                           MeshFormat::AttributeId::kPosition},
-                          {MeshFormat::AttributeType::kFloat1Unpacked,
-                           MeshFormat::AttributeId::kCustom0}},
-                         MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat1Unpacked, AttrId::kCustom0}},
+      MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
   // Create a mesh using that format.
@@ -235,6 +234,60 @@ TEST(MeshTest, EncodeAndDecodeMeshWithCustomFormat) {
   EXPECT_EQ(decoded->FloatVertexAttribute(0, 1)[0], -1);
   EXPECT_EQ(decoded->FloatVertexAttribute(1, 1)[0], 7);
   EXPECT_EQ(decoded->FloatVertexAttribute(2, 1)[0], 3);
+}
+
+// Encoding and decoding fully packed meshes take slightly different code paths
+// than unpacked or partially packed meshes.
+TEST(MeshTest, EncodeAndDecodeFullyPackedMesh) {
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kCustom0}},
+      MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  std::vector<float> position_x = {1, 3, 5};
+  std::vector<float> position_y = {2, 4, 6};
+  std::vector<float> color_h = {.1, .2, .3};
+  std::vector<float> color_s = {.2, .4, .6};
+  std::vector<float> color_l = {.4, .8, 1.2};
+  std::vector<float> color_0 = {.8, 1.6, 2.4};
+  std::vector<float> custom_attr = {-1, 7, 3};
+  std::vector<uint32_t> triangles = {0, 1, 2};
+  absl::StatusOr<Mesh> mesh = Mesh::Create(
+      *format,
+      {position_x, position_y, color_h, color_s, color_l, color_0, custom_attr},
+      triangles);
+  ASSERT_EQ(mesh.status(), absl::OkStatus());
+  CodedMesh coded_mesh;
+  EncodeMesh(*mesh, coded_mesh);
+
+  absl::StatusOr<Mesh> decoded = DecodeMesh(coded_mesh);
+  ASSERT_THAT(decoded, IsOk());
+  ASSERT_THAT(decoded->Format(), MeshFormatEq(*format));
+  ASSERT_EQ(decoded->VertexCount(), 3);
+  EXPECT_EQ(decoded->TriangleCount(), 1);
+
+  EXPECT_EQ(decoded->VertexCount(), 3);
+  EXPECT_EQ(decoded->VertexPosition(0), mesh->VertexPosition(0));
+  EXPECT_EQ(decoded->VertexPosition(1), mesh->VertexPosition(1));
+  EXPECT_EQ(decoded->VertexPosition(2), mesh->VertexPosition(2));
+
+  EXPECT_EQ(decoded->TriangleCount(), 1);
+  EXPECT_THAT(decoded->TriangleIndices(0), ElementsAre(0, 1, 2));
+
+  EXPECT_EQ(decoded->FloatVertexAttribute(0, 1),
+            mesh->FloatVertexAttribute(0, 1));
+  EXPECT_EQ(decoded->FloatVertexAttribute(1, 1),
+            mesh->FloatVertexAttribute(1, 1));
+  EXPECT_EQ(decoded->FloatVertexAttribute(2, 1),
+            mesh->FloatVertexAttribute(2, 1));
+  EXPECT_EQ(decoded->FloatVertexAttribute(0, 2),
+            mesh->FloatVertexAttribute(0, 2));
+  EXPECT_EQ(decoded->FloatVertexAttribute(1, 2),
+            mesh->FloatVertexAttribute(1, 2));
+  EXPECT_EQ(decoded->FloatVertexAttribute(2, 2),
+            mesh->FloatVertexAttribute(2, 2));
 }
 
 TEST(MeshTest, DecodeEmptyMesh) {
@@ -296,7 +349,7 @@ void EncodePositionOnlyMeshRoundTrip(const MutableMesh& mutable_mesh) {
 }
 FUZZ_TEST(MeshTest, EncodePositionOnlyMeshRoundTrip)
     .WithDomains(ValidPackableNonEmptyPositionOnlyMutableMesh(
-        MeshFormat::AttributeType::kFloat2PackedInOneFloat,
+        AttrType::kFloat2PackedInOneFloat,
         MeshFormat::IndexFormat::k32BitUnpacked16BitPacked));
 }  // namespace
 }  // namespace ink
