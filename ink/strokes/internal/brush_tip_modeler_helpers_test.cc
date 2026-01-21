@@ -1252,6 +1252,66 @@ TEST_F(ProcessBehaviorNodeTest, ResponseNode) {
   EXPECT_THAT(stack_, ElementsAre(FloatNear(0.87f, 0.01f)));
 }
 
+TEST_F(ProcessBehaviorNodeTest, IntegralNodeTimeInSeconds) {
+  IntegralNodeImplementation integral_impl = {
+      .integral_index = 0,
+      .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+      .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
+      .integral_value_range = {-5, 5},
+  };
+  std::vector<IntegralState> integrals = {{
+      .last_input = kNullBehaviorNodeValue,
+      .last_integral = 0,
+  }};
+  context_.integrals = absl::MakeSpan(integrals);
+  context_.previous_input_metrics = InputMetrics{
+      .elapsed_time = Duration32::Zero(),
+  };
+
+  // The integral remains at its initial value of zero as long as the input
+  // remains null, and this gets scaled within `integral_value_range`.
+  current_input_.elapsed_time = Duration32::Seconds(4);
+  stack_.push_back(kNullBehaviorNodeValue);
+  ProcessBehaviorNode(integral_impl, context_);
+  EXPECT_FLOAT_EQ(integrals[0].last_integral, 0);
+  EXPECT_THAT(stack_, ElementsAre(0.5));
+  context_.previous_input_metrics->elapsed_time = current_input_.elapsed_time;
+
+  // After the first non-null input, the integral is still at its initial value.
+  current_input_.elapsed_time += Duration32::Seconds(4);
+  stack_[0] = 0.75f;
+  ProcessBehaviorNode(integral_impl, context_);
+  EXPECT_FLOAT_EQ(integrals[0].last_integral, 0);
+  EXPECT_THAT(stack_, ElementsAre(0.5));
+  context_.previous_input_metrics->elapsed_time = current_input_.elapsed_time;
+
+  // As time passes, the integral increases equal to the input value integrated
+  // over time.
+  current_input_.elapsed_time += Duration32::Seconds(4);
+  stack_[0] = 0.75f;
+  ProcessBehaviorNode(integral_impl, context_);
+  EXPECT_FLOAT_EQ(integrals[0].last_integral, 3);
+  EXPECT_THAT(stack_, ElementsAre(FloatNear(0.8, 0.001f)));
+  context_.previous_input_metrics->elapsed_time = current_input_.elapsed_time;
+
+  // If the integral exceeds `integral_value_range`, the output value of the
+  // node follows `integral_out_of_range_behavior` (in this case, `kMirror`).
+  current_input_.elapsed_time += Duration32::Seconds(4);
+  stack_[0] = 0.75f;
+  ProcessBehaviorNode(integral_impl, context_);
+  EXPECT_FLOAT_EQ(integrals[0].last_integral, 6);
+  EXPECT_THAT(stack_, ElementsAre(FloatNear(0.9, 0.001f)));
+  context_.previous_input_metrics->elapsed_time = current_input_.elapsed_time;
+
+  // If the input becomes null, the integral node treats it as though it were
+  // still its previous value.
+  current_input_.elapsed_time += Duration32::Seconds(4);
+  stack_[0] = kNullBehaviorNodeValue;
+  ProcessBehaviorNode(integral_impl, context_);
+  EXPECT_FLOAT_EQ(integrals[0].last_integral, 9);
+  EXPECT_THAT(stack_, ElementsAre(FloatNear(0.6, 0.001f)));
+}
+
 TEST_F(ProcessBehaviorNodeTest, BinaryOpNodeSum) {
   BrushBehavior::BinaryOpNode binary_op_node = {
       .operation = BrushBehavior::BinaryOp::kSum};

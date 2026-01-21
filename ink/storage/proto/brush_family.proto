@@ -1004,6 +1004,7 @@ message BrushBehavior {
       InterpolationNode interpolation_node = 9;
       NoiseNode noise_node = 10;
       PolarTargetNode polar_target_node = 11;
+      IntegralNode integral_node = 12;
     }
   }
 
@@ -1166,6 +1167,39 @@ message BrushBehavior {
   // To be valid: `interpolation` must be a valid `Interpolation` enumerator.
   message InterpolationNode {
     optional Interpolation interpolation = 1;
+  }
+
+  // Value node for integrating an input value over time or distance.
+  //
+  // Inputs: 1
+  //
+  // Output: The integral of the input value since the start of the stroke,
+  // after inverse-lerping from the specified value range and applying the
+  // specified out-of-range behavior. If the input value ever becomes null, this
+  // node acts as though the input value were still equal to its most recent
+  // non-null value. If the input value starts out null, it is treated as zero
+  // until the first non-null input.
+  //
+  // To be valid:
+  //   * `integrate_over` must be a valid `DampingSource` enumerator.
+  //   * The endpoints of `integral_value_range` must be finite and distinct.
+  //   * `integral_out_of_range_behavior` must be a valid `OutOfRange`
+  //     enumerator.
+  message IntegralNode {
+    // The variable and units (e.g. time or distance) over which the input value
+    // is integrated.
+    optional DampingSource integrate_over = 1;
+
+    // The integral value that maps to 0.0 in the output. Below this value,
+    // `out_of_range_behavior` determines the output value.
+    optional float integral_value_range_start = 2;
+
+    // The integral value that maps to 1.0 in the output. Above this value,
+    // `out_of_range_behavior` determines the output value.
+    optional float integral_value_range_end = 3;
+
+    // What to do with integral values outside the integral value range.
+    optional OutOfRange integral_out_of_range_behavior = 4;
   }
 
   // Terminal node that consumes a single input value to modify a scalar brush

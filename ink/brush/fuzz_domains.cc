@@ -372,6 +372,12 @@ Domain<BrushBehavior::ResponseNode> ValidBrushBehaviorResponseNode() {
   return StructOf<BrushBehavior::ResponseNode>(ValidEasingFunction());
 }
 
+Domain<BrushBehavior::IntegralNode> ValidBrushBehaviorIntegralNode() {
+  return StructOf<BrushBehavior::IntegralNode>(
+      ArbitraryBrushBehaviorDampingSource(), ArbitraryBrushBehaviorOutOfRange(),
+      ArrayOfTwoFiniteDistinctFloats());
+}
+
 Domain<BrushBehavior::BinaryOpNode> ValidBrushBehaviorBinaryOpNode() {
   return StructOf<BrushBehavior::BinaryOpNode>(
       ArbitraryBrushBehaviorBinaryOp());
@@ -441,7 +447,8 @@ ValidBrushBehaviorNodeSubtreeWithMaxDepth(int max_depth) {
           OneOf(BrushBehaviorNodeOf(ValidBrushBehaviorFallbackFilterNode()),
                 BrushBehaviorNodeOf(ValidBrushBehaviorToolTypeFilterNode()),
                 BrushBehaviorNodeOf(ValidBrushBehaviorDampingNode()),
-                BrushBehaviorNodeOf(ValidBrushBehaviorResponseNode()))),
+                BrushBehaviorNodeOf(ValidBrushBehaviorResponseNode()),
+                BrushBehaviorNodeOf(ValidBrushBehaviorIntegralNode()))),
       // Or it could be a binary node with two smaller subtrees as inputs:
       Map(
           [](const std::vector<BrushBehavior::Node>& input1,
@@ -452,7 +459,21 @@ ValidBrushBehaviorNodeSubtreeWithMaxDepth(int max_depth) {
             result.push_back(node);
             return result;
           },
-          smaller_subtree, smaller_subtree, ValidBrushBehaviorBinaryOpNode()));
+          smaller_subtree, smaller_subtree, ValidBrushBehaviorBinaryOpNode()),
+      // Or it could be a trinary node with three smaller subtrees as inputs:
+      Map(
+          [](const std::vector<BrushBehavior::Node>& input1,
+             const std::vector<BrushBehavior::Node>& input2,
+             const std::vector<BrushBehavior::Node>& input3,
+             const BrushBehavior::InterpolationNode& node) {
+            std::vector<BrushBehavior::Node> result = input1;
+            result.insert(result.end(), input2.begin(), input2.end());
+            result.insert(result.end(), input3.begin(), input3.end());
+            result.push_back(node);
+            return result;
+          },
+          smaller_subtree, smaller_subtree, smaller_subtree,
+          ValidBrushBehaviorInterpolationNode()));
 }
 
 // A domain over all valid behavior node trees (i.e. with a terminal node at the
@@ -522,8 +543,8 @@ Domain<BrushBehavior::Node> ValidBrushBehaviorNode(DomainVariant variant) {
       ValidBrushBehaviorSourceNode(), ValidBrushBehaviorConstantNode(),
       ValidBrushBehaviorNoiseNode(), ValidBrushBehaviorFallbackFilterNode(),
       ValidBrushBehaviorToolTypeFilterNode(), ValidBrushBehaviorDampingNode(),
-      ValidBrushBehaviorResponseNode(), ValidBrushBehaviorBinaryOpNode(),
-      ValidBrushBehaviorInterpolationNode(),
+      ValidBrushBehaviorResponseNode(), ValidBrushBehaviorIntegralNode(),
+      ValidBrushBehaviorBinaryOpNode(), ValidBrushBehaviorInterpolationNode(),
       ValidBrushBehaviorTargetNode(variant),
       ValidBrushBehaviorPolarTargetNode());
 }

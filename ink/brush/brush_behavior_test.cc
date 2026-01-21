@@ -313,6 +313,18 @@ TEST(BrushBehaviorTest, StringifyResponseNode) {
             "ResponseNode{kEaseIn}");
 }
 
+TEST(BrushBehaviorTest, StringifyIntegralNode) {
+  EXPECT_EQ(
+      absl::StrCat(BrushBehavior::IntegralNode{
+          .integrate_over =
+              BrushBehavior::DampingSource::kDistanceInCentimeters,
+          .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
+          .integral_value_range = {1, 5},
+      }),
+      "IntegralNode{integrate_over=kDistanceInCentimeters, "
+      "integral_out_of_range_behavior=kRepeat, integral_value_range={1, 5}}");
+}
+
 TEST(BrushBehaviorTest, StringifyBinaryOpNode) {
   EXPECT_EQ(
       absl::StrCat(BrushBehavior::BinaryOpNode{BrushBehavior::BinaryOp::kSum}),
@@ -539,6 +551,28 @@ TEST(BrushBehaviorTest, ResponseNodeEqualAndNotEqual) {
   EXPECT_NE((BrushBehavior::ResponseNode{
                 .response_curve = {EasingFunction::Predefined::kEaseOut}}),
             node);
+}
+
+TEST(BrushBehaviorTest, IntegralNodeEqualAndNotEqual) {
+  BrushBehavior::IntegralNode node = {
+      .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+      .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
+      .integral_value_range = {0, 5},
+  };
+  EXPECT_EQ(
+      (BrushBehavior::IntegralNode{
+          .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
+          .integral_value_range = {0, 5},
+      }),
+      node);
+  EXPECT_NE(
+      (BrushBehavior::IntegralNode{
+          .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
+          .integral_value_range = {0, 6},  // different
+      }),
+      node);
 }
 
 TEST(BrushBehaviorTest, BinaryOpNodeEqualAndNotEqual) {
@@ -844,6 +878,45 @@ TEST(BrushBehaviorTest, ValidateResponseNode) {
           .step_position = EasingFunction::StepPosition::kJumpEnd,
       }});
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+}
+
+TEST(BrushBehaviorTest, ValidateIntegralNode) {
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::IntegralNode{
+          .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
+          .integral_value_range = {0, 5},
+      }),
+      IsOk());
+
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::IntegralNode{
+          .integrate_over = static_cast<BrushBehavior::DampingSource>(123),
+          .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
+          .integral_value_range = {0, 5},
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("non-enumerator value 123")));
+
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::IntegralNode{
+          .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .integral_out_of_range_behavior =
+              static_cast<BrushBehavior::OutOfRange>(111),
+          .integral_value_range = {0, 5},
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("non-enumerator value 111")));
+
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::IntegralNode{
+          .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
+          .integral_value_range = {1, 1},
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("integral_value_range` must hold 2 finite and distinct"
+                         " values")));
 }
 
 TEST(BrushBehaviorTest, ValidateBinaryOpNode) {

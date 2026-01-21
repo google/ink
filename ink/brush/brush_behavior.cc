@@ -253,6 +253,7 @@ int NodeInputCount(const BrushBehavior::FallbackFilterNode& node) { return 1; }
 int NodeInputCount(const BrushBehavior::ToolTypeFilterNode& node) { return 1; }
 int NodeInputCount(const BrushBehavior::DampingNode& node) { return 1; }
 int NodeInputCount(const BrushBehavior::ResponseNode& node) { return 1; }
+int NodeInputCount(const BrushBehavior::IntegralNode& node) { return 1; }
 int NodeInputCount(const BrushBehavior::BinaryOpNode& node) { return 2; }
 int NodeInputCount(const BrushBehavior::InterpolationNode& node) { return 3; }
 int NodeInputCount(const BrushBehavior::TargetNode& node) { return 1; }
@@ -355,6 +356,27 @@ absl::Status ValidateNode(const BrushBehavior::DampingNode& node) {
 
 absl::Status ValidateNode(const BrushBehavior::ResponseNode& node) {
   return ValidateEasingFunction(node.response_curve);
+}
+
+absl::Status ValidateNode(const BrushBehavior::IntegralNode& node) {
+  if (!IsValidBehaviorDampingSource(node.integrate_over)) {
+    return absl::InvalidArgumentError(absl::StrFormat(
+        "`IntegralNode::integrate_over` holds non-enumerator value %d",
+        static_cast<int>(node.integrate_over)));
+  }
+  if (!IsValidBehaviorOutOfRange(node.integral_out_of_range_behavior)) {
+    return absl::InvalidArgumentError(
+        absl::StrFormat("`IntegralNode::integral_out_of_range_behavior` holds "
+                        "non-enumerator value %d",
+                        static_cast<int>(node.integral_out_of_range_behavior)));
+  }
+  if (!IsRangeValid(node.integral_value_range)) {
+    return absl::InvalidArgumentError(absl::StrFormat(
+        "`IntegralNode::integral_value_range` must hold 2 finite and distinct "
+        "values. Got {%f, %f}",
+        node.integral_value_range[0], node.integral_value_range[1]));
+  }
+  return absl::OkStatus();
 }
 
 absl::Status ValidateNode(const BrushBehavior::BinaryOpNode& node) {
@@ -727,6 +749,14 @@ std::string ToFormattedString(const BrushBehavior::BinaryOpNode& node) {
 
 std::string ToFormattedString(const BrushBehavior::InterpolationNode& node) {
   return absl::StrCat("InterpolationNode{", node.interpolation, "}");
+}
+
+std::string ToFormattedString(const BrushBehavior::IntegralNode& node) {
+  return absl::StrCat(
+      "IntegralNode{integrate_over=", node.integrate_over,
+      ", integral_out_of_range_behavior=", node.integral_out_of_range_behavior,
+      ", integral_value_range={", node.integral_value_range[0], ", ",
+      node.integral_value_range[1], "}}");
 }
 
 std::string ToFormattedString(const BrushBehavior::TargetNode& node) {

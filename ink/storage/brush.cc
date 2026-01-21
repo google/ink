@@ -839,6 +839,20 @@ void EncodeBrushBehaviorNode(const BrushBehavior::InterpolationNode& node,
       EncodeBrushBehaviorInterpolation(node.interpolation));
 }
 
+void EncodeBrushBehaviorNode(const BrushBehavior::IntegralNode& node,
+                             proto::BrushBehavior::Node& node_proto_out) {
+  proto::BrushBehavior::IntegralNode* integral_node_proto =
+      node_proto_out.mutable_integral_node();
+  integral_node_proto->set_integrate_over(
+      EncodeBrushBehaviorDampingSource(node.integrate_over));
+  integral_node_proto->set_integral_out_of_range_behavior(
+      EncodeBrushBehaviorOutOfRange(node.integral_out_of_range_behavior));
+  integral_node_proto->set_integral_value_range_start(
+      node.integral_value_range[0]);
+  integral_node_proto->set_integral_value_range_end(
+      node.integral_value_range[1]);
+}
+
 void EncodeBrushBehaviorNode(const BrushBehavior::TargetNode& node,
                              proto::BrushBehavior::Node& node_proto_out) {
   proto::BrushBehavior::TargetNode* target_node_proto =
@@ -973,6 +987,27 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorInterpolationNode(
       DecodeBrushBehaviorInterpolation(node_proto.interpolation());
   if (!interpolation.ok()) return interpolation.status();
   return BrushBehavior::InterpolationNode{.interpolation = *interpolation};
+}
+
+absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorIntegralNode(
+    const proto::BrushBehavior::IntegralNode& node_proto) {
+  absl::StatusOr<BrushBehavior::DampingSource> integrate_over =
+      DecodeBrushBehaviorDampingSource(node_proto.integrate_over());
+  if (!integrate_over.ok()) return integrate_over.status();
+
+  absl::StatusOr<BrushBehavior::OutOfRange> integral_out_of_range_behavior =
+      DecodeBrushBehaviorOutOfRange(
+          node_proto.integral_out_of_range_behavior());
+  if (!integral_out_of_range_behavior.ok()) {
+    return integral_out_of_range_behavior.status();
+  }
+
+  return BrushBehavior::IntegralNode{
+      .integrate_over = *integrate_over,
+      .integral_out_of_range_behavior = *integral_out_of_range_behavior,
+      .integral_value_range = {node_proto.integral_value_range_start(),
+                               node_proto.integral_value_range_end()},
+  };
 }
 
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorTargetNode(
@@ -1373,6 +1408,8 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNodeUnvalidated(
     case proto::BrushBehavior::Node::kInterpolationNode:
       return DecodeBrushBehaviorInterpolationNode(
           node_proto.interpolation_node());
+    case proto::BrushBehavior::Node::kIntegralNode:
+      return DecodeBrushBehaviorIntegralNode(node_proto.integral_node());
     case proto::BrushBehavior::Node::kTargetNode:
       return DecodeBrushBehaviorTargetNode(node_proto.target_node());
     case proto::BrushBehavior::Node::kPolarTargetNode:

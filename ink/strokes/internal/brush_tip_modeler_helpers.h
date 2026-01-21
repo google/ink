@@ -47,8 +47,8 @@ inline constexpr float kNullBehaviorNodeValue =
 inline bool IsNullBehaviorNodeValue(float value) { return std::isnan(value); }
 
 struct NoiseNodeImplementation {
-  // The index into `BehaviorNodeContext::*_noise_generators_` for the latest
-  // noise generator state of this noise node.
+  // The index into `BehaviorNodeContext::noise_generators` for the latest noise
+  // generator state of this noise node.
   size_t generator_index;
   // The below fields are copies of the same fields from the
   // `BrushBehavior::NoiseNode` that this struct helps implement.
@@ -57,8 +57,8 @@ struct NoiseNodeImplementation {
 };
 
 struct DampingNodeImplementation {
-  // The index into `BehaviorNodeContext::*_damped_values_` for the latest
-  // damped value of this damping node.
+  // The index into `BehaviorNodeContext::damped_values` for the latest damped
+  // value of this damping node.
   size_t damping_index;
   // The below fields are copies of the same fields from the
   // `BrushBehavior::DampingNode` that this struct helps implement.
@@ -66,8 +66,19 @@ struct DampingNodeImplementation {
   float damping_gap;
 };
 
+struct IntegralNodeImplementation {
+  // The index into `BehaviorNodeContext::integrals` for the latest integration
+  // state of this integral node.
+  size_t integral_index;
+  // The below fields are copies of the same fields from the
+  // `BrushBehavior::IntegralNode` that this struct helps implement.
+  BrushBehavior::DampingSource integrate_over;
+  BrushBehavior::OutOfRange integral_out_of_range_behavior;
+  std::array<float, 2> integral_value_range;
+};
+
 struct TargetNodeImplementation {
-  // The index into `BehaviorNodeContext::*_target_modifiers_` for the latest
+  // The index into `BehaviorNodeContext::target_modifiers` for the latest
   // modifier value of this target node.
   size_t target_index;
   // The below field is a copy of the same field from the
@@ -91,8 +102,18 @@ using BehaviorNodeImplementation =
                  NoiseNodeImplementation, BrushBehavior::FallbackFilterNode,
                  BrushBehavior::ToolTypeFilterNode, DampingNodeImplementation,
                  EasingImplementation, BrushBehavior::BinaryOpNode,
-                 BrushBehavior::InterpolationNode, TargetNodeImplementation,
-                 PolarTargetNodeImplementation>;
+                 BrushBehavior::InterpolationNode, IntegralNodeImplementation,
+                 TargetNodeImplementation, PolarTargetNodeImplementation>;
+
+// Holds mutable state for an integral node.
+struct IntegralState {
+  // The most recent non-null value (if any) of the input node being integrated.
+  float last_input;
+  // The most recent integral value of the `IntegralNode` (i.e. the running
+  // total so far), before being mapped through `integral_value_range` and
+  // `integral_out_of_range_behavior`.
+  float last_integral;
+};
 
 // Holds references to stroke data needed by `ProcessBehaviorNode()`, as well as
 // references to mutable state that that function will need to update.
@@ -106,6 +127,7 @@ struct BehaviorNodeContext {
   std::vector<float>& stack;
   absl::Span<NoiseGenerator> noise_generators;
   absl::Span<float> damped_values;
+  absl::Span<IntegralState> integrals;
   absl::Span<float> target_modifiers;
 };
 

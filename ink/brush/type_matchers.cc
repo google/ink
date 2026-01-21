@@ -222,6 +222,19 @@ Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
 }
 
 Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
+    const BrushBehavior::IntegralNode& expected) {
+  return VariantWith<BrushBehavior::IntegralNode>(AllOf(
+      Field("integrate_over", &BrushBehavior::IntegralNode::integrate_over,
+            Eq(expected.integrate_over)),
+      Field("integral_out_of_range_behavior",
+            &BrushBehavior::IntegralNode::integral_out_of_range_behavior,
+            Eq(expected.integral_out_of_range_behavior)),
+      Field("integral_value_range",
+            &BrushBehavior::IntegralNode::integral_value_range,
+            ContainerEq(expected.integral_value_range))));
+}
+
+Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
     const BrushBehavior::BinaryOpNode& expected) {
   return VariantWith<BrushBehavior::BinaryOpNode>(
       Field("operation", &BrushBehavior::BinaryOpNode::operation,

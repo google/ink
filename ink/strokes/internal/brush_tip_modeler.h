@@ -124,6 +124,7 @@ class BrushTipModeler {
   void AppendBehaviorNode(const BrushBehavior::ResponseNode& node);
   void AppendBehaviorNode(const BrushBehavior::BinaryOpNode& node);
   void AppendBehaviorNode(const BrushBehavior::InterpolationNode& node);
+  void AppendBehaviorNode(const BrushBehavior::IntegralNode& node);
   void AppendBehaviorNode(const BrushBehavior::TargetNode& node);
   void AppendBehaviorNode(const BrushBehavior::PolarTargetNode& node);
 
@@ -200,6 +201,9 @@ class BrushTipModeler {
   // These next two vectors must always be the same size:
   std::vector<float> current_damped_values_;
   std::vector<float> fixed_damped_values_;
+  // These next two vectors must always be the same size:
+  std::vector<IntegralState> current_integrals_;
+  std::vector<IntegralState> fixed_integrals_;
   // These next three vectors must always be the same size:
   std::vector<BrushBehavior::Target> behavior_targets_;
   std::vector<float> current_target_modifiers_;

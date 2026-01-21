@@ -57,10 +57,11 @@ static constexpr int kFallbackFilterNode = 3;
 static constexpr int kToolTypeFilterNode = 4;
 static constexpr int kDampingNode = 5;
 static constexpr int kResponseNode = 6;
-static constexpr int kBinaryOpNode = 7;
-static constexpr int kInterpolationNode = 8;
-static constexpr int kTargetNode = 9;
-static constexpr int kPolarTargetNode = 10;
+static constexpr int kIntegralNode = 7;
+static constexpr int kBinaryOpNode = 8;
+static constexpr int kInterpolationNode = 9;
+static constexpr int kTargetNode = 10;
+static constexpr int kPolarTargetNode = 11;
 
 }  // namespace
 
@@ -185,6 +186,21 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createResponse)
       env);
 }
 
+JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createIntegral)
+(JNIEnv* env, jobject thiz, jint integrate_over, jfloat integral_value_start,
+ jfloat integral_value_end, jint integral_out_of_range_behavior) {
+  return ValidateAndHoistNodeOrThrow(
+      BrushBehavior::IntegralNode{
+          .integrate_over =
+              static_cast<BrushBehavior::DampingSource>(integrate_over),
+          .integral_out_of_range_behavior =
+              static_cast<BrushBehavior::OutOfRange>(
+                  integral_out_of_range_behavior),
+          .integral_value_range = {integral_value_start, integral_value_end},
+      },
+      env);
+}
+
 JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createBinaryOp)
 (JNIEnv* env, jobject thiz, jint operation) {
   return ValidateAndHoistNodeOrThrow(
@@ -247,6 +263,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getNodeType)
       },
       [](const BrushBehavior::DampingNode&) { return kDampingNode; },
       [](const BrushBehavior::ResponseNode&) { return kResponseNode; },
+      [](const BrushBehavior::IntegralNode&) { return kIntegralNode; },
       [](const BrushBehavior::BinaryOpNode&) { return kBinaryOpNode; },
       [](const BrushBehavior::InterpolationNode&) {
         return kInterpolationNode;
@@ -387,6 +404,37 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong,
       std::get<BrushBehavior::ResponseNode>(
           CastToBrushBehaviorNode(node_native_pointer))
           .response_curve);
+}
+
+// IntegralNode accessors:
+
+JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getIntegrateOverInt)
+(JNIEnv* env, jobject thiz, jlong node_native_pointer) {
+  return static_cast<jint>(std::get<BrushBehavior::IntegralNode>(
+                               CastToBrushBehaviorNode(node_native_pointer))
+                               .integrate_over);
+}
+
+JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getIntegralValueRangeStart)
+(JNIEnv* env, jobject thiz, jlong node_native_pointer) {
+  return std::get<BrushBehavior::IntegralNode>(
+             CastToBrushBehaviorNode(node_native_pointer))
+      .integral_value_range[0];
+}
+
+JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getIntegralValueRangeEnd)
+(JNIEnv* env, jobject thiz, jlong node_native_pointer) {
+  return std::get<BrushBehavior::IntegralNode>(
+             CastToBrushBehaviorNode(node_native_pointer))
+      .integral_value_range[1];
+}
+
+JNI_METHOD(brush, BrushBehaviorNodeNative, jint,
+           getIntegralOutOfRangeBehaviorInt)
+(JNIEnv* env, jobject thiz, jlong node_native_pointer) {
+  return static_cast<jint>(std::get<BrushBehavior::IntegralNode>(
+                               CastToBrushBehaviorNode(node_native_pointer))
+                               .integral_out_of_range_behavior);
 }
 
 // BinaryOpNode accessors:

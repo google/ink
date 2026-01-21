@@ -342,6 +342,8 @@ void BrushTipModeler::StartStroke(const BrushTip* absl_nonnull brush_tip,
   fixed_noise_generators_.clear();
   current_damped_values_.clear();
   fixed_damped_values_.clear();
+  current_integrals_.clear();
+  fixed_integrals_.clear();
   behavior_targets_.clear();
   current_target_modifiers_.clear();
   fixed_target_modifiers_.clear();
@@ -426,6 +428,22 @@ void BrushTipModeler::AppendBehaviorNode(
 }
 
 void BrushTipModeler::AppendBehaviorNode(
+    const BrushBehavior::IntegralNode& node) {
+  behavior_nodes_.push_back(IntegralNodeImplementation{
+      .integral_index = current_integrals_.size(),
+      .integrate_over = node.integrate_over,
+      .integral_out_of_range_behavior = node.integral_out_of_range_behavior,
+      .integral_value_range = node.integral_value_range,
+  });
+  IntegralState initial_state = {
+      .last_input = kNullBehaviorNodeValue,
+      .last_integral = 0,
+  };
+  current_integrals_.push_back(initial_state);
+  fixed_integrals_.push_back(initial_state);
+}
+
+void BrushTipModeler::AppendBehaviorNode(
     const BrushBehavior::TargetNode& node) {
   behavior_nodes_.push_back(TargetNodeImplementation{
       .target_index = behavior_targets_.size(),
@@ -471,6 +489,8 @@ void BrushTipModeler::UpdateStroke(
   absl::c_copy(fixed_noise_generators_, current_noise_generators_.begin());
   ABSL_DCHECK_EQ(fixed_damped_values_.size(), current_damped_values_.size());
   absl::c_copy(fixed_damped_values_, current_damped_values_.begin());
+  ABSL_DCHECK_EQ(fixed_integrals_.size(), current_integrals_.size());
+  absl::c_copy(fixed_integrals_, current_integrals_.begin());
   ABSL_DCHECK_EQ(fixed_target_modifiers_.size(),
                  current_target_modifiers_.size());
   absl::c_copy(fixed_target_modifiers_, current_target_modifiers_.begin());
@@ -514,6 +534,8 @@ void BrushTipModeler::UpdateStroke(
   absl::c_copy(current_noise_generators_, fixed_noise_generators_.begin());
   ABSL_DCHECK_EQ(current_damped_values_.size(), fixed_damped_values_.size());
   absl::c_copy(current_damped_values_, fixed_damped_values_.begin());
+  ABSL_DCHECK_EQ(current_integrals_.size(), fixed_integrals_.size());
+  absl::c_copy(current_integrals_, fixed_integrals_.begin());
   ABSL_DCHECK_EQ(current_target_modifiers_.size(),
                  fixed_target_modifiers_.size());
   absl::c_copy(current_target_modifiers_, fixed_target_modifiers_.begin());
@@ -655,6 +677,7 @@ void BrushTipModeler::AddNewTipState(
       .stack = behavior_stack_,
       .noise_generators = absl::MakeSpan(current_noise_generators_),
       .damped_values = absl::MakeSpan(current_damped_values_),
+      .integrals = absl::MakeSpan(current_integrals_),
       .target_modifiers = absl::MakeSpan(current_target_modifiers_),
   };
   ABSL_DCHECK(behavior_stack_.empty());

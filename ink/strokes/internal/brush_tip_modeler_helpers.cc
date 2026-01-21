@@ -538,6 +538,68 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::InterpolationNode& node,
   }
 }
 
+void ProcessBehaviorNodeImpl(const IntegralNodeImplementation& node,
+                             const BehaviorNodeContext& context) {
+  ABSL_DCHECK(!context.stack.empty());
+  IntegralState& state = context.integrals[node.integral_index];
+  float new_input = context.stack.back();
+  if (IsNullBehaviorNodeValue(state.last_input)) {
+    // As long as all previous inputs have been null, the integral remains at
+    // its initial value of zero.
+    ABSL_DCHECK_EQ(state.last_integral, 0);
+    state.last_input = new_input;
+  } else {
+    // Otherwise, we've had at least one previous non-null input. If the current
+    // input is null, use the last non-null input value unchanged.
+    if (IsNullBehaviorNodeValue(new_input)) {
+      new_input = state.last_input;
+    }
+    // Since there was at least one previous input, we know that
+    // `context.previous_input_metrics` is present.
+    ABSL_DCHECK(context.previous_input_metrics.has_value());
+    // Compute the progress delta between the last input and this one.
+    float delta = 0;
+    switch (node.integrate_over) {
+      case BrushBehavior::DampingSource::kDistanceInCentimeters: {
+        // If no mapping from stroke units to physical units is available, then
+        // don't perform any integration (i.e. leave delta at zero).
+        if (context.input_modeler_state.stroke_unit_length.has_value()) {
+          PhysicalDistance traveled_distance_delta =
+              *context.input_modeler_state.stroke_unit_length *
+              (context.current_input.traveled_distance -
+               context.previous_input_metrics->traveled_distance);
+          delta = traveled_distance_delta.ToCentimeters();
+        }
+      } break;
+      case BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize: {
+        float traveled_distance_delta =
+            context.current_input.traveled_distance -
+            context.previous_input_metrics->traveled_distance;
+        delta = traveled_distance_delta / context.brush_size;
+      } break;
+      case BrushBehavior::DampingSource::kTimeInSeconds: {
+        Duration32 elapsed_time_delta =
+            context.current_input.elapsed_time -
+            context.previous_input_metrics->elapsed_time;
+        delta = elapsed_time_delta.ToSeconds();
+      } break;
+    }
+    // Compute a new integral value, using the trapezoidal rule (see
+    // https://en.wikipedia.org/wiki/Trapezoidal_rule).
+    state.last_integral += 0.5 * (state.last_input + new_input) * delta;
+    state.last_input = new_input;
+  }
+
+  float output = ApplyOutOfRangeBehavior(
+      node.integral_out_of_range_behavior,
+      InverseLerp(node.integral_value_range[0], node.integral_value_range[1],
+                  state.last_integral));
+  if (!std::isfinite(output)) {
+    output = kNullBehaviorNodeValue;
+  }
+  context.stack.back() = output;
+}
+
 void ProcessBehaviorNodeImpl(const TargetNodeImplementation& node,
                              const BehaviorNodeContext& context) {
   ABSL_DCHECK(!context.stack.empty());

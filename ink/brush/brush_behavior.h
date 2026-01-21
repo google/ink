@@ -559,6 +559,27 @@ struct BrushBehavior {
     friend bool operator==(const ResponseNode&, const ResponseNode&) = default;
   };
 
+  // Value node for integrating an input value over time or distance.
+  // Inputs: 1
+  // Output: The integral of the input value since the start of the stroke,
+  //     after inverse-lerping from the specified value range and applying the
+  //     specified out-of-range behavior. If the input value ever becomes null,
+  //     this node acts as though the input value were still equal to its most
+  //     recent non-null value. If the input value starts out null, it is
+  //     treated as zero until the first non-null input.
+  // To be valid:
+  //   - `integrate_over` must be a valid `DampingSource` enumerator.
+  //   - `integral_out_of_range_behavior` must be a valid `OutOfRange`
+  //     enumerator.
+  //   - The endpoints of `integral_value_range` must be finite and distinct.
+  struct IntegralNode {
+    DampingSource integrate_over;
+    OutOfRange integral_out_of_range_behavior;
+    std::array<float, 2> integral_value_range;
+
+    friend bool operator==(const IntegralNode&, const IntegralNode&) = default;
+  };
+
   // Value node for combining two other values with a binary operation.
   // Inputs: 2
   // Output: The result of the specified operation on the two input values. See
@@ -631,10 +652,10 @@ struct BrushBehavior {
   // value, or a "terminal node" which consumes one or more input values and
   // applies some effect to the brush tip (but does not produce any output
   // value).
-  using Node =
-      std::variant<SourceNode, ConstantNode, NoiseNode, FallbackFilterNode,
-                   ToolTypeFilterNode, DampingNode, ResponseNode, BinaryOpNode,
-                   InterpolationNode, TargetNode, PolarTargetNode>;
+  using Node = std::variant<SourceNode, ConstantNode, NoiseNode,
+                            FallbackFilterNode, ToolTypeFilterNode, DampingNode,
+                            ResponseNode, IntegralNode, BinaryOpNode,
+                            InterpolationNode, TargetNode, PolarTargetNode>;
 
   std::vector<Node> nodes;
 
