@@ -44,4 +44,6 @@ jobs:
         echo "BAZEL_AUTH=--google_default_credentials" >> $GITHUB_ENV
 
     - name: Test
-      run: bazel test --test_output=errors ${BAZEL_CACHE:-} ${BAZEL_AUTH:-} --keep_going //ink/...
+      run: |
+        USE_BAZEL_VERSION=8.5.1 bazel test --test_output=errors ${BAZEL_CACHE:-} ${BAZEL_AUTH:-} \
+          --keep_going //ink/...
