@@ -30,6 +30,7 @@ cc_library(
 cc_library(
     name = "canvas_mesh_renderer_jni",
     srcs = ["canvas_mesh_renderer_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         "//ink/geometry:mesh_format",
         "//ink/geometry/internal/jni:mesh_format_jni_helper",

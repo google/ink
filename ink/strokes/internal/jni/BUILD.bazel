@@ -21,6 +21,7 @@ package(
 
 cc_library(
     name = "jni",
+    tags = ["keep_dep"],
     visibility = ["//visibility:public"],
     deps = [
         ":in_progress_stroke_jni",
@@ -34,6 +35,7 @@ cc_library(
 cc_library(
     name = "stroke_jni",
     srcs = ["stroke_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":stroke_input_jni_helper",
         ":stroke_jni_helper",
@@ -72,6 +74,7 @@ cc_library(
 cc_library(
     name = "in_progress_stroke_jni",
     srcs = ["in_progress_stroke_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":in_progress_stroke_jni_helper",
         ":stroke_input_jni_helper",
@@ -170,6 +173,7 @@ cc_library(
 cc_library(
     name = "stroke_input_batch_jni",
     srcs = ["stroke_input_batch_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":stroke_input_jni_helper",
         "//ink/geometry:angle",
@@ -193,6 +197,7 @@ cc_library(
 cc_library(
     name = "mesh_creation_jni",
     srcs = ["mesh_creation_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":stroke_input_jni_helper",
         "//ink/geometry:mesh",
