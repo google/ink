@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   bazel_test:
     strategy:
@@ -15,35 +19,25 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    env:
+      USE_BAZEL_VERSION: 8.5.1
+
     steps:
     - uses: actions/checkout@v4
 
-    - name: Cache Bazel repository cache
-      if: matrix.os == 'ubuntu-latest'
-      # Cache the Bazel repository cache based on
-      # https://github.com/actions/cache/blob/main/examples.md#---bazel
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/bazel
-        key: ${{ runner.os }}-bazel-${{ hashFiles('.bazelrc', 'MODULE.bazel') }}
-        restore-keys: |
-          ${{ runner.os }}-bazel-
-
-    - name: Authenticate to Google Cloud
+    - uses: bazel-contrib/setup-bazel@0.18.0
       if: github.repository == 'google/ink'
-      uses: google-github-actions/auth@v2
       with:
-        credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
-        export_environment_variables: true
-
-    - name: Set up Bazel remote cache
-      if: github.repository == 'google/ink'
-      run: |
-        echo "BAZEL_CACHE=--remote_cache=https://storage.googleapis.com/ink-open-source-ci/" >> $GITHUB_ENV
-        echo "BAZEL_AUTH=--google_default_credentials" >> $GITHUB_ENV
+        bazelisk-cache: true
+        disk-cache: true
+        repository-cache: true
+        external-cache: true
+        google-credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
 
     - name: Test
-      run: |
-        USE_BAZEL_VERSION=8.5.1 bazel test --test_output=errors ${BAZEL_CACHE:-} ${BAZEL_AUTH:-} \
-          --keep_going //ink/...
+      run: >
+        bazel test
+        ${{ github.repository == 'google/ink' &&
+        '--google_default_credentials --remote_cache=https://storage.googleapis.com/ink-open-source-ci/'
+        || ''}}
+        --test_output=errors --keep_going //ink/...
