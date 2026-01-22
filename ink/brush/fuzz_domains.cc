@@ -132,15 +132,15 @@ Domain<BrushBehavior::BinaryOp> ArbitraryBrushBehaviorBinaryOp() {
 }
 // LINT.ThenChange(brush_behavior.h:binary_op)
 
-// LINT.IfChange(damping_source)
-Domain<BrushBehavior::DampingSource> ArbitraryBrushBehaviorDampingSource() {
+// LINT.IfChange(progress_domain)
+Domain<BrushBehavior::ProgressDomain> ArbitraryBrushBehaviorProgressDomain() {
   return ElementOf({
-      BrushBehavior::DampingSource::kDistanceInCentimeters,
-      BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize,
-      BrushBehavior::DampingSource::kTimeInSeconds,
+      BrushBehavior::ProgressDomain::kDistanceInCentimeters,
+      BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize,
+      BrushBehavior::ProgressDomain::kTimeInSeconds,
   });
 }
-// LINT.ThenChange(brush_behavior.h:damping_source)
+// LINT.ThenChange(brush_behavior.h:progress_domain)
 
 // LINT.IfChange(interpolation)
 Domain<BrushBehavior::Interpolation> ArbitraryBrushBehaviorInterpolation() {
@@ -347,7 +347,7 @@ Domain<BrushBehavior::ConstantNode> ValidBrushBehaviorConstantNode() {
 
 Domain<BrushBehavior::NoiseNode> ValidBrushBehaviorNoiseNode() {
   return StructOf<BrushBehavior::NoiseNode>(
-      Arbitrary<uint32_t>(), ArbitraryBrushBehaviorDampingSource(),
+      Arbitrary<uint32_t>(), ArbitraryBrushBehaviorProgressDomain(),
       FinitePositiveFloat());
 }
 
@@ -365,7 +365,7 @@ ValidBrushBehaviorToolTypeFilterNode() {
 
 Domain<BrushBehavior::DampingNode> ValidBrushBehaviorDampingNode() {
   return StructOf<BrushBehavior::DampingNode>(
-      ArbitraryBrushBehaviorDampingSource(), FiniteNonNegativeFloat());
+      ArbitraryBrushBehaviorProgressDomain(), FiniteNonNegativeFloat());
 }
 
 Domain<BrushBehavior::ResponseNode> ValidBrushBehaviorResponseNode() {
@@ -374,8 +374,8 @@ Domain<BrushBehavior::ResponseNode> ValidBrushBehaviorResponseNode() {
 
 Domain<BrushBehavior::IntegralNode> ValidBrushBehaviorIntegralNode() {
   return StructOf<BrushBehavior::IntegralNode>(
-      ArbitraryBrushBehaviorDampingSource(), ArbitraryBrushBehaviorOutOfRange(),
-      ArrayOfTwoFiniteDistinctFloats());
+      ArbitraryBrushBehaviorProgressDomain(),
+      ArbitraryBrushBehaviorOutOfRange(), ArrayOfTwoFiniteDistinctFloats());
 }
 
 Domain<BrushBehavior::BinaryOpNode> ValidBrushBehaviorBinaryOpNode() {

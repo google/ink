@@ -239,11 +239,11 @@ TEST(BrushBehaviorTest, StringifyBinaryOp) {
             "BinaryOp(147)");
 }
 
-TEST(BrushBehaviorTest, StringifyDampingSource) {
-  EXPECT_EQ(absl::StrCat(BrushBehavior::DampingSource::kTimeInSeconds),
+TEST(BrushBehaviorTest, StringifyProgressDomain) {
+  EXPECT_EQ(absl::StrCat(BrushBehavior::ProgressDomain::kTimeInSeconds),
             "kTimeInSeconds");
-  EXPECT_EQ(absl::StrCat(static_cast<BrushBehavior::DampingSource>(73)),
-            "DampingSource(73)");
+  EXPECT_EQ(absl::StrCat(static_cast<BrushBehavior::ProgressDomain>(73)),
+            "ProgressDomain(73)");
 }
 
 TEST(BrushBehaviorTest, StringifyInterpolation) {
@@ -280,7 +280,7 @@ TEST(BrushBehaviorTest, StringifyConstantNode) {
 TEST(BrushBehaviorTest, StringifyNoiseNode) {
   EXPECT_EQ(absl::StrCat(BrushBehavior::NoiseNode{
                 .seed = 0xEffaced,
-                .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+                .vary_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
                 .base_period = 0.25f}),
             "NoiseNode{seed=0x0effaced, vary_over=kTimeInSeconds, "
             "base_period=0.25}");
@@ -301,7 +301,7 @@ TEST(BrushBehaviorTest, StringifyToolTypeFilterNode) {
 
 TEST(BrushBehaviorTest, StringifyDampingNode) {
   EXPECT_EQ(absl::StrCat(BrushBehavior::DampingNode{
-                .damping_source = BrushBehavior::DampingSource::kTimeInSeconds,
+                .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
                 .damping_gap = 0.25f,
             }),
             "DampingNode{damping_source=kTimeInSeconds, damping_gap=0.25}");
@@ -317,7 +317,7 @@ TEST(BrushBehaviorTest, StringifyIntegralNode) {
   EXPECT_EQ(
       absl::StrCat(BrushBehavior::IntegralNode{
           .integrate_over =
-              BrushBehavior::DampingSource::kDistanceInCentimeters,
+              BrushBehavior::ProgressDomain::kDistanceInCentimeters,
           .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
           .integral_value_range = {1, 5},
       }),
@@ -470,27 +470,27 @@ TEST(BrushBehaviorTest, ConstantNodeEqualAndNotEqual) {
 TEST(BrushBehaviorTest, NoiseNodeEqualAndNotEqual) {
   BrushBehavior::NoiseNode node = {
       .seed = 12345,
-      .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+      .vary_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
       .base_period = 0.25f};
   EXPECT_EQ((BrushBehavior::NoiseNode{
                 .seed = 12345,
-                .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+                .vary_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
                 .base_period = 0.25f}),
             node);
   EXPECT_NE((BrushBehavior::NoiseNode{
                 .seed = 54321,  // different
-                .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+                .vary_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
                 .base_period = 0.25f}),
             node);
   EXPECT_NE(
       (BrushBehavior::NoiseNode{.seed = 12345,
-                                .vary_over = BrushBehavior::DampingSource::
+                                .vary_over = BrushBehavior::ProgressDomain::
                                     kDistanceInCentimeters,  // different
                                 .base_period = 0.25f}),
       node);
   EXPECT_NE((BrushBehavior::NoiseNode{
                 .seed = 12345,
-                .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+                .vary_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
                 .base_period = 0.75f}),  // different
             node);
 }
@@ -521,22 +521,22 @@ TEST(BrushBehaviorTest, ToolTypeFilterNodeEqualAndNotEqual) {
 
 TEST(BrushBehaviorTest, DampingNodeEqualAndNotEqual) {
   BrushBehavior::DampingNode node = {
-      .damping_source = BrushBehavior::DampingSource::kTimeInSeconds,
+      .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
       .damping_gap = 0.5,
   };
   EXPECT_EQ((BrushBehavior::DampingNode{
-                .damping_source = BrushBehavior::DampingSource::kTimeInSeconds,
+                .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
                 .damping_gap = 0.5,
             }),
             node);
   EXPECT_NE((BrushBehavior::DampingNode{
-                .damping_source = static_cast<BrushBehavior::DampingSource>(
+                .damping_source = static_cast<BrushBehavior::ProgressDomain>(
                     123),  // different
                 .damping_gap = 0.5,
             }),
             node);
   EXPECT_NE((BrushBehavior::DampingNode{
-                .damping_source = BrushBehavior::DampingSource::kTimeInSeconds,
+                .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
                 .damping_gap = 0.75,  // different
             }),
             node);
@@ -555,20 +555,20 @@ TEST(BrushBehaviorTest, ResponseNodeEqualAndNotEqual) {
 
 TEST(BrushBehaviorTest, IntegralNodeEqualAndNotEqual) {
   BrushBehavior::IntegralNode node = {
-      .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+      .integrate_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
       .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
       .integral_value_range = {0, 5},
   };
   EXPECT_EQ(
       (BrushBehavior::IntegralNode{
-          .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .integrate_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
           .integral_value_range = {0, 5},
       }),
       node);
   EXPECT_NE(
       (BrushBehavior::IntegralNode{
-          .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .integrate_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
           .integral_value_range = {0, 6},  // different
       }),
@@ -777,14 +777,14 @@ TEST(BrushBehaviorTest, ValidateNoiseNode) {
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::NoiseNode{
           .seed = 12345,
-          .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .vary_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .base_period = 0.25,
       }),
       IsOk());
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::NoiseNode{
           .seed = 12345,
-          .vary_over = static_cast<BrushBehavior::DampingSource>(123),
+          .vary_over = static_cast<BrushBehavior::ProgressDomain>(123),
           .base_period = 0.25,
       }),
       StatusIs(absl::StatusCode::kInvalidArgument,
@@ -792,7 +792,7 @@ TEST(BrushBehaviorTest, ValidateNoiseNode) {
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::NoiseNode{
           .seed = 12345,
-          .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .vary_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .base_period = 0,
       }),
       StatusIs(absl::StatusCode::kInvalidArgument,
@@ -800,7 +800,7 @@ TEST(BrushBehaviorTest, ValidateNoiseNode) {
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::NoiseNode{
           .seed = 12345,
-          .vary_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .vary_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .base_period = kInfinity,
       }),
       StatusIs(absl::StatusCode::kInvalidArgument,
@@ -836,21 +836,21 @@ TEST(BrushBehaviorTest, ValidateToolTypeFilterNode) {
 TEST(BrushBehaviorTest, ValidateDampingNode) {
   EXPECT_EQ(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
-          .damping_source = BrushBehavior::DampingSource::kTimeInSeconds,
+          .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .damping_gap = 0.25,
       }),
       absl::OkStatus());
 
   absl::Status status =
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
-          .damping_source = static_cast<BrushBehavior::DampingSource>(123),
+          .damping_source = static_cast<BrushBehavior::ProgressDomain>(123),
           .damping_gap = 0.25,
       });
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("non-enumerator value 123"));
 
   status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
-      .damping_source = BrushBehavior::DampingSource::kTimeInSeconds,
+      .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
       .damping_gap = -1,
   });
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
@@ -858,7 +858,7 @@ TEST(BrushBehaviorTest, ValidateDampingNode) {
               HasSubstr("damping_gap` must be finite and non-negative"));
 
   status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
-      .damping_source = BrushBehavior::DampingSource::kTimeInSeconds,
+      .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
       .damping_gap = kInfinity,
   });
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
@@ -883,7 +883,7 @@ TEST(BrushBehaviorTest, ValidateResponseNode) {
 TEST(BrushBehaviorTest, ValidateIntegralNode) {
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::IntegralNode{
-          .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .integrate_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
           .integral_value_range = {0, 5},
       }),
@@ -891,7 +891,7 @@ TEST(BrushBehaviorTest, ValidateIntegralNode) {
 
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::IntegralNode{
-          .integrate_over = static_cast<BrushBehavior::DampingSource>(123),
+          .integrate_over = static_cast<BrushBehavior::ProgressDomain>(123),
           .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
           .integral_value_range = {0, 5},
       }),
@@ -900,7 +900,7 @@ TEST(BrushBehaviorTest, ValidateIntegralNode) {
 
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::IntegralNode{
-          .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .integrate_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .integral_out_of_range_behavior =
               static_cast<BrushBehavior::OutOfRange>(111),
           .integral_value_range = {0, 5},
@@ -910,7 +910,7 @@ TEST(BrushBehaviorTest, ValidateIntegralNode) {
 
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::IntegralNode{
-          .integrate_over = BrushBehavior::DampingSource::kTimeInSeconds,
+          .integrate_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .integral_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
           .integral_value_range = {1, 1},
       }),
@@ -1062,7 +1062,7 @@ TEST(BrushBehaviorTest, ValidateBrushBehavior) {
           BrushBehavior::FallbackFilterNode{
               BrushBehavior::OptionalInputProperty::kTilt},
           BrushBehavior::DampingNode{
-              .damping_source = BrushBehavior::DampingSource::kTimeInSeconds,
+              .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
               .damping_gap = 0.25,
           },
           BrushBehavior::ConstantNode{0.75},
@@ -1115,7 +1115,7 @@ TEST(BrushBehaviorTest, ValidateBrushBehaviorTopLevel) {
           BrushBehavior::FallbackFilterNode{
               BrushBehavior::OptionalInputProperty::kTilt},
           BrushBehavior::DampingNode{
-              .damping_source = BrushBehavior::DampingSource::kTimeInSeconds,
+              .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
               .damping_gap = 0.25,
           },
           BrushBehavior::ConstantNode{0.75},

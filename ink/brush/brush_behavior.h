@@ -409,27 +409,26 @@ struct BrushBehavior {
   //   ../storage/proto/brush_family.proto:binary_op,
   // )
 
-  // Dimensions/units for measuring the `damping_gap` field of a
-  // `DampingNode`.
-  // LINT.IfChange(damping_source)
-  enum class DampingSource {
-    // Value damping occurs over distance traveled by the input pointer, and the
-    // `damping_gap` is measured in centimeters. If the input data does not
-    // indicate the relationship between stroke units and physical units
-    // (e.g. as may be the case for programmatically-generated inputs), then no
-    // damping will be performed (i.e. the `damping_gap` will be treated as
-    // zero).
+  // Dimensions and units for measuring distance/time along the length/duration
+  // of a stroke.
+  // LINT.IfChange(progress_domain)
+  enum class ProgressDomain {
+    // Progress in input distance traveled since the start of the stroke,
+    // measured in centimeters. If the input data does not indicate the
+    // relationship between stroke units and physical units (e.g. as may be the
+    // case for programmatically-generated inputs), then special handling will
+    // be applied based on the node type.
     kDistanceInCentimeters,
-    // Value damping occurs over distance traveled by the input pointer, and the
-    // `damping_gap` is measured in multiples of the brush size.
+    // Progress in input distance traveled since the start of the stroke,
+    // measured in multiples of the brush size.
     kDistanceInMultiplesOfBrushSize,
-    // Value damping occurs over time, and the `damping_gap` is measured in
+    // Progress in input time since the start of the stroke, measured in
     // seconds.
     kTimeInSeconds,
   };
   // LINT.ThenChange(
-  //   fuzz_domains.cc:damping_source,
-  //   ../storage/proto/brush_family.proto:damping_source,
+  //   fuzz_domains.cc:progress_domain,
+  //   ../storage/proto/brush_family.proto:progress_domain,
   // )
 
   // An interpolation function for combining three values in an
@@ -485,11 +484,11 @@ struct BrushBehavior {
   // Inputs: 0
   // Output: The current random value.
   // To be valid:
-  //   - `vary_over` must be a valid `DampingSource` enumerator.
+  //   - `vary_over` must be a valid `ProgressDomain` enumerator.
   //   - `base_period` must be finite and strictly positive.
   struct NoiseNode {
     uint32_t seed;
-    DampingSource vary_over;
+    ProgressDomain vary_over;
     float base_period;
 
     friend bool operator==(const NoiseNode&, const NoiseNode&) = default;
@@ -538,10 +537,15 @@ struct BrushBehavior {
   //     continues to emit its previous output value.  If the input value starts
   //     out null, the output value is null until the first non-null input.
   // To be valid:
-  //   - `damping_source` must be a valid `DampingSource` enumerator.
+  //   - `damping_source` must be a valid `ProgressDomain` enumerator.
   //   - `damping_gap` must be finite and non-negative.
   struct DampingNode {
-    DampingSource damping_source;
+    // If `damping_source` is `kDistanceInCentimeters` but the input data does
+    // not indicate the relationship between stroke units and physical units
+    // (e.g. as may be the case for programmatically-generated inputs), then no
+    // damping will be performed (i.e. the `damping_gap` will be treated as
+    // zero).
+    ProgressDomain damping_source;
     float damping_gap;
 
     friend bool operator==(const DampingNode&, const DampingNode&) = default;
@@ -568,12 +572,12 @@ struct BrushBehavior {
   //     recent non-null value. If the input value starts out null, it is
   //     treated as zero until the first non-null input.
   // To be valid:
-  //   - `integrate_over` must be a valid `DampingSource` enumerator.
+  //   - `integrate_over` must be a valid `ProgressDomain` enumerator.
   //   - `integral_out_of_range_behavior` must be a valid `OutOfRange`
   //     enumerator.
   //   - The endpoints of `integral_value_range` must be finite and distinct.
   struct IntegralNode {
-    DampingSource integrate_over;
+    ProgressDomain integrate_over;
     OutOfRange integral_out_of_range_behavior;
     std::array<float, 2> integral_value_range;
 
@@ -683,7 +687,7 @@ std::string ToFormattedString(BrushBehavior::OutOfRange out_of_range);
 std::string ToFormattedString(BrushBehavior::EnabledToolTypes enabled);
 std::string ToFormattedString(BrushBehavior::OptionalInputProperty input);
 std::string ToFormattedString(BrushBehavior::BinaryOp operation);
-std::string ToFormattedString(BrushBehavior::DampingSource damping_source);
+std::string ToFormattedString(BrushBehavior::ProgressDomain progress_domain);
 std::string ToFormattedString(BrushBehavior::Interpolation interpolation);
 std::string ToFormattedString(const BrushBehavior::Node& node);
 std::string ToFormattedString(const BrushBehavior& behavior);
@@ -726,8 +730,8 @@ void AbslStringify(Sink& sink, BrushBehavior::BinaryOp operation) {
 }
 
 template <typename Sink>
-void AbslStringify(Sink& sink, BrushBehavior::DampingSource damping_source) {
-  sink.Append(brush_internal::ToFormattedString(damping_source));
+void AbslStringify(Sink& sink, BrushBehavior::ProgressDomain progress_domain) {
+  sink.Append(brush_internal::ToFormattedString(progress_domain));
 }
 
 template <typename Sink>

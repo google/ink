@@ -136,7 +136,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createNoise)
   return ValidateAndHoistNodeOrThrow(
       BrushBehavior::NoiseNode{
           .seed = static_cast<uint32_t>(seed),
-          .vary_over = static_cast<BrushBehavior::DampingSource>(vary_over),
+          .vary_over = static_cast<BrushBehavior::ProgressDomain>(vary_over),
           .base_period = base_period,
       },
       env);
@@ -170,7 +170,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createDamping)
   return ValidateAndHoistNodeOrThrow(
       BrushBehavior::DampingNode{
           .damping_source =
-              static_cast<BrushBehavior::DampingSource>(damping_source),
+              static_cast<BrushBehavior::ProgressDomain>(damping_source),
           .damping_gap = damping_gap,
       },
       env);
@@ -192,7 +192,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createIntegral)
   return ValidateAndHoistNodeOrThrow(
       BrushBehavior::IntegralNode{
           .integrate_over =
-              static_cast<BrushBehavior::DampingSource>(integrate_over),
+              static_cast<BrushBehavior::ProgressDomain>(integrate_over),
           .integral_out_of_range_behavior =
               static_cast<BrushBehavior::OutOfRange>(
                   integral_out_of_range_behavior),

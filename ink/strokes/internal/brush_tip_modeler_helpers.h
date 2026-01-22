@@ -52,7 +52,7 @@ struct NoiseNodeImplementation {
   size_t generator_index;
   // The below fields are copies of the same fields from the
   // `BrushBehavior::NoiseNode` that this struct helps implement.
-  BrushBehavior::DampingSource vary_over;
+  BrushBehavior::ProgressDomain vary_over;
   float base_period;
 };
 
@@ -62,7 +62,7 @@ struct DampingNodeImplementation {
   size_t damping_index;
   // The below fields are copies of the same fields from the
   // `BrushBehavior::DampingNode` that this struct helps implement.
-  BrushBehavior::DampingSource damping_source;
+  BrushBehavior::ProgressDomain damping_source;
   float damping_gap;
 };
 
@@ -72,7 +72,7 @@ struct IntegralNodeImplementation {
   size_t integral_index;
   // The below fields are copies of the same fields from the
   // `BrushBehavior::IntegralNode` that this struct helps implement.
-  BrushBehavior::DampingSource integrate_over;
+  BrushBehavior::ProgressDomain integrate_over;
   BrushBehavior::OutOfRange integral_out_of_range_behavior;
   std::array<float, 2> integral_value_range;
 };

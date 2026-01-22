@@ -282,14 +282,15 @@ TEST(BrushTest, DecodeBrushBehaviorBinaryOpNodeWithUnspecifiedBinaryOp) {
               HasSubstr("invalid ink.proto.BrushBehavior.BinaryOp value"));
 }
 
-TEST(BrushTest, DecodeBrushBehaviorDampingNodeWithUnspecifiedDampingSource) {
+TEST(BrushTest, DecodeBrushBehaviorDampingNodeWithUnspecifiedProgressDomain) {
   proto::BrushBehavior::Node node;
   node.mutable_damping_node()->set_damping_source(
-      proto::BrushBehavior::DAMPING_SOURCE_UNSPECIFIED);
+      proto::BrushBehavior::PROGRESS_DOMAIN_UNSPECIFIED);
   absl::Status status = DecodeBrushBehaviorNode(node).status();
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("invalid ink.proto.BrushBehavior.DampingSource value"));
+  EXPECT_THAT(
+      status.message(),
+      HasSubstr("invalid ink.proto.BrushBehavior.ProgressDomain value"));
 }
 
 TEST(BrushTest, DecodeBrushBehaviorResponseNodeWithNoResponseCurve) {
@@ -758,16 +759,16 @@ TEST(BrushTest, EncodeBrushBehaviorBinaryOpNodeWithInvalidOperation) {
             proto::BrushBehavior::BINARY_OP_UNSPECIFIED);
 }
 
-TEST(BrushTest, EncodeBrushBehaviorDampingNodeWithInvalidDampingSource) {
+TEST(BrushTest, EncodeBrushBehaviorDampingNodeWithInvalidProgressDomain) {
   BrushBehavior::DampingNode node{
-      .damping_source = static_cast<BrushBehavior::DampingSource>(123),
+      .damping_source = static_cast<BrushBehavior::ProgressDomain>(123),
       .damping_gap = 1.0f,
   };
   proto::BrushBehavior::Node node_proto;
   EncodeBrushBehaviorNode(node, node_proto);
   EXPECT_TRUE(node_proto.has_damping_node());
   EXPECT_EQ(node_proto.damping_node().damping_source(),
-            proto::BrushBehavior::DAMPING_SOURCE_UNSPECIFIED);
+            proto::BrushBehavior::PROGRESS_DOMAIN_UNSPECIFIED);
   EXPECT_EQ(node_proto.damping_node().damping_gap(), 1.0f);
 }
 

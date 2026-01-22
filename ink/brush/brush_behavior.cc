@@ -226,11 +226,12 @@ bool IsValidBehaviorBinaryOp(BrushBehavior::BinaryOp operation) {
   return false;
 }
 
-bool IsValidBehaviorDampingSource(BrushBehavior::DampingSource damping_source) {
+bool IsValidBehaviorProgressDomain(
+    BrushBehavior::ProgressDomain damping_source) {
   switch (damping_source) {
-    case BrushBehavior::DampingSource::kDistanceInCentimeters:
-    case BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize:
-    case BrushBehavior::DampingSource::kTimeInSeconds:
+    case BrushBehavior::ProgressDomain::kDistanceInCentimeters:
+    case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize:
+    case BrushBehavior::ProgressDomain::kTimeInSeconds:
       return true;
   }
   return false;
@@ -308,7 +309,7 @@ absl::Status ValidateNode(const BrushBehavior::ConstantNode& node) {
 }
 
 absl::Status ValidateNode(const BrushBehavior::NoiseNode& node) {
-  if (!IsValidBehaviorDampingSource(node.vary_over)) {
+  if (!IsValidBehaviorProgressDomain(node.vary_over)) {
     return absl::InvalidArgumentError(
         absl::StrFormat("`NoiseNode::vary_over` holds non-enumerator value %d",
                         static_cast<int>(node.vary_over)));
@@ -340,7 +341,7 @@ absl::Status ValidateNode(const BrushBehavior::ToolTypeFilterNode& node) {
 }
 
 absl::Status ValidateNode(const BrushBehavior::DampingNode& node) {
-  if (!IsValidBehaviorDampingSource(node.damping_source)) {
+  if (!IsValidBehaviorProgressDomain(node.damping_source)) {
     return absl::InvalidArgumentError(absl::StrFormat(
         "`DampingNode::damping_source` holds non-enumerator value %d",
         static_cast<int>(node.damping_source)));
@@ -359,7 +360,7 @@ absl::Status ValidateNode(const BrushBehavior::ResponseNode& node) {
 }
 
 absl::Status ValidateNode(const BrushBehavior::IntegralNode& node) {
-  if (!IsValidBehaviorDampingSource(node.integrate_over)) {
+  if (!IsValidBehaviorProgressDomain(node.integrate_over)) {
     return absl::InvalidArgumentError(absl::StrFormat(
         "`IntegralNode::integrate_over` holds non-enumerator value %d",
         static_cast<int>(node.integrate_over)));
@@ -680,16 +681,17 @@ std::string ToFormattedString(BrushBehavior::BinaryOp operation) {
   return absl::StrCat("BinaryOp(", static_cast<int>(operation), ")");
 }
 
-std::string ToFormattedString(BrushBehavior::DampingSource damping_source) {
-  switch (damping_source) {
-    case BrushBehavior::DampingSource::kDistanceInCentimeters:
+std::string ToFormattedString(BrushBehavior::ProgressDomain progress_domain) {
+  switch (progress_domain) {
+    case BrushBehavior::ProgressDomain::kDistanceInCentimeters:
       return "kDistanceInCentimeters";
-    case BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize:
+    case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize:
       return "kDistanceInMultiplesOfBrushSize";
-    case BrushBehavior::DampingSource::kTimeInSeconds:
+    case BrushBehavior::ProgressDomain::kTimeInSeconds:
       return "kTimeInSeconds";
   }
-  return absl::StrCat("DampingSource(", static_cast<int>(damping_source), ")");
+  return absl::StrCat("ProgressDomain(", static_cast<int>(progress_domain),
+                      ")");
 }
 
 std::string ToFormattedString(BrushBehavior::Interpolation interpolation) {

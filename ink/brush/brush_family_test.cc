@@ -80,7 +80,7 @@ BrushTip CreatePressureTestTip() {
               .response_curve = {EasingFunction::Predefined::kEaseInOut},
           },
           BrushBehavior::DampingNode{
-              .damping_source = BrushBehavior::DampingSource::kTimeInSeconds,
+              .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
               .damping_gap = 0.1,
           },
           BrushBehavior::TargetNode{
@@ -826,7 +826,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBehaviorDampingGap) {
               .source_value_range = {0, 3},
           },
           BrushBehavior::DampingNode{
-              .damping_source = BrushBehavior::DampingSource::kTimeInSeconds,
+              .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
           },
           BrushBehavior::TargetNode{
               .target = BrushBehavior::Target::kPinchOffset,

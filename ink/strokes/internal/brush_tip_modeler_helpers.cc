@@ -335,7 +335,7 @@ void ProcessBehaviorNodeImpl(const NoiseNodeImplementation& node,
                              const BehaviorNodeContext& context) {
   float advance_by = 0.0f;
   switch (node.vary_over) {
-    case BrushBehavior::DampingSource::kDistanceInCentimeters: {
+    case BrushBehavior::ProgressDomain::kDistanceInCentimeters: {
       PhysicalDistance period = PhysicalDistance::Centimeters(node.base_period);
       float previous_traveled_distance =
           context.previous_input_metrics.has_value()
@@ -349,7 +349,7 @@ void ProcessBehaviorNodeImpl(const NoiseNodeImplementation& node,
               : PhysicalDistance::Zero();
       advance_by = traveled_distance_delta / period;
     } break;
-    case BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize: {
+    case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize: {
       float period = context.brush_size * node.base_period;
       float previous_traveled_distance =
           context.previous_input_metrics.has_value()
@@ -359,7 +359,7 @@ void ProcessBehaviorNodeImpl(const NoiseNodeImplementation& node,
           context.current_input.traveled_distance - previous_traveled_distance;
       advance_by = traveled_distance_delta / period;
     } break;
-    case BrushBehavior::DampingSource::kTimeInSeconds: {
+    case BrushBehavior::ProgressDomain::kTimeInSeconds: {
       Duration32 period = Duration32::Seconds(node.base_period);
       Duration32 previous_elapsed_time =
           context.previous_input_metrics.has_value()
@@ -421,7 +421,7 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
     // previous input, and thus `context.previous_input_metrics` is present.
     ABSL_DCHECK(context.previous_input_metrics.has_value());
     switch (node.damping_source) {
-      case BrushBehavior::DampingSource::kDistanceInCentimeters: {
+      case BrushBehavior::ProgressDomain::kDistanceInCentimeters: {
         // If no mapping from stroke units to physical units is available, then
         // don't perform any damping (i.e. snap damped value to input).
         if (!context.input_modeler_state.stroke_unit_length.has_value()) {
@@ -437,7 +437,7 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
         new_damped_value = DampOffsetTransition(
             input, old_damped_value, traveled_distance_delta, damping_distance);
       } break;
-      case BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize: {
+      case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize: {
         float damping_distance = context.brush_size * node.damping_gap;
         float traveled_distance_delta =
             context.current_input.traveled_distance -
@@ -445,7 +445,7 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
         new_damped_value = DampOffsetTransition(
             input, old_damped_value, traveled_distance_delta, damping_distance);
       } break;
-      case BrushBehavior::DampingSource::kTimeInSeconds: {
+      case BrushBehavior::ProgressDomain::kTimeInSeconds: {
         Duration32 damping_time = Duration32::Seconds(node.damping_gap);
         Duration32 elapsed_time_delta =
             context.current_input.elapsed_time -
@@ -560,7 +560,7 @@ void ProcessBehaviorNodeImpl(const IntegralNodeImplementation& node,
     // Compute the progress delta between the last input and this one.
     float delta = 0;
     switch (node.integrate_over) {
-      case BrushBehavior::DampingSource::kDistanceInCentimeters: {
+      case BrushBehavior::ProgressDomain::kDistanceInCentimeters: {
         // If no mapping from stroke units to physical units is available, then
         // don't perform any integration (i.e. leave delta at zero).
         if (context.input_modeler_state.stroke_unit_length.has_value()) {
@@ -571,13 +571,13 @@ void ProcessBehaviorNodeImpl(const IntegralNodeImplementation& node,
           delta = traveled_distance_delta.ToCentimeters();
         }
       } break;
-      case BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize: {
+      case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize: {
         float traveled_distance_delta =
             context.current_input.traveled_distance -
             context.previous_input_metrics->traveled_distance;
         delta = traveled_distance_delta / context.brush_size;
       } break;
-      case BrushBehavior::DampingSource::kTimeInSeconds: {
+      case BrushBehavior::ProgressDomain::kTimeInSeconds: {
         Duration32 elapsed_time_delta =
             context.current_input.elapsed_time -
             context.previous_input_metrics->elapsed_time;

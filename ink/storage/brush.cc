@@ -73,33 +73,33 @@ absl::StatusOr<BrushBehavior::BinaryOp> DecodeBrushBehaviorBinaryOp(
   }
 }
 
-proto::BrushBehavior::DampingSource EncodeBrushBehaviorDampingSource(
-    BrushBehavior::DampingSource damping_source) {
+proto::BrushBehavior::ProgressDomain EncodeBrushBehaviorProgressDomain(
+    BrushBehavior::ProgressDomain damping_source) {
   switch (damping_source) {
-    case BrushBehavior::DampingSource::kDistanceInCentimeters:
-      return proto::BrushBehavior::DAMPING_SOURCE_DISTANCE_IN_CENTIMETERS;
-    case BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize:
+    case BrushBehavior::ProgressDomain::kDistanceInCentimeters:
+      return proto::BrushBehavior::PROGRESS_DOMAIN_DISTANCE_IN_CENTIMETERS;
+    case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize:
       return proto::BrushBehavior::
-          DAMPING_SOURCE_DISTANCE_IN_MULTIPLES_OF_BRUSH_SIZE;
-    case BrushBehavior::DampingSource::kTimeInSeconds:
-      return proto::BrushBehavior::DAMPING_SOURCE_TIME_IN_SECONDS;
+          PROGRESS_DOMAIN_DISTANCE_IN_MULTIPLES_OF_BRUSH_SIZE;
+    case BrushBehavior::ProgressDomain::kTimeInSeconds:
+      return proto::BrushBehavior::PROGRESS_DOMAIN_TIME_IN_SECONDS;
   }
-  return proto::BrushBehavior::DAMPING_SOURCE_UNSPECIFIED;
+  return proto::BrushBehavior::PROGRESS_DOMAIN_UNSPECIFIED;
 }
 
-absl::StatusOr<BrushBehavior::DampingSource> DecodeBrushBehaviorDampingSource(
-    proto::BrushBehavior::DampingSource damping_source_proto) {
+absl::StatusOr<BrushBehavior::ProgressDomain> DecodeBrushBehaviorProgressDomain(
+    proto::BrushBehavior::ProgressDomain damping_source_proto) {
   switch (damping_source_proto) {
-    case proto::BrushBehavior::DAMPING_SOURCE_TIME_IN_SECONDS:
-      return BrushBehavior::DampingSource::kTimeInSeconds;
-    case proto::BrushBehavior::DAMPING_SOURCE_DISTANCE_IN_CENTIMETERS:
-      return BrushBehavior::DampingSource::kDistanceInCentimeters;
+    case proto::BrushBehavior::PROGRESS_DOMAIN_TIME_IN_SECONDS:
+      return BrushBehavior::ProgressDomain::kTimeInSeconds;
+    case proto::BrushBehavior::PROGRESS_DOMAIN_DISTANCE_IN_CENTIMETERS:
+      return BrushBehavior::ProgressDomain::kDistanceInCentimeters;
     case proto::BrushBehavior::
-        DAMPING_SOURCE_DISTANCE_IN_MULTIPLES_OF_BRUSH_SIZE:
-      return BrushBehavior::DampingSource::kDistanceInMultiplesOfBrushSize;
+        PROGRESS_DOMAIN_DISTANCE_IN_MULTIPLES_OF_BRUSH_SIZE:
+      return BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize;
     default:
       return absl::InvalidArgumentError(
-          absl::StrCat("invalid ink.proto.BrushBehavior.DampingSource value: ",
+          absl::StrCat("invalid ink.proto.BrushBehavior.ProgressDomain value: ",
                        damping_source_proto));
   }
 }
@@ -791,7 +791,7 @@ void EncodeBrushBehaviorNode(const BrushBehavior::NoiseNode& node,
       node_proto_out.mutable_noise_node();
   noise_node_proto->set_seed(node.seed);
   noise_node_proto->set_vary_over(
-      EncodeBrushBehaviorDampingSource(node.vary_over));
+      EncodeBrushBehaviorProgressDomain(node.vary_over));
   noise_node_proto->set_base_period(node.base_period);
 }
 
@@ -812,7 +812,7 @@ void EncodeBrushBehaviorNode(const BrushBehavior::DampingNode& node,
   proto::BrushBehavior::DampingNode* damping_node_proto =
       node_proto_out.mutable_damping_node();
   damping_node_proto->set_damping_source(
-      EncodeBrushBehaviorDampingSource(node.damping_source));
+      EncodeBrushBehaviorProgressDomain(node.damping_source));
   damping_node_proto->set_damping_gap(node.damping_gap);
 }
 
@@ -844,7 +844,7 @@ void EncodeBrushBehaviorNode(const BrushBehavior::IntegralNode& node,
   proto::BrushBehavior::IntegralNode* integral_node_proto =
       node_proto_out.mutable_integral_node();
   integral_node_proto->set_integrate_over(
-      EncodeBrushBehaviorDampingSource(node.integrate_over));
+      EncodeBrushBehaviorProgressDomain(node.integrate_over));
   integral_node_proto->set_integral_out_of_range_behavior(
       EncodeBrushBehaviorOutOfRange(node.integral_out_of_range_behavior));
   integral_node_proto->set_integral_value_range_start(
@@ -902,8 +902,8 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorConstantNode(
 
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNoiseNode(
     const proto::BrushBehavior::NoiseNode& node_proto) {
-  absl::StatusOr<BrushBehavior::DampingSource> vary_over =
-      DecodeBrushBehaviorDampingSource(node_proto.vary_over());
+  absl::StatusOr<BrushBehavior::ProgressDomain> vary_over =
+      DecodeBrushBehaviorProgressDomain(node_proto.vary_over());
   if (!vary_over.ok()) return vary_over.status();
   return BrushBehavior::NoiseNode{
       .seed = node_proto.seed(),
@@ -963,8 +963,8 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorToolTypeFilterNode(
 
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorDampingNode(
     const proto::BrushBehavior::DampingNode& node_proto) {
-  absl::StatusOr<BrushBehavior::DampingSource> damping_source =
-      DecodeBrushBehaviorDampingSource(node_proto.damping_source());
+  absl::StatusOr<BrushBehavior::ProgressDomain> damping_source =
+      DecodeBrushBehaviorProgressDomain(node_proto.damping_source());
   if (!damping_source.ok()) return damping_source.status();
 
   return BrushBehavior::DampingNode{
@@ -991,8 +991,8 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorInterpolationNode(
 
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorIntegralNode(
     const proto::BrushBehavior::IntegralNode& node_proto) {
-  absl::StatusOr<BrushBehavior::DampingSource> integrate_over =
-      DecodeBrushBehaviorDampingSource(node_proto.integrate_over());
+  absl::StatusOr<BrushBehavior::ProgressDomain> integrate_over =
+      DecodeBrushBehaviorProgressDomain(node_proto.integrate_over());
   if (!integrate_over.ok()) return integrate_over.status();
 
   absl::StatusOr<BrushBehavior::OutOfRange> integral_out_of_range_behavior =

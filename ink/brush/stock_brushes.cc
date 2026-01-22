@@ -35,9 +35,9 @@ namespace ink::stock_brushes {
 using BinaryOp = BrushBehavior::BinaryOp;
 using BinaryOpNode = BrushBehavior::BinaryOpNode;
 using ConstantNode = BrushBehavior::ConstantNode;
-using DampingSource = BrushBehavior::DampingSource;
 using DampingNode = BrushBehavior::DampingNode;
 using OutOfRange = BrushBehavior::OutOfRange;
+using ProgressDomain = BrushBehavior::ProgressDomain;
 using ResponseNode = BrushBehavior::ResponseNode;
 using Source = BrushBehavior::Source;
 using SourceNode = BrushBehavior::SourceNode;
@@ -112,7 +112,7 @@ BrushFamily PressurePen(const PressurePenVersion& version) {
               .nodes = {
                   *acceleration_source_node,
                   DampingNode{
-                      .damping_source = DampingSource::kTimeInSeconds,
+                      .damping_source = ProgressDomain::kTimeInSeconds,
                       .damping_gap = .025f,
                   },
                   TargetNode{
@@ -139,7 +139,7 @@ BrushFamily PressurePen(const PressurePenVersion& version) {
                                       },
                                       DampingNode{
                                           .damping_source =
-                                              DampingSource::kTimeInSeconds,
+                                              ProgressDomain::kTimeInSeconds,
                                           .damping_gap = .025f,
                                       },
                                       TargetNode{
@@ -160,7 +160,7 @@ BrushFamily PressurePen(const PressurePenVersion& version) {
                                       },
                                       DampingNode{
                                           .damping_source =
-                                              DampingSource::kTimeInSeconds,
+                                              ProgressDomain::kTimeInSeconds,
                                           .damping_gap = .03f,
                                       },
                                       ToolTypeFilterNode{
@@ -205,7 +205,7 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& selfOverlap,
                       .source_value_range = {0.0f, 1.0f},
                   },
                   DampingNode{
-                      .damping_source = DampingSource::kTimeInSeconds,
+                      .damping_source = ProgressDomain::kTimeInSeconds,
                       .damping_gap = 0.015f,
                   },
                   TargetNode{
@@ -222,7 +222,7 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& selfOverlap,
                       .source_value_range = {0.0f, 1.0f},
                   },
                   DampingNode{
-                      .damping_source = DampingSource::kTimeInSeconds,
+                      .damping_source = ProgressDomain::kTimeInSeconds,
                       .damping_gap = 0.015f,
                   },
                   TargetNode{
@@ -239,7 +239,7 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& selfOverlap,
                       .source_value_range = {0.0f, 3.0f},
                   },
                   DampingNode{
-                      .damping_source = DampingSource::kTimeInSeconds,
+                      .damping_source = ProgressDomain::kTimeInSeconds,
                       .damping_gap = 0.015f,
                   },
                   TargetNode{
@@ -257,7 +257,7 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& selfOverlap,
                       .source_value_range = {0.0f, 3.0f},
                   },
                   DampingNode{
-                      .damping_source = DampingSource::kTimeInSeconds,
+                      .damping_source = ProgressDomain::kTimeInSeconds,
                       .damping_gap = 0.015f,
                   },
                   TargetNode{
@@ -511,7 +511,7 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                               },
                               DampingNode{
                                   .damping_source =
-                                      DampingSource::kTimeInSeconds,
+                                      ProgressDomain::kTimeInSeconds,
                                   .damping_gap = 0.01f,
                               },
                               TargetNode{
@@ -532,7 +532,7 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                               },
                               DampingNode{
                                   .damping_source =
-                                      DampingSource::kTimeInSeconds,
+                                      ProgressDomain::kTimeInSeconds,
                                   .damping_gap = 0.01f,
                               },
                               TargetNode{
@@ -553,7 +553,7 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                               },
                               DampingNode{
                                   .damping_source =
-                                      DampingSource::kTimeInSeconds,
+                                      ProgressDomain::kTimeInSeconds,
                                   .damping_gap = 0.01f,
                               },
                               TargetNode{

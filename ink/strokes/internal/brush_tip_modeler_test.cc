@@ -289,7 +289,7 @@ TEST(BrushTipModelerTest, TipWithBehaviors) {
                },
                BrushBehavior::DampingNode{
                    .damping_source =
-                       BrushBehavior::DampingSource::kTimeInSeconds,
+                       BrushBehavior::ProgressDomain::kTimeInSeconds,
                    .damping_gap = 0.1,
                },
                BrushBehavior::TargetNode{

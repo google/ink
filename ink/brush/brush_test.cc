@@ -62,7 +62,7 @@ BrushFamily CreateTestFamily() {
               },
               BrushBehavior::DampingNode{
                   .damping_source =
-                      BrushBehavior::DampingSource::kTimeInSeconds,
+                      BrushBehavior::ProgressDomain::kTimeInSeconds,
                   .damping_gap = 0.25,
               },
               BrushBehavior::TargetNode{
