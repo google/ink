@@ -15,11 +15,12 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(
-    default_visibility = ["//visibility:private"],
+    default_visibility = ["//ink:__subpackages__"],
 )
 
 cc_library(
     name = "jni",
+    tags = ["keep_dep"],
     visibility = ["//visibility:public"],
     deps = [
         ":brush_serialization_jni",
@@ -31,6 +32,7 @@ cc_library(
 cc_library(
     name = "stroke_input_batch_serialization_jni",
     srcs = ["stroke_input_batch_serialization_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_proto_util",
@@ -56,6 +58,7 @@ cc_library(
 cc_library(
     name = "brush_serialization_jni",
     srcs = ["brush_serialization_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         "//ink/brush",
         "//ink/brush:brush_behavior",

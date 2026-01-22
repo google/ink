@@ -30,15 +30,31 @@ cc_binary(
     linkshared = 1,
     linkstatic = 1,
     deps = [
+        ":android_all_jni",
         ":jni.lds",
+    ],
+)
+
+cc_library(
+    name = "android_no_proto_jni",
+    tags = ["keep_dep"],
+    visibility = ["//ink:__subpackages__"],
+    deps = [
         ":jni_onload",
         "//ink/brush/internal/jni",
         "//ink/geometry/internal/jni",
-        "//ink/jni/internal:jni_defines",
-        "//ink/jni/internal:jni_jvm_interface",
         "//ink/rendering/android/internal/jni",
-        "//ink/storage/internal/jni",
         "//ink/strokes/internal/jni",
+    ],
+)
+
+cc_library(
+    name = "android_all_jni",
+    tags = ["keep_dep"],
+    visibility = ["//ink:__subpackages__"],
+    deps = [
+        ":android_no_proto_jni",
+        "//ink/storage/internal/jni",
     ],
 )
 

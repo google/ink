@@ -20,6 +20,7 @@ package(
 
 cc_library(
     name = "jni",
+    tags = ["keep_dep"],
     deps = [
         ":brush_behavior_jni",
         ":brush_coat_jni",
@@ -63,6 +64,7 @@ cc_library(
 cc_library(
     name = "brush_behavior_jni",
     srcs = ["brush_behavior_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":brush_jni_helper",
         "//ink/brush",
@@ -86,6 +88,7 @@ cc_library(
 cc_library(
     name = "brush_tip_jni",
     srcs = ["brush_tip_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":brush_behavior_jni",
         ":brush_jni_helper",
@@ -111,6 +114,7 @@ cc_library(
 cc_library(
     name = "brush_paint_jni",
     srcs = ["brush_paint_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":brush_jni_helper",
         "//ink/brush:brush_paint",
@@ -140,6 +144,7 @@ cc_library(
 cc_library(
     name = "brush_coat_jni",
     srcs = ["brush_coat_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":brush_jni_helper",
         "//ink/brush",
@@ -165,6 +170,7 @@ cc_library(
 cc_library(
     name = "stock_brushes_jni",
     srcs = ["stock_brushes_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":brush_coat_jni",
         ":brush_jni_helper",
@@ -194,6 +200,7 @@ cc_library(
 cc_library(
     name = "brush_family_jni",
     srcs = ["brush_family_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":brush_jni_helper",
         "//ink/brush",
@@ -221,6 +228,7 @@ cc_library(
 cc_library(
     name = "brush_jni",
     srcs = ["brush_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":brush_jni_helper",
         "//ink/brush",
@@ -242,6 +250,7 @@ cc_library(
 cc_library(
     name = "color_function_jni",
     srcs = ["color_function_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":brush_jni_helper",
         "//ink/brush:color_function",
@@ -264,6 +273,7 @@ cc_library(
 cc_library(
     name = "easing_function_jni",
     srcs = ["easing_function_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":brush_jni_helper",
         "//ink/brush:easing_function",
