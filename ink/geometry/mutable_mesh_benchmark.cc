@@ -45,7 +45,9 @@ void BM_AsMesh(benchmark::State& state) {
     benchmark::DoNotOptimize(immutable_mesh);
   }
 }
+// LINT.IfChange
 BENCHMARK(BM_AsMesh)->DenseRange(0, kTestMeshFiles.size() - 1);
+// LINT.ThenChange(//depot/google3/research/ink/perf_tests/labels/mutable_mesh_benchmark_labels.bzl)
 
 void BM_GetVerticesAndTriangles(benchmark::State& state) {
   state.SetLabel(absl::StrFormat("mesh: %s", kTestMeshFiles[state.range(0)]));
@@ -70,7 +72,9 @@ void BM_GetVerticesAndTriangles(benchmark::State& state) {
     }
   }
 }
+// LINT.IfChange
 BENCHMARK(BM_GetVerticesAndTriangles)->DenseRange(0, kTestMeshFiles.size() - 1);
+// LINT.ThenChange(//depot/google3/research/ink/perf_tests/labels/mutable_mesh_benchmark_labels.bzl)
 
 void BM_CreateMeshIncrementally(benchmark::State& state) {
   state.SetLabel(absl::StrFormat("mesh: %s", kTestMeshFiles[state.range(0)]));
@@ -113,7 +117,9 @@ void BM_CreateMeshIncrementally(benchmark::State& state) {
     }
   }
 }
+// LINT.IfChange
 BENCHMARK(BM_CreateMeshIncrementally)->DenseRange(0, kTestMeshFiles.size() - 1);
+// LINT.ThenChange(//depot/google3/research/ink/perf_tests/labels/mutable_mesh_benchmark_labels.bzl)
 
 }  // namespace
 }  // namespace ink
