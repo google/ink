@@ -15,9 +15,6 @@
 #ifndef INK_JNI_INTERNAL_JNI_DEFINES_H_
 #define INK_JNI_INTERNAL_JNI_DEFINES_H_
 
-// For open source, we use the androidx.ink package.
-#define INK_PACKAGE "androidx/ink"
-
 #define JNI_METHOD(module, clazz, return_type, method_name) \
   JNIEXPORT return_type JNICALL                             \
       Java_androidx_ink_##module##_##clazz##_##method_name
