@@ -20,6 +20,7 @@ package(
 
 cc_library(
     name = "jni",
+    tags = ["keep_dep"],
     visibility = ["//ink:__subpackages__"],
     deps = [
         ":affine_transform_jni",
@@ -40,6 +41,7 @@ cc_library(
 cc_library(
     name = "angle_jni",
     srcs = ["angle_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         "//ink/geometry:angle",
         "//ink/jni/internal:jni_defines",
@@ -55,6 +57,7 @@ cc_library(
 cc_library(
     name = "intersects_jni",
     srcs = ["intersects_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":partitioned_mesh_jni_helper",
         "//ink/geometry:affine_transform",
@@ -82,6 +85,7 @@ cc_library(
 cc_library(
     name = "partitioned_mesh_jni",
     srcs = ["partitioned_mesh_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":mesh_format_jni_helper",
         ":mesh_jni_helper",
@@ -112,6 +116,7 @@ cc_library(
 cc_library(
     name = "mesh_jni",
     srcs = ["mesh_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":box_accumulator_jni_helper",
         ":mesh_format_jni_helper",
@@ -150,6 +155,7 @@ cc_library(
 cc_library(
     name = "box_accumulator_jni",
     srcs = ["box_accumulator_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":box_accumulator_jni_helper",
         "//ink/geometry:angle",
@@ -172,6 +178,7 @@ cc_library(
 cc_library(
     name = "mesh_format_jni",
     srcs = ["mesh_format_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":mesh_format_jni_helper",
         "//ink/geometry:mesh_format",
@@ -221,6 +228,7 @@ cc_library(
 cc_library(
     name = "rect_jni",
     srcs = ["rect_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":vec_jni_helper",
         "//ink/geometry:point",
@@ -259,6 +267,7 @@ cc_library(
 cc_library(
     name = "affine_transform_jni",
     srcs = ["affine_transform_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":parallelogram_jni_helper",
         "//ink/geometry:affine_transform",
@@ -277,6 +286,7 @@ cc_library(
 cc_library(
     name = "parallelogram_jni",
     srcs = ["parallelogram_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":rect_jni_helper",
         ":vec_jni_helper",
@@ -320,6 +330,7 @@ cc_library(
 cc_library(
     name = "vec_jni",
     srcs = ["vec_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         ":vec_jni_helper",
         "//ink/geometry:point",
@@ -356,6 +367,7 @@ cc_library(
 cc_library(
     name = "triangle_jni",
     srcs = ["triangle_jni.cc"],
+    tags = ["keep_dep"],
     deps = [
         "//ink/geometry:point",
         "//ink/geometry:triangle",
