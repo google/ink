@@ -43,7 +43,6 @@ Brush MakeBrush(const BrushFamily& family, float brush_size,
 }
 
 void BenchmarkTestCases(Benchmark* b) {
-  // LINT.IfChange
   std::vector<int> brush_sizes;
   int num_test_files = kTestDataFiles.size();
   std::vector<stock_brushes::StockBrushesTestParam> stock_brushes_test_params =
@@ -58,7 +57,6 @@ void BenchmarkTestCases(Benchmark* b) {
       }
     }
   }
-  // LINT.ThenChange(//depot/google3/research/ink/perf_tests/labels/stroke_benchmark_labels.bzl)
 }
 
 void BM_Stroke(benchmark::State& state) {
