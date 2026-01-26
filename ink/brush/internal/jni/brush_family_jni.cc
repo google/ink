@@ -42,7 +42,7 @@ using ::ink::jni::CastToBrushFamily;
 using ::ink::jni::CastToInputModel;
 using ::ink::jni::DeleteNativeBrushFamily;
 using ::ink::jni::DeleteNativeInputModel;
-using ::ink::jni::JStringView;
+using ::ink::jni::JStringToStdString;
 using ::ink::jni::NewNativeBrushCoat;
 using ::ink::jni::NewNativeBrushFamily;
 using ::ink::jni::NewNativeInputModel;
@@ -88,7 +88,8 @@ extern "C" {
 JNI_METHOD(brush, BrushFamilyNative, jlong,
            create)(JNIEnv* env, jobject object,
                    jlongArray coat_native_pointer_array,
-                   jstring client_brush_family_id, jlong input_model_pointer) {
+                   jlong input_model_pointer, jstring client_brush_family_id,
+                   jstring developer_comment) {
   std::vector<BrushCoat> coats;
   const jsize num_coats = env->GetArrayLength(coat_native_pointer_array);
   coats.reserve(num_coats);
@@ -104,8 +105,12 @@ JNI_METHOD(brush, BrushFamilyNative, jlong,
       JNI_ABORT);
 
   absl::StatusOr<BrushFamily> brush_family = BrushFamily::Create(
-      coats, JStringView(env, client_brush_family_id).string_view(),
-      CastToInputModel(input_model_pointer));
+      coats, CastToInputModel(input_model_pointer),
+      BrushFamily::Metadata{
+          .client_brush_family_id =
+              JStringToStdString(env, client_brush_family_id),
+          .developer_comment = JStringToStdString(env, developer_comment),
+      });
   if (!brush_family.ok()) {
     ThrowExceptionFromStatus(env, brush_family.status());
     return 0;  // Unused return value.
@@ -122,7 +127,15 @@ JNI_METHOD(brush, BrushFamilyNative, void, free)
 JNI_METHOD(brush, BrushFamilyNative, jstring, getClientBrushFamilyId)
 (JNIEnv* env, jobject object, jlong native_pointer) {
   const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
-  return env->NewStringUTF(brush_family.GetClientBrushFamilyId().c_str());
+  return env->NewStringUTF(
+      brush_family.GetMetadata().client_brush_family_id.c_str());
+}
+
+JNI_METHOD(brush, BrushFamilyNative, jstring, getDeveloperComment)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
+  return env->NewStringUTF(
+      brush_family.GetMetadata().developer_comment.c_str());
 }
 
 JNI_METHOD(brush, BrushFamilyNative, jlong, getBrushCoatCount)

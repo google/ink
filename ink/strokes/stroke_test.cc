@@ -71,8 +71,9 @@ Brush CreateBrush() {
                            .keyframes = {{.progress = 0.1,
                                           .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
-      "//test/brush-family:awesome-rectangular-brush",
-      BrushFamily::SpringModel{});
+      BrushFamily::SpringModel{},
+      {.client_brush_family_id =
+           "//test/brush-family:awesome-rectangular-brush"});
   ABSL_CHECK_OK(family);
   Color color;
   float brush_size = 10;
@@ -521,7 +522,8 @@ TEST(StrokeTest, SetBrushWithDifferentTipRegeneratesShape) {
 
 TEST(StrokeTest, GetBrushFamily) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
-      BrushTip{}, BrushPaint{}, "ink://ink/brush-family:highlighter:1");
+      BrushTip{}, BrushPaint{}, BrushFamily::DefaultInputModel(),
+      {.client_brush_family_id = "ink://ink/brush-family:highlighter:1"});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Red(), 12, 1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -532,7 +534,8 @@ TEST(StrokeTest, GetBrushFamily) {
 
 TEST(StrokeTest, SetBrushFamily) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
-      BrushTip{}, BrushPaint{}, "ink://ink/brush-family:highlighter:1");
+      BrushTip{}, BrushPaint{}, BrushFamily::DefaultInputModel(),
+      {.client_brush_family_id = "ink://ink/brush-family:highlighter:1"});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Red(), 12, 1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -540,7 +543,8 @@ TEST(StrokeTest, SetBrushFamily) {
   EXPECT_THAT(stroke.GetBrushFamily(), BrushFamilyEq(*family));
 
   absl::StatusOr<BrushFamily> new_family = BrushFamily::Create(
-      BrushTip{}, BrushPaint{}, "ink://ink/brush-family:marker");
+      BrushTip{}, BrushPaint{}, BrushFamily::DefaultInputModel(),
+      {.client_brush_family_id = "ink://ink/brush-family:marker"});
   ASSERT_EQ(new_family.status(), absl::OkStatus());
   stroke.SetBrushFamily(*new_family);
   EXPECT_THAT(stroke.GetBrushFamily(), Not(BrushFamilyEq(*family)));

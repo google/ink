@@ -79,7 +79,8 @@ BrushFamily CreateTestFamily() {
                            .keyframes = {{.progress = 0.1,
                                           .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kDstIn}}},
-      "/brush-family:test-family");
+      BrushFamily::DefaultInputModel(),
+      {.client_brush_family_id = "/brush-family:test-family"});
   ABSL_CHECK_OK(family);
   return *family;
 }
@@ -95,7 +96,8 @@ TEST(BrushTest, Stringify) {
                            .keyframes = {{.progress = 0.1,
                                           .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kDstOut}}},
-      "big-square", BrushFamily::ExperimentalNaiveModel{});
+      BrushFamily::ExperimentalNaiveModel{},
+      {.client_brush_family_id = "big-square"});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Blue(), 3, .1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -113,8 +115,8 @@ TEST(BrushTest, Stringify) {
       "opacity=1, animation_frames=1, animation_rows=1, animation_columns=1, "
       "animation_duration=1s, keyframes={TextureKeyframe{progress=0.1, "
       "rotation=0.25π}}, blend_mode=kDstOut}}, "
-      "self_overlap=kAny}}}], client_brush_family_id='big-square', "
-      "input_model=ExperimentalNaiveModel))");
+      "self_overlap=kAny}}}], input_model=ExperimentalNaiveModel, "
+      "client_brush_family_id='big-square'))");
 }
 
 TEST(BrushTest, Create) {
@@ -245,7 +247,8 @@ TEST(BrushTest, SetNewFamily) {
                            .keyframes = {{.progress = 0.1,
                                           .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kDstIn}}},
-      "/brush-family:new-test-family");
+      BrushFamily::DefaultInputModel(),
+      {.client_brush_family_id = "/brush-family:new-test-family"});
   ASSERT_EQ(absl::OkStatus(), new_family.status());
 
   EXPECT_THAT(brush->GetFamily(), ::testing::Not(BrushFamilyEq(*new_family)));

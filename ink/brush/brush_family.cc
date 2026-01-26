@@ -46,23 +46,24 @@ uint32_t BrushFamily::MaxBrushCoats() {
 }
 
 BrushFamily::BrushFamily(absl::Span<const BrushCoat> coats,
-                         absl::string_view client_brush_family_id,
-                         const InputModel& input_model)
+                         const InputModel& input_model,
+                         const Metadata& metadata)
     : coats_(coats.begin(), coats.end()),
-      client_brush_family_id_(client_brush_family_id),
-      input_model_(input_model) {}
+      input_model_(input_model),
+      metadata_(metadata) {}
 
-absl::StatusOr<BrushFamily> BrushFamily::Create(
-    const BrushTip& tip, const BrushPaint& paint,
-    absl::string_view client_brush_family_id, const InputModel& input_model) {
+absl::StatusOr<BrushFamily> BrushFamily::Create(const BrushTip& tip,
+                                                const BrushPaint& paint,
+                                                const InputModel& input_model,
+                                                const Metadata& metadata) {
   BrushCoat coat = {.tip = tip, .paint_preferences = {paint}};
-  return BrushFamily::Create(absl::MakeConstSpan(&coat, 1),
-                             client_brush_family_id, input_model);
+  return BrushFamily::Create(absl::MakeConstSpan(&coat, 1), input_model,
+                             metadata);
 }
 
 absl::StatusOr<BrushFamily> BrushFamily::Create(
-    absl::Span<const BrushCoat> coats, absl::string_view client_brush_family_id,
-    const InputModel& input_model) {
+    absl::Span<const BrushCoat> coats, const InputModel& input_model,
+    const Metadata& metadata) {
   if (coats.size() > MaxBrushCoats()) {
     return absl::InvalidArgumentError(
         absl::StrCat("A `BrushFamily` cannot have more than ", MaxBrushCoats(),
@@ -78,17 +79,18 @@ absl::StatusOr<BrushFamily> BrushFamily::Create(
       !status.ok()) {
     return status;
   }
-  return BrushFamily(coats, client_brush_family_id, input_model);
+  return BrushFamily(coats, input_model, metadata);
 }
 
 std::string BrushFamily::ToFormattedString() const {
   std::string formatted =
-      absl::StrCat("BrushFamily(coats=[", absl::StrJoin(coats_, ", "), "]");
-  if (!client_brush_family_id_.empty()) {
+      absl::StrCat("BrushFamily(coats=[", absl::StrJoin(coats_, ", "),
+                   "], input_model=", input_model_);
+  if (!metadata_.client_brush_family_id.empty()) {
     absl::StrAppend(&formatted, ", client_brush_family_id='",
-                    client_brush_family_id_, "'");
+                    metadata_.client_brush_family_id, "'");
   }
-  absl::StrAppend(&formatted, ", input_model=", input_model_, ")");
+  absl::StrAppend(&formatted, ")");
   return formatted;
 }
 

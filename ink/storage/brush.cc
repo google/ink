@@ -1669,15 +1669,21 @@ void EncodeBrushFamily(const BrushFamily& family,
     EncodeBrushCoat(coat, *family_proto_out.add_coats());
   }
 
-  if (family.GetClientBrushFamilyId().empty()) {
+  EncodeBrushFamilyInputModel(family.GetInputModel(),
+                              *family_proto_out.mutable_input_model());
+
+  const BrushFamily::Metadata& metadata = family.GetMetadata();
+  if (metadata.client_brush_family_id.empty()) {
     family_proto_out.clear_client_brush_family_id();
   } else {
     family_proto_out.set_client_brush_family_id(
-        family.GetClientBrushFamilyId());
+        metadata.client_brush_family_id);
   }
-
-  EncodeBrushFamilyInputModel(family.GetInputModel(),
-                              *family_proto_out.mutable_input_model());
+  if (metadata.developer_comment.empty()) {
+    family_proto_out.clear_developer_comment();
+  } else {
+    family_proto_out.set_developer_comment(metadata.developer_comment);
+  }
 }
 
 absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
@@ -1738,10 +1744,14 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
     return input_model.status();
   }
 
+  BrushFamily::Metadata metadata = {
+      .client_brush_family_id = family_proto.client_brush_family_id(),
+      .developer_comment = family_proto.developer_comment(),
+  };
+
   // BrushFamily::Create() validates the BrushFamily.
-  return BrushFamily::Create(absl::MakeConstSpan(*coats),
-                             family_proto.client_brush_family_id(),
-                             *input_model);
+  return BrushFamily::Create(absl::MakeConstSpan(*coats), *input_model,
+                             metadata);
 }
 
 void EncodeBrush(const Brush& brush, proto::Brush& brush_proto_out,

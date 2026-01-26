@@ -128,7 +128,7 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
                .corner_rounding = 0,
                .particle_gap_distance_scale = 0.1,
                .particle_gap_duration = Duration32::Seconds(2)},
-      CreateTestPaint(), "", BrushFamily::ExperimentalNaiveModel{});
+      CreateTestPaint(), BrushFamily::ExperimentalNaiveModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_EQ(absl::StrCat(*family),
             "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
@@ -149,7 +149,8 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
 TEST(BrushFamilyTest, StringifyWithId) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{.scale = {3, 3}, .corner_rounding = 0}, CreateTestPaint(),
-      "big-square", BrushFamily::ExperimentalNaiveModel{});
+      BrushFamily::ExperimentalNaiveModel{},
+      {.client_brush_family_id = "big-square"});
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_EQ(absl::StrCat(*family),
             "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
@@ -163,8 +164,8 @@ TEST(BrushFamilyTest, StringifyWithId) {
             "animation_columns=1, animation_duration=1s, "
             "keyframes={TextureKeyframe{progress=0.1, "
             "rotation=0.25π}}, blend_mode=kDstIn}}, "
-            "self_overlap=kAny}}}], client_brush_family_id='big-square', "
-            "input_model=ExperimentalNaiveModel)");
+            "self_overlap=kAny}}}], input_model=ExperimentalNaiveModel, "
+            "client_brush_family_id='big-square')");
 }
 
 TEST(BrushFamilyTest, CreateWithoutId) {
@@ -174,17 +175,18 @@ TEST(BrushFamilyTest, CreateWithoutId) {
 
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_THAT(family->GetCoats(), ElementsAre(BrushCoatEq(coat)));
-  EXPECT_THAT(family->GetClientBrushFamilyId(), "");
+  EXPECT_THAT(family->GetMetadata().client_brush_family_id, "");
 }
 
 TEST(BrushFamilyTest, CreateWithId) {
   BrushCoat coat = CreateTestCoat();
   absl::StatusOr<BrushFamily> family =
-      BrushFamily::Create({coat}, "test-family");
+      BrushFamily::Create({coat}, BrushFamily::DefaultInputModel(),
+                          {.client_brush_family_id = "test-family"});
 
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_THAT(family->GetCoats(), ElementsAre(BrushCoatEq(coat)));
-  EXPECT_EQ(family->GetClientBrushFamilyId(), "test-family");
+  EXPECT_EQ(family->GetMetadata().client_brush_family_id, "test-family");
 }
 
 TEST(BrushFamilyTest, CreateWithNoCoats) {
@@ -213,7 +215,7 @@ TEST(BrushFamilyTest, CreateWithInvalidInputModel) {
   BrushFamily::InputModel input_model = {
       BrushFamily::SlidingWindowModel{.window_size = Duration32::Zero()}};
   EXPECT_THAT(
-      BrushFamily::Create(coats, "", input_model),
+      BrushFamily::Create(coats, input_model),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("window_size")));
 }
 
@@ -898,52 +900,58 @@ TEST(BrushFamilyTest, DefaultConstruction) {
   BrushFamily family;
   EXPECT_THAT(family.GetCoats(),
               ElementsAre(BrushCoatEq(BrushCoat{.tip = BrushTip{}})));
-  EXPECT_THAT(family.GetClientBrushFamilyId(), IsEmpty());
+  EXPECT_THAT(family.GetInputModel(),
+              BrushFamilyInputModelEq(BrushFamily::DefaultInputModel()));
+  EXPECT_THAT(family.GetMetadata().client_brush_family_id, IsEmpty());
 }
 
 TEST(BrushFamilyTest, CopyAndMove) {
   {
-    auto family =
-        BrushFamily::Create(CreatePressureTestTip(), CreateTestPaint(),
-                            "/brush-family:test-family");
+    auto family = BrushFamily::Create(
+        CreatePressureTestTip(), CreateTestPaint(),
+        BrushFamily::DefaultInputModel(),
+        {.client_brush_family_id = "/brush-family:test-family"});
     ASSERT_EQ(absl::OkStatus(), family.status());
 
     BrushFamily copied_family = *family;
     EXPECT_THAT(copied_family.GetCoats(),
                 Pointwise(BrushCoatEq(), family->GetCoats()));
-    EXPECT_EQ(copied_family.GetClientBrushFamilyId(),
-              family->GetClientBrushFamilyId());
+    EXPECT_EQ(copied_family.GetMetadata().client_brush_family_id,
+              family->GetMetadata().client_brush_family_id);
   }
   {
-    auto family =
-        BrushFamily::Create(CreatePressureTestTip(), CreateTestPaint(),
-                            "/brush-family:test-family");
+    auto family = BrushFamily::Create(
+        CreatePressureTestTip(), CreateTestPaint(),
+        BrushFamily::DefaultInputModel(),
+        {.client_brush_family_id = "/brush-family:test-family"});
     ASSERT_EQ(absl::OkStatus(), family.status());
 
     BrushFamily copied_family;
     copied_family = *family;
     EXPECT_THAT(copied_family.GetCoats(),
                 Pointwise(BrushCoatEq(), family->GetCoats()));
-    EXPECT_EQ(copied_family.GetClientBrushFamilyId(),
-              family->GetClientBrushFamilyId());
+    EXPECT_EQ(copied_family.GetMetadata().client_brush_family_id,
+              family->GetMetadata().client_brush_family_id);
   }
   {
-    auto family =
-        BrushFamily::Create(CreatePressureTestTip(), CreateTestPaint(),
-                            "/brush-family:test-family");
+    auto family = BrushFamily::Create(
+        CreatePressureTestTip(), CreateTestPaint(),
+        BrushFamily::DefaultInputModel(),
+        {.client_brush_family_id = "/brush-family:test-family"});
     ASSERT_EQ(absl::OkStatus(), family.status());
 
     BrushFamily copied_family = *family;
     BrushFamily moved_family = *std::move(family);
     EXPECT_THAT(moved_family.GetCoats(),
                 Pointwise(BrushCoatEq(), copied_family.GetCoats()));
-    EXPECT_EQ(moved_family.GetClientBrushFamilyId(),
-              copied_family.GetClientBrushFamilyId());
+    EXPECT_EQ(moved_family.GetMetadata().client_brush_family_id,
+              copied_family.GetMetadata().client_brush_family_id);
   }
   {
-    auto family =
-        BrushFamily::Create(CreatePressureTestTip(), CreateTestPaint(),
-                            "/brush-family:test-family");
+    auto family = BrushFamily::Create(
+        CreatePressureTestTip(), CreateTestPaint(),
+        BrushFamily::DefaultInputModel(),
+        {.client_brush_family_id = "/brush-family:test-family"});
     ASSERT_EQ(absl::OkStatus(), family.status());
 
     BrushFamily copied_family = *family;
@@ -951,8 +959,8 @@ TEST(BrushFamilyTest, CopyAndMove) {
     moved_family = *std::move(family);
     EXPECT_THAT(moved_family.GetCoats(),
                 Pointwise(BrushCoatEq(), copied_family.GetCoats()));
-    EXPECT_EQ(moved_family.GetClientBrushFamilyId(),
-              copied_family.GetClientBrushFamilyId());
+    EXPECT_EQ(moved_family.GetMetadata().client_brush_family_id,
+              copied_family.GetMetadata().client_brush_family_id);
   }
 }
 
@@ -1267,16 +1275,16 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
 }
 
 void CanCreateAnyValidBrushFamily(absl::Span<const BrushCoat> coats,
-                                  absl::string_view id) {
-  absl::StatusOr<BrushFamily> family = BrushFamily::Create(coats, id);
+                                  const BrushFamily::InputModel& input_model) {
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(coats, input_model);
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_THAT(family->GetCoats(), Pointwise(BrushCoatEq(), coats));
-  EXPECT_EQ(family->GetClientBrushFamilyId(), id);
+  EXPECT_THAT(family->GetInputModel(), BrushFamilyInputModelEq(input_model));
 }
 FUZZ_TEST(BrushFamilyTest, CanCreateAnyValidBrushFamily)
     .WithDomains(fuzztest::VectorOf(ValidBrushCoat())
                      .WithMaxSize(BrushFamily::MaxBrushCoats()),
-                 fuzztest::Arbitrary<std::string>());
+                 ValidBrushFamilyInputModel());
 
 }  // namespace
 }  // namespace ink

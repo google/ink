@@ -559,15 +559,21 @@ Domain<BrushCoat> ValidBrushCoat(DomainVariant variant) {
                                  NonEmpty(VectorOf(ValidBrushPaint(variant)))));
 }
 
+Domain<BrushFamily::Metadata> ArbitraryBrushFamilyMetadata() {
+  return StructOf<BrushFamily::Metadata>(Arbitrary<std::string>(),
+                                         Arbitrary<std::string>());
+}
+
 Domain<BrushFamily> ValidBrushFamily(DomainVariant variant) {
   return Map(
-      [](absl::Span<const BrushCoat> coats, const std::string& id,
-         const BrushFamily::InputModel& input_model) {
-        return BrushFamily::Create(coats, id, input_model).value();
+      [](absl::Span<const BrushCoat> coats,
+         const BrushFamily::InputModel& input_model,
+         const BrushFamily::Metadata& metadata) {
+        return BrushFamily::Create(coats, input_model, metadata).value();
       },
       VectorOf(ValidBrushCoat(variant))
           .WithMaxSize(BrushFamily::MaxBrushCoats()),
-      Arbitrary<std::string>(), ValidBrushFamilyInputModel());
+      ValidBrushFamilyInputModel(), ArbitraryBrushFamilyMetadata());
 }
 
 }  // namespace

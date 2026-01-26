@@ -73,6 +73,26 @@ class BrushFamily {
 
   // LINT.ThenChange(../strokes/internal/stroke_input_modeler_test.cc:input_model_types)
 
+  // Metadata for a `BrushFamily` that can be used by client apps or developers,
+  // but is not used internally by Ink.
+  //
+  // All metadata strings should be UTF-8.
+  struct Metadata {
+    // An optional ID string for this brush family, specified by (and meaningful
+    // to) the client that originally created it. For example, this could be a
+    // URI, or UUID, or a simple word. No particular structure or meaning should
+    // be ascribed to this string by clients for brushes not created by that
+    // client.
+    std::string client_brush_family_id;
+    // A multi-line, human-readable string with a description of the brush and
+    // how it works, with the intended audience being designers/developers who
+    // are editing the brush definition. This string is not, in general,
+    // intended to be displayed to end users.
+    std::string developer_comment;
+
+    bool operator==(const Metadata&) const = default;
+  };
+
   // Returns the default `InputModel` that will be used by
   // `BrushFamily::Create()` when none is specified.
   static InputModel DefaultInputModel();
@@ -118,14 +138,15 @@ class BrushFamily {
   //    that property's type.
   static absl::StatusOr<BrushFamily> Create(
       const BrushTip& tip, const BrushPaint& paint,
-      absl::string_view client_brush_family_id = "",
-      const InputModel& input_model = DefaultInputModel());
+      const InputModel& input_model = DefaultInputModel(),
+      const Metadata& metadata = Metadata{});
   static absl::StatusOr<BrushFamily> Create(
       absl::Span<const BrushCoat> coats,
-      absl::string_view client_brush_family_id = "",
-      const InputModel& input_model = DefaultInputModel());
+      const InputModel& input_model = DefaultInputModel(),
+      const Metadata& metadata = Metadata{});
 
-  // Constructs a brush-family with default tip and paint and empty ID.
+  // Constructs a brush-family with default tip and paint, default input model,
+  // and empty metadata.
   BrushFamily() = default;
 
   BrushFamily(const BrushFamily&) = default;
@@ -136,12 +157,10 @@ class BrushFamily {
   absl::Span<const BrushCoat> GetCoats() const;
   const InputModel& GetInputModel() const;
 
-  // Returns the ID for this brush family specified by the client that
-  // originally created it, or an empty string if no ID was specified. This is
-  // considered when comparing `BrushFamily` objects for equality, but it is
-  // not assumed that two `BrushFamily` objects with the same IDs are
-  // equivalent, and the ID is not otherwise used internally by Ink.
-  const std::string& GetClientBrushFamilyId() const;
+  // Returns the metadata fields for this brush family. This metadata is
+  // considered when comparing `BrushFamily` objects for equality, but is not
+  // otherwise used internally by Ink.
+  const Metadata& GetMetadata() const;
 
   template <typename Sink>
   friend void AbslStringify(Sink& sink, const BrushFamily& family) {
@@ -149,16 +168,15 @@ class BrushFamily {
   }
 
  private:
-  BrushFamily(absl::Span<const BrushCoat> coats,
-              absl::string_view client_brush_family_id,
-              const InputModel& input_model);
+  BrushFamily(absl::Span<const BrushCoat> coats, const InputModel& input_model,
+              const Metadata& metadata);
 
   // Implementation helper for AbslStringify.
   std::string ToFormattedString() const;
 
   std::vector<BrushCoat> coats_ = {BrushCoat{.tip = BrushTip{}}};
-  std::string client_brush_family_id_;
-  InputModel input_model_;
+  InputModel input_model_ = DefaultInputModel();
+  Metadata metadata_;
 };
 
 namespace brush_internal {
@@ -181,12 +199,12 @@ inline absl::Span<const BrushCoat> BrushFamily::GetCoats() const {
   return coats_;
 }
 
-inline const std::string& BrushFamily::GetClientBrushFamilyId() const {
-  return client_brush_family_id_;
-}
-
 inline const BrushFamily::InputModel& BrushFamily::GetInputModel() const {
   return input_model_;
+}
+
+inline const BrushFamily::Metadata& BrushFamily::GetMetadata() const {
+  return metadata_;
 }
 
 }  // namespace ink

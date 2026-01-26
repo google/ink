@@ -75,7 +75,7 @@ BrushFamily Marker(const MarkerVersion& version) {
       static const absl::NoDestructor<absl::StatusOr<BrushFamily>> marker_v1(
           BrushFamily::Create(
               BrushTip{.behaviors = {PredictionFadeOutBehavior()}},
-              BrushPaint{}, "", StockInputModel()));
+              BrushPaint{}, StockInputModel()));
       ABSL_CHECK_OK(*marker_v1);
       return **marker_v1;
     }
@@ -173,7 +173,7 @@ BrushFamily PressurePen(const PressurePenVersion& version) {
                                       },
                                   }},
                       }},
-              BrushPaint{}, "", StockInputModel()));
+              BrushPaint{}, StockInputModel()));
       ABSL_CHECK_OK(*pressure_pen_v1);
       return **pressure_pen_v1;
     }
@@ -281,7 +281,7 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& selfOverlap,
           static const absl::NoDestructor<absl::StatusOr<BrushFamily>>
               highlighter_any_v1(BrushFamily::Create(
                   *tip,
-                  BrushPaint{.self_overlap = BrushPaint::SelfOverlap::kAny}, "",
+                  BrushPaint{.self_overlap = BrushPaint::SelfOverlap::kAny},
                   StockInputModel()));
           ABSL_CHECK_OK(*highlighter_any_v1);
           return **highlighter_any_v1;
@@ -291,7 +291,7 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& selfOverlap,
               highlighter_discard_v1(BrushFamily::Create(
                   *tip,
                   BrushPaint{.self_overlap = BrushPaint::SelfOverlap::kDiscard},
-                  "", StockInputModel()));
+                  StockInputModel()));
           ABSL_CHECK_OK(*highlighter_discard_v1);
           return **highlighter_discard_v1;
         }
@@ -301,7 +301,7 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& selfOverlap,
                   *tip,
                   BrushPaint{.self_overlap =
                                  BrushPaint::SelfOverlap::kAccumulate},
-                  "", StockInputModel()));
+                  StockInputModel()));
           ABSL_CHECK_OK(*highlighter_accumulate_v1);
           return **highlighter_accumulate_v1;
         }
@@ -351,7 +351,7 @@ BrushFamily DashedLine(const DashedLineVersion& version) {
                                       },
                                   }},
                       }},
-              BrushPaint{}, "", StockInputModel()));
+              BrushPaint{}, StockInputModel()));
       ABSL_CHECK_OK(*dashed_line_v1);
       return **dashed_line_v1;
     }
@@ -644,7 +644,7 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
           }},
       });
       absl::StatusOr<BrushFamily> emoji_highlighter(
-          BrushFamily::Create(coats, "", StockInputModel()));
+          BrushFamily::Create(coats, StockInputModel()));
       ABSL_CHECK_OK(emoji_highlighter);
       return *emoji_highlighter;
     }

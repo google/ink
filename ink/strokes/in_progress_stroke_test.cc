@@ -78,8 +78,9 @@ Brush CreateRectangularTestBrush() {
                            .keyframes = {{.progress = 0.1,
                                           .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kSrcIn}}},
-      "//test/brush-family:awesome-rectangular-brush",
-      BrushFamily::SpringModel{});
+      BrushFamily::SpringModel{},
+      {.client_brush_family_id =
+           "//test/brush-family:awesome-rectangular-brush"});
   ABSL_CHECK_OK(family);
   Color color;
   float brush_size = 10;
@@ -102,7 +103,8 @@ Brush CreateCircularTestBrush() {
                            .keyframes = {{.progress = 0.1,
                                           .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
-      "//test/brush-family:awesome-circular-brush", BrushFamily::SpringModel{});
+      BrushFamily::SpringModel{},
+      {.client_brush_family_id = "//test/brush-family:awesome-circular-brush"});
   ABSL_CHECK_OK(family);
   Color color;
   float brush_size = 5;

@@ -154,7 +154,7 @@ TEST(BrushTest, DecodeBrushProto) {
              .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
              .size = {1, 2},
              .blend_mode = BrushPaint::BlendMode::kDstOut}}},
-      "", BrushFamily::ExperimentalNaiveModel{});
+      BrushFamily::ExperimentalNaiveModel{});
 
   ASSERT_EQ(expected_family.status(), absl::OkStatus());
   absl::StatusOr<Brush> expected_brush =
@@ -372,7 +372,7 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
                            .size = {10, 15},
                            .blend_mode = BrushPaint::BlendMode::kSrcIn}},
        .self_overlap = BrushPaint::SelfOverlap::kDiscard},
-      "", BrushFamily::SpringModel{});
+      BrushFamily::SpringModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -450,7 +450,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
                            .size = {10, 15},
                            .blend_mode = BrushPaint::BlendMode::kSrcIn}},
        .self_overlap = BrushPaint::SelfOverlap::kAccumulate},
-      "", BrushFamily::SpringModel{});
+      BrushFamily::SpringModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
   ASSERT_EQ(brush.status(), absl::OkStatus());

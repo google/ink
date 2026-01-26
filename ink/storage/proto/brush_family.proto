@@ -87,6 +87,12 @@ message BrushFamily {
   // A mapping of texture IDs (as used in `BrushPaint.TextureLayer`) to bitmaps
   // in PNG format.
   map<string, bytes> texture_id_to_bitmap = 6;
+
+  // A multi-line, human-readable string with a description of the brush and how
+  // it works, with the intended audience being designers/developers who are
+  // editing the brush definition. This string is not, in general, intended to
+  // be displayed to end users.
+  optional string developer_comment = 7;
 }
 
 // A `BrushCoat` represents one coat of ink applied by a brush. It includes a
