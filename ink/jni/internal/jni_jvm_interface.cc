@@ -195,7 +195,7 @@ jclass ClassRuntimeException(JNIEnv* env) {
 jclass ClassImmutableVec(JNIEnv* env) {
   if (class_immutable_vec == nullptr) {
     class_immutable_vec =
-        FindAndCacheClass(env, INK_PACKAGE "/geometry/ImmutableVec");
+        FindAndCacheClass(env, "androidx/ink/geometry/ImmutableVec");
   }
   return class_immutable_vec;
 }
@@ -211,7 +211,7 @@ jmethodID MethodImmutableVecInitXY(JNIEnv* env) {
 jclass ClassMutableVec(JNIEnv* env) {
   if (class_mutable_vec == nullptr) {
     class_mutable_vec =
-        FindAndCacheClass(env, INK_PACKAGE "/geometry/MutableVec");
+        FindAndCacheClass(env, "androidx/ink/geometry/MutableVec");
   }
   return class_mutable_vec;
 }
@@ -235,7 +235,7 @@ jmethodID MethodMutableVecSetY(JNIEnv* env) {
 jclass ClassImmutableBox(JNIEnv* env) {
   if (class_immutable_box == nullptr) {
     class_immutable_box =
-        FindAndCacheClass(env, INK_PACKAGE "/geometry/ImmutableBox");
+        FindAndCacheClass(env, "androidx/ink/geometry/ImmutableBox");
   }
   return class_immutable_box;
 }
@@ -244,8 +244,8 @@ jmethodID MethodImmutableBoxFromTwoPoints(JNIEnv* env) {
   if (method_immutable_box_from_two_points == nullptr) {
     method_immutable_box_from_two_points = GetStaticMethodId(
         env, ClassImmutableBox(env), "fromTwoPoints",
-        "(L" INK_PACKAGE "/geometry/Vec;L" INK_PACKAGE
-        "/geometry/Vec;)L" INK_PACKAGE "/geometry/ImmutableBox;");
+        "(Landroidx/ink/geometry/Vec;Landroidx/ink/geometry/Vec;)"
+        "Landroidx/ink/geometry/ImmutableBox;");
   }
   return method_immutable_box_from_two_points;
 }
@@ -253,7 +253,7 @@ jmethodID MethodImmutableBoxFromTwoPoints(JNIEnv* env) {
 jclass ClassMutableBox(JNIEnv* env) {
   if (class_mutable_box == nullptr) {
     class_mutable_box =
-        FindAndCacheClass(env, INK_PACKAGE "/geometry/MutableBox");
+        FindAndCacheClass(env, "androidx/ink/geometry/MutableBox");
   }
   return class_mutable_box;
 }
@@ -262,7 +262,7 @@ jmethodID MethodMutableBoxSetXBounds(JNIEnv* env) {
   if (method_mutable_box_set_x_bounds == nullptr) {
     method_mutable_box_set_x_bounds =
         GetMethodId(env, ClassMutableBox(env), "setXBounds",
-                    "(FF)L" INK_PACKAGE "/geometry/MutableBox;");
+                    "(FF)Landroidx/ink/geometry/MutableBox;");
   }
   return method_mutable_box_set_x_bounds;
 }
@@ -271,7 +271,7 @@ jmethodID MethodMutableBoxSetYBounds(JNIEnv* env) {
   if (method_mutable_box_set_y_bounds == nullptr) {
     method_mutable_box_set_y_bounds =
         GetMethodId(env, ClassMutableBox(env), "setYBounds",
-                    "(FF)L" INK_PACKAGE "/geometry/MutableBox;");
+                    "(FF)Landroidx/ink/geometry/MutableBox;");
   }
   return method_mutable_box_set_y_bounds;
 }
@@ -279,7 +279,7 @@ jmethodID MethodMutableBoxSetYBounds(JNIEnv* env) {
 jclass ClassBoxAccumulator(JNIEnv* env) {
   if (class_box_accumulator == nullptr) {
     class_box_accumulator =
-        FindAndCacheClass(env, INK_PACKAGE "/geometry/BoxAccumulator");
+        FindAndCacheClass(env, "androidx/ink/geometry/BoxAccumulator");
   }
   return class_box_accumulator;
 }
@@ -288,7 +288,7 @@ jmethodID MethodBoxAccumulatorReset(JNIEnv* env) {
   if (method_box_accumulator_reset == nullptr) {
     method_box_accumulator_reset =
         GetMethodId(env, ClassBoxAccumulator(env), "reset",
-                    "()L" INK_PACKAGE "/geometry/BoxAccumulator;");
+                    "()Landroidx/ink/geometry/BoxAccumulator;");
   }
   return method_box_accumulator_reset;
 }
@@ -297,15 +297,15 @@ jmethodID MethodBoxAccumulatorPopulateFrom(JNIEnv* env) {
   if (method_box_accumulator_populate_from == nullptr) {
     method_box_accumulator_populate_from =
         GetMethodId(env, ClassBoxAccumulator(env), "populateFrom",
-                    "(FFFF)L" INK_PACKAGE "/geometry/BoxAccumulator;");
+                    "(FFFF)Landroidx/ink/geometry/BoxAccumulator;");
   }
   return method_box_accumulator_populate_from;
 }
 
 jclass ClassImmutableParallelogram(JNIEnv* env) {
   if (class_immutable_parallelogram == nullptr) {
-    class_immutable_parallelogram = FindAndCacheClass(
-        env, INK_PACKAGE "/geometry/ImmutableParallelogram");
+    class_immutable_parallelogram =
+        FindAndCacheClass(env, "androidx/ink/geometry/ImmutableParallelogram");
   }
   return class_immutable_parallelogram;
 }
@@ -317,17 +317,16 @@ MethodImmutableParallelogramFromCenterDimensionsRotationInDegreesAndSkew(
     method_immutable_parallelogram_from_center_dim_rot_skew =
         GetStaticMethodId(env, ClassImmutableParallelogram(env),
                           "fromCenterDimensionsRotationInDegreesAndSkew",
-                          "(L" INK_PACKAGE
-                          "/geometry/ImmutableVec;FFFF)L" INK_PACKAGE
-                          "/geometry/ImmutableParallelogram;");
+                          "(Landroidx/ink/geometry/ImmutableVec;FFFF)"
+                          "Landroidx/ink/geometry/ImmutableParallelogram;");
   }
   return method_immutable_parallelogram_from_center_dim_rot_skew;
 }
 
 jclass ClassMutableParallelogram(JNIEnv* env) {
   if (class_mutable_parallelogram == nullptr) {
-    class_mutable_parallelogram = FindAndCacheClass(
-        env, INK_PACKAGE "/geometry/MutableParallelogram");
+    class_mutable_parallelogram =
+        FindAndCacheClass(env, "androidx/ink/geometry/MutableParallelogram");
   }
   return class_mutable_parallelogram;
 }
@@ -335,10 +334,10 @@ jclass ClassMutableParallelogram(JNIEnv* env) {
 jmethodID MethodMutableParallelogramSetCenterDimensionsRotationInDegreesAndSkew(
     JNIEnv* env) {
   if (method_mutable_parallelogram_set_center_dim_rot_shear == nullptr) {
-    method_mutable_parallelogram_set_center_dim_rot_shear = GetMethodId(
-        env, ClassMutableParallelogram(env),
-        "setCenterDimensionsRotationInDegreesAndSkew",
-        "(FFFFFF)L" INK_PACKAGE "/geometry/MutableParallelogram;");
+    method_mutable_parallelogram_set_center_dim_rot_shear =
+        GetMethodId(env, ClassMutableParallelogram(env),
+                    "setCenterDimensionsRotationInDegreesAndSkew",
+                    "(FFFFFF)Landroidx/ink/geometry/MutableParallelogram;");
   }
   return method_mutable_parallelogram_set_center_dim_rot_shear;
 }
@@ -346,7 +345,7 @@ jmethodID MethodMutableParallelogramSetCenterDimensionsRotationInDegreesAndSkew(
 jclass ClassColorNative(JNIEnv* env) {
   if (class_color_native == nullptr) {
     class_color_native =
-        FindAndCacheClass(env, INK_PACKAGE "/brush/ColorNative");
+        FindAndCacheClass(env, "androidx/ink/brush/ColorNative");
   }
   return class_color_native;
 }
@@ -363,7 +362,7 @@ jmethodID MethodColorNativeComposeColorLongFromComponents(JNIEnv* env) {
 jclass ClassInputToolType(JNIEnv* env) {
   if (class_input_tool_type == nullptr) {
     class_input_tool_type =
-        FindAndCacheClass(env, INK_PACKAGE "/brush/InputToolType");
+        FindAndCacheClass(env, "androidx/ink/brush/InputToolType");
   }
   return class_input_tool_type;
 }
@@ -372,7 +371,7 @@ jmethodID MethodInputToolTypeFromInt(JNIEnv* env) {
   if (method_input_tool_type_from == nullptr) {
     method_input_tool_type_from =
         GetStaticMethodId(env, ClassInputToolType(env), "fromInt",
-                          "(I)L" INK_PACKAGE "/brush/InputToolType;");
+                          "(I)Landroidx/ink/brush/InputToolType;");
   }
   return method_input_tool_type_from;
 }
@@ -380,7 +379,7 @@ jmethodID MethodInputToolTypeFromInt(JNIEnv* env) {
 jclass ClassStrokeInput(JNIEnv* env) {
   if (class_stroke_input == nullptr) {
     class_stroke_input =
-        FindAndCacheClass(env, INK_PACKAGE "/strokes/StrokeInput");
+        FindAndCacheClass(env, "androidx/ink/strokes/StrokeInput");
   }
   return class_stroke_input;
 }
@@ -389,7 +388,7 @@ jmethodID MethodStrokeInputUpdate(JNIEnv* env) {
   if (method_stroke_input_update == nullptr) {
     method_stroke_input_update =
         GetMethodId(env, ClassStrokeInput(env), "update",
-                    "(FFJL" INK_PACKAGE "/brush/InputToolType;FFFF)V");
+                    "(FFJLandroidx/ink/brush/InputToolType;FFFF)V");
   }
   return method_stroke_input_update;
 }
