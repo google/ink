@@ -90,8 +90,8 @@ message BrushFamily {
 
   // A multi-line, human-readable string with a description of the brush and how
   // it works, with the intended audience being designers/developers who are
-  // editing the brush definition. This string is not, in general, intended to
-  // be displayed to end users.
+  // editing the brush definition. This string is not generally intended to be
+  // displayed to end users.
   optional string developer_comment = 7;
 }
 
@@ -1269,6 +1269,12 @@ message BrushBehavior {
 
   // Were fields controlling brush behavior, use `nodes` instead.
   reserved 1 to 14;
+
+  // A multi-line, human-readable string with a description of this brush
+  // behavior and its purpose within the brush, with the intended audience being
+  // designers/developers who are editing the brush definition. This string is
+  // not generally intended to be displayed to end users.
+  optional string developer_comment = 16;
 }
 
 // Transforms the brush color to be used as an alternative base color for any

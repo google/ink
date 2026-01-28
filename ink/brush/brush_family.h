@@ -86,8 +86,8 @@ class BrushFamily {
     std::string client_brush_family_id;
     // A multi-line, human-readable string with a description of the brush and
     // how it works, with the intended audience being designers/developers who
-    // are editing the brush definition. This string is not, in general,
-    // intended to be displayed to end users.
+    // are editing the brush definition. This string is not generally intended
+    // to be displayed to end users.
     std::string developer_comment;
 
     bool operator==(const Metadata&) const = default;

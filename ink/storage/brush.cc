@@ -1561,6 +1561,12 @@ void EncodeBrushBehavior(const BrushBehavior& behavior,
   for (const BrushBehavior::Node& node : behavior.nodes) {
     EncodeBrushBehaviorNode(node, *behavior_proto_out.add_nodes());
   }
+
+  if (behavior.developer_comment.empty()) {
+    behavior_proto_out.clear_developer_comment();
+  } else {
+    behavior_proto_out.set_developer_comment(behavior.developer_comment);
+  }
 }
 
 absl::StatusOr<BrushBehavior> DecodeBrushBehavior(
@@ -1573,7 +1579,10 @@ absl::StatusOr<BrushBehavior> DecodeBrushBehavior(
     if (!node.ok()) return node.status();
     nodes.push_back(*std::move(node));
   }
-  return BrushBehavior{.nodes = std::move(nodes)};
+  return BrushBehavior{
+      .nodes = std::move(nodes),
+      .developer_comment = behavior_proto.developer_comment(),
+  };
 }
 
 void EncodeBrushCoat(const BrushCoat& coat, proto::BrushCoat& coat_proto_out) {

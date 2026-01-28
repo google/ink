@@ -661,7 +661,13 @@ struct BrushBehavior {
                             ResponseNode, IntegralNode, BinaryOpNode,
                             InterpolationNode, TargetNode, PolarTargetNode>;
 
+  // A post-order traversal of this behavior's node graph.
   std::vector<Node> nodes;
+  // A multi-line, human-readable string with a description of this brush
+  // behavior and its purpose within the brush, with the intended audience being
+  // designers/developers who are editing the brush definition. This string is
+  // not generally intended to be displayed to end users.
+  std::string developer_comment;
 
   friend bool operator==(const BrushBehavior&, const BrushBehavior&) = default;
 };

@@ -278,8 +278,10 @@ MATCHER_P(BrushBehaviorEqMatcher, expected,
                        " BrushBehavior (expected: ",
                        ::testing::PrintToString(expected), ")")) {
   return ExplainMatchResult(
-      Field("nodes", &BrushBehavior::nodes,
-            Pointwise(BrushBehaviorNodeEq(), expected.nodes)),
+      AllOf(Field("nodes", &BrushBehavior::nodes,
+                  Pointwise(BrushBehaviorNodeEq(), expected.nodes)),
+            Field("developer_comment", &BrushBehavior::developer_comment,
+                  Eq(expected.developer_comment))),
       arg, result_listener);
 }
 

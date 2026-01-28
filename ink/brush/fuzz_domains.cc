@@ -535,7 +535,8 @@ Domain<Brush> ValidBrush(DomainVariant variant) {
 }
 
 Domain<BrushBehavior> ValidBrushBehavior(DomainVariant variant) {
-  return StructOf<BrushBehavior>(ValidBrushBehaviorNodeForest(variant));
+  return StructOf<BrushBehavior>(ValidBrushBehaviorNodeForest(variant),
+                                 Arbitrary<std::string>());
 }
 
 Domain<BrushBehavior::Node> ValidBrushBehaviorNode(DomainVariant variant) {

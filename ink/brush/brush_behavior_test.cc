@@ -368,18 +368,21 @@ TEST(BrushBehaviorTest, StringifyPolarTargetNode) {
 
 TEST(BrushBehaviorTest, StringifyBrushBehavior) {
   EXPECT_EQ(absl::StrCat(BrushBehavior{{}}), "BrushBehavior{nodes={}}");
-  EXPECT_EQ(
-      absl::StrCat(BrushBehavior{{
-          BrushBehavior::ConstantNode{1.f},
-          BrushBehavior::TargetNode{
-              .target =
-                  BrushBehavior::Target::kPositionOffsetXInMultiplesOfBrushSize,
-              .target_modifier_range = {0, 0.5},
-          },
-      }}),
-      "BrushBehavior{nodes={ConstantNode{1}, "
-      "TargetNode{target=kPositionOffsetXInMultiplesOfBrushSize, "
-      "target_modifier_range={0, 0.5}}}}");
+  EXPECT_EQ(absl::StrCat(BrushBehavior{
+                .nodes =
+                    {
+                        BrushBehavior::ConstantNode{1.f},
+                        BrushBehavior::TargetNode{
+                            .target = BrushBehavior::Target::
+                                kPositionOffsetXInMultiplesOfBrushSize,
+                            .target_modifier_range = {0, 0.5},
+                        },
+                    },
+                .developer_comment = "foobar",
+            }),
+            "BrushBehavior{nodes={ConstantNode{1}, "
+            "TargetNode{target=kPositionOffsetXInMultiplesOfBrushSize, "
+            "target_modifier_range={0, 0.5}}}, developer_comment=\"foobar\"}");
 }
 
 TEST(BrushBehaviorTest, EnabledToolTypesHasAllTypes) {

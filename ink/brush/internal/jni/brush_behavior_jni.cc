@@ -25,22 +25,24 @@
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
+#include "ink/jni/internal/jni_string_util.h"
 #include "ink/jni/internal/jni_throw_util.h"
 
 namespace {
 
-using ink::BrushBehavior;
-using ink::brush_internal::ValidateBrushBehaviorNode;
-using ink::brush_internal::ValidateBrushBehaviorTopLevel;
-using ink::jni::CastToBrushBehavior;
-using ink::jni::CastToBrushBehaviorNode;
-using ink::jni::CastToEasingFunction;
-using ink::jni::DeleteNativeBrushBehavior;
-using ink::jni::DeleteNativeBrushBehaviorNode;
-using ink::jni::NewNativeBrushBehavior;
-using ink::jni::NewNativeBrushBehaviorNode;
-using ink::jni::NewNativeEasingFunction;
-using ink::jni::ThrowExceptionFromStatus;
+using ::ink::BrushBehavior;
+using ::ink::brush_internal::ValidateBrushBehaviorNode;
+using ::ink::brush_internal::ValidateBrushBehaviorTopLevel;
+using ::ink::jni::CastToBrushBehavior;
+using ::ink::jni::CastToBrushBehaviorNode;
+using ::ink::jni::CastToEasingFunction;
+using ::ink::jni::DeleteNativeBrushBehavior;
+using ::ink::jni::DeleteNativeBrushBehaviorNode;
+using ::ink::jni::JStringToStdString;
+using ::ink::jni::NewNativeBrushBehavior;
+using ::ink::jni::NewNativeBrushBehaviorNode;
+using ::ink::jni::NewNativeEasingFunction;
+using ::ink::jni::ThrowExceptionFromStatus;
 
 jlong ValidateAndHoistNodeOrThrow(BrushBehavior::Node node, JNIEnv* env) {
   if (absl::Status status = ValidateBrushBehaviorNode(node); !status.ok()) {
@@ -68,7 +70,8 @@ static constexpr int kPolarTargetNode = 11;
 extern "C" {
 
 JNI_METHOD(brush, BrushBehaviorNative, jlong, createFromOrderedNodes)
-(JNIEnv* env, jobject thiz, jlongArray node_native_pointer_array) {
+(JNIEnv* env, jobject thiz, jlongArray node_native_pointer_array,
+ jstring developer_comment) {
   std::vector<BrushBehavior::Node> nodes;
   const jsize num_nodes = env->GetArrayLength(node_native_pointer_array);
   nodes.reserve(num_nodes);
@@ -82,7 +85,10 @@ JNI_METHOD(brush, BrushBehaviorNative, jlong, createFromOrderedNodes)
       node_native_pointer_array, node_pointers,
       // No need to copy back the array, which is not modified.
       JNI_ABORT);
-  BrushBehavior behavior{.nodes = std::move(nodes)};
+  BrushBehavior behavior{
+      .nodes = std::move(nodes),
+      .developer_comment = JStringToStdString(env, developer_comment),
+  };
   if (absl::Status status = ValidateBrushBehaviorTopLevel(behavior);
       !status.ok()) {
     ThrowExceptionFromStatus(env, status);
@@ -99,6 +105,12 @@ JNI_METHOD(brush, BrushBehaviorNative, void, free)
 JNI_METHOD(brush, BrushBehaviorNative, jint, getNodeCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return CastToBrushBehavior(native_pointer).nodes.size();
+}
+
+JNI_METHOD(brush, BrushBehaviorNative, jstring, getDeveloperComment)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  const BrushBehavior& brush_behavior = CastToBrushBehavior(native_pointer);
+  return env->NewStringUTF(brush_behavior.developer_comment.c_str());
 }
 
 JNI_METHOD(brush, BrushBehaviorNative, jlong, newCopyOfNode)

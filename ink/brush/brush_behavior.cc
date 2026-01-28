@@ -782,8 +782,14 @@ std::string ToFormattedString(const BrushBehavior::Node& node) {
 }
 
 std::string ToFormattedString(const BrushBehavior& behavior) {
-  return absl::StrCat("BrushBehavior{nodes={",
-                      absl::StrJoin(behavior.nodes, ", "), "}}");
+  std::string formatted = absl::StrCat(
+      "BrushBehavior{nodes={", absl::StrJoin(behavior.nodes, ", "), "}");
+  if (!behavior.developer_comment.empty()) {
+    absl::StrAppend(&formatted, ", developer_comment=\"",
+                    behavior.developer_comment, "\"");
+  }
+  absl::StrAppend(&formatted, "}");
+  return formatted;
 }
 
 }  // namespace brush_internal

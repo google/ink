@@ -772,6 +772,14 @@ TEST(BrushTest, EncodeBrushBehaviorDampingNodeWithInvalidProgressDomain) {
   EXPECT_EQ(node_proto.damping_node().damping_gap(), 1.0f);
 }
 
+TEST(BrushTest, EncodeBrushBehaviorWithEmptyDeveloperComment) {
+  BrushBehavior behavior = {};
+  proto::BrushBehavior behavior_proto;
+  behavior_proto.set_developer_comment("foobar");
+  EncodeBrushBehavior(behavior, behavior_proto);
+  EXPECT_FALSE(behavior_proto.has_developer_comment());
+}
+
 void EncodeDecodeBrushRoundTrip(const Brush& brush_in) {
   int encode_callback_count = 0;
   int decode_callback_count = 0;
