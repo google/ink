@@ -27,9 +27,6 @@ namespace ink {
 // The `CodedMesh` need not be empty before calling this; this will effectively
 // clear the `CodedMesh` first, but will reuse any existing allocations in the
 // proto if possible.
-//
-// This currently only handles positions, but will be expanded to more vertex
-// attributes going forward.
 void EncodeMesh(const Mesh& mesh, ink::proto::CodedMesh& coded_mesh);
 
 // Same as `EncodeMesh` above, except that the mesh format is not written to the
@@ -40,9 +37,6 @@ void EncodeMeshOmittingFormat(const Mesh& mesh,
 
 // Decodes the `CodedMesh` into a Mesh. Returns an error if the proto is
 // invalid.
-//
-// This currently only handles positions, but will be expanded to more vertex
-// attributes going forward.
 absl::StatusOr<Mesh> DecodeMesh(const ink::proto::CodedMesh& coded_mesh);
 
 // Same as `DecodeMesh` above, except that the `CodedMesh.format` field is

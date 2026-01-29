@@ -155,6 +155,78 @@ void EncodeMeshTriangleIndex(const Mesh& mesh,
   }
 }
 
+bool IsPackedMeshFormat(const MeshFormat& format) {
+  for (const MeshFormat::Attribute& attribute : format.Attributes()) {
+    if (MeshFormat::IsUnpackedType(attribute.type)) return false;
+  }
+  return true;
+}
+
+std::vector<uint32_t> DecodeDeltas(const proto::CodedNumericRun& run) {
+  std::vector<uint32_t> sequence;
+  sequence.reserve(run.deltas_size());
+  uint32_t cur = 0;
+  for (int32_t delta : run.deltas()) {
+    cur += delta;
+    sequence.push_back(cur);
+  }
+  return sequence;
+}
+
+absl::StatusOr<Mesh> DecodePackedMesh(const MeshFormat& format,
+                                      const ink::proto::CodedMesh& coded_mesh) {
+  std::vector<std::vector<uint32_t>> attributes;
+  std::vector<MeshAttributeCodingParams> coding_params;
+
+  int non_position_component_index = 0;
+  for (const MeshFormat::Attribute& attribute : format.Attributes()) {
+    int component_count = MeshFormat::ComponentCount(attribute.type);
+    MeshAttributeCodingParams params;
+    params.components.Resize(component_count);
+
+    if (attribute.id == MeshFormat::AttributeId::kPosition) {
+      attributes.push_back(DecodeDeltas(coded_mesh.x_stroke_space()));
+      params.components[0] = {.offset = coded_mesh.x_stroke_space().offset(),
+                              .scale = coded_mesh.x_stroke_space().scale()};
+      attributes.push_back(DecodeDeltas(coded_mesh.y_stroke_space()));
+      params.components[1] = {.offset = coded_mesh.y_stroke_space().offset(),
+                              .scale = coded_mesh.y_stroke_space().scale()};
+    } else {
+      for (int i = 0; i < component_count; ++i) {
+        if (non_position_component_index >=
+            coded_mesh.other_attribute_components_size()) {
+          return absl::InvalidArgumentError(
+              absl::StrCat("Attribute index ", non_position_component_index,
+                           " out of bounds in CodedMesh."));
+        }
+        const auto& coded_component =
+            coded_mesh.other_attribute_components(non_position_component_index);
+        attributes.push_back(DecodeDeltas(coded_component));
+        params.components[i] = {.offset = coded_component.offset(),
+                                .scale = coded_component.scale()};
+        non_position_component_index += 1;
+      }
+    }
+    coding_params.push_back(params);
+  }
+
+  std::vector<absl::Span<const uint32_t>> attribute_spans;
+  attribute_spans.reserve(attributes.size());
+
+  for (const std::vector<uint32_t>& attribute : attributes) {
+    attribute_spans.push_back(attribute);
+  }
+
+  absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>>
+      triangle_range = DecodeIntNumericRun(coded_mesh.triangle_index());
+  if (!triangle_range.ok()) return triangle_range.status();
+  std::vector<uint32_t> triangle_indices(triangle_range->begin(),
+                                         triangle_range->end());
+
+  return ink::Mesh::CreateFromQuantizedData(format, attribute_spans,
+                                            triangle_indices, coding_params);
+}
+
 }  // namespace
 
 void EncodeMeshOmittingFormat(const Mesh& mesh,
@@ -196,8 +268,12 @@ absl::StatusOr<Mesh> DecodeMesh(const ink::proto::CodedMesh& coded_mesh) {
     format =
         DecodeMeshFormat(coded_mesh.format(),
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+    if (!format.ok()) return format.status();
+
+    if (IsPackedMeshFormat(*format)) {
+      return DecodePackedMesh(*format, coded_mesh);
+    }
   }
-  if (!format.ok()) return format.status();
 
   return DecodeMeshUsingFormat(*format, coded_mesh);
 }
@@ -255,7 +331,7 @@ absl::StatusOr<Mesh> DecodeMeshUsingFormat(
   }
 
   std::vector<absl::Span<const float>> component_spans;
-  component_spans.reserve(component_vectors.size());
+  component_spans.reserve(total_component_count);
   for (const std::vector<float>& component_vector : component_vectors) {
     component_spans.push_back(component_vector);
   }
