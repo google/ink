@@ -28,7 +28,6 @@ cc_library(
     srcs = ["jni_jvm_interface.cc"],
     hdrs = ["jni_jvm_interface.h"],
     deps = [
-        ":jni_defines",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],

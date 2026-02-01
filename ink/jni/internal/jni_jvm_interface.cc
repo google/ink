@@ -17,7 +17,6 @@
 #include <jni.h>
 
 #include "absl/log/absl_check.h"
-#include "ink/jni/internal/jni_defines.h"
 
 namespace ink::jni {
 
