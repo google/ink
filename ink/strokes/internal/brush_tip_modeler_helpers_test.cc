@@ -1472,7 +1472,7 @@ TEST(CreateTipStateTest, HasBasePropertiesWithoutBehaviors) {
 
   EXPECT_FLOAT_EQ(state.width, brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height, brush_tip.scale.y * brush_size);
-  EXPECT_FLOAT_EQ(state.percent_radius, brush_tip.corner_rounding);
+  EXPECT_FLOAT_EQ(state.corner_rounding, brush_tip.corner_rounding);
   EXPECT_THAT(state.slant, AngleEq(brush_tip.slant));
   EXPECT_FLOAT_EQ(state.pinch, brush_tip.pinch);
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
@@ -1490,7 +1490,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingWidth) {
   EXPECT_FLOAT_EQ(state.width,
                   width_multiplier * brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height, brush_tip.scale.y * brush_size);
-  EXPECT_FLOAT_EQ(state.percent_radius, brush_tip.corner_rounding);
+  EXPECT_FLOAT_EQ(state.corner_rounding, brush_tip.corner_rounding);
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   float clamp_multiplier = 5.f;
@@ -1513,7 +1513,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingHeight) {
   EXPECT_FLOAT_EQ(state.width, brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height,
                   height_multiplier * brush_tip.scale.y * brush_size);
-  EXPECT_FLOAT_EQ(state.percent_radius, brush_tip.corner_rounding);
+  EXPECT_FLOAT_EQ(state.corner_rounding, brush_tip.corner_rounding);
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   float clamp_multiplier = -4.f;
@@ -1536,7 +1536,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingSize) {
                   size_multiplier * brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height,
                   size_multiplier * brush_tip.scale.y * brush_size);
-  EXPECT_FLOAT_EQ(state.percent_radius, brush_tip.corner_rounding);
+  EXPECT_FLOAT_EQ(state.corner_rounding, brush_tip.corner_rounding);
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   float clamp_multiplier = 5.f;
@@ -1560,7 +1560,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingSlant) {
 
   EXPECT_FLOAT_EQ(state.width, brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height, brush_tip.scale.y * brush_size);
-  EXPECT_FLOAT_EQ(state.percent_radius, brush_tip.corner_rounding);
+  EXPECT_FLOAT_EQ(state.corner_rounding, brush_tip.corner_rounding);
   EXPECT_THAT(state.slant, AngleEq(brush_tip.slant +
                                    Angle::Radians(slant_offset_in_radians)));
 
@@ -1603,7 +1603,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingRotation) {
 
   EXPECT_FLOAT_EQ(state.width, brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height, brush_tip.scale.y * brush_size);
-  EXPECT_FLOAT_EQ(state.percent_radius, brush_tip.corner_rounding);
+  EXPECT_FLOAT_EQ(state.corner_rounding, brush_tip.corner_rounding);
   EXPECT_THAT(
       state.rotation,
       AngleEq((brush_tip.rotation + Angle::Radians(rotation_offset_in_radians))
@@ -1618,7 +1618,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingCornerRounding) {
       {0, 0}, Vec(), brush_tip, brush_size,
       {BrushBehavior::Target::kCornerRoundingOffset}, {rounding_offset});
 
-  EXPECT_FLOAT_EQ(state.percent_radius,
+  EXPECT_FLOAT_EQ(state.corner_rounding,
                   brush_tip.corner_rounding + rounding_offset);
   EXPECT_FLOAT_EQ(state.width, brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height, brush_tip.scale.y * brush_size);
@@ -1628,7 +1628,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingCornerRounding) {
   state = CreateTipState({0, 0}, Vec(), brush_tip, brush_size,
                          {BrushBehavior::Target::kCornerRoundingOffset},
                          {clamp_offset});
-  EXPECT_FLOAT_EQ(state.percent_radius, /**clamped to 0*/ 0);
+  EXPECT_FLOAT_EQ(state.corner_rounding, /**clamped to 0*/ 0);
 }
 
 TEST(CreateTipStateTest, WithBehaviorTargetingTextureAnimationProgress) {
@@ -1737,7 +1737,7 @@ TEST(CreateTipStateTest, WithBehaviorsTargetingTheSameProperty) {
   EXPECT_FLOAT_EQ(state.width,
                   modifiers[0] * modifiers[1] * brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height, brush_tip.scale.y * brush_size);
-  EXPECT_FLOAT_EQ(state.percent_radius, brush_tip.corner_rounding);
+  EXPECT_FLOAT_EQ(state.corner_rounding, brush_tip.corner_rounding);
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 }
 
@@ -1753,7 +1753,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingEachProperty) {
 
   EXPECT_FLOAT_EQ(state.width, modifiers[0] * brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height, modifiers[1] * brush_tip.scale.y * brush_size);
-  EXPECT_FLOAT_EQ(state.percent_radius, brush_tip.corner_rounding);
+  EXPECT_FLOAT_EQ(state.corner_rounding, brush_tip.corner_rounding);
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 }
 

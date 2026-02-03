@@ -61,7 +61,7 @@ BrushTipState PositionToTipState(Point p) {
       .position = p,
       .width = 1,
       .height = 1,
-      .percent_radius = 1,
+      .corner_rounding = 1,
   };
 }
 
@@ -70,7 +70,7 @@ BrushTipState PositionAndSizeToTipState(Point p, float size) {
       .position = p,
       .width = size,
       .height = size,
-      .percent_radius = 1,
+      .corner_rounding = 1,
   };
 }
 

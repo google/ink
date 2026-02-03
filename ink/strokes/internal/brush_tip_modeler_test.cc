@@ -60,8 +60,8 @@ MATCHER_P(NonPositionFieldsEq, expected, "") {
   return ExplainMatchResult(
       AllOf(Field("width", &BrushTipState::width, FloatEq(expected.width)),
             Field("height", &BrushTipState::height, FloatEq(expected.height)),
-            Field("percent_radius", &BrushTipState::percent_radius,
-                  FloatEq(expected.percent_radius)),
+            Field("corner_rounding", &BrushTipState::corner_rounding,
+                  FloatEq(expected.corner_rounding)),
             Field("rotation", &BrushTipState::rotation,
                   AngleEq(expected.rotation))),
       arg, result_listener);
@@ -132,7 +132,7 @@ TEST(BrushTipModelerTest, UpdateWithAllStableInputs) {
   BrushTipState expected_non_position_values = {
       .width = brush_tip.scale.x * brush_size,
       .height = brush_tip.scale.y * brush_size,
-      .percent_radius = brush_tip.corner_rounding,
+      .corner_rounding = brush_tip.corner_rounding,
       .rotation = brush_tip.rotation,
   };
 
@@ -166,7 +166,7 @@ TEST(BrushTipModelerTest, UpdateWithNoStableInputs) {
   BrushTipState expected_non_position_values = {
       .width = brush_tip.scale.x * brush_size,
       .height = brush_tip.scale.y * brush_size,
-      .percent_radius = brush_tip.corner_rounding,
+      .corner_rounding = brush_tip.corner_rounding,
       .rotation = brush_tip.rotation,
   };
 
@@ -199,7 +199,7 @@ TEST(BrushTipModelerTest, UpdateClearsPreviousStableStates) {
   BrushTipState expected_non_position_values = {
       .width = brush_tip.scale.x * brush_size,
       .height = brush_tip.scale.y * brush_size,
-      .percent_radius = brush_tip.corner_rounding,
+      .corner_rounding = brush_tip.corner_rounding,
       .rotation = brush_tip.rotation,
   };
 

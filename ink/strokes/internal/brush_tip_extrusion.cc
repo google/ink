@@ -139,7 +139,7 @@ BrushTipExtrusion::TangentQuality EvaluateTangentQualityInternal(
 bool StatesHaveEqualShapeProperties(const BrushTipState& first,
                                     const BrushTipState& second) {
   return first.width == second.width && first.height == second.height &&
-         first.percent_radius == second.percent_radius &&
+         first.corner_rounding == second.corner_rounding &&
          first.rotation == second.rotation && first.slant == second.slant &&
          first.pinch == second.pinch;
 }

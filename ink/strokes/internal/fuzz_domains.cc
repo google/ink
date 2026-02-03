@@ -26,7 +26,7 @@ fuzztest::Domain<BrushTipState> ValidBrushTipState() {
       /*position=*/ArbitraryPoint(),
       /*width=*/fuzztest::NonNegative<float>(),
       /*height=*/fuzztest::NonNegative<float>(),
-      /*percent_radius=*/fuzztest::InRange<float>(0, 1),
+      /*corner_rounding=*/fuzztest::InRange<float>(0, 1),
       /*rotation=*/AngleInRange(-kHalfTurn, kHalfTurn),
       /*slant=*/AngleInRange(-kQuarterTurn, kQuarterTurn),
       /*pinch=*/fuzztest::InRange<float>(0, 1),

@@ -780,8 +780,8 @@ void ApplyModifiersToTipState(const BrushTipStateModifiers& modifiers,
         (tip_state.rotation + modifiers.rotation_offset).NormalizedAboutZero();
   }
   if (modifiers.corner_rounding_offset != 0) {
-    tip_state.percent_radius = std::clamp(
-        tip_state.percent_radius + modifiers.corner_rounding_offset, 0.f, 1.f);
+    tip_state.corner_rounding = std::clamp(
+        tip_state.corner_rounding + modifiers.corner_rounding_offset, 0.f, 1.f);
   }
   if (modifiers.texture_animation_progress_offset != 0) {
     tip_state.texture_animation_progress_offset =
@@ -829,7 +829,7 @@ BrushTipState CreateTipState(Point position, Vec velocity,
       .position = position,
       .width = brush_size * brush_tip.scale.x,
       .height = brush_size * brush_tip.scale.y,
-      .percent_radius = brush_tip.corner_rounding,
+      .corner_rounding = brush_tip.corner_rounding,
       .rotation = brush_tip.rotation.NormalizedAboutZero(),
       .slant = brush_tip.slant,
       .pinch = brush_tip.pinch,

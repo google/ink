@@ -46,31 +46,31 @@ using ::ink::geometry_internal::Circle;
 using ::ink::geometry_internal::SegmentIntersection;
 
 // Calculates the radius for the shape control circles. This will return
-// - 0 if applying the percent_radius to the shorter side would result in the
+// - 0 if applying the corner_rounding to the shorter side would result in the
 //   circles not being min_nonzero_radius_and_separation apart
-// - The value obtained from applying percent_radius to the shorter side
+// - The value obtained from applying corner_rounding to the shorter side
 //   otherwise.
 // TODO(b/279163840): Enable non-uniform radii for the perimeter circles.
-float CalculateCircleRadius(float percent_radius, float half_width,
+float CalculateCircleRadius(float corner_rounding, float half_width,
                             float half_height,
                             float min_nonzero_radius_and_separation) {
-  ABSL_DCHECK_GE(percent_radius, 0);
-  ABSL_DCHECK_LE(percent_radius, 1);
+  ABSL_DCHECK_GE(corner_rounding, 0);
+  ABSL_DCHECK_LE(corner_rounding, 1);
   ABSL_DCHECK_GE(half_width, 0);
   ABSL_DCHECK_GE(half_height, 0);
   ABSL_DCHECK_GE(min_nonzero_radius_and_separation, 0);
 
-  // If `percent_radius` is exactly zero, we should always return zero, even if
+  // If `corner_rounding` is exactly zero, we should always return zero, even if
   // `half_width` and `half_height` are infinite (which can happen due to float
   // overflow in an earlier calculation). This special case prevents multiplying
   // zero times infinity below and getting a radius of NaN (which would then
   // CHECK-fail when passed to the `Circle` constructor).
-  if (percent_radius == 0) {
+  if (corner_rounding == 0) {
     return 0;
   }
 
   float min_half_dimension = std::min(half_width, half_height);
-  float unmodified_radius = percent_radius * min_half_dimension;
+  float unmodified_radius = corner_rounding * min_half_dimension;
   ABSL_DCHECK_GE(unmodified_radius, 0);
 
   if (unmodified_radius < min_nonzero_radius_and_separation) {
@@ -84,15 +84,15 @@ SmallArray<Circle, 4> MakeShapeControlCircles(
     const BrushTipState& tip_state, float min_nonzero_radius_and_separation) {
   ABSL_CHECK_GE(tip_state.width, 0);
   ABSL_CHECK_GE(tip_state.height, 0);
-  ABSL_CHECK_GE(tip_state.percent_radius, 0);
-  ABSL_CHECK_LE(tip_state.percent_radius, 1);
+  ABSL_CHECK_GE(tip_state.corner_rounding, 0);
+  ABSL_CHECK_LE(tip_state.corner_rounding, 1);
   ABSL_CHECK_GE(tip_state.pinch, 0);
   ABSL_CHECK_LE(tip_state.pinch, 1);
 
   float half_width = 0.5f * tip_state.width;
   float half_height = 0.5f * tip_state.height;
   float radius =
-      CalculateCircleRadius(tip_state.percent_radius, half_width, half_height,
+      CalculateCircleRadius(tip_state.corner_rounding, half_width, half_height,
                             min_nonzero_radius_and_separation);
 
   // The x and y positions of the first control circle relative to the

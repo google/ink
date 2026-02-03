@@ -49,7 +49,7 @@ class BrushTipShape {
   //     separation would otherwise be smaller than this value.
   //
   // CHECK-fails if `tip_state` has `width` or `height` not greater than or
-  // equal to 0, or `percent_radius` and `pinch` are outside the range [0, 1].
+  // equal to 0, or `corner_rounding` and `pinch` are outside the range [0, 1].
   BrushTipShape(const BrushTipState& tip_state,
                 float min_nonzero_radius_and_separation);
 

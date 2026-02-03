@@ -12,9 +12,9 @@ constexpr float kTravelThreshold = kEpsilon * 0.1;
 TEST(BrushTipExtrusionTest, EvaluateTangentQualityTwoNonOverlappingCircles) {
   EXPECT_EQ(
       BrushTipExtrusion::EvaluateTangentQuality(
-          {{.position = {0, 0}, .width = 1, .height = 1, .percent_radius = 1},
+          {{.position = {0, 0}, .width = 1, .height = 1, .corner_rounding = 1},
            kEpsilon},
-          {{.position = {2, 1}, .width = 1, .height = 1, .percent_radius = 1},
+          {{.position = {2, 1}, .width = 1, .height = 1, .corner_rounding = 1},
            kEpsilon},
           kTravelThreshold),
       BrushTipExtrusion::TangentQuality::kGoodTangents);
@@ -29,14 +29,18 @@ TEST(BrushTipExtrusionTest, EvaluateTangentQualityTwoNonOverlappingSquares) {
 }
 
 TEST(BrushTipExtrusionTest, EvaluateTangentQualityTwoNonOverlappingStadiums) {
-  EXPECT_EQ(
-      BrushTipExtrusion::EvaluateTangentQuality(
-          {{.position = {0, 0}, .width = 1, .height = 1, .percent_radius = 0.5},
-           kEpsilon},
-          {{.position = {2, 1}, .width = 1, .height = 1, .percent_radius = 0.5},
-           kEpsilon},
-          kTravelThreshold),
-      BrushTipExtrusion::TangentQuality::kGoodTangents);
+  EXPECT_EQ(BrushTipExtrusion::EvaluateTangentQuality({{.position = {0, 0},
+                                                        .width = 1,
+                                                        .height = 1,
+                                                        .corner_rounding = 0.5},
+                                                       kEpsilon},
+                                                      {{.position = {2, 1},
+                                                        .width = 1,
+                                                        .height = 1,
+                                                        .corner_rounding = 0.5},
+                                                       kEpsilon},
+                                                      kTravelThreshold),
+            BrushTipExtrusion::TangentQuality::kGoodTangents);
 }
 
 TEST(BrushTipExtrusionTest,
@@ -64,14 +68,14 @@ TEST(BrushTipExtrusionTest,
       BrushTipExtrusion::EvaluateTangentQuality({{.position = {-1, 0},
                                                   .width = 1,
                                                   .height = 1,
-                                                  .percent_radius = 0.5,
+                                                  .corner_rounding = 0.5,
                                                   .rotation = -kQuarterTurn,
                                                   .pinch = 0.5},
                                                  kTravelThreshold},
                                                 {{.position = {1, 0},
                                                   .width = 1,
                                                   .height = 1,
-                                                  .percent_radius = 0.5,
+                                                  .corner_rounding = 0.5,
                                                   .rotation = kQuarterTurn,
                                                   .pinch = 0.5},
                                                  kEpsilon},
@@ -82,12 +86,12 @@ TEST(BrushTipExtrusionTest,
 TEST(BrushTipExtrusionTest, JoinedShapeTwoPillsAtRightAngles) {
   EXPECT_EQ(
       BrushTipExtrusion::EvaluateTangentQuality(
-          {{.position = {0, 0}, .width = 2, .height = 1, .percent_radius = 1},
+          {{.position = {0, 0}, .width = 2, .height = 1, .corner_rounding = 1},
            kEpsilon},
           {{.position = {2, 0},
             .width = 2,
             .height = 1,
-            .percent_radius = 1,
+            .corner_rounding = 1,
             .rotation = kQuarterTurn},
            kEpsilon},
           kTravelThreshold),

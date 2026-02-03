@@ -49,7 +49,7 @@ BrushTipShape ShapeWithZeroMinRadiusAndSeparation(BrushTipState state) {
 
 TEST(BrushTipShapeTest, ConstructedFormingCircle) {
   BrushTipShape shape = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {5, 3}, .width = 14, .height = 14, .percent_radius = 1});
+      {.position = {5, 3}, .width = 14, .height = 14, .corner_rounding = 1});
   EXPECT_THAT(shape.Center(), PointEq({5, 3}));
   EXPECT_THAT(shape.PerimeterCircles(),
               ElementsAre(CircleEq(Circle({5, 3}, 7))));
@@ -63,7 +63,7 @@ TEST(BrushTipShapeTest, ConstructedFormingStadium) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {1, 1},
                                              .width = 4,
                                              .height = 2,
-                                             .percent_radius = 1,
+                                             .corner_rounding = 1,
                                              .rotation = Angle()});
     EXPECT_THAT(shape.Center(), PointEq({1, 1}));
     EXPECT_THAT(
@@ -75,7 +75,7 @@ TEST(BrushTipShapeTest, ConstructedFormingStadium) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {1, 1},
                                              .width = 4,
                                              .height = 16,
-                                             .percent_radius = 1,
+                                             .corner_rounding = 1,
                                              .rotation = 3 * kQuarterTurn});
     EXPECT_THAT(shape.Center(), PointEq({1, 1}));
     EXPECT_THAT(shape.PerimeterCircles(),
@@ -89,7 +89,7 @@ TEST(BrushTipShapeTest, ConstructedFormingRectangle) {
       ShapeWithZeroMinRadiusAndSeparation({.position = {2, 3},
                                            .width = 8,
                                            .height = 8.f / 3,
-                                           .percent_radius = 0,
+                                           .corner_rounding = 0,
                                            .rotation = kFullTurn / 6});
   EXPECT_THAT(shape.Center(), PointEq({2, 3}));
   EXPECT_THAT(shape.PerimeterCircles(),
@@ -100,12 +100,12 @@ TEST(BrushTipShapeTest, ConstructedFormingRectangle) {
 }
 
 TEST(BrushTipShapeTest, ConstructedFormingPinchedQuad) {
-  {  // Shape with 0 min_radius_and_separation, and 0 percent_radius.
+  {  // Shape with 0 min_radius_and_separation, and 0 corner_rounding.
     BrushTipShape shape =
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 9,
                                              .height = 9.f / 3,
-                                             .percent_radius = 0,
+                                             .corner_rounding = 0,
                                              .rotation = Angle(),
                                              .pinch = 0.3});
     EXPECT_THAT(shape.Center(), PointEq({0, 0}));
@@ -115,12 +115,12 @@ TEST(BrushTipShapeTest, ConstructedFormingPinchedQuad) {
                             CircleNear(Circle({-3.15, -1.5}, 0), 0.01),
                             CircleNear(Circle({3.15, -1.5}, 0), 0.01)));
   }
-  {  // Shape with 0 min_radius_and_separation, and a non-zero percent_radius.
+  {  // Shape with 0 min_radius_and_separation, and a non-zero corner_rounding.
     BrushTipShape shape =
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 9,
                                              .height = 9.f / 3,
-                                             .percent_radius = 0.2,
+                                             .corner_rounding = 0.2,
                                              .rotation = Angle(),
                                              .pinch = 0.3});
     EXPECT_THAT(shape.Center(), PointEq({0, 0}));
@@ -130,12 +130,12 @@ TEST(BrushTipShapeTest, ConstructedFormingPinchedQuad) {
                             CircleNear(Circle({-2.94, -1.2}, 0.3), 0.01),
                             CircleNear(Circle({2.94, -1.2}, 0.3), 0.01)));
   }
-  {  // Shape with non-zero min_radius_and_separation, and 0 percent_radius,
+  {  // Shape with non-zero min_radius_and_separation, and 0 corner_rounding,
      // pinch not creating overlap control circle.
     BrushTipShape shape = BrushTipShape({.position = {0, 0},
                                          .width = 9,
                                          .height = 9.f / 3,
-                                         .percent_radius = 0,
+                                         .corner_rounding = 0,
                                          .rotation = Angle(),
                                          .pinch = 0.3},
                                         0.2);
@@ -146,13 +146,13 @@ TEST(BrushTipShapeTest, ConstructedFormingPinchedQuad) {
                             CircleNear(Circle({-3.15, -1.5}, 0), 0.01),
                             CircleNear(Circle({3.15, -1.5}, 0), 0.01)));
   }
-  {  // Shape with 0 min_radius_and_separation, and a non-zero percent_radius
+  {  // Shape with 0 min_radius_and_separation, and a non-zero corner_rounding
      // not centered around 0.
     BrushTipShape shape =
         ShapeWithZeroMinRadiusAndSeparation({.position = {2, 3},
                                              .width = 9,
                                              .height = 9.f / 3,
-                                             .percent_radius = 0.2,
+                                             .corner_rounding = 0.2,
                                              .rotation = Angle(),
                                              .pinch = 0.3});
     EXPECT_THAT(shape.Center(), PointEq({2, 3}));
@@ -165,12 +165,12 @@ TEST(BrushTipShapeTest, ConstructedFormingPinchedQuad) {
 }
 
 TEST(BrushTipShapeTest, ConstructedFormingPinchedQuadToTriangle) {
-  {  // Shape with non-zero min_radius_and_separation, and zero percent_radius,
+  {  // Shape with non-zero min_radius_and_separation, and zero corner_rounding,
      // pinch creating overlap control circle
     BrushTipShape shape = BrushTipShape({.position = {0, 0},
                                          .width = 9,
                                          .height = 9.f / 3,
-                                         .percent_radius = 0,
+                                         .corner_rounding = 0,
                                          .rotation = Angle(),
                                          .pinch = 0.8},
                                         2.0);
@@ -181,11 +181,11 @@ TEST(BrushTipShapeTest, ConstructedFormingPinchedQuadToTriangle) {
                             CircleNear(Circle({0, -1.5}, 0), 0.01)));
   }
   {  // Shape with non-zero min_radius_and_separation, and non-zero
-     // percent_radius, pinch creating overlap control circle
+     // corner_rounding, pinch creating overlap control circle
     BrushTipShape shape = BrushTipShape({.position = {0, 0},
                                          .width = 9,
                                          .height = 9.f,
-                                         .percent_radius = 0.5,
+                                         .corner_rounding = 0.5,
                                          .rotation = Angle(),
                                          .pinch = 0.99},
                                         0.8);
@@ -196,12 +196,12 @@ TEST(BrushTipShapeTest, ConstructedFormingPinchedQuadToTriangle) {
                             CircleNear(Circle({0, -2.25}, 2.25), 0.01)));
   }
   {  // Shape with non-zero min_radius_and_separation, and non-zero
-     // percent_radius, pinch creating overlap control circle not centered
+     // corner_rounding, pinch creating overlap control circle not centered
      // around 0.
     BrushTipShape shape = BrushTipShape({.position = {2, 3},
                                          .width = 9,
                                          .height = 9.f,
-                                         .percent_radius = 0.5,
+                                         .corner_rounding = 0.5,
                                          .rotation = Angle(),
                                          .pinch = 0.99},
                                         0.8);
@@ -214,13 +214,13 @@ TEST(BrushTipShapeTest, ConstructedFormingPinchedQuadToTriangle) {
 }
 
 TEST(BrushTipShapeTest,
-     ConstructedFormingStadiumFromPercentRadiusAndMinRadiusAndSeparation) {
-  {  // Shape with percent radius big enough that `y` is set to zero resulting
+     ConstructedFormingStadiumFromCornerRoundingAndMinRadiusAndSeparation) {
+  {  // Shape with corner rounding big enough that `y` is set to zero resulting
      // in stadium.
     BrushTipShape shape = BrushTipShape({.position = {0, 0},
                                          .width = 9,
                                          .height = 9.f / 3,
-                                         .percent_radius = 0.99,
+                                         .corner_rounding = 0.99,
                                          .rotation = Angle(),
                                          .pinch = 0.8},
                                         1.2);
@@ -229,12 +229,12 @@ TEST(BrushTipShapeTest,
                 ElementsAre(CircleNear(Circle({3.02, 0}, 1.49), 0.01),
                             CircleNear(Circle({-3.02, 0}, 1.49), 0.01)));
   }
-  {  // Shape with percent radius big enough that `x` is set to zero resulting
+  {  // Shape with corner rounding big enough that `x` is set to zero resulting
      // in stadium.
     BrushTipShape shape = BrushTipShape({.position = {0, 0},
                                          .width = 9.f / 3,
                                          .height = 9,
-                                         .percent_radius = 0.99,
+                                         .corner_rounding = 0.99,
                                          .rotation = Angle(),
                                          .pinch = 0.8},
                                         1.2);
@@ -243,12 +243,12 @@ TEST(BrushTipShapeTest,
                 ElementsAre(CircleNear(Circle({0, 3.02}, 1.49), 0.01),
                             CircleNear(Circle({0, -3.02}, 1.49), 0.01)));
   }
-  {  // Shape with percent radius big enough that `x`  and `y` are set to zero
+  {  // Shape with corner rounding big enough that `x`  and `y` are set to zero
      // resulting in circle.
     BrushTipShape shape = BrushTipShape({.position = {0, 0},
                                          .width = 9,
                                          .height = 9,
-                                         .percent_radius = 0.99,
+                                         .corner_rounding = 0.99,
                                          .rotation = Angle(),
                                          .pinch = 0.8},
                                         1.2);
@@ -259,12 +259,12 @@ TEST(BrushTipShapeTest,
 }
 
 TEST(BrushTipShapeTest, ConstructedFormingSlantedRectangle) {
-  {  // Shape with 0 min_radius_and_separation, and 0 percent_radius.
+  {  // Shape with 0 min_radius_and_separation, and 0 corner_rounding.
     BrushTipShape shape =
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 9,
                                              .height = 9.f / 3,
-                                             .percent_radius = 0,
+                                             .corner_rounding = 0,
                                              .rotation = Angle(),
                                              .slant = kFullTurn / 6});
     EXPECT_THAT(shape.Center(), PointEq({0, 0}));
@@ -274,12 +274,12 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedRectangle) {
                             CircleNear(Circle({-3.2, -0.75}, 0), 0.01),
                             CircleNear(Circle({5.8, -0.75}, 0), 0.01)));
   }
-  {  // Shape with 0 min_radius_and_separation, and a non-zero percent_radius.
+  {  // Shape with 0 min_radius_and_separation, and a non-zero corner_rounding.
     BrushTipShape shape =
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 9,
                                              .height = 9.f / 3,
-                                             .percent_radius = 0.2,
+                                             .corner_rounding = 0.2,
                                              .rotation = Angle(),
                                              .slant = kFullTurn / 6});
     EXPECT_THAT(shape.Center(), PointEq({0, 0}));
@@ -289,11 +289,11 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedRectangle) {
                             CircleNear(Circle({-3.16, -0.6}, 0.3), 0.01),
                             CircleNear(Circle({5.24, -0.6}, 0.3), 0.01)));
   }
-  {  // Shape with non-zero min_radius_and_separation, and 0 percent_radius.
+  {  // Shape with non-zero min_radius_and_separation, and 0 corner_rounding.
     BrushTipShape shape = BrushTipShape({.position = {0, 0},
                                          .width = 9,
                                          .height = 9.f / 3,
-                                         .percent_radius = 0.0,
+                                         .corner_rounding = 0.0,
                                          .rotation = Angle(),
                                          .slant = kFullTurn / 6},
                                         0.2);
@@ -305,11 +305,11 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedRectangle) {
                             CircleNear(Circle({5.8, -0.75}, 0.0), 0.01)));
   }
   {  // Shape with non-zero min_radius_and_separation, and non-zero
-     // percent_radius, non-zero rotation.
+     // corner_rounding, non-zero rotation.
     BrushTipShape shape = BrushTipShape({.position = {0, 0},
                                          .width = 9,
                                          .height = 9.f / 3,
-                                         .percent_radius = 0.2,
+                                         .corner_rounding = 0.2,
                                          .rotation = kFullTurn / 8,
                                          .slant = kFullTurn / 6},
                                         0.2);
@@ -321,11 +321,11 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedRectangle) {
                             CircleNear(Circle({4.13, 3.28}, 0.3), 0.01)));
   }
   {  // Shape with non-zero min_radius_and_separation, and non-zero
-     // percent_radius, non-zero rotation, and non-zero center.
+     // corner_rounding, non-zero rotation, and non-zero center.
     BrushTipShape shape = BrushTipShape({.position = {2, 3},
                                          .width = 9,
                                          .height = 9.f / 3,
-                                         .percent_radius = 0.2,
+                                         .corner_rounding = 0.2,
                                          .rotation = kFullTurn / 8,
                                          .slant = kFullTurn / 6},
                                         0.2);
@@ -339,12 +339,12 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedRectangle) {
 }
 
 TEST(BrushTipShapeTest, ConstructedFormingSlantedPinchedQuad) {
-  {  // Shape with 0 min_radius_and_separation, and 0 percent_radius.
+  {  // Shape with 0 min_radius_and_separation, and 0 corner_rounding.
     BrushTipShape shape =
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 9,
                                              .height = 9.f / 3,
-                                             .percent_radius = 0,
+                                             .corner_rounding = 0,
                                              .rotation = Angle(),
                                              .slant = kFullTurn / 6,
                                              .pinch = 0.3});
@@ -355,12 +355,12 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedPinchedQuad) {
                             CircleNear(Circle({-1.85, -0.75}, 0), 0.01),
                             CircleNear(Circle({4.45, -0.75}, 0), 0.01)));
   }
-  {  // Shape with 0 min_radius_and_separation, and a non-zero percent_radius.
+  {  // Shape with 0 min_radius_and_separation, and a non-zero corner_rounding.
     BrushTipShape shape =
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 9,
                                              .height = 9.f / 3,
-                                             .percent_radius = 0.2,
+                                             .corner_rounding = 0.2,
                                              .rotation = Angle(),
                                              .slant = kFullTurn / 6,
                                              .pinch = 0.3});
@@ -371,11 +371,11 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedPinchedQuad) {
                             CircleNear(Circle({-1.9, -0.6}, 0.3), 0.01),
                             CircleNear(Circle({3.98, -0.6}, 0.3), 0.01)));
   }
-  {  // Shape with non-zero min_radius_and_separation, and 0 percent_radius.
+  {  // Shape with non-zero min_radius_and_separation, and 0 corner_rounding.
     BrushTipShape shape = BrushTipShape({.position = {0, 0},
                                          .width = 9,
                                          .height = 9.f / 3,
-                                         .percent_radius = 0.0,
+                                         .corner_rounding = 0.0,
                                          .rotation = Angle(),
                                          .slant = kFullTurn / 6,
                                          .pinch = 0.3},
@@ -388,11 +388,11 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedPinchedQuad) {
                             CircleNear(Circle({4.45, -0.75}, 0.0), 0.01)));
   }
   {  // Shape with non-zero min_radius_and_separation, and non-zero
-     // percent_radius, non-zero rotation.
+     // corner_rounding, non-zero rotation.
     BrushTipShape shape = BrushTipShape({.position = {0, 0},
                                          .width = 9,
                                          .height = 9.f / 3,
-                                         .percent_radius = 0.2,
+                                         .corner_rounding = 0.2,
                                          .rotation = kFullTurn / 8,
                                          .slant = kFullTurn / 6,
                                          .pinch = 0.3},
@@ -405,11 +405,11 @@ TEST(BrushTipShapeTest, ConstructedFormingSlantedPinchedQuad) {
                             CircleNear(Circle({3.24, 2.39}, 0.3), 0.01)));
   }
   {  // Shape with non-zero min_radius_and_separation, and non-zero
-     // percent_radius, non-zero rotation, and non-zero center.
+     // corner_rounding, non-zero rotation, and non-zero center.
     BrushTipShape shape = BrushTipShape({.position = {2, 3},
                                          .width = 9,
                                          .height = 9.f / 3,
-                                         .percent_radius = 0.2,
+                                         .corner_rounding = 0.2,
                                          .rotation = kFullTurn / 8,
                                          .slant = kFullTurn / 6,
                                          .pinch = 0.3},
@@ -428,7 +428,7 @@ TEST(BrushTipShapeTest, ConstructedFormingRoundedSquare) {
       ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                            .width = 4,
                                            .height = 4,
-                                           .percent_radius = 0.5,
+                                           .corner_rounding = 0.5,
                                            .rotation = kFullTurn / 8});
   EXPECT_THAT(shape.Center(), PointEq({0, 0}));
   EXPECT_THAT(shape.PerimeterCircles(),
@@ -440,7 +440,7 @@ TEST(BrushTipShapeTest, ConstructedFormingRoundedSquare) {
 
 TEST(BrushTipShapeTest, ConstructedWithZeroWidthAndHeight) {
   BrushTipShape shape = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {5, 3}, .width = 0, .height = 0, .percent_radius = 0});
+      {.position = {5, 3}, .width = 0, .height = 0, .corner_rounding = 0});
   EXPECT_THAT(shape.Center(), PointEq({5, 3}));
   EXPECT_THAT(shape.PerimeterCircles(),
               ElementsAre(CircleEq(Circle(shape.Center(), 0))));
@@ -450,7 +450,7 @@ TEST(BrushTipShapeTest, ConstructedWithZeroWidthAndHeight) {
 
 TEST(BrushTipShapeTest, ConstructedWithZeroWidth) {
   BrushTipShape shape = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {0, 0}, .width = 0, .height = 4, .percent_radius = 0.5});
+      {.position = {0, 0}, .width = 0, .height = 4, .corner_rounding = 0.5});
 
   EXPECT_THAT(shape.Center(), PointEq({0, 0}));
   EXPECT_THAT(
@@ -460,7 +460,7 @@ TEST(BrushTipShapeTest, ConstructedWithZeroWidth) {
 
 TEST(BrushTipShapeTest, ConstructedWithZeroHeight) {
   BrushTipShape shape(
-      {.position = {0, 0}, .width = 4, .height = 0, .percent_radius = 0.5}, 0);
+      {.position = {0, 0}, .width = 4, .height = 0, .corner_rounding = 0.5}, 0);
 
   EXPECT_THAT(shape.Center(), PointEq({0, 0}));
   EXPECT_THAT(
@@ -476,40 +476,40 @@ TEST(BrushTipShapeTest, ConstructedWithInfiniteWidthAndHeightAndZeroRadius) {
       .position = {5, 3},
       .width = kInfinity,
       .height = kInfinity,
-      .percent_radius = 0,
+      .corner_rounding = 0,
   };
   BrushTipShape shape = ShapeWithZeroMinRadiusAndSeparation(state);
   // Even though the tip shape is infinitely large, it should still have a
   // well-defined center.
   EXPECT_THAT(shape.Center(), PointEq({5, 3}));
-  // A `percent_radius` of exactly zero should always result in circles of zero
+  // A `corner_rounding` of exactly zero should always result in circles of zero
   // radius (even though the size is infinite, and zero times infinity is NaN).
   EXPECT_THAT(shape.PerimeterCircles(), Each(Property(&Circle::Radius, Eq(0))));
 }
 
-TEST(BrushTipShapeDeathTest, ConstructedWithPercentRadiusLessThanZero) {
+TEST(BrushTipShapeDeathTest, ConstructedWithCornerRoundingLessThanZero) {
   EXPECT_DEATH_IF_SUPPORTED(BrushTipShape(BrushTipState{.position = {0, 0},
                                                         .width = 2,
                                                         .height = 2,
-                                                        .percent_radius = -1},
+                                                        .corner_rounding = -1},
                                           0),
                             "");
 }
 
-TEST(BrushTipShapeDeathTest, ConstructedWithPercentRadiusGreaterThanOne) {
-  EXPECT_DEATH_IF_SUPPORTED(
-      BrushTipShape(
-          BrushTipState{
-              .position = {0, 0}, .width = 2, .height = 2, .percent_radius = 2},
-          0),
-      "");
+TEST(BrushTipShapeDeathTest, ConstructedWithCornerRoundingGreaterThanOne) {
+  EXPECT_DEATH_IF_SUPPORTED(BrushTipShape(BrushTipState{.position = {0, 0},
+                                                        .width = 2,
+                                                        .height = 2,
+                                                        .corner_rounding = 2},
+                                          0),
+                            "");
 }
 
 TEST(BrushTipShapeDeathTest, ConstructedWithNegativeWidth) {
   EXPECT_DEATH_IF_SUPPORTED(BrushTipShape(BrushTipState{.position = {0, 0},
                                                         .width = -1,
                                                         .height = 2,
-                                                        .percent_radius = 0.5},
+                                                        .corner_rounding = 0.5},
                                           0),
                             "");
 }
@@ -518,7 +518,7 @@ TEST(BrushTipShapeDeathTest, ConstructedWithNegativeHeight) {
   EXPECT_DEATH_IF_SUPPORTED(BrushTipShape(BrushTipState{.position = {0, 0},
                                                         .width = 3,
                                                         .height = -5,
-                                                        .percent_radius = 0.5},
+                                                        .corner_rounding = 0.5},
                                           0),
                             "");
 }
@@ -526,9 +526,9 @@ TEST(BrushTipShapeDeathTest, ConstructedWithNegativeHeight) {
 TEST(BrushTipShapeTest, Circles) {
   // See brush_tip_shape_tests.svg Circles
   BrushTipShape circle_1 = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {0, 0}, .width = 4, .height = 4, .percent_radius = 1});
+      {.position = {0, 0}, .width = 4, .height = 4, .corner_rounding = 1});
   BrushTipShape circle_2 = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {1, 0}, .width = 4, .height = 4, .percent_radius = 1});
+      {.position = {1, 0}, .width = 4, .height = 4, .corner_rounding = 1});
   BrushTipShape::TangentCircleIndices indices =
       BrushTipShape::GetTangentCircleIndices(circle_1, circle_2);
   EXPECT_EQ(indices.left.first, 0);
@@ -541,12 +541,12 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleStadium) {
   {
     // See brush_tip_shape_tests.svg Circle + Stadium #1
     BrushTipShape circle = ShapeWithZeroMinRadiusAndSeparation(
-        {.position = {0, 0}, .width = 4, .height = 4, .percent_radius = 1});
+        {.position = {0, 0}, .width = 4, .height = 4, .corner_rounding = 1});
     BrushTipShape stadium =
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 1},
                                              .width = 4,
                                              .height = 2,
-                                             .percent_radius = 1,
+                                             .corner_rounding = 1,
                                              .rotation = Angle()});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(circle, stadium);
@@ -558,12 +558,12 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleStadium) {
   {
     // See brush_tip_shape_tests.svg Circle + Stadium #2
     BrushTipShape circle = ShapeWithZeroMinRadiusAndSeparation(
-        {.position = {0, 0}, .width = 4, .height = 4, .percent_radius = 1});
+        {.position = {0, 0}, .width = 4, .height = 4, .corner_rounding = 1});
     BrushTipShape stadium =
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 1},
                                              .width = 4,
                                              .height = 2,
-                                             .percent_radius = 1,
+                                             .corner_rounding = 1,
                                              .rotation = -kQuarterTurn});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(circle, stadium);
@@ -578,10 +578,10 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleStadium) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 2,
                                              .height = 4,
-                                             .percent_radius = 1,
+                                             .corner_rounding = 1,
                                              .rotation = kQuarterTurn});
     BrushTipShape circle = ShapeWithZeroMinRadiusAndSeparation(
-        {.position = {0, 2}, .width = 4, .height = 4, .percent_radius = 1});
+        {.position = {0, 2}, .width = 4, .height = 4, .corner_rounding = 1});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(stadium, circle);
     EXPECT_EQ(indices.left.first, 0);
@@ -595,10 +595,10 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleStadium) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 2,
                                              .height = 4,
-                                             .percent_radius = 1,
+                                             .corner_rounding = 1,
                                              .rotation = Angle()});
     BrushTipShape circle = ShapeWithZeroMinRadiusAndSeparation(
-        {.position = {0, 2}, .width = 4, .height = 4, .percent_radius = 1});
+        {.position = {0, 2}, .width = 4, .height = 4, .corner_rounding = 1});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(stadium, circle);
     EXPECT_EQ(indices.left.first, 1);
@@ -612,9 +612,12 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleSquare) {
   {
     // See brush_tip_shape_tests.svg Circle + Square #1
     BrushTipShape circle = ShapeWithZeroMinRadiusAndSeparation(
-        {.position = {0, 0}, .width = 4, .height = 4, .percent_radius = 1});
-    BrushTipShape square = ShapeWithZeroMinRadiusAndSeparation(
-        {.position = {-3, 0}, .width = 4, .height = 4, .percent_radius = 0.25});
+        {.position = {0, 0}, .width = 4, .height = 4, .corner_rounding = 1});
+    BrushTipShape square =
+        ShapeWithZeroMinRadiusAndSeparation({.position = {-3, 0},
+                                             .width = 4,
+                                             .height = 4,
+                                             .corner_rounding = 0.25});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(circle, square);
     EXPECT_EQ(indices.left.first, 0);
@@ -625,12 +628,12 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleSquare) {
   {
     // See brush_tip_shape_tests.svg Circle + Square #2
     BrushTipShape circle = ShapeWithZeroMinRadiusAndSeparation(
-        {.position = {0, 0}, .width = 4, .height = 4, .percent_radius = 1});
+        {.position = {0, 0}, .width = 4, .height = 4, .corner_rounding = 1});
     BrushTipShape square =
         ShapeWithZeroMinRadiusAndSeparation({.position = {3, 0},
                                              .width = 4,
                                              .height = 4,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = kFullTurn / 8});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(circle, square);
@@ -642,12 +645,12 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleSquare) {
   {
     // See brush_tip_shape_tests.svg Circle + Square #3
     BrushTipShape circle = ShapeWithZeroMinRadiusAndSeparation(
-        {.position = {0, 0}, .width = 4, .height = 4, .percent_radius = 1});
+        {.position = {0, 0}, .width = 4, .height = 4, .corner_rounding = 1});
     BrushTipShape square =
         ShapeWithZeroMinRadiusAndSeparation({.position = {2, 0},
                                              .width = 2,
                                              .height = 2,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = -kQuarterTurn});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(circle, square);
@@ -662,10 +665,10 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleSquare) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 2,
                                              .height = 2,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = Angle()});
     BrushTipShape circle = ShapeWithZeroMinRadiusAndSeparation(
-        {.position = {2, 0}, .width = 4, .height = 4, .percent_radius = 1});
+        {.position = {2, 0}, .width = 4, .height = 4, .corner_rounding = 1});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(square, circle);
     EXPECT_EQ(indices.left.first, 1);
@@ -679,10 +682,13 @@ TEST(BrushTipShapeTest, TangentIndicesWithCircleSquare) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 4,
                                              .height = 4,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = Angle()});
-    BrushTipShape circle = ShapeWithZeroMinRadiusAndSeparation(
-        {.position = {1, 0}, .width = 2.2, .height = 2.2, .percent_radius = 1});
+    BrushTipShape circle =
+        ShapeWithZeroMinRadiusAndSeparation({.position = {1, 0},
+                                             .width = 2.2,
+                                             .height = 2.2,
+                                             .corner_rounding = 1});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(square, circle);
     EXPECT_EQ(indices.left.first, 0);
@@ -699,13 +705,13 @@ TEST(BrushTipShapeTest, TangentIndicesWithStadia) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 2,
                                              .height = 4,
-                                             .percent_radius = 1,
+                                             .corner_rounding = 1,
                                              .rotation = Angle()});
     BrushTipShape stadium_2 =
         ShapeWithZeroMinRadiusAndSeparation({.position = {1, 0},
                                              .width = 2,
                                              .height = 4,
-                                             .percent_radius = 1,
+                                             .corner_rounding = 1,
                                              .rotation = Angle()});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(stadium_1, stadium_2);
@@ -720,13 +726,13 @@ TEST(BrushTipShapeTest, TangentIndicesWithStadia) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 2,
                                              .height = 4,
-                                             .percent_radius = 1,
+                                             .corner_rounding = 1,
                                              .rotation = Angle()});
     BrushTipShape stadium_2 =
         ShapeWithZeroMinRadiusAndSeparation({.position = {2, 0},
                                              .width = 2,
                                              .height = 4,
-                                             .percent_radius = 1,
+                                             .corner_rounding = 1,
                                              .rotation = kQuarterTurn});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(stadium_1, stadium_2);
@@ -744,13 +750,13 @@ TEST(BrushTipShapeTest, TangentIndicesWithRectangles) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 6,
                                              .height = 8,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = Angle()});
     BrushTipShape rectangle_2 =
         ShapeWithZeroMinRadiusAndSeparation({.position = {1, 0},
                                              .width = 6,
                                              .height = 8,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = Angle()});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(rectangle_1, rectangle_2);
@@ -765,13 +771,13 @@ TEST(BrushTipShapeTest, TangentIndicesWithRectangles) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 6,
                                              .height = 8,
-                                             .percent_radius = 0,
+                                             .corner_rounding = 0,
                                              .rotation = Angle()});
     BrushTipShape rectangle_2 =
         ShapeWithZeroMinRadiusAndSeparation({.position = {1, 1},
                                              .width = 6,
                                              .height = 8,
-                                             .percent_radius = 0,
+                                             .corner_rounding = 0,
                                              .rotation = Angle()});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(rectangle_1, rectangle_2);
@@ -786,13 +792,13 @@ TEST(BrushTipShapeTest, TangentIndicesWithRectangles) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 6,
                                              .height = 6,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = kFullTurn / 8});
     BrushTipShape square_2 =
         ShapeWithZeroMinRadiusAndSeparation({.position = {1, 0},
                                              .width = 6,
                                              .height = 6,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = -kFullTurn / 8});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(square_1, square_2);
@@ -811,13 +817,13 @@ TEST(BrushTipShapeTest, TangentIndicesWithCoincidentControlPoints) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 2,
                                              .height = 6,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = Angle()});
     BrushTipShape rectangle_2 =
         ShapeWithZeroMinRadiusAndSeparation({.position = {1.75, 0},
                                              .width = 2,
                                              .height = 6,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = Angle()});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(rectangle_1, rectangle_2);
@@ -833,13 +839,13 @@ TEST(BrushTipShapeTest, TangentIndicesWithCoincidentControlPoints) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 2,
                                              .height = 4,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = Angle()});
     BrushTipShape rectangle_2 =
         ShapeWithZeroMinRadiusAndSeparation({.position = {1, 1},
                                              .width = 4,
                                              .height = 2,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = Angle()});
     BrushTipShape::TangentCircleIndices indices =
         BrushTipShape::GetTangentCircleIndices(rectangle_1, rectangle_2);
@@ -858,13 +864,13 @@ TEST(BrushTipShapeDeathTest, TangentIndicesWithOneInsideTheOther) {
       ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                            .width = 8,
                                            .height = 6,
-                                           .percent_radius = 0.25,
+                                           .corner_rounding = 0.25,
                                            .rotation = Angle()});
   BrushTipShape small_rectangle =
       ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                            .width = 2,
                                            .height = 4,
-                                           .percent_radius = 0.25,
+                                           .corner_rounding = 0.25,
                                            .rotation = Angle()});
   // See brush_tip_shape_tests.svg One Inside The Other #1
   EXPECT_DEATH_IF_SUPPORTED(
@@ -880,7 +886,7 @@ TEST(BrushTipShapeDeathTest, TangentIndicesWithOneInsideTheOther) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 2,
                                              .height = 2,
-                                             .percent_radius = 0.5,
+                                             .corner_rounding = 0.5,
                                              .rotation = Angle()});
     EXPECT_DEATH_IF_SUPPORTED(
         BrushTipShape::GetTangentCircleIndices(square, square), "");
@@ -891,7 +897,7 @@ TEST(BrushTipShapeDeathTest, TangentIndicesWithOneInsideTheOther) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 2,
                                              .height = 2,
-                                             .percent_radius = 0.5,
+                                             .corner_rounding = 0.5,
                                              .rotation = kFullTurn / 8});
     EXPECT_DEATH_IF_SUPPORTED(
         BrushTipShape::GetTangentCircleIndices(square, square), "");
@@ -902,13 +908,13 @@ TEST(BrushTipShapeDeathTest, TangentIndicesWithOneInsideTheOther) {
         ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                              .width = 2,
                                              .height = 6,
-                                             .percent_radius = 0.25,
+                                             .corner_rounding = 0.25,
                                              .rotation = Angle()});
     BrushTipShape rectangle_2 =
         ShapeWithZeroMinRadiusAndSeparation({.position = {1, 0},
                                              .width = 4,
                                              .height = 6,
-                                             .percent_radius = 0.125,
+                                             .corner_rounding = 0.125,
                                              .rotation = Angle()});
     EXPECT_DEATH_IF_SUPPORTED(
         BrushTipShape::GetTangentCircleIndices(rectangle_1, rectangle_2), "");
@@ -923,13 +929,13 @@ TEST(BrushTipShapeTest, TangentIndicesWithMoreThanTwoPointsOfIntersection) {
       ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                            .width = 2,
                                            .height = 2,
-                                           .percent_radius = 0,
+                                           .corner_rounding = 0,
                                            .rotation = Angle()});
   BrushTipShape square_2 =
       ShapeWithZeroMinRadiusAndSeparation({.position = {0, 0},
                                            .width = 2,
                                            .height = 2,
-                                           .percent_radius = 0,
+                                           .corner_rounding = 0,
                                            .rotation = kFullTurn / 8});
   {
     // See brush_tip_shape_tests.svg More Than Two Points Of
@@ -959,7 +965,7 @@ TEST(BrushTipShapeTest,
   // The upper-left corner (index 1) of `small_square` is inside `large_circle`.
   // The other corners lie just outside it.
   BrushTipShape large_circle{
-      {.position = {0, 0}, .width = 2, .height = 2, .percent_radius = 1},
+      {.position = {0, 0}, .width = 2, .height = 2, .corner_rounding = 1},
       kEpsilon};
   BrushTipShape small_square{
       {.position = {0.8, -0.8}, .width = 0.25, .height = 0.25}, kEpsilon};
@@ -991,17 +997,17 @@ TEST(AddRoundedQuadTurnPoints, AppendTurnExtrusionPoints) {
         AppendTipExtrusionPointsHelper({.position = {0, 0},
                                         .width = 2,
                                         .height = 2,
-                                        .percent_radius = 0.5,
+                                        .corner_rounding = 0.5,
                                         .rotation = Angle()},
                                        {.position = {2, -1},
                                         .width = 2,
                                         .height = 2,
-                                        .percent_radius = 0.25,
+                                        .corner_rounding = 0.25,
                                         .rotation = kQuarterTurn},
                                        {.position = {4, 0},
                                         .width = 2,
                                         .height = 2,
-                                        .percent_radius = 0.5,
+                                        .corner_rounding = 0.5,
                                         .rotation = Angle()},
                                        0.01);
     EXPECT_THAT(points.left, ElementsAre(PointNear({2, 0.37}, 0.01)));
@@ -1016,17 +1022,17 @@ TEST(AddRoundedQuadTurnPoints, AppendTurnExtrusionPoints) {
         AppendTipExtrusionPointsHelper({.position = {0, 0},
                                         .width = 2,
                                         .height = 2,
-                                        .percent_radius = 0.5,
+                                        .corner_rounding = 0.5,
                                         .rotation = Angle()},
                                        {.position = {2, 1},
                                         .width = 2,
                                         .height = 2,
-                                        .percent_radius = 0.25,
+                                        .corner_rounding = 0.25,
                                         .rotation = kQuarterTurn},
                                        {.position = {4, 0},
                                         .width = 2,
                                         .height = 2,
-                                        .percent_radius = 0.5,
+                                        .corner_rounding = 0.5,
                                         .rotation = Angle()},
                                        0.01);
     EXPECT_THAT(
@@ -1041,17 +1047,17 @@ TEST(AddRoundedQuadTurnPoints, AppendTurnExtrusionPoints) {
         AppendTipExtrusionPointsHelper({.position = {0, 0},
                                         .width = 2,
                                         .height = 2,
-                                        .percent_radius = 0,
+                                        .corner_rounding = 0,
                                         .rotation = Angle()},
                                        {.position = {2, 0},
                                         .width = 2,
                                         .height = 2,
-                                        .percent_radius = 0,
+                                        .corner_rounding = 0,
                                         .rotation = Angle()},
                                        {.position = {2, 2},
                                         .width = 2,
                                         .height = 2,
-                                        .percent_radius = 0,
+                                        .corner_rounding = 0,
                                         .rotation = Angle()},
                                        0.01);
     EXPECT_THAT(points.left, ElementsAre(PointNear({1, 1}, 0.01)));
@@ -1064,17 +1070,17 @@ TEST(AddRoundedQuadTurnPoints, AppendTurnExtrusionPoints) {
         AppendTipExtrusionPointsHelper({.position = {0, 0},
                                         .width = 2,
                                         .height = 2,
-                                        .percent_radius = 0,
+                                        .corner_rounding = 0,
                                         .rotation = Angle()},
                                        {.position = {2, 0},
                                         .width = 2,
                                         .height = 2,
-                                        .percent_radius = 0,
+                                        .corner_rounding = 0,
                                         .rotation = Angle()},
                                        {.position = {2, -2},
                                         .width = 2,
                                         .height = 2,
-                                        .percent_radius = 0,
+                                        .corner_rounding = 0,
                                         .rotation = Angle()},
                                        0.01);
     EXPECT_THAT(points.left,
@@ -1087,17 +1093,17 @@ TEST(AddRoundedQuadTurnPoints, AppendTurnExtrusionPoints) {
         AppendTipExtrusionPointsHelper({.position = {0, 0},
                                         .width = 4,
                                         .height = 4,
-                                        .percent_radius = 0,
+                                        .corner_rounding = 0,
                                         .rotation = Angle()},
                                        {.position = {2, 1},
                                         .width = 4,
                                         .height = 4,
-                                        .percent_radius = 0,
+                                        .corner_rounding = 0,
                                         .rotation = Angle()},
                                        {.position = {0, 2},
                                         .width = 4,
                                         .height = 4,
-                                        .percent_radius = 0,
+                                        .corner_rounding = 0,
                                         .rotation = Angle()},
                                        0.01);
     EXPECT_THAT(points.left,
@@ -1111,17 +1117,17 @@ TEST(AddRoundedQuadTurnPoints, AppendTurnExtrusionPoints) {
         AppendTipExtrusionPointsHelper({.position = {0, 2},
                                         .width = 4,
                                         .height = 4,
-                                        .percent_radius = 0,
+                                        .corner_rounding = 0,
                                         .rotation = Angle()},
                                        {.position = {2, 1},
                                         .width = 4,
                                         .height = 4,
-                                        .percent_radius = 0,
+                                        .corner_rounding = 0,
                                         .rotation = Angle()},
                                        {.position = {0, 0},
                                         .width = 4,
                                         .height = 4,
-                                        .percent_radius = 0,
+                                        .corner_rounding = 0,
                                         .rotation = Angle()},
                                        0.01);
     EXPECT_THAT(points.left,
@@ -1136,9 +1142,9 @@ TEST(AddRoundedQuadTurnPoints, AppendTurnExtrusionPoints) {
 
 TEST(BrushTipShapeTest, AppendRoundedSquareStartcapExtrusionPoints) {
   BrushTipShape first = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {0, 0}, .width = 20, .height = 20, .percent_radius = 0.5});
+      {.position = {0, 0}, .width = 20, .height = 20, .corner_rounding = 0.5});
   BrushTipShape second = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {5, 5}, .width = 20, .height = 20, .percent_radius = 0.5});
+      {.position = {5, 5}, .width = 20, .height = 20, .corner_rounding = 0.5});
 
   // Fill the points with some starting values to check they are not modified.
   ExtrusionPoints startcap = {
@@ -1159,9 +1165,9 @@ TEST(BrushTipShapeTest, AppendRoundedSquareStartcapExtrusionPoints) {
 
 TEST(BrushTipShapeTest, AppendRoundedSquareEndcapExtrusionPoints) {
   BrushTipShape second_to_last = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {-5, 5}, .width = 20, .height = 20, .percent_radius = 0.5});
+      {.position = {-5, 5}, .width = 20, .height = 20, .corner_rounding = 0.5});
   BrushTipShape last = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {0, 0}, .width = 20, .height = 20, .percent_radius = 0.5});
+      {.position = {0, 0}, .width = 20, .height = 20, .corner_rounding = 0.5});
 
   // Fill the points with some starting values to check they are not modified.
   ExtrusionPoints endcap = {
@@ -1182,9 +1188,9 @@ TEST(BrushTipShapeTest, AppendRoundedSquareEndcapExtrusionPoints) {
 
 TEST(BrushTipShapeTest, AppendCircularStartcapExtrusionPoints) {
   BrushTipShape first = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {0, 0}, .width = 20, .height = 20, .percent_radius = 1});
+      {.position = {0, 0}, .width = 20, .height = 20, .corner_rounding = 1});
   BrushTipShape second = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {10, 10}, .width = 10, .height = 10, .percent_radius = 1});
+      {.position = {10, 10}, .width = 10, .height = 10, .corner_rounding = 1});
 
   ExtrusionPoints startcap;
   BrushTipShape::AppendStartcapExtrusionPoints(first, second, .5, startcap);
@@ -1201,9 +1207,9 @@ TEST(BrushTipShapeTest, AppendCircularStartcapExtrusionPoints) {
 
 TEST(BrushTipShapeTest, AppendCircularEndcapExtrusionPoints) {
   BrushTipShape second_to_last = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {0, 0}, .width = 10, .height = 10, .percent_radius = 1});
+      {.position = {0, 0}, .width = 10, .height = 10, .corner_rounding = 1});
   BrushTipShape last = ShapeWithZeroMinRadiusAndSeparation(
-      {.position = {10, -10}, .width = 20, .height = 20, .percent_radius = 1});
+      {.position = {10, -10}, .width = 20, .height = 20, .corner_rounding = 1});
 
   ExtrusionPoints endcap;
   BrushTipShape::AppendEndcapExtrusionPoints(second_to_last, last, .5, endcap);
@@ -1219,7 +1225,7 @@ TEST(BrushTipShapeTest, AppendCircularEndcapExtrusionPoints) {
 
 TEST(BrushTipShapeTest, AppendCircularWholeShapeExtrusionPoints) {
   BrushTipShape shape = ShapeWithZeroMinRadiusAndSeparation(
-      {.position{2, 2}, .width = 5, .height = 5, .percent_radius = 1});
+      {.position{2, 2}, .width = 5, .height = 5, .corner_rounding = 1});
 
   // Fill the points with some starting values to check they are not modified.
   ExtrusionPoints points = {
@@ -1244,7 +1250,7 @@ TEST(BrushTipShapeTest, AppendRoundedRectangleWholeShapeExtrusionPoints) {
       ShapeWithZeroMinRadiusAndSeparation({.position{3, 4},
                                            .width = 4,
                                            .height = 5,
-                                           .percent_radius = 0.5,
+                                           .corner_rounding = 0.5,
                                            .rotation = kFullTurn / 3});
 
   // Fill the points with some starting values to check they are not modified.
@@ -1269,7 +1275,7 @@ TEST(BrushTipShapeTest, AppendRoundedRectangleWholeShapeExtrusionPoints) {
 
 TEST(BrushTipShapeTest, AppendSquareWholeShapeExtrusionPoints) {
   BrushTipShape shape = ShapeWithZeroMinRadiusAndSeparation(
-      {.position{0, 0}, .width = 4, .height = 4, .percent_radius = 0});
+      {.position{0, 0}, .width = 4, .height = 4, .corner_rounding = 0});
 
   // Fill the points with some starting values to check they are not modified.
   ExtrusionPoints points = {
@@ -1291,7 +1297,7 @@ TEST(BrushTipShapeTest, ContainsSelf) {
       .position = {1, 2},
       .width = 5,
       .height = 5,
-      .percent_radius = 1,
+      .corner_rounding = 1,
   });
   EXPECT_TRUE(circle.Contains(circle));
 
@@ -1299,7 +1305,7 @@ TEST(BrushTipShapeTest, ContainsSelf) {
       .position = {-3, 5},
       .width = 2,
       .height = 8,
-      .percent_radius = 1,
+      .corner_rounding = 1,
   });
   EXPECT_TRUE(stadium.Contains(stadium));
 
@@ -1307,7 +1313,7 @@ TEST(BrushTipShapeTest, ContainsSelf) {
       .position = {5, 7},
       .width = 4,
       .height = 8,
-      .percent_radius = 0.5,
+      .corner_rounding = 0.5,
       .rotation = kFullTurn / 6,
   });
   EXPECT_TRUE(rounded_rectangle.Contains(rounded_rectangle));
@@ -1316,7 +1322,7 @@ TEST(BrushTipShapeTest, ContainsSelf) {
       .position = {5, 7},
       .width = 4,
       .height = 8,
-      .percent_radius = 0,
+      .corner_rounding = 0,
       .rotation = -kQuarterTurn,
   });
   EXPECT_TRUE(rectangle.Contains(rectangle));
@@ -1327,14 +1333,14 @@ TEST(BrushTipShapeTest, ContainsWithDistantShapes) {
       .position = {5, 7},
       .width = 4,
       .height = 8,
-      .percent_radius = 0.5,
+      .corner_rounding = 0.5,
       .rotation = kFullTurn / 6,
   });
   BrushTipShape shape2 = ShapeWithZeroMinRadiusAndSeparation({
       .position = {20, -8},
       .width = 7,
       .height = 3,
-      .percent_radius = 1,
+      .corner_rounding = 1,
       .rotation = kFullTurn / 10,
   });
   EXPECT_FALSE(shape1.Contains(shape2));
@@ -1346,20 +1352,20 @@ TEST(BrushTipShapeTest, ContainsWithCircleAndRoundedRectangle) {
       .position = {1, 2},
       .width = 10,
       .height = 10,
-      .percent_radius = 1,
+      .corner_rounding = 1,
   });
 
   EXPECT_TRUE(circle.Contains(
       ShapeWithZeroMinRadiusAndSeparation({.position = {1, 2},
                                            .width = 6,
                                            .height = 6,
-                                           .percent_radius = 0.1,
+                                           .corner_rounding = 0.1,
                                            .rotation = kQuarterTurn})));
   EXPECT_FALSE(circle.Contains(
       ShapeWithZeroMinRadiusAndSeparation({.position = {1, 4},
                                            .width = 6,
                                            .height = 6,
-                                           .percent_radius = 0.2,
+                                           .corner_rounding = 0.2,
                                            .rotation = -kQuarterTurn})));
 }
 
@@ -1368,7 +1374,7 @@ TEST(BrushTipShapeTest, ContainsWithRoundedRectangleAndCircleEdgeCases) {
       .position = {0, 0},
       .width = 20,
       .height = 10,
-      .percent_radius = 0.5,
+      .corner_rounding = 0.5,
   });
 
   absl::Span<const Circle> circles = rounded_rectangle.PerimeterCircles();
@@ -1376,10 +1382,11 @@ TEST(BrushTipShapeTest, ContainsWithRoundedRectangleAndCircleEdgeCases) {
   // Make circular tip states that are strictly larger than, the same size as,
   // and strictly smaller than, the size of the perimenter circles in the
   // rounded rectangle.
-  BrushTipState larger_circle = {.width = 6, .height = 6, .percent_radius = 1};
+  BrushTipState larger_circle = {.width = 6, .height = 6, .corner_rounding = 1};
   BrushTipState same_sized_circle = {
-      .width = 5, .height = 5, .percent_radius = 1};
-  BrushTipState smaller_circle = {.width = 4, .height = 4, .percent_radius = 1};
+      .width = 5, .height = 5, .corner_rounding = 1};
+  BrushTipState smaller_circle = {
+      .width = 4, .height = 4, .corner_rounding = 1};
 
   float rounded_rectangle_radius = circles.front().Radius();
   ASSERT_GT(ShapeWithZeroMinRadiusAndSeparation(larger_circle)
@@ -1417,7 +1424,7 @@ TEST(BrushTipShapeTest, ContainsWithRoundedSquares) {
       .position = {0, 0},
       .width = 10,
       .height = 10,
-      .percent_radius = 0.25,
+      .corner_rounding = 0.25,
       .rotation = kFullTurn / 8,
   });
 
@@ -1425,7 +1432,7 @@ TEST(BrushTipShapeTest, ContainsWithRoundedSquares) {
       .position = {0, 0},
       .width = 5,
       .height = 5,
-      .percent_radius = 0.25,
+      .corner_rounding = 0.25,
   };
 
   EXPECT_TRUE(large_rounded_square.Contains(
@@ -1460,7 +1467,7 @@ TEST(BrushTipShapeTest, ContainsWithRoundedTriangleEdgeCase) {
       .position = {0, 0},
       .width = 16,
       .height = 20,
-      .percent_radius = 0.1,
+      .corner_rounding = 0.1,
       .rotation = Angle::Degrees(75),
       .slant = Angle::Degrees(60),
       .pinch = 1,
@@ -1473,7 +1480,7 @@ TEST(BrushTipShapeTest, ContainsWithRoundedTriangleEdgeCase) {
       .position = first_circle.Center(),
       .width = 3 * first_circle.Radius(),
       .height = 3 * first_circle.Radius(),
-      .percent_radius = 1,
+      .corner_rounding = 1,
   });
 
   EXPECT_FALSE(rounded_triangle.Contains(circle));

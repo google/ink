@@ -30,7 +30,7 @@ struct BrushTipState {
   float height;
   // The current corner rounding of the brush tip shape, from 0 (fully square)
   // to 1 (fully circular).
-  float percent_radius;
+  float corner_rounding;
   // The current rotation angle of the brush tip shape, in the range [-π, π]
   // radians.
   Angle rotation;
@@ -63,7 +63,7 @@ struct BrushTipState {
   // TODO: b/271837965 - It may be useful for winding texture coordinates to
   // also add distance traveled.
 
-  // Returns a `BrushTipState` whose `width`, `height`, `percent_radius`,
+  // Returns a `BrushTipState` whose `width`, `height`, `corner_rounding`,
   // `rotation`, and `slant` are linearly interpolated between 'a' and 'b'; all
   // other fields are copied from `b`. The interpolation of `rotation` will be
   // in the direction of the shortest path around a circle.

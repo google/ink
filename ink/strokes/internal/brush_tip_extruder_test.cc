@@ -48,14 +48,14 @@ BrushTipState MakeSquareTipState(Point position, float side_length) {
   return {.position = position,
           .width = side_length,
           .height = side_length,
-          .percent_radius = 0};
+          .corner_rounding = 0};
 }
 
 BrushTipState MakeCircularTipState(Point position, float radius) {
   return {.position = position,
           .width = 2 * radius,
           .height = 2 * radius,
-          .percent_radius = 1};
+          .corner_rounding = 1};
 }
 
 std::vector<BrushTipState> MakeUniformCircularTipStates(
@@ -917,7 +917,7 @@ TEST_F(BrushTipExtruderTest, TextureUVsAreSetForWindingTextureParticles) {
       /* new_fixed_states = */ {{.position = {0, 0},
                                  .width = 10,
                                  .height = 10,
-                                 .percent_radius = 0.4}},
+                                 .corner_rounding = 0.4}},
       /* volatile_states = */ {});
 
   ASSERT_EQ(mesh_.VertexCount(), 8);
@@ -953,7 +953,7 @@ TEST_F(BrushTipExtruderTest, TextureUVsAreSetForWindingTextureParticles) {
                                 {.position = {20, 0},
                                  .width = 10,
                                  .height = 10,
-                                 .percent_radius = 0.4}},
+                                 .corner_rounding = 0.4}},
       /* volatile_states = */ {});
 
   ASSERT_EQ(mesh_.VertexCount(), 16);
@@ -991,7 +991,7 @@ TEST_F(BrushTipExtruderTest, TextureUVsAreNotSetForNonWindingTextureParticles) {
       /* new_fixed_states = */ {{.position = {0, 0},
                                  .width = 10,
                                  .height = 10,
-                                 .percent_radius = 0.4}},
+                                 .corner_rounding = 0.4}},
       /* volatile_states = */ {});
 
   for (uint32_t i = 0; i < mesh_.VertexCount(); ++i) {
@@ -1008,7 +1008,7 @@ TEST_F(BrushTipExtruderTest, WindingTextureParticleUVsAreClamped) {
       /* new_fixed_states = */ {{.position = {1669.30981, 761.19311},
                                  .width = 109.525535,
                                  .height = 109.525535,
-                                 .percent_radius = 0}},
+                                 .corner_rounding = 0}},
       /* volatile_states = */ {});
 
   for (uint32_t i = 0; i < mesh_.VertexCount(); ++i) {
@@ -1031,7 +1031,7 @@ TEST_F(BrushTipExtruderTest, TextureUVsFollowTipRotation) {
       /* new_fixed_states = */ {{.position = {5, 5},
                                  .width = 2,
                                  .height = 2,
-                                 .percent_radius = 0,
+                                 .corner_rounding = 0,
                                  .rotation = kQuarterTurn}},
       /* volatile_states = */ {});
 
