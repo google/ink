@@ -17,7 +17,6 @@
 #include <jni.h>
 
 #include "ink/geometry/angle.h"
-#include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_jvm_interface.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/types/duration.h"

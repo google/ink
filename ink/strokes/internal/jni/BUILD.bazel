@@ -153,7 +153,6 @@ cc_library(
     hdrs = ["stroke_input_jni_helper.h"],
     deps = [
         "//ink/geometry:angle",
-        "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_jvm_interface",
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
