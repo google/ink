@@ -158,36 +158,6 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& self_overlap,
                         const HighlighterVersion& version) {
   switch (version) {
     case HighlighterVersion::kV1: {
-      BrushBehavior distance_remaining_damped_to_corner_rounding_behavior = {
-          .nodes = {
-              SourceNode{
-                  .source = Source::kDistanceRemainingInMultiplesOfBrushSize,
-                  .source_out_of_range_behavior = OutOfRange::kClamp,
-                  .source_value_range = {0.0f, 1.0f},
-              },
-              DampingNode{
-                  .damping_source = ProgressDomain::kTimeInSeconds,
-                  .damping_gap = 0.015f,
-              },
-              TargetNode{
-                  .target = Target::kCornerRoundingOffset,
-                  .target_modifier_range = {0.3f, 1.0f},
-              }}};
-      BrushBehavior distance_traveled_damped_to_corner_rounding_behavior = {
-          .nodes = {
-              SourceNode{
-                  .source = Source::kDistanceTraveledInMultiplesOfBrushSize,
-                  .source_out_of_range_behavior = OutOfRange::kClamp,
-                  .source_value_range = {0.0f, 1.0f},
-              },
-              DampingNode{
-                  .damping_source = ProgressDomain::kTimeInSeconds,
-                  .damping_gap = 0.015f,
-              },
-              TargetNode{
-                  .target = Target::kCornerRoundingOffset,
-                  .target_modifier_range = {0.3f, 1.0f},
-              }}};
       BrushBehavior increase_opacity_near_stroke_start_behavior = {
           .nodes = {
               SourceNode{
@@ -219,12 +189,10 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& self_overlap,
                   .target_modifier_range = {1.1f, 1.0f},
               }}};
       BrushTip tip = {.scale = {0.25f, 1.0f},
-                      .corner_rounding = 0.3f,
+                      .corner_rounding = 1.0f,
                       .rotation = Angle::Degrees(150.0f),
                       .behaviors = {
                           PredictionFadeOutBehavior(),
-                          distance_remaining_damped_to_corner_rounding_behavior,
-                          distance_traveled_damped_to_corner_rounding_behavior,
                           increase_opacity_near_stroke_start_behavior,
                           increase_opacity_near_stroke_end_behavior,
                       }};
