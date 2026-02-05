@@ -567,7 +567,7 @@ bool PartitionedMesh::CoverageIsGreaterThan(
 const RTree& PartitionedMesh::Data::SpatialIndex() const {
   ABSL_CHECK(!meshes_.empty());
 
-  absl::MutexLock lock(&cache_mutex_);
+  absl::MutexLock lock(cache_mutex_);
 
   // The index is already initialized, there's nothing to do.
   // NOMUTANTS -- Removing this would not have an observable effect on behavior
@@ -612,7 +612,7 @@ const RTree& PartitionedMesh::Data::SpatialIndex() const {
 float PartitionedMesh::Data::TotalAbsoluteArea() const {
   ABSL_CHECK(!meshes_.empty());
 
-  absl::MutexLock lock(&cache_mutex_);
+  absl::MutexLock lock(cache_mutex_);
   if (!cached_total_absolute_area_.has_value()) {
     float total_abs_area = 0;
     for (const Mesh& mesh : meshes_) {
