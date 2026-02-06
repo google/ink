@@ -40,7 +40,6 @@ cc_library(
     tags = ["keep_dep"],
     visibility = ["//ink:__subpackages__"],
     deps = [
-        ":jni_onload",
         "//ink/brush/internal/jni",
         "//ink/geometry/internal/jni",
         "//ink/rendering/android/internal/jni",
@@ -56,19 +55,4 @@ cc_library(
         ":android_no_proto_jni",
         "//ink/storage/internal/jni",
     ],
-)
-
-cc_library(
-    name = "jni_onload",
-    srcs = ["jni_onload.cc"],
-    visibility = ["//ink:__subpackages__"],
-    deps = [
-        "//ink/jni/internal:jni_jvm_interface",
-        "@com_google_absl//absl/log:absl_check",
-    ] + select({
-        "@platforms//os:android": [],
-        "//conditions:default": [
-            "@rules_jni//jni",
-        ],
-    }),
 )
