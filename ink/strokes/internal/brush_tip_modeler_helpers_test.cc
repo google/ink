@@ -1342,6 +1342,42 @@ TEST_F(ProcessBehaviorNodeTest, BinaryOpNodeProduct) {
   EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
 }
 
+TEST_F(ProcessBehaviorNodeTest, BinaryOpNodeMin) {
+  BrushBehavior::BinaryOpNode binary_op_node = {
+      .operation = BrushBehavior::BinaryOp::kMin};
+
+  stack_.push_back(2.0f);
+  stack_.push_back(3.0f);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(2.0f));
+
+  // `kMin` returns null when either of the two inputs is null.
+  stack_.push_back(kNullBehaviorNodeValue);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+  stack_.push_back(1.0f);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+}
+
+TEST_F(ProcessBehaviorNodeTest, BinaryOpNodeMax) {
+  BrushBehavior::BinaryOpNode binary_op_node = {
+      .operation = BrushBehavior::BinaryOp::kMax};
+
+  stack_.push_back(2.0f);
+  stack_.push_back(3.0f);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(3.0f));
+
+  // `kMax` returns null when either of the two inputs is null.
+  stack_.push_back(kNullBehaviorNodeValue);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+  stack_.push_back(1.0f);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+}
+
 TEST_F(ProcessBehaviorNodeTest, InterpolationNodeLerp) {
   BrushBehavior::InterpolationNode interpolation_node = {
       .interpolation = BrushBehavior::Interpolation::kLerp,

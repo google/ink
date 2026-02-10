@@ -486,16 +486,23 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::BinaryOpNode& node,
   context.stack.pop_back();
   float first_input = context.stack.back();
   float* result = &context.stack.back();
+  if (IsNullBehaviorNodeValue(first_input) ||
+      IsNullBehaviorNodeValue(second_input)) {
+    *result = kNullBehaviorNodeValue;
+    return;
+  }
   switch (node.operation) {
     case BrushBehavior::BinaryOp::kProduct:
-      // kNullBehaviorNodeValue is NaN, so if either input value is null (NaN),
-      // the result will be null (NaN).
       *result = first_input * second_input;
       break;
     case BrushBehavior::BinaryOp::kSum:
-      // kNullBehaviorNodeValue is NaN, so if either input value is null (NaN),
-      // the result will be null (NaN).
       *result = first_input + second_input;
+      break;
+    case BrushBehavior::BinaryOp::kMin:
+      *result = std::min(first_input, second_input);
+      break;
+    case BrushBehavior::BinaryOp::kMax:
+      *result = std::max(first_input, second_input);
       break;
   }
   // If any of the above operations resulted in a non-finite value

@@ -29,10 +29,12 @@ namespace ink {
 // A behavior describing how stroke input properties should affect the shape and
 // color of the brush tip.
 //
-// The behavior is conceptually a graph made from the various node types defined
-// below. Each edge of the graph represents passing a nullable floating point
-// value between nodes, and each node in the graph fits into one of the
-// following categories:
+// The behavior is conceptually a tree made from the various node types defined
+// below. Each edge of the tree graph represents passing a nullable finite
+// floating point value (with "null" representing an undefined value) from a
+// node to its parent, and each node in the tree fits into one of the following
+// categories:
+//
 //   1. Leaf nodes generate an output value without graph inputs. For example,
 //      they can create a value from properties of stroke input.
 //   2. Filter nodes can conditionally toggle branches of the graph "on" by
@@ -398,11 +400,16 @@ struct BrushBehavior {
     kTiltXAndY,
   };
 
-  // A binary operation for combining two values in a `BinaryOpNode`.
+  // A binary operation for combining two values in a `BinaryOpNode`. Unless
+  // otherwise specified for a particular operator, the result will be null
+  // (i.e. undefined) if either input value is null.
+  //
   // LINT.IfChange(binary_op)
   enum class BinaryOp {
-    kProduct,  // A * B, or null if either is null
-    kSum,      // A + B, or null if either is null
+    kProduct,  // A * B
+    kSum,      // A + B
+    kMin,      // min(A, B)
+    kMax,      // max(A, B)
   };
   // LINT.ThenChange(
   //   fuzz_domains.cc:binary_op,

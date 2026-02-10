@@ -235,6 +235,8 @@ TEST(BrushBehaviorTest, StringifyOptionalInputProperty) {
 TEST(BrushBehaviorTest, StringifyBinaryOp) {
   EXPECT_EQ(absl::StrCat(BrushBehavior::BinaryOp::kProduct), "kProduct");
   EXPECT_EQ(absl::StrCat(BrushBehavior::BinaryOp::kSum), "kSum");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::BinaryOp::kMin), "kMin");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::BinaryOp::kMax), "kMax");
   EXPECT_EQ(absl::StrCat(static_cast<BrushBehavior::BinaryOp>(147)),
             "BinaryOp(147)");
 }

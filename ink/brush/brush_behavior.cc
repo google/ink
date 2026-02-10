@@ -221,6 +221,8 @@ bool IsValidBehaviorBinaryOp(BrushBehavior::BinaryOp operation) {
   switch (operation) {
     case BrushBehavior::BinaryOp::kProduct:
     case BrushBehavior::BinaryOp::kSum:
+    case BrushBehavior::BinaryOp::kMin:
+    case BrushBehavior::BinaryOp::kMax:
       return true;
   }
   return false;
@@ -677,6 +679,10 @@ std::string ToFormattedString(BrushBehavior::BinaryOp operation) {
       return "kProduct";
     case BrushBehavior::BinaryOp::kSum:
       return "kSum";
+    case BrushBehavior::BinaryOp::kMin:
+      return "kMin";
+    case BrushBehavior::BinaryOp::kMax:
+      return "kMax";
   }
   return absl::StrCat("BinaryOp(", static_cast<int>(operation), ")");
 }

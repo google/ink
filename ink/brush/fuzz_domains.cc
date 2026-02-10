@@ -128,6 +128,8 @@ Domain<BrushBehavior::BinaryOp> ArbitraryBrushBehaviorBinaryOp() {
   return ElementOf({
       BrushBehavior::BinaryOp::kProduct,
       BrushBehavior::BinaryOp::kSum,
+      BrushBehavior::BinaryOp::kMin,
+      BrushBehavior::BinaryOp::kMax,
   });
 }
 // LINT.ThenChange(brush_behavior.h:binary_op)

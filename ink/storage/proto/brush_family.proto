@@ -948,6 +948,12 @@ message BrushBehavior {
 
     // A + B, or null if either is null
     BINARY_OP_SUM = 2;
+
+    // min(A, B), or null if either is null
+    BINARY_OP_MIN = 3;
+
+    // max(A, B), or null if either is null
+    BINARY_OP_MAX = 4;
   }
   // LINT.ThenChange(../../brush/brush_behavior.h:binary_op)
 
