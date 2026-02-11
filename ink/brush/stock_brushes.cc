@@ -14,7 +14,6 @@
 
 #include "ink/brush/stock_brushes.h"
 
-#include <set>
 #include <string>
 #include <vector>
 
