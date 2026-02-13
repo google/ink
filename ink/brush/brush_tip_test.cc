@@ -43,8 +43,9 @@ TEST(BrushTipTest, Stringify) {
               {
                   BrushBehavior{{
                       BrushBehavior::SourceNode{
-                          .source = BrushBehavior::Source::kTimeOfInputInMillis,
-                          .source_value_range = {0, 250},
+                          .source =
+                              BrushBehavior::Source::kTimeOfInputInSeconds,
+                          .source_value_range = {0, 0.25},
                       },
                       BrushBehavior::TargetNode{
                           .target = BrushBehavior::Target::kWidthMultiplier,
@@ -64,8 +65,9 @@ TEST(BrushTipTest, Stringify) {
               },
       }),
       "BrushTip{scale=<1.25, 0.75>, corner_rounding=0, "
-      "behaviors={BrushBehavior{nodes={SourceNode{source=kTimeOfInputInMillis, "
-      "source_value_range={0, 250}}, TargetNode{target=kWidthMultiplier, "
+      "behaviors={BrushBehavior{nodes={SourceNode{source=kTimeOfInputInSeconds,"
+      " "
+      "source_value_range={0, 0.25}}, TargetNode{target=kWidthMultiplier, "
       "target_modifier_range={1.5, 2}}}}, "
       "BrushBehavior{nodes={SourceNode{source=kNormalizedPressure, "
       "source_value_range={0, 1}}, TargetNode{target=kPinchOffset, "
@@ -84,8 +86,8 @@ TEST(BrushTipTest, EqualAndNotEqual) {
       .behaviors = {
           BrushBehavior{{
               BrushBehavior::SourceNode{
-                  .source = BrushBehavior::Source::kTimeOfInputInMillis,
-                  .source_value_range = {0, 250},
+                  .source = BrushBehavior::Source::kTimeOfInputInSeconds,
+                  .source_value_range = {0, 0.25},
               },
               BrushBehavior::TargetNode{
                   .target = BrushBehavior::Target::kWidthMultiplier,
@@ -107,8 +109,8 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .behaviors = {
                BrushBehavior{{
                    BrushBehavior::SourceNode{
-                       .source = BrushBehavior::Source::kTimeOfInputInMillis,
-                       .source_value_range = {0, 250},
+                       .source = BrushBehavior::Source::kTimeOfInputInSeconds,
+                       .source_value_range = {0, 0.25},
                    },
                    BrushBehavior::TargetNode{
                        .target = BrushBehavior::Target::kWidthMultiplier,
@@ -127,8 +129,8 @@ TEST(BrushTipTest, EqualAndNotEqual) {
                 .particle_gap_duration = Duration32::Seconds(0.5),
                 .behaviors = {BrushBehavior{{
                     BrushBehavior::SourceNode{
-                        .source = BrushBehavior::Source::kTimeOfInputInMillis,
-                        .source_value_range = {0, 250},
+                        .source = BrushBehavior::Source::kTimeOfInputInSeconds,
+                        .source_value_range = {0, 0.25},
                     },
                     BrushBehavior::TargetNode{
                         .target = BrushBehavior::Target::kWidthMultiplier,
@@ -148,8 +150,8 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .behaviors = {
                BrushBehavior{{
                    BrushBehavior::SourceNode{
-                       .source = BrushBehavior::Source::kTimeOfInputInMillis,
-                       .source_value_range = {0, 250},
+                       .source = BrushBehavior::Source::kTimeOfInputInSeconds,
+                       .source_value_range = {0, 0.25},
                    },
                    BrushBehavior::TargetNode{
                        .target = BrushBehavior::Target::kWidthMultiplier,
@@ -170,8 +172,8 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .behaviors = {
                BrushBehavior{{
                    BrushBehavior::SourceNode{
-                       .source = BrushBehavior::Source::kTimeOfInputInMillis,
-                       .source_value_range = {0, 250},
+                       .source = BrushBehavior::Source::kTimeOfInputInSeconds,
+                       .source_value_range = {0, 0.25},
                    },
                    BrushBehavior::TargetNode{
                        .target = BrushBehavior::Target::kWidthMultiplier,
@@ -192,8 +194,8 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .behaviors = {
                BrushBehavior{{
                    BrushBehavior::SourceNode{
-                       .source = BrushBehavior::Source::kTimeOfInputInMillis,
-                       .source_value_range = {0, 250},
+                       .source = BrushBehavior::Source::kTimeOfInputInSeconds,
+                       .source_value_range = {0, 0.25},
                    },
                    BrushBehavior::TargetNode{
                        .target = BrushBehavior::Target::kWidthMultiplier,
@@ -214,8 +216,8 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .behaviors = {
                BrushBehavior{{
                    BrushBehavior::SourceNode{
-                       .source = BrushBehavior::Source::kTimeOfInputInMillis,
-                       .source_value_range = {0, 250},
+                       .source = BrushBehavior::Source::kTimeOfInputInSeconds,
+                       .source_value_range = {0, 0.25},
                    },
                    BrushBehavior::TargetNode{
                        .target = BrushBehavior::Target::kWidthMultiplier,
@@ -236,8 +238,8 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .behaviors = {
                BrushBehavior{{
                    BrushBehavior::SourceNode{
-                       .source = BrushBehavior::Source::kTimeOfInputInMillis,
-                       .source_value_range = {0, 250},
+                       .source = BrushBehavior::Source::kTimeOfInputInSeconds,
+                       .source_value_range = {0, 0.25},
                    },
                    BrushBehavior::TargetNode{
                        .target = BrushBehavior::Target::kWidthMultiplier,
@@ -258,8 +260,8 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .behaviors = {
                BrushBehavior{{
                    BrushBehavior::SourceNode{
-                       .source = BrushBehavior::Source::kTimeOfInputInMillis,
-                       .source_value_range = {0, 250},
+                       .source = BrushBehavior::Source::kTimeOfInputInSeconds,
+                       .source_value_range = {0, 0.25},
                    },
                    BrushBehavior::TargetNode{
                        .target = BrushBehavior::Target::kWidthMultiplier,
@@ -281,8 +283,8 @@ TEST(BrushTipTest, EqualAndNotEqual) {
            .behaviors = {
                BrushBehavior{{
                    BrushBehavior::SourceNode{
-                       .source = BrushBehavior::Source::kTimeOfInputInMillis,
-                       .source_value_range = {0, 250},
+                       .source = BrushBehavior::Source::kTimeOfInputInSeconds,
+                       .source_value_range = {0, 0.25},
                    },
                    BrushBehavior::TargetNode{
                        .target = BrushBehavior::Target::kWidthMultiplier,

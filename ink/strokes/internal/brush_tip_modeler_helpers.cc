@@ -151,8 +151,6 @@ std::optional<float> GetSourceValue(
       return input.traveled_distance / brush_size;
     case BrushBehavior::Source::kTimeOfInputInSeconds:
       return input.elapsed_time.ToSeconds();
-    case BrushBehavior::Source::kTimeOfInputInMillis:
-      return input.elapsed_time.ToMillis();
     case BrushBehavior::Source::
         kPredictedDistanceTraveledInMultiplesOfBrushSize:
       return GetPredictedDistanceTraveledInStrokeUnits(input_modeler_state,
@@ -160,16 +158,12 @@ std::optional<float> GetSourceValue(
              brush_size;
     case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
       return GetPredictedTimeElapsed(input_modeler_state, input).ToSeconds();
-    case BrushBehavior::Source::kPredictedTimeElapsedInMillis:
-      return GetPredictedTimeElapsed(input_modeler_state, input).ToMillis();
     case BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize:
       return (input_modeler_state.complete_traveled_distance -
               input.traveled_distance) /
              brush_size;
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
       return GetTimeSinceInput(input_modeler_state, input).ToSeconds();
-    case BrushBehavior::Source::kTimeSinceInputInMillis:
-      return GetTimeSinceInput(input_modeler_state, input).ToMillis();
     case BrushBehavior::Source::
         kAccelerationInMultiplesOfBrushSizePerSecondSquared:
       return input.acceleration.Magnitude() / brush_size;

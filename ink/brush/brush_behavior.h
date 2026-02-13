@@ -167,7 +167,6 @@ struct BrushBehavior {
     // input. The value remains fixed for any given part of the stroke once
     // drawn.
     kTimeOfInputInSeconds,
-    kTimeOfInputInMillis,
     // Distance traveled by the inputs of the current prediction, starting at 0
     // at the last non-predicted input, in multiples of the brush size. Zero for
     // inputs before the predicted portion of the stroke.
@@ -175,7 +174,6 @@ struct BrushBehavior {
     // Elapsed time of the prediction, starting at 0 at the last non-predicted
     // input. Zero for inputs before the predicted portion of the stroke.
     kPredictedTimeElapsedInSeconds,
-    kPredictedTimeElapsedInMillis,
     // The distance left to be traveled from a given modeled input to the
     // current last modeled input of the stroke in multiples of the brush size.
     // This value changes for each input as the stroke is drawn.
@@ -186,7 +184,6 @@ struct BrushBehavior {
     // `source_out_of_range_behavior` of `kClamp`, to ensure that the animation
     // will eventually end.
     kTimeSinceInputInSeconds,
-    kTimeSinceInputInMillis,
     // Absolute acceleration of the modeled stroke input in multiples of the
     // brush size per second squared. Note that this value doesn't take into
     // account brush behaviors that offset the position of that visible point in

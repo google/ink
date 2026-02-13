@@ -776,53 +776,6 @@ TEST(BrushTipModelerTest, TipWithSecondsRemainingBehavior) {
   EXPECT_EQ(modeler.VolatileTipStates().size(), 4);
 }
 
-TEST(BrushTipModelerTest, TipWithMillisecondsRemainingBehavior) {
-  BrushTipModeler modeler;
-  BrushTip brush_tip = {
-      .behaviors = {BrushBehavior{{
-          BrushBehavior::SourceNode{
-              .source = BrushBehavior::Source::kTimeSinceInputInMillis,
-              .source_out_of_range_behavior = BrushBehavior::OutOfRange::kClamp,
-              .source_value_range = {0, 1500},
-          },
-          BrushBehavior::TargetNode{
-              .target = BrushBehavior::Target::kWidthMultiplier,
-              .target_modifier_range = {0.5, 1.5},
-          },
-      }}}};
-  BrushBehavior::SourceNode* source_node =
-      &std::get<BrushBehavior::SourceNode>(brush_tip.behaviors[0].nodes[0]);
-  modeler.StartStroke(&brush_tip, 1);
-
-  std::vector<ModeledStrokeInput> inputs = {
-      {.position = {0, 0}, .elapsed_time = Duration32::Zero()},
-      {.position = {0, 1}, .elapsed_time = Duration32::Seconds(3)},
-      {.position = {0, 2}, .elapsed_time = Duration32::Seconds(5)},
-      {.position = {0, 3}, .elapsed_time = Duration32::Seconds(8.4)},
-      {.position = {0, 4}, .elapsed_time = Duration32::Seconds(10)},
-  };
-  InputModelerState input_modeler_state = {
-      .complete_elapsed_time = Duration32::Seconds(14),
-
-      .stable_input_count = 5,
-  };
-  modeler.UpdateStroke(input_modeler_state, inputs);
-
-  // Even though all of the inputs in the state were stable, the tip state
-  // created from the last input state should be volatile because it is less
-  // than 1500 milliseconds from the current stable end of the stroke:
-  EXPECT_EQ(modeler.NewFixedTipStates().size(), 4);
-  EXPECT_EQ(modeler.VolatileTipStates().size(), 1);
-
-  // Check again with the source value range reversed, as it should still cause
-  // the same behavior upper bound.
-  source_node->source_value_range = {1500, 0};
-  modeler.StartStroke(&brush_tip, 1);
-  modeler.UpdateStroke(input_modeler_state, inputs);
-  EXPECT_EQ(modeler.NewFixedTipStates().size(), 4);
-  EXPECT_EQ(modeler.VolatileTipStates().size(), 1);
-}
-
 TEST(BrushTipModelerTest, TipWithMultipleTimeSinceInputBehaviors) {
   BrushTipModeler modeler;
   BrushTip brush_tip = {
@@ -841,10 +794,10 @@ TEST(BrushTipModelerTest, TipWithMultipleTimeSinceInputBehaviors) {
           }},
           BrushBehavior{{
               BrushBehavior::SourceNode{
-                  .source = BrushBehavior::Source::kTimeSinceInputInMillis,
+                  .source = BrushBehavior::Source::kTimeSinceInputInSeconds,
                   .source_out_of_range_behavior =
                       BrushBehavior::OutOfRange::kClamp,
-                  .source_value_range = {4000, 0},
+                  .source_value_range = {4, 0},
               },
               BrushBehavior::TargetNode{
                   .target = BrushBehavior::Target::kHeightMultiplier,

@@ -360,16 +360,6 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodeTimeOfInputInSeconds) {
   EXPECT_THAT(stack_, ElementsAre(0.75f));
 }
 
-TEST_F(ProcessBehaviorNodeTest, SourceNodeTimeOfInputInMillis) {
-  BrushBehavior::SourceNode source_node = {
-      .source = BrushBehavior::Source::kTimeOfInputInMillis,
-      .source_value_range = {0, 10000},
-  };
-  current_input_.elapsed_time = Duration32::Seconds(7.5);
-  ProcessBehaviorNode(source_node, context_);
-  EXPECT_THAT(stack_, ElementsAre(0.75f));
-}
-
 TEST_F(ProcessBehaviorNodeTest,
        SourceNodePredictedDistanceTraveledInMultiplesOfBrushSize) {
   BrushBehavior::SourceNode source_node = {
@@ -395,17 +385,6 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodePredictedTimeElapsedInSeconds) {
   EXPECT_THAT(stack_, ElementsAre(0.6f));
 }
 
-TEST_F(ProcessBehaviorNodeTest, SourceNodePredictedTimeElapsedInMillis) {
-  BrushBehavior::SourceNode source_node = {
-      .source = BrushBehavior::Source::kPredictedTimeElapsedInMillis,
-      .source_value_range = {0, 10000},
-  };
-  current_input_.elapsed_time = Duration32::Seconds(15);
-  input_modeler_state_.total_real_elapsed_time = Duration32::Seconds(9);
-  ProcessBehaviorNode(source_node, context_);
-  EXPECT_THAT(stack_, ElementsAre(0.6f));
-}
-
 TEST_F(ProcessBehaviorNodeTest,
        SourceNodeDistanceRemainingInMultiplesOfBrushSize) {
   BrushBehavior::SourceNode source_node = {
@@ -423,17 +402,6 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodeTimeSinceInputInSeconds) {
   BrushBehavior::SourceNode source_node = {
       .source = BrushBehavior::Source::kTimeSinceInputInSeconds,
       .source_value_range = {0, 10},
-  };
-  current_input_.elapsed_time = Duration32::Seconds(3);
-  input_modeler_state_.complete_elapsed_time = Duration32::Seconds(5);
-  ProcessBehaviorNode(source_node, context_);
-  EXPECT_THAT(stack_, ElementsAre(0.2f));
-}
-
-TEST_F(ProcessBehaviorNodeTest, SourceNodeTimeSinceInputInMillis) {
-  BrushBehavior::SourceNode source_node = {
-      .source = BrushBehavior::Source::kTimeSinceInputInMillis,
-      .source_value_range = {0, 10000},
   };
   current_input_.elapsed_time = Duration32::Seconds(3);
   input_modeler_state_.complete_elapsed_time = Duration32::Seconds(5);

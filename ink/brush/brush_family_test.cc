@@ -547,16 +547,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBehaviorSourceAndOutOfRangeBehavior) {
   absl::Status status = BrushFamily::Create(brush_tip, BrushPaint{}).status();
   EXPECT_EQ(status.code(), kInvalidArgument);
   EXPECT_THAT(status.message(),
-              HasSubstr("kTimeSinceInput*` must only be used with "
-                        "`source_out_of_range_behavior` of `kClamp"));
-
-  source_node->source = BrushBehavior::Source::kTimeSinceInputInMillis;
-  source_node->source_out_of_range_behavior =
-      BrushBehavior::OutOfRange::kMirror;
-  status = BrushFamily::Create(brush_tip, BrushPaint{}).status();
-  EXPECT_EQ(status.code(), kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("kTimeSinceInput*` must only be used with "
+              HasSubstr("kTimeSinceInputInSeconds` must only be used with "
                         "`source_out_of_range_behavior` of `kClamp"));
 }
 

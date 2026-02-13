@@ -47,8 +47,8 @@ using ToolTypeFilterNode = ::ink::BrushBehavior::ToolTypeFilterNode;
 BrushBehavior PredictionFadeOutBehavior() {
   return BrushBehavior{
       .nodes =
-          {SourceNode{.source = Source::kPredictedTimeElapsedInMillis,
-                      .source_value_range = {0.0f, 24.0f}},
+          {SourceNode{.source = Source::kPredictedTimeElapsedInSeconds,
+                      .source_value_range = {0.0f, 0.024f}},
            // The second branch of the binary op node keeps the opacity
            // fade-out from starting until the predicted inputs have traveled
            // at least 1.5x brush-size.

@@ -147,14 +147,11 @@ float DistanceRemainingUpperBound(const BrushBehavior::SourceNode& node,
     case BrushBehavior::Source::kNormalizedDirectionX:
     case BrushBehavior::Source::kNormalizedDirectionY:
     case BrushBehavior::Source::kTimeOfInputInSeconds:
-    case BrushBehavior::Source::kTimeOfInputInMillis:
     case BrushBehavior::Source::
         kPredictedDistanceTraveledInMultiplesOfBrushSize:
     case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
-    case BrushBehavior::Source::kPredictedTimeElapsedInMillis:
     case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
-    case BrushBehavior::Source::kTimeSinceInputInMillis:
     case BrushBehavior::Source::
         kAccelerationInMultiplesOfBrushSizePerSecondSquared:
     case BrushBehavior::Source::
@@ -191,8 +188,6 @@ Duration32 TimeRemainingUpperBound(const BrushBehavior::SourceNode& node) {
   switch (node.source) {
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
       return Duration32::Seconds(SourceValueUpperBound(node));
-    case BrushBehavior::Source::kTimeSinceInputInMillis:
-      return Duration32::Millis(SourceValueUpperBound(node));
     case BrushBehavior::Source::kNormalizedPressure:
     case BrushBehavior::Source::kTiltInRadians:
     case BrushBehavior::Source::kTiltXInRadians:
@@ -207,11 +202,9 @@ Duration32 TimeRemainingUpperBound(const BrushBehavior::SourceNode& node) {
     case BrushBehavior::Source::kNormalizedDirectionX:
     case BrushBehavior::Source::kNormalizedDirectionY:
     case BrushBehavior::Source::kTimeOfInputInSeconds:
-    case BrushBehavior::Source::kTimeOfInputInMillis:
     case BrushBehavior::Source::
         kPredictedDistanceTraveledInMultiplesOfBrushSize:
     case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
-    case BrushBehavior::Source::kPredictedTimeElapsedInMillis:
     case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
     case BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize:
     case BrushBehavior::Source::
@@ -264,14 +257,11 @@ bool SourceDependsOnNextModeledInput(BrushBehavior::Source source) {
     case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:
     case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
     case BrushBehavior::Source::kTimeOfInputInSeconds:
-    case BrushBehavior::Source::kTimeOfInputInMillis:
     case BrushBehavior::Source::
         kPredictedDistanceTraveledInMultiplesOfBrushSize:
     case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
-    case BrushBehavior::Source::kPredictedTimeElapsedInMillis:
     case BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize:
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
-    case BrushBehavior::Source::kTimeSinceInputInMillis:
     case BrushBehavior::Source::
         kAccelerationInMultiplesOfBrushSizePerSecondSquared:
     case BrushBehavior::Source::

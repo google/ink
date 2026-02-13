@@ -177,7 +177,6 @@ Domain<BrushBehavior::OutOfRange> ValidBrushBehaviorOutOfRangeForSource(
     BrushBehavior::Source source) {
   switch (source) {
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
-    case BrushBehavior::Source::kTimeSinceInputInMillis:
       return Just(BrushBehavior::OutOfRange::kClamp);
     default:
       return ArbitraryBrushBehaviorOutOfRange();
@@ -203,13 +202,10 @@ Domain<BrushBehavior::Source> ArbitraryBrushBehaviorSource() {
       BrushBehavior::Source::kNormalizedDirectionY,
       BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize,
       BrushBehavior::Source::kTimeOfInputInSeconds,
-      BrushBehavior::Source::kTimeOfInputInMillis,
       BrushBehavior::Source::kPredictedDistanceTraveledInMultiplesOfBrushSize,
       BrushBehavior::Source::kPredictedTimeElapsedInSeconds,
-      BrushBehavior::Source::kPredictedTimeElapsedInMillis,
       BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize,
       BrushBehavior::Source::kTimeSinceInputInSeconds,
-      BrushBehavior::Source::kTimeSinceInputInMillis,
       BrushBehavior::Source::
           kAccelerationInMultiplesOfBrushSizePerSecondSquared,
       BrushBehavior::Source::

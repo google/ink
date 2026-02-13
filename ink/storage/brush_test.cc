@@ -53,10 +53,13 @@ namespace {
 using ::absl_testing::IsOk;
 using ::absl_testing::IsOkAndHolds;
 using ::absl_testing::StatusIs;
+using ::testing::AllOf;
 using ::testing::ElementsAre;
+using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::IsNull;
 using ::testing::SizeIs;
+using ::testing::VariantWith;
 
 constexpr absl::string_view kTestTextureId1 = "test-texture-one";
 constexpr absl::string_view kTestTextureId2 = "test-texture-two";

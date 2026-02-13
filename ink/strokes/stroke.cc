@@ -174,7 +174,6 @@ void Stroke::RegenerateShape() {
   shape_gen.mesh_groups.reserve(num_coats);
 
   // A finished stroke has all of its
-  // `BrushBehavior::Source::kTimeSinceInputInMillis` and
   // `BrushBehavior::Source::kTimeSinceInputInSeconds` behaviors completed.
   // Passing an infinite duration to `ExtendStroke()` achieves this, in an
   // equivalent but simpler way than looping through each behavior and finding
