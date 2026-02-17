@@ -191,26 +191,6 @@ absl::Status ValidateBrushPaintTextureLayer(
                         "Got %v",
                         layer.rotation));
   }
-  if (!(layer.size_jitter.x >= 0.0f && layer.size_jitter.x <= layer.size.x &&
-        layer.size_jitter.y >= 0.0f && layer.size_jitter.y <= layer.size.y)) {
-    return absl::InvalidArgumentError(absl::StrFormat(
-        "`BrushPaint::TextureLayer::size_jitter` must be "
-        "smaller or equal to `BrushPaint::TextureLayer::size`. Got %v",
-        layer.size_jitter));
-  }
-  if (!(layer.offset_jitter.x >= 0.0f && layer.offset_jitter.x <= 1.0f &&
-        layer.offset_jitter.y >= 0.0f && layer.offset_jitter.y <= 1.0f)) {
-    return absl::InvalidArgumentError(absl::StrFormat(
-        "`BrushPaint::TextureLayer::offset_jitter` must be in the "
-        "interval [0, 1]. Got %v",
-        layer.offset_jitter));
-  }
-  if (!std::isfinite(layer.rotation_jitter.ValueInRadians())) {
-    return absl::InvalidArgumentError(absl::StrFormat(
-        "`BrushPaint::TextureLayer::rotation_jitter` must be finite. "
-        "Got %v",
-        layer.rotation_jitter));
-  }
   if (!(layer.opacity >= 0.0f && layer.opacity <= 1.0f)) {
     return absl::InvalidArgumentError(absl::StrFormat(
         "`BrushPaint::TextureLayer::opacity` must be in the interval [0, 1]. "
@@ -466,9 +446,6 @@ std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
       ", wrap_y=", ToFormattedString(texture_layer.wrap_y),
       ", size=", texture_layer.size, ", offset=", texture_layer.offset,
       ", rotation=", texture_layer.rotation,
-      ", size_jitter=", texture_layer.size_jitter,
-      ", offset_jitter=", texture_layer.offset_jitter,
-      ", rotation_jitter=", texture_layer.rotation_jitter,
       ", opacity=", texture_layer.opacity,
       ", animation_frames=", texture_layer.animation_frames,
       ", animation_rows=", texture_layer.animation_rows,

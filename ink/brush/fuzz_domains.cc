@@ -658,22 +658,12 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
     int animation_rows, int animation_columns,
     absl::Duration animation_duration, DomainVariant variant) {
   auto texture_layer = [=](Vec size) {
-    auto size_jitter_domain =
-        StructOf<Vec>(InRange<float>(0.f, size.x), InRange<float>(0.f, size.y));
-    auto offset_jitter_domain =
-        StructOf<Vec>(InRange<float>(0.f, 1.f), InRange<float>(0.f, 1.f));
-    auto rotation_jitter_domain = FiniteAngle();
     auto animation_frames_domain = Just(animation_frames);
     auto animation_rows_domain = Just(animation_rows);
     auto animation_columns_domain = Just(animation_columns);
     auto animation_duration_domain = Just(animation_duration);
     auto keyframes_domain = VectorOf(ValidBrushPaintTextureKeyframe());
     if (variant == DomainVariant::kValidAndSerializable) {
-      size_jitter_domain =
-          StructOf<Vec>(InRange<float>(0.0f, 0.0f), InRange<float>(0.0f, 0.0f));
-      offset_jitter_domain =
-          StructOf<Vec>(InRange<float>(0.0f, 0.0f), InRange<float>(0.0f, 0.0f));
-      rotation_jitter_domain = Just(Angle());
       animation_frames_domain = Just(1);
       animation_rows_domain = Just(1);
       animation_columns_domain = Just(1);
@@ -686,8 +676,7 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
         ArbitraryBrushPaintTextureSizeUnit(), ArbitraryBrushPaintTextureWrap(),
         ArbitraryBrushPaintTextureWrap(), Just(size),
         StructOf<Vec>(InRange<float>(0.f, 1.f), InRange<float>(0.f, 1.f)),
-        FiniteAngle(), size_jitter_domain, offset_jitter_domain,
-        rotation_jitter_domain, InRange(0.f, 1.f), animation_frames_domain,
+        FiniteAngle(), InRange(0.f, 1.f), animation_frames_domain,
         animation_rows_domain, animation_columns_domain,
         animation_duration_domain, keyframes_domain,
         ArbitraryBrushPaintBlendMode());

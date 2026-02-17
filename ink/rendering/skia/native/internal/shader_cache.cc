@@ -99,9 +99,6 @@ SkMatrix ToSkMatrix(const AffineTransform& transform) {
 // Computes the transform for a `TextureLayer` from texel space to size-unit
 // space. This transform depends only on the `TextureLayer` and not on any
 // properties of the particular stroke, so it can be computed up front.
-//
-// TODO: b/368283812 - We may need to refactor this once we implement texture
-// jitter, since then more of this transform will differ from stroke to stroke.
 AffineTransform ComputeTexelToSizeUnitTransform(
     const BrushPaint::TextureLayer& layer, int bitmap_width,
     int bitmap_height) {

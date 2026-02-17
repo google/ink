@@ -118,10 +118,6 @@ class BrushFamily {
   //    - size components must be finite and greater than 0.
   //    - offset components must be in interval [0, 1].
   //    - rotation component must be finite.
-  //    - size_jitter components must be smaller than or equal to their size
-  //      counterparts.
-  //    - offset_jitter must be in interval [0, 1].
-  //    - rotation_jitter must be finite.
   //    - opacity must be in interval [0, 1].
   //    - animation_frames must be greater than 0.
   //    - For each TextureKeyframe the following must hold:

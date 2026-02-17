@@ -74,7 +74,6 @@ Brush CreateRectangularTestBrush() {
                            .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
-                           .size_jitter = {0.1, 2},
                            .keyframes = {{.progress = 0.1,
                                           .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kSrcIn}}},

@@ -254,14 +254,6 @@ struct BrushPaint {
     // axes.
     Angle rotation = Angle();
 
-    // Transform "jitter" properties below specify the magnitude of random
-    // offset that is applied to `size`, `offset`, and `rotation` on a
-    // per-stroke basis. Each component of `size_jitter` must be less than or
-    // equal to that of `size`.
-    Vec size_jitter = {0, 0};
-    Vec offset_jitter = {0, 0};
-    Angle rotation_jitter = Angle();
-
     // Overall layer opacity.
     float opacity = 1;
 
@@ -443,8 +435,7 @@ template <typename H>
 H AbslHashValue(H h, const BrushPaint::TextureLayer& layer) {
   return H::combine(std::move(h), layer.client_texture_id, layer.mapping,
                     layer.origin, layer.size_unit, layer.wrap_x, layer.wrap_y,
-                    layer.size, layer.offset, layer.rotation, layer.size_jitter,
-                    layer.offset_jitter, layer.rotation_jitter, layer.opacity,
+                    layer.size, layer.offset, layer.rotation, layer.opacity,
                     layer.keyframes, layer.blend_mode);
 }
 

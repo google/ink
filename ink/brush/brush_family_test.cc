@@ -97,7 +97,6 @@ BrushPaint CreateTestPaint() {
                .mapping = BrushPaint::TextureMapping::kStamping,
                .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                .size = {3, 5},
-               .size_jitter = {0.1, 2},
                .keyframes = {{.progress = 0.1, .rotation = kFullTurn / 8}},
                .blend_mode = BrushPaint::BlendMode::kDstIn}}};
 }
@@ -138,7 +137,6 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
             "client_texture_id=test-paint, mapping=kStamping, "
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
-            "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
             "opacity=1, animation_frames=1, animation_rows=1, "
             "animation_columns=1, animation_duration=1s, "
             "keyframes={TextureKeyframe{progress=0.1, "
@@ -159,7 +157,6 @@ TEST(BrushFamilyTest, StringifyWithId) {
             "texture_id=test-paint, mapping=kStamping, "
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
-            "size_jitter=<0.1, 2>, offset_jitter=<0, 0>, rotation_jitter=0π, "
             "opacity=1, animation_frames=1, animation_rows=1, "
             "animation_columns=1, animation_duration=1s, "
             "keyframes={TextureKeyframe{progress=0.1, "
@@ -1062,78 +1059,6 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     EXPECT_EQ(status.code(), kInvalidArgument);
     EXPECT_THAT(status.message(),
                 HasSubstr("BrushPaint::TextureLayer::offset"));
-  }
-  // `TextureLayer::size_jitter` has negative component.
-  {
-    absl::Status status =
-        BrushFamily::Create(
-            BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_texture_id =
-                                     std::string(kTestTextureId),
-                                 .size = {1, 3},
-                                 .size_jitter = {-0.1, 0.4}}}})
-            .status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(),
-                HasSubstr("BrushPaint::TextureLayer::size_jitter"));
-  }
-  // `TextureLayer::size_jitter` is greater than size component.
-  {
-    absl::Status status =
-        BrushFamily::Create(
-            BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_texture_id =
-                                     std::string(kTestTextureId),
-                                 .size = {1, 3},
-                                 .size_jitter = {0.1, 4}}}})
-            .status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(),
-                HasSubstr("BrushPaint::TextureLayer::size_jitter"));
-  }
-  // `TextureLayer::offset_jitter` has negative component.
-  {
-    absl::Status status =
-        BrushFamily::Create(
-            BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_texture_id =
-                                     std::string(kTestTextureId),
-                                 .size = {1, 3},
-                                 .offset = {0.8, 0.7},
-                                 .offset_jitter = {-0.1, 0.4}}}})
-            .status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(),
-                HasSubstr("BrushPaint::TextureLayer::offset_jitter"));
-  }
-  // `TextureLayer::offset_jitter` is greater than 1.
-  {
-    absl::Status status =
-        BrushFamily::Create(
-            BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_texture_id =
-                                     std::string(kTestTextureId),
-                                 .size = {1, 3},
-                                 .offset = {0.8, 0.7},
-                                 .offset_jitter = {0.1, 4}}}})
-            .status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(),
-                HasSubstr("BrushPaint::TextureLayer::offset_jitter"));
-  }
-  // `TextureLayer::size_jitter` has negative component.
-  {
-    absl::Status status =
-        BrushFamily::Create(
-            BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_texture_id =
-                                     std::string(kTestTextureId),
-                                 .size = {1, 3},
-                                 .size_jitter = {-0.1, 0.4}}}})
-            .status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(),
-                HasSubstr("BrushPaint::TextureLayer::size_jitter"));
   }
   // `TextureLayer::opacity` is negative.
   {
