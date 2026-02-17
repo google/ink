@@ -75,8 +75,6 @@ BrushFamily CreateTestFamily() {
                            .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
-                           .keyframes = {{.progress = 0.1,
-                                          .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kDstIn}}},
       BrushFamily::DefaultInputModel(),
       {.client_brush_family_id = "/brush-family:test-family"});
@@ -91,8 +89,6 @@ TEST(BrushTest, Stringify) {
                            .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
-                           .keyframes = {{.progress = 0.1,
-                                          .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kDstOut}}},
       BrushFamily::ExperimentalNaiveModel{},
       {.client_brush_family_id = "big-square"});
@@ -110,8 +106,7 @@ TEST(BrushTest, Stringify) {
       "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
       "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
       "opacity=1, animation_frames=1, animation_rows=1, animation_columns=1, "
-      "animation_duration=1s, keyframes={TextureKeyframe{progress=0.1, "
-      "rotation=0.25π}}, blend_mode=kDstOut}}, "
+      "animation_duration=1s, blend_mode=kDstOut}}, "
       "self_overlap=kAny}}}], input_model=ExperimentalNaiveModel, "
       "client_brush_family_id='big-square'))");
 }
@@ -240,8 +235,6 @@ TEST(BrushTest, SetNewFamily) {
                            .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
-                           .keyframes = {{.progress = 0.1,
-                                          .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kDstIn}}},
       BrushFamily::DefaultInputModel(),
       {.client_brush_family_id = "/brush-family:new-test-family"});

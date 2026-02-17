@@ -67,8 +67,6 @@ Brush CreateBrush() {
                            .mapping = BrushPaint::TextureMapping::kStamping,
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
-                           .keyframes = {{.progress = 0.1,
-                                          .rotation = kFullTurn / 8}},
                            .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
       BrushFamily::SpringModel{},
       {.client_brush_family_id =

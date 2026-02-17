@@ -643,15 +643,6 @@ Domain<BrushPaint::BlendMode> ArbitraryBrushPaintBlendMode() {
 }
 // LINT.ThenChange(brush_paint.h:blend_mode)
 
-Domain<BrushPaint::TextureKeyframe> ValidBrushPaintTextureKeyframe() {
-  return StructOf<BrushPaint::TextureKeyframe>(
-      InRange<float>(0.f, 1.f),
-      OptionalOf(StructOf<Vec>(FinitePositiveFloat(), FinitePositiveFloat())),
-      OptionalOf(
-          StructOf<Vec>(InRange<float>(0.f, 1.f), InRange<float>(0.f, 1.f))),
-      OptionalOf(FiniteAngle()), OptionalOf(InRange(0.f, 1.f)));
-}
-
 Domain<BrushPaint::TextureLayer>
 ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
     BrushPaint::TextureMapping mapping, int animation_frames,
@@ -662,13 +653,11 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
     auto animation_rows_domain = Just(animation_rows);
     auto animation_columns_domain = Just(animation_columns);
     auto animation_duration_domain = Just(animation_duration);
-    auto keyframes_domain = VectorOf(ValidBrushPaintTextureKeyframe());
     if (variant == DomainVariant::kValidAndSerializable) {
       animation_frames_domain = Just(1);
       animation_rows_domain = Just(1);
       animation_columns_domain = Just(1);
       animation_duration_domain = Just(absl::Seconds(1));
-      keyframes_domain = VectorOf(ValidBrushPaintTextureKeyframe()).WithSize(0);
     }
     return StructOf<BrushPaint::TextureLayer>(
         Arbitrary<std::string>(), Just(mapping),
@@ -678,8 +667,7 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
         StructOf<Vec>(InRange<float>(0.f, 1.f), InRange<float>(0.f, 1.f)),
         FiniteAngle(), InRange(0.f, 1.f), animation_frames_domain,
         animation_rows_domain, animation_columns_domain,
-        animation_duration_domain, keyframes_domain,
-        ArbitraryBrushPaintBlendMode());
+        animation_duration_domain, ArbitraryBrushPaintBlendMode());
   };
   return FlatMap(texture_layer,
                  StructOf<Vec>(FinitePositiveFloat(), FinitePositiveFloat()));

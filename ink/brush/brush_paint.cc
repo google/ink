@@ -97,51 +97,6 @@ bool IsValidBrushPaintSelfOverlap(BrushPaint::SelfOverlap self_overlap) {
   return false;
 }
 
-absl::Status ValidateBrushPaintTextureKeyframe(
-    BrushPaint::TextureKeyframe keyframe) {
-  if (!(keyframe.progress >= 0.f && keyframe.progress <= 1.f)) {
-    return absl::InvalidArgumentError(absl::StrFormat(
-        "`BrushPaint::TextureKeyframe::progress` must be a value in the "
-        "interval [0, 1]. Got %f",
-        keyframe.progress));
-  }
-  if (keyframe.size.has_value()) {
-    if (!std::isfinite(keyframe.size->x) || !std::isfinite(keyframe.size->y) ||
-        keyframe.size->x <= 0 || keyframe.size->y <= 0) {
-      return absl::InvalidArgumentError(
-          absl::StrFormat("`BrushPaint::TextureKeyframe::size` components must "
-                          "be finite and greater than zero. Got %v",
-                          *keyframe.size));
-    }
-  }
-  if (keyframe.offset.has_value()) {
-    if (!(keyframe.offset->x >= 0.0f && keyframe.offset->x <= 1.0f &&
-          keyframe.offset->y >= 0.0f && keyframe.offset->y <= 1.0f)) {
-      return absl::InvalidArgumentError(
-          absl::StrFormat("`BrushPaint::TextureKeyframe::offset` components "
-                          "must values in the interval [0, 1]. Got %v",
-                          *keyframe.offset));
-    }
-  }
-  if (keyframe.rotation.has_value()) {
-    if (!std::isfinite(keyframe.rotation->ValueInRadians())) {
-      return absl::InvalidArgumentError(
-          absl::StrFormat("`BrushPaint::TextureKeyframe::rotation` must be "
-                          "finite. Got %v",
-                          *keyframe.rotation));
-    }
-  }
-  if (keyframe.opacity.has_value()) {
-    if (!(*keyframe.opacity >= 0.0f && *keyframe.opacity <= 1.0f)) {
-      return absl::InvalidArgumentError(absl::StrFormat(
-          "`BrushPaint::TextureKeyframe::opacity` must be a value in the "
-          "interval [0, 1]. Got %f",
-          *keyframe.opacity));
-    }
-  }
-  return absl::OkStatus();
-}
-
 }  // namespace
 
 absl::Status ValidateBrushPaintTextureLayer(
@@ -231,12 +186,6 @@ absl::Status ValidateBrushPaintTextureLayer(
         "`BrushPaint::TextureLayer::animation_duration` must be "
         "a whole number of milliseconds in the interval [1, 2^24]. Got ",
         layer.animation_duration));
-  }
-  for (const BrushPaint::TextureKeyframe& keyframe : layer.keyframes) {
-    if (auto status = ValidateBrushPaintTextureKeyframe(keyframe);
-        !status.ok()) {
-      return status;
-    }
   }
   if (!IsValidBrushPaintBlendMode(layer.blend_mode)) {
     return absl::InvalidArgumentError(
@@ -416,26 +365,6 @@ std::string ToFormattedString(BrushPaint::BlendMode blend_mode) {
   return absl::StrCat("BlendMode(", static_cast<int>(blend_mode), ")");
 }
 
-std::string ToFormattedString(const BrushPaint::TextureKeyframe& keyframe) {
-  std::string formatted =
-      absl::StrCat("TextureKeyframe{progress=", keyframe.progress);
-  if (keyframe.size.has_value()) {
-    absl::StrAppend(&formatted, ", size=", *keyframe.size);
-  }
-  if (keyframe.offset.has_value()) {
-    absl::StrAppend(&formatted, ", offset=", *keyframe.offset);
-  }
-  if (keyframe.rotation.has_value()) {
-    absl::StrAppend(&formatted, ", rotation=", *keyframe.rotation);
-  }
-  if (keyframe.opacity.has_value()) {
-    absl::StrAppend(&formatted, ", opacity=", *keyframe.opacity);
-  }
-  formatted.push_back('}');
-
-  return formatted;
-}
-
 std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
   return absl::StrCat(
       "TextureLayer{", "client_texture_id=", texture_layer.client_texture_id,
@@ -451,7 +380,6 @@ std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
       ", animation_rows=", texture_layer.animation_rows,
       ", animation_columns=", texture_layer.animation_columns,
       ", animation_duration=", texture_layer.animation_duration,
-      ", keyframes={", absl::StrJoin(texture_layer.keyframes, ", "), "}",
       ", blend_mode=", ToFormattedString(texture_layer.blend_mode), "}");
 }
 
