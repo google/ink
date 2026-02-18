@@ -331,7 +331,6 @@ MATCHER_P(BrushPaintTextureLayerEqMatcher, expected,
             Field(&BrushPaint::TextureLayer::size, Eq(expected.size)),
             Field(&BrushPaint::TextureLayer::offset, Eq(expected.offset)),
             Field(&BrushPaint::TextureLayer::rotation, Eq(expected.rotation)),
-            Field(&BrushPaint::TextureLayer::opacity, Eq(expected.opacity)),
             Field(&BrushPaint::TextureLayer::blend_mode,
                   Eq(expected.blend_mode))),
       arg, result_listener);

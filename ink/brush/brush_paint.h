@@ -234,9 +234,6 @@ struct BrushPaint {
     // axes.
     Angle rotation = Angle();
 
-    // Overall layer opacity.
-    float opacity = 1;
-
     // The number of animation frames in this texture. Must be between 1 and
     // 2^24 (inclusive). If 1 (the default), then animation is effectively
     // disabled. If greater than 1, then the texture image is treated as a grid
@@ -397,8 +394,7 @@ template <typename H>
 H AbslHashValue(H h, const BrushPaint::TextureLayer& layer) {
   return H::combine(std::move(h), layer.client_texture_id, layer.mapping,
                     layer.origin, layer.size_unit, layer.wrap_x, layer.wrap_y,
-                    layer.size, layer.offset, layer.rotation, layer.opacity,
-                    layer.blend_mode);
+                    layer.size, layer.offset, layer.rotation, layer.blend_mode);
 }
 
 template <typename H>

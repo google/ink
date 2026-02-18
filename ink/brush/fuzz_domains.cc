@@ -665,9 +665,9 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
         ArbitraryBrushPaintTextureSizeUnit(), ArbitraryBrushPaintTextureWrap(),
         ArbitraryBrushPaintTextureWrap(), Just(size),
         StructOf<Vec>(InRange<float>(0.f, 1.f), InRange<float>(0.f, 1.f)),
-        FiniteAngle(), InRange(0.f, 1.f), animation_frames_domain,
-        animation_rows_domain, animation_columns_domain,
-        animation_duration_domain, ArbitraryBrushPaintBlendMode());
+        FiniteAngle(), animation_frames_domain, animation_rows_domain,
+        animation_columns_domain, animation_duration_domain,
+        ArbitraryBrushPaintBlendMode());
   };
   return FlatMap(texture_layer,
                  StructOf<Vec>(FinitePositiveFloat(), FinitePositiveFloat()));

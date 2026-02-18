@@ -194,9 +194,9 @@ JNI_METHOD(brush, BrushPaintNative, jboolean, isCompatibleWithMeshFormat)
 JNI_METHOD(brush, TextureLayerNative, jlong, create)
 (JNIEnv* env, jobject thiz, jstring client_texture_id, jfloat size_x,
  jfloat size_y, jfloat offset_x, jfloat offset_y, jfloat rotation_degrees,
- jfloat opacity, jint animation_frames, jint animation_rows,
- jint animation_columns, jlong animation_duration_millis, jint size_unit,
- jint origin, jint mapping, jint wrap_x, jint wrap_y, jint blend_mode) {
+ jint animation_frames, jint animation_rows, jint animation_columns,
+ jlong animation_duration_millis, jint size_unit, jint origin, jint mapping,
+ jint wrap_x, jint wrap_y, jint blend_mode) {
   BrushPaint::TextureLayer texture_layer{
       .client_texture_id = JStringToStdString(env, client_texture_id),
       .mapping = JIntToMapping(mapping),
@@ -207,7 +207,6 @@ JNI_METHOD(brush, TextureLayerNative, jlong, create)
       .size = Vec{size_x, size_y},
       .offset = Vec{offset_x, offset_y},
       .rotation = Angle::Degrees(rotation_degrees),
-      .opacity = opacity,
       .animation_frames = animation_frames,
       .animation_rows = animation_rows,
       .animation_columns = animation_columns,
@@ -256,13 +255,6 @@ JNI_METHOD(brush, TextureLayerNative, jfloat, getOffsetY)
 JNI_METHOD(brush, TextureLayerNative, jfloat, getRotationDegrees)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return CastToTextureLayer(native_pointer).rotation.ValueInDegrees();
-}
-
-JNI_METHOD(brush, TextureLayerNative, jfloat, getOpacity)
-(JNIEnv* env, jobject thiz, jlong native_pointer) {
-  const BrushPaint::TextureLayer& texture_layer =
-      CastToTextureLayer(native_pointer);
-  return texture_layer.opacity;
 }
 
 JNI_METHOD(brush, TextureLayerNative, jint, getAnimationFrames)

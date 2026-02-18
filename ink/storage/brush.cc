@@ -1248,7 +1248,6 @@ void EncodeBrushPaintTextureLayer(
   layer_proto_out.set_offset_x(layer.offset.x);
   layer_proto_out.set_offset_y(layer.offset.y);
   layer_proto_out.set_rotation_in_radians(layer.rotation.ValueInRadians());
-  layer_proto_out.set_opacity(layer.opacity);
   layer_proto_out.set_blend_mode(EncodeBrushPaintBlendMode(layer.blend_mode));
 }
 
@@ -1295,7 +1294,6 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
       .size = {layer_proto.size_x(), layer_proto.size_y()},
       .offset = {layer_proto.offset_x(), layer_proto.offset_y()},
       .rotation = Angle::Radians(layer_proto.rotation_in_radians()),
-      .opacity = layer_proto.opacity(),
       .blend_mode = *blend_mode};
   if (absl::Status status =
           brush_internal::ValidateBrushPaintTextureLayer(texture_layer);

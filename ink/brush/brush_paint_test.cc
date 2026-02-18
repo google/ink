@@ -74,7 +74,6 @@ TEST(BrushPaintTest, TextureLayerSupportsAbslHash) {
       BrushPaint::TextureLayer{.client_texture_id = id1, .size = {2, 2}},
       BrushPaint::TextureLayer{.client_texture_id = id1, .offset = {1, 1}},
       BrushPaint::TextureLayer{.client_texture_id = id1, .rotation = kHalfTurn},
-      BrushPaint::TextureLayer{.client_texture_id = id1, .opacity = 0.5},
       BrushPaint::TextureLayer{.client_texture_id = id1,
                                .blend_mode = BrushPaint::BlendMode::kXor},
   }));
@@ -112,7 +111,6 @@ TEST(BrushPaintTest, TextureLayerEqualAndNotEqual) {
       .size = {1, 1},
       .offset = {0, 0},
       .rotation = Angle(),
-      .opacity = 1,
       .blend_mode = BrushPaint::BlendMode::kModulate,
   };
 
@@ -153,10 +151,6 @@ TEST(BrushPaintTest, TextureLayerEqualAndNotEqual) {
 
   other = layer;
   other.rotation = kHalfTurn;
-  EXPECT_NE(layer, other);
-
-  other = layer;
-  other.opacity = 0.5;
   EXPECT_NE(layer, other);
 
   other = layer;
@@ -248,7 +242,7 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
             "TextureLayer{client_texture_id=, mapping=kTiling, "
             "origin=kStrokeSpaceOrigin, size_unit=kStrokeCoordinates, "
             "wrap_x=kRepeat, wrap_y=kRepeat, "
-            "size=<1, 1>, offset=<0, 0>, rotation=0π, opacity=1, "
+            "size=<1, 1>, offset=<0, 0>, rotation=0π, "
             "animation_frames=1, animation_rows=1, animation_columns=1, "
             "animation_duration=1s, blend_mode=kModulate}");
   EXPECT_EQ(absl::StrCat(BrushPaint::TextureLayer{
@@ -257,7 +251,7 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
             "mapping=kTiling, origin=kStrokeSpaceOrigin, "
             "size_unit=kStrokeCoordinates, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<1, 1>, offset=<0, 0>, rotation=0π, "
-            "opacity=1, animation_frames=1, animation_rows=1, "
+            "animation_frames=1, animation_rows=1, "
             "animation_columns=1, animation_duration=1s, "
             "blend_mode=kModulate}");
   EXPECT_EQ(
@@ -271,7 +265,6 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
           .size = {3, 5},
           .offset = {2, 0.2},
           .rotation = kQuarterTurn,
-          .opacity = 0.6,
           .animation_frames = 2,
           .animation_rows = 3,
           .animation_columns = 4,
@@ -280,7 +273,7 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
       "TextureLayer{client_texture_id=test-texture, "
       "mapping=kStamping, origin=kFirstStrokeInput, size_unit=kBrushSize, "
       "wrap_x=kMirror, wrap_y=kClamp, "
-      "size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, opacity=0.6, "
+      "size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, "
       "animation_frames=2, animation_rows=3, animation_columns=4, "
       "animation_duration=5s, blend_mode=kDstIn}");
   EXPECT_EQ(absl::StrCat(BrushPaint::TextureLayer{
@@ -293,7 +286,6 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
                 .size = {3, 5},
                 .offset = {2, 0.2},
                 .rotation = kQuarterTurn,
-                .opacity = 0.6,
                 .animation_frames = 2,
                 .animation_rows = 3,
                 .animation_columns = 4,
@@ -302,7 +294,7 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
             "TextureLayer{client_texture_id=test-texture, "
             "mapping=kStamping, origin=kLastStrokeInput, size_unit=kBrushSize, "
             "wrap_x=kClamp, wrap_y=kMirror, "
-            "size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, opacity=0.6, "
+            "size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, "
             "animation_frames=2, animation_rows=3, animation_columns=4, "
             "animation_duration=5s, blend_mode=kSrcAtop}");
 }
@@ -314,7 +306,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
             "mapping=kTiling, origin=kStrokeSpaceOrigin, "
             "size_unit=kStrokeCoordinates, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<1, 1>, offset=<0, 0>, "
-            "rotation=0π, opacity=1, animation_frames=1, animation_rows=1, "
+            "rotation=0π, animation_frames=1, animation_rows=1, "
             "animation_columns=1, animation_duration=1s, "
             "blend_mode=kModulate}}, self_overlap=kAny}");
   EXPECT_EQ(
@@ -324,7 +316,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
       "mapping=kTiling, origin=kStrokeSpaceOrigin, "
       "size_unit=kStrokeCoordinates, wrap_x=kRepeat, wrap_y=kRepeat, "
-      "size=<1, 1>, offset=<0, 0>, rotation=0π, opacity=1, "
+      "size=<1, 1>, offset=<0, 0>, rotation=0π, "
       "animation_frames=1, animation_rows=1, animation_columns=1, "
       "animation_duration=1s, blend_mode=kModulate}}, "
       "self_overlap=kAny}");
@@ -338,7 +330,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "mapping=kStamping, origin=kStrokeSpaceOrigin, "
       "size_unit=kBrushSize, wrap_x=kRepeat, wrap_y=kRepeat, "
       "size=<1, 1>, offset=<0, 0>, rotation=0π, "
-      "opacity=1, animation_frames=1, animation_rows=1, animation_columns=1, "
+      "animation_frames=1, animation_rows=1, animation_columns=1, "
       "animation_duration=1s, blend_mode=kModulate}}, "
       "self_overlap=kAny}");
   EXPECT_EQ(
@@ -351,7 +343,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
       "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, "
-      "rotation=0π, opacity=1, animation_frames=1, animation_rows=1, "
+      "rotation=0π, animation_frames=1, animation_rows=1, "
       "animation_columns=1, animation_duration=1s, "
       "blend_mode=kModulate}}, self_overlap=kAny}");
   EXPECT_EQ(
@@ -361,7 +353,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
       "mapping=kTiling, origin=kStrokeSpaceOrigin, "
       "size_unit=kStrokeCoordinates, wrap_x=kRepeat, wrap_y=kRepeat, "
-      "size=<3, 5>, offset=<0, 0>, rotation=0π, opacity=1, "
+      "size=<3, 5>, offset=<0, 0>, rotation=0π, "
       "animation_frames=1, animation_rows=1, animation_columns=1, "
       "animation_duration=1s, blend_mode=kModulate}}, "
       "self_overlap=kAny}");
@@ -373,7 +365,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
       "mapping=kTiling, origin=kStrokeSpaceOrigin, "
       "size_unit=kStrokeCoordinates, wrap_x=kRepeat, wrap_y=kRepeat, "
-      "size=<3, 5>, offset=<2, 0.2>, rotation=0π, opacity=1, "
+      "size=<3, 5>, offset=<2, 0.2>, rotation=0π, "
       "animation_frames=1, animation_rows=1, animation_columns=1, "
       "animation_duration=1s, blend_mode=kModulate}}, "
       "self_overlap=kAny}");
@@ -382,12 +374,11 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
                               .size = {3, 5},
                               .offset = {2, 0.2},
-                              .rotation = kQuarterTurn,
-                              .opacity = 0.6}}}),
+                              .rotation = kQuarterTurn}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
       "mapping=kTiling, origin=kStrokeSpaceOrigin, "
       "size_unit=kStrokeCoordinates, wrap_x=kRepeat, wrap_y=kRepeat, "
-      "size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, opacity=0.6, "
+      "size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, "
       "animation_frames=1, animation_rows=1, animation_columns=1, "
       "animation_duration=1s, blend_mode=kModulate}}, "
       "self_overlap=kAny}");
@@ -403,7 +394,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
       "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
-      "rotation=0π, opacity=1, animation_frames=1, animation_rows=1, "
+      "rotation=0π, animation_frames=1, animation_rows=1, "
       "animation_columns=1, animation_duration=1s, "
       "blend_mode=kSrcIn}}, self_overlap=kAny}");
   EXPECT_EQ(
@@ -414,12 +405,11 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                                   BrushPaint::TextureSizeUnit::kBrushSize,
                               .size = {3, 5},
                               .offset = {2, 0.2},
-                              .rotation = kQuarterTurn,
-                              .opacity = 0.6}}}),
+                              .rotation = kQuarterTurn}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
       "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
-      "rotation=0.5π, opacity=0.6, animation_frames=1, animation_rows=1, "
+      "rotation=0.5π, animation_frames=1, animation_rows=1, "
       "animation_columns=1, animation_duration=1s, "
       "blend_mode=kModulate}}, self_overlap=kAny}");
   EXPECT_EQ(
@@ -431,14 +421,13 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                               .size = {3, 5},
                               .offset = {2, 0.2},
                               .rotation = kQuarterTurn,
-                              .opacity = 0.6,
                               .blend_mode = BrushPaint::BlendMode::kSrcIn}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
       "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
-      "rotation=0.5π, opacity=0.6, animation_frames=1, "
-      "animation_rows=1, animation_columns=1, animation_duration=1s, "
-      "blend_mode=kSrcIn}}, self_overlap=kAny}");
+      "rotation=0.5π, animation_frames=1, animation_rows=1, "
+      "animation_columns=1, animation_duration=1s, blend_mode=kSrcIn}}, "
+      "self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
@@ -447,14 +436,13 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                                   BrushPaint::TextureSizeUnit::kBrushSize,
                               .size = {3, 5},
                               .offset = {2, 0.2},
-                              .rotation = kQuarterTurn,
-                              .opacity = 0.6}}}),
+                              .rotation = kQuarterTurn}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
       "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
-      "rotation=0.5π, opacity=0.6, animation_frames=1, "
-      "animation_rows=1, animation_columns=1, animation_duration=1s, "
-      "blend_mode=kModulate}}, self_overlap=kAny}");
+      "rotation=0.5π, animation_frames=1, animation_rows=1, "
+      "animation_columns=1, animation_duration=1s, blend_mode=kModulate}}, "
+      "self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers =
@@ -464,26 +452,21 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                 .size = {3, 5},
                 .offset = {2, 0.2},
                 .rotation = kQuarterTurn,
-                .opacity = 0.6,
                 .blend_mode = BrushPaint::BlendMode::kSrcIn},
                {.client_texture_id = std::string(kTestTextureId),
                 .mapping = BrushPaint::TextureMapping::kTiling,
                 .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
                 .size = {1, 4},
-                .opacity = 0.7,
                 .blend_mode = BrushPaint::BlendMode::kDstIn}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
       "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
-      "rotation=0.5π, opacity=0.6, animation_frames=1, "
-      "animation_rows=1, animation_columns=1, animation_duration=1s, "
-      "blend_mode=kSrcIn}, "
+      "rotation=0.5π, animation_frames=1, animation_rows=1, "
+      "animation_columns=1, animation_duration=1s, blend_mode=kSrcIn}, "
       "TextureLayer{client_texture_id=test-texture, "
-      "mapping=kTiling, "
-      "origin=kStrokeSpaceOrigin, size_unit=kStrokeSize, "
+      "mapping=kTiling, origin=kStrokeSpaceOrigin, size_unit=kStrokeSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<1, 4>, offset=<0, 0>, "
-      "rotation=0π, "
-      "opacity=0.7, animation_frames=1, animation_rows=1, "
+      "rotation=0π, animation_frames=1, animation_rows=1, "
       "animation_columns=1, animation_duration=1s, "
       "blend_mode=kDstIn}}, self_overlap=kAny}");
   EXPECT_EQ(absl::StrCat(
@@ -500,7 +483,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
             "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-"
             "texture, mapping=kTiling, origin=kStrokeSpaceOrigin, "
             "size_unit=kStrokeCoordinates, wrap_x=kRepeat, wrap_y=kRepeat, "
-            "size=<1, 1>, offset=<0, 0>, rotation=0π, opacity=1, "
+            "size=<1, 1>, offset=<0, 0>, rotation=0π, "
             "animation_frames=1, animation_rows=1, animation_columns=1, "
             "animation_duration=1s, blend_mode=kModulate}}, "
             "color_functions={OpacityMultiplier{0.5}}, self_overlap=kAny}");

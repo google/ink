@@ -105,7 +105,7 @@ TEST(BrushTest, Stringify) {
       "texture_id=test-texture, mapping=kStamping, "
       "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
       "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
-      "opacity=1, animation_frames=1, animation_rows=1, animation_columns=1, "
+      "animation_frames=1, animation_rows=1, animation_columns=1, "
       "animation_duration=1s, blend_mode=kDstOut}}, "
       "self_overlap=kAny}}}], input_model=ExperimentalNaiveModel, "
       "client_brush_family_id='big-square'))");

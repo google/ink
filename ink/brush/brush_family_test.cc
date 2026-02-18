@@ -136,7 +136,7 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
             "client_texture_id=test-paint, mapping=kStamping, "
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
-            "opacity=1, animation_frames=1, animation_rows=1, "
+            "animation_frames=1, animation_rows=1, "
             "animation_columns=1, animation_duration=1s, blend_mode=kDstIn}}, "
             "self_overlap=kAny}}}], input_model=ExperimentalNaiveModel)");
 }
@@ -154,7 +154,7 @@ TEST(BrushFamilyTest, StringifyWithId) {
             "texture_id=test-paint, mapping=kStamping, "
             "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
-            "opacity=1, animation_frames=1, animation_rows=1, "
+            "animation_frames=1, animation_rows=1, "
             "animation_columns=1, animation_duration=1s, blend_mode=kDstIn}}, "
             "self_overlap=kAny}}}], input_model=ExperimentalNaiveModel, "
             "client_brush_family_id='big-square')");
@@ -1054,48 +1054,6 @@ TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
     EXPECT_EQ(status.code(), kInvalidArgument);
     EXPECT_THAT(status.message(),
                 HasSubstr("BrushPaint::TextureLayer::offset"));
-  }
-  // `TextureLayer::opacity` is negative.
-  {
-    absl::Status status =
-        BrushFamily::Create(
-            BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_texture_id =
-                                     std::string(kTestTextureId),
-                                 .size = {1, 3},
-                                 .opacity = -1}}})
-            .status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(),
-                HasSubstr("BrushPaint::TextureLayer::opacity"));
-  }
-  // `TextureLayer::opacity` is negative.
-  {
-    absl::Status status =
-        BrushFamily::Create(
-            BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_texture_id =
-                                     std::string(kTestTextureId),
-                                 .size = {1, 3},
-                                 .opacity = -1}}})
-            .status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(),
-                HasSubstr("BrushPaint::TextureLayer::opacity"));
-  }
-  // `TextureLayer::opacity` is greater than 1.
-  {
-    absl::Status status =
-        BrushFamily::Create(
-            BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-            {.texture_layers = {{.client_texture_id =
-                                     std::string(kTestTextureId),
-                                 .size = {1, 3},
-                                 .opacity = 3}}})
-            .status();
-    EXPECT_EQ(status.code(), kInvalidArgument);
-    EXPECT_THAT(status.message(),
-                HasSubstr("BrushPaint::TextureLayer::opacity"));
   }
 }
 

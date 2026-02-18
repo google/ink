@@ -363,7 +363,6 @@ BrushCoat MiniEmojiCoat(
           .mapping = BrushPaint::TextureMapping::kStamping,
           .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
           .size = {1.0f, 1.0f},
-          .opacity = 0.4f,
           .blend_mode = BrushPaint::BlendMode::kModulate,
       }},
   };

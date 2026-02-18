@@ -425,7 +425,6 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   layer_proto->set_offset_x(0.f);
   layer_proto->set_offset_y(0.f);
   layer_proto->set_rotation_in_radians(0.f);
-  layer_proto->set_opacity(1.f);
   layer_proto->set_blend_mode(
       proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
   paint_proto->set_self_overlap(proto::BrushPaint::SELF_OVERLAP_DISCARD);
@@ -513,7 +512,6 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   texture_layer_proto->set_offset_x(0.f);
   texture_layer_proto->set_offset_y(0.f);
   texture_layer_proto->set_rotation_in_radians(0.f);
-  texture_layer_proto->set_opacity(1.f);
   texture_layer_proto->set_blend_mode(
       proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
   paint_proto->set_self_overlap(proto::BrushPaint::SELF_OVERLAP_ACCUMULATE);

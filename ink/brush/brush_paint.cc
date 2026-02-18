@@ -146,12 +146,6 @@ absl::Status ValidateBrushPaintTextureLayer(
                         "Got %v",
                         layer.rotation));
   }
-  if (!(layer.opacity >= 0.0f && layer.opacity <= 1.0f)) {
-    return absl::InvalidArgumentError(absl::StrFormat(
-        "`BrushPaint::TextureLayer::opacity` must be in the interval [0, 1]. "
-        "Got %v",
-        layer.opacity));
-  }
   if (layer.animation_frames <= 0 || layer.animation_frames > (1 << 24)) {
     return absl::InvalidArgumentError(absl::StrCat(
         "`BrushPaint::TextureLayer::animation_frames` must be in "
@@ -375,7 +369,6 @@ std::string ToFormattedString(const BrushPaint::TextureLayer& texture_layer) {
       ", wrap_y=", ToFormattedString(texture_layer.wrap_y),
       ", size=", texture_layer.size, ", offset=", texture_layer.offset,
       ", rotation=", texture_layer.rotation,
-      ", opacity=", texture_layer.opacity,
       ", animation_frames=", texture_layer.animation_frames,
       ", animation_rows=", texture_layer.animation_rows,
       ", animation_columns=", texture_layer.animation_columns,
