@@ -22,6 +22,7 @@
 
 #include "absl/status/status.h"
 #include "absl/types/span.h"
+#include "ink/brush/version.h"
 #include "ink/color/color.h"
 
 namespace ink {
@@ -65,6 +66,10 @@ namespace brush_internal {
 // Determines whether the given ColorFunction struct is valid to be used in a
 // BrushFamily, and returns an error if not.
 absl::Status ValidateColorFunction(const ColorFunction& color_function);
+
+// Calculates the minimum version of the Ink library that is required to use
+// this color function.
+Version CalculateMinimumRequiredVersion(const ColorFunction& color_function);
 
 std::string ToFormattedString(const ColorFunction& color_function);
 std::string ToFormattedString(const ColorFunction::Parameters& parameters);

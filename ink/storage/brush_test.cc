@@ -14,6 +14,7 @@
 
 #include "ink/storage/brush.h"
 
+#include <algorithm>
 #include <map>
 #include <optional>
 #include <string>
@@ -22,9 +23,11 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ink/brush/brush.h"
@@ -37,15 +40,18 @@
 #include "ink/brush/easing_function.h"
 #include "ink/brush/fuzz_domains.h"
 #include "ink/brush/type_matchers.h"
+#include "ink/brush/version.h"
 #include "ink/color/color.h"
-#include "ink/geometry/vec.h"
 #include "ink/storage/color.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/brush_family.pb.h"
 #include "ink/storage/proto/color.pb.h"
+#include "ink/storage/proto/options.pb.h"
 #include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/storage/proto_matchers.h"
 #include "ink/types/duration.h"
+#include "google/protobuf/descriptor.h"
+#include "google/protobuf/message.h"
 
 namespace ink {
 namespace {
@@ -55,7 +61,9 @@ using ::absl_testing::IsOkAndHolds;
 using ::absl_testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::ElementsAre;
+using ::testing::Eq;
 using ::testing::Field;
+using ::testing::Ge;
 using ::testing::HasSubstr;
 using ::testing::IsNull;
 using ::testing::SizeIs;
@@ -399,6 +407,13 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   brush_proto.mutable_brush_family()
       ->mutable_input_model()
       ->mutable_spring_model();
+  proto::Version* min_version_proto =
+      brush_proto.mutable_brush_family()->mutable_min_version();
+  min_version_proto->set_major(1);
+  min_version_proto->set_minor(0);
+  min_version_proto->set_bug(0);
+  min_version_proto->set_cycle(proto::Version::CYCLE_STABLE);
+  min_version_proto->set_release(1);
   proto::BrushCoat* coat_proto =
       brush_proto.mutable_brush_family()->add_coats();
   coat_proto->mutable_tip()->set_scale_x(1.f);
@@ -482,6 +497,13 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   brush_proto.mutable_brush_family()
       ->mutable_input_model()
       ->mutable_spring_model();
+  proto::Version* min_version_proto =
+      brush_proto.mutable_brush_family()->mutable_min_version();
+  min_version_proto->set_major(1);
+  min_version_proto->set_minor(0);
+  min_version_proto->set_bug(0);
+  min_version_proto->set_cycle(proto::Version::CYCLE_STABLE);
+  min_version_proto->set_release(1);
   brush_proto.mutable_brush_family()->mutable_texture_id_to_bitmap()->insert(
       {std::string(kTestTextureId1), TestPngBytes1x1()});
   proto::BrushCoat* coat_proto =
@@ -903,6 +925,299 @@ void EncodeDecodeValidBrushBehaviorNodeRoundTrip(
 }
 FUZZ_TEST(BrushTest, EncodeDecodeValidBrushBehaviorNodeRoundTrip)
     .WithDomains(SerializableBrushBehaviorNode());
+
+void GetMaxProtoVersion(const ::google::protobuf::Message& message,
+                        Version& max_version_out) {
+  const ::google::protobuf::Descriptor* descriptor = message.GetDescriptor();
+  if (descriptor->options().HasExtension(ink::proto::message_min_version)) {
+    absl::StatusOr<Version> message_version = DecodeBrushFamilyVersion(
+        descriptor->options().GetExtension(ink::proto::message_min_version));
+    ASSERT_THAT(message_version, IsOk());
+    EXPECT_THAT(ValidateVersion(message_version.value()), IsOk());
+    max_version_out = std::max(max_version_out, message_version.value());
+  }
+
+  const ::google::protobuf::Reflection* reflection = message.GetReflection();
+  std::vector<const ::google::protobuf::FieldDescriptor*> fields;
+  reflection->ListFields(message, &fields);
+
+  for (const auto* field : fields) {
+    if (field->options().HasExtension(ink::proto::field_min_version)) {
+      absl::StatusOr<Version> field_version = DecodeBrushFamilyVersion(
+          field->options().GetExtension(ink::proto::field_min_version));
+      ASSERT_THAT(field_version, IsOk());
+      EXPECT_THAT(ValidateVersion(field_version.value()), IsOk());
+      max_version_out = std::max(max_version_out, field_version.value());
+    }
+
+    if (field->cpp_type() == ::google::protobuf::FieldDescriptor::CPPTYPE_ENUM) {
+      if (field->is_repeated()) {
+        for (int i = 0; i < reflection->FieldSize(message, field); ++i) {
+          const ::google::protobuf::EnumValueDescriptor* enum_value =
+              reflection->GetRepeatedEnum(message, field, i);
+          if (enum_value->options().HasExtension(
+                  ink::proto::enum_value_min_version)) {
+            absl::StatusOr<Version> enum_value_version =
+                DecodeBrushFamilyVersion(enum_value->options().GetExtension(
+                    ink::proto::enum_value_min_version));
+            ASSERT_THAT(enum_value_version, IsOk());
+            EXPECT_THAT(ValidateVersion(enum_value_version.value()), IsOk());
+            max_version_out =
+                std::max(max_version_out, enum_value_version.value());
+          }
+        }
+      } else {
+        const ::google::protobuf::EnumValueDescriptor* enum_value =
+            reflection->GetEnum(message, field);
+        if (enum_value->options().HasExtension(
+                ink::proto::enum_value_min_version)) {
+          absl::StatusOr<Version> enum_value_version =
+              DecodeBrushFamilyVersion(enum_value->options().GetExtension(
+                  ink::proto::enum_value_min_version));
+          ASSERT_THAT(enum_value_version, IsOk());
+          EXPECT_THAT(ValidateVersion(enum_value_version.value()), IsOk());
+          max_version_out =
+              std::max(max_version_out, enum_value_version.value());
+        }
+      }
+    } else if (field->cpp_type() ==
+               ::google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
+      if (field->is_repeated()) {
+        for (int i = 0; i < reflection->FieldSize(message, field); ++i) {
+          GetMaxProtoVersion(reflection->GetRepeatedMessage(message, field, i),
+                             max_version_out);
+        }
+      } else {
+        GetMaxProtoVersion(reflection->GetMessage(message, field),
+                           max_version_out);
+      }
+    }
+  }
+}
+
+// Tests that CalculateMinimumRequiredVersion returns the same version as is
+// annotated in the proto options corresponding to the messages, fields, and
+// enums in the serialized form of the BrushFamily.
+void CalculateMinimumRequiredVersionMatchesProtoOptions(
+    const BrushFamily& family) {
+  // Encoding uses CalculateMinimumRequiredVersion to set the min version.
+  proto::BrushFamily family_proto;
+  EncodeBrushFamily(family, family_proto);
+  absl::StatusOr<Version> min_version_calculated =
+      DecodeBrushFamilyVersion(family_proto.min_version());
+  ASSERT_THAT(min_version_calculated, IsOk());
+  EXPECT_THAT(ValidateVersion(min_version_calculated.value()), IsOk());
+
+  Version min_version_from_options =
+      Version(0, 0, 0, Version::Cycle::kStable, 0);
+  GetMaxProtoVersion(family_proto, min_version_from_options);
+  // Using reflection, examine the minimum required version of each
+  // field/message/enum in the proto, and find the maximum.
+  EXPECT_THAT(min_version_calculated.value(), Eq(min_version_from_options));
+}
+FUZZ_TEST(BrushTest, CalculateMinimumRequiredVersionMatchesProtoOptions)
+    .WithDomains(SerializableBrushFamily());
+
+void CheckMinVersionExistsAndIsValid(
+    const ::google::protobuf::Descriptor* descriptor,
+    absl::flat_hash_set<const ::google::protobuf::Descriptor*>& visited_messages,
+    absl::flat_hash_set<const ::google::protobuf::EnumDescriptor*>& visited_enums) {
+  if (visited_messages.contains(descriptor) ||
+      descriptor->file()->name() !=
+          "third_party/ink/storage/proto/brush_family.proto" ||
+      descriptor->options().map_entry()) {
+    // Ignore messages that have already been visited, that are not in the brush
+    // family proto file, or that are map entries (impossible to add options to,
+    // since they are generated by the map field).
+    return;
+  }
+  visited_messages.insert(descriptor);
+
+  EXPECT_TRUE(
+      descriptor->options().HasExtension(ink::proto::message_min_version))
+      << "Message " << descriptor->full_name()
+      << " is missing message_min_version option.";
+  absl::StatusOr<Version> message_version = DecodeBrushFamilyVersion(
+      descriptor->options().GetExtension(ink::proto::message_min_version));
+  ASSERT_THAT(message_version, IsOk());
+  EXPECT_THAT(ValidateVersion(message_version.value()), IsOk());
+
+  for (int i = 0; i < descriptor->field_count(); ++i) {
+    const ::google::protobuf::FieldDescriptor* field = descriptor->field(i);
+    EXPECT_TRUE(field->options().HasExtension(ink::proto::field_min_version))
+        << "Field " << field->full_name()
+        << " is missing field_min_version option.";
+    absl::StatusOr<Version> field_version = DecodeBrushFamilyVersion(
+        field->options().GetExtension(ink::proto::field_min_version));
+    ASSERT_THAT(field_version, IsOk());
+    EXPECT_THAT(ValidateVersion(field_version.value()), IsOk());
+    if (field->cpp_type() == ::google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
+      CheckMinVersionExistsAndIsValid(field->message_type(), visited_messages,
+                                      visited_enums);
+    } else if (field->cpp_type() == ::google::protobuf::FieldDescriptor::CPPTYPE_ENUM) {
+      const ::google::protobuf::EnumDescriptor* enum_descriptor = field->enum_type();
+      if (enum_descriptor->file()->name() !=
+          "third_party/ink/storage/proto/brush_family.proto") {
+        continue;
+      }
+      if (visited_enums.contains(enum_descriptor)) continue;
+      visited_enums.insert(enum_descriptor);
+      for (int j = 0; j < enum_descriptor->value_count(); ++j) {
+        const ::google::protobuf::EnumValueDescriptor* enum_value =
+            enum_descriptor->value(j);
+        EXPECT_TRUE(enum_value->options().HasExtension(
+            ink::proto::enum_value_min_version))
+            << "Enum value " << enum_value->full_name()
+            << " is missing enum_value_min_version option.";
+        absl::StatusOr<Version> enum_value_version =
+            DecodeBrushFamilyVersion(enum_value->options().GetExtension(
+                ink::proto::enum_value_min_version));
+        ASSERT_THAT(enum_value_version, IsOk());
+        EXPECT_THAT(ValidateVersion(enum_value_version.value()), IsOk());
+      }
+    }
+  }
+}
+
+TEST(BrushTest,
+     AllBrushFamilyProtoMessagesFieldsAndEnumsHaveValidMinimumVersion) {
+  // Ensure that all BrushFamily proto messages, fields, and
+  // enums have a `minimum_version` option set, and it is valid:
+  // - Lower than or equal to version::kMax
+  // - Greater than or equal to version::k1_0_0
+  // - All release values must be greater than 0
+  // - Stable cycles must have a release value of 1
+  // This ensures that they are well documented, valid to be loaded, and will be
+  // covered by the `CalculateMinimumRequiredVersionMatchesProtoOptions` test.
+  absl::flat_hash_set<const ::google::protobuf::Descriptor*> visited_messages;
+  absl::flat_hash_set<const ::google::protobuf::EnumDescriptor*> visited_enums;
+  CheckMinVersionExistsAndIsValid(proto::BrushFamily::descriptor(),
+                                  visited_messages, visited_enums);
+}
+TEST(BrushTest, DecodeBrushFamilyFailsWithOutOfRangeMinVersion) {
+  // First an absurdly high version:
+  proto::BrushFamily family_proto;
+  proto::Version* min_version = family_proto.mutable_min_version();
+  min_version->set_major(google::protobuf::Syntax_INT_MAX_SENTINEL_DO_NOT_USE_);
+  min_version->set_minor(google::protobuf::Syntax_INT_MAX_SENTINEL_DO_NOT_USE_);
+  min_version->set_bug(google::protobuf::Syntax_INT_MAX_SENTINEL_DO_NOT_USE_);
+  min_version->set_cycle(proto::Version::CYCLE_STABLE);
+  min_version->set_release(
+      google::protobuf::Syntax_INT_MAX_SENTINEL_DO_NOT_USE_);
+
+  EXPECT_THAT(
+      DecodeBrushFamily(family_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               absl::StrCat("Version must be less than or equal to ",
+                            ToFormattedString(version::kMax), ", but was ",
+                            "2147483647.2147483647.2147483647")));
+
+  // Now a version as close to version::kMax as possible.
+  Version max_plus_one = version::kMax;
+  max_plus_one.release++;
+  min_version->set_major(max_plus_one.major);
+  min_version->set_minor(max_plus_one.minor);
+  min_version->set_bug(max_plus_one.bug);
+  switch (max_plus_one.cycle) {
+    case Version::Cycle::kAlpha:
+      min_version->set_cycle(proto::Version::CYCLE_ALPHA);
+      break;
+    case Version::Cycle::kBeta:
+      min_version->set_cycle(proto::Version::CYCLE_BETA);
+      break;
+    case Version::Cycle::kReleaseCandidate:
+      min_version->set_cycle(proto::Version::CYCLE_RELEASE_CANDIDATE);
+      break;
+    case Version::Cycle::kStable:
+      min_version->set_cycle(proto::Version::CYCLE_STABLE);
+      break;
+  }
+  min_version->set_release(max_plus_one.release);
+
+  EXPECT_THAT(
+      DecodeBrushFamily(family_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               absl::StrCat("Version must be less than or equal to ",
+                            ToFormattedString(version::kMax), ", but was ",
+                            ToFormattedString(max_plus_one))));
+
+  // Now a version as close to version::kMin as possible.
+  Version min_minus_one = version::kMin;
+  min_minus_one.release--;
+  min_version->set_major(min_minus_one.major);
+  min_version->set_minor(min_minus_one.minor);
+  min_version->set_bug(min_minus_one.bug);
+  switch (min_minus_one.cycle) {
+    case Version::Cycle::kAlpha:
+      min_version->set_cycle(proto::Version::CYCLE_ALPHA);
+      break;
+    case Version::Cycle::kBeta:
+      min_version->set_cycle(proto::Version::CYCLE_BETA);
+      break;
+    case Version::Cycle::kReleaseCandidate:
+      min_version->set_cycle(proto::Version::CYCLE_RELEASE_CANDIDATE);
+      break;
+    case Version::Cycle::kStable:
+      min_version->set_cycle(proto::Version::CYCLE_STABLE);
+      break;
+  }
+  min_version->set_release(min_minus_one.release);
+  EXPECT_THAT(
+      DecodeBrushFamily(family_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               absl::StrCat("Version must be greater than or equal to ",
+                            ToFormattedString(version::kMin), ", but was ",
+                            ToFormattedString(min_minus_one))));
+
+  // Now a version with a release value of 0.
+  min_version->set_major(1);
+  min_version->set_minor(1);
+  min_version->set_bug(0);
+  min_version->set_cycle(proto::Version::CYCLE_ALPHA);
+  min_version->set_release(0);
+  EXPECT_THAT(DecodeBrushFamily(family_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       "Version::release must be greater than 0, but was 0"));
+
+  // Now a version with a stable cycle and a release value of 2.
+  min_version->set_major(1);
+  min_version->set_minor(0);
+  min_version->set_bug(0);
+  min_version->set_cycle(proto::Version::CYCLE_STABLE);
+  min_version->set_release(2);
+  EXPECT_THAT(
+      DecodeBrushFamily(family_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               "Version::release must be 1 for stable cycle, but was 2"));
+}
+
+TEST(BrushTest, DecodeBrushFamilyFailsWithUnrecognizedVersionCycle) {
+  proto::BrushFamily family_proto;
+  proto::Version* min_version = family_proto.mutable_min_version();
+  min_version->set_major(1);
+  min_version->set_minor(0);
+  min_version->set_bug(0);
+  min_version->set_cycle(proto::Version::Cycle(
+      proto::Version::Cycle::
+          Version_Cycle_Version_Cycle_INT_MAX_SENTINEL_DO_NOT_USE_));
+  min_version->set_release(1);
+
+  EXPECT_THAT(DecodeBrushFamily(family_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       "Failed to decode BrushFamily version: unrecognized "
+                       "cycle 2147483647"));
+
+  min_version->set_cycle(proto::Version::CYCLE_UNSPECIFIED);
+  EXPECT_THAT(DecodeBrushFamily(family_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       "Failed to decode BrushFamily version: unrecognized "
+                       "cycle 0"));
+}
+
+TEST(BrushTest, DecodeBrushFamilyIsOkWithNoMinVersionSet) {
+  proto::BrushFamily family_proto;
+  EXPECT_THAT(DecodeBrushFamily(family_proto), IsOk());
+}
 
 }  // namespace
 }  // namespace ink

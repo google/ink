@@ -14,6 +14,7 @@
 
 #include "ink/brush/brush_paint.h"
 
+#include <algorithm>
 #include <cmath>
 #include <string>
 
@@ -24,6 +25,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/time/time.h"
 #include "ink/brush/color_function.h"
+#include "ink/brush/version.h"
 #include "ink/geometry/mesh_format.h"
 
 namespace ink::brush_internal {
@@ -259,6 +261,96 @@ absl::Status ValidateBrushPaint(const BrushPaint& paint) {
     return status;
   }
   return absl::OkStatus();
+}
+
+namespace {
+
+Version CalculateMinimumRequiredVersion(
+    BrushPaint::TextureMapping texture_mapping) {
+  switch (texture_mapping) {
+    case BrushPaint::TextureMapping::kTiling:
+    case BrushPaint::TextureMapping::kStamping:
+      return version::k1_0_0;
+  }
+}
+
+Version CalculateMinimumRequiredVersion(
+    BrushPaint::TextureOrigin texture_origin) {
+  switch (texture_origin) {
+    case BrushPaint::TextureOrigin::kStrokeSpaceOrigin:
+    case BrushPaint::TextureOrigin::kFirstStrokeInput:
+    case BrushPaint::TextureOrigin::kLastStrokeInput:
+      return version::k1_0_0;
+  }
+}
+
+Version CalculateMinimumRequiredVersion(
+    BrushPaint::TextureSizeUnit texture_size_unit) {
+  switch (texture_size_unit) {
+    case BrushPaint::TextureSizeUnit::kBrushSize:
+    case BrushPaint::TextureSizeUnit::kStrokeCoordinates:
+      return version::k1_0_0;
+  }
+}
+
+Version CalculateMinimumRequiredVersion(BrushPaint::TextureWrap texture_wrap) {
+  switch (texture_wrap) {
+    case BrushPaint::TextureWrap::kRepeat:
+    case BrushPaint::TextureWrap::kMirror:
+    case BrushPaint::TextureWrap::kClamp:
+      return version::k1_0_0;
+  }
+}
+
+Version CalculateMinimumRequiredVersion(BrushPaint::BlendMode blend_mode) {
+  switch (blend_mode) {
+    case BrushPaint::BlendMode::kModulate:
+    case BrushPaint::BlendMode::kDstIn:
+    case BrushPaint::BlendMode::kDstOut:
+    case BrushPaint::BlendMode::kSrcAtop:
+    case BrushPaint::BlendMode::kSrcIn:
+    case BrushPaint::BlendMode::kSrcOver:
+    case BrushPaint::BlendMode::kDstOver:
+    case BrushPaint::BlendMode::kSrc:
+    case BrushPaint::BlendMode::kDst:
+    case BrushPaint::BlendMode::kSrcOut:
+    case BrushPaint::BlendMode::kDstAtop:
+    case BrushPaint::BlendMode::kXor:
+      return version::k1_0_0;
+  }
+}
+
+Version CalculateMinimumRequiredVersion(BrushPaint::SelfOverlap self_overlap) {
+  switch (self_overlap) {
+    case BrushPaint::SelfOverlap::kAny:
+    case BrushPaint::SelfOverlap::kDiscard:
+    case BrushPaint::SelfOverlap::kAccumulate:
+      return version::k1_0_0;
+  }
+}
+
+Version CalculateMinimumRequiredVersion(
+    const BrushPaint::TextureLayer& texture_layer) {
+  return std::max({CalculateMinimumRequiredVersion(texture_layer.mapping),
+                   CalculateMinimumRequiredVersion(texture_layer.origin),
+                   CalculateMinimumRequiredVersion(texture_layer.size_unit),
+                   CalculateMinimumRequiredVersion(texture_layer.wrap_x),
+                   CalculateMinimumRequiredVersion(texture_layer.wrap_y),
+                   CalculateMinimumRequiredVersion(texture_layer.blend_mode)});
+}
+
+}  // namespace
+
+Version CalculateMinimumRequiredVersion(const BrushPaint& paint) {
+  Version max_version = CalculateMinimumRequiredVersion(paint.self_overlap);
+  for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
+    max_version = std::max(max_version, CalculateMinimumRequiredVersion(layer));
+  }
+  for (const ColorFunction& color_function : paint.color_functions) {
+    max_version =
+        std::max(max_version, CalculateMinimumRequiredVersion(color_function));
+  }
+  return max_version;
 }
 
 void AddAttributeIdsRequiredByPaint(

@@ -82,9 +82,9 @@ cc_library(
     srcs = ["brush_coat.cc"],
     hdrs = ["brush_coat.h"],
     deps = [
-        ":brush_behavior",
         ":brush_paint",
         ":brush_tip",
+        ":version",
         "//ink/geometry:mesh_format",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:inlined_vector",
@@ -120,6 +120,7 @@ cc_library(
         ":brush_coat",
         ":brush_paint",
         ":brush_tip",
+        ":version",
         "//ink/types:duration",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
@@ -160,6 +161,7 @@ cc_library(
     hdrs = ["brush_tip.h"],
     deps = [
         ":brush_behavior",
+        ":version",
         "//ink/geometry:angle",
         "//ink/geometry:mesh_format",
         "//ink/geometry:vec",
@@ -190,6 +192,7 @@ cc_library(
     srcs = ["color_function.cc"],
     hdrs = ["color_function.h"],
     deps = [
+        ":version",
         "//ink/color",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
@@ -219,6 +222,7 @@ cc_library(
     srcs = ["easing_function.cc"],
     hdrs = ["easing_function.h"],
     deps = [
+        ":version",
         "//ink/geometry:point",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
@@ -245,6 +249,7 @@ cc_library(
     hdrs = ["brush_behavior.h"],
     deps = [
         ":easing_function",
+        ":version",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
@@ -273,6 +278,7 @@ cc_library(
     hdrs = ["brush_paint.h"],
     deps = [
         ":color_function",
+        ":version",
         "//ink/geometry:angle",
         "//ink/geometry:mesh_format",
         "//ink/geometry:vec",
@@ -362,6 +368,15 @@ cc_library(
         ":brush_family",
         ":brush_paint",
         ":stock_brushes",
+    ],
+)
+
+cc_library(
+    name = "version",
+    hdrs = ["version.h"],
+    deps = [
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
     ],
 )
 

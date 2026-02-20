@@ -18,6 +18,7 @@
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("//tools/build_defs/proto:descriptor_set.bzl", "transitive_descriptor_set")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -37,12 +38,21 @@ proto_library(
     srcs = ["brush_family.proto"],
     deps = [
         ":color_proto",
+        ":options_proto",
     ],
 )
 
 proto_library(
     name = "color_proto",
     srcs = ["color.proto"],
+)
+
+proto_library(
+    name = "options_proto",
+    srcs = ["options.proto"],
+    deps = [
+        "//net/proto2/proto:descriptor",
+    ],
 )
 
 proto_library(
@@ -95,6 +105,11 @@ cc_proto_library(
 )
 
 cc_proto_library(
+    name = "options_cc_proto",
+    deps = [":options_proto"],
+)
+
+cc_proto_library(
     name = "stroke_input_batch_cc_proto",
     deps = [":stroke_input_batch_proto"],
 )
@@ -107,4 +122,9 @@ cc_proto_library(
 cc_proto_library(
     name = "coded_numeric_run_cc_proto",
     deps = [":coded_numeric_run_proto"],
+)
+
+transitive_descriptor_set(
+    name = "brush_family_proto_descriptor_set",
+    deps = [":brush_family_proto"],
 )

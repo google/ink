@@ -22,6 +22,7 @@
 #include "absl/status/status.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/version.h"
 #include "ink/geometry/mesh_format.h"
 
 namespace ink {
@@ -45,6 +46,10 @@ namespace brush_internal {
 // Determines whether the given BrushCoat struct is valid to be used in a
 // BrushFamily, and returns an error if not.
 absl::Status ValidateBrushCoat(const BrushCoat& coat);
+
+// Calculates the minimum version of the Ink library that is required to use
+// this brush coat.
+Version CalculateMinimumRequiredVersion(const BrushCoat& coat);
 
 // Adds the mesh attribute IDs that are required to properly render a mesh
 // made with this brush coat to the given `attribute_ids` set. This will always
