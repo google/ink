@@ -14,7 +14,9 @@
 
 #include "ink/brush/brush_tip.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <variant>
 #include <vector>
@@ -113,6 +115,15 @@ absl::Status ValidateBrushTip(const BrushTip& tip) {
     }
   }
   return absl::OkStatus();
+}
+
+int32_t CalculateMinimumRequiredVersion(const BrushTip& tip) {
+  int32_t max_version = 0;
+  for (const BrushBehavior& behavior : tip.behaviors) {
+    max_version =
+        std::max(max_version, CalculateMinimumRequiredVersion(behavior));
+  }
+  return max_version;
 }
 
 void AddAttributeIdsRequiredByTip(

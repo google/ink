@@ -152,6 +152,10 @@ class BrushFamily {
   // otherwise used internally by Ink.
   const Metadata& GetMetadata() const;
 
+  // Calculates the minimum version of the Ink library that is required to use
+  // this brush family.
+  int32_t CalculateMinimumRequiredVersion() const;
+
   template <typename Sink>
   friend void AbslStringify(Sink& sink, const BrushFamily& family) {
     sink.Append(family.ToFormattedString());

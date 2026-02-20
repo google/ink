@@ -38,12 +38,14 @@
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
+#include "ink/brush/version.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 #include "ink/storage/color.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/brush_family.pb.h"
+#include "ink/storage/proto/options.pb.h"
 #include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/types/duration.h"
 
@@ -1744,6 +1746,11 @@ void EncodeBrushFamily(const BrushFamily& family,
   } else {
     family_proto_out.set_developer_comment(metadata.developer_comment);
   }
+
+  // TODO(maxmm): Should we prevent families with kDevelopment version from
+  // being encoded at all? As it stands, kDevelopment can be encoded, but will
+  // be rejected by DecodeBrushFamily (as it is much larger than kMax).
+  family_proto_out.set_min_version(family.CalculateMinimumRequiredVersion());
 }
 
 absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
@@ -1765,7 +1772,22 @@ absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
 
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto,
-    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id) {
+    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id,
+    bool allow_development_version) {
+  // Check that the BrushFamily proto is compatible with the current library
+  // version.
+  if (family_proto.has_min_version()) {
+    int32_t required_version = family_proto.min_version();
+    // The decoded version is not saved anywhere; we only care whether it's
+    // compatible with the current library version or not when deserializing.
+    if (absl::Status status = ValidateThatVersionIsSupported(
+            required_version,
+            /*allow_development_version=*/allow_development_version);
+        !status.ok()) {
+      return status;
+    }
+  }
+
   // ID map that also serves as a record of the IDs for which we've already
   // called `get_client_texture_id`.
   std::map<std::string, std::string> old_to_new_id = {};
@@ -1825,9 +1847,11 @@ void EncodeBrush(const Brush& brush, proto::Brush& brush_proto_out,
 
 absl::StatusOr<Brush> DecodeBrush(
     const proto::Brush& brush_proto,
-    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id) {
+    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id,
+    bool allow_development_version) {
   absl::StatusOr<BrushFamily> brush_family =
-      DecodeBrushFamily(brush_proto.brush_family(), get_client_texture_id);
+      DecodeBrushFamily(brush_proto.brush_family(), get_client_texture_id,
+                        allow_development_version);
   if (!brush_family.ok()) {
     return brush_family.status();
   }

@@ -14,6 +14,8 @@
 
 #include "ink/brush/brush_coat.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <string>
 
 #include "absl/container/flat_hash_set.h"
@@ -21,7 +23,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
 #include "ink/geometry/mesh_format.h"
@@ -43,6 +44,14 @@ absl::Status ValidateBrushCoat(const BrushCoat& coat) {
     }
   }
   return absl::OkStatus();
+}
+
+int32_t CalculateMinimumRequiredVersion(const BrushCoat& coat) {
+  int32_t max_version = CalculateMinimumRequiredVersion(coat.tip);
+  for (const BrushPaint& paint : coat.paint_preferences) {
+    max_version = std::max(max_version, CalculateMinimumRequiredVersion(paint));
+  }
+  return max_version;
 }
 
 void AddAttributeIdsRequiredByCoat(

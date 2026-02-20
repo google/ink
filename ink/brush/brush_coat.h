@@ -15,6 +15,7 @@
 #ifndef INK_STROKES_BRUSH_BRUSH_COAT_H_
 #define INK_STROKES_BRUSH_BRUSH_COAT_H_
 
+#include <cstdint>
 #include <string>
 
 #include "absl/container/flat_hash_set.h"
@@ -45,6 +46,10 @@ namespace brush_internal {
 // Determines whether the given BrushCoat struct is valid to be used in a
 // BrushFamily, and returns an error if not.
 absl::Status ValidateBrushCoat(const BrushCoat& coat);
+
+// Calculates the minimum version of the Ink library that is required to use
+// this brush coat.
+int32_t CalculateMinimumRequiredVersion(const BrushCoat& coat);
 
 // Adds the mesh attribute IDs that are required to properly render a mesh
 // made with this brush coat to the given `attribute_ids` set. This will always
