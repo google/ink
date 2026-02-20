@@ -420,6 +420,23 @@ TEST_P(StrokeInputModelerTest, StartWithZeroEpsilon) {
                             "brush_epsilon");
 }
 
+TEST_P(StrokeInputModelerTest, ExtendInputsAfterInputsFinished) {
+  StrokeInputModeler modeler;
+  float brush_epsilon = 0.08;
+  modeler.StartStroke(GetParam().input_model, brush_epsilon);
+
+  absl::StatusOr<StrokeInputBatch> inputs = StrokeInputBatch::Create({
+      {.position = {5, 7}, .elapsed_time = Duration32::Zero()},
+  });
+  ASSERT_EQ(inputs.status(), absl::OkStatus());
+  modeler.ExtendStroke(*inputs, {}, Duration32::Zero());
+  modeler.FinishStrokeInputs();
+
+  EXPECT_DEATH_IF_SUPPORTED(
+      modeler.ExtendStroke(*inputs, {}, Duration32::Zero()),
+      "Can't add more inputs");
+}
+
 INSTANTIATE_TEST_SUITE_P(
     TestInputModels, StrokeInputModelerTest,
     // LINT.IfChange(input_model_types)

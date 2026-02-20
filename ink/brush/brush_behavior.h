@@ -180,10 +180,16 @@ struct BrushBehavior {
     kDistanceRemainingInMultiplesOfBrushSize,
     // Time elapsed since the modeled stroke input. This continues to increase
     // even after all stroke inputs have completed, and can be used to drive
-    // stroke animations. These enumerators are only compatible with a
+    // wet-layer stroke animations. This source is only compatible with a
     // `source_out_of_range_behavior` of `kClamp`, to ensure that the animation
     // will eventually end.
     kTimeSinceInputInSeconds,
+    // Time elapsed since the final input of the stroke, or zero if the final
+    // input hasn't arrived yet. This can be used to drive wet-layer stroke
+    // animations that should occur after the final input. This source is only
+    // compatible with a `source_out_of_range_behavior` of `kClamp`, to ensure
+    // that the animation will eventually end.
+    kTimeSinceStrokeEndInSeconds,
     // Absolute acceleration of the modeled stroke input in multiples of the
     // brush size per second squared. Note that this value doesn't take into
     // account brush behaviors that offset the position of that visible point in

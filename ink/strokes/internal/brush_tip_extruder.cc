@@ -62,20 +62,8 @@ void BrushTipExtruder::StartStroke(float brush_epsilon, bool is_particle_brush,
   max_chord_height_ = GetMaxChordHeight(brush_epsilon);
   simplification_threshold_ = GetSimplificationThreshold(brush_epsilon);
   is_particle_brush_ = is_particle_brush;
-  extrusions_.clear();
-  saved_extrusion_data_count_ = 0;
-  deleted_save_point_extrusions_.clear();
   geometry_.Reset(MutableMeshView(mesh));
-  bounds_ = {};
-  // Pre-allocate the first outline.
-  num_outlines_ = 1;
-  if (outlines_.empty()) {
-    outlines_.resize(1);
-  }
-  // Clear all the outlines from the previous stroke.
-  for (StrokeOutline& outline : outlines_) {
-    outline.TruncateIndices({0, 0});
-  }
+  RestartStroke();
 }
 
 namespace {
@@ -135,6 +123,24 @@ StrokeShapeUpdate BrushTipExtruder::ExtendStroke(
   UpdateCurrentBounds();
   return ConstructUpdate(geometry_, triangle_count_before_update,
                          vertex_count_before_update);
+}
+
+void BrushTipExtruder::RestartStroke() {
+  ABSL_CHECK_GT(brush_epsilon_, 0) << "`StartStroke()` has not been called";
+  extrusions_.clear();
+  saved_extrusion_data_count_ = 0;
+  deleted_save_point_extrusions_.clear();
+  geometry_.Reset(geometry_.GetMeshView());
+  bounds_ = {};
+  // Pre-allocate the first outline.
+  num_outlines_ = 1;
+  if (outlines_.empty()) {
+    outlines_.resize(1);
+  }
+  // Clear all the outlines from the previous stroke.
+  for (StrokeOutline& outline : outlines_) {
+    outline.TruncateIndices({0, 0});
+  }
 }
 
 void BrushTipExtruder::ClearCachedPartialBounds() {

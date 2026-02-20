@@ -522,6 +522,9 @@ TEST(BrushFamilyTest, CreateWithInvalidBehaviorSourceAndOutOfRangeBehavior) {
   BrushTip brush_tip = {
       .behaviors = {BrushBehavior{{
           BrushBehavior::SourceNode{
+              .source = BrushBehavior::Source::kTimeSinceInputInSeconds,
+              .source_out_of_range_behavior =
+                  BrushBehavior::OutOfRange::kRepeat,
               .source_value_range = {0, 1},
           },
           BrushBehavior::TargetNode{
@@ -530,17 +533,11 @@ TEST(BrushFamilyTest, CreateWithInvalidBehaviorSourceAndOutOfRangeBehavior) {
           },
       }}},
   };
-  BrushBehavior::SourceNode* source_node =
-      &std::get<BrushBehavior::SourceNode>(brush_tip.behaviors[0].nodes[0]);
-
-  source_node->source = BrushBehavior::Source::kTimeSinceInputInSeconds;
-  source_node->source_out_of_range_behavior =
-      BrushBehavior::OutOfRange::kRepeat;
-  absl::Status status = BrushFamily::Create(brush_tip, BrushPaint{}).status();
-  EXPECT_EQ(status.code(), kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("kTimeSinceInputInSeconds` must only be used with "
-                        "`source_out_of_range_behavior` of `kClamp"));
+  EXPECT_THAT(
+      BrushFamily::Create(brush_tip, BrushPaint{}).status(),
+      StatusIs(kInvalidArgument,
+               HasSubstr("`kTimeSince*` sources can only be used with a "
+                         "`source_out_of_range_behavior` of `kClamp`")));
 }
 
 TEST(BrushFamilyTest, CreateWithInvalidBehaviorTargetModifierRange) {
