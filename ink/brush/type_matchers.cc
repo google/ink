@@ -29,6 +29,7 @@
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
+#include "ink/brush/version.h"
 #include "ink/geometry/type_matchers.h"
 #include "ink/types/type_matchers.h"
 
@@ -41,6 +42,7 @@ using ::testing::Eq;
 using ::testing::ExplainMatchResult;
 using ::testing::Field;
 using ::testing::FloatEq;
+using ::testing::Ge;
 using ::testing::Matcher;
 using ::testing::Pointwise;
 using ::testing::Property;
@@ -404,6 +406,21 @@ Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
       expected);
 }
 
+MATCHER_P(VersionEqMatcher, expected,
+          absl::StrCat(negation ? "doesn't equal" : "equals",
+                       " Version (expected: ", ToFormattedString(expected),
+                       ")")) {
+  return ExplainMatchResult(Eq(expected), arg, result_listener);
+}
+
+MATCHER_P(VersionGeMatcher, expected,
+          absl::StrCat(negation ? "isn't greater than or equal to"
+                                : "is greater than or equal to",
+                       " Version (expected: ", ToFormattedString(expected),
+                       ")")) {
+  return ExplainMatchResult(Ge(expected), arg, result_listener);
+}
+
 MATCHER_P(BrushFamilyEqMatcher, expected,
           absl::StrCat(negation ? "doesn't equal" : "equals",
                        " BrushFamily (expected: ",
@@ -486,6 +503,14 @@ Matcher<BrushCoat> BrushCoatEq(const BrushCoat& expected) {
 
 Matcher<std::tuple<BrushCoat, BrushCoat>> BrushCoatEq() {
   return BrushCoatPointwiseEqMatcher();
+}
+
+Matcher<Version> VersionEq(const Version& expected) {
+  return VersionEqMatcher(expected);
+}
+
+Matcher<Version> VersionGe(const Version& expected) {
+  return VersionGeMatcher(expected);
 }
 
 Matcher<BrushFamily> BrushFamilyEq(const BrushFamily& expected) {

@@ -24,6 +24,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/time/time.h"
 #include "ink/brush/color_function.h"
+#include "ink/brush/version.h"
 #include "ink/geometry/mesh_format.h"
 
 namespace ink::brush_internal {
@@ -259,6 +260,119 @@ absl::Status ValidateBrushPaint(const BrushPaint& paint) {
     return status;
   }
   return absl::OkStatus();
+}
+
+namespace {
+
+Version CalculateMinimumRequiredVersion(
+    BrushPaint::TextureMapping texture_mapping) {
+  Version max_version = version::k1_0_0;
+  switch (texture_mapping) {
+    case BrushPaint::TextureMapping::kTiling:
+    case BrushPaint::TextureMapping::kStamping:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    BrushPaint::TextureOrigin texture_origin) {
+  Version max_version = version::k1_0_0;
+  switch (texture_origin) {
+    case BrushPaint::TextureOrigin::kStrokeSpaceOrigin:
+    case BrushPaint::TextureOrigin::kFirstStrokeInput:
+    case BrushPaint::TextureOrigin::kLastStrokeInput:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    BrushPaint::TextureSizeUnit texture_size_unit) {
+  Version max_version = version::k1_0_0;
+  switch (texture_size_unit) {
+    case BrushPaint::TextureSizeUnit::kBrushSize:
+    case BrushPaint::TextureSizeUnit::kStrokeCoordinates:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushPaint::TextureWrap texture_wrap) {
+  Version max_version = version::k1_0_0;
+  switch (texture_wrap) {
+    case BrushPaint::TextureWrap::kRepeat:
+    case BrushPaint::TextureWrap::kMirror:
+    case BrushPaint::TextureWrap::kClamp:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushPaint::BlendMode blend_mode) {
+  Version max_version = version::k1_0_0;
+  switch (blend_mode) {
+    case BrushPaint::BlendMode::kModulate:
+    case BrushPaint::BlendMode::kDstIn:
+    case BrushPaint::BlendMode::kDstOut:
+    case BrushPaint::BlendMode::kSrcAtop:
+    case BrushPaint::BlendMode::kSrcIn:
+    case BrushPaint::BlendMode::kSrcOver:
+    case BrushPaint::BlendMode::kDstOver:
+    case BrushPaint::BlendMode::kSrc:
+    case BrushPaint::BlendMode::kDst:
+    case BrushPaint::BlendMode::kSrcOut:
+    case BrushPaint::BlendMode::kDstAtop:
+    case BrushPaint::BlendMode::kXor:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushPaint::SelfOverlap self_overlap) {
+  Version max_version = version::k1_0_0;
+  switch (self_overlap) {
+    case BrushPaint::SelfOverlap::kAny:
+    case BrushPaint::SelfOverlap::kDiscard:
+    case BrushPaint::SelfOverlap::kAccumulate:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    const BrushPaint::TextureLayer& texture_layer) {
+  Version max_version = version::k1_0_0;
+  max_version = MaxVersion(
+      max_version, CalculateMinimumRequiredVersion(texture_layer.mapping));
+  max_version = MaxVersion(
+      max_version, CalculateMinimumRequiredVersion(texture_layer.origin));
+  max_version = MaxVersion(
+      max_version, CalculateMinimumRequiredVersion(texture_layer.size_unit));
+  max_version = MaxVersion(
+      max_version, CalculateMinimumRequiredVersion(texture_layer.wrap_x));
+  max_version = MaxVersion(
+      max_version, CalculateMinimumRequiredVersion(texture_layer.wrap_y));
+  max_version = MaxVersion(
+      max_version, CalculateMinimumRequiredVersion(texture_layer.blend_mode));
+  return max_version;
+}
+
+}  // namespace
+
+Version CalculateMinimumRequiredVersion(const BrushPaint& paint) {
+  Version max_version = version::k1_0_0;
+  max_version = MaxVersion(max_version,
+                           CalculateMinimumRequiredVersion(paint.self_overlap));
+  for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
+    max_version =
+        MaxVersion(max_version, CalculateMinimumRequiredVersion(layer));
+  }
+  for (const ColorFunction& color_function : paint.color_functions) {
+    max_version = MaxVersion(max_version,
+                             CalculateMinimumRequiredVersion(color_function));
+  }
+  return max_version;
 }
 
 void AddAttributeIdsRequiredByPaint(

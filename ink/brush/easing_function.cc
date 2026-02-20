@@ -23,6 +23,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "ink/brush/version.h"
 #include "ink/geometry/point.h"
 
 namespace ink::brush_internal {
@@ -141,6 +142,67 @@ absl::Status ValidateEasingFunction(const EasingFunction& easing_function) {
   return std::visit(
       [](auto&& params) { return ValidateEasingFunctionParameters(params); },
       easing_function.parameters);
+}
+
+namespace {
+
+Version CalculateMinimumRequiredVersion(
+    const EasingFunction::Predefined predefined) {
+  Version max_version = version::k1_0_0;
+  switch (predefined) {
+    case EasingFunction::Predefined::kLinear:
+    case EasingFunction::Predefined::kEase:
+    case EasingFunction::Predefined::kEaseIn:
+    case EasingFunction::Predefined::kEaseOut:
+    case EasingFunction::Predefined::kEaseInOut:
+    case EasingFunction::Predefined::kStepStart:
+    case EasingFunction::Predefined::kStepEnd:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    const EasingFunction::CubicBezier& cubic_bezier) {
+  Version max_version = version::k1_0_0;
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(const EasingFunction::Linear& linear) {
+  Version max_version = version::k1_0_0;
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    EasingFunction::StepPosition step_position) {
+  Version max_version = version::k1_0_0;
+  switch (step_position) {
+    case EasingFunction::StepPosition::kJumpEnd:
+    case EasingFunction::StepPosition::kJumpStart:
+    case EasingFunction::StepPosition::kJumpNone:
+    case EasingFunction::StepPosition::kJumpBoth:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(const EasingFunction::Steps& steps) {
+  Version max_version = version::k1_0_0;
+  max_version = MaxVersion(
+      max_version, CalculateMinimumRequiredVersion(steps.step_position));
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    const EasingFunction::Parameters& parameters) {
+  return std::visit(
+      [](auto&& params) { return CalculateMinimumRequiredVersion(params); },
+      parameters);
+}
+}  // namespace
+
+Version CalculateMinimumRequiredVersion(const EasingFunction& easing_function) {
+  return CalculateMinimumRequiredVersion(easing_function.parameters);
 }
 
 std::string ToFormattedString(const EasingFunction& easing_function) {

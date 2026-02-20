@@ -22,6 +22,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
+#include "ink/brush/version.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/vec.h"
@@ -114,6 +115,10 @@ namespace brush_internal {
 // Determines whether the given BrushTip struct is valid to be used in a
 // BrushFamily, and returns an error if not.
 absl::Status ValidateBrushTip(const BrushTip& tip);
+
+// Calculates the minimum version of the Ink library that is required to use
+// this brush tip.
+Version CalculateMinimumRequiredVersion(const BrushTip& tip);
 
 // Adds the mesh attribute IDs that are required to properly render a mesh
 // with this brush tip to the given `attribute_ids` set. Note that other

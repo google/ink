@@ -27,6 +27,7 @@
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/version.h"
 #include "ink/types/duration.h"
 
 namespace ink {
@@ -151,6 +152,10 @@ class BrushFamily {
   // considered when comparing `BrushFamily` objects for equality, but is not
   // otherwise used internally by Ink.
   const Metadata& GetMetadata() const;
+
+  // Calculates the minimum version of the Ink library that is required to use
+  // this brush family.
+  Version CalculateMinimumRequiredVersion() const;
 
   template <typename Sink>
   friend void AbslStringify(Sink& sink, const BrushFamily& family) {

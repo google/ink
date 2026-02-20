@@ -25,6 +25,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ink/brush/brush_behavior.h"
+#include "ink/brush/version.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/vec.h"
@@ -113,6 +114,15 @@ absl::Status ValidateBrushTip(const BrushTip& tip) {
     }
   }
   return absl::OkStatus();
+}
+
+Version CalculateMinimumRequiredVersion(const BrushTip& tip) {
+  Version max_version;
+  for (const BrushBehavior& behavior : tip.behaviors) {
+    max_version =
+        MaxVersion(max_version, CalculateMinimumRequiredVersion(behavior));
+  }
+  return max_version;
 }
 
 void AddAttributeIdsRequiredByTip(

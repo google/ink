@@ -26,8 +26,10 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/version.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/brush_family.pb.h"
+#include "ink/storage/proto/options.pb.h"
 
 namespace ink {
 
@@ -90,6 +92,8 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
         [](const std::string& encoded_id, const std::string& bitmap) {
           return encoded_id;
         });
+absl::StatusOr<Version> DecodeBrushFamilyVersion(
+    const proto::Version& version_proto);
 absl::StatusOr<BrushCoat> DecodeBrushCoat(
     const proto::BrushCoat& coat_proto,
     ClientTextureIdProvider get_client_texture_id =
