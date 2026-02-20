@@ -91,11 +91,6 @@ Duration32 GetPredictedTimeElapsed(const InputModelerState& input_modeler_state,
       input.elapsed_time - input_modeler_state.total_real_elapsed_time);
 }
 
-Duration32 GetTimeSinceInput(const InputModelerState& input_modeler_state,
-                             const ModeledStrokeInput& input) {
-  return input_modeler_state.complete_elapsed_time - input.elapsed_time;
-}
-
 // Returns the value of the given `Source` at the given modeled input, or
 // `std::nullopt` if the source value is indeterminate at that input.
 std::optional<float> GetSourceValue(
@@ -163,7 +158,13 @@ std::optional<float> GetSourceValue(
               input.traveled_distance) /
              brush_size;
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
-      return GetTimeSinceInput(input_modeler_state, input).ToSeconds();
+      return (input_modeler_state.complete_elapsed_time - input.elapsed_time)
+          .ToSeconds();
+    case BrushBehavior::Source::kTimeSinceStrokeEndInSeconds:
+      if (!input_modeler_state.inputs_are_finished) return 0.0f;
+      return (input_modeler_state.complete_elapsed_time -
+              input_modeler_state.total_real_elapsed_time)
+          .ToSeconds();
     case BrushBehavior::Source::
         kAccelerationInMultiplesOfBrushSizePerSecondSquared:
       return input.acceleration.Magnitude() / brush_size;

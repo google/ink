@@ -43,6 +43,9 @@ class NoiseGenerator {
   NoiseGenerator& operator=(const NoiseGenerator&) = default;
   ~NoiseGenerator() = default;
 
+  // Resets the noise generator back to its initial state and seed value.
+  void Reset();
+
   // Returns the current output value of the generator.
   float CurrentOutputValue() const;
 
@@ -53,6 +56,7 @@ class NoiseGenerator {
   void AdvanceInputBy(float advance_by);
 
  private:
+  uint64_t initial_seed_;
   // The underlying PRNG used to generate lattice values for our 1D gradient
   // noise function. A few notes on the choice of PRNG implementation here:
   //
@@ -76,7 +80,7 @@ class NoiseGenerator {
   // m=2^31-1) that is reasonably good and won't change in the future.
   std::minstd_rand prng_;
   // The current input value, mod 1.
-  float progress_ = 0.f;
+  float progress_;
   // The last two [0, 1) floats to be emitted by the PRNG. The output value is a
   // smoothstep interpolation between these two values, using `progress_` as the
   // interpolation variable. Whenever `progress_` wraps around 1, we move

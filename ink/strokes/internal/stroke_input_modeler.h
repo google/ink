@@ -70,10 +70,16 @@ class StrokeInputModeler {
   //
   // This always clears any previously generated unstable modeled inputs. Either
   // or both of `real_inputs` and `predicted_inputs` may be empty. CHECK-fails
-  // if `StartStroke()` has not been called at least once.
+  // if `StartStroke()` has not been called at least once, or if
+  // `FinishStrokeInputs()` has been called for this stroke and `real_inputs`
+  // and `predicted_inputs` aren't both empty.
   void ExtendStroke(const StrokeInputBatch& real_inputs,
                     const StrokeInputBatch& predicted_inputs,
                     Duration32 current_elapsed_time);
+
+  // Indicates that the inputs for the current stroke are finished. This method
+  // is idempotent.
+  void FinishStrokeInputs();
 
   // Returns the current modeling state so far for the current stroke.
   const InputModelerState& GetState() const { return state_; }
@@ -99,6 +105,10 @@ class StrokeInputModeler {
   std::vector<ModeledStrokeInput> modeled_inputs_;
   absl_nullable std::unique_ptr<InputModelImpl> input_model_impl_;
 };
+
+inline void StrokeInputModeler::FinishStrokeInputs() {
+  state_.inputs_are_finished = true;
+}
 
 }  // namespace ink::strokes_internal
 

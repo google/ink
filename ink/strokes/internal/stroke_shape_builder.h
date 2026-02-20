@@ -108,6 +108,9 @@ class StrokeShapeBuilder {
 
   BrushTipModeler tip_modeler_;
   BrushTipExtruder tip_extruder_;
+  // If true, the tip modeler/extruder should be restarted on the next call to
+  // `ExtendStroke`.
+  bool need_to_restart_ = false;
 };
 
 // ---------------------------------------------------------------------------

@@ -23,11 +23,14 @@
 
 namespace ink::strokes_internal {
 
-NoiseGenerator::NoiseGenerator(uint64_t seed) {
+NoiseGenerator::NoiseGenerator(uint64_t seed) : initial_seed_(seed) { Reset(); }
+
+void NoiseGenerator::Reset() {
   // `std::seed_seq` ignores all but the bottom 32 bits of each entry, so we
   // need to split our 64-bit seed value into two 32-bit entries.
-  std::seed_seq seq{seed & 0xffffffff, seed >> 32};
+  std::seed_seq seq{initial_seed_ & 0xffffffff, initial_seed_ >> 32};
   prng_.seed(seq);
+  progress_ = 0.0f;
   std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
   prev_value_ = distribution(prng_);
   next_value_ = distribution(prng_);

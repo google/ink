@@ -70,6 +70,9 @@ void StrokeInputModeler::ExtendStroke(const StrokeInputBatch& real_inputs,
                                       Duration32 current_elapsed_time) {
   ABSL_CHECK_NE(input_model_impl_, nullptr)
       << "`StartStroke()` has not been called.";
+  ABSL_CHECK(!state_.inputs_are_finished ||
+             (real_inputs.IsEmpty() && predicted_inputs.IsEmpty()))
+      << "Can't add more inputs after calling `FinishStrokeInputs()`.";
   ErasePredictedModeledInputs();
   SetToolTypeAndStrokeUnitLength(real_inputs, predicted_inputs);
   input_model_impl_->ExtendStroke(state_, modeled_inputs_, real_inputs,
