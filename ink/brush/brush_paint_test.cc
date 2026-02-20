@@ -66,7 +66,7 @@ TEST(BrushPaintTest, TextureLayerSupportsAbslHash) {
           .origin = BrushPaint::TextureOrigin::kFirstStrokeInput},
       BrushPaint::TextureLayer{
           .client_texture_id = id1,
-          .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize},
+          .size_unit = BrushPaint::TextureSizeUnit::kBrushSize},
       BrushPaint::TextureLayer{.client_texture_id = id1,
                                .wrap_x = BrushPaint::TextureWrap::kMirror},
       BrushPaint::TextureLayer{.client_texture_id = id1,
@@ -204,8 +204,6 @@ TEST(BrushPaintTest, StringifyTextureOrigin) {
 TEST(BrushPaintTest, StringifyTextureSizeUnit) {
   EXPECT_EQ(absl::StrCat(BrushPaint::TextureSizeUnit::kBrushSize),
             "kBrushSize");
-  EXPECT_EQ(absl::StrCat(BrushPaint::TextureSizeUnit::kStrokeSize),
-            "kStrokeSize");
   EXPECT_EQ(absl::StrCat(BrushPaint::TextureSizeUnit::kStrokeCoordinates),
             "kStrokeCoordinates");
   EXPECT_EQ(absl::StrCat(static_cast<BrushPaint::TextureSizeUnit>(99)),
@@ -455,7 +453,7 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                 .blend_mode = BrushPaint::BlendMode::kSrcIn},
                {.client_texture_id = std::string(kTestTextureId),
                 .mapping = BrushPaint::TextureMapping::kTiling,
-                .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
+                .size_unit = BrushPaint::TextureSizeUnit::kStrokeCoordinates,
                 .size = {1, 4},
                 .blend_mode = BrushPaint::BlendMode::kDstIn}}}),
       "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
@@ -463,8 +461,8 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
       "rotation=0.5π, animation_frames=1, animation_rows=1, "
       "animation_columns=1, animation_duration=1s, blend_mode=kSrcIn}, "
-      "TextureLayer{client_texture_id=test-texture, "
-      "mapping=kTiling, origin=kStrokeSpaceOrigin, size_unit=kStrokeSize, "
+      "TextureLayer{client_texture_id=test-texture, mapping=kTiling, "
+      "origin=kStrokeSpaceOrigin, size_unit=kStrokeCoordinates, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<1, 4>, offset=<0, 0>, "
       "rotation=0π, animation_frames=1, animation_rows=1, "
       "animation_columns=1, animation_duration=1s, "

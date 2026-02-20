@@ -51,7 +51,6 @@ bool IsValidBrushPaintTextureOrigin(BrushPaint::TextureOrigin mapping) {
 bool IsValidBrushPaintTextureSizeUnit(BrushPaint::TextureSizeUnit size_unit) {
   switch (size_unit) {
     case BrushPaint::TextureSizeUnit::kBrushSize:
-    case BrushPaint::TextureSizeUnit::kStrokeSize:
     case BrushPaint::TextureSizeUnit::kStrokeCoordinates:
       return true;
   }
@@ -308,8 +307,6 @@ std::string ToFormattedString(BrushPaint::TextureSizeUnit texture_size_unit) {
   switch (texture_size_unit) {
     case BrushPaint::TextureSizeUnit::kBrushSize:
       return "kBrushSize";
-    case BrushPaint::TextureSizeUnit::kStrokeSize:
-      return "kStrokeSize";
     case BrushPaint::TextureSizeUnit::kStrokeCoordinates:
       return "kStrokeCoordinates";
   }

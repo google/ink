@@ -143,9 +143,6 @@ AffineTransform ComputeSizeUnitToStrokeSpaceTransform(
       break;
     case BrushPaint::TextureSizeUnit::kStrokeCoordinates:
       break;
-    case BrushPaint::TextureSizeUnit::kStrokeSize:
-      // TODO: b/336835642 - Implement support for `kStrokeSize`.
-      break;
   }
   // While we're in stroke space, shift the origin to the position specified by
   // the layer.

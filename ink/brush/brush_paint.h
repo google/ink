@@ -78,17 +78,6 @@ struct BrushPaint {
   enum class TextureSizeUnit {
     // As multiples of brush size.
     kBrushSize,
-    // As multiples of the stroke "size".
-    //
-    // This has different meanings depending on the value of `TextureMapping`
-    // for the given texture.
-    //   * For `kTiling` textures, the stroke size is equal to the dimensions of
-    //     the XY bounding rectangle of the mesh.
-    //   * For `kWinding` textures, the stroke size components are given by
-    //       x: stroke width, which may change over the course of the stroke if
-    //          behaviors affect the tip geometry.
-    //       y: the total distance traveled by the stroke.
-    kStrokeSize,
     // In the same units as the provided `StrokeInput` position.
     kStrokeCoordinates,
   };

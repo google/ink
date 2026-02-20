@@ -360,8 +360,6 @@ BrushCoat MiniEmojiCoat(
       .texture_layers = {{
           .client_texture_id = client_texture_id,
           .mapping = BrushPaint::TextureMapping::kStamping,
-          .size_unit = BrushPaint::TextureSizeUnit::kStrokeSize,
-          .size = {1.0f, 1.0f},
           .blend_mode = BrushPaint::BlendMode::kModulate,
       }},
   };

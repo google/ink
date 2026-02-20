@@ -1117,8 +1117,6 @@ proto::BrushPaint::TextureLayer::SizeUnit EncodeBrushPaintSizeUnit(
       return proto::BrushPaint::TextureLayer::SIZE_UNIT_BRUSH_SIZE;
     case BrushPaint::TextureSizeUnit::kStrokeCoordinates:
       return proto::BrushPaint::TextureLayer::SIZE_UNIT_STROKE_COORDINATES;
-    case BrushPaint::TextureSizeUnit::kStrokeSize:
-      return proto::BrushPaint::TextureLayer::SIZE_UNIT_UNSPECIFIED;
   }
   return proto::BrushPaint::TextureLayer::SIZE_UNIT_UNSPECIFIED;
 }
