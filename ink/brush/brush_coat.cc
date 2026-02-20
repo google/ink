@@ -24,6 +24,7 @@
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/version.h"
 #include "ink/geometry/mesh_format.h"
 
 namespace ink {
@@ -43,6 +44,17 @@ absl::Status ValidateBrushCoat(const BrushCoat& coat) {
     }
   }
   return absl::OkStatus();
+}
+
+Version CalculateMinimumRequiredVersion(const BrushCoat& coat) {
+  Version max_version = version::k1_0_0;
+  max_version =
+      MaxVersion(max_version, CalculateMinimumRequiredVersion(coat.tip));
+  for (const BrushPaint& paint : coat.paint_preferences) {
+    max_version =
+        MaxVersion(max_version, CalculateMinimumRequiredVersion(paint));
+  }
+  return max_version;
 }
 
 void AddAttributeIdsRequiredByCoat(

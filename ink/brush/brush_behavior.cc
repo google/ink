@@ -25,6 +25,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ink/brush/easing_function.h"
+#include "ink/brush/version.h"
 
 namespace ink {
 
@@ -471,6 +472,277 @@ absl::Status ValidateBrushBehavior(const BrushBehavior& behavior) {
     return status;
   }
   return absl::OkStatus();
+}
+
+namespace {
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::Source source) {
+  Version max_version = version::k1_0_0;
+  switch (source) {
+    case BrushBehavior::Source::kNormalizedPressure:
+    case BrushBehavior::Source::kTiltInRadians:
+    case BrushBehavior::Source::kTiltXInRadians:
+    case BrushBehavior::Source::kTiltYInRadians:
+    case BrushBehavior::Source::kOrientationInRadians:
+    case BrushBehavior::Source::kOrientationAboutZeroInRadians:
+    case BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond:
+    case BrushBehavior::Source::kVelocityXInMultiplesOfBrushSizePerSecond:
+    case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:
+    case BrushBehavior::Source::kDirectionInRadians:
+    case BrushBehavior::Source::kDirectionAboutZeroInRadians:
+    case BrushBehavior::Source::kNormalizedDirectionX:
+    case BrushBehavior::Source::kNormalizedDirectionY:
+    case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
+    case BrushBehavior::Source::kTimeOfInputInSeconds:
+    case BrushBehavior::Source::
+        kPredictedDistanceTraveledInMultiplesOfBrushSize:
+    case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
+    case BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize:
+    case BrushBehavior::Source::kTimeSinceInputInSeconds:
+    case BrushBehavior::Source::
+        kAccelerationInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::
+        kAccelerationXInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::
+        kAccelerationYInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::
+        kAccelerationForwardInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::
+        kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::kInputSpeedInCentimetersPerSecond:
+    case BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond:
+    case BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond:
+    case BrushBehavior::Source::kInputDistanceTraveledInCentimeters:
+    case BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters:
+    case BrushBehavior::Source::kInputAccelerationInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::
+        kInputAccelerationXInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::
+        kInputAccelerationYInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::
+        kInputAccelerationForwardInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::
+        kInputAccelerationLateralInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::Target target) {
+  Version max_version = version::k1_0_0;
+  switch (target) {
+    case BrushBehavior::Target::kWidthMultiplier:
+    case BrushBehavior::Target::kHeightMultiplier:
+    case BrushBehavior::Target::kSizeMultiplier:
+    case BrushBehavior::Target::kSlantOffsetInRadians:
+    case BrushBehavior::Target::kPinchOffset:
+    case BrushBehavior::Target::kRotationOffsetInRadians:
+    case BrushBehavior::Target::kCornerRoundingOffset:
+    case BrushBehavior::Target::kPositionOffsetXInMultiplesOfBrushSize:
+    case BrushBehavior::Target::kPositionOffsetYInMultiplesOfBrushSize:
+    case BrushBehavior::Target::kPositionOffsetForwardInMultiplesOfBrushSize:
+    case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
+    case BrushBehavior::Target::kTextureAnimationProgressOffset:
+    case BrushBehavior::Target::kHueOffsetInRadians:
+    case BrushBehavior::Target::kSaturationMultiplier:
+    case BrushBehavior::Target::kLuminosity:
+    case BrushBehavior::Target::kOpacityMultiplier:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::PolarTarget target) {
+  Version max_version = version::k1_0_0;
+  switch (target) {
+    case BrushBehavior::PolarTarget::
+        kPositionOffsetAbsoluteInRadiansAndMultiplesOfBrushSize:
+    case BrushBehavior::PolarTarget::
+        kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    BrushBehavior::OutOfRange out_of_range) {
+  Version max_version = version::k1_0_0;
+  switch (out_of_range) {
+    case BrushBehavior::OutOfRange::kClamp:
+    case BrushBehavior::OutOfRange::kMirror:
+    case BrushBehavior::OutOfRange::kRepeat:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    BrushBehavior::EnabledToolTypes enabled) {
+  Version max_version = version::k1_0_0;
+  if (enabled.unknown || enabled.mouse || enabled.stylus || enabled.touch) {
+    return max_version;
+  }
+  // A tool type filter is compatible with the lowest version that supports any
+  // of the included tool types.
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    BrushBehavior::OptionalInputProperty input) {
+  Version max_version = version::k1_0_0;
+  switch (input) {
+    case BrushBehavior::OptionalInputProperty::kPressure:
+    case BrushBehavior::OptionalInputProperty::kTilt:
+    case BrushBehavior::OptionalInputProperty::kOrientation:
+    case BrushBehavior::OptionalInputProperty::kTiltXAndY:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::BinaryOp operation) {
+  Version max_version = version::k1_0_0;
+  switch (operation) {
+    case BrushBehavior::BinaryOp::kProduct:
+    case BrushBehavior::BinaryOp::kSum:
+      break;
+    case BrushBehavior::BinaryOp::kMin:
+    case BrushBehavior::BinaryOp::kMax:
+      max_version = MaxVersion(max_version, version::k1_1_0_alpha_01);
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    BrushBehavior::ProgressDomain progress_domain) {
+  Version max_version = version::k1_0_0;
+  switch (progress_domain) {
+    case BrushBehavior::ProgressDomain::kDistanceInCentimeters:
+    case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize:
+    case BrushBehavior::ProgressDomain::kTimeInSeconds:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    BrushBehavior::Interpolation interpolation) {
+  Version max_version = version::k1_0_0;
+  switch (interpolation) {
+    case BrushBehavior::Interpolation::kLerp:
+    case BrushBehavior::Interpolation::kInverseLerp:
+      break;
+  }
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::SourceNode node) {
+  Version max_version = version::k1_0_0;
+  max_version = MaxVersion(max_version, CalculateMinimumRequiredVersion(
+                                            node.source_out_of_range_behavior));
+  max_version =
+      MaxVersion(max_version, CalculateMinimumRequiredVersion(node.source));
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::ConstantNode node) {
+  Version max_version = version::k1_0_0;
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::NoiseNode node) {
+  Version max_version = version::k1_0_0;
+  max_version =
+      MaxVersion(max_version, CalculateMinimumRequiredVersion(node.vary_over));
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    BrushBehavior::FallbackFilterNode node) {
+  Version max_version = version::k1_0_0;
+  max_version = MaxVersion(
+      max_version, CalculateMinimumRequiredVersion(node.is_fallback_for));
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(
+    BrushBehavior::ToolTypeFilterNode node) {
+  Version max_version = version::k1_0_0;
+  max_version = MaxVersion(
+      max_version, CalculateMinimumRequiredVersion(node.enabled_tool_types));
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::DampingNode node) {
+  Version max_version = version::k1_0_0;
+  max_version = MaxVersion(
+      max_version, CalculateMinimumRequiredVersion(node.damping_source));
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::ResponseNode node) {
+  Version max_version = version::k1_0_0;
+  max_version = MaxVersion(
+      max_version,
+      brush_internal::CalculateMinimumRequiredVersion(node.response_curve));
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::IntegralNode node) {
+  Version max_version = version::k1_1_0_alpha_01;
+  max_version = MaxVersion(
+      max_version, CalculateMinimumRequiredVersion(node.integrate_over));
+  max_version = MaxVersion(
+      max_version,
+      CalculateMinimumRequiredVersion(node.integral_out_of_range_behavior));
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::BinaryOpNode node) {
+  Version max_version = version::k1_0_0;
+  max_version =
+      MaxVersion(max_version, CalculateMinimumRequiredVersion(node.operation));
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::InterpolationNode node) {
+  Version max_version = version::k1_0_0;
+  max_version = MaxVersion(max_version,
+                           CalculateMinimumRequiredVersion(node.interpolation));
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::TargetNode node) {
+  Version max_version = version::k1_0_0;
+  max_version =
+      MaxVersion(max_version, CalculateMinimumRequiredVersion(node.target));
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(BrushBehavior::PolarTargetNode node) {
+  Version max_version = version::k1_0_0;
+  max_version =
+      MaxVersion(max_version, CalculateMinimumRequiredVersion(node.target));
+  return max_version;
+}
+
+Version CalculateMinimumRequiredVersion(const BrushBehavior::Node& node) {
+  return std::visit(
+      [](const auto& node) { return CalculateMinimumRequiredVersion(node); },
+      node);
+}
+
+}  // namespace
+
+Version CalculateMinimumRequiredVersion(const BrushBehavior& behavior) {
+  Version max_version = version::k1_0_0;
+  for (const BrushBehavior::Node& node : behavior.nodes) {
+    max_version =
+        MaxVersion(max_version, CalculateMinimumRequiredVersion(node));
+  }
+  return max_version;
 }
 
 std::string ToFormattedString(BrushBehavior::Source source) {

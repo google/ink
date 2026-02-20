@@ -25,6 +25,7 @@
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/color_function.h"
+#include "ink/brush/version.h"
 
 namespace ink {
 
@@ -53,6 +54,9 @@ BrushPaintTextureLayerEq();
 ::testing::Matcher<std::tuple<BrushCoat, BrushCoat>> BrushCoatEq();
 
 ::testing::Matcher<BrushFamily> BrushFamilyEq(const BrushFamily& expected);
+
+::testing::Matcher<Version> VersionEq(const Version& expected);
+::testing::Matcher<Version> VersionGe(const Version& expected);
 
 ::testing::Matcher<BrushFamily::InputModel> BrushFamilyInputModelEq(
     const BrushFamily::InputModel& expected);
