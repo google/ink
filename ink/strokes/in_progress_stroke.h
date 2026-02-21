@@ -271,6 +271,10 @@ class InProgressStroke {
 
   absl::Status ValidateNewElapsedTime(Duration32 current_elapsed_time) const;
 
+  // Whether `UpdateShape` might be needed due to a prior call to
+  // `EnqueueInputs`.
+  bool HasQueuedInputs() const;
+
   std::optional<Brush> brush_;
   // Real and predicted inputs that have been queued by calls to
   // `EnqueueInputs()` since the last call to `UpdateShape()`.
