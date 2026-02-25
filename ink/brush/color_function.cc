@@ -21,6 +21,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ink/brush/version.h"
 #include "ink/color/color.h"
 
 namespace ink {
@@ -75,6 +76,32 @@ absl::Status ValidateColorFunction(const ColorFunction& color_function) {
         return ValidateColorFunctionParameters(params);
       },
       color_function.parameters);
+}
+
+namespace {
+
+Version CalculateMinimumRequiredVersion(
+    const ColorFunction::OpacityMultiplier& opacity) {
+  return version::k1_0_0;
+}
+
+Version CalculateMinimumRequiredVersion(
+    const ColorFunction::ReplaceColor& replace) {
+  return version::k1_0_0;
+}
+
+Version CalculateMinimumRequiredVersion(
+    const ColorFunction::Parameters& parameters) {
+  return std::visit(
+      [](const auto& params) {
+        return CalculateMinimumRequiredVersion(params);
+      },
+      parameters);
+}
+}  // namespace
+
+Version CalculateMinimumRequiredVersion(const ColorFunction& color_function) {
+  return CalculateMinimumRequiredVersion(color_function.parameters);
 }
 
 std::string ToFormattedString(const ColorFunction& color_function) {

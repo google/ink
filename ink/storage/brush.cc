@@ -38,12 +38,14 @@
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
+#include "ink/brush/version.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 #include "ink/storage/color.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/brush_family.pb.h"
+#include "ink/storage/proto/options.pb.h"
 #include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/types/duration.h"
 
@@ -1692,6 +1694,56 @@ void EncodeBrushFamilyTextureMap(
   }
 }
 
+void EncodeBrushFamilyVersion(Version version,
+                              proto::Version& version_proto_out) {
+  version_proto_out.set_major(version.major);
+  version_proto_out.set_minor(version.minor);
+  version_proto_out.set_bug(version.bug);
+  switch (version.cycle) {
+    case Version::Cycle::kAlpha:
+      version_proto_out.set_cycle(proto::Version::CYCLE_ALPHA);
+      break;
+    case Version::Cycle::kBeta:
+      version_proto_out.set_cycle(proto::Version::CYCLE_BETA);
+      break;
+    case Version::Cycle::kReleaseCandidate:
+      version_proto_out.set_cycle(proto::Version::CYCLE_RELEASE_CANDIDATE);
+      break;
+    case Version::Cycle::kStable:
+      version_proto_out.set_cycle(proto::Version::CYCLE_STABLE);
+      break;
+  }
+  version_proto_out.set_release(version.release);
+}
+
+absl::StatusOr<Version> DecodeBrushFamilyVersion(
+    const proto::Version& version_proto) {
+  Version version;
+  version.major = version_proto.major();
+  version.minor = version_proto.minor();
+  version.bug = version_proto.bug();
+  switch (version_proto.cycle()) {
+    case proto::Version::CYCLE_ALPHA:
+      version.cycle = Version::Cycle::kAlpha;
+      break;
+    case proto::Version::CYCLE_BETA:
+      version.cycle = Version::Cycle::kBeta;
+      break;
+    case proto::Version::CYCLE_RELEASE_CANDIDATE:
+      version.cycle = Version::Cycle::kReleaseCandidate;
+      break;
+    case proto::Version::CYCLE_STABLE:
+      version.cycle = Version::Cycle::kStable;
+      break;
+    default:
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Failed to decode BrushFamily version: unrecognized cycle ",
+          version_proto.cycle()));
+  }
+  version.release = version_proto.release();
+  return version;
+}
+
 void EncodeBrushFamily(const BrushFamily& family,
                        proto::BrushFamily& family_proto_out,
                        TextureBitmapProvider get_bitmap) {
@@ -1719,6 +1771,9 @@ void EncodeBrushFamily(const BrushFamily& family,
   } else {
     family_proto_out.set_developer_comment(metadata.developer_comment);
   }
+
+  EncodeBrushFamilyVersion(family.CalculateMinimumRequiredVersion(),
+                           *family_proto_out.mutable_min_version());
 }
 
 absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
@@ -1741,6 +1796,25 @@ absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto,
     ClientTextureIdProviderAndBitmapReceiver get_client_texture_id) {
+  // Check that the BrushFamily proto is compatible with the current library
+  // version.
+  if (family_proto.has_min_version()) {
+    absl::StatusOr<Version> required_version =
+        DecodeBrushFamilyVersion(family_proto.min_version());
+    // The decoded version is not saved anywhere; we only care whether it's
+    // compatible with the current library version or not when deserializing.
+    if (!required_version.ok()) {
+      return required_version.status();
+    }
+    // DecodeBrushFamilyVersion() only ensures that the proto::Version is
+    // capable of being decoded into a ink::Version. We also need to check that
+    // it's valid and compatible with the current library version.
+    if (absl::Status status = ValidateVersion(*required_version);
+        !status.ok()) {
+      return status;
+    }
+  }
+
   // ID map that also serves as a record of the IDs for which we've already
   // called `get_client_texture_id`.
   std::map<std::string, std::string> old_to_new_id = {};
