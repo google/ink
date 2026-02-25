@@ -231,6 +231,9 @@ TEST(BrushBehaviorTest, StringifyBinaryOp) {
   EXPECT_EQ(absl::StrCat(BrushBehavior::BinaryOp::kSum), "kSum");
   EXPECT_EQ(absl::StrCat(BrushBehavior::BinaryOp::kMin), "kMin");
   EXPECT_EQ(absl::StrCat(BrushBehavior::BinaryOp::kMax), "kMax");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::BinaryOp::kAndThen), "kAndThen");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::BinaryOp::kOrElse), "kOrElse");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::BinaryOp::kXorElse), "kXorElse");
   EXPECT_EQ(absl::StrCat(static_cast<BrushBehavior::BinaryOp>(147)),
             "BinaryOp(147)");
 }

@@ -1346,6 +1346,98 @@ TEST_F(ProcessBehaviorNodeTest, BinaryOpNodeMax) {
   EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
 }
 
+TEST_F(ProcessBehaviorNodeTest, BinaryOpNodeAndThen) {
+  BrushBehavior::BinaryOpNode binary_op_node = {
+      .operation = BrushBehavior::BinaryOp::kAndThen};
+
+  // `kAndThen` returns the second input as long as the first input isn't null.
+  stack_.push_back(2.0f);
+  stack_.push_back(7.0f);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(7.0f));
+
+  stack_.clear();
+  stack_.push_back(2.0f);
+  stack_.push_back(kNullBehaviorNodeValue);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+
+  // If the first input is null, `kAndThen` always returns null.
+  stack_.clear();
+  stack_.push_back(kNullBehaviorNodeValue);
+  stack_.push_back(7.0f);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+
+  stack_.clear();
+  stack_.push_back(kNullBehaviorNodeValue);
+  stack_.push_back(kNullBehaviorNodeValue);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+}
+
+TEST_F(ProcessBehaviorNodeTest, BinaryOpNodeOrElse) {
+  BrushBehavior::BinaryOpNode binary_op_node = {
+      .operation = BrushBehavior::BinaryOp::kOrElse};
+
+  // `kOrElse` returns the first input as long as it isn't null.
+  stack_.push_back(2.0f);
+  stack_.push_back(7.0f);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(2.0f));
+
+  stack_.clear();
+  stack_.push_back(2.0f);
+  stack_.push_back(kNullBehaviorNodeValue);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(2.0f));
+
+  // If the first input is null, `kOrElse` returns the second input.
+  stack_.clear();
+  stack_.push_back(kNullBehaviorNodeValue);
+  stack_.push_back(7.0f);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(7.0f));
+
+  stack_.clear();
+  stack_.push_back(kNullBehaviorNodeValue);
+  stack_.push_back(kNullBehaviorNodeValue);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+}
+
+TEST_F(ProcessBehaviorNodeTest, BinaryOpNodeXorElse) {
+  BrushBehavior::BinaryOpNode binary_op_node = {
+      .operation = BrushBehavior::BinaryOp::kXorElse};
+
+  // If neither input is null, `kXorElse` returns null.
+  stack_.push_back(2.0f);
+  stack_.push_back(7.0f);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+
+  // If only the first input is null, `kXorElse` returns the second input.
+  stack_.clear();
+  stack_.push_back(kNullBehaviorNodeValue);
+  stack_.push_back(7.0f);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(7.0f));
+
+  // If only the second input is null, `kXorElse` returns the first input.
+  stack_.clear();
+  stack_.push_back(2.0f);
+  stack_.push_back(kNullBehaviorNodeValue);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(2.0f));
+
+  // If both inputs are null, `kXorElse` returns null.
+  stack_.clear();
+  stack_.push_back(kNullBehaviorNodeValue);
+  stack_.push_back(kNullBehaviorNodeValue);
+  ProcessBehaviorNode(binary_op_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+}
+
 TEST_F(ProcessBehaviorNodeTest, InterpolationNodeLerp) {
   BrushBehavior::InterpolationNode interpolation_node = {
       .interpolation = BrushBehavior::Interpolation::kLerp,

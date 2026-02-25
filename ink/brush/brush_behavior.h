@@ -407,6 +407,9 @@ struct BrushBehavior {
     kSum,      // A + B
     kMin,      // min(A, B)
     kMax,      // max(A, B)
+    kAndThen,  // returns null if A is null, otherwise returns B
+    kOrElse,   // returns A if A isn't null, otherwise returns B
+    kXorElse,  // if exactly one input isn't null, returns it, otherwise null
   };
   // LINT.ThenChange(
   //   fuzz_domains.cc:binary_op,

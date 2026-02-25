@@ -480,11 +480,25 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::BinaryOpNode& node,
   context.stack.pop_back();
   float first_input = context.stack.back();
   float* result = &context.stack.back();
-  if (IsNullBehaviorNodeValue(first_input) ||
-      IsNullBehaviorNodeValue(second_input)) {
-    *result = kNullBehaviorNodeValue;
-    return;
+
+  // Some operations always return null if either input is null.
+  switch (node.operation) {
+    case BrushBehavior::BinaryOp::kProduct:
+    case BrushBehavior::BinaryOp::kSum:
+    case BrushBehavior::BinaryOp::kMin:
+    case BrushBehavior::BinaryOp::kMax:
+    case BrushBehavior::BinaryOp::kAndThen:
+      if (IsNullBehaviorNodeValue(first_input) ||
+          IsNullBehaviorNodeValue(second_input)) {
+        *result = kNullBehaviorNodeValue;
+        return;
+      }
+      break;
+    case BrushBehavior::BinaryOp::kOrElse:
+    case BrushBehavior::BinaryOp::kXorElse:
+      break;
   }
+
   switch (node.operation) {
     case BrushBehavior::BinaryOp::kProduct:
       *result = first_input * second_input;
@@ -498,7 +512,21 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::BinaryOpNode& node,
     case BrushBehavior::BinaryOp::kMax:
       *result = std::max(first_input, second_input);
       break;
+    case BrushBehavior::BinaryOp::kAndThen:
+      *result = second_input;
+      break;
+    case BrushBehavior::BinaryOp::kOrElse:
+      *result =
+          IsNullBehaviorNodeValue(first_input) ? second_input : first_input;
+      break;
+    case BrushBehavior::BinaryOp::kXorElse:
+      *result = IsNullBehaviorNodeValue(first_input) ? second_input
+                : IsNullBehaviorNodeValue(second_input)
+                    ? first_input
+                    : kNullBehaviorNodeValue;
+      break;
   }
+
   // If any of the above operations resulted in a non-finite value
   // (e.g. overflow to infinity), treat the result as null.
   if (!std::isfinite(*result)) {

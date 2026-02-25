@@ -61,6 +61,12 @@ proto::BrushBehavior::BinaryOp EncodeBrushBehaviorBinaryOp(
       return proto::BrushBehavior::BINARY_OP_MIN;
     case BrushBehavior::BinaryOp::kMax:
       return proto::BrushBehavior::BINARY_OP_MAX;
+    case BrushBehavior::BinaryOp::kAndThen:
+      return proto::BrushBehavior::BINARY_OP_AND_THEN;
+    case BrushBehavior::BinaryOp::kOrElse:
+      return proto::BrushBehavior::BINARY_OP_OR_ELSE;
+    case BrushBehavior::BinaryOp::kXorElse:
+      return proto::BrushBehavior::BINARY_OP_XOR_ELSE;
   }
   return proto::BrushBehavior::BINARY_OP_UNSPECIFIED;
 }
@@ -76,6 +82,12 @@ absl::StatusOr<BrushBehavior::BinaryOp> DecodeBrushBehaviorBinaryOp(
       return BrushBehavior::BinaryOp::kMin;
     case proto::BrushBehavior::BINARY_OP_MAX:
       return BrushBehavior::BinaryOp::kMax;
+    case proto::BrushBehavior::BINARY_OP_AND_THEN:
+      return BrushBehavior::BinaryOp::kAndThen;
+    case proto::BrushBehavior::BINARY_OP_OR_ELSE:
+      return BrushBehavior::BinaryOp::kOrElse;
+    case proto::BrushBehavior::BINARY_OP_XOR_ELSE:
+      return BrushBehavior::BinaryOp::kXorElse;
     default:
       return absl::InvalidArgumentError(absl::StrCat(
           "invalid ink.proto.BrushBehavior.BinaryOp value: ", binary_op_proto));

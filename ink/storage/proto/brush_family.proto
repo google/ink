@@ -945,6 +945,15 @@ message BrushBehavior {
 
     // max(A, B), or null if either is null
     BINARY_OP_MAX = 4;
+
+    // null if A is null, or B otherwise
+    BINARY_OP_AND_THEN = 5;
+
+    // A if A isn't null, or B otherwise
+    BINARY_OP_OR_ELSE = 6;
+
+    // A if B is null, or B if A is null, or null if neither is null
+    BINARY_OP_XOR_ELSE = 7;
   }
   // LINT.ThenChange(../../brush/brush_behavior.h:binary_op)
 
