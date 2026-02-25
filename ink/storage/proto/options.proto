@@ -1,0 +1,92 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+edition = "2024";
+
+package ink.proto;
+
+import "net/proto2/proto/descriptor.proto";
+
+option java_package = "com.google.ink.proto";
+option java_outer_classname = "OptionsProto";
+
+message Version {
+  // Version represents a Jetpack release of Ink, mapping directly to the
+  // values associated with releases at:
+  // https://developer.android.com/jetpack/androidx/releases/ink
+  //
+  // For example, Ink 1.0.0-alpha04 would be represented as:
+  // ```
+  // major: 1
+  // minor: 0
+  // bug: 0
+  // cycle: CYCLE_ALPHA
+  // release: 4
+  // ```
+  // Ink 1.0.0 would be represented as:
+  // ```
+  // major: 1
+  // minor: 0
+  // bug: 0
+  // cycle: CYCLE_STABLE
+  // release: 1
+  // ```
+  // Note that the release value is 1-based, to stay consistent with the
+  // Jetpack release values. Stable releases should always have a release value
+  // of 1, since we don't release multiple iterations of a stable build for a
+  // given version (there is no 1.0.0-stable01, 1.0.0-stable02, etc.
+  // only 1.0.0).
+  //
+  // Version must be compared in lexicographical order, including all 5 fields
+  // (major, minor, bug, cycle, release) in that order, to establish version
+  // precedence.
+  //
+  // Cycle and release are used to couch against instability between various
+  // alpha and beta releases which change the custom brush API. Earlier releases
+  // provide a guarantee that they will not load a brush containing a feature
+  // from a later release. Cycle and release are necessary for this guarantee
+  // to work between builds of the same major, minor, and bug valued version.
+  //
+  // The reverse guarantee, however, is not provided. If a brush feature is
+  // introduced in an alpha release, and removed in a beta release, the beta
+  // release will not reject the brush on the basis of version, instead it
+  // will attempt to load the brush as-is, making a best effort with the code
+  // that it has to deserialize the brush.
+  int32 major = 1;
+  int32 minor = 2;
+  int32 bug = 3;
+
+  enum Cycle {
+    CYCLE_UNSPECIFIED = 0;
+    CYCLE_ALPHA = 1;
+    CYCLE_BETA = 2;
+    CYCLE_RELEASE_CANDIDATE = 3;
+    CYCLE_STABLE = 4;
+  }
+
+  Cycle cycle = 4;
+  int32 release = 5;
+}
+
+// Extend FieldOptions, MessageOptions, EnumOptions, and EnumValueOptions to
+// include Version.
+extend proto2.FieldOptions {
+  Version field_min_version = 525000068;
+}
+extend proto2.MessageOptions {
+  Version message_min_version = 525000037;
+}
+extend proto2.EnumValueOptions {
+  Version enum_value_min_version = 525000143;
+}
