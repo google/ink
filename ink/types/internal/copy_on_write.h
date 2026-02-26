@@ -101,7 +101,7 @@ class CopyOnWrite {
 
   // Returns a read-only pointer to the managed object. Behavior is undefined
   // if `HasValue()` returns `false`; CHECK-fails in debug.
-  const T* operator->() const {
+  const T* absl_nonnull operator->() const {
     ABSL_DCHECK(HasValue());
     return value_.get();
   }
