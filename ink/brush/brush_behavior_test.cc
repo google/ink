@@ -80,6 +80,8 @@ TEST(BrushBehaviorTest, StringifySource) {
       "kDistanceRemainingInMultiplesOfBrushSize");
   EXPECT_EQ(absl::StrCat(BrushBehavior::Source::kTimeSinceInputInSeconds),
             "kTimeSinceInputInSeconds");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::Source::kTimeSinceStrokeEndInSeconds),
+            "kTimeSinceStrokeEndInSeconds");
   EXPECT_EQ(
       absl::StrCat(BrushBehavior::Source::
                        kAccelerationInMultiplesOfBrushSizePerSecondSquared),
@@ -732,8 +734,18 @@ TEST(BrushBehaviorTest, ValidateSourceNode) {
   });
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status.message(),
-              HasSubstr("kTimeSinceInputInSeconds` must only be used with "
-                        "`source_out_of_range_behavior` of `kClamp"));
+              HasSubstr("`kTimeSince*` sources can only be used with a "
+                        "`source_out_of_range_behavior` of `kClamp`"));
+
+  status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
+      .source = BrushBehavior::Source::kTimeSinceStrokeEndInSeconds,
+      .source_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
+      .source_value_range = {0, 2},
+  });
+  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status.message(),
+              HasSubstr("`kTimeSince*` sources can only be used with a "
+                        "`source_out_of_range_behavior` of `kClamp`"));
 
   status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
       .source = BrushBehavior::Source::kInputDistanceTraveledInCentimeters,

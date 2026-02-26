@@ -35,6 +35,7 @@
 #include "ink/strokes/internal/brush_tip_modeler_helpers.h"
 #include "ink/strokes/internal/easing_implementation.h"
 #include "ink/strokes/internal/modeled_stroke_input.h"
+#include "ink/strokes/internal/noise_generator.h"
 #include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
@@ -128,117 +129,6 @@ float SourceValueUpperBound(const BrushBehavior::SourceNode& node) {
   return std::max(node.source_value_range[0], node.source_value_range[1]);
 }
 
-float DistanceRemainingUpperBound(const BrushBehavior::SourceNode& node,
-                                  float brush_size) {
-  switch (node.source) {
-    case BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize:
-      return brush_size * SourceValueUpperBound(node);
-    case BrushBehavior::Source::kNormalizedPressure:
-    case BrushBehavior::Source::kTiltInRadians:
-    case BrushBehavior::Source::kTiltXInRadians:
-    case BrushBehavior::Source::kTiltYInRadians:
-    case BrushBehavior::Source::kOrientationInRadians:
-    case BrushBehavior::Source::kOrientationAboutZeroInRadians:
-    case BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond:
-    case BrushBehavior::Source::kVelocityXInMultiplesOfBrushSizePerSecond:
-    case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:
-    case BrushBehavior::Source::kDirectionInRadians:
-    case BrushBehavior::Source::kDirectionAboutZeroInRadians:
-    case BrushBehavior::Source::kNormalizedDirectionX:
-    case BrushBehavior::Source::kNormalizedDirectionY:
-    case BrushBehavior::Source::kTimeOfInputInSeconds:
-    case BrushBehavior::Source::
-        kPredictedDistanceTraveledInMultiplesOfBrushSize:
-    case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
-    case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
-    case BrushBehavior::Source::kTimeSinceInputInSeconds:
-    case BrushBehavior::Source::
-        kAccelerationInMultiplesOfBrushSizePerSecondSquared:
-    case BrushBehavior::Source::
-        kAccelerationXInMultiplesOfBrushSizePerSecondSquared:
-    case BrushBehavior::Source::
-        kAccelerationYInMultiplesOfBrushSizePerSecondSquared:
-    case BrushBehavior::Source::
-        kAccelerationForwardInMultiplesOfBrushSizePerSecondSquared:
-    case BrushBehavior::Source::
-        kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared:
-    case BrushBehavior::Source::kInputSpeedInCentimetersPerSecond:
-    case BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond:
-    case BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond:
-    case BrushBehavior::Source::kInputDistanceTraveledInCentimeters:
-    case BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters:
-    case BrushBehavior::Source::kInputAccelerationInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::
-        kInputAccelerationXInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::
-        kInputAccelerationYInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::
-        kInputAccelerationForwardInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::
-        kInputAccelerationLateralInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
-      return 0;
-  }
-  ABSL_LOG(FATAL)
-      << "`node.source` should not be able to have non-enumerator value: "
-      << static_cast<int>(node.source);
-}
-
-Duration32 TimeRemainingUpperBound(const BrushBehavior::SourceNode& node) {
-  switch (node.source) {
-    case BrushBehavior::Source::kTimeSinceInputInSeconds:
-      return Duration32::Seconds(SourceValueUpperBound(node));
-    case BrushBehavior::Source::kNormalizedPressure:
-    case BrushBehavior::Source::kTiltInRadians:
-    case BrushBehavior::Source::kTiltXInRadians:
-    case BrushBehavior::Source::kTiltYInRadians:
-    case BrushBehavior::Source::kOrientationInRadians:
-    case BrushBehavior::Source::kOrientationAboutZeroInRadians:
-    case BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond:
-    case BrushBehavior::Source::kVelocityXInMultiplesOfBrushSizePerSecond:
-    case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:
-    case BrushBehavior::Source::kDirectionInRadians:
-    case BrushBehavior::Source::kDirectionAboutZeroInRadians:
-    case BrushBehavior::Source::kNormalizedDirectionX:
-    case BrushBehavior::Source::kNormalizedDirectionY:
-    case BrushBehavior::Source::kTimeOfInputInSeconds:
-    case BrushBehavior::Source::
-        kPredictedDistanceTraveledInMultiplesOfBrushSize:
-    case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
-    case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
-    case BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize:
-    case BrushBehavior::Source::
-        kAccelerationInMultiplesOfBrushSizePerSecondSquared:
-    case BrushBehavior::Source::
-        kAccelerationXInMultiplesOfBrushSizePerSecondSquared:
-    case BrushBehavior::Source::
-        kAccelerationYInMultiplesOfBrushSizePerSecondSquared:
-    case BrushBehavior::Source::
-        kAccelerationForwardInMultiplesOfBrushSizePerSecondSquared:
-    case BrushBehavior::Source::
-        kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared:
-    case BrushBehavior::Source::kInputSpeedInCentimetersPerSecond:
-    case BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond:
-    case BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond:
-    case BrushBehavior::Source::kInputDistanceTraveledInCentimeters:
-    case BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters:
-    case BrushBehavior::Source::kInputAccelerationInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::
-        kInputAccelerationXInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::
-        kInputAccelerationYInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::
-        kInputAccelerationForwardInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::
-        kInputAccelerationLateralInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
-      return Duration32::Zero();
-  }
-  ABSL_LOG(FATAL)
-      << "`node.source` should not be able to have non-enumerator value: "
-      << static_cast<int>(node.source);
-}
-
 bool SourceDependsOnNextModeledInput(BrushBehavior::Source source) {
   switch (source) {
     case BrushBehavior::Source::kDirectionInRadians:
@@ -262,6 +152,7 @@ bool SourceDependsOnNextModeledInput(BrushBehavior::Source source) {
     case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
     case BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize:
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
+    case BrushBehavior::Source::kTimeSinceStrokeEndInSeconds:
     case BrushBehavior::Source::
         kAccelerationInMultiplesOfBrushSizePerSecondSquared:
     case BrushBehavior::Source::
@@ -310,13 +201,13 @@ void BrushTipModeler::StartStroke(const BrushTip* absl_nonnull brush_tip,
   brush_tip_ = brush_tip;
   brush_size_ = brush_size;
   noise_seed_ = noise_seed;
-
-  // These fields will be updated as the stroke progresses.
-  input_index_for_next_fixed_state_ = 0;
   particle_gap_metrics_ = {
       .traveled_distance = brush_tip->particle_gap_distance_scale * brush_size,
       .elapsed_time = brush_tip->particle_gap_duration,
   };
+
+  // These fields will be updated as the stroke progresses.
+  input_index_for_next_fixed_state_ = 0;
   last_fixed_modeled_tip_state_metrics_.reset();
   saved_tip_states_.clear();
   new_fixed_tip_state_count_ = 0;
@@ -324,7 +215,8 @@ void BrushTipModeler::StartStroke(const BrushTip* absl_nonnull brush_tip,
   // These fields will be updated by the `AppendBehaviorNode()` loop below.
   distance_remaining_behavior_upper_bound_ = 0;
   distance_fraction_behavior_upper_bound_ = 0;
-  time_remaining_behavior_upper_bound_ = Duration32::Zero();
+  time_since_input_behavior_upper_bound_ = Duration32::Zero();
+  time_since_stroke_end_behavior_upper_bound_ = Duration32::Zero();
   behaviors_depend_on_next_input_ = false;
 
   behavior_nodes_.clear();
@@ -348,19 +240,76 @@ void BrushTipModeler::StartStroke(const BrushTip* absl_nonnull brush_tip,
 
 void BrushTipModeler::AppendBehaviorNode(
     const BrushBehavior::SourceNode& node) {
-  distance_remaining_behavior_upper_bound_ =
-      std::max(distance_remaining_behavior_upper_bound_,
-               DistanceRemainingUpperBound(node, brush_size_));
-  time_remaining_behavior_upper_bound_ = std::max(
-      time_remaining_behavior_upper_bound_, TimeRemainingUpperBound(node));
-  if (node.source ==
-      BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength) {
-    distance_fraction_behavior_upper_bound_ = std::max(
-        distance_fraction_behavior_upper_bound_, SourceValueUpperBound(node));
-  }
   behavior_nodes_.push_back(node);
   if (SourceDependsOnNextModeledInput(node.source)) {
     behaviors_depend_on_next_input_ = true;
+  }
+  // If this node's `Source` may have a non-local effect on tip state fixedness
+  // (because it needs to look forward in time or in distance traveled), then
+  // update the appropriate `*_behavior_upper_bound_` field.
+  switch (node.source) {
+    case BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize:
+      distance_remaining_behavior_upper_bound_ =
+          std::max(distance_remaining_behavior_upper_bound_,
+                   brush_size_ * SourceValueUpperBound(node));
+      break;
+    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
+      distance_fraction_behavior_upper_bound_ = std::max(
+          distance_fraction_behavior_upper_bound_, SourceValueUpperBound(node));
+      break;
+    case BrushBehavior::Source::kTimeSinceInputInSeconds:
+      time_since_input_behavior_upper_bound_ =
+          std::max(time_since_input_behavior_upper_bound_,
+                   Duration32::Seconds(SourceValueUpperBound(node)));
+      break;
+    case BrushBehavior::Source::kTimeSinceStrokeEndInSeconds:
+      time_since_stroke_end_behavior_upper_bound_ =
+          std::max(time_since_stroke_end_behavior_upper_bound_,
+                   Duration32::Seconds(SourceValueUpperBound(node)));
+      break;
+    case BrushBehavior::Source::kNormalizedPressure:
+    case BrushBehavior::Source::kTiltInRadians:
+    case BrushBehavior::Source::kTiltXInRadians:
+    case BrushBehavior::Source::kTiltYInRadians:
+    case BrushBehavior::Source::kOrientationInRadians:
+    case BrushBehavior::Source::kOrientationAboutZeroInRadians:
+    case BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond:
+    case BrushBehavior::Source::kVelocityXInMultiplesOfBrushSizePerSecond:
+    case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:
+    case BrushBehavior::Source::kDirectionInRadians:
+    case BrushBehavior::Source::kDirectionAboutZeroInRadians:
+    case BrushBehavior::Source::kNormalizedDirectionX:
+    case BrushBehavior::Source::kNormalizedDirectionY:
+    case BrushBehavior::Source::kTimeOfInputInSeconds:
+    case BrushBehavior::Source::
+        kPredictedDistanceTraveledInMultiplesOfBrushSize:
+    case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
+    case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
+    case BrushBehavior::Source::
+        kAccelerationInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::
+        kAccelerationXInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::
+        kAccelerationYInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::
+        kAccelerationForwardInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::
+        kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared:
+    case BrushBehavior::Source::kInputSpeedInCentimetersPerSecond:
+    case BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond:
+    case BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond:
+    case BrushBehavior::Source::kInputDistanceTraveledInCentimeters:
+    case BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters:
+    case BrushBehavior::Source::kInputAccelerationInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::
+        kInputAccelerationXInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::
+        kInputAccelerationYInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::
+        kInputAccelerationForwardInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::
+        kInputAccelerationLateralInCentimetersPerSecondSquared:
+      break;
   }
 }
 
@@ -425,12 +374,8 @@ void BrushTipModeler::AppendBehaviorNode(
       .integral_out_of_range_behavior = node.integral_out_of_range_behavior,
       .integral_value_range = node.integral_value_range,
   });
-  IntegralState initial_state = {
-      .last_input = kNullBehaviorNodeValue,
-      .last_integral = 0,
-  };
-  current_integrals_.push_back(initial_state);
-  fixed_integrals_.push_back(initial_state);
+  current_integrals_.push_back(IntegralState{});
+  fixed_integrals_.push_back(IntegralState{});
 }
 
 void BrushTipModeler::AppendBehaviorNode(
@@ -540,10 +485,45 @@ void BrushTipModeler::UpdateStroke(
   }
 }
 
+void BrushTipModeler::RestartStroke() {
+  ABSL_CHECK_NE(brush_tip_, nullptr);
+
+  input_index_for_next_fixed_state_ = 0;
+  last_fixed_modeled_tip_state_metrics_.reset();
+  saved_tip_states_.clear();
+  new_fixed_tip_state_count_ = 0;
+
+  absl::c_for_each(current_noise_generators_,
+                   [](NoiseGenerator& generator) { generator.Reset(); });
+  ABSL_DCHECK_EQ(current_noise_generators_.size(),
+                 fixed_noise_generators_.size());
+  absl::c_copy(current_noise_generators_, fixed_noise_generators_.begin());
+
+  absl::c_fill(current_damped_values_, kNullBehaviorNodeValue);
+  absl::c_fill(fixed_damped_values_, kNullBehaviorNodeValue);
+
+  absl::c_fill(current_integrals_, IntegralState{});
+  absl::c_fill(fixed_integrals_, IntegralState{});
+
+  for (size_t i = 0; i < behavior_targets_.size(); ++i) {
+    float initial_modifier = InitialTargetModifierValue(behavior_targets_[i]);
+    current_target_modifiers_[i] = initial_modifier;
+    fixed_target_modifiers_[i] = initial_modifier;
+  }
+}
+
 bool BrushTipModeler::HasUnfinishedTimeBehaviors(
     const InputModelerState& input_modeler_state) const {
   return TimeSinceLastInput(input_modeler_state) <
-         time_remaining_behavior_upper_bound_;
+         std::max(time_since_input_behavior_upper_bound_,
+                  time_since_stroke_end_behavior_upper_bound_);
+}
+
+bool BrushTipModeler::NeedsToRestartBeforeNextUpdate(
+    const InputModelerState& input_modeler_state) const {
+  return input_modeler_state.inputs_are_finished &&
+         TimeSinceLastInput(input_modeler_state) <
+             time_since_stroke_end_behavior_upper_bound_;
 }
 
 InputMetrics BrushTipModeler::CalculateMaxFixedInputMetrics(
@@ -564,8 +544,8 @@ InputMetrics BrushTipModeler::CalculateMaxFixedInputMetrics(
           std::max(distance_remaining_behavior_upper_bound_,
                    distance_fraction_behavior_upper_bound_ *
                        input_modeler_state.complete_traveled_distance),
-      .elapsed_time =
-          last_stable_input.elapsed_time - time_remaining_behavior_upper_bound_,
+      .elapsed_time = last_stable_input.elapsed_time -
+                      time_since_input_behavior_upper_bound_,
   };
 }
 

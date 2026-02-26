@@ -107,8 +107,7 @@ struct BrushBehavior {
   // List of input properties along with their units that can act as sources for
   // a `BrushBehavior`.
   //
-  // This should match the enum in BrushBehavior.kt and
-  // BrushFamilyExtensions.kt.
+  // This should match the enum in BrushBehavior.kt.
   //
   // Behaviors that consider properties of the stroke input do not consider
   // alterations to the visible position of that point in the stroke by brush
@@ -180,10 +179,16 @@ struct BrushBehavior {
     kDistanceRemainingInMultiplesOfBrushSize,
     // Time elapsed since the modeled stroke input. This continues to increase
     // even after all stroke inputs have completed, and can be used to drive
-    // stroke animations. These enumerators are only compatible with a
+    // wet-layer stroke animations. This source is only compatible with a
     // `source_out_of_range_behavior` of `kClamp`, to ensure that the animation
     // will eventually end.
     kTimeSinceInputInSeconds,
+    // Time elapsed since the final input of the stroke, or zero if the final
+    // input hasn't arrived yet. This can be used to drive wet-layer stroke
+    // animations that should occur after the final input. This source is only
+    // compatible with a `source_out_of_range_behavior` of `kClamp`, to ensure
+    // that the animation will eventually end.
+    kTimeSinceStrokeEndInSeconds,
     // Absolute acceleration of the modeled stroke input in multiples of the
     // brush size per second squared. Note that this value doesn't take into
     // account brush behaviors that offset the position of that visible point in
@@ -247,8 +252,7 @@ struct BrushBehavior {
 
   // List of tip properties that can be modified by a `BrushBehavior`.
   //
-  // This should match the enums in BrushBehavior.kt and
-  // BrushFamilyExtensions.kt.
+  // This should match the enum in BrushBehavior.kt.
   enum class Target : int8_t {
     // `kWidthMultiplier` and `kHeightMultiplier` scale the brush-tip size along
     // one dimension, starting from the values calculated using
@@ -324,8 +328,7 @@ struct BrushBehavior {
 
   // List of vector tip properties that can be modified by a `BrushBehavior`.
   //
-  // This should match the enums in BrushBehavior.kt and
-  // BrushFamilyExtensions.kt.
+  // This should match the enum in BrushBehavior.kt.
   enum class PolarTarget : int8_t {
     // Adds the vector to the brush tip's absolute x/y position in stroke space,
     // where the angle input is measured in radians and the magnitude input is
@@ -349,8 +352,7 @@ struct BrushBehavior {
   // The desired behavior when an input value is outside the bounds of
   // `source_value_range`.
   //
-  // This should match the enum in BrushBehavior.kt and
-  // BrushFamilyExtensions.kt.
+  // This should match the enum in BrushBehavior.kt.
   enum class OutOfRange : int8_t {
     // Values outside the range will be clamped to not exceed the bounds.
     kClamp,
@@ -387,8 +389,7 @@ struct BrushBehavior {
 
   // List of input properties that might not be reported by `StrokeInput`.
   //
-  // This should match the enums in BrushBehavior.kt and
-  // BrushFamilyExtensions.kt.
+  // This should match the enum in BrushBehavior.kt.
   enum OptionalInputProperty : int8_t {
     kPressure,
     kTilt,

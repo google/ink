@@ -86,15 +86,34 @@ class BrushTipModeler {
   // Updates the tip modeler with the current `InputModelerState` and
   // current inputs.
   //
-  // Requires that `StartStroke()` has been called at least once since this
+  // CHECK-fails if `StartStroke()` hasn't been called at least once since this
   // modeler was constructed.
   void UpdateStroke(const InputModelerState& input_modeler_state,
                     absl::Span<const ModeledStrokeInput> inputs);
+
+  // Restarts tip modeling for the current stroke, throwing away all fixed tip
+  // states and resetting all stateful behaviors.
+  //
+  // This should be called just before calling `UpdateStroke()` if and only if
+  // `NeedsToRestartBeforeNextUpdate()` returned true just after the previous
+  // call to `UpdateStroke()`.  The `StrokeShapeBuilder` class handles this
+  // automatically.
+  //
+  // CHECK-fails if `StartStroke()` hasn't been called at least once since this
+  // modeler was constructed.
+  void RestartStroke();
 
   // Returns true if the brush tip has any behaviors whose source values could
   // continue to change with the further passage of time (even in the absence of
   // any new inputs).
   bool HasUnfinishedTimeBehaviors(
+      const InputModelerState& input_modeler_state) const;
+
+  /// Returns true for a given input modeler state if `RestartStroke()` should
+  /// be called just prior to calling `UpdateStroke()` with the *next* input
+  /// modeler state, due to the brush tip having e.g. `kTimeSinceStrokeEnd`
+  /// behaviors.
+  bool NeedsToRestartBeforeNextUpdate(
       const InputModelerState& input_modeler_state) const;
 
   // Returns tip states that have become fixed as a result of the most recent
@@ -184,11 +203,12 @@ class BrushTipModeler {
   // per-stroke seed for a given stroke.
   uint32_t noise_seed_ = 0;
 
-  // Cached values from `brush_tip_` that give the upper bounds on distance and
-  // time remaining that are affected by the tip's behaviors.
-  float distance_remaining_behavior_upper_bound_ = 0;
-  Duration32 time_remaining_behavior_upper_bound_ = Duration32::Zero();
+  // Cached values from `brush_tip_` that give the upper bounds on source value
+  // ranges for certain behavior sources that require special handling.
+  float distance_remaining_behavior_upper_bound_ = 0;  // stroke units
+  Duration32 time_since_input_behavior_upper_bound_ = Duration32::Zero();
   float distance_fraction_behavior_upper_bound_ = 0;
+  Duration32 time_since_stroke_end_behavior_upper_bound_ = Duration32::Zero();
   // Flag for whether the current `brush_tip_` has behaviors that depend on
   // properties of subsequent modeled inputs, like the travel direction.
   bool behaviors_depend_on_next_input_ = false;

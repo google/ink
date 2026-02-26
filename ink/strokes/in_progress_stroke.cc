@@ -165,6 +165,9 @@ absl::Status InProgressStroke::UpdateShape(Duration32 current_elapsed_time) {
 
   input_modeler_.ExtendStroke(queued_real_inputs_, queued_predicted_inputs_,
                               current_elapsed_time);
+  if (inputs_are_finished_) {
+    input_modeler_.FinishStrokeInputs();
+  }
   uint32_t num_coats = BrushCoatCount();
   for (uint32_t i = 0; i < num_coats; ++i) {
     StrokeShapeUpdate update = shape_builders_[i].ExtendStroke(input_modeler_);

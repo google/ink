@@ -49,6 +49,24 @@ TEST(NoiseGeneratorTest, RandomSequenceIsFixedForAGivenSeed) {
   EXPECT_THAT(actual, Pointwise(FloatEq(), expected));
 }
 
+TEST(NoiseGeneratorTest, ResetStartsSequenceOver) {
+  NoiseGenerator generator(314159);
+  std::vector<float> initial_sequence;
+  for (int i = 0; i < 30; ++i) {
+    initial_sequence.push_back(generator.CurrentOutputValue());
+    generator.AdvanceInputBy(0.1);
+  }
+
+  generator.Reset();
+  std::vector<float> reset_sequence;
+  for (int i = 0; i < 30; ++i) {
+    reset_sequence.push_back(generator.CurrentOutputValue());
+    generator.AdvanceInputBy(0.1);
+  }
+
+  EXPECT_THAT(reset_sequence, Pointwise(FloatEq(), initial_sequence));
+}
+
 TEST(NoiseGeneratorTest, UsesAll64SeedBits) {
   // Two different seed values should (in most cases, but in particular in this
   // specific case) result in different values generated.  We shouldn't, for

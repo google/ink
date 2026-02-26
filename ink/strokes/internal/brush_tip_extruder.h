@@ -100,6 +100,15 @@ class BrushTipExtruder {
       absl::Span<const BrushTipState> new_fixed_states,
       absl::Span<const BrushTipState> volatile_states);
 
+  // Restarts extrusion for the current stroke, throwing away all saved
+  // geometry. This is used when previously-fixed tip states need to be
+  // replaced, due to e.g. a `kTimeSinceStrokeEnd` behavior.
+  //
+  // This should be called whenever `BrushTipModeler::RestartStroke()` is called
+  // on the tip modeler that is associated with this tip extruder.  The
+  // `StrokeShapeBuilder` class handles this automatically.
+  void RestartStroke();
+
   // Returns the bounding region of positions extruded into the current mesh.
   const Envelope& GetBounds() const;
 

@@ -105,6 +105,9 @@ struct InputModelerState {
   // `stable_input_count`. As with the stable count, the values of this member
   // variable will be non-decreasing over the course of a single stroke.
   size_t real_input_count = 0;
+  // True if inputs are finished for this stroke (in which case, no more real or
+  // predicted inputs will be added).
+  bool inputs_are_finished = false;
 };
 
 }  // namespace ink::strokes_internal

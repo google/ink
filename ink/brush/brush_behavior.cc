@@ -61,6 +61,7 @@ bool IsValidBehaviorSource(BrushBehavior::Source source) {
     case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
     case BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize:
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
+    case BrushBehavior::Source::kTimeSinceStrokeEndInSeconds:
     case BrushBehavior::Source::
         kAccelerationInMultiplesOfBrushSizePerSecondSquared:
     case BrushBehavior::Source::
@@ -95,9 +96,10 @@ absl::Status ValidateSourceAndOutOfRangeCombination(
     BrushBehavior::Source source, BrushBehavior::OutOfRange out_of_range) {
   switch (source) {
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
+    case BrushBehavior::Source::kTimeSinceStrokeEndInSeconds:
       if (out_of_range != BrushBehavior::OutOfRange::kClamp) {
         return absl::InvalidArgumentError(
-            "`Source::kTimeSinceInputInSeconds` must only be used with "
+            "`kTimeSince*` sources can only be used with a "
             "`source_out_of_range_behavior` of `kClamp`.");
       }
       break;
@@ -517,6 +519,8 @@ std::string ToFormattedString(BrushBehavior::Source source) {
       return "kDistanceRemainingInMultiplesOfBrushSize";
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
       return "kTimeSinceInputInSeconds";
+    case BrushBehavior::Source::kTimeSinceStrokeEndInSeconds:
+      return "kTimeSinceStrokeEndInSeconds";
     case BrushBehavior::Source::
         kAccelerationInMultiplesOfBrushSizePerSecondSquared:
       return "kAccelerationInMultiplesOfBrushSizePerSecondSquared";

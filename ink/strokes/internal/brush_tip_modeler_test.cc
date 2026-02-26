@@ -1248,6 +1248,16 @@ TEST(BrushTipModelerDeathTest, NanBrushSize) {
       modeler.StartStroke(&tip, std::numeric_limits<float>::quiet_NaN()), "");
 }
 
+TEST(BrushTipModelerDeathTest, UpdateStrokeBeforeStartStroke) {
+  BrushTipModeler modeler;
+  EXPECT_DEATH_IF_SUPPORTED(modeler.UpdateStroke({}, {}), "");
+}
+
+TEST(BrushTipModelerDeathTest, RestartStrokeBeforeStartStroke) {
+  BrushTipModeler modeler;
+  EXPECT_DEATH_IF_SUPPORTED(modeler.RestartStroke(), "");
+}
+
 void CanModelAnyValidBrushTipAndInputs(const BrushTip& brush_tip,
                                        const StrokeInputBatch& input_batch) {
   float brush_size = 1;

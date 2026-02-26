@@ -42,12 +42,18 @@ void StrokeShapeBuilder::StartStroke(const BrushCoat& coat, float brush_size,
        coat.tip.particle_gap_duration != Duration32::Zero());
   tip_modeler_.StartStroke(&coat.tip, brush_size, noise_seed);
   tip_extruder_.StartStroke(brush_epsilon, is_particle_brush, mesh_);
+  need_to_restart_ = false;
 }
 
 StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
     const StrokeInputModeler& input_modeler) {
   StrokeShapeUpdate update;
   mesh_bounds_.Reset();
+  if (need_to_restart_) {
+    update.region.Add(tip_extruder_.GetBounds());
+    tip_modeler_.RestartStroke();
+    tip_extruder_.RestartStroke();
+  }
 
   outlines_.clear();
   tip_modeler_.UpdateStroke(input_modeler.GetState(),
@@ -62,6 +68,8 @@ StrokeShapeUpdate StrokeShapeBuilder::ExtendStroke(
     }
   }
 
+  need_to_restart_ =
+      tip_modeler_.NeedsToRestartBeforeNextUpdate(input_modeler.GetState());
   return update;
 }
 
