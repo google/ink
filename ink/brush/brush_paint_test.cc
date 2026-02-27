@@ -15,7 +15,6 @@
 #include "ink/brush/brush_paint.h"
 
 #include <limits>
-#include <optional>
 #include <string>
 
 #include "gmock/gmock.h"

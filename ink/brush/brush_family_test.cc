@@ -15,7 +15,6 @@
 #include "ink/brush/brush_family.h"
 
 #include <limits>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
