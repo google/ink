@@ -216,18 +216,6 @@ TEST(BrushBehaviorTest, StringifyEnabledToolTypes) {
             "unknown/mouse/touch");
 }
 
-TEST(BrushBehaviorTest, StringifyOptionalInputProperty) {
-  EXPECT_EQ(absl::StrCat(BrushBehavior::OptionalInputProperty::kPressure),
-            "kPressure");
-  EXPECT_EQ(absl::StrCat(BrushBehavior::OptionalInputProperty::kTilt), "kTilt");
-  EXPECT_EQ(absl::StrCat(BrushBehavior::OptionalInputProperty::kOrientation),
-            "kOrientation");
-  EXPECT_EQ(absl::StrCat(BrushBehavior::OptionalInputProperty::kTiltXAndY),
-            "kTiltXAndY");
-  EXPECT_EQ(absl::StrCat(static_cast<BrushBehavior::OptionalInputProperty>(73)),
-            "OptionalInputProperty(73)");
-}
-
 TEST(BrushBehaviorTest, StringifyBinaryOp) {
   EXPECT_EQ(absl::StrCat(BrushBehavior::BinaryOp::kProduct), "kProduct");
   EXPECT_EQ(absl::StrCat(BrushBehavior::BinaryOp::kSum), "kSum");
@@ -285,12 +273,6 @@ TEST(BrushBehaviorTest, StringifyNoiseNode) {
                 .base_period = 0.25f}),
             "NoiseNode{seed=0x0effaced, vary_over=kTimeInSeconds, "
             "base_period=0.25}");
-}
-
-TEST(BrushBehaviorTest, StringifyFallbackFilterNode) {
-  EXPECT_EQ(absl::StrCat(BrushBehavior::FallbackFilterNode{
-                BrushBehavior::OptionalInputProperty::kPressure}),
-            "FallbackFilterNode{kPressure}");
 }
 
 TEST(BrushBehaviorTest, StringifyToolTypeFilterNode) {
@@ -497,19 +479,6 @@ TEST(BrushBehaviorTest, NoiseNodeEqualAndNotEqual) {
                 .vary_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
                 .base_period = 0.75f}),  // different
             node);
-}
-
-TEST(BrushBehaviorTest, FallbackFilterNodeEqualAndNotEqual) {
-  BrushBehavior::FallbackFilterNode node = {
-      .is_fallback_for = BrushBehavior::OptionalInputProperty::kPressure};
-  EXPECT_EQ(
-      (BrushBehavior::FallbackFilterNode{
-          .is_fallback_for = BrushBehavior::OptionalInputProperty::kPressure}),
-      node);
-  EXPECT_NE(
-      (BrushBehavior::FallbackFilterNode{
-          .is_fallback_for = BrushBehavior::OptionalInputProperty::kTilt}),
-      node);
 }
 
 TEST(BrushBehaviorTest, ToolTypeFilterNodeEqualAndNotEqual) {
@@ -821,19 +790,6 @@ TEST(BrushBehaviorTest, ValidateNoiseNode) {
                HasSubstr("base_period` must be finite and positive")));
 }
 
-TEST(BrushBehaviorTest, ValidateFallbackFilterNode) {
-  EXPECT_EQ(brush_internal::ValidateBrushBehaviorNode(
-                BrushBehavior::FallbackFilterNode{
-                    BrushBehavior::OptionalInputProperty::kPressure}),
-            absl::OkStatus());
-
-  absl::Status status = brush_internal::ValidateBrushBehaviorNode(
-      BrushBehavior::FallbackFilterNode{
-          static_cast<BrushBehavior::OptionalInputProperty>(123)});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("non-enumerator value 123"));
-}
-
 TEST(BrushBehaviorTest, ValidateToolTypeFilterNode) {
   EXPECT_THAT(brush_internal::ValidateBrushBehaviorNode(
                   BrushBehavior::ToolTypeFilterNode{
@@ -1073,8 +1029,6 @@ TEST(BrushBehaviorTest, ValidateBrushBehavior) {
               .source_value_range = {0.5, 0.75},
           },
           BrushBehavior::ToolTypeFilterNode{{.stylus = true}},
-          BrushBehavior::FallbackFilterNode{
-              BrushBehavior::OptionalInputProperty::kTilt},
           BrushBehavior::DampingNode{
               .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
               .damping_gap = 0.25,
@@ -1126,8 +1080,6 @@ TEST(BrushBehaviorTest, ValidateBrushBehaviorTopLevel) {
               .source_value_range = {0.5, 0.75},
           },
           BrushBehavior::ToolTypeFilterNode{{.stylus = true}},
-          BrushBehavior::FallbackFilterNode{
-              BrushBehavior::OptionalInputProperty::kTilt},
           BrushBehavior::DampingNode{
               .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
               .damping_gap = 0.25,

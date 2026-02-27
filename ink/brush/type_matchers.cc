@@ -191,13 +191,6 @@ Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
 }
 
 Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
-    const BrushBehavior::FallbackFilterNode& expected) {
-  return VariantWith<BrushBehavior::FallbackFilterNode>(Field(
-      "is_fallback_for", &BrushBehavior::FallbackFilterNode::is_fallback_for,
-      Eq(expected.is_fallback_for)));
-}
-
-Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
     const BrushBehavior::ToolTypeFilterNode& expected) {
   return VariantWith<BrushBehavior::ToolTypeFilterNode>(
       Field("enabled_tool_types",

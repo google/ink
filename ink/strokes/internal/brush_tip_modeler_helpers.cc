@@ -238,23 +238,6 @@ std::optional<float> GetSourceValue(
   return std::nullopt;
 }
 
-bool IsOptionalInputPropertyPresent(
-    const BrushBehavior::OptionalInputProperty& property,
-    const ModeledStrokeInput& input) {
-  switch (property) {
-    case BrushBehavior::OptionalInputProperty::kPressure:
-      return input.pressure != StrokeInput::kNoPressure;
-    case BrushBehavior::OptionalInputProperty::kTilt:
-      return input.tilt != StrokeInput::kNoTilt;
-    case BrushBehavior::OptionalInputProperty::kOrientation:
-      return input.orientation != StrokeInput::kNoOrientation;
-    case BrushBehavior::OptionalInputProperty::kTiltXAndY:
-      return input.tilt != StrokeInput::kNoTilt &&
-             input.orientation != StrokeInput::kNoOrientation;
-  }
-  return false;
-}
-
 // Applies the `out_of_range_behavior` to `x` to return a value in [0, 1].
 float ApplyOutOfRangeBehavior(BrushBehavior::OutOfRange behavior, float x) {
   switch (behavior) {
@@ -373,15 +356,6 @@ void ProcessBehaviorNodeImpl(const NoiseNodeImplementation& node,
     generator.AdvanceInputBy(advance_by);
   }
   context.stack.push_back(generator.CurrentOutputValue());
-}
-
-void ProcessBehaviorNodeImpl(const BrushBehavior::FallbackFilterNode& node,
-                             const BehaviorNodeContext& context) {
-  ABSL_DCHECK(!context.stack.empty());
-  if (IsOptionalInputPropertyPresent(node.is_fallback_for,
-                                     context.current_input)) {
-    context.stack.back() = kNullBehaviorNodeValue;
-  }
 }
 
 void ProcessBehaviorNodeImpl(const BrushBehavior::ToolTypeFilterNode& node,

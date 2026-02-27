@@ -156,18 +156,6 @@ Domain<BrushBehavior::Interpolation> ArbitraryBrushBehaviorInterpolation() {
 }
 // LINT.ThenChange(brush_behavior.h:interpolation)
 
-// LINT.IfChange(optional_input_property)
-Domain<BrushBehavior::OptionalInputProperty>
-ArbitraryBrushBehaviorOptionalInputProperty() {
-  return ElementOf({
-      BrushBehavior::OptionalInputProperty::kPressure,
-      BrushBehavior::OptionalInputProperty::kTilt,
-      BrushBehavior::OptionalInputProperty::kOrientation,
-      BrushBehavior::OptionalInputProperty::kTiltXAndY,
-  });
-}
-// LINT.ThenChange(brush_behavior.h:optional_input_property)
-
 // LINT.IfChange(out_of_range)
 Domain<BrushBehavior::OutOfRange> ArbitraryBrushBehaviorOutOfRange() {
   return ElementOf({
@@ -354,12 +342,6 @@ Domain<BrushBehavior::NoiseNode> ValidBrushBehaviorNoiseNode() {
       FinitePositiveFloat());
 }
 
-Domain<BrushBehavior::FallbackFilterNode>
-ValidBrushBehaviorFallbackFilterNode() {
-  return StructOf<BrushBehavior::FallbackFilterNode>(
-      ArbitraryBrushBehaviorOptionalInputProperty());
-}
-
 Domain<BrushBehavior::ToolTypeFilterNode>
 ValidBrushBehaviorToolTypeFilterNode() {
   return StructOf<BrushBehavior::ToolTypeFilterNode>(
@@ -447,8 +429,7 @@ ValidBrushBehaviorNodeSubtreeWithMaxDepth(int max_depth) {
             return result;
           },
           smaller_subtree,
-          OneOf(BrushBehaviorNodeOf(ValidBrushBehaviorFallbackFilterNode()),
-                BrushBehaviorNodeOf(ValidBrushBehaviorToolTypeFilterNode()),
+          OneOf(BrushBehaviorNodeOf(ValidBrushBehaviorToolTypeFilterNode()),
                 BrushBehaviorNodeOf(ValidBrushBehaviorDampingNode()),
                 BrushBehaviorNodeOf(ValidBrushBehaviorResponseNode()),
                 BrushBehaviorNodeOf(ValidBrushBehaviorIntegralNode()))),
@@ -545,10 +526,10 @@ Domain<BrushBehavior> ValidBrushBehavior(DomainVariant variant) {
 Domain<BrushBehavior::Node> ValidBrushBehaviorNode(DomainVariant variant) {
   return VariantOf(
       ValidBrushBehaviorSourceNode(), ValidBrushBehaviorConstantNode(),
-      ValidBrushBehaviorNoiseNode(), ValidBrushBehaviorFallbackFilterNode(),
-      ValidBrushBehaviorToolTypeFilterNode(), ValidBrushBehaviorDampingNode(),
-      ValidBrushBehaviorResponseNode(), ValidBrushBehaviorIntegralNode(),
-      ValidBrushBehaviorBinaryOpNode(), ValidBrushBehaviorInterpolationNode(),
+      ValidBrushBehaviorNoiseNode(), ValidBrushBehaviorToolTypeFilterNode(),
+      ValidBrushBehaviorDampingNode(), ValidBrushBehaviorResponseNode(),
+      ValidBrushBehaviorIntegralNode(), ValidBrushBehaviorBinaryOpNode(),
+      ValidBrushBehaviorInterpolationNode(),
       ValidBrushBehaviorTargetNode(variant),
       ValidBrushBehaviorPolarTargetNode());
 }

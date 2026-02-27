@@ -387,17 +387,6 @@ struct BrushBehavior {
   static constexpr EnabledToolTypes kAllToolTypes = {
       .unknown = true, .mouse = true, .touch = true, .stylus = true};
 
-  // List of input properties that might not be reported by `StrokeInput`.
-  //
-  // This should match the enum in BrushBehavior.kt.
-  enum OptionalInputProperty : int8_t {
-    kPressure,
-    kTilt,
-    kOrientation,
-    // Tilt-x and tilt-y require both tilt and orientation to be reported.
-    kTiltXAndY,
-  };
-
   // A binary operation for combining two values in a `BinaryOpNode`. Unless
   // otherwise specified for a particular operator, the result will be null
   // (i.e. undefined) if either input value is null.
@@ -505,20 +494,6 @@ struct BrushBehavior {
   //////////////////////////
   /// FILTER VALUE NODES ///
   //////////////////////////
-
-  // Value node for filtering out a branch of a behavior graph unless a
-  // particular stroke input property is missing.
-  // Inputs: 1
-  // Output: Null if the specified property is present in the stroke input
-  //     batch, otherwise the input value.
-  // To be valid:
-  //   - `is_fallback_for` must be a valid `OptionalInputProperty` enumerator.
-  struct FallbackFilterNode {
-    OptionalInputProperty is_fallback_for;
-
-    friend bool operator==(const FallbackFilterNode&,
-                           const FallbackFilterNode&) = default;
-  };
 
   // Value node for filtering out a branch of a behavior graph unless this
   // stroke's tool type is in the specified set.
@@ -664,10 +639,10 @@ struct BrushBehavior {
   // value, or a "terminal node" which consumes one or more input values and
   // applies some effect to the brush tip (but does not produce any output
   // value).
-  using Node = std::variant<SourceNode, ConstantNode, NoiseNode,
-                            FallbackFilterNode, ToolTypeFilterNode, DampingNode,
-                            ResponseNode, IntegralNode, BinaryOpNode,
-                            InterpolationNode, TargetNode, PolarTargetNode>;
+  using Node =
+      std::variant<SourceNode, ConstantNode, NoiseNode, ToolTypeFilterNode,
+                   DampingNode, ResponseNode, IntegralNode, BinaryOpNode,
+                   InterpolationNode, TargetNode, PolarTargetNode>;
 
   // A post-order traversal of this behavior's node graph.
   std::vector<Node> nodes;
@@ -699,7 +674,6 @@ std::string ToFormattedString(BrushBehavior::Target target);
 std::string ToFormattedString(BrushBehavior::PolarTarget target);
 std::string ToFormattedString(BrushBehavior::OutOfRange out_of_range);
 std::string ToFormattedString(BrushBehavior::EnabledToolTypes enabled);
-std::string ToFormattedString(BrushBehavior::OptionalInputProperty input);
 std::string ToFormattedString(BrushBehavior::BinaryOp operation);
 std::string ToFormattedString(BrushBehavior::ProgressDomain progress_domain);
 std::string ToFormattedString(BrushBehavior::Interpolation interpolation);
@@ -731,11 +705,6 @@ void AbslStringify(Sink& sink, BrushBehavior::OutOfRange out_of_range) {
 template <typename Sink>
 void AbslStringify(Sink& sink, BrushBehavior::EnabledToolTypes enabled) {
   sink.Append(brush_internal::ToFormattedString(enabled));
-}
-
-template <typename Sink>
-void AbslStringify(Sink& sink, BrushBehavior::OptionalInputProperty input) {
-  sink.Append(brush_internal::ToFormattedString(input));
 }
 
 template <typename Sink>

@@ -137,7 +137,6 @@ class BrushTipModeler {
   void AppendBehaviorNode(const BrushBehavior::SourceNode& node);
   void AppendBehaviorNode(const BrushBehavior::ConstantNode& node);
   void AppendBehaviorNode(const BrushBehavior::NoiseNode& node);
-  void AppendBehaviorNode(const BrushBehavior::FallbackFilterNode& node);
   void AppendBehaviorNode(const BrushBehavior::ToolTypeFilterNode& node);
   void AppendBehaviorNode(const BrushBehavior::DampingNode& node);
   void AppendBehaviorNode(const BrushBehavior::ResponseNode& node);

@@ -921,9 +921,10 @@ message BrushBehavior {
   }
   // LINT.ThenChange(../../brush/brush_behavior.h:out_of_range)
 
-  // LINT.IfChange(optional_input_property)
-
   // List of input properties that might not be reported by `StrokeInput`.
+  //
+  // This enum is deprecated, and exists only to support the deprecated
+  // `FallbackFilterNode` type.
   enum OptionalInputProperty {
     OPTIONAL_INPUT_UNSPECIFIED = 0;
     OPTIONAL_INPUT_PRESSURE = 1;
@@ -933,7 +934,6 @@ message BrushBehavior {
     // Tilt-x and tilt-y require both tilt and orientation to be reported.
     OPTIONAL_INPUT_TILT_X_AND_Y = 4;
   }
-  // LINT.ThenChange(../../brush/brush_behavior.h:optional_input_property)
 
   // LINT.IfChange(binary_op)
 
@@ -1014,7 +1014,7 @@ message BrushBehavior {
     oneof node {
       SourceNode source_node = 1;
       ConstantNode constant_node = 2;
-      FallbackFilterNode fallback_filter_node = 3;
+      FallbackFilterNode fallback_filter_node = 3 [deprecated = true];
       ToolTypeFilterNode tool_type_filter_node = 4;
       DampingNode damping_node = 5;
       ResponseNode response_node = 6;
@@ -1093,6 +1093,21 @@ message BrushBehavior {
 
   // Value node for filtering out a branch of a behavior graph unless a
   // particular stroke input property is missing.
+  //
+  // This node type is deprecated. Using BINARY_OP_OR_ELSE is usually a better
+  // option for fallback calculations, but if necessary a FallbackFilterNode can
+  // be directly emulated by the sequence of nodes:
+  //
+  //   * SourceNode { source = <equivalent source for is_fallback_for>, ... }
+  //   * ConstantNode { value = 0 }
+  //   * BinaryOpNode { operation = BINARY_OP_XOR_ELSE }
+  //   * <any nodes that form the input to the FallbackFilterNode go here>
+  //   * BinaryOpNode { operation = BINARY_OP_AND_THEN }
+  //
+  // This works because the XOR_ELSE node in this setup will emit null if and
+  // only if the optional input property is available, in which case the
+  // AND_THEN node will filter out the fallback subtree, just like a
+  // `FallbackFilterNode would`
   //
   // Inputs: 1
   //

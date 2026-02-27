@@ -55,15 +55,14 @@ jlong ValidateAndHoistNodeOrThrow(BrushBehavior::Node node, JNIEnv* env) {
 static constexpr int kSourceNode = 0;
 static constexpr int kConstantNode = 1;
 static constexpr int kNoiseNode = 2;
-static constexpr int kFallbackFilterNode = 3;
-static constexpr int kToolTypeFilterNode = 4;
-static constexpr int kDampingNode = 5;
-static constexpr int kResponseNode = 6;
-static constexpr int kIntegralNode = 7;
-static constexpr int kBinaryOpNode = 8;
-static constexpr int kInterpolationNode = 9;
-static constexpr int kTargetNode = 10;
-static constexpr int kPolarTargetNode = 11;
+static constexpr int kToolTypeFilterNode = 3;
+static constexpr int kDampingNode = 4;
+static constexpr int kResponseNode = 5;
+static constexpr int kIntegralNode = 6;
+static constexpr int kBinaryOpNode = 7;
+static constexpr int kInterpolationNode = 8;
+static constexpr int kTargetNode = 9;
+static constexpr int kPolarTargetNode = 10;
 
 }  // namespace
 
@@ -150,16 +149,6 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createNoise)
           .seed = static_cast<uint32_t>(seed),
           .vary_over = static_cast<BrushBehavior::ProgressDomain>(vary_over),
           .base_period = base_period,
-      },
-      env);
-}
-
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createFallbackFilter)
-(JNIEnv* env, jobject thiz, jint is_fallback_for) {
-  return ValidateAndHoistNodeOrThrow(
-      BrushBehavior::FallbackFilterNode{
-          .is_fallback_for = static_cast<BrushBehavior::OptionalInputProperty>(
-              is_fallback_for),
       },
       env);
 }
@@ -267,9 +256,6 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getNodeType)
       [](const BrushBehavior::SourceNode&) { return kSourceNode; },
       [](const BrushBehavior::ConstantNode&) { return kConstantNode; },
       [](const BrushBehavior::NoiseNode&) { return kNoiseNode; },
-      [](const BrushBehavior::FallbackFilterNode&) {
-        return kFallbackFilterNode;
-      },
       [](const BrushBehavior::ToolTypeFilterNode&) {
         return kToolTypeFilterNode;
       },
@@ -345,16 +331,6 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getNoiseBasePeriod)
   return std::get<BrushBehavior::NoiseNode>(
              CastToBrushBehaviorNode(node_native_pointer))
       .base_period;
-}
-
-// FallbackFilterNode accessors:
-
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint,
-           getFallbackFilterIsFallbackForInt)
-(JNIEnv* env, jobject thiz, jlong node_native_pointer) {
-  return static_cast<jint>(std::get<BrushBehavior::FallbackFilterNode>(
-                               CastToBrushBehaviorNode(node_native_pointer))
-                               .is_fallback_for);
 }
 
 // ToolTypeFilterNode accessors:

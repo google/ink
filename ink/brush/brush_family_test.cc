@@ -72,9 +72,6 @@ BrushTip CreatePressureTestTip() {
           BrushBehavior::ToolTypeFilterNode{
               .enabled_tool_types = {.touch = true, .stylus = true},
           },
-          BrushBehavior::FallbackFilterNode{
-              .is_fallback_for = BrushBehavior::OptionalInputProperty::kTilt,
-          },
           BrushBehavior::ResponseNode{
               .response_curve = {EasingFunction::Predefined::kEaseInOut},
           },
@@ -851,28 +848,6 @@ TEST(BrushFamilyTest, CreateWithInvalidEnabledToolTypes) {
   absl::Status status = BrushFamily::Create(brush_tip, BrushPaint{}).status();
   EXPECT_EQ(status.code(), kInvalidArgument);
   EXPECT_THAT(status.message(), HasSubstr("enabled_tool_types"));
-}
-
-TEST(BrushFamilyTest, CreateWithInvalidBehaviorFallbackSource) {
-  BrushTip brush_tip = {
-      .behaviors = {BrushBehavior{{
-          BrushBehavior::SourceNode{
-              .source = BrushBehavior::Source::kOrientationInRadians,
-              .source_value_range = {0, 3},
-          },
-          BrushBehavior::FallbackFilterNode{
-              .is_fallback_for =
-                  static_cast<BrushBehavior::OptionalInputProperty>(-1),
-          },
-          BrushBehavior::TargetNode{
-              .target = BrushBehavior::Target::kPinchOffset,
-              .target_modifier_range = {0, .2},
-          },
-      }}},
-  };
-  absl::Status status = BrushFamily::Create(brush_tip, BrushPaint{}).status();
-  EXPECT_EQ(status.code(), kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("is_fallback_for"));
 }
 
 TEST(BrushFamilyTest, DefaultConstruction) {

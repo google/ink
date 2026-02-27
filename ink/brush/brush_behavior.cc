@@ -201,18 +201,6 @@ bool IsRangeValid(std::array<float, 2> range) {
          std::isfinite(range[1]) && range[0] != range[1];
 }
 
-bool IsValidOptionalInputProperty(
-    BrushBehavior::OptionalInputProperty unreported_source) {
-  switch (unreported_source) {
-    case BrushBehavior::OptionalInputProperty::kPressure:
-    case BrushBehavior::OptionalInputProperty::kTilt:
-    case BrushBehavior::OptionalInputProperty::kOrientation:
-    case BrushBehavior::OptionalInputProperty::kTiltXAndY:
-      return true;
-  }
-  return false;
-}
-
 bool IsValidBehaviorBinaryOp(BrushBehavior::BinaryOp operation) {
   switch (operation) {
     case BrushBehavior::BinaryOp::kProduct:
@@ -251,7 +239,6 @@ bool IsValidBehaviorInterpolation(BrushBehavior::Interpolation interpolation) {
 int NodeInputCount(const BrushBehavior::SourceNode& node) { return 0; }
 int NodeInputCount(const BrushBehavior::ConstantNode& node) { return 0; }
 int NodeInputCount(const BrushBehavior::NoiseNode& node) { return 0; }
-int NodeInputCount(const BrushBehavior::FallbackFilterNode& node) { return 1; }
 int NodeInputCount(const BrushBehavior::ToolTypeFilterNode& node) { return 1; }
 int NodeInputCount(const BrushBehavior::DampingNode& node) { return 1; }
 int NodeInputCount(const BrushBehavior::ResponseNode& node) { return 1; }
@@ -319,15 +306,6 @@ absl::Status ValidateNode(const BrushBehavior::NoiseNode& node) {
     return absl::InvalidArgumentError(absl::StrCat(
         "`NoiseNode::base_period` must be finite and positive. Got ",
         node.base_period));
-  }
-  return absl::OkStatus();
-}
-
-absl::Status ValidateNode(const BrushBehavior::FallbackFilterNode& node) {
-  if (!IsValidOptionalInputProperty(node.is_fallback_for)) {
-    return absl::InvalidArgumentError(absl::StrFormat(
-        "`FallbackFilterNode::is_fallback_for` holds non-enumerator value %d",
-        static_cast<int>(node.is_fallback_for)));
   }
   return absl::OkStatus();
 }
@@ -654,20 +632,6 @@ std::string ToFormattedString(BrushBehavior::EnabledToolTypes enabled) {
   return formatted;
 }
 
-std::string ToFormattedString(BrushBehavior::OptionalInputProperty input) {
-  switch (input) {
-    case BrushBehavior::OptionalInputProperty::kPressure:
-      return "kPressure";
-    case BrushBehavior::OptionalInputProperty::kTilt:
-      return "kTilt";
-    case BrushBehavior::OptionalInputProperty::kOrientation:
-      return "kOrientation";
-    case BrushBehavior::OptionalInputProperty::kTiltXAndY:
-      return "kTiltXAndY";
-  }
-  return absl::StrCat("OptionalInputProperty(", static_cast<int>(input), ")");
-}
-
 std::string ToFormattedString(BrushBehavior::BinaryOp operation) {
   switch (operation) {
     case BrushBehavior::BinaryOp::kProduct:
@@ -733,10 +697,6 @@ std::string ToFormattedString(const BrushBehavior::NoiseNode& node) {
   return absl::StrCat(
       "NoiseNode{seed=0x", absl::Hex(node.seed, absl::kZeroPad8),
       ", vary_over=", node.vary_over, ", base_period=", node.base_period, "}");
-}
-
-std::string ToFormattedString(const BrushBehavior::FallbackFilterNode& node) {
-  return absl::StrCat("FallbackFilterNode{", node.is_fallback_for, "}");
 }
 
 std::string ToFormattedString(const BrushBehavior::ToolTypeFilterNode& node) {

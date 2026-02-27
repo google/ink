@@ -253,6 +253,27 @@ TEST(BrushTest, EmptyBrushTipProtoDecodesToDefaultBrushTip) {
   EXPECT_THAT(*brush_tip, BrushTipEq(BrushTip()));
 }
 
+TEST(BrushTest, DecodeBrushBehaviorWithInvalidSourceValueRange) {
+  proto::BrushBehavior behavior_proto;
+  proto::BrushBehavior::SourceNode* source_node_proto =
+      behavior_proto.add_nodes()->mutable_source_node();
+  source_node_proto->set_source(
+      proto::BrushBehavior::SOURCE_NORMALIZED_PRESSURE);
+  source_node_proto->set_source_value_range_start(0);
+  source_node_proto->set_source_value_range_end(0);
+  source_node_proto->set_source_out_of_range_behavior(
+      proto::BrushBehavior::OUT_OF_RANGE_CLAMP);
+  proto::BrushBehavior::TargetNode* target_node_proto =
+      behavior_proto.add_nodes()->mutable_target_node();
+  target_node_proto->set_target(proto::BrushBehavior::TARGET_SIZE_MULTIPLIER);
+  target_node_proto->set_target_modifier_range_start(0);
+  target_node_proto->set_target_modifier_range_end(1);
+
+  EXPECT_THAT(DecodeBrushBehavior(behavior_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("source_value_range")));
+}
+
 TEST(BrushTest, DecodeEmptyBrushBehaviorNode) {
   proto::BrushBehavior::Node node;
   absl::Status status = DecodeBrushBehaviorNode(node).status();
@@ -692,10 +713,6 @@ TEST(BrushTest, EncodeBrushTipWithInvalidEnumValues) {
           .source_out_of_range_behavior =
               static_cast<BrushBehavior::OutOfRange>(99),
       },
-      BrushBehavior::FallbackFilterNode{
-          .is_fallback_for =
-              static_cast<BrushBehavior::OptionalInputProperty>(99),
-      },
       BrushBehavior::ResponseNode{
           .response_curve = {static_cast<EasingFunction::Predefined>(99)},
       },
@@ -707,23 +724,20 @@ TEST(BrushTest, EncodeBrushTipWithInvalidEnumValues) {
   EncodeBrushTip(tip, tip_proto);
   ASSERT_EQ(tip_proto.behaviors_size(), 1);
   const proto::BrushBehavior& behavior_proto = tip_proto.behaviors(0);
-  ASSERT_EQ(behavior_proto.nodes_size(), 4);
+  ASSERT_EQ(behavior_proto.nodes_size(), 3);
   EXPECT_TRUE(behavior_proto.nodes(0).has_source_node());
   EXPECT_EQ(behavior_proto.nodes(0).source_node().source(),
             proto::BrushBehavior::SOURCE_UNSPECIFIED);
   EXPECT_EQ(
       behavior_proto.nodes(0).source_node().source_out_of_range_behavior(),
       proto::BrushBehavior::OUT_OF_RANGE_UNSPECIFIED);
-  EXPECT_TRUE(behavior_proto.nodes(1).has_fallback_filter_node());
-  EXPECT_EQ(behavior_proto.nodes(1).fallback_filter_node().is_fallback_for(),
-            proto::BrushBehavior::OPTIONAL_INPUT_UNSPECIFIED);
-  EXPECT_TRUE(behavior_proto.nodes(2).has_response_node());
+  EXPECT_TRUE(behavior_proto.nodes(1).has_response_node());
   EXPECT_TRUE(
-      behavior_proto.nodes(2).response_node().has_predefined_response_curve());
-  EXPECT_EQ(behavior_proto.nodes(2).response_node().predefined_response_curve(),
+      behavior_proto.nodes(1).response_node().has_predefined_response_curve());
+  EXPECT_EQ(behavior_proto.nodes(1).response_node().predefined_response_curve(),
             proto::PREDEFINED_EASING_UNSPECIFIED);
-  EXPECT_TRUE(behavior_proto.nodes(3).has_target_node());
-  EXPECT_EQ(behavior_proto.nodes(3).target_node().target(),
+  EXPECT_TRUE(behavior_proto.nodes(2).has_target_node());
+  EXPECT_EQ(behavior_proto.nodes(2).target_node().target(),
             proto::BrushBehavior::TARGET_UNSPECIFIED);
 }
 

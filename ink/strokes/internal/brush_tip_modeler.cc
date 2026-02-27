@@ -331,11 +331,6 @@ void BrushTipModeler::AppendBehaviorNode(const BrushBehavior::NoiseNode& node) {
 }
 
 void BrushTipModeler::AppendBehaviorNode(
-    const BrushBehavior::FallbackFilterNode& node) {
-  behavior_nodes_.push_back(node);
-}
-
-void BrushTipModeler::AppendBehaviorNode(
     const BrushBehavior::ToolTypeFilterNode& node) {
   behavior_nodes_.push_back(node);
 }

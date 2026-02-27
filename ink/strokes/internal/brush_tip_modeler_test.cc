@@ -388,14 +388,17 @@ TEST(BrushTipModelerTest, TipWithFallbackFilter) {
       .behaviors = {BrushBehavior{{
           // Map speed to width multiplier, but only if pressure is missing.
           BrushBehavior::SourceNode{
+              .source = BrushBehavior::Source::kNormalizedPressure,
+              .source_value_range = {0, 1},
+          },
+          BrushBehavior::ConstantNode{0.0f},
+          BrushBehavior::BinaryOpNode{BrushBehavior::BinaryOp::kXorElse},
+          BrushBehavior::SourceNode{
               .source =
                   BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond,
               .source_value_range = {0, 1},
           },
-          BrushBehavior::FallbackFilterNode{
-              .is_fallback_for =
-                  BrushBehavior::OptionalInputProperty::kPressure,
-          },
+          BrushBehavior::BinaryOpNode{BrushBehavior::BinaryOp::kAndThen},
           BrushBehavior::TargetNode{
               .target = BrushBehavior::Target::kWidthMultiplier,
               .target_modifier_range = {1.5, 2},

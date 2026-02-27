@@ -99,11 +99,11 @@ struct PolarTargetNodeImplementation {
 
 using BehaviorNodeImplementation =
     std::variant<BrushBehavior::SourceNode, BrushBehavior::ConstantNode,
-                 NoiseNodeImplementation, BrushBehavior::FallbackFilterNode,
-                 BrushBehavior::ToolTypeFilterNode, DampingNodeImplementation,
-                 EasingImplementation, BrushBehavior::BinaryOpNode,
-                 BrushBehavior::InterpolationNode, IntegralNodeImplementation,
-                 TargetNodeImplementation, PolarTargetNodeImplementation>;
+                 NoiseNodeImplementation, BrushBehavior::ToolTypeFilterNode,
+                 DampingNodeImplementation, EasingImplementation,
+                 BrushBehavior::BinaryOpNode, BrushBehavior::InterpolationNode,
+                 IntegralNodeImplementation, TargetNodeImplementation,
+                 PolarTargetNodeImplementation>;
 
 // Holds mutable state for an integral node.
 struct IntegralState {
