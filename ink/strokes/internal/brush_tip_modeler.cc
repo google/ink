@@ -184,9 +184,8 @@ bool SourceDependsOnNextModeledInput(BrushBehavior::Source source) {
 }
 
 Duration32 TimeSinceLastInput(const InputModelerState& input_modeler_state) {
-  // TODO: b/287041801 - Do we need to consider predicted inputs here too?
   return input_modeler_state.complete_elapsed_time -
-         input_modeler_state.total_real_elapsed_time;
+         input_modeler_state.full_input_metrics.elapsed_time;
 }
 
 }  // namespace
@@ -536,9 +535,10 @@ InputMetrics BrushTipModeler::CalculateMaxFixedInputMetrics(
   return {
       .traveled_distance =
           last_stable_input.traveled_distance -
-          std::max(distance_remaining_behavior_upper_bound_,
-                   distance_fraction_behavior_upper_bound_ *
-                       input_modeler_state.complete_traveled_distance),
+          std::max(
+              distance_remaining_behavior_upper_bound_,
+              distance_fraction_behavior_upper_bound_ *
+                  input_modeler_state.full_input_metrics.traveled_distance),
       .elapsed_time = last_stable_input.elapsed_time -
                       time_since_input_behavior_upper_bound_,
   };

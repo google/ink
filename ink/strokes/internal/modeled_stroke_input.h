@@ -77,21 +77,19 @@ struct InputModelerState {
   // space and physical space is unknown (possibly because the current stroke
   // has no inputs yet) or ill-defined.
   std::optional<PhysicalDistance> stroke_unit_length;
+  // The total modeled distance/time from the start of the stroke until the last
+  // "real" (i.e. non-predicted) modeled input so far.
+  InputMetrics real_input_metrics;
+  // The total modeled distance/time from the start of the stroke until the last
+  // modeled input so far (including unstable/predicted modeled inputs).
+  InputMetrics full_input_metrics;
   // The modeled time elapsed from the start of the stroke until either "now" or
   // the last modeled input, whichever comes later.
   //
   // This value may be different from the `current_elapsed_time` value passed to
-  // `ExtendStroke()` due to modeling and prediction. If `GetModeledInputs()` is
-  // not empty, this value will always be greater than or equal to
-  // `GetModeledInputs().back().elapsed_time`.
+  // `ExtendStroke()` due to modeling and prediction. This value will always be
+  // greater than or equal to `full_input_metrics.elapsed_time`.
   Duration32 complete_elapsed_time = Duration32::Zero();
-  // The modeled distance traveled from the start of the stroke to the last
-  // modeled input (including unstable/predicted modeled inputs).
-  float complete_traveled_distance = 0;
-  // The total elapsed time for "real" (i.e. non-predicted) inputs only.
-  Duration32 total_real_elapsed_time = Duration32::Zero();
-  // The total traveled distance for "real" (i.e. non-predicted) inputs only.
-  float total_real_distance = 0;
   // The number of "stable" elements at the start of `GetModeledInputs()`.
   //
   // These will not be removed or modified by subsequent calls to

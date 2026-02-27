@@ -369,7 +369,7 @@ TEST_F(ProcessBehaviorNodeTest,
   };
   context_.brush_size = 3;
   current_input_.traveled_distance = 15;
-  input_modeler_state_.total_real_distance = 9;
+  input_modeler_state_.real_input_metrics.traveled_distance = 9;
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(0.2f));
 }
@@ -380,7 +380,7 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodePredictedTimeElapsedInSeconds) {
       .source_value_range = {0, 10},
   };
   current_input_.elapsed_time = Duration32::Seconds(15);
-  input_modeler_state_.total_real_elapsed_time = Duration32::Seconds(9);
+  input_modeler_state_.real_input_metrics.elapsed_time = Duration32::Seconds(9);
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(0.6f));
 }
@@ -393,7 +393,7 @@ TEST_F(ProcessBehaviorNodeTest,
   };
   context_.brush_size = 3;
   current_input_.traveled_distance = 9;
-  input_modeler_state_.complete_traveled_distance = 15;
+  input_modeler_state_.full_input_metrics.traveled_distance = 15;
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(0.2f));
 }
@@ -416,7 +416,7 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodeTimeSinceStrokeEndInSeconds) {
   };
 
   // If `inputs_are_finished` is still `false`, the source node emits zero.
-  input_modeler_state_.total_real_elapsed_time = Duration32::Seconds(3);
+  input_modeler_state_.full_input_metrics.elapsed_time = Duration32::Seconds(3);
   input_modeler_state_.complete_elapsed_time = Duration32::Seconds(5);
   input_modeler_state_.inputs_are_finished = false;
   ProcessBehaviorNode(source_node, context_);
@@ -628,7 +628,7 @@ TEST_F(ProcessBehaviorNodeTest,
 
   input_modeler_state_.stroke_unit_length = PhysicalDistance::Centimeters(0.1f);
   current_input_.traveled_distance = 50;
-  input_modeler_state_.total_real_distance = 46;
+  input_modeler_state_.real_input_metrics.traveled_distance = 46;
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(FloatNear(0.4f, 1e-5)));
 
@@ -776,7 +776,7 @@ TEST_F(ProcessBehaviorNodeTest,
   };
 
   current_input_.traveled_distance = 3.0f;
-  input_modeler_state_.complete_traveled_distance = 12.0f;
+  input_modeler_state_.full_input_metrics.traveled_distance = 12.0f;
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(0.75f));
 }
@@ -793,7 +793,7 @@ TEST_F(ProcessBehaviorNodeTest,
   // then the fraction of distance remaining isn't well-defined (0/0), so we
   // arbitrarily define that as 0% distance remaining.
   current_input_.traveled_distance = 0.0f;
-  input_modeler_state_.complete_traveled_distance = 0.0f;
+  input_modeler_state_.full_input_metrics.traveled_distance = 0.0f;
   ProcessBehaviorNode(source_node, context_);
   EXPECT_THAT(stack_, ElementsAre(0.0f));
 }

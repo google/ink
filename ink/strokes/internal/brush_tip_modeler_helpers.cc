@@ -80,15 +80,16 @@ std::optional<float> GetTiltY(Angle tilt, Angle orientation) {
 float GetPredictedDistanceTraveledInStrokeUnits(
     const InputModelerState& input_modeler_state,
     const ModeledStrokeInput& input) {
-  return std::max(
-      0.f, input.traveled_distance - input_modeler_state.total_real_distance);
+  return std::max(0.f,
+                  input.traveled_distance -
+                      input_modeler_state.real_input_metrics.traveled_distance);
 }
 
 Duration32 GetPredictedTimeElapsed(const InputModelerState& input_modeler_state,
                                    const ModeledStrokeInput& input) {
   return std::max(
       Duration32::Zero(),
-      input.elapsed_time - input_modeler_state.total_real_elapsed_time);
+      input.elapsed_time - input_modeler_state.real_input_metrics.elapsed_time);
 }
 
 // Returns the value of the given `Source` at the given modeled input, or
@@ -154,7 +155,7 @@ std::optional<float> GetSourceValue(
     case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
       return GetPredictedTimeElapsed(input_modeler_state, input).ToSeconds();
     case BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize:
-      return (input_modeler_state.complete_traveled_distance -
+      return (input_modeler_state.full_input_metrics.traveled_distance -
               input.traveled_distance) /
              brush_size;
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
@@ -163,7 +164,7 @@ std::optional<float> GetSourceValue(
     case BrushBehavior::Source::kTimeSinceStrokeEndInSeconds:
       if (!input_modeler_state.inputs_are_finished) return 0.0f;
       return (input_modeler_state.complete_elapsed_time -
-              input_modeler_state.total_real_elapsed_time)
+              input_modeler_state.full_input_metrics.elapsed_time)
           .ToSeconds();
     case BrushBehavior::Source::
         kAccelerationInMultiplesOfBrushSizePerSecondSquared:
@@ -229,11 +230,13 @@ std::optional<float> GetSourceValue(
       return Vec::DotProduct(input.acceleration,
                              input.velocity.AsUnitVec().Orthogonal()) *
              input_modeler_state.stroke_unit_length->ToCentimeters();
-    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
-      return input_modeler_state.complete_traveled_distance == 0.0f
+    case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength: {
+      float stroke_length =
+          input_modeler_state.full_input_metrics.traveled_distance;
+      return stroke_length == 0.0f
                  ? 0.0f
-                 : 1.0f - input.traveled_distance /
-                              input_modeler_state.complete_traveled_distance;
+                 : 1.0f - input.traveled_distance / stroke_length;
+    }
   }
   return std::nullopt;
 }

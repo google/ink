@@ -228,7 +228,6 @@ void SlidingWindowInputModeler::ExtendStroke(
   int raw_input_queue_real_input_count = raw_input_queue_.Size();
   AppendRawInputsToQueue(state, predicted_inputs);
   ModelUnstableInputs(state, modeled_inputs, raw_input_queue_real_input_count);
-  UpdateRealAndCompleteDistanceAndTime(state, modeled_inputs);
   MarkStableModeledInputs(state, modeled_inputs);
   TrimRawInputQueue(state, modeled_inputs, raw_input_queue_real_input_count);
 }
@@ -465,29 +464,19 @@ void SlidingWindowInputModeler::ModelUnstableInputs(
       modeled_inputs, state.stable_input_count, half_window_size_);
 }
 
-void SlidingWindowInputModeler::UpdateRealAndCompleteDistanceAndTime(
-    InputModelerState& state, std::vector<ModeledStrokeInput>& modeled_inputs) {
-  if (state.real_input_count > 0) {
-    const ModeledStrokeInput& last_real_input =
-        modeled_inputs[state.real_input_count - 1];
-    state.total_real_elapsed_time = last_real_input.elapsed_time;
-    state.total_real_distance = last_real_input.traveled_distance;
-  }
-  if (!modeled_inputs.empty()) {
-    const ModeledStrokeInput& last_input = modeled_inputs.back();
-    state.complete_traveled_distance = last_input.traveled_distance;
-    state.complete_elapsed_time = last_input.elapsed_time;
-  }
-}
-
 void SlidingWindowInputModeler::MarkStableModeledInputs(
     InputModelerState& state, std::vector<ModeledStrokeInput>& modeled_inputs) {
   ABSL_DCHECK_LE(state.stable_input_count, state.real_input_count);
   ABSL_DCHECK_LE(state.real_input_count, modeled_inputs.size());
+
+  if (state.real_input_count == 0) return;
+  const ModeledStrokeInput& last_real_input =
+      modeled_inputs[state.real_input_count - 1];
+
   while (state.stable_input_count < state.real_input_count &&
          modeled_inputs[state.stable_input_count].elapsed_time +
                  half_window_size_ <
-             state.total_real_elapsed_time) {
+             last_real_input.elapsed_time) {
     ++state.stable_input_count;
   }
 }
