@@ -31,11 +31,6 @@ void NaiveInputModeler::ExtendStroke(
     const StrokeInputBatch& real_inputs,
     const StrokeInputBatch& predicted_inputs) {
   AppendInputs(state, modeled_inputs, real_inputs);
-  if (!modeled_inputs.empty()) {
-    const ModeledStrokeInput& last_real_input = modeled_inputs.back();
-    state.total_real_elapsed_time = last_real_input.elapsed_time;
-    state.total_real_distance = last_real_input.traveled_distance;
-  }
   state.real_input_count = modeled_inputs.size();
   state.stable_input_count = state.real_input_count;
   AppendInputs(state, modeled_inputs, predicted_inputs);
@@ -60,8 +55,6 @@ void NaiveInputModeler::AppendInputs(
         acceleration = (velocity - last_input.velocity) / delta_seconds;
       }
     }
-    state.complete_elapsed_time = input.elapsed_time;
-    state.complete_traveled_distance = traveled_distance;
     modeled_inputs.push_back(ModeledStrokeInput{
         .position = input.position,
         .velocity = velocity,

@@ -122,8 +122,10 @@ TEST(NaiveInputModelerTest, RealAndCompleteElapsedTime) {
                       /*brush_epsilon=*/0.001);
   modeler.ExtendStroke(input_batches[1], input_batches[2], Duration32::Zero());
 
-  EXPECT_THAT(modeler.GetState().total_real_elapsed_time,
+  EXPECT_THAT(modeler.GetState().real_input_metrics.elapsed_time,
               Duration32Eq(Duration32::Seconds(1)));
+  EXPECT_THAT(modeler.GetState().full_input_metrics.elapsed_time,
+              Duration32Eq(Duration32::Seconds(2)));
   EXPECT_THAT(modeler.GetState().complete_elapsed_time,
               Duration32Eq(Duration32::Seconds(2)));
 }

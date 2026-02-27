@@ -51,11 +51,6 @@ class SpringBasedInputModeler : public InputModelImpl {
   void ModelInput(std::vector<ModeledStrokeInput>& modeled_inputs,
                   const StrokeInput& input, bool last_input_in_update);
 
-  // Updates `state` elapsed time and distance properties.
-  void UpdateStateTimeAndDistance(
-      InputModelerState& state,
-      std::vector<ModeledStrokeInput>& modeled_inputs);
-
   Version version_;
   // We use `brush_epsilon` to set up the parameters for `stroke_modeler_`, and
   // to determine the minimum distance that a new `stroke_model::Result` must

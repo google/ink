@@ -364,12 +364,13 @@ TEST_P(StrokeInputModelerTest, CumulativeDistanceTraveled) {
   // on the order of *around* 200 stroke units. Exactly how close the distance
   // is will depend on the modeler implementation, but it shouldn't be *too* far
   // off.
-  EXPECT_THAT(modeler.GetState().complete_traveled_distance,
+  EXPECT_THAT(modeler.GetState().full_input_metrics.traveled_distance,
               FloatNear(200, 25));
   // Only the first 100ms of inputs were real, so the total real distance should
   // be *around* 100 stroke units (again, we'll leave a generous margin to allow
   // for different modeling strategies).
-  EXPECT_THAT(modeler.GetState().total_real_distance, FloatNear(100, 25));
+  EXPECT_THAT(modeler.GetState().real_input_metrics.traveled_distance,
+              FloatNear(100, 25));
   // Intermediate elapsed times/distances should also be reasonable.  Different
   // modeling implementations may have different upsampling strategies, but
   // given the regularity of these test inputs, it is reasonable to assume that
@@ -398,14 +399,18 @@ TEST_P(StrokeInputModelerTest, EraseInitialPredictionWithNoRealInputs) {
   modeler.ExtendStroke({}, synthetic_predicted_inputs, Duration32::Zero());
   EXPECT_THAT(modeler.GetModeledInputs(), Not(IsEmpty()));
   EXPECT_GT(modeler.GetState().complete_elapsed_time, Duration32::Zero());
-  EXPECT_GT(modeler.GetState().complete_traveled_distance, 0);
+  EXPECT_GT(modeler.GetState().full_input_metrics.elapsed_time,
+            Duration32::Zero());
+  EXPECT_GT(modeler.GetState().full_input_metrics.traveled_distance, 0);
 
   // Now erase the prediction, still with no real inputs. Elapsed time and
   // distance traveled should go back to zero.
   modeler.ExtendStroke({}, {}, Duration32::Zero());
   EXPECT_THAT(modeler.GetModeledInputs(), IsEmpty());
   EXPECT_EQ(modeler.GetState().complete_elapsed_time, Duration32::Zero());
-  EXPECT_EQ(modeler.GetState().complete_traveled_distance, 0);
+  EXPECT_EQ(modeler.GetState().full_input_metrics.elapsed_time,
+            Duration32::Zero());
+  EXPECT_EQ(modeler.GetState().full_input_metrics.traveled_distance, 0);
 }
 
 TEST_P(StrokeInputModelerTest, ExtendWithoutStart) {
