@@ -1,0 +1,48 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+edition = "2024";
+
+package ink.proto;
+
+import "net/proto2/proto/descriptor.proto";
+
+message Version {
+  int32 major = 1;
+  int32 minor = 2;
+  int32 bug = 3;
+
+  enum Cycle {
+    CYCLE_UNSPECIFIED = 0;
+    CYCLE_ALPHA = 1;
+    CYCLE_BETA = 2;
+    CYCLE_RC = 3;
+    CYCLE_STABLE = 4;
+  }
+
+  Cycle cycle = 4;
+  int32 release = 5;
+}
+
+// Extend FieldOptions, MessageOptions, EnumOptions, and EnumValueOptions to
+// include Version.
+extend proto2.FieldOptions {
+  Version field_min_version = 525000068;
+}
+extend proto2.MessageOptions {
+  Version message_min_version = 525000037;
+}
+extend proto2.EnumValueOptions {
+  Version enum_value_min_version = 525000143;
+}
