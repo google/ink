@@ -101,6 +101,11 @@ class StrokeInputModeler {
   void SetToolTypeAndStrokeUnitLength(const StrokeInputBatch& real_inputs,
                                       const StrokeInputBatch& predicted_inputs);
 
+  // Helper method for `ExtendStroke()`. Sets `metrics` based on the first
+  // `modeled_input_count` inputs in `modeled_inputs_`.
+  void SetMetricsFromInputCount(size_t modeled_input_count,
+                                InputMetrics& metrics);
+
   InputModelerState state_;
   std::vector<ModeledStrokeInput> modeled_inputs_;
   absl_nullable std::unique_ptr<InputModelImpl> input_model_impl_;

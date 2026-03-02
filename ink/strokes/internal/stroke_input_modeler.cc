@@ -15,6 +15,7 @@
 #include "ink/strokes/internal/stroke_input_modeler.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <variant>
 
@@ -22,6 +23,7 @@
 #include "absl/log/absl_check.h"
 #include "ink/brush/brush_family.h"
 #include "ink/strokes/input/stroke_input_batch.h"
+#include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/strokes/internal/stroke_input_modeler/input_model_impl.h"
 #include "ink/strokes/internal/stroke_input_modeler/naive_input_modeler.h"
 #include "ink/strokes/internal/stroke_input_modeler/sliding_window_input_modeler.h"
@@ -78,15 +80,17 @@ void StrokeInputModeler::ExtendStroke(const StrokeInputBatch& real_inputs,
   input_model_impl_->ExtendStroke(state_, modeled_inputs_, real_inputs,
                                   predicted_inputs);
   ABSL_DCHECK_LE(state_.stable_input_count, state_.real_input_count);
-  ABSL_DCHECK_LE(state_.real_input_count, modeled_inputs_.size());
+
+  SetMetricsFromInputCount(state_.real_input_count, state_.real_input_metrics);
+  SetMetricsFromInputCount(modeled_inputs_.size(), state_.full_input_metrics);
   state_.complete_elapsed_time =
-      std::max(state_.complete_elapsed_time, current_elapsed_time);
+      std::max(state_.full_input_metrics.elapsed_time, current_elapsed_time);
 }
 
 void StrokeInputModeler::ErasePredictedModeledInputs() {
   modeled_inputs_.resize(state_.real_input_count);
-  state_.complete_elapsed_time = state_.total_real_elapsed_time;
-  state_.complete_traveled_distance = state_.total_real_distance;
+  state_.full_input_metrics = state_.real_input_metrics;
+  state_.complete_elapsed_time = state_.real_input_metrics.elapsed_time;
 }
 
 void StrokeInputModeler::SetToolTypeAndStrokeUnitLength(
@@ -98,6 +102,19 @@ void StrokeInputModeler::SetToolTypeAndStrokeUnitLength(
   } else if (!predicted_inputs.IsEmpty()) {
     state_.tool_type = predicted_inputs.GetToolType();
     state_.stroke_unit_length = predicted_inputs.GetStrokeUnitLength();
+  }
+}
+
+void StrokeInputModeler::SetMetricsFromInputCount(size_t modeled_input_count,
+                                                  InputMetrics& metrics) {
+  ABSL_DCHECK_LE(modeled_input_count, modeled_inputs_.size());
+  if (modeled_input_count == 0) {
+    metrics.elapsed_time = Duration32::Zero();
+    metrics.traveled_distance = 0;
+  } else {
+    const ModeledStrokeInput& input = modeled_inputs_[modeled_input_count - 1];
+    metrics.elapsed_time = input.elapsed_time;
+    metrics.traveled_distance = input.traveled_distance;
   }
 }
 

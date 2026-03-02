@@ -35,10 +35,10 @@ class InputModelImpl {
   //
   // When this is called, `modeled_inputs` will already have been trimmed down
   // to just its real inputs, and `state.complete_elapsed_time` and
-  // `state.complete_traveled_distance` will have been updated accordingly. This
-  // method is responsible for updating any previously-unstable real modeled
-  // inputs, modeling the new `real_inputs` and `predicted_inputs`, and updating
-  // `state` accordingly.
+  // `state.full_input_metrics` will have been updated accordingly. This method
+  // is responsible for updating any previously-unstable real modeled inputs,
+  // modeling the new `real_inputs` and `predicted_inputs`, and updating `state`
+  // accordingly.
   virtual void ExtendStroke(InputModelerState& state,
                             std::vector<ModeledStrokeInput>& modeled_inputs,
                             const StrokeInputBatch& real_inputs,

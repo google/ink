@@ -18,7 +18,6 @@
 #include <optional>
 #include <vector>
 
-#include "absl/cleanup/cleanup.h"
 #include "absl/log/absl_check.h"
 #include "ink/brush/brush_family.h"
 #include "ink/geometry/angle.h"
@@ -149,10 +148,6 @@ void SpringBasedInputModeler::ExtendStroke(
     InputModelerState& state, std::vector<ModeledStrokeInput>& modeled_inputs,
     const StrokeInputBatch& real_inputs,
     const StrokeInputBatch& predicted_inputs) {
-  absl::Cleanup update_time_and_distance = [&]() {
-    UpdateStateTimeAndDistance(state, modeled_inputs);
-  };
-
   if (!last_real_stroke_input_.has_value()) {
     ResetStrokeModeler(stroke_modeler_, version_, brush_epsilon_,
                        state.stroke_unit_length);
@@ -276,24 +271,6 @@ void SpringBasedInputModeler::ModelInput(
 
     previous_position = position;
   }
-}
-
-void SpringBasedInputModeler::UpdateStateTimeAndDistance(
-    InputModelerState& state, std::vector<ModeledStrokeInput>& modeled_inputs) {
-  if (modeled_inputs.empty()) {
-    return;
-  }
-
-  const ModeledStrokeInput& last_input = modeled_inputs.back();
-  state.complete_elapsed_time = last_input.elapsed_time;
-  state.complete_traveled_distance = last_input.traveled_distance;
-
-  if (state.real_input_count == 0) return;
-
-  const ModeledStrokeInput& last_real_input =
-      modeled_inputs[state.real_input_count - 1];
-  state.total_real_distance = last_real_input.traveled_distance;
-  state.total_real_elapsed_time = last_real_input.elapsed_time;
 }
 
 }  // namespace ink::strokes_internal

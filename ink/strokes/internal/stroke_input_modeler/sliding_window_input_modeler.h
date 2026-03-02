@@ -92,17 +92,10 @@ class SlidingWindowInputModeler : public InputModelImpl {
       std::vector<ModeledStrokeInput>& modeled_inputs, Duration32 elapsed_time,
       int& start_index, int& end_index);
 
-  // Helper method for `ExtendStroke()`. Updates `state` fields for `total_real`
-  // and `complete` distance and time, based on current `modeled_inputs` and
-  // `state.real_input_count`.
-  void UpdateRealAndCompleteDistanceAndTime(
-      InputModelerState& state,
-      std::vector<ModeledStrokeInput>& modeled_inputs);
-
   // Helper method for `ExtendStroke()`. Marks stable all real modeled inputs
-  // that are at least `half_window_size_` before
-  // `state.total_real_elapsed_time` (and which will therefore not change
-  // further when further real raw inputs are added later).
+  // that are at least `half_window_size_` before the `elapsed_time` of the last
+  // real input (and which will therefore not change further when further real
+  // raw inputs are added later).
   void MarkStableModeledInputs(InputModelerState& state,
                                std::vector<ModeledStrokeInput>& modeled_inputs);
 
