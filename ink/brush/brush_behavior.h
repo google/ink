@@ -166,6 +166,9 @@ struct BrushBehavior {
     // input. The value remains fixed for any given part of the stroke once
     // drawn.
     kTimeOfInputInSeconds,
+    // Time elapsed from the current modeled stroke input until the last input
+    // in the stroke.
+    kTimeFromInputToStrokeEndInSeconds,
     // Distance traveled by the inputs of the current prediction, starting at 0
     // at the last non-predicted input, in multiples of the brush size. Zero for
     // inputs before the predicted portion of the stroke.

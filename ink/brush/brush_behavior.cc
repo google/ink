@@ -56,6 +56,7 @@ bool IsValidBehaviorSource(BrushBehavior::Source source) {
     case BrushBehavior::Source::kNormalizedDirectionY:
     case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
     case BrushBehavior::Source::kTimeOfInputInSeconds:
+    case BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds:
     case BrushBehavior::Source::
         kPredictedDistanceTraveledInMultiplesOfBrushSize:
     case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
@@ -118,6 +119,7 @@ absl::Status ValidateSourceAndOutOfRangeCombination(
     case BrushBehavior::Source::kNormalizedDirectionY:
     case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
     case BrushBehavior::Source::kTimeOfInputInSeconds:
+    case BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds:
     case BrushBehavior::Source::
         kPredictedDistanceTraveledInMultiplesOfBrushSize:
     case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
@@ -488,6 +490,8 @@ std::string ToFormattedString(BrushBehavior::Source source) {
       return "kDistanceTraveledInMultiplesOfBrushSize";
     case BrushBehavior::Source::kTimeOfInputInSeconds:
       return "kTimeOfInputInSeconds";
+    case BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds:
+      return "kTimeFromInputToStrokeEndInSeconds";
     case BrushBehavior::Source::
         kPredictedDistanceTraveledInMultiplesOfBrushSize:
       return "kPredictedDistanceTraveledInMultiplesOfBrushSize";

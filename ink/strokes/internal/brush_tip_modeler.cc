@@ -147,6 +147,7 @@ bool SourceDependsOnNextModeledInput(BrushBehavior::Source source) {
     case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:
     case BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize:
     case BrushBehavior::Source::kTimeOfInputInSeconds:
+    case BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds:
     case BrushBehavior::Source::
         kPredictedDistanceTraveledInMultiplesOfBrushSize:
     case BrushBehavior::Source::kPredictedTimeElapsedInSeconds:
@@ -213,6 +214,7 @@ void BrushTipModeler::StartStroke(const BrushTip* absl_nonnull brush_tip,
 
   // These fields will be updated by the `AppendBehaviorNode()` loop below.
   distance_remaining_behavior_upper_bound_ = 0;
+  time_remaining_behavior_upper_bound_ = Duration32::Zero();
   distance_fraction_behavior_upper_bound_ = 0;
   time_since_input_behavior_upper_bound_ = Duration32::Zero();
   time_since_stroke_end_behavior_upper_bound_ = Duration32::Zero();
@@ -255,6 +257,11 @@ void BrushTipModeler::AppendBehaviorNode(
     case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
       distance_fraction_behavior_upper_bound_ = std::max(
           distance_fraction_behavior_upper_bound_, SourceValueUpperBound(node));
+      break;
+    case BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds:
+      time_remaining_behavior_upper_bound_ =
+          std::max(time_remaining_behavior_upper_bound_,
+                   Duration32::Seconds(SourceValueUpperBound(node)));
       break;
     case BrushBehavior::Source::kTimeSinceInputInSeconds:
       time_since_input_behavior_upper_bound_ =
@@ -540,7 +547,8 @@ InputMetrics BrushTipModeler::CalculateMaxFixedInputMetrics(
               distance_fraction_behavior_upper_bound_ *
                   input_modeler_state.full_input_metrics.traveled_distance),
       .elapsed_time = last_stable_input.elapsed_time -
-                      time_since_input_behavior_upper_bound_,
+                      std::max(time_remaining_behavior_upper_bound_,
+                               time_since_input_behavior_upper_bound_),
   };
 }
 

@@ -69,6 +69,9 @@ TEST(BrushBehaviorTest, StringifySource) {
             "kDistanceTraveledInMultiplesOfBrushSize");
   EXPECT_EQ(absl::StrCat(BrushBehavior::Source::kTimeOfInputInSeconds),
             "kTimeOfInputInSeconds");
+  EXPECT_EQ(
+      absl::StrCat(BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds),
+      "kTimeFromInputToStrokeEndInSeconds");
   EXPECT_EQ(absl::StrCat(BrushBehavior::Source::
                              kPredictedDistanceTraveledInMultiplesOfBrushSize),
             "kPredictedDistanceTraveledInMultiplesOfBrushSize");

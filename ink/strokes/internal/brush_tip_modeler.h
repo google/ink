@@ -205,6 +205,7 @@ class BrushTipModeler {
   // Cached values from `brush_tip_` that give the upper bounds on source value
   // ranges for certain behavior sources that require special handling.
   float distance_remaining_behavior_upper_bound_ = 0;  // stroke units
+  Duration32 time_remaining_behavior_upper_bound_ = Duration32::Zero();
   Duration32 time_since_input_behavior_upper_bound_ = Duration32::Zero();
   float distance_fraction_behavior_upper_bound_ = 0;
   Duration32 time_since_stroke_end_behavior_upper_bound_ = Duration32::Zero();

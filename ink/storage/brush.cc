@@ -188,6 +188,9 @@ proto::BrushBehavior::Source EncodeBrushBehaviorSource(
           SOURCE_DISTANCE_TRAVELED_IN_MULTIPLES_OF_BRUSH_SIZE;
     case BrushBehavior::Source::kTimeOfInputInSeconds:
       return proto::BrushBehavior::SOURCE_TIME_OF_INPUT_IN_SECONDS;
+    case BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds:
+      return proto::BrushBehavior::
+          SOURCE_TIME_FROM_INPUT_TO_STROKE_END_IN_SECONDS;
     case BrushBehavior::Source::
         kPredictedDistanceTraveledInMultiplesOfBrushSize:
       return proto::BrushBehavior::
@@ -388,6 +391,8 @@ absl::StatusOr<BrushBehavior::Source> DecodeBrushBehaviorSource(
       return BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength;
     case proto::BrushBehavior::SOURCE_TIME_SINCE_STROKE_END_IN_SECONDS:
       return BrushBehavior::Source::kTimeSinceStrokeEndInSeconds;
+    case proto::BrushBehavior::SOURCE_TIME_FROM_INPUT_TO_STROKE_END_IN_SECONDS:
+      return BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds;
     default:
       return absl::InvalidArgumentError(absl::StrCat(
           "invalid ink.proto.BrushBehavior.Source value: ", source_proto));

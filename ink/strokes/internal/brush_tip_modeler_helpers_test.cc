@@ -360,6 +360,30 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodeTimeOfInputInSeconds) {
   EXPECT_THAT(stack_, ElementsAre(0.75f));
 }
 
+TEST_F(ProcessBehaviorNodeTest, SourceNodeTimeFromInputToStrokeEndInSeconds) {
+  BrushBehavior::SourceNode source_node = {
+      .source = BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds,
+      .source_value_range = {0, 10},
+  };
+  current_input_.elapsed_time = Duration32::Seconds(4);
+  // Until stroke inputs are finished, measure from `input.elapsed_time` to
+  // `complete_elapsed_time`, so that the source value continues to smoothly
+  // advance even if new inputs aren't arriving.
+  input_modeler_state_.full_input_metrics.elapsed_time = Duration32::Seconds(6);
+  input_modeler_state_.complete_elapsed_time = Duration32::Seconds(6.5);
+  input_modeler_state_.inputs_are_finished = false;
+  ProcessBehaviorNode(source_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(0.25f));
+  // Once stroke inputs are finished, measure from `input.elapsed_time` to
+  // `full_input_metrics.elapsed_time` instead.
+  stack_.clear();
+  input_modeler_state_.full_input_metrics.elapsed_time = Duration32::Seconds(9);
+  input_modeler_state_.complete_elapsed_time = Duration32::Seconds(10.5);
+  input_modeler_state_.inputs_are_finished = true;
+  ProcessBehaviorNode(source_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(0.5f));
+}
+
 TEST_F(ProcessBehaviorNodeTest,
        SourceNodePredictedDistanceTraveledInMultiplesOfBrushSize) {
   BrushBehavior::SourceNode source_node = {

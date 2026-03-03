@@ -147,6 +147,13 @@ std::optional<float> GetSourceValue(
       return input.traveled_distance / brush_size;
     case BrushBehavior::Source::kTimeOfInputInSeconds:
       return input.elapsed_time.ToSeconds();
+    case BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds: {
+      Duration32 stroke_end_time =
+          input_modeler_state.inputs_are_finished
+              ? input_modeler_state.full_input_metrics.elapsed_time
+              : input_modeler_state.complete_elapsed_time;
+      return (stroke_end_time - input.elapsed_time).ToSeconds();
+    }
     case BrushBehavior::Source::
         kPredictedDistanceTraveledInMultiplesOfBrushSize:
       return GetPredictedDistanceTraveledInStrokeUnits(input_modeler_state,

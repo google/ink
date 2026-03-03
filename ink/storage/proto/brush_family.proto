@@ -762,6 +762,10 @@ message BrushBehavior {
     // only compatible with a `source_out_of_range_behavior` of
     // `OUT_OF_RANGE_CLAMP`, to ensure that the animation will eventually end.
     SOURCE_TIME_SINCE_STROKE_END_IN_SECONDS = 40;
+
+    // Time elapsed (in seconds) from the current modeled stroke input until the
+    // last input in the stroke.
+    SOURCE_TIME_FROM_INPUT_TO_STROKE_END_IN_SECONDS = 41;
   }
   // LINT.ThenChange(../../brush/brush_behavior.h:source)
 

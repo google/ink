@@ -194,6 +194,7 @@ Domain<BrushBehavior::Source> ArbitraryBrushBehaviorSource() {
       BrushBehavior::Source::kNormalizedDirectionY,
       BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize,
       BrushBehavior::Source::kTimeOfInputInSeconds,
+      BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds,
       BrushBehavior::Source::kPredictedDistanceTraveledInMultiplesOfBrushSize,
       BrushBehavior::Source::kPredictedTimeElapsedInSeconds,
       BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize,
