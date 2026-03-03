@@ -24,6 +24,7 @@
 namespace {
 
 using ::ink::BrushBehavior;
+using ::ink::brush_internal::CalculateMinimumRequiredVersion;
 using ::ink::brush_internal::ValidateBrushBehaviorNode;
 using ::ink::native::CastToBrushBehaviorNode;
 using ::ink::native::CastToEasingFunction;
@@ -399,6 +400,54 @@ float PolarTargetNodeNative_getMagnitudeRangeEnd(int64_t native_ptr) {
   return std::get<BrushBehavior::PolarTargetNode>(
              CastToBrushBehaviorNode(native_ptr))
       .magnitude_range[1];
+}
+
+int NodeNative_calculateMinimumRequiredVersion(int64_t native_ptr) {
+  return CalculateMinimumRequiredVersion(CastToBrushBehaviorNode(native_ptr))
+      .value();
+}
+
+int SourceNodeNative_getSourceMinimumRequiredVersion(int source_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<BrushBehavior::Source>(source_int))
+      .value();
+}
+
+int TargetNodeNative_getTargetMinimumRequiredVersion(int target_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<BrushBehavior::Target>(target_int))
+      .value();
+}
+
+int PolarTargetNodeNative_getPolarTargetMinimumRequiredVersion(int target_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<BrushBehavior::PolarTarget>(target_int))
+      .value();
+}
+
+int BinaryOpNodeNative_getOperationMinimumRequiredVersion(int operation_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<BrushBehavior::BinaryOp>(operation_int))
+      .value();
+}
+
+int InterpolationNodeNative_getInterpolationMinimumRequiredVersion(
+    int interpolation_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<BrushBehavior::Interpolation>(interpolation_int))
+      .value();
+}
+
+int OutOfRangeNative_calculateMinimumRequiredVersion(int out_of_range_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<BrushBehavior::OutOfRange>(out_of_range_int))
+      .value();
+}
+
+int ProgressDomainNative_calculateMinimumRequiredVersion(int domain_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<BrushBehavior::ProgressDomain>(domain_int))
+      .value();
 }
 
 }  // extern "C"

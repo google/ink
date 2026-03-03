@@ -278,4 +278,52 @@ JNI_METHOD(brush_behavior, PolarTargetNodeNative, jfloat, getMagnitudeRangeEnd)
   return PolarTargetNodeNative_getMagnitudeRangeEnd(node_native_pointer);
 }
 
+JNI_METHOD(brush_behavior, NodeNative, jint, calculateMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return NodeNative_calculateMinimumRequiredVersion(native_pointer);
+}
+
+JNI_METHOD(brush_behavior, SourceNodeNative, jint,
+           getSourceMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint source_int) {
+  return SourceNodeNative_getSourceMinimumRequiredVersion(source_int);
+}
+
+JNI_METHOD(brush_behavior, TargetNodeNative, jint,
+           getTargetMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint target_int) {
+  return TargetNodeNative_getTargetMinimumRequiredVersion(target_int);
+}
+
+JNI_METHOD(brush_behavior, PolarTargetNodeNative, jint,
+           getPolarTargetMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint target_int) {
+  return PolarTargetNodeNative_getPolarTargetMinimumRequiredVersion(target_int);
+}
+
+JNI_METHOD(brush_behavior, BinaryOpNodeNative, jint,
+           getOperationMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint operation_int) {
+  return BinaryOpNodeNative_getOperationMinimumRequiredVersion(operation_int);
+}
+
+JNI_METHOD(brush_behavior, InterpolationNodeNative, jint,
+           getInterpolationMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint interpolation_int) {
+  return InterpolationNodeNative_getInterpolationMinimumRequiredVersion(
+      interpolation_int);
+}
+
+JNI_METHOD(brush_behavior, OutOfRangeNative, jint,
+           calculateMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint out_of_range_int) {
+  return OutOfRangeNative_calculateMinimumRequiredVersion(out_of_range_int);
+}
+
+JNI_METHOD(brush_behavior, ProgressDomainNative, jint,
+           calculateMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint domain_int) {
+  return ProgressDomainNative_calculateMinimumRequiredVersion(domain_int);
+}
+
 }  // extern "C"

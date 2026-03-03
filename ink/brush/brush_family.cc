@@ -142,7 +142,8 @@ std::string BrushFamily::ToFormattedString() const {
 }
 
 Version BrushFamily::CalculateMinimumRequiredVersion() const {
-  Version max_version = Version::k0Jetpack1_0_0();
+  Version max_version =
+      brush_internal::CalculateMinimumRequiredVersion(input_model_);
   for (const auto& coat : coats_) {
     max_version = std::max(
         max_version, brush_internal::CalculateMinimumRequiredVersion(coat));
@@ -190,6 +191,10 @@ std::string ToFormattedString(const BrushFamily::SlidingWindowModel& model) {
 absl::Status ValidateInputModel(const BrushFamily::InputModel& model) {
   return std::visit([](const auto& model) { return ValidateInputModel(model); },
                     model);
+}
+
+Version CalculateMinimumRequiredVersion(const BrushFamily::InputModel& model) {
+  return Version::k0Jetpack1_0_0();
 }
 
 std::string ToFormattedString(const BrushFamily::InputModel& model) {

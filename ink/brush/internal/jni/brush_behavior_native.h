@@ -37,6 +37,8 @@ const char* BrushBehaviorNative_getDeveloperComment(int64_t native_ptr);
 
 int64_t BrushBehaviorNative_newCopyOfNode(int64_t native_ptr, int index);
 
+int BrushBehaviorNative_calculateMinimumRequiredVersion(int64_t native_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

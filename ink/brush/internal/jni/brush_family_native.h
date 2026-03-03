@@ -64,6 +64,7 @@ void InputModelNative_free(int64_t native_pointer);
 int64_t InputModelNative_getSlidingWindowDurationMillis(int64_t native_pointer);
 
 int InputModelNative_getSlidingUpsamplingFrequencyHz(int64_t native_pointer);
+int InputModelNative_calculateMinimumRequiredVersion(int64_t native_pointer);
 
 #ifdef __cplusplus
 }  // extern "C"

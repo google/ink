@@ -303,8 +303,6 @@ absl::Status ValidateBrushPaint(const BrushPaint& paint) {
   return absl::OkStatus();
 }
 
-namespace {
-
 Version CalculateMinimumRequiredVersion(
     BrushPaint::TextureOrigin texture_origin) {
   switch (texture_origin) {
@@ -365,6 +363,10 @@ Version CalculateMinimumRequiredVersion(BrushPaint::SelfOverlap self_overlap) {
   return Version::kDevelopment();
 }
 
+namespace {
+
+using ::ink::brush_internal::CalculateMinimumRequiredVersion;
+
 Version CalculateMinimumRequiredVersion(
     const BrushPaint::TilingTexture& layer) {
   return std::max({CalculateMinimumRequiredVersion(layer.origin),
@@ -389,13 +391,13 @@ Version CalculateMinimumRequiredVersion(
   return CalculateMinimumRequiredVersion(layer.blend_mode);
 }
 
+}  // namespace
+
 Version CalculateMinimumRequiredVersion(const BrushPaint::TextureLayer& layer) {
   return std::visit(
       [](const auto& layer) { return CalculateMinimumRequiredVersion(layer); },
       layer);
 }
-
-}  // namespace
 
 Version CalculateMinimumRequiredVersion(const BrushPaint& paint) {
   Version max_version = CalculateMinimumRequiredVersion(paint.self_overlap);

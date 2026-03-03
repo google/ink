@@ -139,4 +139,9 @@ JNI_METHOD(brush, InputModelNative, jint, getSlidingUpsamplingFrequencyHz)
   return InputModelNative_getSlidingUpsamplingFrequencyHz(native_pointer);
 }
 
+JNI_METHOD(brush, InputModelNative, jint, calculateMinimumRequiredVersion)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  return InputModelNative_calculateMinimumRequiredVersion(native_pointer);
+}
+
 }  // extern "C"

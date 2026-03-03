@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <string>
 
+#include "ink/brush/version.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
 #include "ink/types/duration.h"
@@ -100,6 +101,8 @@ namespace stroke_input_internal {
 std::string ToFormattedString(StrokeInput::ToolType tool_type);
 std::string ToFormattedString(const StrokeInput& input);
 }  // namespace stroke_input_internal
+
+Version CalculateMinimumRequiredVersion(StrokeInput::ToolType tool_type);
 
 template <typename Sink>
 void AbslStringify(Sink& sink, StrokeInput::ToolType tool_type) {

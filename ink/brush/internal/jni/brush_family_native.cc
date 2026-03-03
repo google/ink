@@ -34,6 +34,7 @@
 using ::ink::BrushCoat;
 using ::ink::BrushFamily;
 using ::ink::Duration32;
+using ::ink::brush_internal::CalculateMinimumRequiredVersion;
 using ::ink::native::CastToBrushCoat;
 using ::ink::native::CastToBrushFamily;
 using ::ink::native::CastToInputModel;
@@ -194,6 +195,11 @@ int InputModelNative_getSlidingUpsamplingFrequencyHz(int64_t native_pointer) {
   return static_cast<int>(
       std::min(1.0f / upsampling_period_seconds,
                static_cast<float>(std::numeric_limits<int>::max())));
+}
+
+int InputModelNative_calculateMinimumRequiredVersion(int64_t native_pointer) {
+  return CalculateMinimumRequiredVersion(CastToInputModel(native_pointer))
+      .value();
 }
 
 }  // extern "C"

@@ -69,6 +69,7 @@ cc_library(
     srcs = ["stroke_input.cc"],
     hdrs = ["stroke_input.h"],
     deps = [
+        "//ink/brush:version",
         "//ink/geometry:angle",
         "//ink/geometry:point",
         "//ink/types:duration",

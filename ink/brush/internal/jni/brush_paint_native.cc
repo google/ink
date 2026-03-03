@@ -44,6 +44,7 @@ using ::ink::ColorSpace;
 using ::ink::MeshFormat;
 using ::ink::Vec;
 using ::ink::brush_internal::AddAttributeIdsRequiredByPaint;
+using ::ink::brush_internal::CalculateMinimumRequiredVersion;
 using ::ink::brush_internal::ValidateBrushPaint;
 using ::ink::brush_internal::ValidateBrushPaintTextureLayer;
 using ::ink::native::CastToBrushPaint;
@@ -410,6 +411,45 @@ int64_t ColorFunctionNative_computeTransformedColorLong(
   const Color output_color = CastToColorFunction(native_ptr)(input_color);
   return ComputeColorLong(jni_env_pass_through, output_color,
                           compose_color_long_from_components_callback);
+}
+
+int BrushPaintNative_calculateMinimumRequiredVersion(int64_t native_ptr) {
+  return CalculateMinimumRequiredVersion(CastToBrushPaint(native_ptr)).value();
+}
+
+int BrushPaintNative_getBlendModeMinimumRequiredVersion(int blend_mode_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<BrushPaint::BlendMode>(blend_mode_int))
+      .value();
+}
+
+int BrushPaintNative_getTextureWrapMinimumRequiredVersion(int wrap_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<BrushPaint::TextureWrap>(wrap_int))
+      .value();
+}
+
+int BrushPaintNative_getTextureOriginMinimumRequiredVersion(int origin_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<BrushPaint::TextureOrigin>(origin_int))
+      .value();
+}
+
+int BrushPaintNative_getTextureSizeUnitMinimumRequiredVersion(
+    int size_unit_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<BrushPaint::TextureSizeUnit>(size_unit_int))
+      .value();
+}
+
+int TextureLayerNative_calculateMinimumRequiredVersion(int64_t native_ptr) {
+  return CalculateMinimumRequiredVersion(CastToTextureLayer(native_ptr))
+      .value();
+}
+
+int ColorFunctionNative_calculateMinimumRequiredVersion(int64_t native_ptr) {
+  return CalculateMinimumRequiredVersion(CastToColorFunction(native_ptr))
+      .value();
 }
 
 }  // extern "C"
