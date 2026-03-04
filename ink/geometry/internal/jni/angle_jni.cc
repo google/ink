@@ -14,35 +14,31 @@
 
 #include <jni.h>
 
-#include "ink/geometry/angle.h"
 #include "ink/jni/internal/jni_defines.h"
-
-namespace {
-
-using ::ink::Angle;
-
-}  // namespace
 
 extern "C" {
 
+// C-compatible library header needs to be included in extern "C" block.
+#include "ink/geometry/internal/jni/angle_native.h"
+
 JNI_METHOD(geometry, AngleNative, jfloat, normalizedRadians)
 (JNIEnv* env, jobject object, jfloat radians) {
-  return Angle::Radians(radians).Normalized().ValueInRadians();
+  return AngleNative_normalizedRadians(radians);
 }
 
 JNI_METHOD(geometry, AngleNative, jfloat, normalizedAboutZeroRadians)
 (JNIEnv* env, jobject object, jfloat radians) {
-  return Angle::Radians(radians).NormalizedAboutZero().ValueInRadians();
+  return AngleNative_normalizedAboutZeroRadians(radians);
 }
 
 JNI_METHOD(geometry, AngleNative, jfloat, normalizedDegrees)
 (JNIEnv* env, jobject object, jfloat degrees) {
-  return Angle::Degrees(degrees).Normalized().ValueInDegrees();
+  return AngleNative_normalizedDegrees(degrees);
 }
 
 JNI_METHOD(geometry, AngleNative, jfloat, normalizedAboutZeroDegrees)
 (JNIEnv* env, jobject object, jfloat degrees) {
-  return Angle::Degrees(degrees).NormalizedAboutZero().ValueInDegrees();
+  return AngleNative_normalizedAboutZeroDegrees(degrees);
 }
 
 }  // extern "C"
