@@ -710,46 +710,46 @@ message BrushBehavior {
 
     // Absolute speed of the modeled stroke input pointer in centimeters per
     // second.
-    SOURCE_INPUT_SPEED_IN_CENTIMETERS_PER_SECOND = 29;
+    SOURCE_SPEED_IN_CENTIMETERS_PER_SECOND = 29;
 
     // Signed x component of the modeled stroke input pointer velocity
     // in centimeters per second.
-    SOURCE_INPUT_VELOCITY_X_IN_CENTIMETERS_PER_SECOND = 30;
+    SOURCE_VELOCITY_X_IN_CENTIMETERS_PER_SECOND = 30;
 
     // Signed y component of the modeled stroke input pointer velocity
     // in centimeters per second.
-    SOURCE_INPUT_VELOCITY_Y_IN_CENTIMETERS_PER_SECOND = 31;
+    SOURCE_VELOCITY_Y_IN_CENTIMETERS_PER_SECOND = 31;
 
     // Distance in centimeters traveled by the modeled stroke input pointer
     // along the input path from the start of the stroke.
-    SOURCE_INPUT_DISTANCE_TRAVELED_IN_CENTIMETERS = 32;
+    SOURCE_DISTANCE_TRAVELED_IN_CENTIMETERS = 32;
 
     // Distance in centimeters along the input path from the real portion of
     // the modeled stroke to this input. Zero for inputs before the predicted
     // portion of the stroke.
-    SOURCE_PREDICTED_INPUT_DISTANCE_TRAVELED_IN_CENTIMETERS = 33;
+    SOURCE_PREDICTED_DISTANCE_TRAVELED_IN_CENTIMETERS = 33;
 
     // Absolute acceleration of the modeled stroke input pointer in centimeters
     // per second squared.
-    SOURCE_INPUT_ACCELERATION_IN_CENTIMETERS_PER_SECOND_SQUARED = 34;
+    SOURCE_ACCELERATION_IN_CENTIMETERS_PER_SECOND_SQUARED = 34;
 
     // Signed x component of the acceleration of the modeled stroke input
     // pointer in centimeters per second squared.
-    SOURCE_INPUT_ACCELERATION_X_IN_CENTIMETERS_PER_SECOND_SQUARED = 35;
+    SOURCE_ACCELERATION_X_IN_CENTIMETERS_PER_SECOND_SQUARED = 35;
 
     // Signed y component of the acceleration of the modeled stroke input
     // pointer in centimeters per second squared.
-    SOURCE_INPUT_ACCELERATION_Y_IN_CENTIMETERS_PER_SECOND_SQUARED = 36;
+    SOURCE_ACCELERATION_Y_IN_CENTIMETERS_PER_SECOND_SQUARED = 36;
 
     // Signed component of acceleration of the modeled stroke input pointer in
     // the direction of its velocity in centimeters per second squared.
-    SOURCE_INPUT_ACCELERATION_FORWARD_IN_CENTIMETERS_PER_SECOND_SQUARED = 37;
+    SOURCE_ACCELERATION_FORWARD_IN_CENTIMETERS_PER_SECOND_SQUARED = 37;
 
     // Signed component of acceleration of the modeled stroke input pointer
     // perpendicular to its velocity, rotated 90 degrees in the direction from
     // the positive x-axis towards the positive y-axis, in centimeters per
     // second squared.
-    SOURCE_INPUT_ACCELERATION_LATERAL_IN_CENTIMETERS_PER_SECOND_SQUARED = 38;
+    SOURCE_ACCELERATION_LATERAL_IN_CENTIMETERS_PER_SECOND_SQUARED = 38;
 
     // Distance from the current modeled input to the end of the stroke along
     // the input path, as a fraction of the current total length of the stroke.

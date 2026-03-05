@@ -73,20 +73,18 @@ bool IsValidBehaviorSource(BrushBehavior::Source source) {
         kAccelerationForwardInMultiplesOfBrushSizePerSecondSquared:
     case BrushBehavior::Source::
         kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared:
-    case BrushBehavior::Source::kInputSpeedInCentimetersPerSecond:
-    case BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond:
-    case BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond:
-    case BrushBehavior::Source::kInputDistanceTraveledInCentimeters:
-    case BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters:
-    case BrushBehavior::Source::kInputAccelerationInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kSpeedInCentimetersPerSecond:
+    case BrushBehavior::Source::kVelocityXInCentimetersPerSecond:
+    case BrushBehavior::Source::kVelocityYInCentimetersPerSecond:
+    case BrushBehavior::Source::kDistanceTraveledInCentimeters:
+    case BrushBehavior::Source::kPredictedDistanceTraveledInCentimeters:
+    case BrushBehavior::Source::kAccelerationInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kAccelerationXInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kAccelerationYInCentimetersPerSecondSquared:
     case BrushBehavior::Source::
-        kInputAccelerationXInCentimetersPerSecondSquared:
+        kAccelerationForwardInCentimetersPerSecondSquared:
     case BrushBehavior::Source::
-        kInputAccelerationYInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::
-        kInputAccelerationForwardInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::
-        kInputAccelerationLateralInCentimetersPerSecondSquared:
+        kAccelerationLateralInCentimetersPerSecondSquared:
     case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
       return true;
   }
@@ -134,20 +132,18 @@ absl::Status ValidateSourceAndOutOfRangeCombination(
         kAccelerationForwardInMultiplesOfBrushSizePerSecondSquared:
     case BrushBehavior::Source::
         kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared:
-    case BrushBehavior::Source::kInputSpeedInCentimetersPerSecond:
-    case BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond:
-    case BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond:
-    case BrushBehavior::Source::kInputDistanceTraveledInCentimeters:
-    case BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters:
-    case BrushBehavior::Source::kInputAccelerationInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kSpeedInCentimetersPerSecond:
+    case BrushBehavior::Source::kVelocityXInCentimetersPerSecond:
+    case BrushBehavior::Source::kVelocityYInCentimetersPerSecond:
+    case BrushBehavior::Source::kDistanceTraveledInCentimeters:
+    case BrushBehavior::Source::kPredictedDistanceTraveledInCentimeters:
+    case BrushBehavior::Source::kAccelerationInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kAccelerationXInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kAccelerationYInCentimetersPerSecondSquared:
     case BrushBehavior::Source::
-        kInputAccelerationXInCentimetersPerSecondSquared:
+        kAccelerationForwardInCentimetersPerSecondSquared:
     case BrushBehavior::Source::
-        kInputAccelerationYInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::
-        kInputAccelerationForwardInCentimetersPerSecondSquared:
-    case BrushBehavior::Source::
-        kInputAccelerationLateralInCentimetersPerSecondSquared:
+        kAccelerationLateralInCentimetersPerSecondSquared:
     case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
       break;
   }
@@ -518,30 +514,28 @@ std::string ToFormattedString(BrushBehavior::Source source) {
     case BrushBehavior::Source::
         kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared:
       return "kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared";
-    case BrushBehavior::Source::kInputSpeedInCentimetersPerSecond:
-      return "kInputSpeedInCentimetersPerSecond";
-    case BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond:
-      return "kInputVelocityXInCentimetersPerSecond";
-    case BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond:
-      return "kInputVelocityYInCentimetersPerSecond";
-    case BrushBehavior::Source::kInputDistanceTraveledInCentimeters:
-      return "kInputDistanceTraveledInCentimeters";
-    case BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters:
-      return "kPredictedInputDistanceTraveledInCentimeters";
-    case BrushBehavior::Source::kInputAccelerationInCentimetersPerSecondSquared:
-      return "kInputAccelerationInCentimetersPerSecondSquared";
+    case BrushBehavior::Source::kSpeedInCentimetersPerSecond:
+      return "kSpeedInCentimetersPerSecond";
+    case BrushBehavior::Source::kVelocityXInCentimetersPerSecond:
+      return "kVelocityXInCentimetersPerSecond";
+    case BrushBehavior::Source::kVelocityYInCentimetersPerSecond:
+      return "kVelocityYInCentimetersPerSecond";
+    case BrushBehavior::Source::kDistanceTraveledInCentimeters:
+      return "kDistanceTraveledInCentimeters";
+    case BrushBehavior::Source::kPredictedDistanceTraveledInCentimeters:
+      return "kPredictedDistanceTraveledInCentimeters";
+    case BrushBehavior::Source::kAccelerationInCentimetersPerSecondSquared:
+      return "kAccelerationInCentimetersPerSecondSquared";
+    case BrushBehavior::Source::kAccelerationXInCentimetersPerSecondSquared:
+      return "kAccelerationXInCentimetersPerSecondSquared";
+    case BrushBehavior::Source::kAccelerationYInCentimetersPerSecondSquared:
+      return "kAccelerationYInCentimetersPerSecondSquared";
     case BrushBehavior::Source::
-        kInputAccelerationXInCentimetersPerSecondSquared:
-      return "kInputAccelerationXInCentimetersPerSecondSquared";
+        kAccelerationForwardInCentimetersPerSecondSquared:
+      return "kAccelerationForwardInCentimetersPerSecondSquared";
     case BrushBehavior::Source::
-        kInputAccelerationYInCentimetersPerSecondSquared:
-      return "kInputAccelerationYInCentimetersPerSecondSquared";
-    case BrushBehavior::Source::
-        kInputAccelerationForwardInCentimetersPerSecondSquared:
-      return "kInputAccelerationForwardInCentimetersPerSecondSquared";
-    case BrushBehavior::Source::
-        kInputAccelerationLateralInCentimetersPerSecondSquared:
-      return "kInputAccelerationLateralInCentimetersPerSecondSquared";
+        kAccelerationLateralInCentimetersPerSecondSquared:
+      return "kAccelerationLateralInCentimetersPerSecondSquared";
     case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
       return "kDistanceRemainingAsFractionOfStrokeLength";
   }

@@ -542,9 +542,9 @@ TEST_F(ProcessBehaviorNodeTest,
   EXPECT_THAT(stack_, ElementsAre(0.5f));
 }
 
-TEST_F(ProcessBehaviorNodeTest, SourceNodeInputSpeedInCentimetersPerSecond) {
+TEST_F(ProcessBehaviorNodeTest, SourceNodeSpeedInCentimetersPerSecond) {
   BrushBehavior::SourceNode source_node = {
-      .source = BrushBehavior::Source::kInputSpeedInCentimetersPerSecond,
+      .source = BrushBehavior::Source::kSpeedInCentimetersPerSecond,
       .source_value_range = {0, 1},
   };
 
@@ -561,10 +561,9 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodeInputSpeedInCentimetersPerSecond) {
   EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
 }
 
-TEST_F(ProcessBehaviorNodeTest,
-       SourceNodeInputVelocityXInCentimetersPerSecond) {
+TEST_F(ProcessBehaviorNodeTest, SourceNodeVelocityXInCentimetersPerSecond) {
   BrushBehavior::SourceNode source_node = {
-      .source = BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond,
+      .source = BrushBehavior::Source::kVelocityXInCentimetersPerSecond,
       .source_value_range = {-1, 1},
   };
 
@@ -592,10 +591,9 @@ TEST_F(ProcessBehaviorNodeTest,
   EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
 }
 
-TEST_F(ProcessBehaviorNodeTest,
-       SourceNodeInputVelocityYInCentimetersPerSecond) {
+TEST_F(ProcessBehaviorNodeTest, SourceNodeVelocityYInCentimetersPerSecond) {
   BrushBehavior::SourceNode source_node = {
-      .source = BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond,
+      .source = BrushBehavior::Source::kVelocityYInCentimetersPerSecond,
       .source_value_range = {-1, 1},
   };
 
@@ -623,9 +621,9 @@ TEST_F(ProcessBehaviorNodeTest,
   EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
 }
 
-TEST_F(ProcessBehaviorNodeTest, SourceNodeInputDistanceTraveledInCentimeters) {
+TEST_F(ProcessBehaviorNodeTest, SourceNodeDistanceTraveledInCentimeters) {
   BrushBehavior::SourceNode source_node = {
-      .source = BrushBehavior::Source::kInputDistanceTraveledInCentimeters,
+      .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
       .source_value_range = {0, 10},
   };
 
@@ -643,10 +641,9 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodeInputDistanceTraveledInCentimeters) {
 }
 
 TEST_F(ProcessBehaviorNodeTest,
-       SourceNodePredictedInputDistanceTraveledInCentimeters) {
+       SourceNodePredictedDistanceTraveledInCentimeters) {
   BrushBehavior::SourceNode source_node = {
-      .source =
-          BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters,
+      .source = BrushBehavior::Source::kPredictedDistanceTraveledInCentimeters,
       .source_value_range = {0, 1},
   };
 
@@ -665,10 +662,10 @@ TEST_F(ProcessBehaviorNodeTest,
 }
 
 TEST_F(ProcessBehaviorNodeTest,
-       SourceNodeInputAccelerationInCentimetersPerSecondSquared) {
+       SourceNodeAccelerationInCentimetersPerSecondSquared) {
   BrushBehavior::SourceNode source_node = {
-      .source = BrushBehavior::Source::
-          kInputAccelerationInCentimetersPerSecondSquared,
+      .source =
+          BrushBehavior::Source::kAccelerationInCentimetersPerSecondSquared,
       .source_value_range = {0, 100},
   };
 
@@ -686,10 +683,10 @@ TEST_F(ProcessBehaviorNodeTest,
 }
 
 TEST_F(ProcessBehaviorNodeTest,
-       SourceNodeInputAccelerationXInCentimetersPerSecondSquared) {
+       SourceNodeAccelerationXInCentimetersPerSecondSquared) {
   BrushBehavior::SourceNode source_node = {
-      .source = BrushBehavior::Source::
-          kInputAccelerationXInCentimetersPerSecondSquared,
+      .source =
+          BrushBehavior::Source::kAccelerationXInCentimetersPerSecondSquared,
       .source_value_range = {0, 100},
   };
 
@@ -707,10 +704,10 @@ TEST_F(ProcessBehaviorNodeTest,
 }
 
 TEST_F(ProcessBehaviorNodeTest,
-       SourceNodeInputAccelerationYInCentimetersPerSecondSquared) {
+       SourceNodeAccelerationYInCentimetersPerSecondSquared) {
   BrushBehavior::SourceNode source_node = {
-      .source = BrushBehavior::Source::
-          kInputAccelerationYInCentimetersPerSecondSquared,
+      .source =
+          BrushBehavior::Source::kAccelerationYInCentimetersPerSecondSquared,
       .source_value_range = {0, -100},
   };
 
@@ -728,10 +725,10 @@ TEST_F(ProcessBehaviorNodeTest,
 }
 
 TEST_F(ProcessBehaviorNodeTest,
-       SourceNodeInputAccelerationForwardInCentimetersPerSecondSquared) {
+       SourceNodeAccelerationForwardInCentimetersPerSecondSquared) {
   BrushBehavior::SourceNode source_node = {
       .source = BrushBehavior::Source::
-          kInputAccelerationForwardInCentimetersPerSecondSquared,
+          kAccelerationForwardInCentimetersPerSecondSquared,
       .source_value_range = {0, 100},
   };
 
@@ -760,10 +757,10 @@ TEST_F(ProcessBehaviorNodeTest,
 }
 
 TEST_F(ProcessBehaviorNodeTest,
-       SourceNodeInputAccelerationLateralInCentimetersPerSecondSquared) {
+       SourceNodeAccelerationLateralInCentimetersPerSecondSquared) {
   BrushBehavior::SourceNode source_node = {
       .source = BrushBehavior::Source::
-          kInputAccelerationLateralInCentimetersPerSecondSquared,
+          kAccelerationLateralInCentimetersPerSecondSquared,
       .source_value_range = {-100, 100},
   };
 

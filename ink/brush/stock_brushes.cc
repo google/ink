@@ -129,21 +129,20 @@ BrushFamily PressurePen(const PressurePenVersion& version) {
               "Slightly increases the brush size when the input is moving "
               "mostly downwards (rather than sideways or upwards)."};
       BrushBehavior acceleration_damped_to_size_behavior = {
-          .nodes =
-              {SourceNode{
-                   .source = Source::
-                       kInputAccelerationLateralInCentimetersPerSecondSquared,
-                   .source_out_of_range_behavior = OutOfRange::kClamp,
-                   .source_value_range = {-80.0f, -230.0f},
-               },
-               DampingNode{
-                   .damping_source = ProgressDomain::kTimeInSeconds,
-                   .damping_gap = .025f,
-               },
-               TargetNode{
-                   .target = Target::kSizeMultiplier,
-                   .target_modifier_range = {1.0f, 1.25f},
-               }},
+          .nodes = {SourceNode{
+                        .source = Source::
+                            kAccelerationLateralInCentimetersPerSecondSquared,
+                        .source_out_of_range_behavior = OutOfRange::kClamp,
+                        .source_value_range = {-80.0f, -230.0f},
+                    },
+                    DampingNode{
+                        .damping_source = ProgressDomain::kTimeInSeconds,
+                        .damping_gap = .025f,
+                    },
+                    TargetNode{
+                        .target = Target::kSizeMultiplier,
+                        .target_modifier_range = {1.0f, 1.25f},
+                    }},
           .developer_comment =
               "Slightly increases the brush size for negative lateral "
               "acceleration. This tends to make the stroke thicker for "

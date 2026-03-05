@@ -105,39 +105,37 @@ TEST(BrushBehaviorTest, StringifySource) {
                 BrushBehavior::Source::
                     kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared),
             "kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::Source::kSpeedInCentimetersPerSecond),
+            "kSpeedInCentimetersPerSecond");
   EXPECT_EQ(
-      absl::StrCat(BrushBehavior::Source::kInputSpeedInCentimetersPerSecond),
-      "kInputSpeedInCentimetersPerSecond");
-  EXPECT_EQ(absl::StrCat(
-                BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond),
-            "kInputVelocityXInCentimetersPerSecond");
-  EXPECT_EQ(absl::StrCat(
-                BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond),
-            "kInputVelocityYInCentimetersPerSecond");
+      absl::StrCat(BrushBehavior::Source::kVelocityXInCentimetersPerSecond),
+      "kVelocityXInCentimetersPerSecond");
   EXPECT_EQ(
-      absl::StrCat(BrushBehavior::Source::kInputDistanceTraveledInCentimeters),
-      "kInputDistanceTraveledInCentimeters");
+      absl::StrCat(BrushBehavior::Source::kVelocityYInCentimetersPerSecond),
+      "kVelocityYInCentimetersPerSecond");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::Source::kDistanceTraveledInCentimeters),
+            "kDistanceTraveledInCentimeters");
+  EXPECT_EQ(absl::StrCat(
+                BrushBehavior::Source::kPredictedDistanceTraveledInCentimeters),
+            "kPredictedDistanceTraveledInCentimeters");
   EXPECT_EQ(
       absl::StrCat(
-          BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters),
-      "kPredictedInputDistanceTraveledInCentimeters");
-  EXPECT_EQ(absl::StrCat(BrushBehavior::Source::
-                             kInputAccelerationInCentimetersPerSecondSquared),
-            "kInputAccelerationInCentimetersPerSecondSquared");
-  EXPECT_EQ(absl::StrCat(BrushBehavior::Source::
-                             kInputAccelerationXInCentimetersPerSecondSquared),
-            "kInputAccelerationXInCentimetersPerSecondSquared");
-  EXPECT_EQ(absl::StrCat(BrushBehavior::Source::
-                             kInputAccelerationYInCentimetersPerSecondSquared),
-            "kInputAccelerationYInCentimetersPerSecondSquared");
+          BrushBehavior::Source::kAccelerationInCentimetersPerSecondSquared),
+      "kAccelerationInCentimetersPerSecondSquared");
   EXPECT_EQ(
-      absl::StrCat(BrushBehavior::Source::
-                       kInputAccelerationForwardInCentimetersPerSecondSquared),
-      "kInputAccelerationForwardInCentimetersPerSecondSquared");
+      absl::StrCat(
+          BrushBehavior::Source::kAccelerationXInCentimetersPerSecondSquared),
+      "kAccelerationXInCentimetersPerSecondSquared");
   EXPECT_EQ(
-      absl::StrCat(BrushBehavior::Source::
-                       kInputAccelerationLateralInCentimetersPerSecondSquared),
-      "kInputAccelerationLateralInCentimetersPerSecondSquared");
+      absl::StrCat(
+          BrushBehavior::Source::kAccelerationYInCentimetersPerSecondSquared),
+      "kAccelerationYInCentimetersPerSecondSquared");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::Source::
+                             kAccelerationForwardInCentimetersPerSecondSquared),
+            "kAccelerationForwardInCentimetersPerSecondSquared");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::Source::
+                             kAccelerationLateralInCentimetersPerSecondSquared),
+            "kAccelerationLateralInCentimetersPerSecondSquared");
   EXPECT_EQ(
       absl::StrCat(
           BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength),
@@ -256,11 +254,11 @@ TEST(BrushBehaviorTest, StringifySourceNode) {
       "SourceNode{source=kNormalizedPressure, source_value_range={0.5, 0.75}}");
   EXPECT_EQ(
       absl::StrCat(BrushBehavior::SourceNode{
-          .source = BrushBehavior::Source::kInputDistanceTraveledInCentimeters,
+          .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
           .source_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
           .source_value_range = {0, 1},
       }),
-      "SourceNode{source=kInputDistanceTraveledInCentimeters, "
+      "SourceNode{source=kDistanceTraveledInCentimeters, "
       "source_out_of_range_behavior=kRepeat, "
       "source_value_range={0, 1}}");
 }
@@ -676,7 +674,7 @@ TEST(BrushBehaviorTest, BrushBehaviorEqualAndNotEqual) {
 TEST(BrushBehaviorTest, ValidateSourceNode) {
   EXPECT_EQ(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
-          .source = BrushBehavior::Source::kInputDistanceTraveledInCentimeters,
+          .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
           .source_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
           .source_value_range = {0, 2},
       }),
@@ -692,7 +690,7 @@ TEST(BrushBehaviorTest, ValidateSourceNode) {
   EXPECT_THAT(status.message(), HasSubstr("non-enumerator value 123"));
 
   status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
-      .source = BrushBehavior::Source::kInputDistanceTraveledInCentimeters,
+      .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
       .source_out_of_range_behavior =
           static_cast<BrushBehavior::OutOfRange>(123),
       .source_value_range = {0, 2},
@@ -721,7 +719,7 @@ TEST(BrushBehaviorTest, ValidateSourceNode) {
                         "`source_out_of_range_behavior` of `kClamp`"));
 
   status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
-      .source = BrushBehavior::Source::kInputDistanceTraveledInCentimeters,
+      .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
       .source_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
       .source_value_range = {0, kInfinity},
   });
@@ -731,7 +729,7 @@ TEST(BrushBehaviorTest, ValidateSourceNode) {
       HasSubstr("source_value_range` must hold 2 finite and distinct values"));
 
   status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
-      .source = BrushBehavior::Source::kInputDistanceTraveledInCentimeters,
+      .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
       .source_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
       .source_value_range = {2, 2},
   });

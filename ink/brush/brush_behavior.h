@@ -217,38 +217,38 @@ struct BrushBehavior {
     kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared,
     // Absolute speed of the modeled stroke input pointer in centimeters per
     // second.
-    kInputSpeedInCentimetersPerSecond,
+    kSpeedInCentimetersPerSecond,
     // Signed x and y components of the modeled stroke input pointer velocity
     // in centimeters per second.
-    kInputVelocityXInCentimetersPerSecond,
-    kInputVelocityYInCentimetersPerSecond,
+    kVelocityXInCentimetersPerSecond,
+    kVelocityYInCentimetersPerSecond,
     // Distance in centimeters traveled by the modeled stroke input pointer
     // along the input path from the start of the stroke.
-    kInputDistanceTraveledInCentimeters,
+    kDistanceTraveledInCentimeters,
     // Distance in centimeters alonge the input path from the real portion of
     // the modeled stroke to this input. Zero for inputs before the predicted
     // portion of the stroke.
-    kPredictedInputDistanceTraveledInCentimeters,
+    kPredictedDistanceTraveledInCentimeters,
     // Absolute acceleration of the modeled stroke input pointer in centimeters
     // per second squared.
-    kInputAccelerationInCentimetersPerSecondSquared,
+    kAccelerationInCentimetersPerSecondSquared,
     // Signed x and y components of the acceleration of the modeled stroke input
     // pointer in centimeters per second squared.
-    kInputAccelerationXInCentimetersPerSecondSquared,
-    kInputAccelerationYInCentimetersPerSecondSquared,
+    kAccelerationXInCentimetersPerSecondSquared,
+    kAccelerationYInCentimetersPerSecondSquared,
     // Signed component of acceleration of the modeled stroke input pointer in
     // the direction of its velocity in centimeters per second squared.
-    kInputAccelerationForwardInCentimetersPerSecondSquared,
+    kAccelerationForwardInCentimetersPerSecondSquared,
     // Signed component of acceleration of the modeled stroke input pointer
     // perpendicular to its velocity, rotated 90 degrees in the direction from
     // the positive x-axis towards the positive y-axis, in centimeters per
     // second squared.
-    kInputAccelerationLateralInCentimetersPerSecondSquared,
+    kAccelerationLateralInCentimetersPerSecondSquared,
     // Distance from the current modeled input to the end of the stroke along
     // the input path, as a fraction of the current total length of the stroke.
     // This value changes for each input as inputs are added.
     kDistanceRemainingAsFractionOfStrokeLength,
-    // TODO: b/336565152 - Add kInputDistanceRemainingInCentimeters (this will
+    // TODO: b/336565152 - Add kDistanceRemainingInCentimeters (this will
     // require some refactoring for the code that calculates
     // BrushTipModeler::distance_remaining_behavior_upper_bound_).
   };

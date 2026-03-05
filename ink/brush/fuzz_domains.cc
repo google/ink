@@ -210,18 +210,16 @@ Domain<BrushBehavior::Source> ArbitraryBrushBehaviorSource() {
           kAccelerationForwardInMultiplesOfBrushSizePerSecondSquared,
       BrushBehavior::Source::
           kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared,
-      BrushBehavior::Source::kInputSpeedInCentimetersPerSecond,
-      BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond,
-      BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond,
-      BrushBehavior::Source::kInputDistanceTraveledInCentimeters,
-      BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters,
-      BrushBehavior::Source::kInputAccelerationInCentimetersPerSecondSquared,
-      BrushBehavior::Source::kInputAccelerationXInCentimetersPerSecondSquared,
-      BrushBehavior::Source::kInputAccelerationYInCentimetersPerSecondSquared,
-      BrushBehavior::Source::
-          kInputAccelerationForwardInCentimetersPerSecondSquared,
-      BrushBehavior::Source::
-          kInputAccelerationLateralInCentimetersPerSecondSquared,
+      BrushBehavior::Source::kSpeedInCentimetersPerSecond,
+      BrushBehavior::Source::kVelocityXInCentimetersPerSecond,
+      BrushBehavior::Source::kVelocityYInCentimetersPerSecond,
+      BrushBehavior::Source::kDistanceTraveledInCentimeters,
+      BrushBehavior::Source::kPredictedDistanceTraveledInCentimeters,
+      BrushBehavior::Source::kAccelerationInCentimetersPerSecondSquared,
+      BrushBehavior::Source::kAccelerationXInCentimetersPerSecondSquared,
+      BrushBehavior::Source::kAccelerationYInCentimetersPerSecondSquared,
+      BrushBehavior::Source::kAccelerationForwardInCentimetersPerSecondSquared,
+      BrushBehavior::Source::kAccelerationLateralInCentimetersPerSecondSquared,
       BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength,
   });
 }

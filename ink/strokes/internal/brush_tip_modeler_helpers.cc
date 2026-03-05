@@ -191,48 +191,46 @@ std::optional<float> GetSourceValue(
       return Vec::DotProduct(input.acceleration,
                              input.velocity.AsUnitVec().Orthogonal()) /
              brush_size;
-    case BrushBehavior::Source::kInputSpeedInCentimetersPerSecond:
+    case BrushBehavior::Source::kSpeedInCentimetersPerSecond:
       if (!input_modeler_state.stroke_unit_length.has_value()) break;
       return input.velocity.Magnitude() *
              input_modeler_state.stroke_unit_length->ToCentimeters();
-    case BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond:
+    case BrushBehavior::Source::kVelocityXInCentimetersPerSecond:
       if (!input_modeler_state.stroke_unit_length.has_value()) break;
       return input.velocity.x *
              input_modeler_state.stroke_unit_length->ToCentimeters();
-    case BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond:
+    case BrushBehavior::Source::kVelocityYInCentimetersPerSecond:
       if (!input_modeler_state.stroke_unit_length.has_value()) break;
       return input.velocity.y *
              input_modeler_state.stroke_unit_length->ToCentimeters();
-    case BrushBehavior::Source::kInputDistanceTraveledInCentimeters:
+    case BrushBehavior::Source::kDistanceTraveledInCentimeters:
       if (!input_modeler_state.stroke_unit_length.has_value()) break;
       return input.traveled_distance *
              input_modeler_state.stroke_unit_length->ToCentimeters();
-    case BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters:
+    case BrushBehavior::Source::kPredictedDistanceTraveledInCentimeters:
       if (!input_modeler_state.stroke_unit_length.has_value()) break;
       return GetPredictedDistanceTraveledInStrokeUnits(input_modeler_state,
                                                        input) *
              input_modeler_state.stroke_unit_length->ToCentimeters();
-    case BrushBehavior::Source::kInputAccelerationInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kAccelerationInCentimetersPerSecondSquared:
       if (!input_modeler_state.stroke_unit_length.has_value()) break;
       return input.acceleration.Magnitude() *
              input_modeler_state.stroke_unit_length->ToCentimeters();
-    case BrushBehavior::Source::
-        kInputAccelerationXInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kAccelerationXInCentimetersPerSecondSquared:
       if (!input_modeler_state.stroke_unit_length.has_value()) break;
       return input.acceleration.x *
              input_modeler_state.stroke_unit_length->ToCentimeters();
-    case BrushBehavior::Source::
-        kInputAccelerationYInCentimetersPerSecondSquared:
+    case BrushBehavior::Source::kAccelerationYInCentimetersPerSecondSquared:
       if (!input_modeler_state.stroke_unit_length.has_value()) break;
       return input.acceleration.y *
              input_modeler_state.stroke_unit_length->ToCentimeters();
     case BrushBehavior::Source::
-        kInputAccelerationForwardInCentimetersPerSecondSquared:
+        kAccelerationForwardInCentimetersPerSecondSquared:
       if (!input_modeler_state.stroke_unit_length.has_value()) break;
       return Vec::DotProduct(input.acceleration, input.velocity.AsUnitVec()) *
              input_modeler_state.stroke_unit_length->ToCentimeters();
     case BrushBehavior::Source::
-        kInputAccelerationLateralInCentimetersPerSecondSquared:
+        kAccelerationLateralInCentimetersPerSecondSquared:
       if (!input_modeler_state.stroke_unit_length.has_value()) break;
       return Vec::DotProduct(input.acceleration,
                              input.velocity.AsUnitVec().Orthogonal()) *

@@ -224,39 +224,34 @@ proto::BrushBehavior::Source EncodeBrushBehaviorSource(
         kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared:
       return proto::BrushBehavior::
           SOURCE_ACCELERATION_LATERAL_IN_MULTIPLES_OF_BRUSH_SIZE_PER_SECOND_SQUARED;
-    case BrushBehavior::Source::kInputSpeedInCentimetersPerSecond:
-      return proto::BrushBehavior::SOURCE_INPUT_SPEED_IN_CENTIMETERS_PER_SECOND;
-    case BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond:
+    case BrushBehavior::Source::kSpeedInCentimetersPerSecond:
+      return proto::BrushBehavior::SOURCE_SPEED_IN_CENTIMETERS_PER_SECOND;
+    case BrushBehavior::Source::kVelocityXInCentimetersPerSecond:
+      return proto::BrushBehavior::SOURCE_VELOCITY_X_IN_CENTIMETERS_PER_SECOND;
+    case BrushBehavior::Source::kVelocityYInCentimetersPerSecond:
+      return proto::BrushBehavior::SOURCE_VELOCITY_Y_IN_CENTIMETERS_PER_SECOND;
+    case BrushBehavior::Source::kDistanceTraveledInCentimeters:
+      return proto::BrushBehavior::SOURCE_DISTANCE_TRAVELED_IN_CENTIMETERS;
+    case BrushBehavior::Source::kPredictedDistanceTraveledInCentimeters:
       return proto::BrushBehavior::
-          SOURCE_INPUT_VELOCITY_X_IN_CENTIMETERS_PER_SECOND;
-    case BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond:
+          SOURCE_PREDICTED_DISTANCE_TRAVELED_IN_CENTIMETERS;
+    case BrushBehavior::Source::kAccelerationInCentimetersPerSecondSquared:
       return proto::BrushBehavior::
-          SOURCE_INPUT_VELOCITY_Y_IN_CENTIMETERS_PER_SECOND;
-    case BrushBehavior::Source::kInputDistanceTraveledInCentimeters:
+          SOURCE_ACCELERATION_IN_CENTIMETERS_PER_SECOND_SQUARED;
+    case BrushBehavior::Source::kAccelerationXInCentimetersPerSecondSquared:
       return proto::BrushBehavior::
-          SOURCE_INPUT_DISTANCE_TRAVELED_IN_CENTIMETERS;
-    case BrushBehavior::Source::kPredictedInputDistanceTraveledInCentimeters:
+          SOURCE_ACCELERATION_X_IN_CENTIMETERS_PER_SECOND_SQUARED;
+    case BrushBehavior::Source::kAccelerationYInCentimetersPerSecondSquared:
       return proto::BrushBehavior::
-          SOURCE_PREDICTED_INPUT_DISTANCE_TRAVELED_IN_CENTIMETERS;
-    case BrushBehavior::Source::kInputAccelerationInCentimetersPerSecondSquared:
-      return proto::BrushBehavior::
-          SOURCE_INPUT_ACCELERATION_IN_CENTIMETERS_PER_SECOND_SQUARED;
+          SOURCE_ACCELERATION_Y_IN_CENTIMETERS_PER_SECOND_SQUARED;
     case BrushBehavior::Source::
-        kInputAccelerationXInCentimetersPerSecondSquared:
+        kAccelerationForwardInCentimetersPerSecondSquared:
       return proto::BrushBehavior::
-          SOURCE_INPUT_ACCELERATION_X_IN_CENTIMETERS_PER_SECOND_SQUARED;
+          SOURCE_ACCELERATION_FORWARD_IN_CENTIMETERS_PER_SECOND_SQUARED;
     case BrushBehavior::Source::
-        kInputAccelerationYInCentimetersPerSecondSquared:
+        kAccelerationLateralInCentimetersPerSecondSquared:
       return proto::BrushBehavior::
-          SOURCE_INPUT_ACCELERATION_Y_IN_CENTIMETERS_PER_SECOND_SQUARED;
-    case BrushBehavior::Source::
-        kInputAccelerationForwardInCentimetersPerSecondSquared:
-      return proto::BrushBehavior::
-          SOURCE_INPUT_ACCELERATION_FORWARD_IN_CENTIMETERS_PER_SECOND_SQUARED;
-    case BrushBehavior::Source::
-        kInputAccelerationLateralInCentimetersPerSecondSquared:
-      return proto::BrushBehavior::
-          SOURCE_INPUT_ACCELERATION_LATERAL_IN_CENTIMETERS_PER_SECOND_SQUARED;
+          SOURCE_ACCELERATION_LATERAL_IN_CENTIMETERS_PER_SECOND_SQUARED;
     case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
       return proto::BrushBehavior::
           SOURCE_DISTANCE_REMAINING_AS_FRACTION_OF_STROKE_LENGTH;
@@ -352,40 +347,34 @@ absl::StatusOr<BrushBehavior::Source> DecodeBrushBehaviorSource(
         SOURCE_ACCELERATION_LATERAL_IN_MULTIPLES_OF_BRUSH_SIZE_PER_SECOND_SQUARED:
       return BrushBehavior::Source::
           kAccelerationLateralInMultiplesOfBrushSizePerSecondSquared;
-    case proto::BrushBehavior::SOURCE_INPUT_SPEED_IN_CENTIMETERS_PER_SECOND:
-      return BrushBehavior::Source::kInputSpeedInCentimetersPerSecond;
+    case proto::BrushBehavior::SOURCE_SPEED_IN_CENTIMETERS_PER_SECOND:
+      return BrushBehavior::Source::kSpeedInCentimetersPerSecond;
+    case proto::BrushBehavior::SOURCE_VELOCITY_X_IN_CENTIMETERS_PER_SECOND:
+      return BrushBehavior::Source::kVelocityXInCentimetersPerSecond;
+    case proto::BrushBehavior::SOURCE_VELOCITY_Y_IN_CENTIMETERS_PER_SECOND:
+      return BrushBehavior::Source::kVelocityYInCentimetersPerSecond;
+    case proto::BrushBehavior::SOURCE_DISTANCE_TRAVELED_IN_CENTIMETERS:
+      return BrushBehavior::Source::kDistanceTraveledInCentimeters;
     case proto::BrushBehavior::
-        SOURCE_INPUT_VELOCITY_X_IN_CENTIMETERS_PER_SECOND:
-      return BrushBehavior::Source::kInputVelocityXInCentimetersPerSecond;
+        SOURCE_PREDICTED_DISTANCE_TRAVELED_IN_CENTIMETERS:
+      return BrushBehavior::Source::kPredictedDistanceTraveledInCentimeters;
     case proto::BrushBehavior::
-        SOURCE_INPUT_VELOCITY_Y_IN_CENTIMETERS_PER_SECOND:
-      return BrushBehavior::Source::kInputVelocityYInCentimetersPerSecond;
-    case proto::BrushBehavior::SOURCE_INPUT_DISTANCE_TRAVELED_IN_CENTIMETERS:
-      return BrushBehavior::Source::kInputDistanceTraveledInCentimeters;
+        SOURCE_ACCELERATION_IN_CENTIMETERS_PER_SECOND_SQUARED:
+      return BrushBehavior::Source::kAccelerationInCentimetersPerSecondSquared;
     case proto::BrushBehavior::
-        SOURCE_PREDICTED_INPUT_DISTANCE_TRAVELED_IN_CENTIMETERS:
+        SOURCE_ACCELERATION_X_IN_CENTIMETERS_PER_SECOND_SQUARED:
+      return BrushBehavior::Source::kAccelerationXInCentimetersPerSecondSquared;
+    case proto::BrushBehavior::
+        SOURCE_ACCELERATION_Y_IN_CENTIMETERS_PER_SECOND_SQUARED:
+      return BrushBehavior::Source::kAccelerationYInCentimetersPerSecondSquared;
+    case proto::BrushBehavior::
+        SOURCE_ACCELERATION_FORWARD_IN_CENTIMETERS_PER_SECOND_SQUARED:
       return BrushBehavior::Source::
-          kPredictedInputDistanceTraveledInCentimeters;
+          kAccelerationForwardInCentimetersPerSecondSquared;
     case proto::BrushBehavior::
-        SOURCE_INPUT_ACCELERATION_IN_CENTIMETERS_PER_SECOND_SQUARED:
+        SOURCE_ACCELERATION_LATERAL_IN_CENTIMETERS_PER_SECOND_SQUARED:
       return BrushBehavior::Source::
-          kInputAccelerationInCentimetersPerSecondSquared;
-    case proto::BrushBehavior::
-        SOURCE_INPUT_ACCELERATION_X_IN_CENTIMETERS_PER_SECOND_SQUARED:
-      return BrushBehavior::Source::
-          kInputAccelerationXInCentimetersPerSecondSquared;
-    case proto::BrushBehavior::
-        SOURCE_INPUT_ACCELERATION_Y_IN_CENTIMETERS_PER_SECOND_SQUARED:
-      return BrushBehavior::Source::
-          kInputAccelerationYInCentimetersPerSecondSquared;
-    case proto::BrushBehavior::
-        SOURCE_INPUT_ACCELERATION_FORWARD_IN_CENTIMETERS_PER_SECOND_SQUARED:
-      return BrushBehavior::Source::
-          kInputAccelerationForwardInCentimetersPerSecondSquared;
-    case proto::BrushBehavior::
-        SOURCE_INPUT_ACCELERATION_LATERAL_IN_CENTIMETERS_PER_SECOND_SQUARED:
-      return BrushBehavior::Source::
-          kInputAccelerationLateralInCentimetersPerSecondSquared;
+          kAccelerationLateralInCentimetersPerSecondSquared;
     case proto::BrushBehavior::
         SOURCE_DISTANCE_REMAINING_AS_FRACTION_OF_STROKE_LENGTH:
       return BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength;
