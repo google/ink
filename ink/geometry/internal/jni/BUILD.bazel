@@ -39,16 +39,6 @@ cc_library(
 )
 
 cc_library(
-    name = "kmp",
-    tags = ["keep_dep"],
-    visibility = ["//ink:__subpackages__"],
-    deps = [
-        ":angle_native",
-    ],
-    alwayslink = 1,
-)
-
-cc_library(
     name = "angle_jni",
     srcs = ["angle_jni.cc"],
     tags = ["keep_dep"],
