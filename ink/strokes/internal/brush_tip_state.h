@@ -49,13 +49,9 @@ struct BrushTipState {
   // The saturation multiplier, in the range [0, 2], to apply to the brush color
   // at this tip position.
   float saturation_multiplier = 1.f;
-  // The luminosity shift, in the range [-1, 1], to apply to the brush color at
+  // The luminosity offset, in the range [-1, 1], to apply to the brush color at
   // this tip position.
-  //
-  // TODO: b/344839538 - Once we decide if per-vertex luminosity shift is going
-  // to become a multiplier or stay an additive offset, rename this to either
-  // `luminosity_multiplier` or `luminosity_offset`.
-  float luminosity_shift = 0.f;
+  float luminosity_offset = 0.f;
   // The opacity multiplier, in the range [0, 2], to apply to the brush color at
   // this tip position.
   float opacity_multiplier = 1.f;

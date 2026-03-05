@@ -429,7 +429,7 @@ void ExtrudeGeometry(const ExtrusionPoints& points,
   float opacity_shift = tip_state.opacity_multiplier - 1.f;
   std::array<float, 3> hsl_shift = {tip_state.hue_offset_in_full_turns,
                                     tip_state.saturation_multiplier - 1.f,
-                                    tip_state.luminosity_shift};
+                                    tip_state.luminosity_offset};
 
   AffineTransform position_to_particle_surface_uv =
       ComputeParticleSurfaceUvTransform(tip_state);

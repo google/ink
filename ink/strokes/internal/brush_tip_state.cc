@@ -34,7 +34,7 @@ BrushTipState BrushTipState::LerpShapeAttributes(const BrushTipState& a,
       .pinch = Lerp(a.pinch, b.pinch, t),
       .hue_offset_in_full_turns = b.hue_offset_in_full_turns,
       .saturation_multiplier = b.saturation_multiplier,
-      .luminosity_shift = b.luminosity_shift,
+      .luminosity_offset = b.luminosity_offset,
       .opacity_multiplier = b.opacity_multiplier,
   };
 }

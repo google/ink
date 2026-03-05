@@ -41,7 +41,7 @@ bool BrushTipUsesColorShift(const BrushTip& tip) {
         switch (output->target) {
           case BrushBehavior::Target::kHueOffsetInRadians:
           case BrushBehavior::Target::kSaturationMultiplier:
-          case BrushBehavior::Target::kLuminosity:
+          case BrushBehavior::Target::kLuminosityOffset:
             return true;
           default:
             break;

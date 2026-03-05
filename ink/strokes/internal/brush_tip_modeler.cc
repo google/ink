@@ -95,7 +95,7 @@ float InitialTargetModifierValue(BrushBehavior::Target target) {
     case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
     case BrushBehavior::Target::kTextureAnimationProgressOffset:
     case BrushBehavior::Target::kHueOffsetInRadians:
-    case BrushBehavior::Target::kLuminosity:
+    case BrushBehavior::Target::kLuminosityOffset:
       return 0.f;
   }
   ABSL_LOG(FATAL)

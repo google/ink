@@ -323,7 +323,7 @@ BrushCoat MiniEmojiCoat(
                 },
                 ConstantNode{.value = 0.0f},
                 TargetNode{
-                    .target = Target::kLuminosity,
+                    .target = Target::kLuminosityOffset,
                     .target_modifier_range = {luminosity_range_start,
                                               luminosity_range_end},
                 }},

@@ -181,7 +181,8 @@ TEST(BrushBehaviorTest, StringifyTarget) {
             "kHueOffsetInRadians");
   EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kSaturationMultiplier),
             "kSaturationMultiplier");
-  EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kLuminosity), "kLuminosity");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kLuminosityOffset),
+            "kLuminosityOffset");
   EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kOpacityMultiplier),
             "kOpacityMultiplier");
   EXPECT_EQ(absl::StrCat(static_cast<BrushBehavior::Target>(91)), "Target(91)");

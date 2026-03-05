@@ -101,7 +101,7 @@ TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithColorShift) {
   constexpr BrushBehavior::Target kColorShiftTargets[] = {
       BrushBehavior::Target::kHueOffsetInRadians,
       BrushBehavior::Target::kSaturationMultiplier,
-      BrushBehavior::Target::kLuminosity,
+      BrushBehavior::Target::kLuminosityOffset,
   };
   for (BrushBehavior::Target target : kColorShiftTargets) {
     BrushTip tip = {

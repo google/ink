@@ -306,9 +306,6 @@ struct BrushBehavior {
     // The following are targets for tip color adjustments, including opacity.
     // Renderers can apply them to the brush color when a stroke is drawn to
     // contribute to the local color of each part of the stroke.
-    //
-    // TODO: b/344839538 - Rename and re-document kLuminosity once we decide how
-    // that target should stack.
 
     // Shifts the hue of the base brush color.  A positive offset shifts around
     // the hue wheel from red towards orange, while a negative offset shifts the
@@ -320,9 +317,11 @@ struct BrushBehavior {
     // have one of these targets, they stack multiplicatively.  The final
     // saturation multiplier is clamped to [0, 2].
     kSaturationMultiplier,
-    // Target the luminosity of the color. An offset of +/-100% corresponds to
-    // changing the luminosity by up to +/-100%.
-    kLuminosity,
+    // Shifts the luminosity of the base brush color. An offset of ±1.0
+    // corresponds to changing the luminosity by up to ±100%. If multiple
+    // behaviors have this target, they stack additively.  The final luminosity
+    // offset is clamped to [-1, 1].
+    kLuminosityOffset,
     // Scales the opacity of the base brush color.  If multiple behaviors have
     // one of these targets, they stack multiplicatively.  The final opacity
     // multiplier is clamped to [0, 2].

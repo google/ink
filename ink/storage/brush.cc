@@ -435,8 +435,8 @@ proto::BrushBehavior::Target EncodeBrushBehaviorTarget(
       return proto::BrushBehavior::TARGET_HUE_OFFSET_IN_RADIANS;
     case BrushBehavior::Target::kSaturationMultiplier:
       return proto::BrushBehavior::TARGET_SATURATION_MULTIPLIER;
-    case BrushBehavior::Target::kLuminosity:
-      return proto::BrushBehavior::TARGET_LUMINOSITY;
+    case BrushBehavior::Target::kLuminosityOffset:
+      return proto::BrushBehavior::TARGET_LUMINOSITY_OFFSET;
     case BrushBehavior::Target::kOpacityMultiplier:
       return proto::BrushBehavior::TARGET_OPACITY_MULTIPLIER;
   }
@@ -464,8 +464,8 @@ absl::StatusOr<BrushBehavior::Target> DecodeBrushBehaviorTarget(
       return BrushBehavior::Target::kHueOffsetInRadians;
     case proto::BrushBehavior::TARGET_SATURATION_MULTIPLIER:
       return BrushBehavior::Target::kSaturationMultiplier;
-    case proto::BrushBehavior::TARGET_LUMINOSITY:
-      return BrushBehavior::Target::kLuminosity;
+    case proto::BrushBehavior::TARGET_LUMINOSITY_OFFSET:
+      return BrushBehavior::Target::kLuminosityOffset;
     case proto::BrushBehavior::TARGET_OPACITY_MULTIPLIER:
       return BrushBehavior::Target::kOpacityMultiplier;
     case proto::BrushBehavior::

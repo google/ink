@@ -245,7 +245,7 @@ Domain<BrushBehavior::Target> ArbitraryBrushBehaviorTarget(
       BrushBehavior::Target::kTextureAnimationProgressOffset,
       BrushBehavior::Target::kHueOffsetInRadians,
       BrushBehavior::Target::kSaturationMultiplier,
-      BrushBehavior::Target::kLuminosity,
+      BrushBehavior::Target::kLuminosityOffset,
       BrushBehavior::Target::kOpacityMultiplier,
   };
   if (variant == DomainVariant::kValidAndSerializable) {

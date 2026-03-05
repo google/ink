@@ -35,7 +35,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesAtZero) {
                   .pinch = 0.2,
                   .hue_offset_in_full_turns = 0.5,
                   .saturation_multiplier = 1.1,
-                  .luminosity_shift = 0.2,
+                  .luminosity_offset = 0.2,
                   .opacity_multiplier = 1.7};
   BrushTipState b{.position = {5, 4},
                   .width = 3,
@@ -46,7 +46,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesAtZero) {
                   .pinch = 0.7,
                   .hue_offset_in_full_turns = 0.1,
                   .saturation_multiplier = 1.6,
-                  .luminosity_shift = 0.5,
+                  .luminosity_offset = 0.5,
                   .opacity_multiplier = 1.4};
   // Recall that only `width`. `height`, `corner_rounding`, `rotation`, and
   // `slant` are interpolated; the rest are copied from `b`.
@@ -61,7 +61,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesAtZero) {
                        .pinch = a.pinch,
                        .hue_offset_in_full_turns = b.hue_offset_in_full_turns,
                        .saturation_multiplier = b.saturation_multiplier,
-                       .luminosity_shift = b.luminosity_shift,
+                       .luminosity_offset = b.luminosity_offset,
                        .opacity_multiplier = b.opacity_multiplier}));
 }
 
@@ -75,7 +75,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesAtOne) {
                   .pinch = 0.2,
                   .hue_offset_in_full_turns = 0.5,
                   .saturation_multiplier = 1.1,
-                  .luminosity_shift = 0.2,
+                  .luminosity_offset = 0.2,
                   .opacity_multiplier = 1.7};
   BrushTipState b{.position = {5, 4},
                   .width = 3,
@@ -86,7 +86,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesAtOne) {
                   .pinch = 0.7,
                   .hue_offset_in_full_turns = 0.1,
                   .saturation_multiplier = 1.6,
-                  .luminosity_shift = 0.5,
+                  .luminosity_offset = 0.5,
                   .opacity_multiplier = 1.4};
   EXPECT_THAT(BrushTipState::LerpShapeAttributes(a, b, 1), BrushTipStateEq(b));
 }
@@ -101,7 +101,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesBetweenZeroAndOne) {
                   .pinch = 0.2,
                   .hue_offset_in_full_turns = 0.5,
                   .saturation_multiplier = 1.1,
-                  .luminosity_shift = 0.2,
+                  .luminosity_offset = 0.2,
                   .opacity_multiplier = 1.7};
   BrushTipState b{.position = {5, 4},
                   .width = 3,
@@ -112,7 +112,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesBetweenZeroAndOne) {
                   .pinch = 0.7,
                   .hue_offset_in_full_turns = 0.1,
                   .saturation_multiplier = 1.6,
-                  .luminosity_shift = 0.5,
+                  .luminosity_offset = 0.5,
                   .opacity_multiplier = 1.4};
   // Recall that only `width`. `height`, `corner_rounding`, `rotation`, and
   // `slant` are interpolated; the rest are copied from `b`.
@@ -127,7 +127,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesBetweenZeroAndOne) {
                        .pinch = 0.45,
                        .hue_offset_in_full_turns = b.hue_offset_in_full_turns,
                        .saturation_multiplier = b.saturation_multiplier,
-                       .luminosity_shift = b.luminosity_shift,
+                       .luminosity_offset = b.luminosity_offset,
                        .opacity_multiplier = b.opacity_multiplier}));
 }
 
@@ -141,7 +141,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesLessThanZero) {
                   .pinch = 0.2,
                   .hue_offset_in_full_turns = 0.5,
                   .saturation_multiplier = 1.1,
-                  .luminosity_shift = 0.2,
+                  .luminosity_offset = 0.2,
                   .opacity_multiplier = 1.7};
   BrushTipState b{.position = {5, 4},
                   .width = 3,
@@ -152,7 +152,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesLessThanZero) {
                   .pinch = 0.7,
                   .hue_offset_in_full_turns = 0.1,
                   .saturation_multiplier = 1.6,
-                  .luminosity_shift = 0.5,
+                  .luminosity_offset = 0.5,
                   .opacity_multiplier = 1.4};
   // Recall that only `width`. `height`, `corner_rounding`, `rotation`, and
   // `slant` are interpolated; the rest are copied from `b`.
@@ -167,7 +167,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesLessThanZero) {
                        .pinch = -0.8,
                        .hue_offset_in_full_turns = b.hue_offset_in_full_turns,
                        .saturation_multiplier = b.saturation_multiplier,
-                       .luminosity_shift = b.luminosity_shift,
+                       .luminosity_offset = b.luminosity_offset,
                        .opacity_multiplier = b.opacity_multiplier}));
 }
 
@@ -181,7 +181,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesGreaterThanOne) {
                   .pinch = 0.2,
                   .hue_offset_in_full_turns = 0.5,
                   .saturation_multiplier = 1.1,
-                  .luminosity_shift = 0.2,
+                  .luminosity_offset = 0.2,
                   .opacity_multiplier = 1.7};
   BrushTipState b{.position = {5, 4},
                   .width = 3,
@@ -192,7 +192,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesGreaterThanOne) {
                   .pinch = 0.7,
                   .hue_offset_in_full_turns = 0.1,
                   .saturation_multiplier = 1.6,
-                  .luminosity_shift = 0.5,
+                  .luminosity_offset = 0.5,
                   .opacity_multiplier = 1.4};
   // Recall that only `width`. `height`, `corner_rounding`, `rotation`, and
   // `slant` are interpolated; the rest are copied from `b`.
@@ -207,7 +207,7 @@ TEST(BrushTipStateTest, LerpShapeAttributesGreaterThanOne) {
                        .pinch = 1.2,
                        .hue_offset_in_full_turns = b.hue_offset_in_full_turns,
                        .saturation_multiplier = b.saturation_multiplier,
-                       .luminosity_shift = b.luminosity_shift,
+                       .luminosity_offset = b.luminosity_offset,
                        .opacity_multiplier = b.opacity_multiplier}));
 }
 

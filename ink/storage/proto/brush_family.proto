@@ -831,13 +831,15 @@ message BrushBehavior {
     // each part of the stroke.
     TARGET_SATURATION_MULTIPLIER = 9;
 
-    // Target the luminosity of the color. An offset of +/-100% corresponds to
-    // changing the luminosity by up to +/-100%.
+    // Shifts the luminosity of the base brush color. An offset of ±1.0
+    // corresponds to changing the luminosity by up to ±100%. If multiple
+    // behaviors have this target, they stack additively.  The final luminosity
+    // offset is clamped to [-1, 1].
     //
     // This target is for tip color adjustments. Renderers can apply it to the
     // brush color when a stroke is drawn to contribute to the local color of
     // each part of the stroke.
-    TARGET_LUMINOSITY = 10;
+    TARGET_LUMINOSITY_OFFSET = 10;
 
     // Scales the opacity of the base brush color.  If multiple behaviors have
     // one of these targets, they stack multiplicatively.  The final opacity

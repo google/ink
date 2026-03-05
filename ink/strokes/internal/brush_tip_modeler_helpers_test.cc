@@ -1753,19 +1753,20 @@ TEST(CreateTipStateTest, WithBehaviorTargetingLuminosity) {
   BrushTip brush_tip = MakeBaseBrushTip();
   float brush_size = 2.5f;
   float luminosity_offset = 0.3;
-  BrushTipState state =
-      CreateTipState({0, 0}, Vec(), brush_tip, brush_size,
-                     {BrushBehavior::Target::kLuminosity}, {luminosity_offset});
+  BrushTipState state = CreateTipState(
+      {0, 0}, Vec(), brush_tip, brush_size,
+      {BrushBehavior::Target::kLuminosityOffset}, {luminosity_offset});
 
-  EXPECT_FLOAT_EQ(state.luminosity_shift, luminosity_offset);
+  EXPECT_FLOAT_EQ(state.luminosity_offset, luminosity_offset);
   EXPECT_FLOAT_EQ(state.width, brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height, brush_tip.scale.y * brush_size);
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
   float clamp_offset = 2.f;
   state = CreateTipState({0, 0}, Vec(), brush_tip, brush_size,
-                         {BrushBehavior::Target::kLuminosity}, {clamp_offset});
-  EXPECT_FLOAT_EQ(state.luminosity_shift, 1.f);
+                         {BrushBehavior::Target::kLuminosityOffset},
+                         {clamp_offset});
+  EXPECT_FLOAT_EQ(state.luminosity_offset, 1.f);
 }
 
 TEST(CreateTipStateTest, WithBehaviorTargetingOpacity) {

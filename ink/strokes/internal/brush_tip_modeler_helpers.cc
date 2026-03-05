@@ -677,7 +677,7 @@ struct BrushTipStateModifiers {
   float texture_animation_progress_offset = 0;  // always in range [0, 1)
   Angle hue_offset;  // always in range [0, 2π) radians
   float saturation_multiplier = 1;
-  float luminosity = 0;
+  float luminosity_offset = 0;
   float opacity_multiplier = 1;
 };
 
@@ -760,8 +760,8 @@ void ApplyModifierToTarget(float modifier, BrushBehavior::Target target,
       tip_state_modifiers.saturation_multiplier =
           NanSafeMultiply(tip_state_modifiers.saturation_multiplier, modifier);
       break;
-    case BrushBehavior::Target::kLuminosity:
-      tip_state_modifiers.luminosity += modifier;
+    case BrushBehavior::Target::kLuminosityOffset:
+      tip_state_modifiers.luminosity_offset += modifier;
       break;
     case BrushBehavior::Target::kOpacityMultiplier:
       tip_state_modifiers.opacity_multiplier =
@@ -811,8 +811,9 @@ void ApplyModifiersToTipState(const BrushTipStateModifiers& modifiers,
     tip_state.saturation_multiplier =
         std::clamp(modifiers.saturation_multiplier, 0.f, 2.f);
   }
-  if (modifiers.luminosity != 0) {
-    tip_state.luminosity_shift = std::clamp(modifiers.luminosity, -1.f, 1.f);
+  if (modifiers.luminosity_offset != 0) {
+    tip_state.luminosity_offset =
+        std::clamp(modifiers.luminosity_offset, -1.f, 1.f);
   }
   if (modifiers.opacity_multiplier != 1) {
     tip_state.opacity_multiplier = std::clamp(

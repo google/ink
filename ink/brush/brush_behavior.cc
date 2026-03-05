@@ -170,7 +170,7 @@ bool IsValidBehaviorTarget(BrushBehavior::Target target) {
     case BrushBehavior::Target::kTextureAnimationProgressOffset:
     case BrushBehavior::Target::kHueOffsetInRadians:
     case BrushBehavior::Target::kSaturationMultiplier:
-    case BrushBehavior::Target::kLuminosity:
+    case BrushBehavior::Target::kLuminosityOffset:
     case BrushBehavior::Target::kOpacityMultiplier:
       return true;
   }
@@ -578,8 +578,8 @@ std::string ToFormattedString(BrushBehavior::Target target) {
       return "kHueOffsetInRadians";
     case BrushBehavior::Target::kSaturationMultiplier:
       return "kSaturationMultiplier";
-    case BrushBehavior::Target::kLuminosity:
-      return "kLuminosity";
+    case BrushBehavior::Target::kLuminosityOffset:
+      return "kLuminosityOffset";
     case BrushBehavior::Target::kOpacityMultiplier:
       return "kOpacityMultiplier";
   }
