@@ -75,7 +75,7 @@ Brush CreateRectangularTestBrush() {
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
                            .blend_mode = BrushPaint::BlendMode::kSrcIn}}},
-      BrushFamily::SpringModel{},
+      BrushFamily::DefaultInputModel(),
       {.client_brush_family_id =
            "//test/brush-family:awesome-rectangular-brush"});
   ABSL_CHECK_OK(family);
@@ -98,7 +98,7 @@ Brush CreateCircularTestBrush() {
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
                            .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
-      BrushFamily::SpringModel{},
+      BrushFamily::DefaultInputModel(),
       {.client_brush_family_id = "//test/brush-family:awesome-circular-brush"});
   ABSL_CHECK_OK(family);
   Color color;
@@ -398,7 +398,7 @@ TEST(InProgressStrokeTest, NonEmptyInputs) {
   EXPECT_THAT(stroke.GetCoatOutlines(0), ElementsAre(Not(IsEmpty())));
   EXPECT_THAT(stroke.GetUpdatedRegion().AsRect(),
               Optional(RectNear(
-                  Rect::FromTwoPoints({-0.88, 0.13}, {4.90, 5.87}), 0.01)));
+                  Rect::FromTwoPoints({-0.875, 0.125}, {4.875, 5.875}), 0.01)));
 
   absl::StatusOr<StrokeInputBatch> real_inputs_1 = StrokeInputBatch::Create(
       {{.position = {3, 0}, .elapsed_time = Duration32::Seconds(0.2)}});
@@ -507,9 +507,10 @@ TEST(InProgressStrokeTest, ExtendWithEmptyPredictedButNonEmptyReal) {
                    0.0001));
 
   EXPECT_THAT(stroke.GetCoatOutlines(0), ElementsAre(Not(IsEmpty())));
-  EXPECT_THAT(stroke.GetUpdatedRegion().AsRect(),
-              Optional(RectNear(
-                  Rect::FromTwoPoints({-0.88, -1.87}, {4.90, 3.88}), 0.01)));
+  EXPECT_THAT(
+      stroke.GetUpdatedRegion().AsRect(),
+      Optional(RectNear(Rect::FromTwoPoints({-0.875, -1.875}, {4.875, 3.875}),
+                        0.01)));
 }
 
 TEST(InProgressStrokeTest, EnqueueInputsWithDifferentToolTypes) {
@@ -827,9 +828,9 @@ TEST(InProgressStrokeTest, CopyToStroke) {
   EXPECT_THAT(finished_stroke.GetInputs(),
               StrokeInputBatchEq(all_original_inputs));
   EXPECT_EQ(finished_stroke.GetShape().Meshes().size(), 1u);
-  EXPECT_THAT(
-      finished_stroke.GetShape().Bounds(),
-      EnvelopeNear(Rect::FromTwoPoints({-0.88, -1.87}, {4.89, 3.88}), 0.01));
+  EXPECT_THAT(finished_stroke.GetShape().Bounds(),
+              EnvelopeNear(
+                  Rect::FromTwoPoints({-0.875, -1.875}, {4.875, 3.875}), 0.01));
 
   Stroke another_finished_stroke = stroke.CopyToStroke();
 
@@ -851,9 +852,9 @@ TEST(InProgressStrokeTest, CopyToStroke) {
   EXPECT_THAT(finished_stroke.GetInputs(),
               StrokeInputBatchEq(all_original_inputs));
   EXPECT_EQ(finished_stroke.GetShape().Meshes().size(), 1u);
-  EXPECT_THAT(
-      finished_stroke.GetShape().Bounds(),
-      EnvelopeNear(Rect::FromTwoPoints({-0.88, -1.87}, {4.89, 3.88}), 0.01));
+  EXPECT_THAT(finished_stroke.GetShape().Bounds(),
+              EnvelopeNear(
+                  Rect::FromTwoPoints({-0.875, -1.875}, {4.875, 3.875}), 0.01));
 }
 
 TEST(InProgressStrokeTest, CopyToStrokeOmitUnneededAttributes) {

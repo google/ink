@@ -27,17 +27,10 @@
 #include "ink/strokes/internal/stroke_input_modeler/input_model_impl.h"
 #include "ink/strokes/internal/stroke_input_modeler/naive_input_modeler.h"
 #include "ink/strokes/internal/stroke_input_modeler/sliding_window_input_modeler.h"
-#include "ink/strokes/internal/stroke_input_modeler/spring_based_input_modeler.h"
 #include "ink/types/duration.h"
 
 namespace ink::strokes_internal {
 namespace {
-
-absl_nonnull std::unique_ptr<InputModelImpl> CreateInputModeler(
-    const BrushFamily::SpringModel& spring_model, float brush_epsilon) {
-  return std::make_unique<SpringBasedInputModeler>(
-      SpringBasedInputModeler::Version::kSpringModel, brush_epsilon);
-}
 
 absl_nonnull std::unique_ptr<InputModelImpl> CreateInputModeler(
     const BrushFamily::ExperimentalNaiveModel& naive_model,

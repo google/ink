@@ -29,11 +29,10 @@ namespace {
 using ::benchmark::internal::Benchmark;
 
 // LINT.IfChange(input_model_types)
-const std::array<absl::string_view, 3> input_model_names = {
-    "SpringModel", "NaiveModel", "SlidingWindowModel"};
-const std::array<BrushFamily::InputModel, 3> input_models = {
-    BrushFamily::SpringModel{}, BrushFamily::ExperimentalNaiveModel{},
-    BrushFamily::SlidingWindowModel{}};
+const std::array<absl::string_view, 2> input_model_names = {
+    "NaiveModel", "SlidingWindowModel"};
+const std::array<BrushFamily::InputModel, 2> input_models = {
+    BrushFamily::ExperimentalNaiveModel{}, BrushFamily::SlidingWindowModel{}};
 // LINT.ThenChange(../../brush/brush_family.h:input_model_types)
 
 void TestCases(Benchmark* b) {
