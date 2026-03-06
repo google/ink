@@ -14,8 +14,6 @@
 
 #include "ink/strokes/internal/modeled_stroke_input.h"
 
-#include <limits>
-
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ink/geometry/angle.h"
@@ -26,8 +24,6 @@
 
 namespace ink::strokes_internal {
 namespace {
-
-constexpr float kFloatMax = std::numeric_limits<float>::max();
 
 TEST(ModeledStrokeInputLerpTest, ZeroT) {
   ModeledStrokeInput a = {.position = {0, 0},
