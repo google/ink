@@ -629,9 +629,8 @@ Domain<BrushPaint::BlendMode> ArbitraryBrushPaintBlendMode() {
 // LINT.ThenChange(brush_paint.h:blend_mode)
 
 Domain<BrushPaint::TextureLayer>
-ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
-    BrushPaint::TextureMapping mapping, int animation_frames,
-    int animation_rows, int animation_columns,
+ValidBrushPaintTextureLayerWithAnimationParameters(
+    int animation_frames, int animation_rows, int animation_columns,
     absl::Duration animation_duration, DomainVariant variant) {
   auto texture_layer = [=](Vec size) {
     auto animation_frames_domain = Just(animation_frames);
@@ -645,7 +644,7 @@ ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
       animation_duration_domain = Just(absl::Seconds(1));
     }
     return StructOf<BrushPaint::TextureLayer>(
-        Arbitrary<std::string>(), Just(mapping),
+        Arbitrary<std::string>(), ArbitraryBrushPaintTextureMapping(),
         ArbitraryBrushPaintTextureOrigin(),
         ArbitraryBrushPaintTextureSizeUnit(), ArbitraryBrushPaintTextureWrap(),
         ArbitraryBrushPaintTextureWrap(), Just(size),
@@ -670,22 +669,18 @@ Domain<BrushPaint::SelfOverlap> ArbitraryBrushPaintSelfOverlap() {
 
 Domain<BrushPaint> ValidBrushPaint(DomainVariant variant) {
   return FlatMap(
-      [=](BrushPaint::TextureMapping mapping,
-          std::tuple<int, int, int> animation_frames_rows_columns,
+      [=](std::tuple<int, int, int> animation_frames_rows_columns,
           absl::Duration animation_duration) {
         return std::apply(
             [&](int frames, int rows, int columns) {
               return fuzztest::StructOf<BrushPaint>(
-                  VectorOf(
-                      ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
-                          mapping, frames, rows, columns, animation_duration,
-                          variant)),
+                  VectorOf(ValidBrushPaintTextureLayerWithAnimationParameters(
+                      frames, rows, columns, animation_duration, variant)),
                   VectorOf(ValidColorFunction()),
                   ArbitraryBrushPaintSelfOverlap());
             },
             animation_frames_rows_columns);
       },
-      ArbitraryBrushPaintTextureMapping(),
       FlatMap(
           [](int rows, int columns) {
             return TupleOf(InRange<int>(1, rows * columns), Just(rows),
