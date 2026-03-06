@@ -70,6 +70,7 @@ git_repository(
 bazel_dep(name = "protobuf", version = "31.1")
 bazel_dep(name = "rules_android", version = "0.6.0")
 bazel_dep(name = "rules_jni", version = "0.11.1")
+bazel_dep(name = "rules_proto", version = "7.1.0")
 
 git_repository(
     name = "skia",
