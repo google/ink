@@ -196,7 +196,6 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
     int first_animation_columns = paint.texture_layers[0].animation_columns;
     absl::Duration first_animation_duration =
         paint.texture_layers[0].animation_duration;
-    BrushPaint::TextureMapping first_mapping = paint.texture_layers[0].mapping;
     for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
       if (layer.animation_frames != first_animation_frames) {
         return absl::InvalidArgumentError(absl::StrCat(
@@ -222,14 +221,6 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
             "for all texture layers. Got `",
             first_animation_duration, "` and `", layer.animation_duration,
             "`"));
-      }
-      // TODO: b/375203215 - Remove the below check once we are able to mix
-      // rendering different mapping modes in a single `BrushPaint`.
-      if (layer.mapping != first_mapping) {
-        return absl::InvalidArgumentError(
-            absl::StrCat("`BrushPaint::TextureLayer::mapping` must be the same "
-                         "for all texture layers. Got `",
-                         first_mapping, "` and `", layer.mapping, "`"));
       }
     }
   }
