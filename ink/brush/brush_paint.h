@@ -15,7 +15,7 @@
 #ifndef INK_STROKES_BRUSH_BRUSH_PAINT_H_
 #define INK_STROKES_BRUSH_BRUSH_PAINT_H_
 
-#include <optional>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -312,6 +312,10 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint);
 // used in a `BrushPaint`, and returns an error if not.
 absl::Status ValidateBrushPaintTextureLayer(
     const BrushPaint::TextureLayer& layer);
+
+// Calculates the minimum version of the Ink library that is required to use
+// this brush paint.
+int32_t CalculateMinimumRequiredVersion(const BrushPaint& paint);
 
 // Adds the mesh attribute IDs that are required to properly render a mesh
 // with this brush paint to the given `attribute_ids` set. Note that other

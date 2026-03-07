@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <variant>
 
@@ -141,6 +142,58 @@ absl::Status ValidateEasingFunction(const EasingFunction& easing_function) {
   return std::visit(
       [](auto&& params) { return ValidateEasingFunctionParameters(params); },
       easing_function.parameters);
+}
+
+namespace {
+
+int32_t CalculateMinimumRequiredVersion(
+    const EasingFunction::Predefined predefined) {
+  switch (predefined) {
+    case EasingFunction::Predefined::kLinear:
+    case EasingFunction::Predefined::kEase:
+    case EasingFunction::Predefined::kEaseIn:
+    case EasingFunction::Predefined::kEaseOut:
+    case EasingFunction::Predefined::kEaseInOut:
+    case EasingFunction::Predefined::kStepStart:
+    case EasingFunction::Predefined::kStepEnd:
+      return 0;
+  }
+}
+
+int32_t CalculateMinimumRequiredVersion(
+    const EasingFunction::CubicBezier& cubic_bezier) {
+  return 0;
+}
+
+int32_t CalculateMinimumRequiredVersion(const EasingFunction::Linear& linear) {
+  return 0;
+}
+
+int32_t CalculateMinimumRequiredVersion(
+    EasingFunction::StepPosition step_position) {
+  switch (step_position) {
+    case EasingFunction::StepPosition::kJumpEnd:
+    case EasingFunction::StepPosition::kJumpStart:
+    case EasingFunction::StepPosition::kJumpNone:
+    case EasingFunction::StepPosition::kJumpBoth:
+      return 0;
+  }
+}
+
+int32_t CalculateMinimumRequiredVersion(const EasingFunction::Steps& steps) {
+  return CalculateMinimumRequiredVersion(steps.step_position);
+}
+
+int32_t CalculateMinimumRequiredVersion(
+    const EasingFunction::Parameters& parameters) {
+  return std::visit(
+      [](auto&& params) { return CalculateMinimumRequiredVersion(params); },
+      parameters);
+}
+}  // namespace
+
+int32_t CalculateMinimumRequiredVersion(const EasingFunction& easing_function) {
+  return CalculateMinimumRequiredVersion(easing_function.parameters);
 }
 
 std::string ToFormattedString(const EasingFunction& easing_function) {

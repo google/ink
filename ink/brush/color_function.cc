@@ -15,6 +15,7 @@
 #include "ink/brush/color_function.h"
 
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <variant>
 
@@ -75,6 +76,32 @@ absl::Status ValidateColorFunction(const ColorFunction& color_function) {
         return ValidateColorFunctionParameters(params);
       },
       color_function.parameters);
+}
+
+namespace {
+
+int32_t CalculateMinimumRequiredVersion(
+    const ColorFunction::OpacityMultiplier& opacity) {
+  return 0;
+}
+
+int32_t CalculateMinimumRequiredVersion(
+    const ColorFunction::ReplaceColor& replace) {
+  return 0;
+}
+
+int32_t CalculateMinimumRequiredVersion(
+    const ColorFunction::Parameters& parameters) {
+  return std::visit(
+      [](const auto& params) {
+        return CalculateMinimumRequiredVersion(params);
+      },
+      parameters);
+}
+}  // namespace
+
+int32_t CalculateMinimumRequiredVersion(const ColorFunction& color_function) {
+  return CalculateMinimumRequiredVersion(color_function.parameters);
 }
 
 std::string ToFormattedString(const ColorFunction& color_function) {

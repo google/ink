@@ -15,6 +15,7 @@
 #ifndef INK_STROKES_BRUSH_COLOR_FUNCTION_H_
 #define INK_STROKES_BRUSH_COLOR_FUNCTION_H_
 
+#include <cstdint>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -65,6 +66,10 @@ namespace brush_internal {
 // Determines whether the given ColorFunction struct is valid to be used in a
 // BrushFamily, and returns an error if not.
 absl::Status ValidateColorFunction(const ColorFunction& color_function);
+
+// Calculates the minimum version of the Ink library that is required to use
+// this color function.
+int32_t CalculateMinimumRequiredVersion(const ColorFunction& color_function);
 
 std::string ToFormattedString(const ColorFunction& color_function);
 std::string ToFormattedString(const ColorFunction::Parameters& parameters);

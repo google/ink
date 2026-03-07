@@ -168,6 +168,10 @@ namespace brush_internal {
 // BrushFamily, and returns an error if not.
 absl::Status ValidateEasingFunction(const EasingFunction& easing_function);
 
+// Calculates the minimum version of the Ink library that is required to use
+// this easing function.
+int32_t CalculateMinimumRequiredVersion(const EasingFunction& easing_function);
+
 std::string ToFormattedString(const EasingFunction& easing_function);
 std::string ToFormattedString(EasingFunction::Predefined predefined);
 std::string ToFormattedString(const EasingFunction::CubicBezier& cubic_bezier);
