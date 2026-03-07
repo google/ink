@@ -38,11 +38,6 @@ class BrushFamily {
  public:
   // LINT.IfChange(input_model_types)
 
-  // Spring-based input modeler. Stored in the `InputModel` variant below to
-  // allow future input models to be added without changing the shape of
-  // existing strokes.
-  struct SpringModel {};
-
   // A naive model that passes through raw inputs mostly unchanged.  This is an
   // experimental configuration which may be adjusted or removed later.
   struct ExperimentalNaiveModel {};
@@ -68,8 +63,7 @@ class BrushFamily {
   // inputs. Raw hardware inputs tend to be noisy, and must be smoothed before
   // being passed into a brush's behaviors and extruded into a mesh in order to
   // get a good-looking stroke.
-  using InputModel =
-      std::variant<SpringModel, ExperimentalNaiveModel, SlidingWindowModel>;
+  using InputModel = std::variant<ExperimentalNaiveModel, SlidingWindowModel>;
 
   // LINT.ThenChange(../strokes/internal/stroke_input_modeler_test.cc:input_model_types)
 

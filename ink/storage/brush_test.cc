@@ -396,7 +396,7 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
                            .size = {10, 15},
                            .blend_mode = BrushPaint::BlendMode::kSrcIn}},
        .self_overlap = BrushPaint::SelfOverlap::kDiscard},
-      BrushFamily::SpringModel{});
+      BrushFamily::ExperimentalNaiveModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -419,7 +419,7 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
       proto::ColorSpace::COLOR_SPACE_SRGB);
   brush_proto.mutable_brush_family()
       ->mutable_input_model()
-      ->mutable_spring_model();
+      ->mutable_experimental_naive_model();
   proto::BrushCoat* coat_proto =
       brush_proto.mutable_brush_family()->add_coats();
   coat_proto->mutable_tip()->set_scale_x(1.f);
@@ -473,7 +473,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
                            .size = {10, 15},
                            .blend_mode = BrushPaint::BlendMode::kSrcIn}},
        .self_overlap = BrushPaint::SelfOverlap::kAccumulate},
-      BrushFamily::SpringModel{});
+      BrushFamily::ExperimentalNaiveModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
   ASSERT_EQ(brush.status(), absl::OkStatus());
@@ -502,7 +502,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
       proto::ColorSpace::COLOR_SPACE_SRGB);
   brush_proto.mutable_brush_family()
       ->mutable_input_model()
-      ->mutable_spring_model();
+      ->mutable_experimental_naive_model();
   brush_proto.mutable_brush_family()->mutable_texture_id_to_bitmap()->insert(
       {std::string(kTestTextureId1), TestPngBytes1x1()});
   proto::BrushCoat* coat_proto =

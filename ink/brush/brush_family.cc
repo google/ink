@@ -97,10 +97,6 @@ std::string BrushFamily::ToFormattedString() const {
 namespace brush_internal {
 namespace {
 
-absl::Status ValidateInputModel(const BrushFamily::SpringModel& model) {
-  return absl::OkStatus();
-}
-
 absl::Status ValidateInputModel(
     const BrushFamily::ExperimentalNaiveModel& model) {
   return absl::OkStatus();
@@ -119,10 +115,6 @@ absl::Status ValidateInputModel(const BrushFamily::SlidingWindowModel& model) {
         model.upsampling_period));
   }
   return absl::OkStatus();
-}
-
-std::string ToFormattedString(const BrushFamily::SpringModel& model) {
-  return "SpringModel";
 }
 
 std::string ToFormattedString(

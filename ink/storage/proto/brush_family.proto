@@ -25,11 +25,6 @@ import "ink/storage/proto/color.proto";
 // optionally be identified by setting a non-empty `client_brush_family_id`.
 message BrushFamily {
 
-  // Spring-based input modeler. Stored in the `InputModel` variant below to
-  // allow future input models to be added without changing the shape of
-  // existing strokes.
-  message SpringModel {}
-
   // A naive model that passes through raw inputs mostly unchanged.  This is an
   // experimental configuration which may be adjusted or removed later. Strokes
   // generated with this input model might change shape if read with a later
@@ -54,12 +49,12 @@ message BrushFamily {
 
   message InputModel {
     oneof input_model {
-      SpringModel spring_model = 2;
       ExperimentalNaiveModel experimental_naive_model = 4;
       SlidingWindowModel sliding_window_model = 5;
     }
     // Removed InputModel types go here (reserved needs to be outside oneof).
     reserved 1;
+    reserved 2;
     reserved 3;
   }
 

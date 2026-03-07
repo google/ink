@@ -125,7 +125,6 @@ cc_library(
         "//ink/strokes/internal/stroke_input_modeler:input_model_impl",
         "//ink/strokes/internal/stroke_input_modeler:naive_input_modeler",
         "//ink/strokes/internal/stroke_input_modeler:sliding_window_input_modeler",
-        "//ink/strokes/internal/stroke_input_modeler:spring_based_input_modeler",
         "//ink/types:duration",
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log:absl_check",

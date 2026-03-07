@@ -68,7 +68,7 @@ Brush CreateBrush() {
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
                            .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
-      BrushFamily::SpringModel{},
+      BrushFamily::DefaultInputModel(),
       {.client_brush_family_id =
            "//test/brush-family:awesome-rectangular-brush"});
   ABSL_CHECK_OK(family);
@@ -132,7 +132,7 @@ TEST(StrokeTest, ConstructFromBrushAndInputs) {
   EXPECT_EQ(stroke.GetShape().Meshes().size(), 1u);
   EXPECT_THAT(
       stroke.GetShape().Bounds(),
-      EnvelopeNear(Rect::FromTwoPoints({5.757, -2.224}, {16.237, 9.219}),
+      EnvelopeNear(Rect::FromTwoPoints({5.757, -2.243}, {16.243, 9.230}),
                    0.001));
 
   // Modifying the original brush and inputs should not modify the Stroke since
@@ -425,7 +425,7 @@ TEST(StrokeTest, SetInputGetInputs) {
     stroke.SetInputs(inputs);
     ASSERT_EQ(stroke.GetInputs().Size(), inputs.Size());
     ASSERT_THAT(stroke.GetShape().Meshes(), SizeIs(1));
-    EXPECT_EQ(stroke.GetShape().Meshes()[0].VertexCount(), 15u);
+    EXPECT_EQ(stroke.GetShape().Meshes()[0].VertexCount(), 16u);
     ASSERT_FALSE(stroke.GetShape().Bounds().IsEmpty());
   }
   {
