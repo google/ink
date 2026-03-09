@@ -1358,12 +1358,6 @@ absl::StatusOr<BrushPaint::SelfOverlap> DecodeBrushPaintSelfOverlap(
 }
 
 void EncodeBrushFamilyInputModel(
-    const BrushFamily::SpringModel& model,
-    proto::BrushFamily::InputModel& model_proto_out) {
-  model_proto_out.mutable_spring_model();  // no fields to set
-}
-
-void EncodeBrushFamilyInputModel(
     const BrushFamily::ExperimentalNaiveModel& model,
     proto::BrushFamily::InputModel& model_proto_out) {
   model_proto_out.mutable_experimental_naive_model();  // no fields to set
@@ -1392,8 +1386,6 @@ void EncodeBrushFamilyInputModel(
 absl::StatusOr<BrushFamily::InputModel> DecodeBrushFamilyInputModel(
     const proto::BrushFamily::InputModel& model_proto) {
   switch (model_proto.input_model_case()) {
-    case proto::BrushFamily::InputModel::kSpringModel:
-      return BrushFamily::SpringModel{};
     case proto::BrushFamily::InputModel::kExperimentalNaiveModel:
       return BrushFamily::ExperimentalNaiveModel{};
     case proto::BrushFamily::InputModel::kSlidingWindowModel:
