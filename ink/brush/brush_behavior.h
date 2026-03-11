@@ -413,10 +413,10 @@ struct BrushBehavior {
   // LINT.IfChange(progress_domain)
   enum class ProgressDomain {
     // Progress in input distance traveled since the start of the stroke,
-    // measured in centimeters. If the input data does not indicate the
+    // measured in centimeters. If the stroke input data does not indicate the
     // relationship between stroke units and physical units (e.g. as may be the
-    // case for programmatically-generated inputs), then special handling will
-    // be applied based on the node type.
+    // case for programmatically-generated inputs), then any node relying on
+    // this domain will emit null.
     kDistanceInCentimeters,
     // Progress in input distance traveled since the start of the stroke,
     // measured in multiples of the brush size.
@@ -479,9 +479,15 @@ struct BrushBehavior {
   };
 
   // Value node for producing a continuous random noise function with values
-  // between 0 to 1.
+  // between 0 to 1. A new random value will be generated every `base_period`
+  // units along the `vary_over` domain, with the output of this node shifting
+  // smoothly between successive random values.
   // Inputs: 0
-  // Output: The current random value.
+  // Output: The current random value. If `vary_over` is
+  //     `kDistanceInCentimeters` and the stroke input data does not indicate
+  //     the relationship between stroke units and physical units (e.g. as may
+  //     be the case for programmatically-generated inputs), then the output
+  //     value will be null.
   // To be valid:
   //   - `vary_over` must be a valid `ProgressDomain` enumerator.
   //   - `base_period` must be finite and strictly positive.
@@ -519,17 +525,16 @@ struct BrushBehavior {
   // distance.
   // Inputs: 1
   // Output: The damped input value. If the input value becomes null, this node
-  //     continues to emit its previous output value.  If the input value starts
-  //     out null, the output value is null until the first non-null input.
+  //     continues to emit its previous output value. If the input value starts
+  //     out null, the output value is null until the first non-null input. If
+  //     `damping_source` is `kDistanceInCentimeters` and the stroke input data
+  //     does not indicate the relationship between stroke units and physical
+  //     units (e.g. as may be the case for programmatically-generated inputs),
+  //     then the output value will be null regardless of the input.
   // To be valid:
   //   - `damping_source` must be a valid `ProgressDomain` enumerator.
   //   - `damping_gap` must be finite and non-negative.
   struct DampingNode {
-    // If `damping_source` is `kDistanceInCentimeters` but the input data does
-    // not indicate the relationship between stroke units and physical units
-    // (e.g. as may be the case for programmatically-generated inputs), then no
-    // damping will be performed (i.e. the `damping_gap` will be treated as
-    // zero).
     ProgressDomain damping_source;
     float damping_gap;
 
@@ -555,7 +560,11 @@ struct BrushBehavior {
   //     specified out-of-range behavior. If the input value ever becomes null,
   //     this node acts as though the input value were still equal to its most
   //     recent non-null value. If the input value starts out null, it is
-  //     treated as zero until the first non-null input.
+  //     treated as zero until the first non-null input. If `integrate_over` is
+  //     `kDistanceInCentimeters` and the stroke input data does not indicate
+  //     the relationship between stroke units and physical units (e.g. as may
+  //     be the case for programmatically-generated inputs), then the output
+  //     value will be null.
   // To be valid:
   //   - `integrate_over` must be a valid `ProgressDomain` enumerator.
   //   - `integral_out_of_range_behavior` must be a valid `OutOfRange`

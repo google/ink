@@ -967,24 +967,24 @@ message BrushBehavior {
 
   // LINT.IfChange(progress_domain)
 
-  // Dimensions/units for measuring the `damping_gap` field of a `DampingNode`.
+  // Dimensions and units for measuring distance/time along the length/duration
+  // of a stroke.
   enum ProgressDomain {
     PROGRESS_DOMAIN_UNSPECIFIED = 0;
 
-    // Value damping occurs over time, and the `damping_gap` is measured in
+    // Progress in input time since the start of the stroke, measured in
     // seconds.
     PROGRESS_DOMAIN_TIME_IN_SECONDS = 1;
 
-    // Value damping occurs over distance traveled by the input pointer, and the
-    // `damping_gap` is measured in centimeters. If the input data does not
-    // indicate the relationship between stroke units and physical units
-    // (e.g. as may be the case for programmatically-generated inputs), then no
-    // damping will be performed (i.e. the `damping_gap` will be treated as
-    // zero).
+    // Progress in input distance traveled since the start of the stroke,
+    // measured in centimeters. If the stroke input data does not indicate the
+    // relationship between stroke units and physical units (e.g. as may be the
+    // case for programmatically-generated inputs), then any node relying on
+    // this domain will emit null.
     PROGRESS_DOMAIN_DISTANCE_IN_CENTIMETERS = 2;
 
-    // Value damping occurs over distance traveled by the input pointer, and the
-    // `damping_gap` is measured in multiples of the brush size.
+    // Progress in input distance traveled since the start of the stroke,
+    // measured in multiples of the brush size.
     PROGRESS_DOMAIN_DISTANCE_IN_MULTIPLES_OF_BRUSH_SIZE = 3;
   }
   // LINT.ThenChange(../../brush/brush_behavior.h:progress_domain)

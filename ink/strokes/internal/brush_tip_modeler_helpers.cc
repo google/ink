@@ -322,17 +322,19 @@ void ProcessBehaviorNodeImpl(const NoiseNodeImplementation& node,
   float advance_by = 0.0f;
   switch (node.vary_over) {
     case BrushBehavior::ProgressDomain::kDistanceInCentimeters: {
+      if (!context.input_modeler_state.stroke_unit_length.has_value()) {
+        context.stack.push_back(kNullBehaviorNodeValue);
+        return;
+      }
       PhysicalDistance period = PhysicalDistance::Centimeters(node.base_period);
       float previous_traveled_distance =
           context.previous_input_metrics.has_value()
               ? context.previous_input_metrics->traveled_distance
               : 0.0f;
       PhysicalDistance traveled_distance_delta =
-          context.input_modeler_state.stroke_unit_length.has_value()
-              ? *context.input_modeler_state.stroke_unit_length *
-                    (context.current_input.traveled_distance -
-                     previous_traveled_distance)
-              : PhysicalDistance::Zero();
+          *context.input_modeler_state.stroke_unit_length *
+          (context.current_input.traveled_distance -
+           previous_traveled_distance);
       advance_by = traveled_distance_delta / period;
     } break;
     case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize: {
@@ -378,6 +380,12 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::ToolTypeFilterNode& node,
 void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
                              const BehaviorNodeContext& context) {
   ABSL_DCHECK(!context.stack.empty());
+  if (node.damping_source ==
+          BrushBehavior::ProgressDomain::kDistanceInCentimeters &&
+      !context.input_modeler_state.stroke_unit_length.has_value()) {
+    context.stack.back() = kNullBehaviorNodeValue;
+    return;
+  }
   float old_damped_value = context.damped_values[node.damping_index];
   float new_damped_value = kNullBehaviorNodeValue;
   float input = context.stack.back();
@@ -399,12 +407,6 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
     ABSL_DCHECK(context.previous_input_metrics.has_value());
     switch (node.damping_source) {
       case BrushBehavior::ProgressDomain::kDistanceInCentimeters: {
-        // If no mapping from stroke units to physical units is available, then
-        // don't perform any damping (i.e. snap damped value to input).
-        if (!context.input_modeler_state.stroke_unit_length.has_value()) {
-          new_damped_value = input;
-          break;
-        }
         PhysicalDistance damping_distance =
             PhysicalDistance::Centimeters(node.damping_gap);
         PhysicalDistance traveled_distance_delta =
@@ -553,6 +555,12 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::InterpolationNode& node,
 void ProcessBehaviorNodeImpl(const IntegralNodeImplementation& node,
                              const BehaviorNodeContext& context) {
   ABSL_DCHECK(!context.stack.empty());
+  if (node.integrate_over ==
+          BrushBehavior::ProgressDomain::kDistanceInCentimeters &&
+      !context.input_modeler_state.stroke_unit_length.has_value()) {
+    context.stack.back() = kNullBehaviorNodeValue;
+    return;
+  }
   IntegralState& state = context.integrals[node.integral_index];
   float new_input = context.stack.back();
   if (IsNullBehaviorNodeValue(state.last_input)) {
@@ -573,15 +581,11 @@ void ProcessBehaviorNodeImpl(const IntegralNodeImplementation& node,
     float delta = 0;
     switch (node.integrate_over) {
       case BrushBehavior::ProgressDomain::kDistanceInCentimeters: {
-        // If no mapping from stroke units to physical units is available, then
-        // don't perform any integration (i.e. leave delta at zero).
-        if (context.input_modeler_state.stroke_unit_length.has_value()) {
-          PhysicalDistance traveled_distance_delta =
-              *context.input_modeler_state.stroke_unit_length *
-              (context.current_input.traveled_distance -
-               context.previous_input_metrics->traveled_distance);
-          delta = traveled_distance_delta.ToCentimeters();
-        }
+        PhysicalDistance traveled_distance_delta =
+            *context.input_modeler_state.stroke_unit_length *
+            (context.current_input.traveled_distance -
+             context.previous_input_metrics->traveled_distance);
+        delta = traveled_distance_delta.ToCentimeters();
       } break;
       case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize: {
         float traveled_distance_delta =
