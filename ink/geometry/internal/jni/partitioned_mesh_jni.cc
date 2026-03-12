@@ -15,6 +15,7 @@
 #include <jni.h>
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 #include "absl/types/span.h"
@@ -23,6 +24,7 @@
 #include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
 #include "ink/geometry/internal/jni/mesh_jni_helper.h"
 #include "ink/geometry/internal/jni/partitioned_mesh_jni_helper.h"
+#include "ink/geometry/internal/jni/rect_jni_helper.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/partitioned_mesh.h"
@@ -44,6 +46,7 @@ using ::ink::Rect;
 using ::ink::Triangle;
 using ::ink::VertexIndexPair;
 using ::ink::jni::CastToPartitionedMesh;
+using ::ink::jni::CreateJImmutableBoxFromRectOrThrow;
 using ::ink::jni::DeleteNativePartitionedMesh;
 using ::ink::jni::NewNativeMesh;
 using ::ink::jni::NewNativeMeshFormat;
@@ -108,6 +111,17 @@ JNI_METHOD(geometry, PartitionedMeshNative, void,
                                              index_pair.vertex_index};
   env->SetIntArrayRegion(out_mesh_index_and_mesh_vertex_index, 0, 2,
                          mesh_index_and_mesh_vertex_index);
+}
+
+JNI_METHOD(geometry, PartitionedMeshNative, jobject, createBounds)
+(JNIEnv* env, jobject object, jlong native_pointer, jobject mutable_box) {
+  const PartitionedMesh& partitioned_mesh =
+      CastToPartitionedMesh(native_pointer);
+  const std::optional<Rect>& bounds_rect = partitioned_mesh.Bounds().AsRect();
+  if (!bounds_rect.has_value()) {
+    return nullptr;
+  }
+  return CreateJImmutableBoxFromRectOrThrow(env, *bounds_rect);
 }
 
 // Allocate an empty `PartitionedMesh` and return a pointer to it.

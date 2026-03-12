@@ -15,23 +15,26 @@
 #include <jni.h>
 
 #include <cstddef>
+#include <optional>
 
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
-#include "ink/geometry/internal/jni/box_accumulator_jni_helper.h"
 #include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
 #include "ink/geometry/internal/jni/mesh_jni_helper.h"
+#include "ink/geometry/internal/jni/rect_jni_helper.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_packing_types.h"
+#include "ink/geometry/rect.h"
 #include "ink/jni/internal/jni_defines.h"
 
 namespace {
 
 using ::ink::Mesh;
+using ::ink::Rect;
 using ::ink::jni::CastToMesh;
+using ::ink::jni::CreateJImmutableBoxFromRectOrThrow;
 using ::ink::jni::DeleteNativeMesh;
-using ::ink::jni::FillJBoxAccumulatorOrThrow;
 using ::ink::jni::FillJMutableVecFromPointOrThrow;
 using ::ink::jni::NewNativeMesh;
 using ::ink::jni::NewNativeMeshFormat;
@@ -117,10 +120,14 @@ JNI_METHOD(geometry, MeshNative, jint, getAttributeCount)
   return CastToMesh(native_pointer).Format().Attributes().size();
 }
 
-JNI_METHOD(geometry, MeshNative, void, fillBounds)
-(JNIEnv* env, jobject object, jlong native_pointer, jobject box_accumulator) {
+JNI_METHOD(geometry, MeshNative, jobject, createBounds)
+(JNIEnv* env, jobject object, jlong native_pointer, jobject mutable_box) {
   const Mesh& mesh = CastToMesh(native_pointer);
-  FillJBoxAccumulatorOrThrow(env, mesh.Bounds(), box_accumulator);
+  const std::optional<Rect>& bounds_rect = mesh.Bounds().AsRect();
+  if (!bounds_rect.has_value()) {
+    return nullptr;
+  }
+  return CreateJImmutableBoxFromRectOrThrow(env, *bounds_rect);
 }
 
 JNI_METHOD(geometry, MeshNative, jint, fillAttributeUnpackingParams)
