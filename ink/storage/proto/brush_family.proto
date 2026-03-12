@@ -771,19 +771,17 @@ message BrushBehavior {
     TARGET_UNSPECIFIED = 0;
 
     // Scales the brush-tip width, starting from the value calculated using
-    // `BrushTip::scale_x`. The final brush width is clamped to a maximum of
-    // twice the baseline width. If multiple behaviors have this target or
-    // `TARGET_SIZE_MULTIPLIER`, they aggregate multiplicatively. (Therefore, if
-    // one behavior scales the width down to zero over time, it "wins out" over
-    // all other width-modifying behaviors.)
+    // `BrushTip::scale_x`. If multiple behaviors have this target, they stack
+    // multiplicatively.
     TARGET_WIDTH_MULTIPLIER = 1;
 
-    // Same as `TARGET_WIDTH_MULTIPLIER` but for height. Clamping and
-    // aggregation work the same way as for width.
+    // Scales the brush-tip width, starting from the value calculated using
+    // `BrushTip::scale_y`. If multiple behaviors have this target, they stack
+    // multiplicatively.
     TARGET_HEIGHT_MULTIPLIER = 2;
 
-    // A convenience target that affects both width and height at once, in the
-    // same way that `TARGET_WIDTH_MULTIPLIER` does.
+    // Convenience enumerator to target both `TARGET_WIDTH_MULTIPLIER` and
+    // `TARGET_HEIGHT_MULTIPLIER`.
     TARGET_SIZE_MULTIPLIER = 3;
 
     // Adds the target modifier to `BrushTip::slant`. The final brush slant

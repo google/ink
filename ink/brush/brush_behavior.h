@@ -260,11 +260,10 @@ struct BrushBehavior {
     // `kWidthMultiplier` and `kHeightMultiplier` scale the brush-tip size along
     // one dimension, starting from the values calculated using
     // `BrushTip::scale`, while `kSizeMultiplier` is a convenience target that
-    // affects both width and height at once. The final brush size is clamped to
-    // a maximum of twice the base size along each dimension. If multiple
-    // behaviors have one of these targets, they stack multiplicatively (thus
-    // allowing one behavior to scale the size down to zero over time, "winning"
-    // over all other size-modifying behaviors).
+    // affects both width and height at once. If multiple behaviors have one of
+    // these targets, they stack multiplicatively (thus allowing one behavior to
+    // scale the size down to zero over time, "winning" over all other
+    // size-modifying behaviors).
     kWidthMultiplier,
     kHeightMultiplier,
     kSizeMultiplier,

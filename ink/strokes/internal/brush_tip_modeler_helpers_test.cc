@@ -1573,12 +1573,12 @@ TEST(CreateTipStateTest, WithBehaviorTargetingWidth) {
   EXPECT_FLOAT_EQ(state.corner_rounding, brush_tip.corner_rounding);
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
-  float clamp_multiplier = 5.f;
+  width_multiplier = 5.f;
   state = CreateTipState({0, 0}, Vec(), brush_tip, brush_size,
                          {BrushBehavior::Target::kWidthMultiplier},
-                         {clamp_multiplier});
+                         {width_multiplier});
   EXPECT_FLOAT_EQ(state.width,
-                  /**clamped to 2*/ 2 * brush_tip.scale.x * brush_size);
+                  width_multiplier * brush_tip.scale.x * brush_size);
 }
 
 TEST(CreateTipStateTest, WithBehaviorTargetingHeight) {
@@ -1619,14 +1619,14 @@ TEST(CreateTipStateTest, WithBehaviorTargetingSize) {
   EXPECT_FLOAT_EQ(state.corner_rounding, brush_tip.corner_rounding);
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 
-  float clamp_multiplier = 5.f;
+  size_multiplier = 5.f;
   state = CreateTipState({0, 0}, Vec(), brush_tip, brush_size,
                          {BrushBehavior::Target::kSizeMultiplier},
-                         {clamp_multiplier});
+                         {size_multiplier});
   EXPECT_FLOAT_EQ(state.width,
-                  /**clamped to 2*/ 2 * brush_tip.scale.x * brush_size);
+                  size_multiplier * brush_tip.scale.x * brush_size);
   EXPECT_FLOAT_EQ(state.height,
-                  /**clamped to 2*/ 2 * brush_tip.scale.y * brush_size);
+                  size_multiplier * brush_tip.scale.y * brush_size);
 }
 
 TEST(CreateTipStateTest, WithBehaviorTargetingSlant) {
@@ -1838,7 +1838,7 @@ TEST(CreateTipStateTest, WithBehaviorTargetingEachProperty) {
   EXPECT_THAT(state.rotation, AngleEq(brush_tip.rotation));
 }
 
-TEST(CreateTipStateTest, WidthIsClampedZeroToTwiceBaseValue) {
+TEST(CreateTipStateTest, WidthIsClampedToNonNegative) {
   BrushTip brush_tip = MakeBaseBrushTip();
   float brush_size = 3.f;
 
@@ -1848,15 +1848,9 @@ TEST(CreateTipStateTest, WidthIsClampedZeroToTwiceBaseValue) {
                                  {-0.9f, 1.7f})
                       .width,
                   0);
-  EXPECT_FLOAT_EQ(CreateTipState({0, 0}, Vec(), brush_tip, brush_size,
-                                 {BrushBehavior::Target::kWidthMultiplier,
-                                  BrushBehavior::Target::kWidthMultiplier},
-                                 {1.8f, 1.7f})
-                      .width,
-                  2 * brush_tip.scale.x * brush_size);
 }
 
-TEST(CreateTipStateTest, HeightIsClampedZeroToTwiceBaseValue) {
+TEST(CreateTipStateTest, HeightIsClampedToNonNegative) {
   BrushTip brush_tip = MakeBaseBrushTip();
   float brush_size = 3.f;
 
@@ -1866,12 +1860,6 @@ TEST(CreateTipStateTest, HeightIsClampedZeroToTwiceBaseValue) {
                                  {0.5f, -0.3f})
                       .height,
                   0);
-  EXPECT_FLOAT_EQ(CreateTipState({0, 0}, Vec(), brush_tip, brush_size,
-                                 {BrushBehavior::Target::kHeightMultiplier,
-                                  BrushBehavior::Target::kHeightMultiplier},
-                                 {1.2f, 1.9f})
-                      .height,
-                  2 * brush_tip.scale.y * brush_size);
 }
 
 TEST(CreateTipStateTest, WidthMultiplierOverflowTimesZeroModifier) {
