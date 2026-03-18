@@ -64,8 +64,7 @@ message BrushFamily {
   // though each coat were painted in its entirety one at a time.
   repeated BrushCoat coats = 4;
 
-  // Was `tip` and `paint`, use `coats[0].tip` and `coats[0].paint`
-  // instead.
+  // Was `tip` and `paint`; use `coats[0].tip` and `coats[0].paint` instead.
   reserved 1 to 2;
 
   // The ID for this brush family specified by the client that created it. The
@@ -101,9 +100,9 @@ message BrushFamily {
 // coat were painted in its entirety one at a time.
 message BrushCoat {
   optional BrushTip tip = 1;
-  optional BrushPaint paint = 2 [deprecated = true];
-  // If empty, the `paint` field above will be used as the only entry. If that
-  // is also not set, the default `BrushPaint` will be used.
+  // Was `paint`; use `paint_preferences` instead.
+  reserved 2;
+  // If empty, the default `BrushPaint` will be used.
   repeated BrushPaint paint_preferences = 3;
 }
 
@@ -620,10 +619,7 @@ message BrushBehavior {
     // of the stroke once drawn.
     SOURCE_TIME_OF_INPUT_IN_SECONDS = 13;
 
-    // The time elapsed (in milliseconds) from when the stroke started to when
-    // this part of the stroke was drawn. This is deprecated; use
-    // SOURCE_TIME_OF_INPUT_IN_SECONDS instead.
-    SOURCE_TIME_OF_INPUT_IN_MILLIS = 14 [deprecated = true];
+    reserved 14;
 
     // Distance traveled by the inputs of the current prediction, starting at 0
     // at the last non-predicted input, in multiples of the brush size. Zero for
@@ -635,9 +631,7 @@ message BrushBehavior {
     // stroke.
     SOURCE_PREDICTED_TIME_ELAPSED_IN_SECONDS = 16;
 
-    // Elapsed time (in milliseconds) of the prediction. This is deprecated; use
-    // SOURCE_PREDICTED_TIME_ELAPSED_IN_SECONDS instead.
-    SOURCE_PREDICTED_TIME_ELAPSED_IN_MILLIS = 17 [deprecated = true];
+    reserved 17;
 
     // The distance left to be traveled from a given modeled input to the
     // current last modeled input of the stroke in multiples of the brush size.
@@ -651,9 +645,7 @@ message BrushBehavior {
     // the animation will eventually end.
     SOURCE_TIME_SINCE_INPUT_IN_SECONDS = 19;
 
-    // Time elapsed (in milliseconds) since the modeled stroke input. This
-    // is deprecated; use SOURCE_TIME_SINCE_INPUT_IN_SECONDS instead.
-    SOURCE_TIME_SINCE_INPUT_IN_MILLIS = 20 [deprecated = true];
+    reserved 20;
 
     // Angle of the modeled stroke input's current direction of travel in stroke
     // coordinate space, normalized to the range [0, 2π). A value of 0 indicates
@@ -920,20 +912,6 @@ message BrushBehavior {
   }
   // LINT.ThenChange(../../brush/brush_behavior.h:out_of_range)
 
-  // List of input properties that might not be reported by `StrokeInput`.
-  //
-  // This enum is deprecated, and exists only to support the deprecated
-  // `FallbackFilterNode` type.
-  enum OptionalInputProperty {
-    OPTIONAL_INPUT_UNSPECIFIED = 0;
-    OPTIONAL_INPUT_PRESSURE = 1;
-    OPTIONAL_INPUT_TILT = 2;
-    OPTIONAL_INPUT_ORIENTATION = 3;
-
-    // Tilt-x and tilt-y require both tilt and orientation to be reported.
-    OPTIONAL_INPUT_TILT_X_AND_Y = 4;
-  }
-
   // LINT.IfChange(binary_op)
 
   // A binary operation for combining two values in a `BinaryOpNode`.
@@ -1013,7 +991,6 @@ message BrushBehavior {
     oneof node {
       SourceNode source_node = 1;
       ConstantNode constant_node = 2;
-      FallbackFilterNode fallback_filter_node = 3 [deprecated = true];
       ToolTypeFilterNode tool_type_filter_node = 4;
       DampingNode damping_node = 5;
       ResponseNode response_node = 6;
@@ -1024,6 +1001,8 @@ message BrushBehavior {
       PolarTargetNode polar_target_node = 11;
       IntegralNode integral_node = 12;
     }
+    // Removed Node types go here (reserved needs to be outside oneof).
+    reserved 3;
   }
 
   // Value node for getting data from the stroke input batch.
@@ -1088,35 +1067,6 @@ message BrushBehavior {
     // other words, if two points in the input are separated by at least this
     // period, their output values are uncorrelated.)
     optional float base_period = 3;
-  }
-
-  // Value node for filtering out a branch of a behavior graph unless a
-  // particular stroke input property is missing.
-  //
-  // This node type is deprecated. Using BINARY_OP_OR_ELSE is usually a better
-  // option for fallback calculations, but if necessary a FallbackFilterNode can
-  // be directly emulated by the sequence of nodes:
-  //
-  //   * SourceNode { source = <equivalent source for is_fallback_for>, ... }
-  //   * ConstantNode { value = 0 }
-  //   * BinaryOpNode { operation = BINARY_OP_XOR_ELSE }
-  //   * <any nodes that form the input to the FallbackFilterNode go here>
-  //   * BinaryOpNode { operation = BINARY_OP_AND_THEN }
-  //
-  // This works because the XOR_ELSE node in this setup will emit null if and
-  // only if the optional input property is available, in which case the
-  // AND_THEN node will filter out the fallback subtree, just like a
-  // `FallbackFilterNode would`
-  //
-  // Inputs: 1
-  //
-  // Output: Null if the specified property is present in the stroke input
-  // batch, otherwise the input value.
-  //
-  // To be valid: `is_fallback_for` must be a valid `OptionalInputProperty`
-  // enumerator.
-  message FallbackFilterNode {
-    optional OptionalInputProperty is_fallback_for = 1;
   }
 
   // Value node for filtering out a branch of a behavior graph unless this
@@ -1294,7 +1244,7 @@ message BrushBehavior {
   // A post-order traversal of the graph of Nodes.
   repeated Node nodes = 15;
 
-  // Were fields controlling brush behavior, use `nodes` instead.
+  // Were fields controlling brush behavior; use `nodes` instead.
   reserved 1 to 14;
 
   // A multi-line, human-readable string with a description of this brush
