@@ -232,6 +232,18 @@ TEST(BrushTest, EmptyBrushCoatProtoDecodesToDefaultBrushCoat) {
   EXPECT_THAT(*brush_coat, BrushCoatEq(BrushCoat()));
 }
 
+TEST(BrushTest, EmptyBrushCoatProtoWithDeprecatedPaintDecodesToUseThatPaint) {
+  proto::BrushCoat coat_proto;
+  proto::BrushPaint* paint_proto = coat_proto.mutable_paint();
+  paint_proto->set_self_overlap(proto::BrushPaint::SELF_OVERLAP_ACCUMULATE);
+  absl::StatusOr<BrushCoat> brush_coat = DecodeBrushCoat(coat_proto);
+  ASSERT_EQ(brush_coat.status(), absl::OkStatus());
+  EXPECT_THAT(*brush_coat,
+              BrushCoatEq(BrushCoat{
+                  .paint_preferences = {BrushPaint{
+                      .self_overlap = BrushPaint::SelfOverlap::kAccumulate}}}));
+}
+
 // This test ensures that we set correct proto field defaults when adding new
 // BrushTip struct fields, to avoid a repeat of b/337238252.
 TEST(BrushTest, EmptyBrushTipProtoDecodesToDefaultBrushTip) {
@@ -438,6 +450,11 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
       proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
   paint_proto->set_self_overlap(proto::BrushPaint::SELF_OVERLAP_DISCARD);
 
+  // TODO: b/346530293 - Remove this once the paint field is deleted/reserved
+  //   rather than just deprecated.
+  proto::BrushPaint* deprecated_paint_proto = coat_proto->mutable_paint();
+  *deprecated_paint_proto = *paint_proto;
+
   EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto));
   EXPECT_EQ(callback_count, 1);
 }
@@ -519,6 +536,11 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   texture_layer_proto->set_blend_mode(
       proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
   paint_proto->set_self_overlap(proto::BrushPaint::SELF_OVERLAP_ACCUMULATE);
+
+  // TODO: b/346530293 - Remove this once the paint field is deleted/reserved
+  //   rather than just deprecated.
+  proto::BrushPaint* deprecated_paint_proto = coat_proto->mutable_paint();
+  *deprecated_paint_proto = *paint_proto;
 
   EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto));
   EXPECT_EQ(callback_count, 1);
