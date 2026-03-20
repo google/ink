@@ -15,7 +15,6 @@
 #include "ink/storage/brush.h"
 
 #include <array>
-#include <cstdint>
 #include <map>
 #include <optional>
 #include <string>
@@ -38,12 +37,14 @@
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
+#include "ink/brush/version.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 #include "ink/storage/color.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/brush_family.pb.h"
+#include "ink/storage/proto/options.pb.h"
 #include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/types/duration.h"
 
@@ -1685,7 +1686,7 @@ absl::StatusOr<BrushCoat> DecodeBrushCoat(
 
 void EncodeBrushFamilyTextureMap(
     const BrushFamily& family,
-    ::google::protobuf::Map<std::string, std::string>& texture_id_to_bitmap_out,
+    google::protobuf::Map<std::string, std::string>& texture_id_to_bitmap_out,
     TextureBitmapProvider get_bitmap) {
   texture_id_to_bitmap_out.clear();
   // The set of texture ids for which we have already called get_bitmap().
@@ -1736,6 +1737,13 @@ void EncodeBrushFamily(const BrushFamily& family,
   } else {
     family_proto_out.set_developer_comment(metadata.developer_comment);
   }
+
+  // kDevelopment brush families are not portable. It is OK to serialize them,
+  // though, since they cannot be deserialized without opting in to the risk via
+  // `max_version`. Consumers of the serialization format may
+  // choose to accept development versions (with undefined behavior) or not.
+  family_proto_out.set_min_version(
+      family.CalculateMinimumRequiredVersion().value());
 }
 
 absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
@@ -1756,8 +1764,34 @@ absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
 }
 
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
+    const proto::BrushFamily& family_proto, Version max_version) {
+  return DecodeBrushFamily(
+      family_proto,
+      // LINT.IfChange(decode_brush_family_get_client_texture_id)
+      [](const std::string& encoded_id, const std::string& bitmap) {
+        return encoded_id;
+      },
+      // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.h:decode_brush_family_get_client_texture_id)
+      max_version);
+}
+
+absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto,
-    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id) {
+    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id,
+    Version max_version) {
+  // Check that the BrushFamily proto is compatible with the current library
+  // version.
+  if (family_proto.has_min_version()) {
+    // The decoded version is not saved anywhere; we only care whether it's
+    // compatible with the current library version or not when deserializing.
+    if (family_proto.min_version() > max_version.value()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("Version must be less than or equal to ",
+                       max_version.ToFormattedString(), ", but was ",
+                       family_proto.min_version()));
+    }
+  }
+
   // ID map that also serves as a record of the IDs for which we've already
   // called `get_client_texture_id`.
   std::map<std::string, std::string> old_to_new_id = {};
@@ -1815,11 +1849,24 @@ void EncodeBrush(const Brush& brush, proto::Brush& brush_proto_out,
                     get_bitmap);
 }
 
+absl::StatusOr<Brush> DecodeBrush(const proto::Brush& brush_proto,
+                                  Version max_version) {
+  return DecodeBrush(
+      brush_proto,
+      // LINT.IfChange(decode_brush_get_client_texture_id)
+      [](const std::string& encoded_id, const std::string& bitmap) {
+        return encoded_id;
+      },
+      // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.h:decode_brush_get_client_texture_id)
+      max_version);
+}
+
 absl::StatusOr<Brush> DecodeBrush(
     const proto::Brush& brush_proto,
-    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id) {
-  absl::StatusOr<BrushFamily> brush_family =
-      DecodeBrushFamily(brush_proto.brush_family(), get_client_texture_id);
+    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id,
+    Version max_version) {
+  absl::StatusOr<BrushFamily> brush_family = DecodeBrushFamily(
+      brush_proto.brush_family(), get_client_texture_id, max_version);
   if (!brush_family.ok()) {
     return brush_family.status();
   }

@@ -15,12 +15,12 @@
 #ifndef INK_STROKES_BRUSH_EASING_FUNCTION_H_
 #define INK_STROKES_BRUSH_EASING_FUNCTION_H_
 
-#include <cstdint>
 #include <string>
 #include <variant>
 #include <vector>
 
 #include "absl/status/status.h"
+#include "ink/brush/version.h"
 #include "ink/geometry/point.h"
 
 namespace ink {
@@ -167,6 +167,10 @@ namespace brush_internal {
 // Determines whether the given EasingFunction struct is valid to be used in a
 // BrushFamily, and returns an error if not.
 absl::Status ValidateEasingFunction(const EasingFunction& easing_function);
+
+// Calculates the minimum version of the Ink library that is required to use
+// this easing function.
+Version CalculateMinimumRequiredVersion(const EasingFunction& easing_function);
 
 std::string ToFormattedString(const EasingFunction& easing_function);
 std::string ToFormattedString(EasingFunction::Predefined predefined);

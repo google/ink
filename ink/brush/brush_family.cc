@@ -14,7 +14,7 @@
 
 #include "ink/brush/brush_family.h"
 
-#include <cstdint>
+#include <algorithm>
 #include <string>
 #include <variant>
 #include <vector>
@@ -28,6 +28,7 @@
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/version.h"
 #include "ink/types/duration.h"
 
 namespace ink {
@@ -92,6 +93,15 @@ std::string BrushFamily::ToFormattedString() const {
   }
   absl::StrAppend(&formatted, ")");
   return formatted;
+}
+
+Version BrushFamily::CalculateMinimumRequiredVersion() const {
+  Version max_version = Version::k0Jetpack1_0_0();
+  for (const auto& coat : coats_) {
+    max_version = std::max(
+        max_version, brush_internal::CalculateMinimumRequiredVersion(coat));
+  }
+  return max_version;
 }
 
 namespace brush_internal {

@@ -16,13 +16,13 @@
 #define INK_STROKES_BRUSH_BRUSH_BEHAVIOR_H_
 
 #include <array>
-#include <cstdint>
 #include <string>
 #include <variant>
 #include <vector>
 
 #include "absl/status/status.h"
 #include "ink/brush/easing_function.h"
+#include "ink/brush/version.h"
 
 namespace ink {
 
@@ -678,6 +678,10 @@ absl::Status ValidateBrushBehavior(const BrushBehavior& behavior);
 absl::Status ValidateBrushBehaviorTopLevel(const BrushBehavior& behavior);
 
 absl::Status ValidateBrushBehaviorNode(const BrushBehavior::Node& node);
+
+// Calculates the minimum version of the Ink library that is required to use
+// this brush behavior.
+Version CalculateMinimumRequiredVersion(const BrushBehavior& behavior);
 
 std::string ToFormattedString(BrushBehavior::Source source);
 std::string ToFormattedString(BrushBehavior::Target target);

@@ -14,6 +14,8 @@
 
 #include "ink/storage/brush.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <map>
 #include <optional>
 #include <string>
@@ -22,9 +24,11 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ink/brush/brush.h"
@@ -37,15 +41,24 @@
 #include "ink/brush/easing_function.h"
 #include "ink/brush/fuzz_domains.h"
 #include "ink/brush/type_matchers.h"
+#include "ink/brush/version.h"
 #include "ink/color/color.h"
-#include "ink/geometry/vec.h"
 #include "ink/storage/color.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/brush_family.pb.h"
 #include "ink/storage/proto/color.pb.h"
+#include "ink/storage/proto/options.pb.h"
 #include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/storage/proto_matchers.h"
 #include "ink/types/duration.h"
+#include "google/protobuf/descriptor.h"
+#include "google/protobuf/message.h"
+
+// Undefine macro that may have been introduced by Windows headers which
+// clashes with Reflection::GetMessage.
+#ifdef GetMessage
+#undef GetMessage
+#endif
 
 namespace ink {
 namespace {
@@ -55,9 +68,11 @@ using ::absl_testing::IsOkAndHolds;
 using ::absl_testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::ElementsAre;
+using ::testing::Eq;
 using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::IsNull;
+using ::testing::Le;
 using ::testing::SizeIs;
 using ::testing::VariantWith;
 
@@ -420,6 +435,7 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   brush_proto.mutable_brush_family()
       ->mutable_input_model()
       ->mutable_experimental_naive_model();
+  brush_proto.mutable_brush_family()->set_min_version(0);
   proto::BrushCoat* coat_proto =
       brush_proto.mutable_brush_family()->add_coats();
   coat_proto->mutable_tip()->set_scale_x(1.f);
@@ -503,6 +519,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   brush_proto.mutable_brush_family()
       ->mutable_input_model()
       ->mutable_experimental_naive_model();
+  brush_proto.mutable_brush_family()->set_min_version(0);
   brush_proto.mutable_brush_family()->mutable_texture_id_to_bitmap()->insert(
       {std::string(kTestTextureId1), TestPngBytes1x1()});
   proto::BrushCoat* coat_proto =
@@ -569,7 +586,7 @@ TEST(BrushTest, EncodeBrushFamilyTextureMap) {
                            .blend_mode = BrushPaint::BlendMode::kSrcIn}},
        .self_overlap = BrushPaint::SelfOverlap::kDiscard});
   ASSERT_EQ(family.status(), absl::OkStatus());
-  ::google::protobuf::Map<std::string, std::string> texture_id_to_bitmap_proto_out;
+  google::protobuf::Map<std::string, std::string> texture_id_to_bitmap_proto_out;
   int distinct_texture_ids_count = 0;
   TextureBitmapProvider callback =
       [&distinct_texture_ids_count](
@@ -599,7 +616,7 @@ TEST(BrushTest, EncodeBrushFamilyTextureMap) {
 TEST(BrushTest, EncodeBrushFamilyTextureMapWithNonEmptyProto) {
   absl::StatusOr<BrushFamily> family = BrushFamily();
   ASSERT_EQ(family.status(), absl::OkStatus());
-  ::google::protobuf::Map<std::string, std::string> texture_id_to_bitmap_proto_out;
+  google::protobuf::Map<std::string, std::string> texture_id_to_bitmap_proto_out;
   texture_id_to_bitmap_proto_out.insert({"existing_id", TestPngBytes1x1()});
 
   int callback_count = 0;
@@ -814,8 +831,10 @@ void EncodeDecodeBrushRoundTrip(const Brush& brush_in) {
   proto::Brush brush_proto_in;
   EncodeBrush(brush_in, brush_proto_in, encode_callback);
 
+  // Fuzz tests will generate brushes with development versions, so
+  // max_version must be kDevelopment.
   absl::StatusOr<Brush> brush_out =
-      DecodeBrush(brush_proto_in, decode_callback);
+      DecodeBrush(brush_proto_in, decode_callback, Version::kDevelopment());
   ASSERT_EQ(brush_out.status(), absl::OkStatus());
   EXPECT_THAT(*brush_out, BrushEq(brush_in));
   EXPECT_EQ(encode_callback_count, decode_callback_count);
@@ -833,7 +852,10 @@ void EncodeDecodeBrushFamilyRoundTrip(const BrushFamily& family_in) {
   proto::BrushFamily family_proto_in;
   EncodeBrushFamily(family_in, family_proto_in);
 
-  absl::StatusOr<BrushFamily> family_out = DecodeBrushFamily(family_proto_in);
+  // Fuzz tests will generate brushes with development versions, so
+  // max_version must be kDevelopment.
+  absl::StatusOr<BrushFamily> family_out =
+      DecodeBrushFamily(family_proto_in, Version::kDevelopment());
   ASSERT_EQ(family_out.status(), absl::OkStatus());
   EXPECT_THAT(*family_out, BrushFamilyEq(family_in));
 
@@ -917,6 +939,209 @@ void EncodeDecodeValidBrushBehaviorNodeRoundTrip(
 }
 FUZZ_TEST(BrushTest, EncodeDecodeValidBrushBehaviorNodeRoundTrip)
     .WithDomains(SerializableBrushBehaviorNode());
+
+void GetMaxProtoVersion(const google::protobuf::Message& message,
+                        int32_t& max_version_out) {
+  const google::protobuf::Descriptor* descriptor = message.GetDescriptor();
+  if (descriptor->options().HasExtension(ink::proto::message_min_version)) {
+    int32_t message_version =
+        descriptor->options().GetExtension(ink::proto::message_min_version);
+    EXPECT_THAT(message_version, Le(Version::kDevelopment().value()));
+    max_version_out = std::max(max_version_out, message_version);
+  }
+
+  const google::protobuf::Reflection* reflection = message.GetReflection();
+  std::vector<const google::protobuf::FieldDescriptor*> fields;
+  reflection->ListFields(message, &fields);
+
+  for (const auto* field : fields) {
+    if (field->options().HasExtension(ink::proto::field_min_version)) {
+      int32_t field_version =
+          field->options().GetExtension(ink::proto::field_min_version);
+      EXPECT_THAT(field_version, Le(Version::kDevelopment().value()));
+      max_version_out = std::max(max_version_out, field_version);
+    }
+
+    if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_ENUM) {
+      if (field->is_repeated()) {
+        for (int i = 0; i < reflection->FieldSize(message, field); ++i) {
+          const google::protobuf::EnumValueDescriptor* enum_value =
+              reflection->GetRepeatedEnum(message, field, i);
+          if (enum_value->options().HasExtension(
+                  ink::proto::enum_value_min_version)) {
+            int32_t enum_value_version = enum_value->options().GetExtension(
+                ink::proto::enum_value_min_version);
+            EXPECT_THAT(enum_value_version,
+                        Le(Version::kDevelopment().value()));
+            max_version_out = std::max(max_version_out, enum_value_version);
+          }
+        }
+      } else {
+        const google::protobuf::EnumValueDescriptor* enum_value =
+            reflection->GetEnum(message, field);
+        if (enum_value->options().HasExtension(
+                ink::proto::enum_value_min_version)) {
+          int32_t enum_value_version = enum_value->options().GetExtension(
+              ink::proto::enum_value_min_version);
+          EXPECT_THAT(enum_value_version, Le(Version::kDevelopment().value()));
+          max_version_out = std::max(max_version_out, enum_value_version);
+        }
+      }
+    } else if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
+      if (field->is_repeated()) {
+        for (int i = 0; i < reflection->FieldSize(message, field); ++i) {
+          GetMaxProtoVersion(reflection->GetRepeatedMessage(message, field, i),
+                             max_version_out);
+        }
+      } else {
+        GetMaxProtoVersion(reflection->GetMessage(message, field),
+                           max_version_out);
+      }
+    }
+  }
+}
+
+// Tests that CalculateMinimumRequiredVersion returns the same version as is
+// annotated in the proto options corresponding to the messages, fields, and
+// enums in the serialized form of the BrushFamily.
+void CalculateMinimumRequiredVersionMatchesProtoOptions(
+    const BrushFamily& family) {
+  // Encoding uses CalculateMinimumRequiredVersion to set the min version.
+  proto::BrushFamily family_proto;
+  EncodeBrushFamily(family, family_proto);
+  int32_t min_version_calculated = family_proto.min_version();
+  EXPECT_THAT(min_version_calculated, Le(Version::kDevelopment().value()));
+
+  int32_t min_version_from_options = Version::k0Jetpack1_0_0().value();
+  GetMaxProtoVersion(family_proto, min_version_from_options);
+  // Using reflection, examine the minimum required version of each
+  // field/message/enum in the proto, and find the maximum.
+  EXPECT_THAT(min_version_calculated, Eq(min_version_from_options));
+}
+FUZZ_TEST(BrushTest, CalculateMinimumRequiredVersionMatchesProtoOptions)
+    .WithDomains(SerializableBrushFamily());
+
+void CheckMinVersionExistsAndIsValid(
+    const google::protobuf::Descriptor* descriptor,
+    absl::flat_hash_set<const google::protobuf::Descriptor*>& visited_messages,
+    absl::flat_hash_set<const google::protobuf::EnumDescriptor*>& visited_enums) {
+  if (visited_messages.contains(descriptor) ||
+      descriptor->file()->name() !=
+          "third_party/ink/storage/proto/brush_family.proto" ||
+      descriptor->options().map_entry()) {
+    // Ignore messages that have already been visited, that are not in the brush
+    // family proto file, or that are map entries (impossible to add options to,
+    // since they are generated by the map field).
+    return;
+  }
+  visited_messages.insert(descriptor);
+
+  EXPECT_TRUE(
+      descriptor->options().HasExtension(ink::proto::message_min_version))
+      << "Message " << descriptor->full_name()
+      << " is missing message_min_version option.";
+  int32_t message_version =
+      descriptor->options().GetExtension(ink::proto::message_min_version);
+  if (message_version != Version::kDevelopment().value()) {
+    EXPECT_THAT(message_version, Le(Version::kMaxSupported().value()));
+  }
+
+  for (int i = 0; i < descriptor->field_count(); ++i) {
+    const google::protobuf::FieldDescriptor* field = descriptor->field(i);
+    EXPECT_TRUE(field->options().HasExtension(ink::proto::field_min_version))
+        << "Field " << field->full_name()
+        << " is missing field_min_version option.";
+    int32_t field_version =
+        field->options().GetExtension(ink::proto::field_min_version);
+    if (field_version != Version::kDevelopment().value()) {
+      EXPECT_THAT(field_version, Le(Version::kMaxSupported().value()));
+    }
+    if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
+      CheckMinVersionExistsAndIsValid(field->message_type(), visited_messages,
+                                      visited_enums);
+    } else if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_ENUM) {
+      const google::protobuf::EnumDescriptor* enum_descriptor = field->enum_type();
+      if (enum_descriptor->file()->name() !=
+          "third_party/ink/storage/proto/brush_family.proto") {
+        continue;
+      }
+      if (visited_enums.contains(enum_descriptor)) continue;
+      visited_enums.insert(enum_descriptor);
+      for (int j = 0; j < enum_descriptor->value_count(); ++j) {
+        const google::protobuf::EnumValueDescriptor* enum_value =
+            enum_descriptor->value(j);
+        EXPECT_TRUE(enum_value->options().HasExtension(
+            ink::proto::enum_value_min_version))
+            << "Enum value " << enum_value->full_name()
+            << " is missing enum_value_min_version option.";
+        int32_t enum_value_version = enum_value->options().GetExtension(
+            ink::proto::enum_value_min_version);
+        if (enum_value_version != Version::kDevelopment().value()) {
+          EXPECT_THAT(enum_value_version, Le(Version::kMaxSupported().value()));
+        }
+      }
+    }
+  }
+}
+
+TEST(BrushTest,
+     AllBrushFamilyProtoMessagesFieldsAndEnumsHaveValidMinimumVersion) {
+  // Ensure that all BrushFamily proto messages, fields, and
+  // enums have a `minimum_version` option set, and it is valid, i.e.
+  // less than or equal to Version::kMaxSupported, unless it equal to
+  // kDevelopment. This ensures that they are well documented, valid to be
+  // loaded, and will be covered by the
+  // `CalculateMinimumRequiredVersionMatchesProtoOptions` test.
+  absl::flat_hash_set<const google::protobuf::Descriptor*> visited_messages;
+  absl::flat_hash_set<const google::protobuf::EnumDescriptor*> visited_enums;
+  CheckMinVersionExistsAndIsValid(proto::BrushFamily::descriptor(),
+                                  visited_messages, visited_enums);
+}
+TEST(BrushTest, DecodeBrushFamilyFailsWithOutOfRangeMinVersion) {
+  // Test with kDevelopment (int32_t max). This is allowed by DecodeBrushFamily
+  // only if max_version is set to kDevelopment.
+  proto::BrushFamily family_proto;
+  family_proto.set_min_version(Version::kDevelopment().value());
+
+  EXPECT_THAT(
+      DecodeBrushFamily(family_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               absl::StrCat("Version must be less than or equal to ",
+                            Version::kMaxSupported().ToFormattedString(),
+                            ", but was ",
+                            Version::kDevelopment().ToFormattedString())));
+
+  // Now a version as close to Version::kMaxSupported as possible.
+  family_proto.set_min_version(Version::kMaxSupported().value() + 1);
+
+  EXPECT_THAT(
+      DecodeBrushFamily(family_proto),
+      StatusIs(
+          absl::StatusCode::kInvalidArgument,
+          absl::StrCat("Version must be less than or equal to ",
+                       Version::kMaxSupported().ToFormattedString(),
+                       ", but was ", (Version::kMaxSupported().value() + 1))));
+}
+
+TEST(BrushTest, DecodeBrushFamilyIsOkWithDevelopmentVersion) {
+  proto::BrushFamily family_proto;
+  family_proto.set_min_version(Version::kDevelopment().value());
+  EXPECT_THAT(DecodeBrushFamily(family_proto, Version::kDevelopment()), IsOk());
+}
+
+TEST(BrushTest, DecodeBrushIsOkWithDevelopmentVersion) {
+  proto::Brush brush_proto;
+  brush_proto.set_size_stroke_space(10);
+  brush_proto.set_epsilon_stroke_space(1.1);
+  brush_proto.mutable_brush_family()->set_min_version(
+      Version::kDevelopment().value());
+  EXPECT_THAT(DecodeBrush(brush_proto, Version::kDevelopment()), IsOk());
+}
+
+TEST(BrushTest, DecodeBrushFamilyIsOkWithNoMinVersionSet) {
+  proto::BrushFamily family_proto;
+  EXPECT_THAT(DecodeBrushFamily(family_proto), IsOk());
+}
 
 }  // namespace
 }  // namespace ink

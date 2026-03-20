@@ -26,8 +26,10 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/version.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/brush_family.pb.h"
+#include "ink/storage/proto/options.pb.h"
 
 namespace ink {
 
@@ -80,16 +82,26 @@ void EncodeBrushBehaviorNode(const BrushBehavior::Node& node,
 // invalid.
 absl::StatusOr<Brush> DecodeBrush(
     const proto::Brush& brush_proto,
+    // LINT.IfChange(decode_brush_get_client_texture_id)
     ClientTextureIdProviderAndBitmapReceiver get_client_texture_id =
         [](const std::string& encoded_id, const std::string& bitmap) {
           return encoded_id;
-        });
+        },
+    // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.cc:decode_brush_get_client_texture_id)
+    Version max_version = Version::kMaxSupported());
+absl::StatusOr<Brush> DecodeBrush(const proto::Brush& brush_proto,
+                                  Version max_version);
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto,
+    // LINT.IfChange(decode_brush_family_get_client_texture_id)
     ClientTextureIdProviderAndBitmapReceiver get_client_texture_id =
         [](const std::string& encoded_id, const std::string& bitmap) {
           return encoded_id;
-        });
+        },
+    // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.cc:decode_brush_family_get_client_texture_id)
+    Version max_version = Version::kMaxSupported());
+absl::StatusOr<BrushFamily> DecodeBrushFamily(
+    const proto::BrushFamily& family_proto, Version max_version);
 absl::StatusOr<BrushCoat> DecodeBrushCoat(
     const proto::BrushCoat& coat_proto,
     ClientTextureIdProvider get_client_texture_id =
