@@ -38,6 +38,7 @@ proto_library(
     srcs = ["brush_family.proto"],
     deps = [
         ":color_proto",
+        ":options_proto",
     ],
 )
 
@@ -101,6 +102,11 @@ cc_proto_library(
 cc_proto_library(
     name = "color_cc_proto",
     deps = [":color_proto"],
+)
+
+cc_proto_library(
+    name = "options_cc_proto",
+    deps = [":options_proto"],
 )
 
 cc_proto_library(
