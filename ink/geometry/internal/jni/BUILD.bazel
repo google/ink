@@ -38,6 +38,20 @@ cc_library(
     alwayslink = 1,
 )
 
+filegroup(
+    name = "cinterop_headers",
+    srcs = glob(["*_native.h"]),
+    visibility = ["//ink:__subpackages__"],
+)
+
+cc_library(
+    name = "cinterop",
+    tags = ["keep_dep"],
+    visibility = ["//ink:__subpackages__"],
+    deps = [":angle_native"],
+    alwayslink = 1,
+)
+
 cc_library(
     name = "angle_jni",
     srcs = ["angle_jni.cc"],
