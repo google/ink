@@ -14,14 +14,15 @@
 
 #include <jni.h>
 
-#include <map>
 #include <optional>
 #include <string>
 #include <utility>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_coat.h"
@@ -57,6 +58,7 @@ using ::ink::EncodeBrushCoat;
 using ::ink::EncodeBrushFamily;
 using ::ink::EncodeBrushPaint;
 using ::ink::EncodeBrushTip;
+using ::ink::jni::AbslStringViewToJByteArray;
 using ::ink::jni::CastToBrush;
 using ::ink::jni::CastToBrushBehavior;
 using ::ink::jni::CastToBrushCoat;
@@ -73,7 +75,6 @@ using ::ink::jni::NewNativeBrushPaint;
 using ::ink::jni::NewNativeBrushTip;
 using ::ink::jni::ParseProtoFromEither;
 using ::ink::jni::SerializeProto;
-using ::ink::jni::StdStringToJByteArray;
 using ::ink::jni::ThrowExceptionFromStatus;
 
 }  // namespace
@@ -90,7 +91,7 @@ JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrush)
 JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushFamily)
 (JNIEnv* env, jobject object, jlong brush_family_native_pointer,
  jobjectArray texture_map_keys, jobjectArray texture_map_values) {
-  std::map<std::string, std::string> texture_map = {};
+  absl::flat_hash_map<std::string, std::string> texture_map = {};
 
   jsize key_length = env->GetArrayLength(texture_map_keys);
   jsize value_length = env->GetArrayLength(texture_map_values);
@@ -112,7 +113,7 @@ JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushFamily)
 
   ink::TextureBitmapProvider texture_bitmap_provider =
       [&texture_map](
-          const std::string& texture_id) -> std::optional<std::string> {
+          absl::string_view texture_id) -> std::optional<std::string> {
     if (auto it = texture_map.find(texture_id); it != texture_map.end()) {
       return it->second;
     }
@@ -199,14 +200,15 @@ JNI_METHOD(storage, BrushSerializationNative, jlong,
 
   ink::ClientTextureIdProviderAndBitmapReceiver decode_texture_jni_wrapper =
       [env, callback, on_decode_texture_method](
-          const std::string& encoded_id,
-          const std::string& bitmap) -> absl::StatusOr<std::string> {
+          absl::string_view encoded_id,
+          absl::string_view bitmap) -> absl::StatusOr<std::string> {
     if (env->ExceptionCheck()) {
       return absl::InternalError("Previously encountered exception in JVM.");
     }
-    jstring encoded_id_jstring = env->NewStringUTF(encoded_id.c_str());
+    jstring encoded_id_jstring =
+        env->NewStringUTF(std::string(encoded_id).c_str());
     jbyteArray pixel_data_jarray =
-        bitmap.empty() ? nullptr : StdStringToJByteArray(env, bitmap);
+        bitmap.empty() ? nullptr : AbslStringViewToJByteArray(env, bitmap);
 
     jstring new_id_jstring = static_cast<jstring>(
         env->CallObjectMethod(callback, on_decode_texture_method,

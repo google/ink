@@ -44,8 +44,8 @@ inline std::string JStringToStdString(JNIEnv* env, jstring j_string) {
   return std::string(JStringView(env, j_string).string_view());
 }
 
-// Converts a `std::string` to a JVM `jbyteArray`.
-jbyteArray StdStringToJByteArray(JNIEnv* env, const std::string& str);
+// Converts an `absl::string_view to a JVM `jbyteArray`.
+jbyteArray AbslStringViewToJByteArray(JNIEnv* env, absl::string_view str);
 
 // Converts a JVM `jbyteArray` to a `std::string`.
 std::string JByteArrayToStdString(JNIEnv* env, jbyteArray byteArray);

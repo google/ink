@@ -181,8 +181,8 @@ TEST(BrushTest, DecodeBrushProto) {
 
   std::map<std::string, std::string> decoded_bitmaps = {};
   ClientTextureIdProviderAndBitmapReceiver callback =
-      [&decoded_bitmaps](const std::string& id,
-                         const std::string& bitmap) -> std::string {
+      [&decoded_bitmaps](absl::string_view id,
+                         absl::string_view bitmap) -> std::string {
     std::string new_id = "";
     if (id == kTestTextureId1) {
       new_id = kTestTextureId1Decoded;
@@ -191,7 +191,7 @@ TEST(BrushTest, DecodeBrushProto) {
     }
     if (!bitmap.empty()) {
       if (decoded_bitmaps.find(new_id) == decoded_bitmaps.end()) {
-        decoded_bitmaps.insert({new_id, bitmap});
+        decoded_bitmaps.insert({new_id, std::string(bitmap)});
       }
     }
     return new_id;
@@ -405,7 +405,7 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
   ASSERT_EQ(brush.status(), absl::OkStatus());
   proto::Brush brush_proto_out;
   int callback_count = 0;
-  TextureBitmapProvider callback = [&callback_count](const std::string& id) {
+  TextureBitmapProvider callback = [&callback_count](absl::string_view id) {
     callback_count++;
     return std::nullopt;
   };
@@ -479,7 +479,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
   proto::Brush brush_proto_out;
   int callback_count = 0;
   TextureBitmapProvider callback =
-      [&callback_count](const std::string& id) -> std::optional<std::string> {
+      [&callback_count](absl::string_view id) -> std::optional<std::string> {
     callback_count++;
     if (kTestTextureId1 == id) {
       return TestPngBytes1x1();
@@ -568,7 +568,7 @@ TEST(BrushTest, EncodeBrushFamilyTextureMap) {
   int distinct_texture_ids_count = 0;
   TextureBitmapProvider callback =
       [&distinct_texture_ids_count](
-          const std::string& id) -> std::optional<std::string> {
+          absl::string_view id) -> std::optional<std::string> {
     distinct_texture_ids_count++;
     if (kTestTextureId1 == id) {
       return TestPngBytes1x1();
@@ -599,7 +599,7 @@ TEST(BrushTest, EncodeBrushFamilyTextureMapWithNonEmptyProto) {
 
   int callback_count = 0;
   TextureBitmapProvider callback =
-      [&callback_count](const std::string& id) -> std::optional<std::string> {
+      [&callback_count](absl::string_view id) -> std::optional<std::string> {
     callback_count++;
     return std::nullopt;
   };
@@ -645,8 +645,8 @@ TEST(BrushTest, DecodeBrushFamilyWithNoInputModel) {
 TEST(BrushTest, DecodeBrushFamilyReturnsErrorStatusFromCallback) {
   absl::Status error_status = absl::InternalError("test error");
   ClientTextureIdProviderAndBitmapReceiver callback =
-      [&error_status](const std::string&,
-                      const std::string&) -> absl::StatusOr<std::string> {
+      [&error_status](absl::string_view,
+                      absl::string_view) -> absl::StatusOr<std::string> {
     return error_status;
   };
   proto::BrushFamily family_proto;
@@ -663,7 +663,7 @@ TEST(BrushTest, DecodeBrushPaintReturnsErrorStatusFromCallback) {
   absl::Status error_status = absl::InternalError("test error");
   ClientTextureIdProvider callback =
       [&error_status](
-          const std::string& encoded_id) -> absl::StatusOr<std::string> {
+          absl::string_view encoded_id) -> absl::StatusOr<std::string> {
     return error_status;
   };
   proto::BrushPaint paint_proto;
@@ -795,16 +795,16 @@ void EncodeDecodeBrushRoundTrip(const Brush& brush_in) {
   int decode_callback_count = 0;
   TextureBitmapProvider encode_callback =
       [&encode_callback_count](
-          const std::string& id) -> std::optional<std::string> {
+          absl::string_view id) -> std::optional<std::string> {
     encode_callback_count++;
     return std::nullopt;
   };
   ClientTextureIdProviderAndBitmapReceiver decode_callback =
       [&decode_callback_count](
-          const std::string& id,
-          const std::string& bitmap) -> absl::StatusOr<std::string> {
+          absl::string_view id,
+          absl::string_view bitmap) -> absl::StatusOr<std::string> {
     decode_callback_count++;
-    return id;
+    return std::string(id);
   };
   proto::Brush brush_proto_in;
   EncodeBrush(brush_in, brush_proto_in, encode_callback);

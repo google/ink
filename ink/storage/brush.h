@@ -20,6 +20,7 @@
 #include <string>
 
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_coat.h"
@@ -37,19 +38,19 @@ namespace ink {
 // returned string is the bytes of the PNG-encoded bitmap, or std::nullopt if
 // the bitmap is not available.
 using TextureBitmapProvider =
-    std::function<std::optional<std::string>(const std::string& id)>;
+    std::function<std::optional<std::string>(absl::string_view id)>;
 
 // Provides a new client texture ID for a given encoded texture ID, and is
 // responsible for receiving (e.g. by storing) the corresponding bitmap.
 // `bitmap` is the bytes of the PNG-encoded bitmap that the proto associated
 // with `encoded_id`, or the empty string if there was no associated bitmap.
 using ClientTextureIdProviderAndBitmapReceiver =
-    std::function<absl::StatusOr<std::string>(const std::string& encoded_id,
-                                              const std::string& bitmap)>;
+    std::function<absl::StatusOr<std::string>(absl::string_view encoded_id,
+                                              absl::string_view bitmap)>;
 
 // Provides a new client texture ID for a given encoded texture ID.
 using ClientTextureIdProvider =
-    std::function<absl::StatusOr<std::string>(const std::string& encoded_id)>;
+    std::function<absl::StatusOr<std::string>(absl::string_view encoded_id)>;
 
 // Populates the given proto by encoding the given brush object.
 //
@@ -57,12 +58,12 @@ using ClientTextureIdProvider =
 // the proto first.
 void EncodeBrush(
     const Brush& brush, proto::Brush& brush_proto_out,
-    TextureBitmapProvider get_bitmap = [](const std::string& id) {
+    TextureBitmapProvider get_bitmap = [](absl::string_view id) {
       return std::nullopt;
     });
 void EncodeBrushFamily(
     const BrushFamily& family, proto::BrushFamily& family_proto_out,
-    TextureBitmapProvider get_bitmap = [](const std::string& id) {
+    TextureBitmapProvider get_bitmap = [](absl::string_view id) {
       return std::nullopt;
     });
 void EncodeBrushFamilyTextureMap(
@@ -84,8 +85,8 @@ absl::StatusOr<Brush> DecodeBrush(
     const proto::Brush& brush_proto,
     // LINT.IfChange(decode_brush_get_client_texture_id)
     ClientTextureIdProviderAndBitmapReceiver get_client_texture_id =
-        [](const std::string& encoded_id, const std::string& bitmap) {
-          return encoded_id;
+        [](absl::string_view encoded_id, absl::string_view bitmap) {
+          return std::string(encoded_id);
         },
     // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.cc:decode_brush_get_client_texture_id)
     Version max_version = Version::kMaxSupported());
@@ -95,8 +96,8 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto,
     // LINT.IfChange(decode_brush_family_get_client_texture_id)
     ClientTextureIdProviderAndBitmapReceiver get_client_texture_id =
-        [](const std::string& encoded_id, const std::string& bitmap) {
-          return encoded_id;
+        [](absl::string_view encoded_id, absl::string_view bitmap) {
+          return std::string(encoded_id);
         },
     // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.cc:decode_brush_family_get_client_texture_id)
     Version max_version = Version::kMaxSupported());
@@ -105,11 +106,11 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
 absl::StatusOr<BrushCoat> DecodeBrushCoat(
     const proto::BrushCoat& coat_proto,
     ClientTextureIdProvider get_client_texture_id =
-        [](const std::string& encoded_id) { return encoded_id; });
+        [](absl::string_view encoded_id) { return std::string(encoded_id); });
 absl::StatusOr<BrushPaint> DecodeBrushPaint(
     const proto::BrushPaint& paint_proto,
     ClientTextureIdProvider get_client_texture_id =
-        [](const std::string& encoded_id) { return encoded_id; });
+        [](absl::string_view encoded_id) { return std::string(encoded_id); });
 absl::StatusOr<BrushTip> DecodeBrushTip(const proto::BrushTip& tip_proto);
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNode(
     const proto::BrushBehavior::Node& node_proto);

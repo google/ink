@@ -75,9 +75,11 @@ cc_library(
         "//ink/storage:brush",
         "//ink/storage/proto:brush_cc_proto",
         "//ink/storage/proto:brush_family_cc_proto",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:string_view",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [

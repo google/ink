@@ -15,18 +15,19 @@
 #include "ink/storage/brush.h"
 
 #include <array>
-#include <map>
 #include <optional>
 #include <string>
 #include <utility>
 #include <variant>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
@@ -1682,8 +1683,8 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
   return DecodeBrushFamily(
       family_proto,
       // LINT.IfChange(decode_brush_family_get_client_texture_id)
-      [](const std::string& encoded_id, const std::string& bitmap) {
-        return encoded_id;
+      [](absl::string_view encoded_id, absl::string_view bitmap) {
+        return std::string(encoded_id);
       },
       // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.h:decode_brush_family_get_client_texture_id)
       max_version);
@@ -1708,11 +1709,11 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
 
   // ID map that also serves as a record of the IDs for which we've already
   // called `get_client_texture_id`.
-  std::map<std::string, std::string> old_to_new_id = {};
+  absl::flat_hash_map<std::string, std::string> old_to_new_id = {};
 
   ClientTextureIdProvider texture_callback =
       [&family_proto, &old_to_new_id, &get_client_texture_id](
-          const std::string& old_id) -> absl::StatusOr<std::string> {
+          absl::string_view old_id) -> absl::StatusOr<std::string> {
     if (auto it = old_to_new_id.find(old_id); it != old_to_new_id.end()) {
       // No need to call `get_client_texture_id` again.
       return it->second;
@@ -1728,7 +1729,7 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
     if (!new_id.ok()) {
       return new_id.status();
     }
-    old_to_new_id.insert({old_id, *new_id});
+    old_to_new_id.insert({std::string(old_id), *new_id});
     return *new_id;
   };
 
@@ -1768,8 +1769,8 @@ absl::StatusOr<Brush> DecodeBrush(const proto::Brush& brush_proto,
   return DecodeBrush(
       brush_proto,
       // LINT.IfChange(decode_brush_get_client_texture_id)
-      [](const std::string& encoded_id, const std::string& bitmap) {
-        return encoded_id;
+      [](absl::string_view encoded_id, absl::string_view bitmap) {
+        return std::string(encoded_id);
       },
       // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.h:decode_brush_get_client_texture_id)
       max_version);

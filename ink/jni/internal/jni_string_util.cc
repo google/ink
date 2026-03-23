@@ -40,7 +40,7 @@ JStringView::~JStringView() {
   }
 }
 
-jbyteArray StdStringToJByteArray(JNIEnv* env, const std::string& str) {
+jbyteArray AbslStringViewToJByteArray(JNIEnv* env, absl::string_view str) {
   jbyteArray array = env->NewByteArray(str.size());
   env->SetByteArrayRegion(array, 0, str.size(),
                           reinterpret_cast<const jbyte*>(str.data()));
