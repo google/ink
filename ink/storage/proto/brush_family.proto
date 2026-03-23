@@ -121,10 +121,11 @@ message BrushCoat {
   option (ink.proto.message_min_version) = 0;
 
   optional BrushTip tip = 1 [(ink.proto.field_min_version) = 0];
-  optional BrushPaint paint = 2
-      [deprecated = true, (ink.proto.field_min_version) = 0];
-  // If empty, the `paint` field above will be used as the only entry. If that
-  // is also not set, the default `BrushPaint` will be used.
+
+  // Was `paint`; use `paint_preferences` instead.
+  reserved 2;
+
+  // If empty, the default `BrushPaint` will be used.
   repeated BrushPaint paint_preferences = 3 [(ink.proto.field_min_version) = 0];
 }
 
