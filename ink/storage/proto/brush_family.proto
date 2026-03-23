@@ -1002,20 +1002,6 @@ message BrushBehavior {
   }
   // LINT.ThenChange(../../brush/brush_behavior.h:out_of_range)
 
-  // List of input properties that might not be reported by `StrokeInput`.
-  //
-  // This enum is deprecated, and exists only to support the deprecated
-  // `FallbackFilterNode` type.
-  enum OptionalInputProperty {
-    OPTIONAL_INPUT_UNSPECIFIED = 0 [(ink.proto.enum_value_min_version) = 0];
-    OPTIONAL_INPUT_PRESSURE = 1 [(ink.proto.enum_value_min_version) = 0];
-    OPTIONAL_INPUT_TILT = 2 [(ink.proto.enum_value_min_version) = 0];
-    OPTIONAL_INPUT_ORIENTATION = 3 [(ink.proto.enum_value_min_version) = 0];
-
-    // Tilt-x and tilt-y require both tilt and orientation to be reported.
-    OPTIONAL_INPUT_TILT_X_AND_Y = 4 [(ink.proto.enum_value_min_version) = 0];
-  }
-
   // LINT.IfChange(binary_op)
 
   // A binary operation for combining two values in a `BinaryOpNode`.
@@ -1100,8 +1086,6 @@ message BrushBehavior {
     oneof node {
       SourceNode source_node = 1 [(ink.proto.field_min_version) = 0];
       ConstantNode constant_node = 2 [(ink.proto.field_min_version) = 0];
-      FallbackFilterNode fallback_filter_node = 3
-          [deprecated = true, (ink.proto.field_min_version) = 0];
       ToolTypeFilterNode tool_type_filter_node = 4
           [(ink.proto.field_min_version) = 0];
       DampingNode damping_node = 5 [(ink.proto.field_min_version) = 0];
@@ -1115,6 +1099,8 @@ message BrushBehavior {
           [(ink.proto.field_min_version) = 0];
       IntegralNode integral_node = 12 [(ink.proto.field_min_version) = 1];
     }
+    // Removed Node types go here (reserved needs to be outside oneof).
+    reserved 3;
   }
 
   // Value node for getting data from the stroke input batch.
@@ -1188,38 +1174,6 @@ message BrushBehavior {
     // other words, if two points in the input are separated by at least this
     // period, their output values are uncorrelated.)
     optional float base_period = 3 [(ink.proto.field_min_version) = 0];
-  }
-
-  // Value node for filtering out a branch of a behavior graph unless a
-  // particular stroke input property is missing.
-  //
-  // This node type is deprecated. Using BINARY_OP_OR_ELSE is usually a better
-  // option for fallback calculations, but if necessary a FallbackFilterNode can
-  // be directly emulated by the sequence of nodes:
-  //
-  //   * SourceNode { source = <equivalent source for is_fallback_for>, ... }
-  //   * ConstantNode { value = 0 }
-  //   * BinaryOpNode { operation = BINARY_OP_XOR_ELSE }
-  //   * <any nodes that form the input to the FallbackFilterNode go here>
-  //   * BinaryOpNode { operation = BINARY_OP_AND_THEN }
-  //
-  // This works because the XOR_ELSE node in this setup will emit null if and
-  // only if the optional input property is available, in which case the
-  // AND_THEN node will filter out the fallback subtree, just like a
-  // `FallbackFilterNode would`
-  //
-  // Inputs: 1
-  //
-  // Output: Null if the specified property is present in the stroke input
-  // batch, otherwise the input value.
-  //
-  // To be valid: `is_fallback_for` must be a valid `OptionalInputProperty`
-  // enumerator.
-  message FallbackFilterNode {
-    option (ink.proto.message_min_version) = 0;
-
-    optional OptionalInputProperty is_fallback_for = 1
-        [(ink.proto.field_min_version) = 0];
   }
 
   // Value node for filtering out a branch of a behavior graph unless this
