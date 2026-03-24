@@ -262,11 +262,6 @@ proto::BrushBehavior::Source EncodeBrushBehaviorSource(
   return proto::BrushBehavior::SOURCE_UNSPECIFIED;
 }
 
-void ConvertFromMillisToSeconds(std::array<float, 2>& source_value_range) {
-  source_value_range[0] /= 1000;
-  source_value_range[1] /= 1000;
-}
-
 // Decodes a proto `Source` enum to a native `Source` enum. If the proto enum is
 // using deprecated units, this will mutate `source_value_range` to apply a
 // scaling factor to the units of the returned native enum.
@@ -305,25 +300,16 @@ absl::StatusOr<BrushBehavior::Source> DecodeBrushBehaviorSource(
       return BrushBehavior::Source::kDistanceTraveledInMultiplesOfBrushSize;
     case proto::BrushBehavior::SOURCE_TIME_OF_INPUT_IN_SECONDS:
       return BrushBehavior::Source::kTimeOfInputInSeconds;
-    case proto::BrushBehavior::SOURCE_TIME_OF_INPUT_IN_MILLIS:
-      ConvertFromMillisToSeconds(source_value_range);
-      return BrushBehavior::Source::kTimeOfInputInSeconds;
     case proto::BrushBehavior::
         SOURCE_PREDICTED_DISTANCE_TRAVELED_IN_MULTIPLES_OF_BRUSH_SIZE:
       return BrushBehavior::Source::
           kPredictedDistanceTraveledInMultiplesOfBrushSize;
     case proto::BrushBehavior::SOURCE_PREDICTED_TIME_ELAPSED_IN_SECONDS:
       return BrushBehavior::Source::kPredictedTimeElapsedInSeconds;
-    case proto::BrushBehavior::SOURCE_PREDICTED_TIME_ELAPSED_IN_MILLIS:
-      ConvertFromMillisToSeconds(source_value_range);
-      return BrushBehavior::Source::kPredictedTimeElapsedInSeconds;
     case proto::BrushBehavior::
         SOURCE_DISTANCE_REMAINING_IN_MULTIPLES_OF_BRUSH_SIZE:
       return BrushBehavior::Source::kDistanceRemainingInMultiplesOfBrushSize;
     case proto::BrushBehavior::SOURCE_TIME_SINCE_INPUT_IN_SECONDS:
-      return BrushBehavior::Source::kTimeSinceInputInSeconds;
-    case proto::BrushBehavior::SOURCE_TIME_SINCE_INPUT_IN_MILLIS:
-      ConvertFromMillisToSeconds(source_value_range);
       return BrushBehavior::Source::kTimeSinceInputInSeconds;
     case proto::BrushBehavior::SOURCE_DIRECTION_IN_RADIANS:
       return BrushBehavior::Source::kDirectionInRadians;

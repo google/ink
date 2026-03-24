@@ -671,11 +671,7 @@ message BrushBehavior {
     SOURCE_TIME_OF_INPUT_IN_SECONDS = 13
         [(ink.proto.enum_value_min_version) = 0];
 
-    // The time elapsed (in milliseconds) from when the stroke started to when
-    // this part of the stroke was drawn. This is deprecated; use
-    // SOURCE_TIME_OF_INPUT_IN_SECONDS instead.
-    SOURCE_TIME_OF_INPUT_IN_MILLIS = 14
-        [deprecated = true, (ink.proto.enum_value_min_version) = 0];
+    reserved 14;
 
     // Distance traveled by the inputs of the current prediction, starting at 0
     // at the last non-predicted input, in multiples of the brush size. Zero for
@@ -689,10 +685,7 @@ message BrushBehavior {
     SOURCE_PREDICTED_TIME_ELAPSED_IN_SECONDS = 16
         [(ink.proto.enum_value_min_version) = 0];
 
-    // Elapsed time (in milliseconds) of the prediction. This is deprecated; use
-    // SOURCE_PREDICTED_TIME_ELAPSED_IN_SECONDS instead.
-    SOURCE_PREDICTED_TIME_ELAPSED_IN_MILLIS = 17
-        [deprecated = true, (ink.proto.enum_value_min_version) = 0];
+    reserved 17;
 
     // The distance left to be traveled from a given modeled input to the
     // current last modeled input of the stroke in multiples of the brush size.
@@ -708,10 +701,7 @@ message BrushBehavior {
     SOURCE_TIME_SINCE_INPUT_IN_SECONDS = 19
         [(ink.proto.enum_value_min_version) = 0];
 
-    // Time elapsed (in milliseconds) since the modeled stroke input. This
-    // is deprecated; use SOURCE_TIME_SINCE_INPUT_IN_SECONDS instead.
-    SOURCE_TIME_SINCE_INPUT_IN_MILLIS = 20
-        [deprecated = true, (ink.proto.enum_value_min_version) = 0];
+    reserved 20;
 
     // Angle of the modeled stroke input's current direction of travel in stroke
     // coordinate space, normalized to the range [0, 2π). A value of 0 indicates
