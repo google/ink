@@ -15,6 +15,7 @@
 #include "ink/brush/brush_family.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <variant>
 #include <vector>
