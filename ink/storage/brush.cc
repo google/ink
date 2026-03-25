@@ -1568,7 +1568,6 @@ absl::StatusOr<BrushCoat> DecodeBrushCoat(
     if (!paint.ok()) {
       return paint.status();
     }
-
     paint_preferences.push_back(*std::move(paint));
   }
 
