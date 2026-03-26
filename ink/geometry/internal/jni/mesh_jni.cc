@@ -19,9 +19,9 @@
 
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
+#include "ink/geometry/internal/jni/box_jni_helper.h"
 #include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
 #include "ink/geometry/internal/jni/mesh_jni_helper.h"
-#include "ink/geometry/internal/jni/rect_jni_helper.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_packing_types.h"

@@ -19,7 +19,7 @@
 
 #include "ink/geometry/angle.h"
 #include "ink/geometry/envelope.h"
-#include "ink/geometry/internal/jni/rect_jni_helper.h"
+#include "ink/geometry/internal/jni/box_jni_helper.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"

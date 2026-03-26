@@ -15,58 +15,46 @@
 #include <jni.h>
 
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
-#include "ink/geometry/point.h"
-#include "ink/geometry/rect.h"
 #include "ink/jni/internal/jni_defines.h"
 
-namespace {
-
-using ::ink::Point;
-using ::ink::Rect;
 using ::ink::jni::CreateJImmutableVecFromPointOrThrow;
 using ::ink::jni::FillJMutableVecFromPointOrThrow;
 
-}  // namespace
-
 extern "C" {
+
+// C-compatible library header needs to be included in extern "C" block.
+#include "ink/geometry/internal/jni/box_native.h"
 
 JNI_METHOD(geometry, BoxNative, jobject, createCenter)
 (JNIEnv* env, jobject object, float rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max) {
-  Rect rect =
-      Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
-  Point point = rect.Center();
-
-  return CreateJImmutableVecFromPointOrThrow(env, point);
+  BoxNative_Point point =
+      BoxNative_createCenter(rect_x_min, rect_y_min, rect_x_max, rect_y_max);
+  return CreateJImmutableVecFromPointOrThrow(env, {point.x, point.y});
 }
 
 JNI_METHOD(geometry, BoxNative, void, populateCenter)
 (JNIEnv* env, jobject object, float rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max, jobject mutable_vec) {
-  Rect rect =
-      Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
-  Point point = rect.Center();
-
-  FillJMutableVecFromPointOrThrow(env, mutable_vec, point);
+  BoxNative_Point point =
+      BoxNative_createCenter(rect_x_min, rect_y_min, rect_x_max, rect_y_max);
+  FillJMutableVecFromPointOrThrow(env, mutable_vec, {point.x, point.y});
 }
 
 JNI_METHOD(geometry, BoxNative, jboolean, containsPoint)
 (JNIEnv* env, jobject object, jfloat rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max, jfloat point_x, jfloat point_y) {
-  Rect rect =
-      Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
-  return rect.Contains(Point{point_x, point_y});
+  return BoxNative_containsPoint(rect_x_min, rect_y_min, rect_x_max, rect_y_max,
+                                 point_x, point_y);
 }
 
 JNI_METHOD(geometry, BoxNative, jboolean, containsBox)
 (JNIEnv* env, jobject object, jfloat rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max, jfloat other_x_min, jfloat other_y_min,
  jfloat other_x_max, jfloat other_y_max) {
-  Rect rect =
-      Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
-  Rect other_rect = Rect::FromTwoPoints({other_x_min, other_y_min},
-                                        {other_x_max, other_y_max});
-  return rect.Contains(other_rect);
+  return BoxNative_containsBox(rect_x_min, rect_y_min, rect_x_max, rect_y_max,
+                               other_x_min, other_y_min, other_x_max,
+                               other_y_max);
 }
 
 }  // extern "C

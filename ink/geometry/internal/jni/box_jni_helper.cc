@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/geometry/internal/jni/rect_jni_helper.h"
+#include "ink/geometry/internal/jni/box_jni_helper.h"
 
 #include <jni.h>
 

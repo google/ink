@@ -26,12 +26,12 @@ cc_library(
         ":affine_transform_jni",
         ":angle_jni",
         ":box_accumulator_jni",
+        ":box_jni",
         ":intersects_jni",
         ":mesh_format_jni",
         ":mesh_jni",
         ":parallelogram_jni",
         ":partitioned_mesh_jni",
-        ":rect_jni",
         ":triangle_jni",
         ":vec_jni",
     ],
@@ -50,6 +50,7 @@ cc_library(
     visibility = ["//ink:__subpackages__"],
     deps = [
         ":angle_native",
+        ":box_native",
         ":vec_native",
     ],
     alwayslink = 1,
@@ -114,10 +115,10 @@ cc_library(
     srcs = ["partitioned_mesh_jni.cc"],
     tags = ["keep_dep"],
     deps = [
+        ":box_jni_helper",
         ":mesh_format_jni_helper",
         ":mesh_jni_helper",
         ":partitioned_mesh_jni_helper",
-        ":rect_jni_helper",
         "//ink/geometry:affine_transform",
         "//ink/geometry:angle",
         "//ink/geometry:mesh",
@@ -147,9 +148,9 @@ cc_library(
     tags = ["keep_dep"],
     deps = [
         ":box_accumulator_jni_helper",
+        ":box_jni_helper",
         ":mesh_format_jni_helper",
         ":mesh_jni_helper",
-        ":rect_jni_helper",
         ":vec_jni_helper",
         "//ink/geometry:envelope",
         "//ink/geometry:mesh",
@@ -256,13 +257,13 @@ cc_library(
 )
 
 cc_library(
-    name = "rect_jni",
-    srcs = ["rect_jni.cc"],
+    name = "box_jni",
+    srcs = ["box_jni.cc"],
     tags = ["keep_dep"],
     deps = [
+        ":box_native",
         ":vec_jni_helper",
         "//ink/geometry:point",
-        "//ink/geometry:rect",
         "//ink/jni/internal:jni_defines",
     ] + select({
         "@platforms//os:android": [],
@@ -274,9 +275,20 @@ cc_library(
 )
 
 cc_library(
-    name = "rect_jni_helper",
-    srcs = ["rect_jni_helper.cc"],
-    hdrs = ["rect_jni_helper.h"],
+    name = "box_native",
+    srcs = ["box_native.cc"],
+    hdrs = ["box_native.h"],
+    deps = [
+        "//ink/geometry:point",
+        "//ink/geometry:rect",
+    ],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "box_jni_helper",
+    srcs = ["box_jni_helper.cc"],
+    hdrs = ["box_jni_helper.h"],
     # Temporarily limited visibility while new APIs are being developed.
     visibility = ["//visibility:private"],
     deps = [
@@ -318,7 +330,7 @@ cc_library(
     srcs = ["parallelogram_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":rect_jni_helper",
+        ":box_jni_helper",
         ":vec_jni_helper",
         "//ink/geometry:angle",
         "//ink/geometry:envelope",

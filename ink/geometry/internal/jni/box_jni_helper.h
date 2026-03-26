@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INK_GEOMETRY_INTERNAL_JNI_RECT_JNI_HELPER_H_
-#define INK_GEOMETRY_INTERNAL_JNI_RECT_JNI_HELPER_H_
+#ifndef INK_GEOMETRY_INTERNAL_JNI_BOX_JNI_HELPER_H_
+#define INK_GEOMETRY_INTERNAL_JNI_BOX_JNI_HELPER_H_
 
 #include <jni.h>
 
@@ -36,4 +36,4 @@ void FillJMutableBoxFromRectOrThrow(JNIEnv* env, jobject mutable_box,
 
 }  // namespace ink::jni
 
-#endif  // INK_GEOMETRY_INTERNAL_JNI_RECT_JNI_HELPER_H_
+#endif  // INK_GEOMETRY_INTERNAL_JNI_BOX_JNI_HELPER_H_
