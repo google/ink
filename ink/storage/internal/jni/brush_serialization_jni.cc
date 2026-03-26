@@ -280,8 +280,7 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushBehaviorFromProto)
 
 JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushTipFromProto)
 (JNIEnv* env, jobject object, jobject brush_tip_direct_byte_buffer,
- jbyteArray brush_tip_byte_array, jint offset, jint length,
- jboolean throw_on_parse_error) {
+ jbyteArray brush_tip_byte_array, jint offset, jint length) {
   ink::proto::BrushTip brush_tip_proto;
   if (absl::Status status = ParseProtoFromEither(
           env, brush_tip_direct_byte_buffer, brush_tip_byte_array, offset,
