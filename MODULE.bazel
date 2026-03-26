@@ -54,6 +54,7 @@ bazel_dep(
     version = "20250512.0",
     repo_name = "com_google_absl",
 )
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
 
 git_repository(
     name = "libtess2",
@@ -123,5 +124,4 @@ bazel_dep(
 # We can remove these when Skia has a MODULE.bazel file.
 # See: https://g-issues.skia.org/issues/367315534
 bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "libpng", version = "1.6.47")
