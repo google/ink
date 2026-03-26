@@ -12,17 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_static_library.bzl", "cc_static_library")
 
 package(
     default_visibility = ["//ink:__subpackages__"],
 )
 
-cc_binary(
-    name = "libink.so",
-    features = ["-legacy_whole_archive"],
-    linkshared = True,
-    linkstatic = True,
+cc_static_library(
+    name = "ink",
     deps = ["//ink/geometry/internal/jni:cinterop"],
 )
 
