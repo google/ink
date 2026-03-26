@@ -28,32 +28,35 @@ using ::ink::jni::FillJMutableVecFromVecOrThrow;
 
 extern "C" {
 
+// C-compatible library header needs to be included in extern "C" block.
+#include "ink/geometry/internal/jni/vec_native.h"
+
 JNI_METHOD(geometry, VecNative, jobject, unitVec)
 (JNIEnv* env, jobject object, jfloat vec_X, jfloat vec_Y) {
-  return CreateJImmutableVecFromVecOrThrow(env, Vec{vec_X, vec_Y}.AsUnitVec());
+  VecNative_Vec unit_vec = VecNative_unitVec(vec_X, vec_Y);
+  return CreateJImmutableVecFromVecOrThrow(env, Vec{unit_vec.x, unit_vec.y});
 }
 
 JNI_METHOD(geometry, VecNative, void, populateUnitVec)
 (JNIEnv* env, jobject object, jfloat vec_X, jfloat vec_Y,
  jobject output_mutable_vec) {
+  VecNative_Vec unit_vec = VecNative_unitVec(vec_X, vec_Y);
   FillJMutableVecFromVecOrThrow(env, output_mutable_vec,
-                                Vec{vec_X, vec_Y}.AsUnitVec());
+                                Vec{unit_vec.x, unit_vec.y});
 }
 
 JNI_METHOD(geometry, VecNative, jfloat, absoluteAngleBetweenInDegrees)
 (JNIEnv* env, jobject object, jfloat first_vec_X, jfloat first_vec_Y,
  jfloat second_vec_X, jfloat second_vec_Y) {
-  return Vec::AbsoluteAngleBetween(Vec{first_vec_X, first_vec_Y},
-                                   Vec{second_vec_X, second_vec_Y})
-      .ValueInDegrees();
+  return VecNative_absoluteAngleBetweenInDegrees(first_vec_X, first_vec_Y,
+                                                 second_vec_X, second_vec_Y);
 }
 
 JNI_METHOD(geometry, VecNative, jfloat, signedAngleBetweenInDegrees)
 (JNIEnv* env, jobject object, jfloat first_vec_X, jfloat first_vec_Y,
  jfloat second_vec_X, jfloat second_vec_Y) {
-  return Vec::SignedAngleBetween(Vec{first_vec_X, first_vec_Y},
-                                 Vec{second_vec_X, second_vec_Y})
-      .ValueInDegrees();
+  return VecNative_signedAngleBetweenInDegrees(first_vec_X, first_vec_Y,
+                                               second_vec_X, second_vec_Y);
 }
 
-}  // extern "C
+}  // extern "C"

@@ -48,7 +48,10 @@ cc_library(
     name = "cinterop",
     tags = ["keep_dep"],
     visibility = ["//ink:__subpackages__"],
-    deps = [":angle_native"],
+    deps = [
+        ":angle_native",
+        ":vec_native",
+    ],
     alwayslink = 1,
 )
 
@@ -360,6 +363,7 @@ cc_library(
     tags = ["keep_dep"],
     deps = [
         ":vec_jni_helper",
+        ":vec_native",
         "//ink/geometry:point",
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_defines",
@@ -370,6 +374,17 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "vec_native",
+    srcs = ["vec_native.cc"],
+    hdrs = ["vec_native.h"],
+    deps = [
+        "//ink/geometry:angle",
+        "//ink/geometry:vec",
+    ],
     alwayslink = 1,
 )
 
