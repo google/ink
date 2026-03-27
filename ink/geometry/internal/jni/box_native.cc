@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ink/geometry/internal/jni/box_native.h"
+
+#include "ink/geometry/internal/jni/vec_native.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
 
@@ -20,11 +23,8 @@ using ::ink::Rect;
 
 extern "C" {
 
-// C-compatible library header needs to be included in extern "C" block.
-#include "ink/geometry/internal/jni/box_native.h"
-
-BoxNative_Point BoxNative_createCenter(float rect_x_min, float rect_y_min,
-                                       float rect_x_max, float rect_y_max) {
+VecNative_Vec BoxNative_createCenter(float rect_x_min, float rect_y_min,
+                                     float rect_x_max, float rect_y_max) {
   Rect rect =
       Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
   Point point = rect.Center();

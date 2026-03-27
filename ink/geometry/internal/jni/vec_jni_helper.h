@@ -17,35 +17,31 @@
 
 #include <jni.h>
 
+#include "ink/geometry/internal/jni/vec_native.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
 
 namespace ink::jni {
 
 // Calls back into the JVM to create a new ImmutableVec object
-// with the provided Vec. The caller must check if an exception was thrown by
+// with the provided input. The caller must check if an exception was thrown by
 // this call, e.g. with env->ExceptionCheck(). If an exception was thrown, the
 // caller must bail out instead of continuing execution.
-jobject CreateJImmutableVecFromVecOrThrow(JNIEnv* env, Vec vec);
-
-// Calls back into the JVM to create a new ImmutableVec object
-// with the provided Point. The caller must check if an exception was thrown by
-// this call, e.g. with env->ExceptionCheck(). If an exception was thrown, the
-// caller must bail out instead of continuing execution.
-jobject CreateJImmutableVecFromPointOrThrow(JNIEnv* env, Point point);
+jobject CreateJImmutableVecOrThrow(JNIEnv* env, float x, float y);
+jobject CreateJImmutableVecOrThrow(JNIEnv* env, const Vec& vec);
+jobject CreateJImmutableVecOrThrow(JNIEnv* env, const Point& point);
+jobject CreateJImmutableVecOrThrow(JNIEnv* env, const VecNative_Vec& vec);
 
 // Calls back into the JVM to populate an existing MutableVec object
-// with the provided Vec. The caller must check if an exception was thrown by
+// with the provided input. The caller must check if an exception was thrown by
 // this call, e.g. with env->ExceptionCheck(). If an exception was thrown, the
 // caller must bail out instead of continuing execution.
-void FillJMutableVecFromVecOrThrow(JNIEnv* env, jobject mutable_vec, Vec vec);
-
-// Calls back into the JVM to populate an existing MutableVec object
-// with the provided Point. The caller must check if an exception was thrown by
-// this call, e.g. with env->ExceptionCheck(). If an exception was thrown, the
-// caller must bail out instead of continuing execution.
-void FillJMutableVecFromPointOrThrow(JNIEnv* env, jobject mutable_vec,
-                                     Point point);
+void FillJMutableVecOrThrow(JNIEnv* env, float x, float y, jobject mutable_vec);
+void FillJMutableVecOrThrow(JNIEnv* env, const Vec& vec, jobject mutable_vec);
+void FillJMutableVecOrThrow(JNIEnv* env, const Point& point,
+                            jobject mutable_vec);
+void FillJMutableVecOrThrow(JNIEnv* env, const VecNative_Vec& vec,
+                            jobject mutable_vec);
 
 }  // namespace ink::jni
 

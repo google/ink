@@ -14,12 +14,10 @@
 
 #include <jni.h>
 
+#include "ink/geometry/internal/jni/angle_native.h"
 #include "ink/jni/internal/jni_defines.h"
 
 extern "C" {
-
-// C-compatible library header needs to be included in extern "C" block.
-#include "ink/geometry/internal/jni/angle_native.h"
 
 JNI_METHOD(geometry, AngleNative, jfloat, normalizedRadians)
 (JNIEnv* env, jobject object, jfloat radians) {

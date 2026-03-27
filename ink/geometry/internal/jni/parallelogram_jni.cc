@@ -27,22 +27,16 @@
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_jvm_interface.h"
 
-namespace {
-
 using ::ink::Angle;
 using ::ink::Envelope;
 using ::ink::Point;
 using ::ink::Quad;
 using ::ink::Vec;
 using ::ink::jni::ClassImmutableVec;
-using ::ink::jni::CreateJImmutableBoxFromRectOrThrow;
-using ::ink::jni::CreateJImmutableVecFromPointOrThrow;
-using ::ink::jni::CreateJImmutableVecFromVecOrThrow;
-using ::ink::jni::FillJMutableBoxFromRectOrThrow;
-using ::ink::jni::FillJMutableVecFromPointOrThrow;
-using ::ink::jni::FillJMutableVecFromVecOrThrow;
-
-}  // namespace
+using ::ink::jni::CreateJImmutableBoxOrThrow;
+using ::ink::jni::CreateJImmutableVecOrThrow;
+using ::ink::jni::FillJMutableBoxOrThrow;
+using ::ink::jni::FillJMutableVecOrThrow;
 
 extern "C" {
 
@@ -52,8 +46,7 @@ JNI_METHOD(geometry, ParallelogramNative, jobject, createBoundingBox)
   Quad quad = Quad::FromCenterDimensionsRotationAndSkew(
       {center_x, center_y}, width, height, Angle::Degrees(rotation_degrees),
       skew);
-  return CreateJImmutableBoxFromRectOrThrow(env,
-                                            Envelope(quad).AsRect().value());
+  return CreateJImmutableBoxOrThrow(env, Envelope(quad).AsRect().value());
 }
 
 JNI_METHOD(geometry, ParallelogramNative, void, populateBoundingBox)
@@ -62,8 +55,7 @@ JNI_METHOD(geometry, ParallelogramNative, void, populateBoundingBox)
   Quad quad = Quad::FromCenterDimensionsRotationAndSkew(
       {center_x, center_y}, width, height, Angle::Degrees(rotation_degrees),
       skew);
-  FillJMutableBoxFromRectOrThrow(env, mutable_box,
-                                 Envelope(quad).AsRect().value());
+  FillJMutableBoxOrThrow(env, Envelope(quad).AsRect().value(), mutable_box);
 }
 
 JNI_METHOD(geometry, ParallelogramNative, jobjectArray, createSemiAxes)
@@ -76,10 +68,10 @@ JNI_METHOD(geometry, ParallelogramNative, jobjectArray, createSemiAxes)
   std::pair<Vec, Vec> axes = quad.SemiAxes();
   jobjectArray vector_array =
       env->NewObjectArray(2, ClassImmutableVec(env), nullptr);
-  env->SetObjectArrayElement(
-      vector_array, 0, CreateJImmutableVecFromVecOrThrow(env, axes.first));
-  env->SetObjectArrayElement(
-      vector_array, 1, CreateJImmutableVecFromVecOrThrow(env, axes.second));
+  env->SetObjectArrayElement(vector_array, 0,
+                             CreateJImmutableVecOrThrow(env, axes.first));
+  env->SetObjectArrayElement(vector_array, 1,
+                             CreateJImmutableVecOrThrow(env, axes.second));
   return vector_array;
 }
 
@@ -91,9 +83,9 @@ JNI_METHOD(geometry, ParallelogramNative, void, populateSemiAxes)
       {center_x, center_y}, width, height, Angle::Degrees(rotation_degrees),
       skew);
   std::pair<Vec, Vec> axes = quad.SemiAxes();
-  FillJMutableVecFromVecOrThrow(env, out_axis1, axes.first);
+  FillJMutableVecOrThrow(env, axes.first, out_axis1);
   if (env->ExceptionCheck()) return;
-  FillJMutableVecFromVecOrThrow(env, out_axis2, axes.second);
+  FillJMutableVecOrThrow(env, axes.second, out_axis2);
 }
 
 JNI_METHOD(geometry, ParallelogramNative, jobjectArray, createCorners)
@@ -106,7 +98,7 @@ JNI_METHOD(geometry, ParallelogramNative, jobjectArray, createCorners)
   jobjectArray vector_array =
       env->NewObjectArray(4, ClassImmutableVec(env), nullptr);
   for (int i = 0; i < 4; ++i) {
-    jobject corner = CreateJImmutableVecFromPointOrThrow(env, corners[i]);
+    jobject corner = CreateJImmutableVecOrThrow(env, corners[i]);
     if (env->ExceptionCheck()) return nullptr;
     env->SetObjectArrayElement(vector_array, i, corner);
   }
@@ -121,13 +113,13 @@ JNI_METHOD(geometry, ParallelogramNative, void, populateCorners)
       {center_x, center_y}, width, height, Angle::Degrees(rotation_degrees),
       skew);
   std::array<Point, 4> corners = quad.Corners();
-  FillJMutableVecFromPointOrThrow(env, out_corner1, corners[0]);
+  FillJMutableVecOrThrow(env, corners[0], out_corner1);
   if (env->ExceptionCheck()) return;
-  FillJMutableVecFromPointOrThrow(env, out_corner2, corners[1]);
+  FillJMutableVecOrThrow(env, corners[1], out_corner2);
   if (env->ExceptionCheck()) return;
-  FillJMutableVecFromPointOrThrow(env, out_corner3, corners[2]);
+  FillJMutableVecOrThrow(env, corners[2], out_corner3);
   if (env->ExceptionCheck()) return;
-  FillJMutableVecFromPointOrThrow(env, out_corner4, corners[3]);
+  FillJMutableVecOrThrow(env, corners[3], out_corner4);
 }
 
 JNI_METHOD(geometry, ParallelogramNative, jboolean, contains)

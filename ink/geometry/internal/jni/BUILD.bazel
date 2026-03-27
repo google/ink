@@ -279,6 +279,7 @@ cc_library(
     srcs = ["box_native.cc"],
     hdrs = ["box_native.h"],
     deps = [
+        ":vec_native",
         "//ink/geometry:point",
         "//ink/geometry:rect",
     ],
@@ -406,6 +407,8 @@ cc_library(
     hdrs = ["vec_jni_helper.h"],
     visibility = ["//ink:__subpackages__"],
     deps = [
+        ":box_native",
+        ":vec_native",
         "//ink/geometry:point",
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_jvm_interface",

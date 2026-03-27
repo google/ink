@@ -24,7 +24,7 @@
 namespace ink::jni {
 
 jobject CreateJImmutableParallelogramOrThrow(JNIEnv* env, const Quad& quad) {
-  jobject center = CreateJImmutableVecFromPointOrThrow(env, quad.Center());
+  jobject center = CreateJImmutableVecOrThrow(env, quad.Center());
   if (env->ExceptionCheck()) return nullptr;
   return env->CallStaticObjectMethod(
       ClassImmutableParallelogram(env),

@@ -17,6 +17,10 @@
 
 // C-compatible library header for Kotlin-native bindings.
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 float AngleNative_normalizedRadians(float radians);
 
 float AngleNative_normalizedAboutZeroRadians(float radians);
@@ -24,5 +28,9 @@ float AngleNative_normalizedAboutZeroRadians(float radians);
 float AngleNative_normalizedDegrees(float degrees);
 
 float AngleNative_normalizedAboutZeroDegrees(float degrees);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif  // INK_GEOMETRY_INTERNAL_JNI_ANGLE_NATIVE_H_
