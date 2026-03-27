@@ -32,7 +32,6 @@ cc_library(
         ":easing_function_jni",
         ":stock_brushes_jni",
     ],
-    alwayslink = 1,
 )
 
 cc_library(
@@ -83,7 +82,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -109,7 +107,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -139,7 +136,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -165,7 +161,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -195,7 +190,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -223,7 +217,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -245,7 +238,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -268,7 +260,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -290,5 +281,4 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )

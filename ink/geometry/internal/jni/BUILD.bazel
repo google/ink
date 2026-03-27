@@ -35,7 +35,6 @@ cc_library(
         ":triangle_jni",
         ":vec_jni",
     ],
-    alwayslink = 1,
 )
 
 filegroup(
@@ -53,7 +52,6 @@ cc_library(
         ":box_native",
         ":vec_native",
     ],
-    alwayslink = 1,
 )
 
 cc_library(
@@ -69,7 +67,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -79,7 +76,6 @@ cc_library(
     deps = [
         "//ink/geometry:angle",
     ],
-    alwayslink = 1,
 )
 
 cc_library(
@@ -107,7 +103,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -139,7 +134,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -166,7 +160,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -203,7 +196,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -220,7 +212,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -271,7 +262,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -282,7 +272,6 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry:rect",
     ],
-    alwayslink = 1,
 )
 
 cc_library(
@@ -322,7 +311,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -346,7 +334,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -366,7 +353,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -386,7 +372,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -397,7 +382,6 @@ cc_library(
         "//ink/geometry:angle",
         "//ink/geometry:vec",
     ],
-    alwayslink = 1,
 )
 
 cc_library(
@@ -432,7 +416,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(

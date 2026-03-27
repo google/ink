@@ -29,7 +29,6 @@ cc_library(
         ":stroke_input_batch_jni",
         ":stroke_jni",
     ],
-    alwayslink = 1,
 )
 
 cc_library(
@@ -54,7 +53,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -106,7 +104,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -190,7 +187,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
 
 cc_library(
@@ -218,5 +214,4 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )
