@@ -54,7 +54,7 @@ jint ToolTypeToJInt(StrokeInput::ToolType type) {
   }
 }
 
-void UpdateJObjectInputOrThrow(JNIEnv* env, const StrokeInput& input_in,
+void UpdateJStrokeInputOrThrow(JNIEnv* env, const StrokeInput& input_in,
                                jobject j_input_out) {
   jobject j_inputtooltype = ToolTypeToJObjectOrThrow(env, input_in.tool_type);
   if (env->ExceptionCheck()) return;

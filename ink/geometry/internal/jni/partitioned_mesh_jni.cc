@@ -46,7 +46,7 @@ using ::ink::Rect;
 using ::ink::Triangle;
 using ::ink::VertexIndexPair;
 using ::ink::jni::CastToPartitionedMesh;
-using ::ink::jni::CreateJImmutableBoxFromRectOrThrow;
+using ::ink::jni::CreateJImmutableBoxOrThrow;
 using ::ink::jni::DeleteNativePartitionedMesh;
 using ::ink::jni::NewNativeMesh;
 using ::ink::jni::NewNativeMeshFormat;
@@ -121,7 +121,7 @@ JNI_METHOD(geometry, PartitionedMeshNative, jobject, createBounds)
   if (!bounds_rect.has_value()) {
     return nullptr;
   }
-  return CreateJImmutableBoxFromRectOrThrow(env, *bounds_rect);
+  return CreateJImmutableBoxOrThrow(env, *bounds_rect);
 }
 
 // Allocate an empty `PartitionedMesh` and return a pointer to it.

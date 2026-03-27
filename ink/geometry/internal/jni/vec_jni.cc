@@ -15,14 +15,12 @@
 #include <jni.h>
 
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
-#include "ink/geometry/vec.h"
 #include "ink/jni/internal/jni_defines.h"
 
 namespace {
 
-using ::ink::Vec;
-using ::ink::jni::CreateJImmutableVecFromVecOrThrow;
-using ::ink::jni::FillJMutableVecFromVecOrThrow;
+using ::ink::jni::CreateJImmutableVecOrThrow;
+using ::ink::jni::FillJMutableVecOrThrow;
 
 }  // namespace
 
@@ -34,15 +32,14 @@ extern "C" {
 JNI_METHOD(geometry, VecNative, jobject, unitVec)
 (JNIEnv* env, jobject object, jfloat vec_X, jfloat vec_Y) {
   VecNative_Vec unit_vec = VecNative_unitVec(vec_X, vec_Y);
-  return CreateJImmutableVecFromVecOrThrow(env, Vec{unit_vec.x, unit_vec.y});
+  return CreateJImmutableVecOrThrow(env, unit_vec);
 }
 
 JNI_METHOD(geometry, VecNative, void, populateUnitVec)
 (JNIEnv* env, jobject object, jfloat vec_X, jfloat vec_Y,
  jobject output_mutable_vec) {
-  VecNative_Vec unit_vec = VecNative_unitVec(vec_X, vec_Y);
-  FillJMutableVecFromVecOrThrow(env, output_mutable_vec,
-                                Vec{unit_vec.x, unit_vec.y});
+  FillJMutableVecOrThrow(env, VecNative_unitVec(vec_X, vec_Y),
+                         output_mutable_vec);
 }
 
 JNI_METHOD(geometry, VecNative, jfloat, absoluteAngleBetweenInDegrees)

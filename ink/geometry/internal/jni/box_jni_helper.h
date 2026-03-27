@@ -25,14 +25,13 @@ namespace ink::jni {
 // Rect. The caller must check if an exception was thrown by this call, e.g.
 // with env->ExceptionCheck(). If an exception was thrown, the caller must bail
 // out early instead of continuing execution.
-jobject CreateJImmutableBoxFromRectOrThrow(JNIEnv* env, Rect rect);
+jobject CreateJImmutableBoxOrThrow(JNIEnv* env, const Rect& rect);
 
 // Calls back into the JVM to populate an existing MutableBox object with the
 // provided Rect. The caller must check if an exception was thrown by this call,
 // e.g. with env->ExceptionCheck(). If an exception was thrown, the caller must
 // bail out instead of continuing execution.
-void FillJMutableBoxFromRectOrThrow(JNIEnv* env, jobject mutable_box,
-                                    Rect rect);
+void FillJMutableBoxOrThrow(JNIEnv* env, const Rect& rect, jobject mutable_box);
 
 }  // namespace ink::jni
 

@@ -75,7 +75,7 @@ jint ToolTypeToJInt(StrokeInput::ToolType type);
 // with the provided StrokeInput. The caller must check if an exception was
 // thrown by this call, e.g. with env->ExceptionCheck(). If an exception was
 // thrown, the caller must bail out instead of continuing execution.
-void UpdateJObjectInputOrThrow(JNIEnv* env, const StrokeInput& input_in,
+void UpdateJStrokeInputOrThrow(JNIEnv* env, const StrokeInput& input_in,
                                jobject j_input_out);
 
 }  // namespace ink::jni
