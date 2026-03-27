@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ink/geometry/internal/jni/angle_native.h"
+
 #include "ink/geometry/angle.h"
 
 // C-compatible library implementation for Kotlin-native bindings.
