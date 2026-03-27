@@ -153,6 +153,12 @@ JNI_METHOD(brush, BrushFamilyNative, jlong, newCopyOfInputModel)
   return NewNativeInputModel(brush_family.GetInputModel());
 }
 
+JNI_METHOD(brush, BrushFamilyNative, jint, calculateMinimumRequiredVersion)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
+  return brush_family.CalculateMinimumRequiredVersion().value();
+}
+
 JNI_METHOD(brush, InputModelNative, jlong, createNoParametersModel)
 (JNIEnv* env, jobject object, jint type) {
   return NewNativeInputModel(TypeToInputModel(type));
