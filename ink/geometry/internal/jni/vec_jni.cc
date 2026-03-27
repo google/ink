@@ -15,6 +15,7 @@
 #include <jni.h>
 
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
+#include "ink/geometry/internal/jni/vec_native.h"
 #include "ink/geometry/vec.h"
 #include "ink/jni/internal/jni_defines.h"
 
@@ -27,9 +28,6 @@ using ::ink::jni::FillJMutableVecFromVecOrThrow;
 }  // namespace
 
 extern "C" {
-
-// C-compatible library header needs to be included in extern "C" block.
-#include "ink/geometry/internal/jni/vec_native.h"
 
 JNI_METHOD(geometry, VecNative, jobject, unitVec)
 (JNIEnv* env, jobject object, jfloat vec_X, jfloat vec_Y) {

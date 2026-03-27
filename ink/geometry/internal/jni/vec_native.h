@@ -17,6 +17,10 @@
 
 // C-compatible library header for Kotlin-native bindings.
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   float x;
   float y;
@@ -33,5 +37,9 @@ float VecNative_signedAngleBetweenInDegrees(float first_vec_x,
                                             float first_vec_y,
                                             float second_vec_x,
                                             float second_vec_y);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif  // INK_GEOMETRY_INTERNAL_JNI_VEC_NATIVE_H_

@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ink/geometry/internal/jni/vec_native.h"
+
 #include "ink/geometry/angle.h"
 #include "ink/geometry/vec.h"
 
 using ::ink::Vec;
 
 extern "C" {
-
-// C-compatible library header needs to be included in extern "C" block.
-#include "ink/geometry/internal/jni/vec_native.h"
 
 VecNative_Vec VecNative_unitVec(float x, float y) {
   Vec unit_vec = Vec{x, y}.AsUnitVec();

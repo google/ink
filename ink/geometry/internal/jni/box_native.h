@@ -19,6 +19,10 @@
 
 // C-compatible library header for Kotlin-native bindings.
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   float x;
   float y;
@@ -35,5 +39,9 @@ bool BoxNative_containsBox(float rect_x_min, float rect_y_min, float rect_x_max,
                            float rect_y_max, float other_x_min,
                            float other_y_min, float other_x_max,
                            float other_y_max);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif  // INK_GEOMETRY_INTERNAL_JNI_BOX_NATIVE_H_

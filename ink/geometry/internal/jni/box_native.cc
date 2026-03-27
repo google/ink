@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ink/geometry/internal/jni/box_native.h"
+
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
 
@@ -19,9 +21,6 @@ using ::ink::Point;
 using ::ink::Rect;
 
 extern "C" {
-
-// C-compatible library header needs to be included in extern "C" block.
-#include "ink/geometry/internal/jni/box_native.h"
 
 BoxNative_Point BoxNative_createCenter(float rect_x_min, float rect_y_min,
                                        float rect_x_max, float rect_y_max) {

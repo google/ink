@@ -14,6 +14,7 @@
 
 #include <jni.h>
 
+#include "ink/geometry/internal/jni/box_native.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
 
@@ -21,9 +22,6 @@ using ::ink::jni::CreateJImmutableVecFromPointOrThrow;
 using ::ink::jni::FillJMutableVecFromPointOrThrow;
 
 extern "C" {
-
-// C-compatible library header needs to be included in extern "C" block.
-#include "ink/geometry/internal/jni/box_native.h"
 
 JNI_METHOD(geometry, BoxNative, jobject, createCenter)
 (JNIEnv* env, jobject object, float rect_x_min, jfloat rect_y_min,
