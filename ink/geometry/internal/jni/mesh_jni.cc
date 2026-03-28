@@ -33,9 +33,9 @@ namespace {
 using ::ink::Mesh;
 using ::ink::Rect;
 using ::ink::jni::CastToMesh;
-using ::ink::jni::CreateJImmutableBoxFromRectOrThrow;
+using ::ink::jni::CreateJImmutableBoxOrThrow;
 using ::ink::jni::DeleteNativeMesh;
-using ::ink::jni::FillJMutableVecFromPointOrThrow;
+using ::ink::jni::FillJMutableVecOrThrow;
 using ::ink::jni::NewNativeMesh;
 using ::ink::jni::NewNativeMeshFormat;
 
@@ -127,7 +127,7 @@ JNI_METHOD(geometry, MeshNative, jobject, createBounds)
   if (!bounds_rect.has_value()) {
     return nullptr;
   }
-  return CreateJImmutableBoxFromRectOrThrow(env, *bounds_rect);
+  return CreateJImmutableBoxOrThrow(env, *bounds_rect);
 }
 
 JNI_METHOD(geometry, MeshNative, jint, fillAttributeUnpackingParams)
@@ -159,9 +159,9 @@ JNI_METHOD(geometry, MeshNative, jlong, newCopyOfFormat)
 JNI_METHOD(geometry, MeshNative, void, fillPosition)
 (JNIEnv* env, jobject object, jlong native_pointer, jint vertex_index,
  jobject mutable_vec) {
-  FillJMutableVecFromPointOrThrow(
-      env, mutable_vec,
-      CastToMesh(native_pointer).VertexPosition(vertex_index));
+  FillJMutableVecOrThrow(
+      env, CastToMesh(native_pointer).VertexPosition(vertex_index),
+      mutable_vec);
 }
 
 }  // extern "C"

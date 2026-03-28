@@ -18,17 +18,17 @@
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
 
-using ::ink::jni::CreateJImmutableVecFromPointOrThrow;
-using ::ink::jni::FillJMutableVecFromPointOrThrow;
+using ::ink::jni::CreateJImmutableVecOrThrow;
+using ::ink::jni::FillJMutableVecOrThrow;
 
 extern "C" {
 
 JNI_METHOD(geometry, BoxNative, jobject, createCenter)
 (JNIEnv* env, jobject object, float rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max) {
-  BoxNative_Point point =
-      BoxNative_createCenter(rect_x_min, rect_y_min, rect_x_max, rect_y_max);
-  return CreateJImmutableVecFromPointOrThrow(env, {point.x, point.y});
+  return CreateJImmutableVecOrThrow(
+      env,
+      BoxNative_createCenter(rect_x_min, rect_y_min, rect_x_max, rect_y_max));
 }
 
 JNI_METHOD(geometry, BoxNative, void, populateCenter)
@@ -36,7 +36,7 @@ JNI_METHOD(geometry, BoxNative, void, populateCenter)
  jfloat rect_x_max, jfloat rect_y_max, jobject mutable_vec) {
   BoxNative_Point point =
       BoxNative_createCenter(rect_x_min, rect_y_min, rect_x_max, rect_y_max);
-  FillJMutableVecFromPointOrThrow(env, mutable_vec, {point.x, point.y});
+  FillJMutableVecOrThrow(env, point, mutable_vec);
 }
 
 JNI_METHOD(geometry, BoxNative, jboolean, containsPoint)

@@ -23,15 +23,15 @@
 
 namespace ink::jni {
 
-jobject CreateJImmutableBoxFromRectOrThrow(JNIEnv* env, Rect rect) {
+jobject CreateJImmutableBoxOrThrow(JNIEnv* env, const Rect& rect) {
   return env->CallStaticObjectMethod(
       ClassImmutableBox(env), MethodImmutableBoxFromTwoPoints(env),
-      CreateJImmutableVecFromPointOrThrow(env, {rect.XMin(), rect.YMin()}),
-      CreateJImmutableVecFromPointOrThrow(env, {rect.XMax(), rect.YMax()}));
+      CreateJImmutableVecOrThrow(env, rect.XMin(), rect.YMin()),
+      CreateJImmutableVecOrThrow(env, rect.XMax(), rect.YMax()));
 }
 
-void FillJMutableBoxFromRectOrThrow(JNIEnv* env, jobject mutable_box,
-                                    Rect rect) {
+void FillJMutableBoxOrThrow(JNIEnv* env, const Rect& rect,
+                            jobject mutable_box) {
   env->CallObjectMethod(mutable_box, MethodMutableBoxSetXBounds(env),
                         rect.XMin(), rect.XMax());
   if (env->ExceptionCheck()) return;

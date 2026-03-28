@@ -34,8 +34,6 @@
 #include "ink/geometry/triangle.h"
 #include "ink/jni/internal/jni_defines.h"
 
-namespace {
-
 using ::ink::AffineTransform;
 using ::ink::Angle;
 using ::ink::Mesh;
@@ -46,13 +44,11 @@ using ::ink::Rect;
 using ::ink::Triangle;
 using ::ink::VertexIndexPair;
 using ::ink::jni::CastToPartitionedMesh;
-using ::ink::jni::CreateJImmutableBoxFromRectOrThrow;
+using ::ink::jni::CreateJImmutableBoxOrThrow;
 using ::ink::jni::DeleteNativePartitionedMesh;
 using ::ink::jni::NewNativeMesh;
 using ::ink::jni::NewNativeMeshFormat;
 using ::ink::jni::NewNativePartitionedMesh;
-
-}  // namespace
 
 extern "C" {
 
@@ -121,7 +117,7 @@ JNI_METHOD(geometry, PartitionedMeshNative, jobject, createBounds)
   if (!bounds_rect.has_value()) {
     return nullptr;
   }
-  return CreateJImmutableBoxFromRectOrThrow(env, *bounds_rect);
+  return CreateJImmutableBoxOrThrow(env, *bounds_rect);
 }
 
 // Allocate an empty `PartitionedMesh` and return a pointer to it.

@@ -37,8 +37,6 @@
 #include "ink/strokes/internal/jni/stroke_jni_helper.h"
 #include "ink/types/duration.h"
 
-namespace {
-
 using ::ink::Duration32;
 using ::ink::Envelope;
 using ::ink::InProgressStroke;
@@ -52,15 +50,13 @@ using ::ink::jni::CastToMutableStrokeInputBatch;
 using ::ink::jni::CastToStrokeInputBatch;
 using ::ink::jni::DeleteNativeInProgressStroke;
 using ::ink::jni::FillJBoxAccumulatorOrThrow;
-using ::ink::jni::FillJMutableVecFromPointOrThrow;
+using ::ink::jni::FillJMutableVecOrThrow;
 using ::ink::jni::InProgressStrokeWrapper;
 using ::ink::jni::NewNativeInProgressStroke;
 using ::ink::jni::NewNativeMeshFormat;
 using ::ink::jni::NewNativeStroke;
 using ::ink::jni::ThrowExceptionFromStatus;
-using ::ink::jni::UpdateJObjectInputOrThrow;
-
-}  // namespace
+using ::ink::jni::UpdateJStrokeInputOrThrow;
 
 extern "C" {
 
@@ -193,7 +189,7 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, getAndOverwriteInput)
   const InProgressStroke& in_progress_stroke =
       CastToInProgressStrokeWrapper(native_pointer).Stroke();
   StrokeInput input = in_progress_stroke.GetInputs().Get(index);
-  UpdateJObjectInputOrThrow(env, input, j_input);
+  UpdateJStrokeInputOrThrow(env, input, j_input);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getBrushCoatCount)
@@ -254,7 +250,7 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, fillOutlinePosition)
       in_progress_stroke.GetCoatOutlines(coat_index)[outline_index];
   Point position = in_progress_stroke.GetMesh(coat_index)
                        .VertexPosition(outline[outline_vertex_index]);
-  FillJMutableVecFromPointOrThrow(env, out_position, position);
+  FillJMutableVecOrThrow(env, position, out_position);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, void, fillPosition)
@@ -264,7 +260,7 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, fillPosition)
       CastToInProgressStrokeWrapper(native_pointer).Stroke();
   Point position =
       in_progress_stroke.GetMesh(coat_index).VertexPosition(vertex_index);
-  FillJMutableVecFromPointOrThrow(env, out_position, position);
+  FillJMutableVecOrThrow(env, position, out_position);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getMeshPartitionCount)
