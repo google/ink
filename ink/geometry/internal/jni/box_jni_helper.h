@@ -17,21 +17,30 @@
 
 #include <jni.h>
 
+#include "ink/geometry/internal/jni/parallelogram_native.h"
 #include "ink/geometry/rect.h"
 
 namespace ink::jni {
 
 // Calls back into the JVM to create a new ImmutableBox object from the provided
-// Rect. The caller must check if an exception was thrown by this call, e.g.
+// input. The caller must check if an exception was thrown by this call, e.g.
 // with env->ExceptionCheck(). If an exception was thrown, the caller must bail
 // out early instead of continuing execution.
+jobject CreateJImmutableBoxOrThrow(JNIEnv* env, float x_min, float y_min,
+                                   float x_max, float y_max);
 jobject CreateJImmutableBoxOrThrow(JNIEnv* env, const Rect& rect);
+jobject CreateJImmutableBoxOrThrow(JNIEnv* env,
+                                   const ParallelogramNative_Box& box);
 
 // Calls back into the JVM to populate an existing MutableBox object with the
-// provided Rect. The caller must check if an exception was thrown by this call,
-// e.g. with env->ExceptionCheck(). If an exception was thrown, the caller must
-// bail out instead of continuing execution.
+// provided input. The caller must check if an exception was thrown by this
+// call, e.g. with env->ExceptionCheck(). If an exception was thrown, the caller
+// must bail out instead of continuing execution.
+void FillJMutableBoxOrThrow(JNIEnv* env, float x_min, float y_min, float x_max,
+                            float y_max, jobject mutable_box);
 void FillJMutableBoxOrThrow(JNIEnv* env, const Rect& rect, jobject mutable_box);
+void FillJMutableBoxOrThrow(JNIEnv* env, const ParallelogramNative_Box& box,
+                            jobject mutable_box);
 
 }  // namespace ink::jni
 

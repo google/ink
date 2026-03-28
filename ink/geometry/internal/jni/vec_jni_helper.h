@@ -18,6 +18,7 @@
 #include <jni.h>
 
 #include "ink/geometry/internal/jni/box_native.h"
+#include "ink/geometry/internal/jni/parallelogram_native.h"
 #include "ink/geometry/internal/jni/vec_native.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
@@ -33,6 +34,8 @@ jobject CreateJImmutableVecOrThrow(JNIEnv* env, const Vec& vec);
 jobject CreateJImmutableVecOrThrow(JNIEnv* env, const Point& point);
 jobject CreateJImmutableVecOrThrow(JNIEnv* env, const VecNative_Vec& vec);
 jobject CreateJImmutableVecOrThrow(JNIEnv* env, const BoxNative_Vec& vec);
+jobject CreateJImmutableVecOrThrow(JNIEnv* env,
+                                   const ParallelogramNative_Vec& vec);
 
 // Calls back into the JVM to populate an existing MutableVec object
 // with the provided input. The caller must check if an exception was thrown by
@@ -45,6 +48,8 @@ void FillJMutableVecOrThrow(JNIEnv* env, const Point& point,
 void FillJMutableVecOrThrow(JNIEnv* env, const VecNative_Vec& vec,
                             jobject mutable_vec);
 void FillJMutableVecOrThrow(JNIEnv* env, const BoxNative_Vec& vec,
+                            jobject mutable_vec);
+void FillJMutableVecOrThrow(JNIEnv* env, const ParallelogramNative_Vec& vec,
                             jobject mutable_vec);
 
 }  // namespace ink::jni

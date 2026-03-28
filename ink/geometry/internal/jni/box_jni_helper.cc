@@ -17,26 +17,51 @@
 
 #include <jni.h>
 
+#include "ink/geometry/internal/jni/parallelogram_native.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/rect.h"
 #include "ink/jni/internal/jni_jvm_interface.h"
 
 namespace ink::jni {
 
-jobject CreateJImmutableBoxOrThrow(JNIEnv* env, const Rect& rect) {
+jobject CreateJImmutableBoxOrThrow(JNIEnv* env, float x_min, float y_min,
+                                   float x_max, float y_max) {
   return env->CallStaticObjectMethod(
       ClassImmutableBox(env), MethodImmutableBoxFromTwoPoints(env),
-      CreateJImmutableVecOrThrow(env, rect.XMin(), rect.YMin()),
-      CreateJImmutableVecOrThrow(env, rect.XMax(), rect.YMax()));
+      CreateJImmutableVecOrThrow(env, x_min, y_min),
+      CreateJImmutableVecOrThrow(env, x_max, y_max));
+}
+
+jobject CreateJImmutableBoxOrThrow(JNIEnv* env, const Rect& rect) {
+  return CreateJImmutableBoxOrThrow(env, rect.XMin(), rect.YMin(), rect.XMax(),
+                                    rect.YMax());
+}
+
+jobject CreateJImmutableBoxOrThrow(JNIEnv* env,
+                                   const ParallelogramNative_Box& box) {
+  return CreateJImmutableBoxOrThrow(env, box.xmin, box.ymin, box.xmax,
+                                    box.ymax);
+}
+
+void FillJMutableBoxOrThrow(JNIEnv* env, float x_min, float y_min, float x_max,
+                            float y_max, jobject mutable_box) {
+  env->CallObjectMethod(mutable_box, MethodMutableBoxSetXBounds(env), x_min,
+                        x_max);
+  if (env->ExceptionCheck()) return;
+  env->CallObjectMethod(mutable_box, MethodMutableBoxSetYBounds(env), y_min,
+                        y_max);
 }
 
 void FillJMutableBoxOrThrow(JNIEnv* env, const Rect& rect,
                             jobject mutable_box) {
-  env->CallObjectMethod(mutable_box, MethodMutableBoxSetXBounds(env),
-                        rect.XMin(), rect.XMax());
-  if (env->ExceptionCheck()) return;
-  env->CallObjectMethod(mutable_box, MethodMutableBoxSetYBounds(env),
-                        rect.YMin(), rect.YMax());
+  FillJMutableBoxOrThrow(env, rect.XMin(), rect.YMin(), rect.XMax(),
+                         rect.YMax(), mutable_box);
+}
+
+void FillJMutableBoxOrThrow(JNIEnv* env, const ParallelogramNative_Box& box,
+                            jobject mutable_box) {
+  FillJMutableBoxOrThrow(env, box.xmin, box.ymin, box.xmax, box.ymax,
+                         mutable_box);
 }
 
 }  // namespace ink::jni

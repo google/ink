@@ -17,6 +17,7 @@
 #include <jni.h>
 
 #include "ink/geometry/internal/jni/box_native.h"
+#include "ink/geometry/internal/jni/parallelogram_native.h"
 #include "ink/geometry/internal/jni/vec_native.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
@@ -45,6 +46,11 @@ jobject CreateJImmutableVecOrThrow(JNIEnv* env, const BoxNative_Vec& vec) {
   return CreateJImmutableVecOrThrow(env, vec.x, vec.y);
 }
 
+jobject CreateJImmutableVecOrThrow(JNIEnv* env,
+                                   const ParallelogramNative_Vec& vec) {
+  return CreateJImmutableVecOrThrow(env, vec.x, vec.y);
+}
+
 void FillJMutableVecOrThrow(JNIEnv* env, float x, float y,
                             jobject mutable_vec) {
   env->CallVoidMethod(mutable_vec, MethodMutableVecSetX(env), x);
@@ -67,6 +73,11 @@ void FillJMutableVecOrThrow(JNIEnv* env, const VecNative_Vec& vec,
 }
 
 void FillJMutableVecOrThrow(JNIEnv* env, const BoxNative_Vec& vec,
+                            jobject mutable_vec) {
+  FillJMutableVecOrThrow(env, vec.x, vec.y, mutable_vec);
+}
+
+void FillJMutableVecOrThrow(JNIEnv* env, const ParallelogramNative_Vec& vec,
                             jobject mutable_vec) {
   FillJMutableVecOrThrow(env, vec.x, vec.y, mutable_vec);
 }

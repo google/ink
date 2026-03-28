@@ -51,6 +51,7 @@ cc_library(
     deps = [
         ":angle_native",
         ":box_native",
+        ":parallelogram_native",
         ":vec_native",
     ],
 )
@@ -289,6 +290,7 @@ cc_library(
     # Temporarily limited visibility while new APIs are being developed.
     visibility = ["//visibility:private"],
     deps = [
+        ":parallelogram_native",
         ":vec_jni_helper",
         "//ink/geometry:rect",
         "//ink/jni/internal:jni_defines",
@@ -328,11 +330,10 @@ cc_library(
     tags = ["keep_dep"],
     deps = [
         ":box_jni_helper",
+        ":parallelogram_native",
         ":vec_jni_helper",
-        "//ink/geometry:angle",
-        "//ink/geometry:envelope",
         "//ink/geometry:point",
-        "//ink/geometry:quad",
+        "//ink/geometry:rect",
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_jvm_interface",
@@ -344,6 +345,20 @@ cc_library(
         ],
     }),
     alwayslink = 1,
+)
+
+cc_library(
+    name = "parallelogram_native",
+    srcs = ["parallelogram_native.cc"],
+    hdrs = ["parallelogram_native.h"],
+    deps = [
+        "//ink/geometry:angle",
+        "//ink/geometry:envelope",
+        "//ink/geometry:point",
+        "//ink/geometry:quad",
+        "//ink/geometry:rect",
+        "//ink/geometry:vec",
+    ],
 )
 
 cc_library(
@@ -403,6 +418,7 @@ cc_library(
     visibility = ["//ink:__subpackages__"],
     deps = [
         ":box_native",
+        ":parallelogram_native",
         ":vec_native",
         "//ink/geometry:point",
         "//ink/geometry:vec",
