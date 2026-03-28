@@ -52,6 +52,7 @@ cc_library(
         ":angle_native",
         ":box_native",
         ":parallelogram_native",
+        ":triangle_native",
         ":vec_native",
     ],
 )
@@ -437,8 +438,7 @@ cc_library(
     srcs = ["triangle_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        "//ink/geometry:point",
-        "//ink/geometry:triangle",
+        ":triangle_native",
         "//ink/jni/internal:jni_defines",
     ] + select({
         "@platforms//os:android": [],
@@ -447,6 +447,16 @@ cc_library(
         ],
     }),
     alwayslink = 1,
+)
+
+cc_library(
+    name = "triangle_native",
+    srcs = ["triangle_native.cc"],
+    hdrs = ["triangle_native.h"],
+    deps = [
+        "//ink/geometry:point",
+        "//ink/geometry:triangle",
+    ],
 )
 
 cc_library(

@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,20 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <jni.h>
-
 #include "ink/geometry/internal/jni/triangle_native.h"
-#include "ink/jni/internal/jni_defines.h"
+
+#include "ink/geometry/point.h"
+#include "ink/geometry/triangle.h"
+
+using ::ink::Point;
+using ::ink::Triangle;
 
 extern "C" {
 
-JNI_METHOD(geometry, TriangleNative, jboolean, contains)
-(JNIEnv* env, jobject object, jfloat triangle_p0_x, jfloat triangle_p0_y,
- jfloat triangle_p1_x, jfloat triangle_p1_y, jfloat triangle_p2_x,
- jfloat triangle_p2_y, jfloat point_x, jfloat point_y) {
-  return TriangleNative_contains(triangle_p0_x, triangle_p0_y, triangle_p1_x,
-                                 triangle_p1_y, triangle_p2_x, triangle_p2_y,
-                                 point_x, point_y);
+bool TriangleNative_contains(float triangle_p0_x, float triangle_p0_y,
+                             float triangle_p1_x, float triangle_p1_y,
+                             float triangle_p2_x, float triangle_p2_y,
+                             float point_x, float point_y) {
+  Point point = Point{point_x, point_y};
+  Triangle triangle{{triangle_p0_x, triangle_p0_y},
+                    {triangle_p1_x, triangle_p1_y},
+                    {triangle_p2_x, triangle_p2_y}};
+  return triangle.Contains(point);
 }
 
 }  // extern "C"
