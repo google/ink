@@ -41,8 +41,8 @@ jobject CreateJImmutableVecOrThrow(JNIEnv* env, const VecNative_Vec& vec) {
   return CreateJImmutableVecOrThrow(env, vec.x, vec.y);
 }
 
-jobject CreateJImmutableVecOrThrow(JNIEnv* env, const BoxNative_Point& point) {
-  return CreateJImmutableVecOrThrow(env, point.x, point.y);
+jobject CreateJImmutableVecOrThrow(JNIEnv* env, const BoxNative_Vec& vec) {
+  return CreateJImmutableVecOrThrow(env, vec.x, vec.y);
 }
 
 void FillJMutableVecOrThrow(JNIEnv* env, float x, float y,
@@ -66,9 +66,9 @@ void FillJMutableVecOrThrow(JNIEnv* env, const VecNative_Vec& vec,
   FillJMutableVecOrThrow(env, vec.x, vec.y, mutable_vec);
 }
 
-void FillJMutableVecOrThrow(JNIEnv* env, const BoxNative_Point& point,
+void FillJMutableVecOrThrow(JNIEnv* env, const BoxNative_Vec& vec,
                             jobject mutable_vec) {
-  FillJMutableVecOrThrow(env, point.x, point.y, mutable_vec);
+  FillJMutableVecOrThrow(env, vec.x, vec.y, mutable_vec);
 }
 
 }  // namespace ink::jni

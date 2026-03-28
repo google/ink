@@ -26,10 +26,10 @@ extern "C" {
 typedef struct {
   float x;
   float y;
-} BoxNative_Point;
+} BoxNative_Vec;
 
-BoxNative_Point BoxNative_createCenter(float rect_x_min, float rect_y_min,
-                                       float rect_x_max, float rect_y_max);
+BoxNative_Vec BoxNative_createCenter(float rect_x_min, float rect_y_min,
+                                     float rect_x_max, float rect_y_max);
 
 bool BoxNative_containsPoint(float rect_x_min, float rect_y_min,
                              float rect_x_max, float rect_y_max, float point_x,

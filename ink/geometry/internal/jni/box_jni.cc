@@ -34,9 +34,9 @@ JNI_METHOD(geometry, BoxNative, jobject, createCenter)
 JNI_METHOD(geometry, BoxNative, void, populateCenter)
 (JNIEnv* env, jobject object, float rect_x_min, jfloat rect_y_min,
  jfloat rect_x_max, jfloat rect_y_max, jobject mutable_vec) {
-  BoxNative_Point point =
+  BoxNative_Vec center =
       BoxNative_createCenter(rect_x_min, rect_y_min, rect_x_max, rect_y_max);
-  FillJMutableVecOrThrow(env, point, mutable_vec);
+  FillJMutableVecOrThrow(env, center, mutable_vec);
 }
 
 JNI_METHOD(geometry, BoxNative, jboolean, containsPoint)

@@ -22,12 +22,12 @@ using ::ink::Rect;
 
 extern "C" {
 
-BoxNative_Point BoxNative_createCenter(float rect_x_min, float rect_y_min,
-                                       float rect_x_max, float rect_y_max) {
+BoxNative_Vec BoxNative_createCenter(float rect_x_min, float rect_y_min,
+                                     float rect_x_max, float rect_y_max) {
   Rect rect =
       Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
-  Point point = rect.Center();
-  return {point.x, point.y};
+  Point center = rect.Center();
+  return {center.x, center.y};
 }
 
 bool BoxNative_containsPoint(float rect_x_min, float rect_y_min,
