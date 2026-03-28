@@ -14,40 +14,31 @@
 
 #include <jni.h>
 
-#include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
-#include "ink/geometry/mesh_format.h"
+#include "ink/geometry/internal/jni/mesh_format_native.h"
 #include "ink/jni/internal/jni_defines.h"
-
-namespace {
-
-using ::ink::MeshFormat;
-using ::ink::jni::CastToMeshFormat;
-using ::ink::jni::DeleteNativeMeshFormat;
-
-}  // namespace
 
 extern "C" {
 
 JNI_METHOD(geometry, MeshFormatNative, jboolean, isPackedEquivalent)
 (JNIEnv* env, jobject obj, jlong native_pointer, jlong other_native_pointer) {
-  return MeshFormat::IsPackedEquivalent(CastToMeshFormat(native_pointer),
-                                        CastToMeshFormat(other_native_pointer));
+  return MeshFormatNative_isPackedEquivalent(native_pointer,
+                                             other_native_pointer);
 }
 
 JNI_METHOD(geometry, MeshFormatNative, jboolean, isUnpackedEquivalent)
 (JNIEnv* env, jobject obj, jlong native_pointer, jlong other_native_pointer) {
-  return MeshFormat::IsUnpackedEquivalent(
-      CastToMeshFormat(native_pointer), CastToMeshFormat(other_native_pointer));
+  return MeshFormatNative_isUnpackedEquivalent(native_pointer,
+                                               other_native_pointer);
 }
 
 JNI_METHOD(geometry, MeshFormatNative, jint, attributeCount)
 (JNIEnv* env, jobject obj, jlong native_pointer) {
-  return CastToMeshFormat(native_pointer).Attributes().size();
+  return MeshFormatNative_attributeCount(native_pointer);
 }
 
 JNI_METHOD(geometry, MeshFormatNative, void, free)
 (JNIEnv* env, jobject obj, jlong native_pointer) {
-  DeleteNativeMeshFormat(native_pointer);
+  MeshFormatNative_free(native_pointer);
 }
 
 }  // extern "C"

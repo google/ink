@@ -85,7 +85,7 @@ cc_library(
         "//ink/geometry:mutable_mesh",
         "//ink/geometry:point",
         "//ink/geometry/internal/jni:box_accumulator_jni_helper",
-        "//ink/geometry/internal/jni:mesh_format_jni_helper",
+        "//ink/geometry/internal/jni:mesh_format_native_helper",
         "//ink/geometry/internal/jni:vec_jni_helper",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_throw_util",

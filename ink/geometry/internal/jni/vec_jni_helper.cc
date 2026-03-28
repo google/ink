@@ -18,6 +18,7 @@
 
 #include "ink/geometry/internal/jni/affine_transform_native.h"
 #include "ink/geometry/internal/jni/box_native.h"
+#include "ink/geometry/internal/jni/mesh_native.h"
 #include "ink/geometry/internal/jni/parallelogram_native.h"
 #include "ink/geometry/internal/jni/vec_native.h"
 #include "ink/geometry/point.h"
@@ -84,6 +85,11 @@ void FillJMutableVecOrThrow(JNIEnv* env, const BoxNative_Vec& vec,
 }
 
 void FillJMutableVecOrThrow(JNIEnv* env, const ParallelogramNative_Vec& vec,
+                            jobject mutable_vec) {
+  FillJMutableVecOrThrow(env, vec.x, vec.y, mutable_vec);
+}
+
+void FillJMutableVecOrThrow(JNIEnv* env, const MeshNative_Vec& vec,
                             jobject mutable_vec) {
   FillJMutableVecOrThrow(env, vec.x, vec.y, mutable_vec);
 }
