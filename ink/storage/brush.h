@@ -88,7 +88,7 @@ absl::StatusOr<Brush> DecodeBrush(
         [](absl::string_view encoded_id, absl::string_view bitmap) {
           return std::string(encoded_id);
         },
-    // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.cc:decode_brush_get_client_texture_id)
+    // LINT.ThenChange(brush.cc:decode_brush_get_client_texture_id)
     Version max_version = Version::kMaxSupported());
 absl::StatusOr<Brush> DecodeBrush(const proto::Brush& brush_proto,
                                   Version max_version);
@@ -99,7 +99,7 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
         [](absl::string_view encoded_id, absl::string_view bitmap) {
           return std::string(encoded_id);
         },
-    // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.cc:decode_brush_family_get_client_texture_id)
+    // LINT.ThenChange(brush.cc:decode_brush_family_get_client_texture_id)
     Version max_version = Version::kMaxSupported());
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto, Version max_version);

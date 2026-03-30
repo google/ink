@@ -1671,7 +1671,7 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
       [](absl::string_view encoded_id, absl::string_view bitmap) {
         return std::string(encoded_id);
       },
-      // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.h:decode_brush_family_get_client_texture_id)
+      // LINT.ThenChange(brush.h:decode_brush_family_get_client_texture_id)
       max_version);
 }
 
@@ -1757,7 +1757,7 @@ absl::StatusOr<Brush> DecodeBrush(const proto::Brush& brush_proto,
       [](absl::string_view encoded_id, absl::string_view bitmap) {
         return std::string(encoded_id);
       },
-      // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.h:decode_brush_get_client_texture_id)
+      // LINT.ThenChange(brush.h:decode_brush_get_client_texture_id)
       max_version);
 }
 
