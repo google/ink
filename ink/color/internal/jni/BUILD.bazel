@@ -31,5 +31,4 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )

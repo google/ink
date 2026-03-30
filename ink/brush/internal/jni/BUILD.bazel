@@ -32,7 +32,6 @@ cc_library(
         ":easing_function_jni",
         ":stock_brushes_jni",
     ],
-    alwayslink = 1,
 )
 
 cc_library(
