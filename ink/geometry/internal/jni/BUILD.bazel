@@ -35,7 +35,6 @@ cc_library(
         ":triangle_jni",
         ":vec_jni",
     ],
-    alwayslink = 1,
 )
 
 filegroup(

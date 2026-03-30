@@ -24,7 +24,6 @@ cc_library(
     deps = [
         ":canvas_mesh_renderer_jni",
     ],
-    alwayslink = 1,
 )
 
 cc_library(

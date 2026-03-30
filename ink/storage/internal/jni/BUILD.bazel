@@ -26,7 +26,6 @@ cc_library(
         ":brush_serialization_jni",
         ":stroke_input_batch_serialization_jni",
     ],
-    alwayslink = 1,
 )
 
 cc_library(
