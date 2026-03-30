@@ -14,17 +14,12 @@
 
 #include <jni.h>
 
-#include "ink/geometry/affine_transform.h"
-#include "ink/geometry/angle.h"
+#include "ink/geometry/internal/jni/affine_transform_native.h"
 #include "ink/geometry/internal/jni/parallelogram_jni_helper.h"
-#include "ink/geometry/quad.h"
 #include "ink/jni/internal/jni_defines.h"
 
 namespace {
 
-using ::ink::AffineTransform;
-using ::ink::Angle;
-using ::ink::Quad;
 using ::ink::jni::CreateJImmutableParallelogramOrThrow;
 using ::ink::jni::FillJMutableParallelogramOrThrow;
 
@@ -41,13 +36,11 @@ JNI_METHOD(geometry, AffineTransformNative, jobject,
  jfloat quad_width, jfloat quad_height, jfloat quad_rotation_degrees,
  jfloat quad_shear_factor) {
   return CreateJImmutableParallelogramOrThrow(
-      env,
-      AffineTransform(affine_transform_A, affine_transform_B,
-                      affine_transform_C, affine_transform_D,
-                      affine_transform_E, affine_transform_F)
-          .Apply(Quad::FromCenterDimensionsRotationAndSkew(
-              {.x = quad_center_x, .y = quad_center_y}, quad_width, quad_height,
-              Angle::Degrees(quad_rotation_degrees), quad_shear_factor)));
+      env, AffineTransformNative_apply(
+               affine_transform_A, affine_transform_B, affine_transform_C,
+               affine_transform_D, affine_transform_E, affine_transform_F,
+               quad_center_x, quad_center_y, quad_width, quad_height,
+               quad_rotation_degrees, quad_shear_factor));
 }
 
 JNI_METHOD(geometry, AffineTransformNative, void,
@@ -60,13 +53,12 @@ JNI_METHOD(geometry, AffineTransformNative, void,
  jfloat quad_shear_factor, jobject mutable_quad) {
   FillJMutableParallelogramOrThrow(
       env,
-      AffineTransform(affine_transform_A, affine_transform_B,
-                      affine_transform_C, affine_transform_D,
-                      affine_transform_E, affine_transform_F)
-          .Apply(Quad::FromCenterDimensionsRotationAndSkew(
-              {.x = quad_center_x, .y = quad_center_y}, quad_width, quad_height,
-              Angle::Degrees(quad_rotation_degrees), quad_shear_factor)),
+      AffineTransformNative_apply(
+          affine_transform_A, affine_transform_B, affine_transform_C,
+          affine_transform_D, affine_transform_E, affine_transform_F,
+          quad_center_x, quad_center_y, quad_width, quad_height,
+          quad_rotation_degrees, quad_shear_factor),
       mutable_quad);
 }
 
-}  // extern "C
+}  // extern "C"

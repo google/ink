@@ -49,6 +49,7 @@ cc_library(
     tags = ["keep_dep"],
     visibility = ["//ink:__subpackages__"],
     deps = [
+        ":affine_transform_native",
         ":angle_native",
         ":box_native",
         ":parallelogram_native",
@@ -311,8 +312,8 @@ cc_library(
     srcs = ["affine_transform_jni.cc"],
     tags = ["keep_dep"],
     deps = [
+        ":affine_transform_native",
         ":parallelogram_jni_helper",
-        "//ink/geometry:affine_transform",
         "//ink/geometry:angle",
         "//ink/geometry:quad",
         "//ink/jni/internal:jni_defines",
@@ -322,6 +323,18 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "affine_transform_native",
+    srcs = ["affine_transform_native.cc"],
+    hdrs = ["affine_transform_native.h"],
+    deps = [
+        "//ink/geometry:affine_transform",
+        "//ink/geometry:angle",
+        "//ink/geometry:quad",
+    ],
     alwayslink = 1,
 )
 
@@ -367,6 +380,8 @@ cc_library(
     srcs = ["parallelogram_jni_helper.cc"],
     hdrs = ["parallelogram_jni_helper.h"],
     deps = [
+        ":affine_transform_native",
+        ":parallelogram_native",
         ":vec_jni_helper",
         "//ink/geometry:point",
         "//ink/geometry:quad",
@@ -418,6 +433,7 @@ cc_library(
     hdrs = ["vec_jni_helper.h"],
     visibility = ["//ink:__subpackages__"],
     deps = [
+        ":affine_transform_native",
         ":box_native",
         ":parallelogram_native",
         ":vec_native",

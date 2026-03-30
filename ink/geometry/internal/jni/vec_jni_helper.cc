@@ -16,6 +16,7 @@
 
 #include <jni.h>
 
+#include "ink/geometry/internal/jni/affine_transform_native.h"
 #include "ink/geometry/internal/jni/box_native.h"
 #include "ink/geometry/internal/jni/parallelogram_native.h"
 #include "ink/geometry/internal/jni/vec_native.h"
@@ -48,6 +49,11 @@ jobject CreateJImmutableVecOrThrow(JNIEnv* env, const BoxNative_Vec& vec) {
 
 jobject CreateJImmutableVecOrThrow(JNIEnv* env,
                                    const ParallelogramNative_Vec& vec) {
+  return CreateJImmutableVecOrThrow(env, vec.x, vec.y);
+}
+
+jobject CreateJImmutableVecOrThrow(JNIEnv* env,
+                                   const AffineTransformNative_Vec& vec) {
   return CreateJImmutableVecOrThrow(env, vec.x, vec.y);
 }
 
