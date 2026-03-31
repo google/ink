@@ -79,7 +79,7 @@ proto_library(
 proto_library(
     name = "incremental_stroke_inputs_proto",
     srcs = ["incremental_stroke_inputs.proto"],
-    visibility = ["//ink:__subpackages__"],
+    visibility = ["//visibility:private"],
     deps = [":stroke_input_batch_proto"],
 )
 
