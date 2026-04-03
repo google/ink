@@ -47,11 +47,15 @@ cc_library(
         "//ink/brush:brush_tip",
         "//ink/brush:color_function",
         "//ink/brush:easing_function",
+        "//ink/brush:version",
         "//ink/color",
         "//ink/color:color_space",
         "//ink/color/internal/jni:color_jni_helper",
         "//ink/jni/internal:jni_jvm_interface",
         "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [

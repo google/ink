@@ -30,6 +30,7 @@
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/version.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_proto_util.h"
 #include "ink/jni/internal/jni_string_util.h"
@@ -58,6 +59,7 @@ using ::ink::EncodeBrushCoat;
 using ::ink::EncodeBrushFamily;
 using ::ink::EncodeBrushPaint;
 using ::ink::EncodeBrushTip;
+using ::ink::Version;
 using ::ink::jni::AbslStringViewToJByteArray;
 using ::ink::jni::CastToBrush;
 using ::ink::jni::CastToBrushBehavior;
@@ -66,6 +68,7 @@ using ::ink::jni::CastToBrushFamily;
 using ::ink::jni::CastToBrushPaint;
 using ::ink::jni::CastToBrushTip;
 using ::ink::jni::JByteArrayToStdString;
+using ::ink::jni::JIntToVersion;
 using ::ink::jni::JStringToStdString;
 using ::ink::jni::NewNativeBrush;
 using ::ink::jni::NewNativeBrushBehavior;
@@ -159,7 +162,8 @@ JNI_METHOD(storage, BrushSerializationNative, jbyteArray, serializeBrushPaint)
 
 JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFromProto)
 (JNIEnv* env, jobject object, jobject brush_direct_byte_buffer,
- jbyteArray brush_byte_array, jint offset, jint length) {
+ jbyteArray brush_byte_array, jint offset, jint length,
+ jint max_version_value) {
   ink::proto::Brush brush_proto;
   if (absl::Status status =
           ParseProtoFromEither(env, brush_direct_byte_buffer, brush_byte_array,
@@ -168,7 +172,12 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFromProto)
     ThrowExceptionFromStatus(env, status);
     return 0;
   }
-  absl::StatusOr<Brush> brush = DecodeBrush(brush_proto);
+  absl::StatusOr<Version> max_version = JIntToVersion(max_version_value);
+  if (!max_version.ok()) {
+    ThrowExceptionFromStatus(env, max_version.status());
+    return 0;
+  }
+  absl::StatusOr<Brush> brush = DecodeBrush(brush_proto, max_version.value());
   if (!brush.ok()) {
     ThrowExceptionFromStatus(env, brush.status());
     return 0;
@@ -179,8 +188,8 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFromProto)
 JNI_METHOD(storage, BrushSerializationNative, jlong,
            newBrushFamilyFromProtoInternal)
 (JNIEnv* env, jobject object, jobject brush_family_direct_byte_buffer,
- jbyteArray brush_family_byte_array, jint offset, jint length,
- jobject callback) {
+ jbyteArray brush_family_byte_array, jint offset, jint length, jobject callback,
+ jint max_version_value) {
   ink::proto::BrushFamily brush_family_proto;
   if (absl::Status status = ParseProtoFromEither(
           env, brush_family_direct_byte_buffer, brush_family_byte_array, offset,
@@ -226,8 +235,13 @@ JNI_METHOD(storage, BrushSerializationNative, jlong,
     env->DeleteLocalRef(new_id_jstring);
     return new_id;
   };
-  absl::StatusOr<BrushFamily> brush_family =
-      DecodeBrushFamily(brush_family_proto, decode_texture_jni_wrapper);
+  absl::StatusOr<Version> max_version = JIntToVersion(max_version_value);
+  if (!max_version.ok()) {
+    ThrowExceptionFromStatus(env, max_version.status());
+    return 0;
+  }
+  absl::StatusOr<BrushFamily> brush_family = DecodeBrushFamily(
+      brush_family_proto, decode_texture_jni_wrapper, max_version.value());
   if (!brush_family.ok()) {
     // If the callback raised an exception we want to raise that as-is
     // instead of replacing it with the status.

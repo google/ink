@@ -16,6 +16,13 @@
 
 #include <jni.h>
 
+#include <cstdint>
+#include <limits>
+
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
+#include "ink/brush/version.h"
 #include "ink/color/color.h"
 #include "ink/color/color_space.h"
 #include "ink/color/internal/jni/color_jni_helper.h"
@@ -39,6 +46,20 @@ jlong ComputeColorLong(JNIEnv* env, const Color& color) {
       ColorSpaceToJInt(color_space_is_supported ? original_color_space
                                                 : ColorSpace::kDisplayP3),
       rgba.r, rgba.g, rgba.b, rgba.a);
+}
+
+absl::StatusOr<Version> JIntToVersion(jint version) {
+  switch (version) {
+    case 0:
+      return Version::k0Jetpack1_0_0();
+    case 1:
+      return Version::k1Jetpack1_1_0Alpha01();
+    case std::numeric_limits<int32_t>::max():
+      return Version::kDevelopment();
+    default:
+      return absl::InvalidArgumentError(
+          absl::StrCat("Invalid version: ", version));
+  }
 }
 
 }  // namespace ink::jni

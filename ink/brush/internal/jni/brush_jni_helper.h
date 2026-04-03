@@ -18,6 +18,7 @@
 #include <jni.h>
 
 #include "absl/log/absl_check.h"
+#include "absl/status/statusor.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_coat.h"
@@ -26,6 +27,7 @@
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
+#include "ink/brush/version.h"
 #include "ink/color/color.h"
 
 namespace ink::jni {
@@ -258,6 +260,9 @@ inline void DeleteNativeEasingFunction(jlong easing_function_native_pointer) {
 
 // Converts an Ink `Color` into a Kotlin `ColorLong`.
 jlong ComputeColorLong(JNIEnv* env, const Color& color);
+
+// Converts the integer value of a Kotlin `Version` into a C++ `Version`.
+absl::StatusOr<Version> JIntToVersion(jint version);
 
 }  // namespace ink::jni
 
