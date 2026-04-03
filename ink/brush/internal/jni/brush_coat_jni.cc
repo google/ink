@@ -23,11 +23,9 @@
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
-#include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
+#include "ink/geometry/internal/jni/mesh_format_native_helper.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/jni/internal/jni_defines.h"
-
-namespace {
 
 using ::ink::BrushCoat;
 using ::ink::BrushPaint;
@@ -36,13 +34,11 @@ using ::ink::brush_internal::AddAttributeIdsRequiredByCoat;
 using ::ink::jni::CastToBrushCoat;
 using ::ink::jni::CastToBrushPaint;
 using ::ink::jni::CastToBrushTip;
-using ::ink::jni::CastToMeshFormat;
 using ::ink::jni::DeleteNativeBrushCoat;
 using ::ink::jni::NewNativeBrushCoat;
 using ::ink::jni::NewNativeBrushPaint;
 using ::ink::jni::NewNativeBrushTip;
-
-}  // namespace
+using ::ink::native::CastToMeshFormat;
 
 extern "C" {
 

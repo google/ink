@@ -26,7 +26,7 @@
 #include "ink/brush/color_function.h"
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/geometry/angle.h"
-#include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
+#include "ink/geometry/internal/jni/mesh_format_native_helper.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/vec.h"
 #include "ink/jni/internal/jni_defines.h"
@@ -45,7 +45,6 @@ using ::ink::brush_internal::ValidateBrushPaint;
 using ::ink::brush_internal::ValidateBrushPaintTextureLayer;
 using ::ink::jni::CastToBrushPaint;
 using ::ink::jni::CastToColorFunction;
-using ::ink::jni::CastToMeshFormat;
 using ::ink::jni::CastToTextureLayer;
 using ::ink::jni::DeleteNativeBrushPaint;
 using ::ink::jni::DeleteNativeTextureLayer;
@@ -54,6 +53,7 @@ using ::ink::jni::NewNativeBrushPaint;
 using ::ink::jni::NewNativeColorFunction;
 using ::ink::jni::NewNativeTextureLayer;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::CastToMeshFormat;
 
 BrushPaint::TextureSizeUnit JIntToSizeUnit(jint val) {
   return static_cast<BrushPaint::TextureSizeUnit>(val);

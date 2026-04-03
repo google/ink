@@ -22,8 +22,7 @@
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/internal/jni/box_jni_helper.h"
-#include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
-#include "ink/geometry/internal/jni/mesh_jni_helper.h"
+#include "ink/geometry/internal/jni/mesh_format_native_helper.h"
 #include "ink/geometry/internal/jni/partitioned_mesh_jni_helper.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_index_types.h"
@@ -46,23 +45,19 @@ using ::ink::VertexIndexPair;
 using ::ink::jni::CastToPartitionedMesh;
 using ::ink::jni::CreateJImmutableBoxOrThrow;
 using ::ink::jni::DeleteNativePartitionedMesh;
-using ::ink::jni::NewNativeMesh;
-using ::ink::jni::NewNativeMeshFormat;
 using ::ink::jni::NewNativePartitionedMesh;
+using ::ink::native::NewNativeMeshFormat;
 
 extern "C" {
 
-JNI_METHOD(geometry, PartitionedMeshNative, jlongArray, newCopiesOfMeshes)
+JNI_METHOD(geometry, PartitionedMeshNative, jlongArray,
+           getRenderGroupMeshPointers)
 (JNIEnv* env, jobject object, jlong native_pointer, jint group_index) {
   absl::Span<const Mesh> meshes =
       CastToPartitionedMesh(native_pointer).RenderGroupMeshes(group_index);
   std::vector<jlong> meshes_ptrs(meshes.size());
   for (size_t i = 0; i < meshes.size(); ++i) {
-    // Create new heap-allocated copies of each `Mesh` object, to be owned by
-    // the `Mesh.kt` objects of the `PartitionedMesh.kt` that is under
-    // construction. The C++ `Mesh` type is cheap to copy because internally it
-    // keeps a `shared_ptr` to its (immutable) data.
-    meshes_ptrs[i] = NewNativeMesh(meshes[i]);
+    meshes_ptrs[i] = reinterpret_cast<jlong>(&meshes[i]);
   }
   jlongArray mesh_pointers = env->NewLongArray(meshes.size());
   env->SetLongArrayRegion(mesh_pointers, 0, meshes.size(), meshes_ptrs.data());
