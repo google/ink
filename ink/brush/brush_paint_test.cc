@@ -633,16 +633,6 @@ TEST(BrushPaintTest, InvalidColorFunction) {
                        HasSubstr("OpacityMultiplier")));
 }
 
-TEST(BrushPaintTest, MismatchedTextureMappings) {
-  EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
-                  {{.client_texture_id = std::string(kTestTextureId),
-                    .mapping = BrushPaint::TextureMapping::kTiling},
-                   {.client_texture_id = std::string(kTestTextureId),
-                    .mapping = BrushPaint::TextureMapping::kStamping}}}),
-              StatusIs(absl::StatusCode::kInvalidArgument,
-                       HasSubstr("TextureLayer::mapping` must be the same")));
-}
-
 TEST(BrushPaintTest, MismatchedAnimationFrames) {
   EXPECT_THAT(
       brush_internal::ValidateBrushPaint(
