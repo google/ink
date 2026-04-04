@@ -19,7 +19,7 @@
 
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
+#include "ink/geometry/internal/jni/mesh_format_native_helper.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_throw_util.h"
@@ -28,8 +28,8 @@
 namespace {
 
 using ::ink::MeshFormat;
-using ::ink::jni::CastToMeshFormat;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::CastToMeshFormat;
 using ::ink::skia_common_internal::MeshSpecificationData;
 
 absl::StatusOr<MeshSpecificationData> GetMeshSpecificationData(

@@ -20,7 +20,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/internal/jni/box_jni_helper.h"
-#include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
+#include "ink/geometry/internal/jni/mesh_format_native_helper.h"
 #include "ink/geometry/internal/jni/mesh_jni_helper.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/mesh.h"
@@ -37,7 +37,7 @@ using ::ink::jni::CreateJImmutableBoxOrThrow;
 using ::ink::jni::DeleteNativeMesh;
 using ::ink::jni::FillJMutableVecOrThrow;
 using ::ink::jni::NewNativeMesh;
-using ::ink::jni::NewNativeMeshFormat;
+using ::ink::native::NewNativeMeshFormat;
 
 // The maximum supported number of attribute unpacking components.
 //

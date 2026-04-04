@@ -22,7 +22,7 @@
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/internal/jni/box_jni_helper.h"
-#include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
+#include "ink/geometry/internal/jni/mesh_format_native_helper.h"
 #include "ink/geometry/internal/jni/mesh_jni_helper.h"
 #include "ink/geometry/internal/jni/partitioned_mesh_jni_helper.h"
 #include "ink/geometry/mesh.h"
@@ -47,8 +47,8 @@ using ::ink::jni::CastToPartitionedMesh;
 using ::ink::jni::CreateJImmutableBoxOrThrow;
 using ::ink::jni::DeleteNativePartitionedMesh;
 using ::ink::jni::NewNativeMesh;
-using ::ink::jni::NewNativeMeshFormat;
 using ::ink::jni::NewNativePartitionedMesh;
+using ::ink::native::NewNativeMeshFormat;
 
 extern "C" {
 

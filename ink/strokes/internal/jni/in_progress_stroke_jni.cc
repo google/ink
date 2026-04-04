@@ -23,7 +23,7 @@
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/internal/jni/box_accumulator_jni_helper.h"
-#include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
+#include "ink/geometry/internal/jni/mesh_format_native_helper.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
@@ -53,10 +53,10 @@ using ::ink::jni::FillJBoxAccumulatorOrThrow;
 using ::ink::jni::FillJMutableVecOrThrow;
 using ::ink::jni::InProgressStrokeWrapper;
 using ::ink::jni::NewNativeInProgressStroke;
-using ::ink::jni::NewNativeMeshFormat;
 using ::ink::jni::NewNativeStroke;
 using ::ink::jni::ThrowExceptionFromStatus;
 using ::ink::jni::UpdateJStrokeInputOrThrow;
+using ::ink::native::NewNativeMeshFormat;
 
 extern "C" {
 

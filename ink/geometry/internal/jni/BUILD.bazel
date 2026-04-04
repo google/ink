@@ -51,6 +51,7 @@ cc_library(
         ":affine_transform_native",
         ":angle_native",
         ":box_native",
+        ":mesh_format_native",
         ":parallelogram_native",
         ":triangle_native",
         ":vec_native",
@@ -116,7 +117,7 @@ cc_library(
     tags = ["keep_dep"],
     deps = [
         ":box_jni_helper",
-        ":mesh_format_jni_helper",
+        ":mesh_format_native_helper",
         ":mesh_jni_helper",
         ":partitioned_mesh_jni_helper",
         "//ink/geometry:affine_transform",
@@ -149,7 +150,7 @@ cc_library(
     deps = [
         ":box_accumulator_jni_helper",
         ":box_jni_helper",
-        ":mesh_format_jni_helper",
+        ":mesh_format_native_helper",
         ":mesh_jni_helper",
         ":vec_jni_helper",
         "//ink/geometry:envelope",
@@ -211,8 +212,7 @@ cc_library(
     srcs = ["mesh_format_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":mesh_format_jni_helper",
-        "//ink/geometry:mesh_format",
+        ":mesh_format_native",
         "//ink/jni/internal:jni_defines",
     ] + select({
         "@platforms//os:android": [],
@@ -224,17 +224,23 @@ cc_library(
 )
 
 cc_library(
-    name = "mesh_format_jni_helper",
-    hdrs = ["mesh_format_jni_helper.h"],
+    name = "mesh_format_native",
+    srcs = ["mesh_format_native.cc"],
+    hdrs = ["mesh_format_native.h"],
+    deps = [
+        ":mesh_format_native_helper",
+        "//ink/geometry:mesh_format",
+    ],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "mesh_format_native_helper",
+    hdrs = ["mesh_format_native_helper.h"],
     deps = [
         "//ink/geometry:mesh_format",
         "@com_google_absl//absl/log:absl_check",
-    ] + select({
-        "@platforms//os:android": [],
-        "//conditions:default": [
-            "@rules_jni//jni",
-        ],
-    }),
+    ],
 )
 
 cc_library(
