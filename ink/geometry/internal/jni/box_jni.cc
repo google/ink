@@ -55,4 +55,4 @@ JNI_METHOD(geometry, BoxNative, jboolean, containsBox)
                                other_y_max);
 }
 
-}  // extern "C
+}  // extern "C"
