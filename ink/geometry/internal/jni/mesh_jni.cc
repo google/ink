@@ -15,29 +15,22 @@
 #include <jni.h>
 
 #include <cstddef>
-#include <optional>
 
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/internal/jni/box_jni_helper.h"
-#include "ink/geometry/internal/jni/mesh_format_native_helper.h"
-#include "ink/geometry/internal/jni/mesh_jni_helper.h"
+#include "ink/geometry/internal/jni/mesh_native.h"
+#include "ink/geometry/internal/jni/mesh_native_helper.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/mesh.h"
-#include "ink/geometry/mesh_packing_types.h"
-#include "ink/geometry/rect.h"
 #include "ink/jni/internal/jni_defines.h"
 
 namespace {
 
 using ::ink::Mesh;
-using ::ink::Rect;
-using ::ink::jni::CastToMesh;
 using ::ink::jni::CreateJImmutableBoxOrThrow;
-using ::ink::jni::DeleteNativeMesh;
 using ::ink::jni::FillJMutableVecOrThrow;
-using ::ink::jni::NewNativeMesh;
-using ::ink::native::NewNativeMeshFormat;
+using ::ink::native::CastToMesh;
 
 // The maximum supported number of attribute unpacking components.
 //
@@ -55,19 +48,25 @@ extern "C" {
 // Free the given `Mesh`.
 JNI_METHOD(geometry, MeshNative, void, free)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  DeleteNativeMesh(native_pointer);
+  MeshNative_free(native_pointer);
 }
 
 // Create a newly allocated empty `Mesh`.
 JNI_METHOD(geometry, MeshNative, jlong, createEmpty)
-(JNIEnv* env, jobject object) { return NewNativeMesh(); }
+(JNIEnv* env, jobject object) { return MeshNative_createEmpty(); }
+
+JNI_METHOD(geometry, MeshNative, jlong, newCopy)
+(JNIEnv* env, jobject object, jlong mesh_native_pointer) {
+  return MeshNative_newCopy(mesh_native_pointer);
+}
 
 // Returns a direct [ByteBuffer] wrapped around the contents of
 // `ink::Mesh::RawVertexData`. It will be writeable, so be sure to only expose a
 // read-only wrapper of it.
-JNI_METHOD(geometry, MeshNative, jobject, createRawVertexBuffer)
+JNI_METHOD(geometry, JvmMeshNative, jobject,
+           createUnsafelyMutableMeshOwnedRawVertexBuffer)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  const Mesh mesh = CastToMesh(native_pointer);
+  const Mesh& mesh = CastToMesh(native_pointer);
   const absl::Span<const std::byte> raw_vertex_data = mesh.RawVertexData();
   if (raw_vertex_data.data() == nullptr) return nullptr;
   return env->NewDirectByteBuffer(
@@ -80,20 +79,20 @@ JNI_METHOD(geometry, MeshNative, jobject, createRawVertexBuffer)
 // Return the number of bytes per vertex in `createRawVertexBuffer`.
 JNI_METHOD(geometry, MeshNative, jint, getVertexStride)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  return CastToMesh(native_pointer).VertexStride();
+  return MeshNative_getVertexStride(native_pointer);
 }
 
 // Return the number of vertices in the mesh.
 JNI_METHOD(geometry, MeshNative, jint, getVertexCount)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  return CastToMesh(native_pointer).VertexCount();
+  return MeshNative_getVertexCount(native_pointer);
 }
 
 // Returns a direct [ByteBuffer] wrapped around the contents of
 // `ink::Mesh::RawIndexData`. It will be writeable, so be sure to only expose a
-// read-only wrapper of it. The raw data is stored in `uint16_t`s (two bytes per
-// element), so it can be treated as a `ShortBuffer`.
-JNI_METHOD(geometry, MeshNative, jobject, createRawTriangleIndexBuffer)
+// read-only wrapper of it.
+JNI_METHOD(geometry, JvmMeshNative, jobject,
+           createUnsafelyMutableMeshOwnedRawTriangleIndexBuffer)
 (JNIEnv* env, jobject object, jlong native_pointer) {
   const Mesh& mesh = CastToMesh(native_pointer);
   // `Mesh`'s indices should always be two bytes each.
@@ -112,55 +111,45 @@ JNI_METHOD(geometry, MeshNative, jobject, createRawTriangleIndexBuffer)
 // Return the number of triangles represented in `createRawTriangleIndexBuffer`.
 JNI_METHOD(geometry, MeshNative, jint, getTriangleCount)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  return CastToMesh(native_pointer).TriangleCount();
+  return MeshNative_getTriangleCount(native_pointer);
 }
 
 JNI_METHOD(geometry, MeshNative, jint, getAttributeCount)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  return CastToMesh(native_pointer).Format().Attributes().size();
+  return MeshNative_getAttributeCount(native_pointer);
 }
 
 JNI_METHOD(geometry, MeshNative, jobject, createBounds)
 (JNIEnv* env, jobject object, jlong native_pointer, jobject mutable_box) {
-  const Mesh& mesh = CastToMesh(native_pointer);
-  const std::optional<Rect>& bounds_rect = mesh.Bounds().AsRect();
-  if (!bounds_rect.has_value()) {
+  if (MeshNative_isEmpty(native_pointer)) {
     return nullptr;
   }
-  return CreateJImmutableBoxOrThrow(env, *bounds_rect);
+  return CreateJImmutableBoxOrThrow(env, MeshNative_getBounds(native_pointer));
 }
 
 JNI_METHOD(geometry, MeshNative, jint, fillAttributeUnpackingParams)
 (JNIEnv* env, jobject object, jlong native_pointer, jint attribute_index,
  jfloatArray offsets, jfloatArray scales) {
-  const Mesh& mesh = CastToMesh(native_pointer);
-  absl::Span<const ink::MeshAttributeCodingParams::ComponentCodingParams>
-      coding_params = mesh.VertexAttributeUnpackingParams(attribute_index)
-                          .components.Values();
-  ABSL_CHECK_LE(coding_params.size(),
-                static_cast<size_t>(kMaxAttributeUnpackingParamComponents));
-  jfloat offset_values[kMaxAttributeUnpackingParamComponents];
-  jfloat scale_values[kMaxAttributeUnpackingParamComponents];
-  for (size_t i = 0; i < coding_params.size(); ++i) {
-    offset_values[i] = coding_params[i].offset;
-    scale_values[i] = coding_params[i].scale;
-  }
-  env->SetFloatArrayRegion(offsets, 0, coding_params.size(), offset_values);
-  env->SetFloatArrayRegion(scales, 0, coding_params.size(), scale_values);
-  return coding_params.size();
+  float offset_values[kMaxAttributeUnpackingParamComponents];
+  float scale_values[kMaxAttributeUnpackingParamComponents];
+  int count = MeshNative_fillAttributeUnpackingParams(
+      native_pointer, attribute_index, offset_values, scale_values);
+  env->SetFloatArrayRegion(offsets, 0, count, offset_values);
+  env->SetFloatArrayRegion(scales, 0, count, scale_values);
+  return count;
 }
 
 // Return a newly allocated copy of the given `Mesh`'s `MeshFormat`.
 JNI_METHOD(geometry, MeshNative, jlong, newCopyOfFormat)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  return NewNativeMeshFormat(CastToMesh(native_pointer).Format());
+  return MeshNative_newCopyOfFormat(native_pointer);
 }
 
 JNI_METHOD(geometry, MeshNative, void, fillPosition)
 (JNIEnv* env, jobject object, jlong native_pointer, jint vertex_index,
  jobject mutable_vec) {
   FillJMutableVecOrThrow(
-      env, CastToMesh(native_pointer).VertexPosition(vertex_index),
+      env, MeshNative_getVertexPosition(native_pointer, vertex_index),
       mutable_vec);
 }
 

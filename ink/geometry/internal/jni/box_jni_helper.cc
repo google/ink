@@ -17,6 +17,7 @@
 
 #include <jni.h>
 
+#include "ink/geometry/internal/jni/mesh_native.h"
 #include "ink/geometry/internal/jni/parallelogram_native.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/rect.h"
@@ -41,6 +42,11 @@ jobject CreateJImmutableBoxOrThrow(JNIEnv* env,
                                    const ParallelogramNative_Box& box) {
   return CreateJImmutableBoxOrThrow(env, box.xmin, box.ymin, box.xmax,
                                     box.ymax);
+}
+
+jobject CreateJImmutableBoxOrThrow(JNIEnv* env, const MeshNative_Box& box) {
+  return CreateJImmutableBoxOrThrow(env, box.x_min, box.y_min, box.x_max,
+                                    box.y_max);
 }
 
 void FillJMutableBoxOrThrow(JNIEnv* env, float x_min, float y_min, float x_max,
