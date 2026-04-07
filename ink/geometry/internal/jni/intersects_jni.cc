@@ -16,7 +16,7 @@
 
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
-#include "ink/geometry/internal/jni/partitioned_mesh_jni_helper.h"
+#include "ink/geometry/internal/jni/partitioned_mesh_native_helper.h"
 #include "ink/geometry/intersects.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/quad.h"
@@ -35,7 +35,7 @@ using ::ink::Quad;
 using ::ink::Rect;
 using ::ink::Segment;
 using ::ink::Triangle;
-using ::ink::jni::CastToPartitionedMesh;
+using ::ink::native::CastToPartitionedMesh;
 
 }  // namespace
 

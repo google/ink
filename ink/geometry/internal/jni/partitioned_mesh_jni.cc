@@ -14,133 +14,91 @@
 
 #include <jni.h>
 
-#include <cstddef>
-#include <optional>
+#include <cstdint>
 #include <vector>
 
-#include "absl/log/absl_check.h"
-#include "absl/status/statusor.h"
-#include "absl/types/span.h"
-#include "ink/geometry/affine_transform.h"
-#include "ink/geometry/angle.h"
 #include "ink/geometry/internal/jni/box_jni_helper.h"
-#include "ink/geometry/internal/jni/mesh_format_native_helper.h"
-#include "ink/geometry/internal/jni/partitioned_mesh_jni_helper.h"
+#include "ink/geometry/internal/jni/partitioned_mesh_native.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
-#include "ink/geometry/mesh.h"
-#include "ink/geometry/mesh_format.h"
-#include "ink/geometry/mesh_index_types.h"
-#include "ink/geometry/partitioned_mesh.h"
-#include "ink/geometry/point.h"
-#include "ink/geometry/quad.h"
-#include "ink/geometry/rect.h"
-#include "ink/geometry/triangle.h"
 #include "ink/jni/internal/jni_defines.h"
 
-using ::ink::AffineTransform;
-using ::ink::Angle;
-using ::ink::Mesh;
-using ::ink::MeshFormat;
-using ::ink::PartitionedMesh;
-using ::ink::Point;
-using ::ink::Quad;
-using ::ink::Rect;
-using ::ink::Triangle;
-using ::ink::VertexIndexPair;
-using ::ink::jni::CastToPartitionedMesh;
 using ::ink::jni::CreateJImmutableBoxOrThrow;
-using ::ink::jni::DeleteNativePartitionedMesh;
 using ::ink::jni::FillJMutableVecOrThrow;
-using ::ink::jni::NewNativePartitionedMesh;
-using ::ink::native::NewNativeMeshFormat;
 
 extern "C" {
 
 JNI_METHOD(geometry, PartitionedMeshNative, jlongArray,
            getRenderGroupMeshPointers)
 (JNIEnv* env, jobject object, jlong native_pointer, jint group_index) {
-  absl::Span<const Mesh> meshes =
-      CastToPartitionedMesh(native_pointer).RenderGroupMeshes(group_index);
-  std::vector<jlong> meshes_ptrs(meshes.size());
-  for (size_t i = 0; i < meshes.size(); ++i) {
-    meshes_ptrs[i] = reinterpret_cast<jlong>(&meshes[i]);
-  }
-  jlongArray mesh_pointers = env->NewLongArray(meshes.size());
-  env->SetLongArrayRegion(mesh_pointers, 0, meshes.size(), meshes_ptrs.data());
+  int group_mesh_count = PartitionedMeshNative_getRenderGroupMeshCount(
+      native_pointer, group_index);
+  std::vector<int64_t> meshes_ptrs(group_mesh_count);
+  PartitionedMeshNative_fillRenderGroupMeshPointers(native_pointer, group_index,
+                                                    meshes_ptrs.data());
+  jlongArray mesh_pointers = env->NewLongArray(group_mesh_count);
+  env->SetLongArrayRegion(mesh_pointers, 0, group_mesh_count,
+                          meshes_ptrs.data());
   return mesh_pointers;
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jint, getRenderGroupCount)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  return CastToPartitionedMesh(native_pointer).RenderGroupCount();
+  return PartitionedMeshNative_getRenderGroupCount(native_pointer);
 }
 
-JNI_METHOD(geometry, PartitionedMeshNative, jlong, getRenderGroupFormat)
+JNI_METHOD(geometry, PartitionedMeshNative, jlong, newCopyOfRenderGroupFormat)
 (JNIEnv* env, jobject object, jlong native_pointer, jint group_index) {
-  return NewNativeMeshFormat(
-      CastToPartitionedMesh(native_pointer).RenderGroupFormat(group_index));
+  return PartitionedMeshNative_newCopyOfRenderGroupFormat(native_pointer,
+                                                          group_index);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jint, getOutlineCount)
 (JNIEnv* env, jobject object, jlong native_pointer, jint group_index) {
-  return CastToPartitionedMesh(native_pointer).OutlineCount(group_index);
+  return PartitionedMeshNative_getOutlineCount(native_pointer, group_index);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jint, getOutlineVertexCount)
 (JNIEnv* env, jobject object, jlong native_pointer, jint group_index,
  jint outline_index) {
-  return CastToPartitionedMesh(native_pointer)
-      .Outline(group_index, outline_index)
-      .size();
+  return PartitionedMeshNative_getOutlineVertexCount(
+      native_pointer, group_index, outline_index);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, void, populateOutlineVertexPosition)
 (JNIEnv* env, jobject object, jlong native_pointer, jint group_index,
  jint outline_index, jint outline_vertex_index,
  jobject out_position_mutable_vec) {
-  const PartitionedMesh& partitioned_mesh =
-      CastToPartitionedMesh(native_pointer);
-  VertexIndexPair index_pair = partitioned_mesh.Outline(
-      group_index, outline_index)[outline_vertex_index];
-  const Mesh& mesh =
-      partitioned_mesh.RenderGroupMeshes(group_index)[index_pair.mesh_index];
-  const Point& position = mesh.VertexPosition(index_pair.vertex_index);
+  PartitionedMeshNative_Vec position =
+      PartitionedMeshNative_getOutlineVertexPosition(
+          native_pointer, group_index, outline_index, outline_vertex_index);
   FillJMutableVecOrThrow(env, position, out_position_mutable_vec);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jobject, createBounds)
 (JNIEnv* env, jobject object, jlong native_pointer, jobject mutable_box) {
-  const PartitionedMesh& partitioned_mesh =
-      CastToPartitionedMesh(native_pointer);
-  const std::optional<Rect>& bounds_rect = partitioned_mesh.Bounds().AsRect();
-  if (!bounds_rect.has_value()) {
+  if (PartitionedMeshNative_isEmpty(native_pointer)) {
     return nullptr;
   }
-  return CreateJImmutableBoxOrThrow(env, *bounds_rect);
+  return CreateJImmutableBoxOrThrow(
+      env, PartitionedMeshNative_getBounds(native_pointer));
 }
 
 // Allocate an empty `PartitionedMesh` and return a pointer to it.
 JNI_METHOD(geometry, PartitionedMeshNative, jlong, createEmptyForTesting)
-(JNIEnv* env, jobject object) { return NewNativePartitionedMesh(); }
+(JNIEnv* env, jobject object) {
+  return PartitionedMeshNative_createEmptyForTesting();
+}
 
 JNI_METHOD(geometry, PartitionedMeshNative, jlong, createFromTriangleForTesting)
 (JNIEnv* env, jobject object, jfloat triangle_p0_x, jfloat triangle_p0_y,
  jfloat triangle_p1_x, jfloat triangle_p1_y, jfloat triangle_p2_x,
  jfloat triangle_p2_y) {
-  absl::StatusOr<Mesh> mesh =
-      Mesh::Create(MeshFormat(),
-                   {{triangle_p0_x, triangle_p1_x, triangle_p2_x},
-                    {triangle_p0_y, triangle_p1_y, triangle_p2_y}},
-                   {0, 1, 2});
-  ABSL_CHECK(mesh.ok());
-  absl::StatusOr<PartitionedMesh> partitioned_mesh =
-      PartitionedMesh::FromMeshes({*mesh}, {{{0, 0}, {0, 1}, {0, 2}}});
-  ABSL_CHECK(partitioned_mesh.ok());
-  return NewNativePartitionedMesh(*partitioned_mesh);
+  return PartitionedMeshNative_createFromTriangleForTesting(
+      triangle_p0_x, triangle_p0_y, triangle_p1_x, triangle_p1_y, triangle_p2_x,
+      triangle_p2_y);
 }
 
-JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
-           partitionedMeshTriangleCoverage)
+JNI_METHOD(geometry, PartitionedMeshNative, jfloat, triangleCoverage)
 (JNIEnv* env, jobject object, jlong native_pointer, jfloat triangle_p0_x,
  jfloat triangle_p0_y, jfloat triangle_p1_x, jfloat triangle_p1_y,
  jfloat triangle_p2_x, jfloat triangle_p2_y,
@@ -150,21 +108,18 @@ JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
  jfloat triangle_to_partitionedMesh_transform_d,
  jfloat triangle_to_partitionedMesh_transform_e,
  jfloat triangle_to_partitionedMesh_transform_f) {
-  const PartitionedMesh& partitioned_mesh =
-      CastToPartitionedMesh(native_pointer);
-  Triangle triangle{{triangle_p0_x, triangle_p0_y},
-                    {triangle_p1_x, triangle_p1_y},
-                    {triangle_p2_x, triangle_p2_y}};
-  AffineTransform transform(triangle_to_partitionedMesh_transform_a,
-                            triangle_to_partitionedMesh_transform_b,
-                            triangle_to_partitionedMesh_transform_c,
-                            triangle_to_partitionedMesh_transform_d,
-                            triangle_to_partitionedMesh_transform_e,
-                            triangle_to_partitionedMesh_transform_f);
-  return partitioned_mesh.Coverage(triangle, transform);
+  return PartitionedMeshNative_triangleCoverage(
+      native_pointer, triangle_p0_x, triangle_p0_y, triangle_p1_x,
+      triangle_p1_y, triangle_p2_x, triangle_p2_y,
+      triangle_to_partitionedMesh_transform_a,
+      triangle_to_partitionedMesh_transform_b,
+      triangle_to_partitionedMesh_transform_c,
+      triangle_to_partitionedMesh_transform_d,
+      triangle_to_partitionedMesh_transform_e,
+      triangle_to_partitionedMesh_transform_f);
 }
 
-JNI_METHOD(geometry, PartitionedMeshNative, jfloat, partitionedMeshBoxCoverage)
+JNI_METHOD(geometry, PartitionedMeshNative, jfloat, boxCoverage)
 (JNIEnv* env, jobject object, jlong native_pointer, jfloat rect_x_min,
  jfloat rect_y_min, jfloat rect_x_max, jfloat rect_y_max,
  jfloat rect_to_partitionedMesh_transform_a,
@@ -173,19 +128,14 @@ JNI_METHOD(geometry, PartitionedMeshNative, jfloat, partitionedMeshBoxCoverage)
  jfloat rect_to_partitionedMesh_transform_d,
  jfloat rect_to_partitionedMesh_transform_e,
  jfloat rect_to_partitionedMesh_transform_f) {
-  const PartitionedMesh& partitioned_mesh =
-      CastToPartitionedMesh(native_pointer);
-  Rect rect =
-      Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
-  AffineTransform transform(
+  return PartitionedMeshNative_boxCoverage(
+      native_pointer, rect_x_min, rect_y_min, rect_x_max, rect_y_max,
       rect_to_partitionedMesh_transform_a, rect_to_partitionedMesh_transform_b,
       rect_to_partitionedMesh_transform_c, rect_to_partitionedMesh_transform_d,
       rect_to_partitionedMesh_transform_e, rect_to_partitionedMesh_transform_f);
-  return partitioned_mesh.Coverage(rect, transform);
 }
 
-JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
-           partitionedMeshParallelogramCoverage)
+JNI_METHOD(geometry, PartitionedMeshNative, jfloat, parallelogramCoverage)
 (JNIEnv* env, jobject object, jlong native_pointer, jfloat quad_center_x,
  jfloat quad_center_y, jfloat quad_width, jfloat quad_height,
  jfloat quad_angle_radian, jfloat quad_shear_factor,
@@ -195,38 +145,29 @@ JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
  jfloat quad_to_partitionedMesh_transform_d,
  jfloat quad_to_partitionedMesh_transform_e,
  jfloat quad_to_partitionedMesh_transform_f) {
-  const PartitionedMesh& partitioned_mesh =
-      CastToPartitionedMesh(native_pointer);
-  Quad quad = Quad::FromCenterDimensionsRotationAndSkew(
-      Point{quad_center_x, quad_center_y}, quad_width, quad_height,
-      Angle::Radians(quad_angle_radian), quad_shear_factor);
-  AffineTransform transform(
-      quad_to_partitionedMesh_transform_a, quad_to_partitionedMesh_transform_b,
-      quad_to_partitionedMesh_transform_c, quad_to_partitionedMesh_transform_d,
-      quad_to_partitionedMesh_transform_e, quad_to_partitionedMesh_transform_f);
-  return partitioned_mesh.Coverage(quad, transform);
+  return PartitionedMeshNative_parallelogramCoverage(
+      native_pointer, quad_center_x, quad_center_y, quad_width, quad_height,
+      quad_angle_radian, quad_shear_factor, quad_to_partitionedMesh_transform_a,
+      quad_to_partitionedMesh_transform_b, quad_to_partitionedMesh_transform_c,
+      quad_to_partitionedMesh_transform_d, quad_to_partitionedMesh_transform_e,
+      quad_to_partitionedMesh_transform_f);
 }
 
-JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
-           partitionedMeshPartitionedMeshCoverage)
+JNI_METHOD(geometry, PartitionedMeshNative, jfloat, partitionedMeshCoverage)
 (JNIEnv* env, jobject object, jlong native_pointer,
  jlong other_partitioned_mesh_pointer, jfloat other_to_this_transform_a,
  jfloat other_to_this_transform_b, jfloat other_to_this_transform_c,
  jfloat other_to_this_transform_d, jfloat other_to_this_transform_e,
  jfloat other_to_this_transform_f) {
-  const PartitionedMesh& this_partitioned_mesh =
-      CastToPartitionedMesh(native_pointer);
-  const PartitionedMesh& other_partitioned_mesh =
-      CastToPartitionedMesh(other_partitioned_mesh_pointer);
-  AffineTransform transform(
-      other_to_this_transform_a, other_to_this_transform_b,
-      other_to_this_transform_c, other_to_this_transform_d,
-      other_to_this_transform_e, other_to_this_transform_f);
-  return this_partitioned_mesh.Coverage(other_partitioned_mesh, transform);
+  return PartitionedMeshNative_partitionedMeshCoverage(
+      native_pointer, other_partitioned_mesh_pointer, other_to_this_transform_a,
+      other_to_this_transform_b, other_to_this_transform_c,
+      other_to_this_transform_d, other_to_this_transform_e,
+      other_to_this_transform_f);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
-           partitionedMeshTriangleCoverageIsGreaterThan)
+           triangleCoverageIsGreaterThan)
 (JNIEnv* env, jobject object, jlong native_pointer, jfloat triangle_p0_x,
  jfloat triangle_p0_y, jfloat triangle_p1_x, jfloat triangle_p1_y,
  jfloat triangle_p2_x, jfloat triangle_p2_y, jfloat coverage_threshold,
@@ -236,23 +177,18 @@ JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
  jfloat triangle_to_partitionedMesh_transform_d,
  jfloat triangle_to_partitionedMesh_transform_e,
  jfloat triangle_to_partitionedMesh_transform_f) {
-  const PartitionedMesh& partitioned_mesh =
-      CastToPartitionedMesh(native_pointer);
-  Triangle triangle{{triangle_p0_x, triangle_p0_y},
-                    {triangle_p1_x, triangle_p1_y},
-                    {triangle_p2_x, triangle_p2_y}};
-  AffineTransform transform(triangle_to_partitionedMesh_transform_a,
-                            triangle_to_partitionedMesh_transform_b,
-                            triangle_to_partitionedMesh_transform_c,
-                            triangle_to_partitionedMesh_transform_d,
-                            triangle_to_partitionedMesh_transform_e,
-                            triangle_to_partitionedMesh_transform_f);
-  return partitioned_mesh.CoverageIsGreaterThan(triangle, coverage_threshold,
-                                                transform);
+  return PartitionedMeshNative_triangleCoverageIsGreaterThan(
+      native_pointer, triangle_p0_x, triangle_p0_y, triangle_p1_x,
+      triangle_p1_y, triangle_p2_x, triangle_p2_y, coverage_threshold,
+      triangle_to_partitionedMesh_transform_a,
+      triangle_to_partitionedMesh_transform_b,
+      triangle_to_partitionedMesh_transform_c,
+      triangle_to_partitionedMesh_transform_d,
+      triangle_to_partitionedMesh_transform_e,
+      triangle_to_partitionedMesh_transform_f);
 }
 
-JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
-           partitionedMeshBoxCoverageIsGreaterThan)
+JNI_METHOD(geometry, PartitionedMeshNative, jboolean, boxCoverageIsGreaterThan)
 (JNIEnv* env, jobject object, jlong native_pointer, jfloat rect_x_min,
  jfloat rect_y_min, jfloat rect_x_max, jfloat rect_y_max,
  jfloat coverage_threshold, jfloat rect_to_partitionedMesh_transform_a,
@@ -261,20 +197,16 @@ JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
  jfloat rect_to_partitionedMesh_transform_d,
  jfloat rect_to_partitionedMesh_transform_e,
  jfloat rect_to_partitionedMesh_transform_f) {
-  const PartitionedMesh& partitioned_mesh =
-      CastToPartitionedMesh(native_pointer);
-  Rect rect =
-      Rect::FromTwoPoints({rect_x_min, rect_y_min}, {rect_x_max, rect_y_max});
-  AffineTransform transform(
-      rect_to_partitionedMesh_transform_a, rect_to_partitionedMesh_transform_b,
-      rect_to_partitionedMesh_transform_c, rect_to_partitionedMesh_transform_d,
-      rect_to_partitionedMesh_transform_e, rect_to_partitionedMesh_transform_f);
-  return partitioned_mesh.CoverageIsGreaterThan(rect, coverage_threshold,
-                                                transform);
+  return PartitionedMeshNative_boxCoverageIsGreaterThan(
+      native_pointer, rect_x_min, rect_y_min, rect_x_max, rect_y_max,
+      coverage_threshold, rect_to_partitionedMesh_transform_a,
+      rect_to_partitionedMesh_transform_b, rect_to_partitionedMesh_transform_c,
+      rect_to_partitionedMesh_transform_d, rect_to_partitionedMesh_transform_e,
+      rect_to_partitionedMesh_transform_f);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
-           partitionedMeshParallelogramCoverageIsGreaterThan)
+           parallelogramCoverageIsGreaterThan)
 (JNIEnv* env, jobject object, jlong native_pointer, jfloat quad_center_x,
  jfloat quad_center_y, jfloat quad_width, jfloat quad_height,
  jfloat quad_angle_radian, jfloat quad_shear_factor, jfloat coverage_threshold,
@@ -284,49 +216,41 @@ JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
  jfloat quad_to_partitionedMesh_transform_d,
  jfloat quad_to_partitionedMesh_transform_e,
  jfloat quad_to_partitionedMesh_transform_f) {
-  const PartitionedMesh& partitioned_mesh =
-      CastToPartitionedMesh(native_pointer);
-  Quad quad = Quad::FromCenterDimensionsRotationAndSkew(
-      Point{quad_center_x, quad_center_y}, quad_width, quad_height,
-      Angle::Radians(quad_angle_radian), quad_shear_factor);
-  AffineTransform transform(
+  return PartitionedMeshNative_parallelogramCoverageIsGreaterThan(
+      native_pointer, quad_center_x, quad_center_y, quad_width, quad_height,
+      quad_angle_radian, quad_shear_factor, coverage_threshold,
       quad_to_partitionedMesh_transform_a, quad_to_partitionedMesh_transform_b,
       quad_to_partitionedMesh_transform_c, quad_to_partitionedMesh_transform_d,
       quad_to_partitionedMesh_transform_e, quad_to_partitionedMesh_transform_f);
-  return partitioned_mesh.CoverageIsGreaterThan(quad, coverage_threshold,
-                                                transform);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jboolean,
-           partitionedMeshPartitionedMeshCoverageIsGreaterThan)
+           partitionedMeshCoverageIsGreaterThan)
 (JNIEnv* env, jobject object, jlong native_pointer,
  jlong other_partitioned_mesh_pointer, jfloat coverage_threshold,
  jfloat other_to_this_transform_a, jfloat other_to_this_transform_b,
  jfloat other_to_this_transform_c, jfloat other_to_this_transform_d,
  jfloat other_to_this_transform_e, jfloat other_to_this_transform_f) {
-  AffineTransform transform(
+  return PartitionedMeshNative_partitionedMeshCoverageIsGreaterThan(
+      native_pointer, other_partitioned_mesh_pointer, coverage_threshold,
       other_to_this_transform_a, other_to_this_transform_b,
       other_to_this_transform_c, other_to_this_transform_d,
       other_to_this_transform_e, other_to_this_transform_f);
-  return CastToPartitionedMesh(native_pointer)
-      .CoverageIsGreaterThan(
-          CastToPartitionedMesh(other_partitioned_mesh_pointer),
-          coverage_threshold, transform);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, void, initializeSpatialIndex)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  return CastToPartitionedMesh(native_pointer).InitializeSpatialIndex();
+  PartitionedMeshNative_initializeSpatialIndex(native_pointer);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jboolean, isSpatialIndexInitialized)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  return CastToPartitionedMesh(native_pointer).IsSpatialIndexInitialized();
+  return PartitionedMeshNative_isSpatialIndexInitialized(native_pointer);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, void, free)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  DeleteNativePartitionedMesh(native_pointer);
+  PartitionedMeshNative_free(native_pointer);
 }
 
 }  // extern "C"

@@ -21,6 +21,7 @@
 #include "ink/geometry/internal/jni/box_native.h"
 #include "ink/geometry/internal/jni/mesh_native.h"
 #include "ink/geometry/internal/jni/parallelogram_native.h"
+#include "ink/geometry/internal/jni/partitioned_mesh_native.h"
 #include "ink/geometry/internal/jni/vec_native.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
@@ -56,6 +57,8 @@ void FillJMutableVecOrThrow(JNIEnv* env, const BoxNative_Vec& vec,
 void FillJMutableVecOrThrow(JNIEnv* env, const ParallelogramNative_Vec& vec,
                             jobject mutable_vec);
 void FillJMutableVecOrThrow(JNIEnv* env, const MeshNative_Vec& vec,
+                            jobject mutable_vec);
+void FillJMutableVecOrThrow(JNIEnv* env, const PartitionedMeshNative_Vec& vec,
                             jobject mutable_vec);
 
 }  // namespace ink::jni
