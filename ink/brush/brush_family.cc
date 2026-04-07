@@ -105,6 +105,10 @@ Version BrushFamily::CalculateMinimumRequiredVersion() const {
   return max_version;
 }
 
+bool BrushFamily::HasFallbacks() const {
+  return !opaque_decoded_proto_bytes_with_fallbacks_.empty();
+}
+
 namespace brush_internal {
 namespace {
 
