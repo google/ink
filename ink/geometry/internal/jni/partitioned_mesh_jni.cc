@@ -25,6 +25,7 @@
 #include "ink/geometry/internal/jni/mesh_format_native_helper.h"
 #include "ink/geometry/internal/jni/mesh_jni_helper.h"
 #include "ink/geometry/internal/jni/partitioned_mesh_jni_helper.h"
+#include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/partitioned_mesh.h"
@@ -46,6 +47,7 @@ using ::ink::VertexIndexPair;
 using ::ink::jni::CastToPartitionedMesh;
 using ::ink::jni::CreateJImmutableBoxOrThrow;
 using ::ink::jni::DeleteNativePartitionedMesh;
+using ::ink::jni::FillJMutableVecOrThrow;
 using ::ink::jni::NewNativeMesh;
 using ::ink::jni::NewNativePartitionedMesh;
 using ::ink::native::NewNativeMeshFormat;
@@ -93,20 +95,18 @@ JNI_METHOD(geometry, PartitionedMeshNative, jint, getOutlineVertexCount)
       .size();
 }
 
-JNI_METHOD(geometry, PartitionedMeshNative, void,
-           fillOutlineMeshIndexAndMeshVertexIndex)
+JNI_METHOD(geometry, PartitionedMeshNative, void, populateOutlineVertexPosition)
 (JNIEnv* env, jobject object, jlong native_pointer, jint group_index,
  jint outline_index, jint outline_vertex_index,
- jintArray out_mesh_index_and_mesh_vertex_index) {
+ jobject out_position_mutable_vec) {
   const PartitionedMesh& partitioned_mesh =
       CastToPartitionedMesh(native_pointer);
-  absl::Span<const VertexIndexPair> outline =
-      partitioned_mesh.Outline(group_index, outline_index);
-  VertexIndexPair index_pair = outline[outline_vertex_index];
-  jint mesh_index_and_mesh_vertex_index[] = {index_pair.mesh_index,
-                                             index_pair.vertex_index};
-  env->SetIntArrayRegion(out_mesh_index_and_mesh_vertex_index, 0, 2,
-                         mesh_index_and_mesh_vertex_index);
+  VertexIndexPair index_pair = partitioned_mesh.Outline(
+      group_index, outline_index)[outline_vertex_index];
+  const Mesh& mesh =
+      partitioned_mesh.RenderGroupMeshes(group_index)[index_pair.mesh_index];
+  const Point& position = mesh.VertexPosition(index_pair.vertex_index);
+  FillJMutableVecOrThrow(env, position, out_position_mutable_vec);
 }
 
 JNI_METHOD(geometry, PartitionedMeshNative, jobject, createBounds)

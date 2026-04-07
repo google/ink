@@ -120,6 +120,7 @@ cc_library(
         ":mesh_format_native_helper",
         ":mesh_jni_helper",
         ":partitioned_mesh_jni_helper",
+        ":vec_jni_helper",
         "//ink/geometry:affine_transform",
         "//ink/geometry:angle",
         "//ink/geometry:mesh",
