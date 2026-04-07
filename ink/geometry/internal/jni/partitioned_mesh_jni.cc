@@ -18,6 +18,8 @@
 #include <optional>
 #include <vector>
 
+#include "absl/log/absl_check.h"
+#include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
@@ -26,6 +28,7 @@
 #include "ink/geometry/internal/jni/partitioned_mesh_jni_helper.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/mesh.h"
+#include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
@@ -37,6 +40,7 @@
 using ::ink::AffineTransform;
 using ::ink::Angle;
 using ::ink::Mesh;
+using ::ink::MeshFormat;
 using ::ink::PartitionedMesh;
 using ::ink::Point;
 using ::ink::Quad;
@@ -116,8 +120,24 @@ JNI_METHOD(geometry, PartitionedMeshNative, jobject, createBounds)
 }
 
 // Allocate an empty `PartitionedMesh` and return a pointer to it.
-JNI_METHOD(geometry, PartitionedMeshNative, jlong, create)
+JNI_METHOD(geometry, PartitionedMeshNative, jlong, createEmptyForTesting)
 (JNIEnv* env, jobject object) { return NewNativePartitionedMesh(); }
+
+JNI_METHOD(geometry, PartitionedMeshNative, jlong, createFromTriangleForTesting)
+(JNIEnv* env, jobject object, jfloat triangle_p0_x, jfloat triangle_p0_y,
+ jfloat triangle_p1_x, jfloat triangle_p1_y, jfloat triangle_p2_x,
+ jfloat triangle_p2_y) {
+  absl::StatusOr<Mesh> mesh =
+      Mesh::Create(MeshFormat(),
+                   {{triangle_p0_x, triangle_p1_x, triangle_p2_x},
+                    {triangle_p0_y, triangle_p1_y, triangle_p2_y}},
+                   {0, 1, 2});
+  ABSL_CHECK(mesh.ok());
+  absl::StatusOr<PartitionedMesh> partitioned_mesh =
+      PartitionedMesh::FromMeshes({*mesh}, {{{0, 0}, {0, 1}, {0, 2}}});
+  ABSL_CHECK(partitioned_mesh.ok());
+  return NewNativePartitionedMesh(*partitioned_mesh);
+}
 
 JNI_METHOD(geometry, PartitionedMeshNative, jfloat,
            partitionedMeshTriangleCoverage)
