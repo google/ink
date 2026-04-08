@@ -8,13 +8,13 @@
 
 namespace ink::native {
 
-// Creates a new stack-allocated copy of the `Mesh` and returns a pointer
+// Creates a new heap-allocated copy of the `Mesh` and returns a pointer
 // to it as a 64-bit integer, suitable for wrapping in a Kotlin Mesh.
 inline int64_t NewNativeMesh(const Mesh& mesh) {
   return reinterpret_cast<int64_t>(new Mesh(mesh));
 }
 
-// Creates a new stack-allocated empty `Mesh` and returns a pointer
+// Creates a new heap-allocated empty `Mesh` and returns a pointer
 // to it as a 64-bit integer, suitable for wrapping in a Kotlin Mesh.
 inline int64_t NewNativeMesh() {
   // Note that URVO avoids the inefficiency of constructing this on the stack

@@ -22,7 +22,7 @@
 
 namespace ink::native {
 
-// Creates a new stack-allocated copy of the `MeshFormat` and returns a pointer
+// Creates a new heap-allocated copy of the `MeshFormat` and returns a pointer
 // to it as a 64-bit integer, suitable for wrapping in a Kotlin MeshFormat.
 inline int64_t NewNativeMeshFormat(const MeshFormat& mesh_format) {
   return reinterpret_cast<int64_t>(new MeshFormat(mesh_format));

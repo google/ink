@@ -122,10 +122,9 @@ class InProgressStrokeWrapper {
   std::vector<internal::PartitionedCoatIndices> coat_buffer_partitions_;
 };
 
-// Creates a new stack-allocated
-// `ink::jni::InProgressStrokeWrapper` containing an empty
-// `InProgressStroke` and returns a pointer to it as a jlong, suitable for
-// wrapping in a Kotlin InProgressStroke.
+// Creates a new heap-allocated `ink::jni::InProgressStrokeWrapper` containing
+// an empty `InProgressStroke` and returns a pointer to it as a jlong, suitable
+// for wrapping in a Kotlin InProgressStroke.
 inline jlong NewNativeInProgressStroke() {
   return reinterpret_cast<jlong>(new InProgressStrokeWrapper());
 }
