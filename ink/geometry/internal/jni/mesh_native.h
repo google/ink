@@ -37,10 +37,19 @@ typedef struct {
   float y;
 } MeshNative_Vec;
 
+// The native_ptr parameter of these methods contains the raw pointer to a
+// C++ Mesh object stored in Kotlin on Mesh.nativePointer.
+
+// Frees a Kotlin Mesh.nativePointer.
 void MeshNative_free(int64_t native_ptr);
 
+// Creates a new heap-allocated empty `Mesh` and returns a pointer to it as
+// int64_t, suitable for wrapping in a Kotlin Mesh.
 int64_t MeshNative_createEmpty();
 
+// Takes a raw pointer to another `Mesh` as int64_t, creates a new
+// heap-allocated copy of that, and returns a pointer to it as int64_t, suitable
+// fors wrapping in a Kotlin Mesh.
 int64_t MeshNative_newCopy(int64_t other_native_ptr);
 
 int MeshNative_getVertexCount(int64_t native_ptr);

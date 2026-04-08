@@ -24,14 +24,25 @@
 extern "C" {
 #endif
 
+// The native_ptr parameter of these methods contains the raw pointer to a
+// C++ MeshFormat object stored in Kotlin on MeshFormat.nativePointer.
+
+// Returns whether this mesh format has the same packed representation and same
+// packing scheme as another MeshFormat, such that they can be passed to the
+// same shader that accepts packed attribute values. other_native_ptr is the raw
+// pointer to a different MeshFormat object.
 bool MeshFormatNative_isPackedEquivalent(int64_t native_ptr,
                                          int64_t other_native_ptr);
 
+// Returns whether this mesh formats has the same unpacked representation as
+// another MeshFormat. other_native_ptr is the raw pointer to a different
+// MeshFormat object.
 bool MeshFormatNative_isUnpackedEquivalent(int64_t native_ptr,
                                            int64_t other_native_ptr);
 
 int MeshFormatNative_attributeCount(int64_t native_ptr);
 
+// Frees a Kotlin MeshFormat.nativePointer.
 void MeshFormatNative_free(int64_t native_ptr);
 
 #ifdef __cplusplus
