@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/strokes/internal/stroke_input_modeler/naive_input_modeler.h"
+#include "ink/strokes/internal/stroke_input_modeler/passthrough_input_modeler.h"
 
 #include <cstddef>
 #include <vector>
@@ -26,7 +26,7 @@
 
 namespace ink::strokes_internal {
 
-void NaiveInputModeler::ExtendStroke(
+void PassthroughInputModeler::ExtendStroke(
     InputModelerState& state, std::vector<ModeledStrokeInput>& modeled_inputs,
     const StrokeInputBatch& real_inputs,
     const StrokeInputBatch& predicted_inputs) {
@@ -36,7 +36,7 @@ void NaiveInputModeler::ExtendStroke(
   AppendInputs(state, modeled_inputs, predicted_inputs);
 }
 
-void NaiveInputModeler::AppendInputs(
+void PassthroughInputModeler::AppendInputs(
     InputModelerState& state, std::vector<ModeledStrokeInput>& modeled_inputs,
     const StrokeInputBatch& inputs) {
   for (size_t i = 0; i < inputs.Size(); ++i) {

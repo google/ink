@@ -90,7 +90,7 @@ TEST(BrushTest, Stringify) {
                            .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                            .size = {3, 5},
                            .blend_mode = BrushPaint::BlendMode::kDstOut}}},
-      BrushFamily::ExperimentalNaiveModel{},
+      BrushFamily::PassthroughModel{},
       {.client_brush_family_id = "big-square"});
   ASSERT_EQ(family.status(), absl::OkStatus());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Blue(), 3, .1);
@@ -107,7 +107,7 @@ TEST(BrushTest, Stringify) {
       "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
       "animation_frames=1, animation_rows=1, animation_columns=1, "
       "animation_duration=1s, blend_mode=kDstOut}}, "
-      "self_overlap=kAny}}}], input_model=ExperimentalNaiveModel, "
+      "self_overlap=kAny}}}], input_model=PassthroughModel, "
       "client_brush_family_id='big-square'))");
 }
 

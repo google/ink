@@ -451,7 +451,7 @@ INSTANTIATE_TEST_SUITE_P(
     TestInputModels, StrokeInputModelerTest,
     // LINT.IfChange(input_model_types)
     ::testing::ValuesIn<InputModelTestCase>({
-        {"NaiveModel", {BrushFamily::ExperimentalNaiveModel{}}},
+        {"PassthroughModel", {BrushFamily::PassthroughModel{}}},
         {"SlidingWindowModel_default", {BrushFamily::SlidingWindowModel{}}},
         {"SlidingWindowModel_250ms_100ms",
          {BrushFamily::SlidingWindowModel{

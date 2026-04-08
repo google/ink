@@ -27,11 +27,12 @@ import "ink/storage/proto/options.proto";
 message BrushFamily {
   option (ink.proto.message_min_version) = 0;
 
-  // A naive model that passes through raw inputs mostly unchanged.  This is an
-  // experimental configuration which may be adjusted or removed later. Strokes
-  // generated with this input model might change shape if read with a later
-  // version of the code that has removed this feature.
-  message ExperimentalNaiveModel {
+  // A naive input model that passes raw inputs through unchanged, performing
+  // only base-minimal modeling to derive velocity and acceleration values for
+  // the modeled inputs. This can be useful as a point of comparison for other
+  // input models, or for callers who wish to do their own input modeling prior
+  // to passing inputs into Ink.
+  message PassthroughModel {
     option (ink.proto.message_min_version) = 0;
   }
 
@@ -58,7 +59,7 @@ message BrushFamily {
     option (ink.proto.message_min_version) = 0;
 
     oneof input_model {
-      ExperimentalNaiveModel experimental_naive_model = 4
+      PassthroughModel passthrough_model = 4
           [(ink.proto.field_min_version) = 0];
       SlidingWindowModel sliding_window_model = 5
           [(ink.proto.field_min_version) = 0];

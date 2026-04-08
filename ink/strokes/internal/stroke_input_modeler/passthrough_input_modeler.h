@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INK_STROKES_INTERNAL_STROKE_INPUT_MODELER_NAIVE_INPUT_MODELER_H_
-#define INK_STROKES_INTERNAL_STROKE_INPUT_MODELER_NAIVE_INPUT_MODELER_H_
+#ifndef INK_STROKES_INTERNAL_STROKE_INPUT_MODELER_PASSTHROUGH_INPUT_MODELER_H_
+#define INK_STROKES_INTERNAL_STROKE_INPUT_MODELER_PASSTHROUGH_INPUT_MODELER_H_
 
 #include <vector>
 
@@ -25,12 +25,12 @@
 
 namespace ink::strokes_internal {
 
-// A naive model that passes through raw inputs mostly unchanged, with no
+// A naive model that passes raw inputs through mostly unchanged, with no
 // smoothing or upsampling. Velocity and acceleration for modeled inputs are
 // calculated in a very simple way from the adjacent input points.
-class NaiveInputModeler : public InputModelImpl {
+class PassthroughInputModeler : public InputModelImpl {
  public:
-  NaiveInputModeler() = default;
+  PassthroughInputModeler() = default;
 
   void ExtendStroke(InputModelerState& state,
                     std::vector<ModeledStrokeInput>& modeled_inputs,
@@ -45,4 +45,4 @@ class NaiveInputModeler : public InputModelImpl {
 
 }  // namespace ink::strokes_internal
 
-#endif  // INK_STROKES_INTERNAL_STROKE_INPUT_MODELER_NAIVE_INPUT_MODELER_H_
+#endif  // INK_STROKES_INTERNAL_STROKE_INPUT_MODELER_PASSTHROUGH_INPUT_MODELER_H_

@@ -29,9 +29,9 @@ cc_library(
 )
 
 cc_library(
-    name = "naive_input_modeler",
-    srcs = ["naive_input_modeler.cc"],
-    hdrs = ["naive_input_modeler.h"],
+    name = "passthrough_input_modeler",
+    srcs = ["passthrough_input_modeler.cc"],
+    hdrs = ["passthrough_input_modeler.h"],
     deps = [
         ":input_model_impl",
         "//ink/geometry:distance",
@@ -45,10 +45,9 @@ cc_library(
 )
 
 cc_test(
-    name = "naive_input_modeler_test",
-    srcs = ["naive_input_modeler_test.cc"],
+    name = "passthrough_input_modeler_test",
+    srcs = ["passthrough_input_modeler_test.cc"],
     deps = [
-        ":naive_input_modeler",
         "//ink/brush:brush_family",
         "//ink/geometry:angle",
         "//ink/geometry:type_matchers",

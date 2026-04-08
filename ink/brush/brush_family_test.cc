@@ -104,9 +104,9 @@ BrushCoat CreateTestCoat() {
 }
 
 TEST(BrushFamilyTest, StringifyInputModel) {
-  EXPECT_EQ(absl::StrCat(
-                BrushFamily::InputModel{BrushFamily::ExperimentalNaiveModel{}}),
-            "ExperimentalNaiveModel");
+  EXPECT_EQ(
+      absl::StrCat(BrushFamily::InputModel{BrushFamily::PassthroughModel{}}),
+      "PassthroughModel");
   EXPECT_EQ(
       absl::StrCat(BrushFamily::InputModel{BrushFamily::SlidingWindowModel{
           .window_size = Duration32::Millis(125),
@@ -120,7 +120,7 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
                .corner_rounding = 0,
                .particle_gap_distance_scale = 0.1,
                .particle_gap_duration = Duration32::Seconds(2)},
-      CreateTestPaint(), BrushFamily::ExperimentalNaiveModel{});
+      CreateTestPaint(), BrushFamily::PassthroughModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_EQ(absl::StrCat(*family),
             "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
@@ -132,14 +132,14 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
             "animation_frames=1, animation_rows=1, "
             "animation_columns=1, animation_duration=1s, blend_mode=kDstIn}}, "
-            "self_overlap=kAny}}}], input_model=ExperimentalNaiveModel)");
+            "self_overlap=kAny}}}], input_model=PassthroughModel)");
 }
 
 TEST(BrushFamilyTest, StringifyWithId) {
-  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
-      BrushTip{.scale = {3, 3}, .corner_rounding = 0}, CreateTestPaint(),
-      BrushFamily::ExperimentalNaiveModel{},
-      {.client_brush_family_id = "big-square"});
+  absl::StatusOr<BrushFamily> family =
+      BrushFamily::Create(BrushTip{.scale = {3, 3}, .corner_rounding = 0},
+                          CreateTestPaint(), BrushFamily::PassthroughModel{},
+                          {.client_brush_family_id = "big-square"});
   ASSERT_EQ(family.status(), absl::OkStatus());
   EXPECT_EQ(absl::StrCat(*family),
             "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
@@ -150,7 +150,7 @@ TEST(BrushFamilyTest, StringifyWithId) {
             "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
             "animation_frames=1, animation_rows=1, "
             "animation_columns=1, animation_duration=1s, blend_mode=kDstIn}}, "
-            "self_overlap=kAny}}}], input_model=ExperimentalNaiveModel, "
+            "self_overlap=kAny}}}], input_model=PassthroughModel, "
             "client_brush_family_id='big-square')");
 }
 

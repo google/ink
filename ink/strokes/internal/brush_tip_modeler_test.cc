@@ -1265,12 +1265,11 @@ void CanModelAnyValidBrushTipAndInputs(const BrushTip& brush_tip,
                                        const StrokeInputBatch& input_batch) {
   float brush_size = 1;
   float brush_epsilon = 0.01;
-  // Run an arbitrary `StrokeInputBatch` through the naive input modeler as a
-  // way of getting a mostly-arbitrary (but valid) input modeler state and
+  // Run an arbitrary `StrokeInputBatch` through the passthrough input modeler
+  // as a way of getting a mostly-arbitrary (but valid) input modeler state and
   // sequence of modeled inputs.
   StrokeInputModeler input_modeler;
-  input_modeler.StartStroke(BrushFamily::ExperimentalNaiveModel{},
-                            brush_epsilon);
+  input_modeler.StartStroke(BrushFamily::PassthroughModel{}, brush_epsilon);
   input_modeler.ExtendStroke(input_batch, StrokeInputBatch(),
                              Duration32::Zero());
   // We should be able to apply the `BrushTipModeler` to any valid brush tip and

@@ -51,13 +51,13 @@ using ::ink::jni::ThrowExceptionFromStatus;
 // 0 is reserved for internal use.
 // 1 is reserved (was previously the "spring model").
 // 2 is reserved (was previously the experimental "raw position" model).
-constexpr jint kExperimentalNaiveModel = 3;
+constexpr jint kPassthroughModel = 3;
 constexpr jint kSlidingWindowModel = 4;
 
 BrushFamily::InputModel TypeToInputModel(jint input_model_value) {
   switch (input_model_value) {
-    case kExperimentalNaiveModel:
-      return BrushFamily::ExperimentalNaiveModel();
+    case kPassthroughModel:
+      return BrushFamily::PassthroughModel();
     case kSlidingWindowModel:
       return BrushFamily::SlidingWindowModel();
     default:
@@ -67,9 +67,7 @@ BrushFamily::InputModel TypeToInputModel(jint input_model_value) {
 
 jint InputModelType(const BrushFamily::InputModel& input_model) {
   constexpr auto visitor = absl::Overload{
-      [](const BrushFamily::ExperimentalNaiveModel&) {
-        return kExperimentalNaiveModel;
-      },
+      [](const BrushFamily::PassthroughModel&) { return kPassthroughModel; },
       [](const BrushFamily::SlidingWindowModel&) {
         return kSlidingWindowModel;
       },
