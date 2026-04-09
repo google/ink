@@ -25,7 +25,6 @@ cc_library(
     deps = [
         ":affine_transform_jni",
         ":angle_jni",
-        ":box_accumulator_jni",
         ":box_jni",
         ":intersects_jni",
         ":mesh_format_jni",
@@ -219,29 +218,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-)
-
-cc_library(
-    name = "box_accumulator_jni",
-    srcs = ["box_accumulator_jni.cc"],
-    tags = ["keep_dep"],
-    deps = [
-        ":box_accumulator_jni_helper",
-        "//ink/geometry:angle",
-        "//ink/geometry:envelope",
-        "//ink/geometry:point",
-        "//ink/geometry:quad",
-        "//ink/geometry:rect",
-        "//ink/geometry:segment",
-        "//ink/geometry:triangle",
-        "//ink/jni/internal:jni_defines",
-    ] + select({
-        "@platforms//os:android": [],
-        "//conditions:default": [
-            "@rules_jni//jni",
-        ],
-    }),
-    alwayslink = 1,
 )
 
 cc_library(
