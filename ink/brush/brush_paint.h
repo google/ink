@@ -218,9 +218,8 @@ struct BrushPaint {
     Vec size = {1, 1};
     // An offset into the texture, specified as fractions of the texture size.
     Vec offset = {0, 0};
-    // Angle in radians specifying the rotation of the texture. The rotation is
-    // carried out about the center of the texture's first repetition along both
-    // axes.
+    // Angle specifying the rotation of the texture. The rotation is carried out
+    // about the center of the texture's first repetition along both axes.
     Angle rotation = Angle();
 
     // The number of animation frames in this texture. Must be between 1 and

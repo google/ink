@@ -36,11 +36,19 @@ namespace ink {
 //   2. An array of `BrushBehavior`s that allow dynamic properties of each input
 //      to augment the tip shape and color.
 //
-// Depending on the combination of values, the tip can be shaped as a rounded
-// parallelogram, circle, or stadium. Through `BrushBehavior`s, the tip can
-// produce a per-vertex HSLA color shift that can be used to augment the `Brush`
-// color when drawing. The default values below produce a static circular tip
-// shape with diameter equal to the `Brush` size and no color shift.
+// The base tip shape is controlled by various parameters: `scale` controls the
+// size and aspect ratio; `corner_rounding` controls the roundness (going from
+// square to rounded-rect to circle); `slant` controls the slantedness (going
+// from rectangle to parallelogram); `pinch` controls the triangularity (going
+// from rectangle to trapezoid to triangle). By combining these parameters, the
+// tip shape can be circular, or pill-shaped, or a rounded triangle, or a
+// rounded convex quadrilateral.
+//
+// Through `BrushBehavior`s, the tip can also produce a per-vertex HSLA color
+// shift that can be used to augment the `Brush` color when drawing.
+//
+// The default parameters produce a static circular tip shape, with diameter
+// equal to the `Brush` size and no color shift.
 struct BrushTip {
   // 2D scale used to calculate the initial width and height of the tip shape
   // relative to the brush size prior to applying `slant` and `rotation`.
