@@ -26,7 +26,7 @@ cc_library(
         ":affine_transform_jni",
         ":angle_jni",
         ":box_jni",
-        ":intersects_jni",
+        ":intersection_jni",
         ":mesh_format_jni",
         ":mesh_jni",
         ":parallelogram_jni",
@@ -50,6 +50,7 @@ cc_library(
         ":affine_transform_native",
         ":angle_native",
         ":box_native",
+        ":intersection_native",
         ":mesh_format_native",
         ":mesh_native",
         ":parallelogram_native",
@@ -85,30 +86,36 @@ cc_library(
 )
 
 cc_library(
-    name = "intersects_jni",
-    srcs = ["intersects_jni.cc"],
+    name = "intersection_jni",
+    srcs = ["intersection_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":partitioned_mesh_native_helper",
-        "//ink/geometry:affine_transform",
-        "//ink/geometry:angle",
-        "//ink/geometry:intersects",
-        "//ink/geometry:mesh",
-        "//ink/geometry:partitioned_mesh",
-        "//ink/geometry:point",
-        "//ink/geometry:quad",
-        "//ink/geometry:rect",
-        "//ink/geometry:segment",
-        "//ink/geometry:triangle",
+        ":intersection_native",
         "//ink/jni/internal:jni_defines",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
             "@rules_jni//jni",
         ],
     }),
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "intersection_native",
+    srcs = ["intersection_native.cc"],
+    hdrs = ["intersection_native.h"],
+    deps = [
+        ":partitioned_mesh_native_helper",
+        "//ink/geometry:affine_transform",
+        "//ink/geometry:angle",
+        "//ink/geometry:intersects",
+        "//ink/geometry:point",
+        "//ink/geometry:quad",
+        "//ink/geometry:rect",
+        "//ink/geometry:segment",
+        "//ink/geometry:triangle",
+    ],
     alwayslink = 1,
 )
 
@@ -187,22 +194,15 @@ cc_library(
     deps = [
         ":mesh_format_native_helper",
         ":mesh_native_helper",
-        "//ink/geometry:envelope",
         "//ink/geometry:mesh",
         "//ink/geometry:mesh_format",
         "//ink/geometry:mesh_packing_types",
         "//ink/geometry:point",
         "//ink/geometry:rect",
-        "//ink/jni/internal:jni_defines",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
-    ] + select({
-        "@platforms//os:android": [],
-        "//conditions:default": [
-            "@rules_jni//jni",
-        ],
-    }),
+    ],
     alwayslink = 1,
 )
 
