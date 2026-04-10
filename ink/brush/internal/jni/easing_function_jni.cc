@@ -57,25 +57,25 @@ static constexpr int kSteps = 3;
 
 extern "C" {
 
-JNI_METHOD(brush, EasingFunctionNative, jlong, createCopyOf)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, createCopyOf)
 (JNIEnv* env, jobject thiz, jlong other_easing_function_native_pointer) {
   return NewNativeEasingFunction(
       CastToEasingFunction(other_easing_function_native_pointer));
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jlong, createPredefined)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, createPredefined)
 (JNIEnv* env, jobject thiz, jint predefined_response_curve) {
   return ValidateAndHoistEasingFunctionOrThrow(
       static_cast<EasingFunction::Predefined>(predefined_response_curve), env);
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jlong, createCubicBezier)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, createCubicBezier)
 (JNIEnv* env, jobject thiz, jfloat x1, jfloat y1, jfloat x2, jfloat y2) {
   return ValidateAndHoistEasingFunctionOrThrow(
       EasingFunction::CubicBezier{.x1 = x1, .y1 = y1, .x2 = x2, .y2 = y2}, env);
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jlong, createSteps)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, createSteps)
 (JNIEnv* env, jobject thiz, jint step_count, jint step_position) {
   return ValidateAndHoistEasingFunctionOrThrow(
       EasingFunction::Steps{
@@ -86,7 +86,7 @@ JNI_METHOD(brush, EasingFunctionNative, jlong, createSteps)
       env);
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jlong, createLinear)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, createLinear)
 (JNIEnv* env, jobject thiz, jfloatArray points_array) {
   jsize num_points = env->GetArrayLength(points_array) / 2;
   jfloat* points_elements = env->GetFloatArrayElements(points_array, nullptr);
@@ -104,12 +104,12 @@ JNI_METHOD(brush, EasingFunctionNative, jlong, createLinear)
       EasingFunction::Linear{.points = std::move(points_vector)}, env);
 }
 
-JNI_METHOD(brush, EasingFunctionNative, void, free)
+JNI_METHOD(brush_behavior, EasingFunctionNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   DeleteNativeEasingFunction(native_pointer);
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jlong, getParametersType)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, getParametersType)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   constexpr auto visitor = absl::Overload{
       [](const EasingFunction::Predefined&) { return kPredefined; },
@@ -121,48 +121,48 @@ JNI_METHOD(brush, EasingFunctionNative, jlong, getParametersType)
       std::visit(visitor, CastToEasingFunction(native_pointer).parameters));
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jint, getPredefinedValueInt)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jint, getPredefinedValueInt)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return static_cast<jint>(std::get<EasingFunction::Predefined>(
       CastToEasingFunction(native_pointer).parameters));
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jfloat, getCubicBezierX1)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jfloat, getCubicBezierX1)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return std::get<EasingFunction::CubicBezier>(
              CastToEasingFunction(native_pointer).parameters)
       .x1;
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jfloat, getCubicBezierY1)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jfloat, getCubicBezierY1)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return std::get<EasingFunction::CubicBezier>(
              CastToEasingFunction(native_pointer).parameters)
       .y1;
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jfloat, getCubicBezierX2)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jfloat, getCubicBezierX2)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return std::get<EasingFunction::CubicBezier>(
              CastToEasingFunction(native_pointer).parameters)
       .x2;
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jfloat, getCubicBezierY2)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jfloat, getCubicBezierY2)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return std::get<EasingFunction::CubicBezier>(
              CastToEasingFunction(native_pointer).parameters)
       .y2;
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jint, getLinearNumPoints)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jint, getLinearNumPoints)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return static_cast<jint>(std::get<EasingFunction::Linear>(
                                CastToEasingFunction(native_pointer).parameters)
                                .points.size());
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jfloat, getLinearPointX)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jfloat, getLinearPointX)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
   return std::get<EasingFunction::Linear>(
              CastToEasingFunction(native_pointer).parameters)
@@ -170,7 +170,7 @@ JNI_METHOD(brush, EasingFunctionNative, jfloat, getLinearPointX)
       .x;
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jfloat, getLinearPointY)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jfloat, getLinearPointY)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
   return std::get<EasingFunction::Linear>(
              CastToEasingFunction(native_pointer).parameters)
@@ -178,14 +178,14 @@ JNI_METHOD(brush, EasingFunctionNative, jfloat, getLinearPointY)
       .y;
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jint, getStepsCount)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jint, getStepsCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return std::get<EasingFunction::Steps>(
              CastToEasingFunction(native_pointer).parameters)
       .step_count;
 }
 
-JNI_METHOD(brush, EasingFunctionNative, jint, getStepsPositionInt)
+JNI_METHOD(brush_behavior, EasingFunctionNative, jint, getStepsPositionInt)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return static_cast<jint>(std::get<EasingFunction::Steps>(
                                CastToEasingFunction(native_pointer).parameters)
