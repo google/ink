@@ -385,13 +385,12 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getDampingGap)
 
 // ResponseNode accessors:
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong,
-           newCopyOfResponseEasingFunction)
+JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, getResponseCurvePointer)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
-  return NewNativeEasingFunction(
-      std::get<BrushBehavior::ResponseNode>(
-          CastToBrushBehaviorNode(node_native_pointer))
-          .response_curve);
+  return reinterpret_cast<jlong>(
+      &std::get<BrushBehavior::ResponseNode>(
+           CastToBrushBehaviorNode(node_native_pointer))
+           .response_curve);
 }
 
 // IntegralNode accessors:

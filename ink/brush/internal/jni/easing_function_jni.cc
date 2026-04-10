@@ -57,6 +57,12 @@ static constexpr int kSteps = 3;
 
 extern "C" {
 
+JNI_METHOD(brush, EasingFunctionNative, jlong, createCopyOf)
+(JNIEnv* env, jobject thiz, jlong other_easing_function_native_pointer) {
+  return NewNativeEasingFunction(
+      CastToEasingFunction(other_easing_function_native_pointer));
+}
+
 JNI_METHOD(brush, EasingFunctionNative, jlong, createPredefined)
 (JNIEnv* env, jobject thiz, jint predefined_response_curve) {
   return ValidateAndHoistEasingFunctionOrThrow(
