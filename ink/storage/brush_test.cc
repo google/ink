@@ -21,6 +21,7 @@
 #include <string>
 #include <variant>
 
+#include "net/proto2/contrib/parse_proto/parse_text_proto.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
@@ -37,12 +38,13 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
-#include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
 #include "ink/brush/fuzz_domains.h"
+#include "ink/brush/internal/brush_family_internal_accessor.h"
 #include "ink/brush/type_matchers.h"
 #include "ink/brush/version.h"
 #include "ink/color/color.h"
+#include "ink/geometry/angle.h"
 #include "ink/storage/color.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/brush_family.pb.h"
@@ -66,14 +68,18 @@ namespace {
 using ::absl_testing::IsOk;
 using ::absl_testing::IsOkAndHolds;
 using ::absl_testing::StatusIs;
+using ::google::protobuf::contrib::parse_proto::ParseTextProtoOrDie;
 using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 using ::testing::IsNull;
 using ::testing::Le;
+using ::testing::Property;
 using ::testing::SizeIs;
+using ::testing::UnorderedElementsAreArray;
 using ::testing::VariantWith;
 
 constexpr absl::string_view kTestTextureId1 = "test-texture-one";
@@ -844,6 +850,74 @@ void EncodeDecodeBrushFamilyRoundTrip(const BrushFamily& family_in) {
 FUZZ_TEST(BrushTest, EncodeDecodeBrushFamilyRoundTrip)
     .WithDomains(SerializableBrushFamily());
 
+void EncodeDecodeMultipleBrushFamiliesRoundTrip(
+    const std::vector<BrushFamily>& families_in) {
+  // Filter out duplicate versions.
+  absl::flat_hash_set<int32_t> seen_versions;
+  std::vector<BrushFamily> families_in_filtered;
+  for (const BrushFamily& family : families_in) {
+    int32_t version = family.CalculateMinimumRequiredVersion().value();
+    if (seen_versions.contains(version)) {
+      continue;
+    }
+    seen_versions.insert(version);
+    families_in_filtered.push_back(family);
+  }
+  // We can pass in all the families, or just the filtered ones, and the
+  // result should be the same.
+  proto::BrushFamily family_proto_in;
+  EncodeMultipleBrushFamilies(families_in, family_proto_in);
+  proto::BrushFamily family_proto_in_filtered;
+  EncodeMultipleBrushFamilies(families_in_filtered, family_proto_in_filtered);
+  EXPECT_THAT(family_proto_in_filtered, EqualsProto(family_proto_in));
+  EXPECT_THAT(family_proto_in_filtered.newer_brush_families(),
+              SizeIs(families_in_filtered.size() - 1));
+
+  // Fuzz tests will generate brushes with development versions, so
+  // max_version must be kDevelopment.
+  absl::StatusOr<std::vector<BrushFamily>> families_out =
+      DecodeMultipleBrushFamilies(family_proto_in, Version::kDevelopment());
+  // Compare against the filtered families, as encoding will skip duplicates.
+  std::vector<::testing::Matcher<BrushFamily>> families_in_filtered_matchers;
+  for (const BrushFamily& family : families_in_filtered) {
+    families_in_filtered_matchers.push_back(BrushFamilyEq(family));
+  }
+  ASSERT_THAT(
+      families_out,
+      IsOkAndHolds(UnorderedElementsAreArray(families_in_filtered_matchers)));
+
+  proto::BrushFamily family_proto_out;
+  EncodeMultipleBrushFamilies(*families_out, family_proto_out);
+  EXPECT_THAT(family_proto_out, EqualsProto(family_proto_in));
+
+  // Now round trip using fallbacks, if possible.
+  if (families_in_filtered.size() > 1) {
+    for (const BrushFamily& f : families_in_filtered) {
+      absl::StatusOr<BrushFamily> out = DecodeBrushFamily(
+          family_proto_out, f.CalculateMinimumRequiredVersion());
+      ASSERT_THAT(
+          out, IsOkAndHolds(AllOf(BrushFamilyEq(f),
+                                  Property(&BrushFamily::HasFallbacks, true))));
+      proto::BrushFamily out_proto;
+      EncodeBrushFamily(*out, out_proto);
+      EXPECT_THAT(out_proto, EqualsProto(family_proto_in));
+    }
+  } else {
+    // If there's only one family, make sure it doesn't have fallbacks.
+    EXPECT_THAT(family_proto_out.newer_brush_families(), IsEmpty());
+    absl::StatusOr<BrushFamily> out =
+        DecodeBrushFamily(family_proto_out, Version::kDevelopment());
+    ASSERT_THAT(
+        out, IsOkAndHolds(AllOf(BrushFamilyEq(families_in_filtered[0]),
+                                Property(&BrushFamily::HasFallbacks, false))));
+  }
+}
+FUZZ_TEST(BrushTest, EncodeDecodeMultipleBrushFamiliesRoundTrip)
+    .WithDomains(
+        fuzztest::NonEmpty(fuzztest::VectorOf(SerializableBrushFamily()))
+            .WithMinSize(1)
+            .WithMaxSize(10));
+
 // Unlike the Brush and BrushFamily classes, BrushCoat is an open struct that
 // does not enforce validity. Proto encode/decode round-tripping is only
 // guaranteed for valid BrushCoat structs.
@@ -1119,6 +1193,486 @@ TEST(BrushTest, DecodeBrushIsOkWithDevelopmentVersion) {
 TEST(BrushTest, DecodeBrushFamilyIsOkWithNoMinVersionSet) {
   proto::BrushFamily family_proto;
   EXPECT_THAT(DecodeBrushFamily(family_proto), IsOk());
+}
+
+TEST(BrushTest, DecodeBrushFamilyIsOkWithFallbacks) {
+  proto::BrushFamily family_proto = ParseTextProtoOrDie(R"pb(
+    min_version: 0
+    newer_brush_families { min_version: 1 }
+    newer_brush_families { min_version: 2 }
+  )pb");
+  EXPECT_THAT(DecodeBrushFamily(family_proto, Version::k0Jetpack1_0_0()),
+              IsOk());
+  EXPECT_THAT(DecodeBrushFamily(family_proto, Version::k1Jetpack1_1_0Alpha01()),
+              IsOk());
+  EXPECT_THAT(DecodeBrushFamily(family_proto, Version::kDevelopment()), IsOk());
+}
+
+TEST(BrushTest, DecodeMultipleBrushFamiliesReturnsAllFallbacks) {
+  proto::BrushFamily family_proto = ParseTextProtoOrDie(R"pb(
+    min_version: 0
+    newer_brush_families { min_version: 1 }
+    newer_brush_families { min_version: 2 }
+  )pb");
+  absl::StatusOr<std::vector<BrushFamily>> families =
+      DecodeMultipleBrushFamilies(family_proto, Version::kDevelopment());
+  EXPECT_THAT(families, IsOkAndHolds(SizeIs(3)));
+}
+
+TEST(BrushTest,
+     DecodeMultipleBrushFamiliesFailsWithAnyNonCompatibleVersionFallback) {
+  proto::BrushFamily family_proto = ParseTextProtoOrDie(R"pb(
+    min_version: 0
+    newer_brush_families { min_version: 1 }
+  )pb");
+  EXPECT_THAT(
+      DecodeMultipleBrushFamilies(family_proto, Version::k0Jetpack1_0_0()),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               absl::StrCat(
+                   "Version must be less than or equal to ",
+                   Version::k0Jetpack1_0_0().ToFormattedString(), ", but was ",
+                   Version::k1Jetpack1_1_0Alpha01().ToFormattedString())));
+}
+
+TEST(BrushTest, DecodeBrushFamilyReturnsMaxCompatibleVersion) {
+  proto::BrushFamily family_proto = ParseTextProtoOrDie(R"pb(
+    min_version: 0
+    newer_brush_families { min_version: 1 }
+    newer_brush_families {
+      min_version: 2
+      client_brush_family_id: "newest_family"
+    }
+  )pb");
+  absl::StatusOr<BrushFamily> family =
+      DecodeBrushFamily(family_proto, Version::kDevelopment());
+  EXPECT_THAT(family, IsOkAndHolds(Property(
+                          &BrushFamily::GetMetadata,
+                          Field(&BrushFamily::Metadata::client_brush_family_id,
+                                Eq("newest_family")))));
+}
+
+TEST(BrushTest, DecodeBrushFamilyFailsWithNoCompatibleVersion) {
+  proto::BrushFamily family_proto = ParseTextProtoOrDie(R"pb(
+    min_version: 1
+    newer_brush_families { min_version: 2 }
+  )pb");
+  EXPECT_THAT(
+      DecodeBrushFamily(family_proto, Version::k0Jetpack1_0_0()),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               absl::StrCat(
+                   "Version must be less than or equal to ",
+                   Version::k0Jetpack1_0_0().ToFormattedString(), ", but was ",
+                   Version::k1Jetpack1_1_0Alpha01().ToFormattedString())));
+}
+
+TEST(BrushTest, DecodeBrushFamilyIsOkWithLowestVersionBeingMaxVersion) {
+  proto::BrushFamily family_proto = ParseTextProtoOrDie(R"pb(
+    min_version: 0
+    newer_brush_families { min_version: 123456789 }
+  )pb");
+  absl::StatusOr<BrushFamily> family =
+      DecodeBrushFamily(family_proto, Version::k0Jetpack1_0_0());
+  EXPECT_THAT(family, IsOkAndHolds(Property(&BrushFamily::HasFallbacks, true)));
+}
+
+TEST(BrushTest, DecodeBrushFamilyPreservesOpaqueFallbacks) {
+  proto::BrushFamily family_proto = ParseTextProtoOrDie(R"pb(
+    min_version: 0
+    client_brush_family_id: "v0"
+    newer_brush_families { min_version: 1 client_brush_family_id: "v1" }
+    newer_brush_families { min_version: 2 client_brush_family_id: "v2" }
+  )pb");
+
+  // Decode with k1Jetpack1_1_0Alpha01 (should pick "v1")
+  absl::StatusOr<BrushFamily> family =
+      DecodeBrushFamily(family_proto, Version::k1Jetpack1_1_0Alpha01());
+  ASSERT_THAT(family,
+              IsOkAndHolds(AllOf(
+                  Property(&BrushFamily::GetMetadata,
+                           Field(&BrushFamily::Metadata::client_brush_family_id,
+                                 Eq("v1"))),
+                  Property(&BrushFamily::HasFallbacks, true))));
+
+  // Re-encode and verify result is identical to original proto
+  proto::BrushFamily family_proto_out;
+  EncodeBrushFamily(*family, family_proto_out);
+  EXPECT_THAT(family_proto_out, EqualsProto(family_proto));
+}
+
+TEST(BrushTest, DecodeBrushFamilyPreservesUnreadableFallbacks) {
+  // Create proto from string with fields the deserializer/parser won't
+  // understand.
+  proto::BrushFamily family_proto = ParseTextProtoOrDie(R"pb(
+    min_version: 0
+    client_brush_family_id: "v0"
+    newer_brush_families {
+      min_version: 1000
+      client_brush_family_id: "v1000"
+      # 9999: "Some unknown value"
+    }
+  )pb");
+
+  family_proto.mutable_newer_brush_families(0)
+      ->mutable_unknown_fields()
+      ->AddLengthDelimited(
+          /*field_number=*/9999, "Some unknown value");
+  ASSERT_EQ(family_proto.newer_brush_families(0).unknown_fields().field_count(),
+            1);
+  // Decode with k0Jetpack1_0_0 (should pick "v0")
+  absl::StatusOr<BrushFamily> family =
+      DecodeBrushFamily(family_proto, Version::k0Jetpack1_0_0());
+  ASSERT_THAT(family,
+              IsOkAndHolds(AllOf(
+                  Property(&BrushFamily::GetMetadata,
+                           Field(&BrushFamily::Metadata::client_brush_family_id,
+                                 Eq("v0"))),
+                  Property(&BrushFamily::HasFallbacks, true))));
+  // Re-encode and verify result is identical to original proto
+  proto::BrushFamily family_proto_out;
+  EncodeBrushFamily(*family, family_proto_out);
+  EXPECT_THAT(family_proto_out, EqualsProto(family_proto));
+  // Trying to deserialize with a version that would match the unknown fields
+  // should succeed, but of course not decode the unknown fields.
+  absl::StatusOr<BrushFamily> familyUnrecognized =
+      DecodeBrushFamily(family_proto_out, Version::kDevelopment());
+  ASSERT_THAT(familyUnrecognized,
+              IsOkAndHolds(AllOf(
+                  Property(&BrushFamily::GetMetadata,
+                           Field(&BrushFamily::Metadata::client_brush_family_id,
+                                 Eq("v1000"))),
+                  Property(&BrushFamily::HasFallbacks, true))));
+  // Re-encode and verify result is identical to original proto -- the
+  // unrecognized fields are preserved by the stored proto bytes.
+  proto::BrushFamily family_proto_out2;
+  EncodeBrushFamily(*familyUnrecognized, family_proto_out2);
+  EXPECT_THAT(family_proto_out2, EqualsProto(family_proto));
+}
+
+TEST(BrushTest, HasFallbacksReturnsExpectedValue) {
+  BrushFamily family;
+  EXPECT_FALSE(family.HasFallbacks());
+  BrushFamilyInternalAccessor::SetOpaqueDecodedProtoBytesWithFallbacks("bytes",
+                                                                       family);
+  EXPECT_TRUE(family.HasFallbacks());
+  BrushFamilyInternalAccessor::SetOpaqueDecodedProtoBytesWithFallbacks("",
+                                                                       family);
+  EXPECT_FALSE(family.HasFallbacks());
+}
+
+TEST(BrushTest, EncodeMultipleBrushFamiliesEncodesLowestVersionAtTopLevel) {
+  proto::BrushFamily family_proto;
+  BrushFamily family0 = BrushFamily();
+  absl::StatusOr<BrushFamily> family1 = BrushFamily::Create(
+      BrushTip({1, 1}, 1, Angle::Radians(0), 0, Angle::Radians(0), 0,
+               Duration32::Zero(),
+               {BrushBehavior(
+                   {BrushBehavior::SourceNode{
+                        .source = BrushBehavior::Source::kNormalizedPressure,
+                        .source_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .source_value_range = {0, 1},
+                    },
+                    BrushBehavior::IntegralNode{
+                        .integrate_over =
+                            BrushBehavior::ProgressDomain::kTimeInSeconds,
+                        .integral_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .integral_value_range = {0, 1},
+                    },
+                    BrushBehavior::TargetNode{
+                        .target = BrushBehavior::Target::kHeightMultiplier,
+                        .target_modifier_range = {0, 1},
+                    }})}),
+      BrushPaint());
+  ASSERT_THAT(family1, IsOk());
+  absl::StatusOr<BrushFamily> family2 = BrushFamily::Create(
+      BrushTip({1, 1}, 1, Angle::Radians(0), 0, Angle::Radians(0), 0,
+               Duration32::Zero(),
+               {BrushBehavior(
+                   {BrushBehavior::SourceNode{
+                        .source = BrushBehavior::Source::
+                            kTimeFromInputToStrokeEndInSeconds,
+                        .source_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .source_value_range = {0, 1},
+                    },
+                    BrushBehavior::TargetNode{
+                        .target = BrushBehavior::Target::kHeightMultiplier,
+                        .target_modifier_range = {0, 1},
+                    }})}),
+      BrushPaint());
+  ASSERT_THAT(family2, IsOk());
+  EncodeMultipleBrushFamilies({family0, *family1, *family2}, family_proto);
+  EXPECT_THAT(family_proto.min_version(),
+              Eq(Version::k0Jetpack1_0_0().value()));
+  EXPECT_THAT(family_proto.newer_brush_families(), SizeIs(2));
+  EXPECT_THAT(family_proto.newer_brush_families(0).min_version(),
+              Eq(Version::k1Jetpack1_1_0Alpha01().value()));
+  EXPECT_THAT(family_proto.newer_brush_families(1).min_version(),
+              Eq(Version::kDevelopment().value()));
+  // Reverse the order of the input -- top level should still be lowest version.
+  // Order of newer_brush_families should be the same, as we sort them.
+  proto::BrushFamily family_proto2;
+  EncodeMultipleBrushFamilies({*family2, *family1, family0}, family_proto2);
+  EXPECT_THAT(family_proto2.min_version(),
+              Eq(Version::k0Jetpack1_0_0().value()));
+  EXPECT_THAT(family_proto2.newer_brush_families(), SizeIs(2));
+  EXPECT_THAT(family_proto2.newer_brush_families(0).min_version(),
+              Eq(Version::k1Jetpack1_1_0Alpha01().value()));
+  EXPECT_THAT(family_proto2.newer_brush_families(1).min_version(),
+              Eq(Version::kDevelopment().value()));
+  // Same exact proto output.
+  EXPECT_THAT(family_proto, EqualsProto(family_proto2));
+  EXPECT_THAT(family_proto.min_version(), Eq(family_proto2.min_version()));
+}
+
+TEST(BrushTest, EncodeMultipleBrushFamiliesIgnoresFallbacks) {
+  proto::BrushFamily opaque_family0 = ParseTextProtoOrDie(R"pb(
+    client_brush_family_id: "opaque"
+  )pb");
+  absl::StatusOr<BrushFamily> family0 = BrushFamily::Create(
+      BrushTip(), BrushPaint(), BrushFamily::InputModel(),
+      BrushFamily::Metadata{.client_brush_family_id = "true family 0"});
+  ASSERT_THAT(family0, IsOk());
+  BrushFamilyInternalAccessor::SetOpaqueDecodedProtoBytesWithFallbacks(
+      opaque_family0.SerializeAsString(), *family0);
+  absl::StatusOr<BrushFamily> family1 = BrushFamily::Create(
+      BrushTip({1, 1}, 1, Angle::Radians(0), 0, Angle::Radians(0), 0,
+               Duration32::Zero(),
+               {BrushBehavior(
+                   {BrushBehavior::SourceNode{
+                        .source = BrushBehavior::Source::
+                            kTimeFromInputToStrokeEndInSeconds,
+                        .source_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .source_value_range = {0, 1},
+                    },
+                    BrushBehavior::TargetNode{
+                        .target = BrushBehavior::Target::kHeightMultiplier,
+                        .target_modifier_range = {0, 1},
+                    }})}),
+      BrushPaint());
+  ASSERT_THAT(family1, IsOk());
+  proto::BrushFamily family_proto;
+  // Call to EncodeBrushFamily uses the fallbacks.
+  EncodeBrushFamily(*family0, family_proto);
+  EXPECT_THAT(family_proto, EqualsProto(opaque_family0));
+  // Call to EncodeMultipleBrushFamilies does not use the existing fallbacks,
+  // but rather creates new ones.
+  EncodeMultipleBrushFamilies({*family0, *family1}, family_proto);
+  EXPECT_THAT(family_proto.newer_brush_families(), SizeIs(1));
+  absl::StatusOr<std::vector<BrushFamily>> families =
+      DecodeMultipleBrushFamilies(family_proto, Version::kDevelopment());
+  // Should equal the true family values, not the ignored fallbacks.
+  ASSERT_THAT(families, IsOkAndHolds(AllOf(
+                            SizeIs(2), ElementsAre(BrushFamilyEq(*family0),
+                                                   BrushFamilyEq(*family1)))));
+}
+
+TEST(BrushTest, EncodeMultipleBrushFamiliesEmptyDoesntChangeProto) {
+  proto::BrushFamily family_proto = ParseTextProtoOrDie(R"pb(
+    min_version: 123456789
+    client_brush_family_id: "123456789"
+  )pb");
+  EncodeMultipleBrushFamilies({}, family_proto);
+  // Nothing to serialize, so no change to proto.
+  EXPECT_THAT(family_proto.min_version(), Eq(123456789));
+  EXPECT_THAT(family_proto.client_brush_family_id(), Eq("123456789"));
+}
+
+TEST(BrushTest, EncodeMultipleBrushFamiliesSingletonIsSameAsEncodeBrushFamily) {
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
+      BrushTip({1, 1}, 1, Angle::Radians(0), 0, Angle::Radians(0), 0,
+               Duration32::Zero(),
+               {BrushBehavior(
+                   {BrushBehavior::SourceNode{
+                        .source = BrushBehavior::Source::
+                            kTimeFromInputToStrokeEndInSeconds,
+                        .source_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .source_value_range = {0, 1},
+                    },
+                    BrushBehavior::TargetNode{
+                        .target = BrushBehavior::Target::kHeightMultiplier,
+                        .target_modifier_range = {0, 1},
+                    }})}),
+      BrushPaint());
+  ASSERT_THAT(family, IsOk());
+  proto::BrushFamily family_proto;
+  EncodeBrushFamily(*family, family_proto);
+  proto::BrushFamily family_proto2;
+  EncodeMultipleBrushFamilies({*family}, family_proto2);
+  EXPECT_THAT(family_proto, EqualsProto(family_proto2));
+}
+
+TEST(BrushTest, EncodeDecodeMultipleBrushFamiliesRoundTrip) {
+  // Encode multiple brush families and decode them, making sure that the
+  // output is the same as the input.
+  proto::BrushFamily family_proto;
+  BrushFamily family0 = BrushFamily();
+  absl::StatusOr<BrushFamily> family1 = BrushFamily::Create(
+      BrushTip({1, 1}, 1, Angle::Radians(0), 0, Angle::Radians(0), 0,
+               Duration32::Zero(),
+               {BrushBehavior(
+                   {BrushBehavior::SourceNode{
+                        .source = BrushBehavior::Source::kNormalizedPressure,
+                        .source_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .source_value_range = {0, 1},
+                    },
+                    BrushBehavior::IntegralNode{
+                        .integrate_over =
+                            BrushBehavior::ProgressDomain::kTimeInSeconds,
+                        .integral_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .integral_value_range = {0, 1},
+                    },
+                    BrushBehavior::TargetNode{
+                        .target = BrushBehavior::Target::kHeightMultiplier,
+                        .target_modifier_range = {0, 1},
+                    }})}),
+      BrushPaint());
+  ASSERT_THAT(family1, IsOk());
+  absl::StatusOr<BrushFamily> family2 = BrushFamily::Create(
+      BrushTip({1, 1}, 1, Angle::Radians(0), 0, Angle::Radians(0), 0,
+               Duration32::Zero(),
+               {BrushBehavior(
+                   {BrushBehavior::SourceNode{
+                        .source = BrushBehavior::Source::
+                            kTimeFromInputToStrokeEndInSeconds,
+                        .source_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .source_value_range = {0, 1},
+                    },
+                    BrushBehavior::TargetNode{
+                        .target = BrushBehavior::Target::kHeightMultiplier,
+                        .target_modifier_range = {0, 1},
+                    }})}),
+      BrushPaint());
+  ASSERT_THAT(family2, IsOk());
+  EncodeMultipleBrushFamilies({family0, *family1, *family2}, family_proto);
+  absl::StatusOr<std::vector<BrushFamily>> families =
+      DecodeMultipleBrushFamilies(family_proto, Version::kDevelopment());
+  ASSERT_THAT(families, IsOkAndHolds(AllOf(
+                            SizeIs(3), ElementsAre(BrushFamilyEq(family0),
+                                                   BrushFamilyEq(*family1),
+                                                   BrushFamilyEq(*family2)))));
+}
+
+TEST(BrushTest, EncodeMultipleDecodeSingleBrushFamilyRoundTrip) {
+  // Encode multiple brush families and decode them at various versions, and
+  // then encode them again. Regardless of the version deserializing, the
+  // encoded output should be the same.
+  proto::BrushFamily family_proto;
+  BrushFamily family0 = BrushFamily();
+  absl::StatusOr<BrushFamily> family1 = BrushFamily::Create(
+      BrushTip({1, 1}, 1, Angle::Radians(0), 0, Angle::Radians(0), 0,
+               Duration32::Zero(),
+               {BrushBehavior(
+                   {BrushBehavior::SourceNode{
+                        .source = BrushBehavior::Source::kNormalizedPressure,
+                        .source_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .source_value_range = {0, 1},
+                    },
+                    BrushBehavior::IntegralNode{
+                        .integrate_over =
+                            BrushBehavior::ProgressDomain::kTimeInSeconds,
+                        .integral_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .integral_value_range = {0, 1},
+                    },
+                    BrushBehavior::TargetNode{
+                        .target = BrushBehavior::Target::kHeightMultiplier,
+                        .target_modifier_range = {0, 1},
+                    }})}),
+      BrushPaint());
+  ASSERT_THAT(family1, IsOk());
+  absl::StatusOr<BrushFamily> family2 = BrushFamily::Create(
+      BrushTip({1, 1}, 1, Angle::Radians(0), 0, Angle::Radians(0), 0,
+               Duration32::Zero(),
+               {BrushBehavior(
+                   {BrushBehavior::SourceNode{
+                        .source = BrushBehavior::Source::
+                            kTimeFromInputToStrokeEndInSeconds,
+                        .source_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .source_value_range = {0, 1},
+                    },
+                    BrushBehavior::TargetNode{
+                        .target = BrushBehavior::Target::kHeightMultiplier,
+                        .target_modifier_range = {0, 1},
+                    }})}),
+      BrushPaint());
+  ASSERT_THAT(family2, IsOk());
+  EncodeMultipleBrushFamilies({family0, *family1, *family2}, family_proto);
+  // Decode with kDevelopment (should pick family2)
+  absl::StatusOr<BrushFamily> family2_out =
+      DecodeBrushFamily(family_proto, Version::kDevelopment());
+  ASSERT_THAT(family2_out, IsOkAndHolds(BrushFamilyEq(*family2)));
+  // Re-encode and verify result is identical to original proto
+  proto::BrushFamily family_proto_out;
+  EncodeBrushFamily(*family2_out, family_proto_out);
+  EXPECT_THAT(family_proto_out, EqualsProto(family_proto));
+  // Decode with k1Jetpack1_1_0Alpha01 (should pick family1)
+  absl::StatusOr<BrushFamily> family1_out =
+      DecodeBrushFamily(family_proto, Version::k1Jetpack1_1_0Alpha01());
+  ASSERT_THAT(family1_out, IsOkAndHolds(BrushFamilyEq(*family1)));
+  // Re-encode and verify result is identical to original proto
+  EncodeBrushFamily(*family1_out, family_proto_out);
+  EXPECT_THAT(family_proto_out, EqualsProto(family_proto));
+  // Decode with k0Jetpack1_0_0 (should pick family0)
+  absl::StatusOr<BrushFamily> family0_out =
+      DecodeBrushFamily(family_proto, Version::k0Jetpack1_0_0());
+  ASSERT_THAT(family0_out, IsOkAndHolds(BrushFamilyEq(family0)));
+  // Re-encode and verify result is identical to original proto
+  EncodeBrushFamily(*family0_out, family_proto_out);
+  EXPECT_THAT(family_proto_out, EqualsProto(family_proto));
+
+  // After all this, we can still pull all the brush families out.
+  absl::StatusOr<std::vector<BrushFamily>> families =
+      DecodeMultipleBrushFamilies(family_proto, Version::kDevelopment());
+  ASSERT_THAT(families, IsOkAndHolds(AllOf(
+                            SizeIs(3), ElementsAre(BrushFamilyEq(family0),
+                                                   BrushFamilyEq(*family1),
+                                                   BrushFamilyEq(*family2)))));
+}
+
+TEST(BrushTest, EncodeBrushFamilyWithMalformedProtoBytesLosesFallbacksButIsOk) {
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
+      BrushTip({1, 1}, 1, Angle::Radians(0), 0, Angle::Radians(0), 0,
+               Duration32::Zero(),
+               {BrushBehavior(
+                   {BrushBehavior::SourceNode{
+                        .source = BrushBehavior::Source::kNormalizedPressure,
+                        .source_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .source_value_range = {0, 1},
+                    },
+                    BrushBehavior::IntegralNode{
+                        .integrate_over =
+                            BrushBehavior::ProgressDomain::kTimeInSeconds,
+                        .integral_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .integral_value_range = {0, 1},
+                    },
+                    BrushBehavior::TargetNode{
+                        .target = BrushBehavior::Target::kHeightMultiplier,
+                        .target_modifier_range = {0, 1},
+                    }})}),
+      BrushPaint());
+  ASSERT_THAT(family, IsOk());
+  BrushFamilyInternalAccessor::SetOpaqueDecodedProtoBytesWithFallbacks(
+      "invalid proto bytes", *family);
+  ASSERT_THAT(family, IsOkAndHolds(Property(&BrushFamily::HasFallbacks, true)));
+  proto::BrushFamily family_proto_out;
+  EncodeBrushFamily(*family, family_proto_out);
+  EXPECT_THAT(family_proto_out.newer_brush_families(), IsEmpty());
+  absl::StatusOr<BrushFamily> family_out =
+      DecodeBrushFamily(family_proto_out, Version::kDevelopment());
+  ASSERT_THAT(family_out,
+              IsOkAndHolds(AllOf(BrushFamilyEq(*family),
+                                 Property(&BrushFamily::HasFallbacks, false))));
 }
 
 }  // namespace

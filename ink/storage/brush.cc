@@ -14,6 +14,7 @@
 
 #include "ink/storage/brush.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <optional>
@@ -39,6 +40,7 @@
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
+#include "ink/brush/internal/brush_family_internal_accessor.h"
 #include "ink/brush/version.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/point.h"
@@ -1611,9 +1613,12 @@ void EncodeBrushFamilyTextureMap(
   }
 }
 
-void EncodeBrushFamily(const BrushFamily& family,
-                       proto::BrushFamily& family_proto_out,
-                       TextureBitmapProvider get_bitmap) {
+// Explicitly does not inspect `opaque_decoded_proto_bytes_with_fallbacks`.
+// Nor does it populate `newer_brush_families`. This is the responsibility of
+// the caller, either `EncodeBrushFamily` or `EncodeMultipleBrushFamilies`.
+void EncodeSingleBrushFamily(const BrushFamily& family,
+                             proto::BrushFamily& family_proto_out,
+                             TextureBitmapProvider get_bitmap) {
   family_proto_out.Clear();
   EncodeBrushFamilyTextureMap(
       family, *family_proto_out.mutable_texture_id_to_bitmap(), get_bitmap);
@@ -1647,6 +1652,57 @@ void EncodeBrushFamily(const BrushFamily& family,
       family.CalculateMinimumRequiredVersion().value());
 }
 
+void EncodeMultipleBrushFamilies(const std::vector<BrushFamily>& families,
+                                 proto::BrushFamily& family_proto_out,
+                                 TextureBitmapProvider get_bitmap) {
+  if (families.empty()) {
+    return;
+  }
+  // First, serialize all the brush families into a vector of protos.
+  std::vector<proto::BrushFamily> family_protos;
+  family_protos.reserve(families.size());
+  absl::flat_hash_set<int32_t> seen_versions;
+  for (const BrushFamily& family : families) {
+    int32_t version = family.CalculateMinimumRequiredVersion().value();
+    if (!seen_versions.insert(version).second) {
+      // Skip duplicate versions.
+      continue;
+    }
+
+    proto::BrushFamily family_proto;
+    EncodeSingleBrushFamily(family, family_proto, get_bitmap);
+    family_protos.push_back(std::move(family_proto));
+  }
+  // Find the lowest versioned brush family, and pack the others into its
+  // `newer_brush_families` field, in order from lowest to highest version.
+  // Decoding does not depend on the order, but sorting ensures that a given set
+  // of brush families will always be serialized in exactly the same way.
+  std::sort(family_protos.begin(), family_protos.end(),
+            [](const proto::BrushFamily& a, const proto::BrushFamily& b) {
+              return a.min_version() < b.min_version();
+            });
+  family_proto_out = family_protos[0];
+  for (const proto::BrushFamily& family_proto : family_protos) {
+    // Don't pack the top-level brush family into itself.
+    if (family_proto.min_version() == family_proto_out.min_version()) {
+      continue;
+    }
+    *family_proto_out.add_newer_brush_families() = family_proto;
+  }
+}
+
+void EncodeBrushFamily(const BrushFamily& family,
+                       proto::BrushFamily& family_proto_out,
+                       TextureBitmapProvider get_bitmap) {
+  if (family.HasFallbacks() &&
+      family_proto_out.ParseFromString(
+          BrushFamilyInternalAccessor::GetOpaqueDecodedProtoBytesWithFallbacks(
+              family))) {
+    return;
+  }
+  EncodeSingleBrushFamily(family, family_proto_out, get_bitmap);
+}
+
 absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
     const proto::BrushFamily& family_proto,
     ClientTextureIdProvider get_client_texture_id) {
@@ -1664,19 +1720,10 @@ absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
   return std::move(coats);
 }
 
-absl::StatusOr<BrushFamily> DecodeBrushFamily(
-    const proto::BrushFamily& family_proto, Version max_version) {
-  return DecodeBrushFamily(
-      family_proto,
-      // LINT.IfChange(decode_brush_family_get_client_texture_id)
-      [](absl::string_view encoded_id, absl::string_view bitmap) {
-        return std::string(encoded_id);
-      },
-      // LINT.ThenChange(brush.h:decode_brush_family_get_client_texture_id)
-      max_version);
-}
-
-absl::StatusOr<BrushFamily> DecodeBrushFamily(
+// Explicitly does not inspect `newer_brush_families`. This is the
+// responsibility of the caller, either `DecodeBrushFamily` or
+// `DecodeMultipleBrushFamilies`.
+absl::StatusOr<BrushFamily> DecodeSingleBrushFamily(
     const proto::BrushFamily& family_proto,
     ClientTextureIdProviderAndBitmapReceiver get_client_texture_id,
     Version max_version) {
@@ -1739,6 +1786,84 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
   // BrushFamily::Create() validates the BrushFamily.
   return BrushFamily::Create(absl::MakeConstSpan(*coats), *input_model,
                              metadata);
+}
+
+absl::StatusOr<BrushFamily> DecodeBrushFamily(
+    const proto::BrushFamily& family_proto, Version max_version) {
+  return DecodeBrushFamily(
+      family_proto,
+      // LINT.IfChange(decode_brush_family_get_client_texture_id)
+      [](absl::string_view encoded_id, absl::string_view bitmap) {
+        return std::string(encoded_id);
+      },
+      // LINT.ThenChange(brush.h:decode_brush_family_get_client_texture_id)
+      max_version);
+}
+
+absl::StatusOr<BrushFamily> DecodeBrushFamily(
+    const proto::BrushFamily& family_proto,
+    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id,
+    Version max_version) {
+  // Check the versions of all available brush families, and decode the
+  // highest compatible version. If none are compatible, return an error.
+  // If the highest compatible version cannot be deserialized, return the
+  // status from that attempt.
+  const proto::BrushFamily* best_supported_family_proto = &family_proto;
+  for (const proto::BrushFamily& family : family_proto.newer_brush_families()) {
+    if (family.min_version() <= max_version.value() &&
+        family.min_version() > best_supported_family_proto->min_version()) {
+      best_supported_family_proto = &family;
+    }
+  }
+  absl::StatusOr<BrushFamily> best_supported_family = DecodeSingleBrushFamily(
+      *best_supported_family_proto, get_client_texture_id, max_version);
+  if (best_supported_family.ok() &&
+      !std::empty(family_proto.newer_brush_families())) {
+    BrushFamilyInternalAccessor::SetOpaqueDecodedProtoBytesWithFallbacks(
+        family_proto.SerializeAsString(), *best_supported_family);
+  }
+  return best_supported_family;
+}
+
+absl::StatusOr<std::vector<BrushFamily>> DecodeMultipleBrushFamilies(
+    const proto::BrushFamily& family_proto, Version max_version) {
+  return DecodeMultipleBrushFamilies(
+      family_proto,
+      // LINT.IfChange(decode_multiple_brush_families_get_client_texture_id)
+      [](absl::string_view encoded_id, absl::string_view bitmap) {
+        return std::string(encoded_id);
+      },
+      // LINT.ThenChange(brush.h:decode_multiple_brush_families_get_client_texture_id)
+      max_version);
+}
+
+absl::StatusOr<std::vector<BrushFamily>> DecodeMultipleBrushFamilies(
+    const proto::BrushFamily& family_proto,
+    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id,
+    Version max_version) {
+  // Deserialize all of the brush families.
+  std::vector<BrushFamily> brush_families;
+  brush_families.reserve(family_proto.newer_brush_families_size() + 1);
+
+  // The top-level brush family.
+  absl::StatusOr<BrushFamily> family =
+      DecodeSingleBrushFamily(family_proto, get_client_texture_id, max_version);
+  if (!family.ok()) {
+    return family.status();
+  }
+  brush_families.push_back(*std::move(family));
+
+  // And the nested ones.
+  for (const proto::BrushFamily& newer_family_proto :
+       family_proto.newer_brush_families()) {
+    absl::StatusOr<BrushFamily> newer_family = DecodeSingleBrushFamily(
+        newer_family_proto, get_client_texture_id, max_version);
+    if (!newer_family.ok()) {
+      return newer_family.status();
+    }
+    brush_families.push_back(*std::move(newer_family));
+  }
+  return brush_families;
 }
 
 void EncodeBrush(const Brush& brush, proto::Brush& brush_proto_out,
