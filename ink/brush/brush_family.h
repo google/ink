@@ -147,6 +147,10 @@ class BrushFamily {
   // otherwise used internally by Ink.
   const Metadata& GetMetadata() const;
 
+  // Returns true if this brush family has fallback data that was preserved
+  // during decoding.
+  bool HasFallbacks() const;
+
   // Calculates the minimum version of the Ink library that is required to use
   // this brush family.
   Version CalculateMinimumRequiredVersion() const;
@@ -155,6 +159,8 @@ class BrushFamily {
   friend void AbslStringify(Sink& sink, const BrushFamily& family) {
     sink.Append(family.ToFormattedString());
   }
+
+  friend class BrushFamilyInternalAccessor;
 
  private:
   BrushFamily(absl::Span<const BrushCoat> coats, const InputModel& input_model,
@@ -166,6 +172,7 @@ class BrushFamily {
   std::vector<BrushCoat> coats_ = {BrushCoat{.tip = BrushTip{}}};
   InputModel input_model_ = DefaultInputModel();
   Metadata metadata_;
+  std::string opaque_decoded_proto_bytes_with_fallbacks_;
 };
 
 namespace brush_internal {

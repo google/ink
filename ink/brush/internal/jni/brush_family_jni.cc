@@ -157,6 +157,11 @@ JNI_METHOD(brush, BrushFamilyNative, jint, calculateMinimumRequiredVersion)
   return brush_family.CalculateMinimumRequiredVersion().value();
 }
 
+JNI_METHOD(brush, BrushFamilyNative, jboolean, hasFallbacks)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  return CastToBrushFamily(native_pointer).HasFallbacks();
+}
+
 JNI_METHOD(brush, InputModelNative, jlong, createNoParametersModel)
 (JNIEnv* env, jobject object, jint type) {
   return NewNativeInputModel(TypeToInputModel(type));
