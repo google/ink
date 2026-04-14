@@ -22,7 +22,7 @@
 #include "ink/color/color.h"
 #include "ink/color/internal/jni/color_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 
 namespace {
 

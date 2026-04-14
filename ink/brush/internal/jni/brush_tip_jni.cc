@@ -25,7 +25,7 @@
 #include "ink/geometry/angle.h"
 #include "ink/geometry/vec.h"
 #include "ink/jni/internal/jni_defines.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 #include "ink/types/duration.h"
 
 namespace {

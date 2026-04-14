@@ -35,7 +35,7 @@ cc_library(
     deps = [
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_proto_util",
-        "//ink/jni/internal:jni_throw_util",
+        "//ink/jni/internal:status_jni_helper",
         "//ink/storage:stroke_input_batch",
         "//ink/storage/proto:stroke_input_batch_cc_proto",
         "//ink/strokes/input:stroke_input_batch",
@@ -71,7 +71,7 @@ cc_library(
         "//ink/jni/internal:jni_jvm_interface",
         "//ink/jni/internal:jni_proto_util",
         "//ink/jni/internal:jni_string_util",
-        "//ink/jni/internal:jni_throw_util",
+        "//ink/jni/internal:status_jni_helper",
         "//ink/storage:brush",
         "//ink/storage/proto:brush_cc_proto",
         "//ink/storage/proto:brush_family_cc_proto",

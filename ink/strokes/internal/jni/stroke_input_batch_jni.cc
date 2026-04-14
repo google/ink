@@ -19,7 +19,7 @@
 #include "absl/status/status.h"
 #include "ink/geometry/angle.h"
 #include "ink/jni/internal/jni_defines.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/jni/stroke_input_jni_helper.h"

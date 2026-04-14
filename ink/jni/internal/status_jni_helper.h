@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INK_JNI_INTERNAL_JNI_THROW_UTIL_H_
-#define INK_JNI_INTERNAL_JNI_THROW_UTIL_H_
+#ifndef INK_JNI_INTERNAL_STATUS_JNI_HELPER_H_
+#define INK_JNI_INTERNAL_STATUS_JNI_HELPER_H_
 
 #include <jni.h>
 
@@ -32,4 +32,4 @@ void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status);
 
 }  // namespace ink::jni
 
-#endif  // INK_JNI_INTERNAL_JNI_THROW_UTIL_H_
+#endif  // INK_JNI_INTERNAL_STATUS_JNI_HELPER_H_

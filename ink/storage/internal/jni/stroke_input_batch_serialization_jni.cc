@@ -20,7 +20,7 @@
 #include "absl/status/statusor.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_proto_util.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 #include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/storage/stroke_input_batch.h"
 #include "ink/strokes/input/stroke_input_batch.h"

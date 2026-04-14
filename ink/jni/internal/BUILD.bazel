@@ -53,9 +53,9 @@ cc_library(
 )
 
 cc_library(
-    name = "jni_throw_util",
-    srcs = ["jni_throw_util.cc"],
-    hdrs = ["jni_throw_util.h"],
+    name = "status_jni_helper",
+    srcs = ["status_jni_helper.cc"],
+    hdrs = ["status_jni_helper.h"],
     deps = [
         ":jni_jvm_interface",
         ":jni_string_util",

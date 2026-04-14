@@ -28,7 +28,7 @@
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/jni/internal/jni_defines.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"

@@ -29,7 +29,7 @@
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_string_util.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 #include "ink/types/duration.h"
 
 namespace {

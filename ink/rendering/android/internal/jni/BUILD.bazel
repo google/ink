@@ -34,7 +34,7 @@ cc_library(
         "//ink/geometry:mesh_format",
         "//ink/geometry/internal/jni:mesh_format_native_helper",
         "//ink/jni/internal:jni_defines",
-        "//ink/jni/internal:jni_throw_util",
+        "//ink/jni/internal:status_jni_helper",
         "//ink/rendering/skia/common_internal:mesh_specification_data",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:string_view",

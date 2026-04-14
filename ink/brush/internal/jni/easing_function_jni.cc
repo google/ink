@@ -25,7 +25,7 @@
 #include "ink/brush/internal/jni/brush_jni_helper.h"
 #include "ink/geometry/point.h"
 #include "ink/jni/internal/jni_defines.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 
 namespace {
 

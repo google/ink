@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 
 #include <jni.h>
-
-#include <string>
 
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"

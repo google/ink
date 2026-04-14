@@ -37,7 +37,7 @@
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_proto_util.h"
 #include "ink/jni/internal/jni_string_util.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 #include "ink/storage/brush.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/brush_family.pb.h"

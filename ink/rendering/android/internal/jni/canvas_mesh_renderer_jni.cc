@@ -22,7 +22,7 @@
 #include "ink/geometry/internal/jni/mesh_format_native_helper.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/jni/internal/jni_defines.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 #include "ink/rendering/skia/common_internal/mesh_specification_data.h"
 
 namespace {
