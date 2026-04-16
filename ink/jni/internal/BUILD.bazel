@@ -59,8 +59,8 @@ cc_library(
     deps = [
         ":jni_jvm_interface",
         ":jni_string_util",
-        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings:string_view",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -85,4 +85,52 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
+)
+
+filegroup(
+    name = "cinterop_headers",
+    srcs = glob(["*_native.h"]),
+)
+
+cc_library(
+    name = "jni",
+    deps = [
+        ":status_jni",
+    ],
+)
+
+cc_library(
+    name = "cinterop",
+    deps = [
+        ":status_native",
+    ],
+)
+
+cc_library(
+    name = "status_jni",
+    srcs = ["status_jni.cc"],
+    deps = [
+        ":jni_defines",
+        ":jni_string_util",
+        ":status_jni_helper",
+        ":status_native",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings:string_view",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+    alwayslink = True,
+)
+
+cc_library(
+    name = "status_native",
+    srcs = ["status_native.cc"],
+    hdrs = ["status_native.h"],
+    deps = [
+        "@com_google_absl//absl/status",
+    ],
+    alwayslink = True,
 )

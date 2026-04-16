@@ -42,6 +42,7 @@ cc_library(
     deps = [
         "//ink/brush/internal/jni",
         "//ink/geometry/internal/jni",
+        "//ink/jni/internal:jni",
         "//ink/rendering/android/internal/jni",
         "//ink/strokes/internal/jni",
     ],

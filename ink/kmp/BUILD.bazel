@@ -23,13 +23,17 @@ package(
 
 cc_static_library(
     name = "ink",
-    deps = ["//ink/geometry/internal/jni:cinterop"],
+    deps = [
+        "//ink/geometry/internal/jni:cinterop",
+        "//ink/jni/internal:cinterop",
+    ],
 )
 
 ink_combine_headers(
     name = "combined_headers",
     srcs = [
         "//ink/geometry/internal/jni:cinterop_headers",
+        "//ink/jni/internal:cinterop_headers",
     ],
     out = "ink_cinterop.h",
 )

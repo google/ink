@@ -1,4 +1,4 @@
-// Copyright 2024-2025 Google LLC
+// Copyright 2024-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,38 +16,33 @@
 
 #include <jni.h>
 
-#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "ink/jni/internal/jni_jvm_interface.h"
 
 namespace ink::jni {
 
 namespace {
 
-jclass ExceptionClassForStatusCode(JNIEnv* env, absl::StatusCode code) {
-  // These should all be subclasses of RuntimeException.
-  switch (code) {
-    case absl::StatusCode::kFailedPrecondition:
-      return ClassIllegalStateException(env);
-    case absl::StatusCode::kInvalidArgument:
-      return ClassIllegalArgumentException(env);
-    case absl::StatusCode::kNotFound:
-      return ClassNoSuchElementException(env);
-    case absl::StatusCode::kOutOfRange:
-      return ClassIndexOutOfBoundsException(env);
-    case absl::StatusCode::kUnimplemented:
-      return ClassUnsupportedOperationException(env);
-    default:
-      return ClassRuntimeException(env);
-  }
+void ThrowExceptionFromStatus(JNIEnv* env, absl::StatusCode status_code,
+                              absl::string_view status_message) {
+  env->CallStaticVoidMethod(
+      ClassNativeExceptionHandling(env),
+      MethodNativeExceptionHandlingThrowForNonOkStatus(env), status_code,
+      env->NewStringUTF(status_message.data()));
 }
 
 }  // namespace
 
 void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status) {
-  ABSL_CHECK(!status.ok()) << "Trying to throw an exception from OK status.";
-  env->ThrowNew(ExceptionClassForStatusCode(env, status.code()),
-                status.ToString().c_str());
+  ThrowExceptionFromStatus(env, status.code(), status.ToString());
+}
+
+void ThrowExceptionFromStatusCallback(void* jni_env, int status_code,
+                                      const char* status_string) {
+  ThrowExceptionFromStatus(static_cast<JNIEnv*>(jni_env),
+                           static_cast<absl::StatusCode>(status_code),
+                           status_string == nullptr ? "" : status_string);
 }
 
 }  // namespace ink::jni
