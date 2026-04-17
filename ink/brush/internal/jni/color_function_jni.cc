@@ -20,7 +20,7 @@
 #include "absl/functional/overload.h"
 #include "absl/status/status.h"
 #include "ink/brush/color_function.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/color/color.h"
 #include "ink/color/internal/jni/color_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
@@ -30,12 +30,12 @@ namespace {
 
 using ::ink::Color;
 using ::ink::ColorFunction;
-using ::ink::jni::CastToColorFunction;
 using ::ink::jni::ComputeColorLong;
-using ::ink::jni::DeleteNativeColorFunction;
 using ::ink::jni::JIntToColorSpace;
-using ::ink::jni::NewNativeColorFunction;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::CastToColorFunction;
+using ::ink::native::DeleteNativeColorFunction;
+using ::ink::native::NewNativeColorFunction;
 
 jlong ValidateAndHoistColorFunctionOrThrow(ColorFunction::Parameters parameters,
                                            JNIEnv* env) {

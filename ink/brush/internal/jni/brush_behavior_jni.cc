@@ -23,7 +23,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_string_util.h"
 #include "ink/jni/internal/status_jni_helper.h"
@@ -33,16 +33,15 @@ namespace {
 using ::ink::BrushBehavior;
 using ::ink::brush_internal::ValidateBrushBehaviorNode;
 using ::ink::brush_internal::ValidateBrushBehaviorTopLevel;
-using ::ink::jni::CastToBrushBehavior;
-using ::ink::jni::CastToBrushBehaviorNode;
-using ::ink::jni::CastToEasingFunction;
-using ::ink::jni::DeleteNativeBrushBehavior;
-using ::ink::jni::DeleteNativeBrushBehaviorNode;
 using ::ink::jni::JStringToStdString;
-using ::ink::jni::NewNativeBrushBehavior;
-using ::ink::jni::NewNativeBrushBehaviorNode;
-using ::ink::jni::NewNativeEasingFunction;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::CastToBrushBehavior;
+using ::ink::native::CastToBrushBehaviorNode;
+using ::ink::native::CastToEasingFunction;
+using ::ink::native::DeleteNativeBrushBehavior;
+using ::ink::native::DeleteNativeBrushBehaviorNode;
+using ::ink::native::NewNativeBrushBehavior;
+using ::ink::native::NewNativeBrushBehaviorNode;
 
 jlong ValidateAndHoistNodeOrThrow(BrushBehavior::Node node, JNIEnv* env) {
   if (absl::Status status = ValidateBrushBehaviorNode(node); !status.ok()) {

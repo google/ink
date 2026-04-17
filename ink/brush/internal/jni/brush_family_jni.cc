@@ -26,7 +26,7 @@
 #include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_string_util.h"
 #include "ink/jni/internal/status_jni_helper.h"
@@ -37,16 +37,16 @@ namespace {
 using ::ink::BrushCoat;
 using ::ink::BrushFamily;
 using ::ink::Duration32;
-using ::ink::jni::CastToBrushCoat;
-using ::ink::jni::CastToBrushFamily;
-using ::ink::jni::CastToInputModel;
-using ::ink::jni::DeleteNativeBrushFamily;
-using ::ink::jni::DeleteNativeInputModel;
 using ::ink::jni::JStringToStdString;
-using ::ink::jni::NewNativeBrushCoat;
-using ::ink::jni::NewNativeBrushFamily;
-using ::ink::jni::NewNativeInputModel;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::CastToBrushCoat;
+using ::ink::native::CastToBrushFamily;
+using ::ink::native::CastToInputModel;
+using ::ink::native::DeleteNativeBrushFamily;
+using ::ink::native::DeleteNativeInputModel;
+using ::ink::native::NewNativeBrushCoat;
+using ::ink::native::NewNativeBrushFamily;
+using ::ink::native::NewNativeInputModel;
 
 // 0 is reserved for internal use.
 // 1 is reserved (was previously the "spring model").

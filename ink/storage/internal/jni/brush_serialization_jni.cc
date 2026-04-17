@@ -32,7 +32,7 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/brush/version.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_proto_util.h"
@@ -68,24 +68,24 @@ using ::ink::EncodeMultipleBrushFamilies;
 using ::ink::TextureBitmapProvider;
 using ::ink::Version;
 using ::ink::jni::AbslStringViewToJByteArray;
-using ::ink::jni::CastToBrush;
-using ::ink::jni::CastToBrushBehavior;
-using ::ink::jni::CastToBrushCoat;
-using ::ink::jni::CastToBrushFamily;
-using ::ink::jni::CastToBrushPaint;
-using ::ink::jni::CastToBrushTip;
 using ::ink::jni::JByteArrayToStdString;
-using ::ink::jni::JIntToVersion;
 using ::ink::jni::JStringToStdString;
-using ::ink::jni::NewNativeBrush;
-using ::ink::jni::NewNativeBrushBehavior;
-using ::ink::jni::NewNativeBrushCoat;
-using ::ink::jni::NewNativeBrushFamily;
-using ::ink::jni::NewNativeBrushPaint;
-using ::ink::jni::NewNativeBrushTip;
 using ::ink::jni::ParseProtoFromEither;
 using ::ink::jni::SerializeProto;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::CastToBrush;
+using ::ink::native::CastToBrushBehavior;
+using ::ink::native::CastToBrushCoat;
+using ::ink::native::CastToBrushFamily;
+using ::ink::native::CastToBrushPaint;
+using ::ink::native::CastToBrushTip;
+using ::ink::native::IntToVersion;
+using ::ink::native::NewNativeBrush;
+using ::ink::native::NewNativeBrushBehavior;
+using ::ink::native::NewNativeBrushCoat;
+using ::ink::native::NewNativeBrushFamily;
+using ::ink::native::NewNativeBrushPaint;
+using ::ink::native::NewNativeBrushTip;
 
 TextureBitmapProvider CreateTextureBitmapProvider(
     JNIEnv* env, jobjectArray texture_map_keys,
@@ -249,7 +249,7 @@ JNI_METHOD(storage, BrushSerializationNative, jlong, newBrushFromProto)
     ThrowExceptionFromStatus(env, status);
     return 0;
   }
-  absl::StatusOr<Version> max_version = JIntToVersion(max_version_value);
+  absl::StatusOr<Version> max_version = IntToVersion(max_version_value);
   if (!max_version.ok()) {
     ThrowExceptionFromStatus(env, max_version.status());
     return 0;
@@ -279,7 +279,7 @@ JNI_METHOD(storage, BrushSerializationNative, jlong,
   ClientTextureIdProviderAndBitmapReceiver decode_texture_jni_wrapper =
       CreateDecodeTextureJniWrapper(env, callback);
 
-  absl::StatusOr<Version> max_version = JIntToVersion(max_version_value);
+  absl::StatusOr<Version> max_version = IntToVersion(max_version_value);
   if (!max_version.ok()) {
     ThrowExceptionFromStatus(env, max_version.status());
     return 0;
@@ -314,7 +314,7 @@ JNI_METHOD(storage, BrushSerializationNative, jlongArray,
   ClientTextureIdProviderAndBitmapReceiver decode_texture_jni_wrapper =
       CreateDecodeTextureJniWrapper(env, callback);
 
-  absl::StatusOr<Version> max_version = JIntToVersion(max_version_value);
+  absl::StatusOr<Version> max_version = IntToVersion(max_version_value);
   if (!max_version.ok()) {
     ThrowExceptionFromStatus(env, max_version.status());
     return nullptr;

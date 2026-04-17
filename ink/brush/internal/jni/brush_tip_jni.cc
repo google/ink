@@ -21,7 +21,7 @@
 #include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_tip.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/vec.h"
 #include "ink/jni/internal/jni_defines.h"
@@ -36,12 +36,12 @@ using ::ink::BrushTip;
 using ::ink::Duration32;
 using ::ink::Vec;
 using ::ink::brush_internal::ValidateBrushTip;
-using ::ink::jni::CastToBrushBehavior;
-using ::ink::jni::CastToBrushTip;
-using ::ink::jni::DeleteNativeBrushTip;
-using ::ink::jni::NewNativeBrushBehavior;
-using ::ink::jni::NewNativeBrushTip;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::CastToBrushBehavior;
+using ::ink::native::CastToBrushTip;
+using ::ink::native::DeleteNativeBrushTip;
+using ::ink::native::NewNativeBrushBehavior;
+using ::ink::native::NewNativeBrushTip;
 
 }  // namespace
 

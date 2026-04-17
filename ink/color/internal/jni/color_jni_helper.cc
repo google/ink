@@ -14,8 +14,12 @@
 
 #include "ink/color/internal/jni/color_jni_helper.h"
 
+#include <jni.h>
+
 #include "absl/log/absl_check.h"
+#include "ink/color/color.h"
 #include "ink/color/color_space.h"
+#include "ink/jni/internal/jni_jvm_interface.h"
 
 namespace ink::jni {
 
@@ -49,6 +53,24 @@ bool ColorSpaceIsSupportedInJetpack(ColorSpace color_space) {
       return true;
   }
   return false;
+}
+
+jlong ComputeColorLong(JNIEnv* env, const Color& color) {
+  const ColorSpace& original_color_space = color.GetColorSpace();
+  // This is currently defensive coding, at this time there aren't color
+  // spaces supported here that aren't supported in Ink Jetpack.
+  bool color_space_is_supported =
+      ColorSpaceIsSupportedInJetpack(original_color_space);
+  const Color::RgbaFloat rgba =
+      (color_space_is_supported ? color
+                                : color.InColorSpace(ColorSpace::kDisplayP3))
+          .AsFloat(Color::Format::kGammaEncoded);
+  return env->CallStaticLongMethod(
+      ClassColorNative(env),
+      MethodColorNativeComposeColorLongFromComponents(env),
+      ColorSpaceToJInt(color_space_is_supported ? original_color_space
+                                                : ColorSpace::kDisplayP3),
+      rgba.r, rgba.g, rgba.b, rgba.a);
 }
 
 }  // namespace ink::jni

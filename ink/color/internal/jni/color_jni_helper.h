@@ -17,6 +17,7 @@
 
 #include <jni.h>
 
+#include "ink/color/color.h"
 #include "ink/color/color_space.h"
 
 namespace ink::jni {
@@ -30,6 +31,9 @@ constexpr jint kJniColorSpaceIdDisplayP3 = 1;
 ColorSpace JIntToColorSpace(jint color_space_id);
 jint ColorSpaceToJInt(ColorSpace color_space);
 bool ColorSpaceIsSupportedInJetpack(ColorSpace color_space);
+
+// Converts an Ink `Color` into a Kotlin `ColorLong`.
+jlong ComputeColorLong(JNIEnv* env, const Color& color);
 
 }  // namespace ink::jni
 

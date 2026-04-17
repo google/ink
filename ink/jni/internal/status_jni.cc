@@ -22,6 +22,8 @@
 using ::ink::jni::JStringToStdString;
 using ::ink::jni::ThrowExceptionFromStatusCallback;
 
+namespace {}
+
 extern "C" {
 
 JNI_METHOD(nativeloader, StatusNative, jint, statusCodeOk)

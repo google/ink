@@ -22,7 +22,7 @@
 #include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/geometry/internal/jni/mesh_format_native_helper.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/jni/internal/jni_defines.h"
@@ -31,14 +31,14 @@ using ::ink::BrushCoat;
 using ::ink::BrushPaint;
 using ::ink::MeshFormat;
 using ::ink::brush_internal::AddAttributeIdsRequiredByCoat;
-using ::ink::jni::CastToBrushCoat;
-using ::ink::jni::CastToBrushPaint;
-using ::ink::jni::CastToBrushTip;
-using ::ink::jni::DeleteNativeBrushCoat;
-using ::ink::jni::NewNativeBrushCoat;
-using ::ink::jni::NewNativeBrushPaint;
-using ::ink::jni::NewNativeBrushTip;
+using ::ink::native::CastToBrushCoat;
+using ::ink::native::CastToBrushPaint;
+using ::ink::native::CastToBrushTip;
 using ::ink::native::CastToMeshFormat;
+using ::ink::native::DeleteNativeBrushCoat;
+using ::ink::native::NewNativeBrushCoat;
+using ::ink::native::NewNativeBrushPaint;
+using ::ink::native::NewNativeBrushTip;
 
 extern "C" {
 
@@ -60,7 +60,6 @@ JNI_METHOD(brush, BrushCoatNative, jlong, create)
   }
   env->ReleaseLongArrayElements(paint_preferences_native_pointers_array,
                                 paint_preferences_native_pointers, JNI_ABORT);
-
   return NewNativeBrushCoat(BrushCoat{
       .tip = CastToBrushTip(tip_native_pointer),
       .paint_preferences = std::move(paint_preferences),

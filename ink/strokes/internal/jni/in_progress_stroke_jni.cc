@@ -20,7 +20,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/internal/jni/box_accumulator_jni_helper.h"
 #include "ink/geometry/internal/jni/mesh_format_native_helper.h"
@@ -43,7 +43,6 @@ using ::ink::InProgressStroke;
 using ::ink::Point;
 using ::ink::StrokeInput;
 using ::ink::StrokeInputBatch;
-using ::ink::jni::CastToBrush;
 using ::ink::jni::CastToInProgressStrokeWrapper;
 using ::ink::jni::CastToMutableInProgressStrokeWrapper;
 using ::ink::jni::CastToMutableStrokeInputBatch;
@@ -56,6 +55,7 @@ using ::ink::jni::NewNativeInProgressStroke;
 using ::ink::jni::NewNativeStroke;
 using ::ink::jni::ThrowExceptionFromStatus;
 using ::ink::jni::UpdateJStrokeInputOrThrow;
+using ::ink::native::CastToBrush;
 using ::ink::native::NewNativeMeshFormat;
 
 extern "C" {

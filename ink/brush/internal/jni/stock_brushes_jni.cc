@@ -18,7 +18,7 @@
 
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/brush/stock_brushes.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_string_util.h"
@@ -28,8 +28,8 @@ namespace {
 using ::ink::BrushFamily;
 using ::ink::BrushPaint;
 using ::ink::jni::JStringToStdString;
-using ::ink::jni::NewNativeBrushBehavior;
-using ::ink::jni::NewNativeBrushFamily;
+using ::ink::native::NewNativeBrushBehavior;
+using ::ink::native::NewNativeBrushFamily;
 using ::ink::stock_brushes::DashedLine;
 using ::ink::stock_brushes::DashedLineVersion;
 using ::ink::stock_brushes::EmojiHighlighter;

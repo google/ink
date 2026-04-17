@@ -18,7 +18,7 @@
 
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_family.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/color/color.h"
 #include "ink/color/internal/jni/color_jni_helper.h"
 #include "ink/jni/internal/jni_defines.h"
@@ -29,14 +29,14 @@ namespace {
 using ::ink::Brush;
 using ::ink::BrushFamily;
 using ::ink::Color;
-using ::ink::jni::CastToBrush;
-using ::ink::jni::CastToBrushFamily;
 using ::ink::jni::ComputeColorLong;
-using ::ink::jni::DeleteNativeBrush;
 using ::ink::jni::JIntToColorSpace;
-using ::ink::jni::NewNativeBrush;
-using ::ink::jni::NewNativeBrushFamily;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::CastToBrush;
+using ::ink::native::CastToBrushFamily;
+using ::ink::native::DeleteNativeBrush;
+using ::ink::native::NewNativeBrush;
+using ::ink::native::NewNativeBrushFamily;
 
 }  // namespace
 

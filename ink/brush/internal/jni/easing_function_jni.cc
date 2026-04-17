@@ -22,7 +22,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "ink/brush/easing_function.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/geometry/point.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/status_jni_helper.h"
@@ -31,10 +31,10 @@ namespace {
 
 using ink::EasingFunction;
 using ink::Point;
-using ink::jni::CastToEasingFunction;
-using ink::jni::DeleteNativeEasingFunction;
-using ink::jni::NewNativeEasingFunction;
 using ink::jni::ThrowExceptionFromStatus;
+using ink::native::CastToEasingFunction;
+using ink::native::DeleteNativeEasingFunction;
+using ink::native::NewNativeEasingFunction;
 
 jlong ValidateAndHoistEasingFunctionOrThrow(
     EasingFunction::Parameters parameters, JNIEnv* env) {
