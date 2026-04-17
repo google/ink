@@ -36,8 +36,13 @@ JNI_METHOD(geometry, PartitionedMeshNative, jlongArray,
   PartitionedMeshNative_fillRenderGroupMeshPointers(native_pointer, group_index,
                                                     meshes_ptrs.data());
   jlongArray mesh_pointers = env->NewLongArray(group_mesh_count);
+  // Both `jlong` and `int64_t` are required to be 64-bit integers which JNI and
+  // Kotlin-cinterop respectively both map to Kotlin `Long`. However, on MacOS
+  // they represent two distinct (though equivalent) types, `jlong` is `long`
+  // but `int64_t` is `long long`.
+  static_assert(sizeof(jlong) == sizeof(int64_t));
   env->SetLongArrayRegion(mesh_pointers, 0, group_mesh_count,
-                          meshes_ptrs.data());
+                          reinterpret_cast<jlong*>(meshes_ptrs.data()));
   return mesh_pointers;
 }
 

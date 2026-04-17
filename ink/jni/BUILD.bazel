@@ -21,17 +21,24 @@ package(
 
 cc_binary(
     name = "libink.so",
-    additional_linker_inputs = ["jni.lds"],
-    features = ["-legacy_whole_archive"],
-    linkopts = [
-        # Use a linker script to limit exported symbols to JNI functions.
-        "-Wl,--version-script=$(location :jni.lds)",
+    additional_linker_inputs = [
+        "exported_symbols.txt",
+        "jni.lds",
     ],
+    features = ["-legacy_whole_archive"],
+    linkopts = select({
+        "@platforms//os:macos": [
+            "-Wl,-exported_symbols_list,$(location :exported_symbols.txt)",
+        ],
+        "//conditions:default": [
+            # Use a linker script to limit exported symbols to JNI functions.
+            "-Wl,--version-script=$(location :jni.lds)",
+        ],
+    }),
     linkshared = 1,
     linkstatic = 1,
     deps = [
         ":android_all_jni",
-        ":jni.lds",
     ],
 )
 
