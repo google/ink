@@ -25,11 +25,11 @@ namespace ink::jni {
 namespace {
 
 void ThrowExceptionFromStatus(JNIEnv* env, absl::StatusCode status_code,
-                              absl::string_view status_message) {
+                              absl::string_view status_string) {
   env->CallStaticVoidMethod(
       ClassNativeExceptionHandling(env),
       MethodNativeExceptionHandlingThrowForNonOkStatus(env), status_code,
-      env->NewStringUTF(status_message.data()));
+      env->NewStringUTF(status_string.data()));
 }
 
 }  // namespace

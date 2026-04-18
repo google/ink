@@ -14,76 +14,37 @@
 
 #include <jni.h>
 
-#include <utility>
-#include <variant>
-#include <vector>
-
-#include "absl/functional/overload.h"
 #include "absl/log/absl_check.h"
-#include "absl/status/status.h"
-#include "ink/brush/easing_function.h"
-#include "ink/brush/internal/jni/brush_native_helper.h"
-#include "ink/geometry/point.h"
+#include "ink/brush/internal/jni/easing_function_native.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/status_jni_helper.h"
 
-namespace {
-
-using ink::EasingFunction;
-using ink::Point;
-using ink::jni::ThrowExceptionFromStatus;
-using ink::native::CastToEasingFunction;
-using ink::native::DeleteNativeEasingFunction;
-using ink::native::NewNativeEasingFunction;
-
-jlong ValidateAndHoistEasingFunctionOrThrow(
-    EasingFunction::Parameters parameters, JNIEnv* env) {
-  EasingFunction easing_function{.parameters = std::move(parameters)};
-  if (absl::Status status =
-          ink::brush_internal::ValidateEasingFunction(easing_function);
-      !status.ok()) {
-    ThrowExceptionFromStatus(env, status);
-    return 0;
-  }
-  return NewNativeEasingFunction(std::move(easing_function));
-}
-
-static constexpr int kPredefined = 0;
-static constexpr int kCubicBezier = 1;
-static constexpr int kLinear = 2;
-static constexpr int kSteps = 3;
-
-}  // namespace
+using ::ink::jni::ThrowExceptionFromStatusCallback;
 
 extern "C" {
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, createCopyOf)
 (JNIEnv* env, jobject thiz, jlong other_easing_function_native_pointer) {
-  return NewNativeEasingFunction(
-      CastToEasingFunction(other_easing_function_native_pointer));
+  return EasingFunctionNative_createCopyOf(
+      other_easing_function_native_pointer);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, createPredefined)
 (JNIEnv* env, jobject thiz, jint predefined_response_curve) {
-  return ValidateAndHoistEasingFunctionOrThrow(
-      static_cast<EasingFunction::Predefined>(predefined_response_curve), env);
+  return EasingFunctionNative_createPredefined(
+      env, predefined_response_curve, &ThrowExceptionFromStatusCallback);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, createCubicBezier)
 (JNIEnv* env, jobject thiz, jfloat x1, jfloat y1, jfloat x2, jfloat y2) {
-  return ValidateAndHoistEasingFunctionOrThrow(
-      EasingFunction::CubicBezier{.x1 = x1, .y1 = y1, .x2 = x2, .y2 = y2}, env);
+  return EasingFunctionNative_createCubicBezier(
+      env, x1, y1, x2, y2, &ThrowExceptionFromStatusCallback);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, createSteps)
 (JNIEnv* env, jobject thiz, jint step_count, jint step_position) {
-  return ValidateAndHoistEasingFunctionOrThrow(
-      EasingFunction::Steps{
-          .step_count = step_count,
-          .step_position =
-              static_cast<EasingFunction::StepPosition>(step_position),
-      },
-      env);
+  return EasingFunctionNative_createSteps(env, step_count, step_position,
+                                          &ThrowExceptionFromStatusCallback);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, createLinear)
@@ -91,105 +52,71 @@ JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, createLinear)
   jsize num_points = env->GetArrayLength(points_array) / 2;
   jfloat* points_elements = env->GetFloatArrayElements(points_array, nullptr);
   ABSL_CHECK(points_elements != nullptr);
-  std::vector<Point> points_vector;
-  points_vector.reserve(num_points);
-  for (int i = 0; i < num_points; ++i) {
-    float x = points_elements[2 * i];
-    float y = points_elements[2 * i + 1];
-    points_vector.push_back(Point{x, y});
-  }
+  jlong result = EasingFunctionNative_createLinear(
+      env, points_elements, num_points, &ThrowExceptionFromStatusCallback);
   // Don't need to copy back the array, which is not modified.
   env->ReleaseFloatArrayElements(points_array, points_elements, JNI_ABORT);
-  return ValidateAndHoistEasingFunctionOrThrow(
-      EasingFunction::Linear{.points = std::move(points_vector)}, env);
+  return result;
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  DeleteNativeEasingFunction(native_pointer);
+  EasingFunctionNative_free(native_pointer);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jlong, getParametersType)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  constexpr auto visitor = absl::Overload{
-      [](const EasingFunction::Predefined&) { return kPredefined; },
-      [](const EasingFunction::CubicBezier&) { return kCubicBezier; },
-      [](const EasingFunction::Steps&) { return kSteps; },
-      [](const EasingFunction::Linear&) { return kLinear; },
-  };
-  return static_cast<jint>(
-      std::visit(visitor, CastToEasingFunction(native_pointer).parameters));
+  return EasingFunctionNative_getParametersType(native_pointer);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jint, getPredefinedValueInt)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return static_cast<jint>(std::get<EasingFunction::Predefined>(
-      CastToEasingFunction(native_pointer).parameters));
+  return EasingFunctionNative_getPredefinedValueInt(native_pointer);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jfloat, getCubicBezierX1)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return std::get<EasingFunction::CubicBezier>(
-             CastToEasingFunction(native_pointer).parameters)
-      .x1;
+  return EasingFunctionNative_getCubicBezierX1(native_pointer);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jfloat, getCubicBezierY1)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return std::get<EasingFunction::CubicBezier>(
-             CastToEasingFunction(native_pointer).parameters)
-      .y1;
+  return EasingFunctionNative_getCubicBezierY1(native_pointer);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jfloat, getCubicBezierX2)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return std::get<EasingFunction::CubicBezier>(
-             CastToEasingFunction(native_pointer).parameters)
-      .x2;
+  return EasingFunctionNative_getCubicBezierX2(native_pointer);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jfloat, getCubicBezierY2)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return std::get<EasingFunction::CubicBezier>(
-             CastToEasingFunction(native_pointer).parameters)
-      .y2;
+  return EasingFunctionNative_getCubicBezierY2(native_pointer);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jint, getLinearNumPoints)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return static_cast<jint>(std::get<EasingFunction::Linear>(
-                               CastToEasingFunction(native_pointer).parameters)
-                               .points.size());
+  return EasingFunctionNative_getLinearNumPoints(native_pointer);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jfloat, getLinearPointX)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
-  return std::get<EasingFunction::Linear>(
-             CastToEasingFunction(native_pointer).parameters)
-      .points[index]
-      .x;
+  return EasingFunctionNative_getLinearPointX(native_pointer, index);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jfloat, getLinearPointY)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint index) {
-  return std::get<EasingFunction::Linear>(
-             CastToEasingFunction(native_pointer).parameters)
-      .points[index]
-      .y;
+  return EasingFunctionNative_getLinearPointY(native_pointer, index);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jint, getStepsCount)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return std::get<EasingFunction::Steps>(
-             CastToEasingFunction(native_pointer).parameters)
-      .step_count;
+  return EasingFunctionNative_getStepsCount(native_pointer);
 }
 
 JNI_METHOD(brush_behavior, EasingFunctionNative, jint, getStepsPositionInt)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return static_cast<jint>(std::get<EasingFunction::Steps>(
-                               CastToEasingFunction(native_pointer).parameters)
-                               .step_position);
+  return EasingFunctionNative_getStepsPositionInt(native_pointer);
 }
 
 }  // extern "C"

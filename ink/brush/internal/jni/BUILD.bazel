@@ -34,6 +34,18 @@ cc_library(
     ],
 )
 
+filegroup(
+    name = "cinterop_headers",
+    srcs = glob(["*_native.h"]),
+)
+
+cc_library(
+    name = "cinterop",
+    deps = [
+        ":easing_function_native",
+    ],
+)
+
 cc_library(
     name = "brush_native_helper",
     srcs = ["brush_native_helper.cc"],
@@ -270,14 +282,10 @@ cc_library(
     srcs = ["easing_function_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":brush_native_helper",
-        "//ink/brush:easing_function",
-        "//ink/geometry:point",
+        ":easing_function_native",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:status_jni_helper",
-        "@com_google_absl//absl/functional:overload",
         "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -285,4 +293,17 @@ cc_library(
         ],
     }),
     alwayslink = 1,
+)
+
+cc_library(
+    name = "easing_function_native",
+    srcs = ["easing_function_native.cc"],
+    hdrs = ["easing_function_native.h"],
+    deps = [
+        ":brush_native_helper",
+        "//ink/brush:easing_function",
+        "//ink/geometry:point",
+        "@com_google_absl//absl/functional:overload",
+        "@com_google_absl//absl/status",
+    ],
 )
