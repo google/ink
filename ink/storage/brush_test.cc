@@ -68,6 +68,13 @@ namespace {
 using ::absl_testing::IsOk;
 using ::absl_testing::IsOkAndHolds;
 using ::absl_testing::StatusIs;
+using ::google::protobuf::Descriptor;
+using ::google::protobuf::EnumDescriptor;
+using ::google::protobuf::EnumValueDescriptor;
+using ::google::protobuf::FieldDescriptor;
+using ::google::protobuf::Map;
+using ::google::protobuf::Message;
+using ::google::protobuf::Reflection;
 using ::google::protobuf::TextFormat;
 using ::testing::AllOf;
 using ::testing::ElementsAre;
@@ -570,7 +577,7 @@ TEST(BrushTest, EncodeBrushFamilyTextureMap) {
                            .blend_mode = BrushPaint::BlendMode::kSrcIn}},
        .self_overlap = BrushPaint::SelfOverlap::kDiscard});
   ASSERT_EQ(family.status(), absl::OkStatus());
-  google::protobuf::Map<std::string, std::string> texture_id_to_bitmap_proto_out;
+  Map<std::string, std::string> texture_id_to_bitmap_proto_out;
   int distinct_texture_ids_count = 0;
   TextureBitmapProvider callback =
       [&distinct_texture_ids_count](
@@ -600,7 +607,7 @@ TEST(BrushTest, EncodeBrushFamilyTextureMap) {
 TEST(BrushTest, EncodeBrushFamilyTextureMapWithNonEmptyProto) {
   absl::StatusOr<BrushFamily> family = BrushFamily();
   ASSERT_EQ(family.status(), absl::OkStatus());
-  google::protobuf::Map<std::string, std::string> texture_id_to_bitmap_proto_out;
+  Map<std::string, std::string> texture_id_to_bitmap_proto_out;
   texture_id_to_bitmap_proto_out.insert({"existing_id", TestPngBytes1x1()});
 
   int callback_count = 0;
@@ -992,9 +999,8 @@ void EncodeDecodeValidBrushBehaviorNodeRoundTrip(
 FUZZ_TEST(BrushTest, EncodeDecodeValidBrushBehaviorNodeRoundTrip)
     .WithDomains(SerializableBrushBehaviorNode());
 
-void GetMaxProtoVersion(const google::protobuf::Message& message,
-                        int32_t& max_version_out) {
-  const google::protobuf::Descriptor* descriptor = message.GetDescriptor();
+void GetMaxProtoVersion(const Message& message, int32_t& max_version_out) {
+  const Descriptor* descriptor = message.GetDescriptor();
   if (descriptor->options().HasExtension(ink::proto::message_min_version)) {
     int32_t message_version =
         descriptor->options().GetExtension(ink::proto::message_min_version);
@@ -1002,8 +1008,8 @@ void GetMaxProtoVersion(const google::protobuf::Message& message,
     max_version_out = std::max(max_version_out, message_version);
   }
 
-  const google::protobuf::Reflection* reflection = message.GetReflection();
-  std::vector<const google::protobuf::FieldDescriptor*> fields;
+  const Reflection* reflection = message.GetReflection();
+  std::vector<const FieldDescriptor*> fields;
   reflection->ListFields(message, &fields);
 
   for (const auto* field : fields) {
@@ -1014,10 +1020,10 @@ void GetMaxProtoVersion(const google::protobuf::Message& message,
       max_version_out = std::max(max_version_out, field_version);
     }
 
-    if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_ENUM) {
+    if (field->cpp_type() == FieldDescriptor::CPPTYPE_ENUM) {
       if (field->is_repeated()) {
         for (int i = 0; i < reflection->FieldSize(message, field); ++i) {
-          const google::protobuf::EnumValueDescriptor* enum_value =
+          const EnumValueDescriptor* enum_value =
               reflection->GetRepeatedEnum(message, field, i);
           if (enum_value->options().HasExtension(
                   ink::proto::enum_value_min_version)) {
@@ -1029,7 +1035,7 @@ void GetMaxProtoVersion(const google::protobuf::Message& message,
           }
         }
       } else {
-        const google::protobuf::EnumValueDescriptor* enum_value =
+        const EnumValueDescriptor* enum_value =
             reflection->GetEnum(message, field);
         if (enum_value->options().HasExtension(
                 ink::proto::enum_value_min_version)) {
@@ -1039,7 +1045,7 @@ void GetMaxProtoVersion(const google::protobuf::Message& message,
           max_version_out = std::max(max_version_out, enum_value_version);
         }
       }
-    } else if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
+    } else if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
       if (field->is_repeated()) {
         for (int i = 0; i < reflection->FieldSize(message, field); ++i) {
           GetMaxProtoVersion(reflection->GetRepeatedMessage(message, field, i),
@@ -1074,9 +1080,9 @@ FUZZ_TEST(BrushTest, CalculateMinimumRequiredVersionMatchesProtoOptions)
     .WithDomains(SerializableBrushFamily());
 
 void CheckMinVersionExistsAndIsValid(
-    const google::protobuf::Descriptor* descriptor,
-    absl::flat_hash_set<const google::protobuf::Descriptor*>& visited_messages,
-    absl::flat_hash_set<const google::protobuf::EnumDescriptor*>& visited_enums) {
+    const Descriptor* descriptor,
+    absl::flat_hash_set<const Descriptor*>& visited_messages,
+    absl::flat_hash_set<const EnumDescriptor*>& visited_enums) {
   if (visited_messages.contains(descriptor) ||
       descriptor->file()->name() !=
           "third_party/ink/storage/proto/brush_family.proto" ||
@@ -1099,7 +1105,7 @@ void CheckMinVersionExistsAndIsValid(
   }
 
   for (int i = 0; i < descriptor->field_count(); ++i) {
-    const google::protobuf::FieldDescriptor* field = descriptor->field(i);
+    const FieldDescriptor* field = descriptor->field(i);
     EXPECT_TRUE(field->options().HasExtension(ink::proto::field_min_version))
         << "Field " << field->full_name()
         << " is missing field_min_version option.";
@@ -1108,11 +1114,11 @@ void CheckMinVersionExistsAndIsValid(
     if (field_version != Version::kDevelopment().value()) {
       EXPECT_THAT(field_version, Le(Version::kMaxSupported().value()));
     }
-    if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
+    if (field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
       CheckMinVersionExistsAndIsValid(field->message_type(), visited_messages,
                                       visited_enums);
-    } else if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_ENUM) {
-      const google::protobuf::EnumDescriptor* enum_descriptor = field->enum_type();
+    } else if (field->cpp_type() == FieldDescriptor::CPPTYPE_ENUM) {
+      const EnumDescriptor* enum_descriptor = field->enum_type();
       if (enum_descriptor->file()->name() !=
           "third_party/ink/storage/proto/brush_family.proto") {
         continue;
@@ -1120,8 +1126,7 @@ void CheckMinVersionExistsAndIsValid(
       if (visited_enums.contains(enum_descriptor)) continue;
       visited_enums.insert(enum_descriptor);
       for (int j = 0; j < enum_descriptor->value_count(); ++j) {
-        const google::protobuf::EnumValueDescriptor* enum_value =
-            enum_descriptor->value(j);
+        const EnumValueDescriptor* enum_value = enum_descriptor->value(j);
         EXPECT_TRUE(enum_value->options().HasExtension(
             ink::proto::enum_value_min_version))
             << "Enum value " << enum_value->full_name()
@@ -1144,8 +1149,8 @@ TEST(BrushTest,
   // kDevelopment. This ensures that they are well documented, valid to be
   // loaded, and will be covered by the
   // `CalculateMinimumRequiredVersionMatchesProtoOptions` test.
-  absl::flat_hash_set<const google::protobuf::Descriptor*> visited_messages;
-  absl::flat_hash_set<const google::protobuf::EnumDescriptor*> visited_enums;
+  absl::flat_hash_set<const Descriptor*> visited_messages;
+  absl::flat_hash_set<const EnumDescriptor*> visited_enums;
   CheckMinVersionExistsAndIsValid(proto::BrushFamily::descriptor(),
                                   visited_messages, visited_enums);
 }
