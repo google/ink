@@ -321,7 +321,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
 
     // Unpacks a combined position-and-opacity value into a `float3` from one of
     // the "packed" types supported.
-    // LINT.IfChange(opacity_packing)
+    // LINT.IfChange(position_and_opacity_unpacking)
     R"(
     float3 unpackPositionAndOpacityShift(const float4 unpackingTransform,
                                          const float2 packedValue) {
@@ -336,7 +336,8 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
           (255.0 / 127.0) * packedValue.w - 1.0);
     })"
     // LINT.ThenChange(
-    //     ../../../strokes/internal/stroke_vertex.cc:margin_encoding)
+    //     ../../../strokes/internal/stroke_vertex.cc:opacity_packing,
+    //     ../../../rendering/webgpu/StrokeShader.wgsl:position_and_opacity_unpacking)
 
     // Unpacks a combined derivative-and-label value into a `float3` from one of
     // the supported "packed" types.
