@@ -1008,6 +1008,11 @@ void GetMaxProtoVersion(const google::protobuf::Message& message,
 
   for (const auto* field : fields) {
     if (field->options().HasExtension(ink::proto::field_min_version)) {
+      // Only check fields which were set to something other than their default
+      // value.
+      if (!field->is_repeated() && !reflection->HasField(message, field)) {
+        continue;
+      }
       int32_t field_version =
           field->options().GetExtension(ink::proto::field_min_version);
       EXPECT_THAT(field_version, Le(Version::kDevelopment().value()));
