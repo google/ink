@@ -354,7 +354,8 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
           255.0 * packedValue.w - 128.0);
     })"
     // LINT.ThenChange(
-    //     ../../../strokes/internal/stroke_vertex.cc:label_packing)
+    //     ../../../strokes/internal/stroke_vertex.cc:label_packing,
+    //     ../../../rendering/webgpu/StrokeShader.wgsl:derivative_and_label_unpacking)
 
     // Unpacks an HSL color-shift value into a `float3` from one of the
     // supported "packed" types.
