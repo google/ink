@@ -279,13 +279,31 @@ JNI_METHOD(storage, BrushSerializationNative, jlong,
   ClientTextureIdProviderAndBitmapReceiver decode_texture_jni_wrapper =
       CreateDecodeTextureJniWrapper(env, callback);
 
-  absl::StatusOr<Version> max_version = IntToVersion(max_version_value);
-  if (!max_version.ok()) {
-    ThrowExceptionFromStatus(env, max_version.status());
-    return 0;
-  }
-  absl::StatusOr<BrushFamily> brush_family = DecodeBrushFamily(
-      brush_family_proto, decode_texture_jni_wrapper, max_version.value());
+if (env->ExceptionCheck()) {
+      // Note that we're not clearing the exception here since we want to
+      // raise it as-is later. We're counting on the parsing code bailing out
+      // on the first error status encountered.
+      return absl::InternalError("onDecodeTexture raised exception.");
+    }
+
+    if (new_id_jstring == nullptr) {
+      return absl::InternalError("onDecodeTexture returned null.");
+    }
+
+    const char* raw_new_id = env->GetStringUTFChars(new_id_jstring, nullptr);
+    if (raw_new_id == nullptr) {
+      env->DeleteLocalRef(new_id_jstring);
+      return absl::InternalError("GetStringUTFChars failed.");
+    }
+
+    std::string new_id(raw_new_id);
+    env->ReleaseStringUTFChars(new_id_jstring, raw_new_id);
+
+    env->DeleteLocalRef(new_id_jstring);
+    return new_id;
+  };
+  absl::StatusOr<BrushFamily> brush_family =
+      DecodeBrushFamily(brush_family_proto, decode_texture_jni_wrapper);
   if (!brush_family.ok()) {
     // If the callback raised an exception we want to raise that as-is
     // instead of replacing it with the status.
