@@ -524,12 +524,13 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::Target target) {
     case BrushBehavior::Target::kPositionOffsetYInMultiplesOfBrushSize:
     case BrushBehavior::Target::kPositionOffsetForwardInMultiplesOfBrushSize:
     case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
-    case BrushBehavior::Target::kTextureAnimationProgressOffset:
     case BrushBehavior::Target::kHueOffsetInRadians:
     case BrushBehavior::Target::kSaturationMultiplier:
     case BrushBehavior::Target::kLuminosityOffset:
     case BrushBehavior::Target::kOpacityMultiplier:
       return Version::k0Jetpack1_0_0();
+    case BrushBehavior::Target::kTextureAnimationProgressOffset:
+      return Version::kDevelopment();
   }
 }
 

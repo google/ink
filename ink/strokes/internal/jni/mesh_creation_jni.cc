@@ -21,7 +21,7 @@
 
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
-#include "ink/geometry/internal/jni/partitioned_mesh_jni_helper.h"
+#include "ink/geometry/internal/jni/partitioned_mesh_native_helper.h"
 #include "ink/geometry/internal/polyline_processing.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
@@ -29,7 +29,7 @@
 #include "ink/geometry/point.h"
 #include "ink/geometry/tessellator.h"
 #include "ink/jni/internal/jni_defines.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/jni/stroke_input_jni_helper.h"
 
@@ -40,8 +40,8 @@ using ::ink::PartitionedMesh;
 using ::ink::Point;
 using ::ink::StrokeInputBatch;
 using ::ink::jni::CastToStrokeInputBatch;
-using ::ink::jni::NewNativePartitionedMesh;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::NewNativePartitionedMesh;
 
 // private method to calculate the slope of a line segment. If the slope is
 // infinite, return float::infinity.

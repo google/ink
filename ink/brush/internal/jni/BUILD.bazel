@@ -32,13 +32,24 @@ cc_library(
         ":easing_function_jni",
         ":stock_brushes_jni",
     ],
-    alwayslink = 1,
+)
+
+filegroup(
+    name = "cinterop_headers",
+    srcs = glob(["*_native.h"]),
 )
 
 cc_library(
-    name = "brush_jni_helper",
-    srcs = ["brush_jni_helper.cc"],
-    hdrs = ["brush_jni_helper.h"],
+    name = "cinterop",
+    deps = [
+        ":easing_function_native",
+    ],
+)
+
+cc_library(
+    name = "brush_native_helper",
+    srcs = ["brush_native_helper.cc"],
+    hdrs = ["brush_native_helper.h"],
     deps = [
         "//ink/brush",
         "//ink/brush:brush_behavior",
@@ -48,17 +59,12 @@ cc_library(
         "//ink/brush:brush_tip",
         "//ink/brush:color_function",
         "//ink/brush:easing_function",
-        "//ink/color",
-        "//ink/color:color_space",
-        "//ink/color/internal/jni:color_jni_helper",
-        "//ink/jni/internal:jni_jvm_interface",
+        "//ink/brush:version",
         "@com_google_absl//absl/log:absl_check",
-    ] + select({
-        "@platforms//os:android": [],
-        "//conditions:default": [
-            "@rules_jni//jni",
-        ],
-    }),
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
 )
 
 cc_library(
@@ -66,13 +72,12 @@ cc_library(
     srcs = ["brush_behavior_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":brush_jni_helper",
+        ":brush_native_helper",
         "//ink/brush",
         "//ink/brush:brush_behavior",
-        "//ink/brush:easing_function",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_string_util",
-        "//ink/jni/internal:jni_throw_util",
+        "//ink/jni/internal:status_jni_helper",
         "//ink/types:duration",
         "@com_google_absl//absl/functional:overload",
         "@com_google_absl//absl/log:absl_check",
@@ -92,14 +97,14 @@ cc_library(
     tags = ["keep_dep"],
     deps = [
         ":brush_behavior_jni",
-        ":brush_jni_helper",
+        ":brush_native_helper",
         "//ink/brush",
         "//ink/brush:brush_behavior",
         "//ink/brush:brush_tip",
         "//ink/geometry:angle",
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_defines",
-        "//ink/jni/internal:jni_throw_util",
+        "//ink/jni/internal:status_jni_helper",
         "//ink/types:duration",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
@@ -117,16 +122,16 @@ cc_library(
     srcs = ["brush_paint_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":brush_jni_helper",
+        ":brush_native_helper",
         "//ink/brush:brush_paint",
         "//ink/brush:color_function",
         "//ink/geometry:angle",
         "//ink/geometry:mesh_format",
         "//ink/geometry:vec",
-        "//ink/geometry/internal/jni:mesh_format_jni_helper",
+        "//ink/geometry/internal/jni:mesh_format_native_helper",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_string_util",
-        "//ink/jni/internal:jni_throw_util",
+        "//ink/jni/internal:status_jni_helper",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
@@ -147,13 +152,13 @@ cc_library(
     srcs = ["brush_coat_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":brush_jni_helper",
+        ":brush_native_helper",
         "//ink/brush",
         "//ink/brush:brush_coat",
         "//ink/brush:brush_paint",
         "//ink/brush:brush_tip",
         "//ink/geometry:mesh_format",
-        "//ink/geometry/internal/jni:mesh_format_jni_helper",
+        "//ink/geometry/internal/jni:mesh_format_native_helper",
         "//ink/jni/internal:jni_defines",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/container:inlined_vector",
@@ -174,7 +179,7 @@ cc_library(
     tags = ["keep_dep"],
     deps = [
         ":brush_coat_jni",
-        ":brush_jni_helper",
+        ":brush_native_helper",
         "//ink/brush",
         "//ink/brush:brush_coat",
         "//ink/brush:brush_family",
@@ -183,7 +188,7 @@ cc_library(
         "//ink/brush:stock_brushes",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_string_util",
-        "//ink/jni/internal:jni_throw_util",
+        "//ink/jni/internal:status_jni_helper",
         "//ink/types:duration",
         "@com_google_absl//absl/functional:overload",
         "@com_google_absl//absl/log:absl_check",
@@ -203,7 +208,7 @@ cc_library(
     srcs = ["brush_family_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":brush_jni_helper",
+        ":brush_native_helper",
         "//ink/brush",
         "//ink/brush:brush_coat",
         "//ink/brush:brush_family",
@@ -211,7 +216,7 @@ cc_library(
         "//ink/brush:brush_tip",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_string_util",
-        "//ink/jni/internal:jni_throw_util",
+        "//ink/jni/internal:status_jni_helper",
         "//ink/types:duration",
         "@com_google_absl//absl/functional:overload",
         "@com_google_absl//absl/log:absl_check",
@@ -231,13 +236,13 @@ cc_library(
     srcs = ["brush_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":brush_jni_helper",
+        ":brush_native_helper",
         "//ink/brush",
         "//ink/brush:brush_family",
         "//ink/color",
         "//ink/color/internal/jni:color_jni_helper",
         "//ink/jni/internal:jni_defines",
-        "//ink/jni/internal:jni_throw_util",
+        "//ink/jni/internal:status_jni_helper",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
@@ -253,15 +258,16 @@ cc_library(
     srcs = ["color_function_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":brush_jni_helper",
+        ":brush_native_helper",
         "//ink/brush:color_function",
         "//ink/color",
         "//ink/color/internal/jni:color_jni_helper",
         "//ink/jni/internal:jni_defines",
-        "//ink/jni/internal:jni_throw_util",
+        "//ink/jni/internal:status_jni_helper",
         "@com_google_absl//absl/functional:overload",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -276,14 +282,10 @@ cc_library(
     srcs = ["easing_function_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":brush_jni_helper",
-        "//ink/brush:easing_function",
-        "//ink/geometry:point",
+        ":easing_function_native",
         "//ink/jni/internal:jni_defines",
-        "//ink/jni/internal:jni_throw_util",
-        "@com_google_absl//absl/functional:overload",
+        "//ink/jni/internal:status_jni_helper",
         "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -291,4 +293,17 @@ cc_library(
         ],
     }),
     alwayslink = 1,
+)
+
+cc_library(
+    name = "easing_function_native",
+    srcs = ["easing_function_native.cc"],
+    hdrs = ["easing_function_native.h"],
+    deps = [
+        ":brush_native_helper",
+        "//ink/brush:easing_function",
+        "//ink/geometry:point",
+        "@com_google_absl//absl/functional:overload",
+        "@com_google_absl//absl/status",
+    ],
 )

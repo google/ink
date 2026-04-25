@@ -37,15 +37,17 @@ class BrushFamily {
  public:
   // LINT.IfChange(input_model_types)
 
-  // A naive model that passes through raw inputs mostly unchanged.  This is an
-  // experimental configuration which may be adjusted or removed later.
-  struct ExperimentalNaiveModel {};
+  // A naive input model that passes raw inputs through unchanged, performing
+  // only base-minimal modeling to derive velocity and acceleration values for
+  // the modeled inputs. This can be useful as a point of comparison for other
+  // input models, or for callers who wish to do their own input modeling prior
+  // to passing inputs into Ink.
+  struct PassthroughModel {};
 
   // Averages nearby inputs together within a sliding time window. To be valid,
   // the window size must be finite and strictly positive, and the upsampling
   // period must be strictly positive (but may be infinte, to completely disable
-  // upsampling). This is an experimental configuration which may be adjusted or
-  // removed later.
+  // upsampling).
   struct SlidingWindowModel {
     // The duration over which to average together nearby raw inputs. Typically
     // this should be somewhere in the 1 ms to 100 ms range.
@@ -62,7 +64,7 @@ class BrushFamily {
   // inputs. Raw hardware inputs tend to be noisy, and must be smoothed before
   // being passed into a brush's behaviors and extruded into a mesh in order to
   // get a good-looking stroke.
-  using InputModel = std::variant<ExperimentalNaiveModel, SlidingWindowModel>;
+  using InputModel = std::variant<PassthroughModel, SlidingWindowModel>;
 
   // LINT.ThenChange(../strokes/internal/stroke_input_modeler_test.cc:input_model_types)
 
@@ -145,6 +147,10 @@ class BrushFamily {
   // otherwise used internally by Ink.
   const Metadata& GetMetadata() const;
 
+  // Returns true if this brush family has fallback data that was preserved
+  // during decoding.
+  bool HasFallbacks() const;
+
   // Calculates the minimum version of the Ink library that is required to use
   // this brush family.
   Version CalculateMinimumRequiredVersion() const;
@@ -153,6 +159,8 @@ class BrushFamily {
   friend void AbslStringify(Sink& sink, const BrushFamily& family) {
     sink.Append(family.ToFormattedString());
   }
+
+  friend class BrushFamilyInternalAccessor;
 
  private:
   BrushFamily(absl::Span<const BrushCoat> coats, const InputModel& input_model,
@@ -164,6 +172,7 @@ class BrushFamily {
   std::vector<BrushCoat> coats_ = {BrushCoat{.tip = BrushTip{}}};
   InputModel input_model_ = DefaultInputModel();
   Metadata metadata_;
+  std::string opaque_decoded_proto_bytes_with_fallbacks_;
 };
 
 namespace brush_internal {

@@ -23,14 +23,14 @@
 
 namespace ink::jni {
 
-// Creates a new stack-allocated copy of the `StrokeInputBatch` and returns a
+// Creates a new heap-allocated copy of the `StrokeInputBatch` and returns a
 // pointer to it as a jlong, suitable for wrapping in a Kotlin
 // StrokeInputBatch or MutableStrokeInputBatch.
 inline jlong NewNativeStrokeInputBatch(const StrokeInputBatch& batch) {
   return reinterpret_cast<jlong>(new StrokeInputBatch(batch));
 }
 
-// Creates a new stack-allocated empty `StrokeInputBatch` and returns a
+// Creates a new heap-allocated empty `StrokeInputBatch` and returns a
 // pointer to it as a jlong, suitable for wrapping in a Kotlin
 // StrokeInputBatch or MutableStrokeInputBatch.
 inline jlong NewNativeStrokeInputBatch() {

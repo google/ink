@@ -22,7 +22,7 @@
 
 namespace ink::jni {
 
-// Creates a new stack-allocated copy of the `Stroke` and returns a pointer
+// Creates a new heap-allocated copy of the `Stroke` and returns a pointer
 // to it as a jlong, suitable for wrapping in a Kotlin Stroke.
 inline jlong NewNativeStroke(const Stroke& stroke) {
   return reinterpret_cast<jlong>(new Stroke(stroke));

@@ -16,32 +16,33 @@
 
 #include <jni.h>
 
+#include "ink/geometry/internal/jni/affine_transform_native.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
-#include "ink/geometry/point.h"
-#include "ink/geometry/quad.h"
 #include "ink/jni/internal/jni_jvm_interface.h"
 
 namespace ink::jni {
 
-jobject CreateJImmutableParallelogramOrThrow(JNIEnv* env, const Quad& quad) {
-  jobject center = CreateJImmutableVecOrThrow(env, quad.Center());
+jobject CreateJImmutableParallelogramOrThrow(
+    JNIEnv* env, const AffineTransformNative_Parallelogram& parallelogram) {
+  jobject center = CreateJImmutableVecOrThrow(env, parallelogram.center);
   if (env->ExceptionCheck()) return nullptr;
   return env->CallStaticObjectMethod(
       ClassImmutableParallelogram(env),
       MethodImmutableParallelogramFromCenterDimensionsRotationInDegreesAndSkew(
           env),
-      center, quad.Width(), quad.Height(), quad.Rotation().ValueInDegrees(),
-      quad.Skew());
+      center, parallelogram.width, parallelogram.height,
+      parallelogram.rotation_degrees, parallelogram.skew);
 }
 
-void FillJMutableParallelogramOrThrow(JNIEnv* env, const Quad& quad,
-                                      jobject mutable_parallelogram) {
+void FillJMutableParallelogramOrThrow(
+    JNIEnv* env, const AffineTransformNative_Parallelogram& parallelogram,
+    jobject mutable_parallelogram) {
   env->CallObjectMethod(
       mutable_parallelogram,
       MethodMutableParallelogramSetCenterDimensionsRotationInDegreesAndSkew(
           env),
-      quad.Center().x, quad.Center().y, quad.Width(), quad.Height(),
-      quad.Rotation().ValueInDegrees(), quad.Skew());
+      parallelogram.center.x, parallelogram.center.y, parallelogram.width,
+      parallelogram.height, parallelogram.rotation_degrees, parallelogram.skew);
 }
 
 }  // namespace ink::jni

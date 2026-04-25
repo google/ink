@@ -23,7 +23,9 @@ cc_library(
     srcs = ["color_jni_helper.cc"],
     hdrs = ["color_jni_helper.h"],
     deps = [
+        "//ink/color",
         "//ink/color:color_space",
+        "//ink/jni/internal:jni_jvm_interface",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
@@ -31,5 +33,4 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-    alwayslink = 1,
 )

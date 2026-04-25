@@ -23,26 +23,25 @@
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_string_util.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 
 namespace {
 
 using ::ink::BrushBehavior;
 using ::ink::brush_internal::ValidateBrushBehaviorNode;
 using ::ink::brush_internal::ValidateBrushBehaviorTopLevel;
-using ::ink::jni::CastToBrushBehavior;
-using ::ink::jni::CastToBrushBehaviorNode;
-using ::ink::jni::CastToEasingFunction;
-using ::ink::jni::DeleteNativeBrushBehavior;
-using ::ink::jni::DeleteNativeBrushBehaviorNode;
 using ::ink::jni::JStringToStdString;
-using ::ink::jni::NewNativeBrushBehavior;
-using ::ink::jni::NewNativeBrushBehaviorNode;
-using ::ink::jni::NewNativeEasingFunction;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::CastToBrushBehavior;
+using ::ink::native::CastToBrushBehaviorNode;
+using ::ink::native::CastToEasingFunction;
+using ::ink::native::DeleteNativeBrushBehavior;
+using ::ink::native::DeleteNativeBrushBehaviorNode;
+using ::ink::native::NewNativeBrushBehavior;
+using ::ink::native::NewNativeBrushBehaviorNode;
 
 jlong ValidateAndHoistNodeOrThrow(BrushBehavior::Node node, JNIEnv* env) {
   if (absl::Status status = ValidateBrushBehaviorNode(node); !status.ok()) {
@@ -122,7 +121,7 @@ JNI_METHOD(brush, BrushBehaviorNative, jlong, newCopyOfNode)
 // BrushBehavior::Node is a variant, so all of the native pointers are pointers
 // to the same type (the variant BrushBehavior::Node).
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createSource)
+JNI_METHOD(brush_behavior, SourceNodeNative, jlong, createSource)
 (JNIEnv* env, jobject thiz, jint source, jfloat source_value_start,
  jfloat source_value_end, jint source_out_of_range_behavior) {
   return ValidateAndHoistNodeOrThrow(
@@ -136,13 +135,13 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createSource)
       env);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createConstant)
+JNI_METHOD(brush_behavior, ConstantNodeNative, jlong, createConstant)
 (JNIEnv* env, jobject thiz, jfloat value) {
   return ValidateAndHoistNodeOrThrow(
       BrushBehavior::ConstantNode{.value = value}, env);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createNoise)
+JNI_METHOD(brush_behavior, NoiseNodeNative, jlong, createNoise)
 (JNIEnv* env, jobject thiz, jint seed, jint vary_over, jfloat base_period) {
   return ValidateAndHoistNodeOrThrow(
       BrushBehavior::NoiseNode{
@@ -153,7 +152,8 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createNoise)
       env);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createToolTypeFilter)
+JNI_METHOD(brush_behavior, ToolTypeFilterNodeNative, jlong,
+           createToolTypeFilter)
 (JNIEnv* env, jobject thiz, jboolean mouse_enabled, jboolean touch_enabled,
  jboolean stylus_enabled, jboolean unknown_enabled) {
   return ValidateAndHoistNodeOrThrow(
@@ -166,7 +166,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createToolTypeFilter)
       env);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createDamping)
+JNI_METHOD(brush_behavior, DampingNodeNative, jlong, createDamping)
 (JNIEnv* env, jobject thiz, jint damping_source, jfloat damping_gap) {
   return ValidateAndHoistNodeOrThrow(
       BrushBehavior::DampingNode{
@@ -177,7 +177,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createDamping)
       env);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createResponse)
+JNI_METHOD(brush_behavior, ResponseNodeNative, jlong, createResponse)
 (JNIEnv* env, jobject thiz, jlong easing_function_native_pointer) {
   return ValidateAndHoistNodeOrThrow(
       BrushBehavior::ResponseNode{
@@ -187,7 +187,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createResponse)
       env);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createIntegral)
+JNI_METHOD(brush_behavior, IntegralNodeNative, jlong, createIntegral)
 (JNIEnv* env, jobject thiz, jint integrate_over, jfloat integral_value_start,
  jfloat integral_value_end, jint integral_out_of_range_behavior) {
   return ValidateAndHoistNodeOrThrow(
@@ -202,7 +202,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createIntegral)
       env);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createBinaryOp)
+JNI_METHOD(brush_behavior, BinaryOpNodeNative, jlong, createBinaryOp)
 (JNIEnv* env, jobject thiz, jint operation) {
   return ValidateAndHoistNodeOrThrow(
       BrushBehavior::BinaryOpNode{
@@ -211,7 +211,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createBinaryOp)
       env);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createInterpolation)
+JNI_METHOD(brush_behavior, InterpolationNodeNative, jlong, createInterpolation)
 (JNIEnv* env, jobject thiz, jint interpolation) {
   return ValidateAndHoistNodeOrThrow(
       BrushBehavior::InterpolationNode{
@@ -221,7 +221,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createInterpolation)
       env);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createTarget)
+JNI_METHOD(brush_behavior, TargetNodeNative, jlong, createTarget)
 (JNIEnv* env, jobject thiz, jint target, jfloat target_modifier_start,
  jfloat target_modifier_end) {
   return ValidateAndHoistNodeOrThrow(
@@ -232,7 +232,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createTarget)
       env);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createPolarTarget)
+JNI_METHOD(brush_behavior, PolarTargetNodeNative, jlong, createPolarTarget)
 (JNIEnv* env, jobject thiz, jint polar_target, jfloat angle_range_start,
  jfloat angle_range_end, jfloat magnitude_range_start,
  jfloat magnitude_range_end) {
@@ -245,12 +245,12 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jlong, createPolarTarget)
       env);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, void, free)
+JNI_METHOD(brush_behavior, NodeNative, void, free)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   DeleteNativeBrushBehaviorNode(node_native_pointer);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getNodeType)
+JNI_METHOD(brush_behavior, NodeNative, jint, getNodeType)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   constexpr auto visitor = absl::Overload{
       [](const BrushBehavior::SourceNode&) { return kSourceNode; },
@@ -273,28 +273,29 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getNodeType)
 
 // SourceNode accessors:
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getSourceInt)
+JNI_METHOD(brush_behavior, SourceNodeNative, jint, getSourceInt)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return static_cast<jint>(std::get<BrushBehavior::SourceNode>(
                                CastToBrushBehaviorNode(node_native_pointer))
                                .source);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getSourceValueRangeStart)
+JNI_METHOD(brush_behavior, SourceNodeNative, jfloat, getSourceValueRangeStart)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::SourceNode>(
              CastToBrushBehaviorNode(node_native_pointer))
       .source_value_range[0];
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getSourceValueRangeEnd)
+JNI_METHOD(brush_behavior, SourceNodeNative, jfloat, getSourceValueRangeEnd)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::SourceNode>(
              CastToBrushBehaviorNode(node_native_pointer))
       .source_value_range[1];
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getSourceOutOfRangeBehaviorInt)
+JNI_METHOD(brush_behavior, SourceNodeNative, jint,
+           getSourceOutOfRangeBehaviorInt)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return static_cast<jint>(std::get<BrushBehavior::SourceNode>(
                                CastToBrushBehaviorNode(node_native_pointer))
@@ -303,7 +304,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getSourceOutOfRangeBehaviorInt)
 
 // ConstantNode accessors:
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getConstantValue)
+JNI_METHOD(brush_behavior, ConstantNodeNative, jfloat, getConstantValue)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::ConstantNode>(
              CastToBrushBehaviorNode(node_native_pointer))
@@ -312,21 +313,21 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getConstantValue)
 
 // NoiseNode accessors:
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getNoiseSeed)
+JNI_METHOD(brush_behavior, NoiseNodeNative, jint, getNoiseSeed)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return static_cast<jint>(std::get<BrushBehavior::NoiseNode>(
                                CastToBrushBehaviorNode(node_native_pointer))
                                .seed);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getNoiseVaryOverInt)
+JNI_METHOD(brush_behavior, NoiseNodeNative, jint, getNoiseVaryOverInt)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return static_cast<jint>(std::get<BrushBehavior::NoiseNode>(
                                CastToBrushBehaviorNode(node_native_pointer))
                                .vary_over);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getNoiseBasePeriod)
+JNI_METHOD(brush_behavior, NoiseNodeNative, jfloat, getNoiseBasePeriod)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::NoiseNode>(
              CastToBrushBehaviorNode(node_native_pointer))
@@ -335,7 +336,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getNoiseBasePeriod)
 
 // ToolTypeFilterNode accessors:
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jboolean,
+JNI_METHOD(brush_behavior, ToolTypeFilterNodeNative, jboolean,
            getToolTypeFilterMouseEnabled)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::ToolTypeFilterNode>(
@@ -343,7 +344,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jboolean,
       .enabled_tool_types.mouse;
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jboolean,
+JNI_METHOD(brush_behavior, ToolTypeFilterNodeNative, jboolean,
            getToolTypeFilterTouchEnabled)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::ToolTypeFilterNode>(
@@ -351,7 +352,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jboolean,
       .enabled_tool_types.touch;
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jboolean,
+JNI_METHOD(brush_behavior, ToolTypeFilterNodeNative, jboolean,
            getToolTypeFilterStylusEnabled)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::ToolTypeFilterNode>(
@@ -359,7 +360,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jboolean,
       .enabled_tool_types.stylus;
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jboolean,
+JNI_METHOD(brush_behavior, ToolTypeFilterNodeNative, jboolean,
            getToolTypeFilterUnknownEnabled)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::ToolTypeFilterNode>(
@@ -369,14 +370,14 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jboolean,
 
 // DampingNode accessors:
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getDampingSourceInt)
+JNI_METHOD(brush_behavior, DampingNodeNative, jint, getDampingSourceInt)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return static_cast<jint>(std::get<BrushBehavior::DampingNode>(
                                CastToBrushBehaviorNode(node_native_pointer))
                                .damping_source);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getDampingGap)
+JNI_METHOD(brush_behavior, DampingNodeNative, jfloat, getDampingGap)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::DampingNode>(
              CastToBrushBehaviorNode(node_native_pointer))
@@ -385,39 +386,39 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getDampingGap)
 
 // ResponseNode accessors:
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jlong,
-           newCopyOfResponseEasingFunction)
+JNI_METHOD(brush_behavior, ResponseNodeNative, jlong, getResponseCurvePointer)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
-  return NewNativeEasingFunction(
-      std::get<BrushBehavior::ResponseNode>(
-          CastToBrushBehaviorNode(node_native_pointer))
-          .response_curve);
+  return reinterpret_cast<jlong>(
+      &std::get<BrushBehavior::ResponseNode>(
+           CastToBrushBehaviorNode(node_native_pointer))
+           .response_curve);
 }
 
 // IntegralNode accessors:
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getIntegrateOverInt)
+JNI_METHOD(brush_behavior, IntegralNodeNative, jint, getIntegrateOverInt)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return static_cast<jint>(std::get<BrushBehavior::IntegralNode>(
                                CastToBrushBehaviorNode(node_native_pointer))
                                .integrate_over);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getIntegralValueRangeStart)
+JNI_METHOD(brush_behavior, IntegralNodeNative, jfloat,
+           getIntegralValueRangeStart)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::IntegralNode>(
              CastToBrushBehaviorNode(node_native_pointer))
       .integral_value_range[0];
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getIntegralValueRangeEnd)
+JNI_METHOD(brush_behavior, IntegralNodeNative, jfloat, getIntegralValueRangeEnd)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::IntegralNode>(
              CastToBrushBehaviorNode(node_native_pointer))
       .integral_value_range[1];
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint,
+JNI_METHOD(brush_behavior, IntegralNodeNative, jint,
            getIntegralOutOfRangeBehaviorInt)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return static_cast<jint>(std::get<BrushBehavior::IntegralNode>(
@@ -427,7 +428,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jint,
 
 // BinaryOpNode accessors:
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getBinaryOperationInt)
+JNI_METHOD(brush_behavior, BinaryOpNodeNative, jint, getBinaryOperationInt)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return static_cast<jint>(std::get<BrushBehavior::BinaryOpNode>(
                                CastToBrushBehaviorNode(node_native_pointer))
@@ -436,7 +437,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getBinaryOperationInt)
 
 // InterpolationNode accessors:
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getInterpolationInt)
+JNI_METHOD(brush_behavior, InterpolationNodeNative, jint, getInterpolationInt)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return static_cast<jint>(std::get<BrushBehavior::InterpolationNode>(
                                CastToBrushBehaviorNode(node_native_pointer))
@@ -445,21 +446,22 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getInterpolationInt)
 
 // TargetNode accessors:
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getTargetInt)
+JNI_METHOD(brush_behavior, TargetNodeNative, jint, getTargetInt)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return static_cast<jint>(std::get<BrushBehavior::TargetNode>(
                                CastToBrushBehaviorNode(node_native_pointer))
                                .target);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getTargetModifierRangeStart)
+JNI_METHOD(brush_behavior, TargetNodeNative, jfloat,
+           getTargetModifierRangeStart)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::TargetNode>(
              CastToBrushBehaviorNode(node_native_pointer))
       .target_modifier_range[0];
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getTargetModifierRangeEnd)
+JNI_METHOD(brush_behavior, TargetNodeNative, jfloat, getTargetModifierRangeEnd)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::TargetNode>(
              CastToBrushBehaviorNode(node_native_pointer))
@@ -468,14 +470,14 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getTargetModifierRangeEnd)
 
 // PolarTargetNode accessors:
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jint, getPolarTargetInt)
+JNI_METHOD(brush_behavior, PolarTargetNodeNative, jint, getPolarTargetInt)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return static_cast<jint>(std::get<BrushBehavior::PolarTargetNode>(
                                CastToBrushBehaviorNode(node_native_pointer))
                                .target);
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat,
+JNI_METHOD(brush_behavior, PolarTargetNodeNative, jfloat,
            getPolarTargetAngleRangeStart)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::PolarTargetNode>(
@@ -483,14 +485,15 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat,
       .angle_range[0];
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat, getPolarTargetAngleRangeEnd)
+JNI_METHOD(brush_behavior, PolarTargetNodeNative, jfloat,
+           getPolarTargetAngleRangeEnd)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::PolarTargetNode>(
              CastToBrushBehaviorNode(node_native_pointer))
       .angle_range[1];
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat,
+JNI_METHOD(brush_behavior, PolarTargetNodeNative, jfloat,
            getPolarTargetMagnitudeRangeStart)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::PolarTargetNode>(
@@ -498,7 +501,7 @@ JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat,
       .magnitude_range[0];
 }
 
-JNI_METHOD(brush, BrushBehaviorNodeNative, jfloat,
+JNI_METHOD(brush_behavior, PolarTargetNodeNative, jfloat,
            getPolarTargetMagnitudeRangeEnd)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
   return std::get<BrushBehavior::PolarTargetNode>(

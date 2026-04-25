@@ -275,10 +275,14 @@ void AsUnitVecMagnitudeIsOne(Vec vec) {
 FUZZ_TEST(VecTest, AsUnitVecMagnitudeIsOne).WithDomains(NotNanVec());
 
 void AsUnitVecDirectionIsUnchanged(Vec vec) {
-  EXPECT_THAT(vec.AsUnitVec().Direction(), AngleEq(vec.Direction()))
+  // Subnormal vectors get scaled up by 2^20 before conversion, and there's
+  // some room for error due to floating-point quantization.
+  EXPECT_THAT(vec.AsUnitVec().Direction(), AngleNear(vec.Direction(), 1e-6f))
       << "Where vec is: " << testing::PrintToString(vec)
-      << "\nAnd vec.AsUnitVec() is: "
-      << testing::PrintToString(vec.AsUnitVec());
+      << "\nAnd vec.AsUnitVec() is: " << testing::PrintToString(vec.AsUnitVec())
+      << "\nDifference in radians: "
+      << testing::PrintToString(
+             (vec.AsUnitVec().Direction() - vec.Direction()).ValueInRadians());
 }
 FUZZ_TEST(VecTest, AsUnitVecDirectionIsUnchanged).WithDomains(NotNanVec());
 

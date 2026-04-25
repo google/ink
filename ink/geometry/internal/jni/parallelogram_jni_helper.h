@@ -17,22 +17,24 @@
 
 #include <jni.h>
 
-#include "ink/geometry/quad.h"
+#include "ink/geometry/internal/jni/affine_transform_native.h"
 
 namespace ink::jni {
 
 // Calls back into the JVM to create a new ImmutableParallelogram object from
-// the provided Quad. The caller must check if an exception was thrown by this
+// the provided input. The caller must check if an exception was thrown by this
 // call, e.g. with env->ExceptionCheck(). If an exception was thrown, the caller
 // must bail out instead of continuing execution.
-jobject CreateJImmutableParallelogramOrThrow(JNIEnv* env, const Quad& quad);
+jobject CreateJImmutableParallelogramOrThrow(
+    JNIEnv* env, const AffineTransformNative_Parallelogram& parallelogram);
 
 // Calls back into the JVM to populate an existing MutableParallelogram object
-// with the provided Quad. The caller must check if an exception was thrown by
+// with the provided input. The caller must check if an exception was thrown by
 // this call, e.g. with env->ExceptionCheck(). If an exception was thrown, the
 // caller must bail out instead of continuing execution.
-void FillJMutableParallelogramOrThrow(JNIEnv* env, const Quad& quad,
-                                      jobject mutable_parallelogram);
+void FillJMutableParallelogramOrThrow(
+    JNIEnv* env, const AffineTransformNative_Parallelogram& parallelogram,
+    jobject mutable_parallelogram);
 
 }  // namespace ink::jni
 

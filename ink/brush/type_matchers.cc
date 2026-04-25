@@ -374,10 +374,10 @@ Matcher<BrushFamily::InputModel> BrushFamilyInputModelEqMatcher(
     const BrushFamily::InputModel& expected) {
   return std::visit(
       absl::Overload(
-          [](const BrushFamily::ExperimentalNaiveModel& input_model)
+          [](const BrushFamily::PassthroughModel& input_model)
               -> Matcher<BrushFamily::InputModel> {
             // no fields to match
-            return VariantWith<BrushFamily::ExperimentalNaiveModel>(_);
+            return VariantWith<BrushFamily::PassthroughModel>(_);
           },
           [](const BrushFamily::SlidingWindowModel& input_model)
               -> Matcher<BrushFamily::InputModel> {

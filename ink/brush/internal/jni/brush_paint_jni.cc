@@ -24,14 +24,14 @@
 #include "absl/types/span.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/color_function.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/geometry/angle.h"
-#include "ink/geometry/internal/jni/mesh_format_jni_helper.h"
+#include "ink/geometry/internal/jni/mesh_format_native_helper.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/vec.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_string_util.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 
 namespace {
 
@@ -43,17 +43,17 @@ using ::ink::Vec;
 using ::ink::brush_internal::AddAttributeIdsRequiredByPaint;
 using ::ink::brush_internal::ValidateBrushPaint;
 using ::ink::brush_internal::ValidateBrushPaintTextureLayer;
-using ::ink::jni::CastToBrushPaint;
-using ::ink::jni::CastToColorFunction;
-using ::ink::jni::CastToMeshFormat;
-using ::ink::jni::CastToTextureLayer;
-using ::ink::jni::DeleteNativeBrushPaint;
-using ::ink::jni::DeleteNativeTextureLayer;
 using ::ink::jni::JStringToStdString;
-using ::ink::jni::NewNativeBrushPaint;
-using ::ink::jni::NewNativeColorFunction;
-using ::ink::jni::NewNativeTextureLayer;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::CastToBrushPaint;
+using ::ink::native::CastToColorFunction;
+using ::ink::native::CastToMeshFormat;
+using ::ink::native::CastToTextureLayer;
+using ::ink::native::DeleteNativeBrushPaint;
+using ::ink::native::DeleteNativeTextureLayer;
+using ::ink::native::NewNativeBrushPaint;
+using ::ink::native::NewNativeColorFunction;
+using ::ink::native::NewNativeTextureLayer;
 
 BrushPaint::TextureSizeUnit JIntToSizeUnit(jint val) {
   return static_cast<BrushPaint::TextureSizeUnit>(val);

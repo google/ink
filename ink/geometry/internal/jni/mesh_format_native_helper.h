@@ -12,35 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INK_GEOMETRY_INTERNAL_JNI_MESH_FORMAT_JNI_HELPER_H_
-#define INK_GEOMETRY_INTERNAL_JNI_MESH_FORMAT_JNI_HELPER_H_
+#ifndef INK_GEOMETRY_INTERNAL_JNI_MESH_FORMAT_NATIVE_HELPER_H_
+#define INK_GEOMETRY_INTERNAL_JNI_MESH_FORMAT_NATIVE_HELPER_H_
 
-#include <jni.h>
+#include <cstdint>
 
 #include "absl/log/absl_check.h"
 #include "ink/geometry/mesh_format.h"
 
-namespace ink::jni {
+namespace ink::native {
 
-// Creates a new stack-allocated copy of the `MeshFormat` and returns a pointer
-// to it as a jlong, suitable for wrapping in a Kotlin MeshFormat.
-inline jlong NewNativeMeshFormat(const MeshFormat& mesh_format) {
-  return reinterpret_cast<jlong>(new MeshFormat(mesh_format));
+// Creates a new heap-allocated copy of the `MeshFormat` and returns a pointer
+// to it as a 64-bit integer, suitable for wrapping in a Kotlin MeshFormat.
+inline int64_t NewNativeMeshFormat(const MeshFormat& mesh_format) {
+  return reinterpret_cast<int64_t>(new MeshFormat(mesh_format));
 }
 
 // Casts a Kotlin MeshFormat.nativePointer to a C++ MeshFormat. The returned
 // MeshFormat is a const ref as the Kotlin MeshFormat is immutable.
-inline const MeshFormat& CastToMeshFormat(jlong native_pointer) {
+inline const MeshFormat& CastToMeshFormat(int64_t native_pointer) {
   ABSL_CHECK_NE(native_pointer, 0);
   return *reinterpret_cast<MeshFormat*>(native_pointer);
 }
 
 // Frees a Kotlin MeshFormat.nativePointer.
-inline void DeleteNativeMeshFormat(jlong native_pointer) {
+inline void DeleteNativeMeshFormat(int64_t native_pointer) {
   if (native_pointer == 0) return;
   delete reinterpret_cast<MeshFormat*>(native_pointer);
 }
 
-}  // namespace ink::jni
+}  // namespace ink::native
 
-#endif  // INK_GEOMETRY_INTERNAL_JNI_MESH_FORMAT_JNI_HELPER_H_
+#endif  // INK_GEOMETRY_INTERNAL_JNI_MESH_FORMAT_NATIVE_HELPER_H_

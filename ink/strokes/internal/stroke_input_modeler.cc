@@ -25,7 +25,7 @@
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/modeled_stroke_input.h"
 #include "ink/strokes/internal/stroke_input_modeler/input_model_impl.h"
-#include "ink/strokes/internal/stroke_input_modeler/naive_input_modeler.h"
+#include "ink/strokes/internal/stroke_input_modeler/passthrough_input_modeler.h"
 #include "ink/strokes/internal/stroke_input_modeler/sliding_window_input_modeler.h"
 #include "ink/types/duration.h"
 
@@ -33,9 +33,9 @@ namespace ink::strokes_internal {
 namespace {
 
 absl_nonnull std::unique_ptr<InputModelImpl> CreateInputModeler(
-    const BrushFamily::ExperimentalNaiveModel& naive_model,
+    const BrushFamily::PassthroughModel& passthrough_model,
     float brush_epsilon) {
-  return std::make_unique<NaiveInputModeler>();
+  return std::make_unique<PassthroughInputModeler>();
 }
 
 absl_nonnull std::unique_ptr<InputModelImpl> CreateInputModeler(

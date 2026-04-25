@@ -16,8 +16,11 @@
 
 #include <jni.h>
 
+#include "ink/geometry/internal/jni/affine_transform_native.h"
 #include "ink/geometry/internal/jni/box_native.h"
+#include "ink/geometry/internal/jni/mesh_native.h"
 #include "ink/geometry/internal/jni/parallelogram_native.h"
+#include "ink/geometry/internal/jni/partitioned_mesh_native.h"
 #include "ink/geometry/internal/jni/vec_native.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/vec.h"
@@ -51,6 +54,11 @@ jobject CreateJImmutableVecOrThrow(JNIEnv* env,
   return CreateJImmutableVecOrThrow(env, vec.x, vec.y);
 }
 
+jobject CreateJImmutableVecOrThrow(JNIEnv* env,
+                                   const AffineTransformNative_Vec& vec) {
+  return CreateJImmutableVecOrThrow(env, vec.x, vec.y);
+}
+
 void FillJMutableVecOrThrow(JNIEnv* env, float x, float y,
                             jobject mutable_vec) {
   env->CallVoidMethod(mutable_vec, MethodMutableVecSetX(env), x);
@@ -78,6 +86,16 @@ void FillJMutableVecOrThrow(JNIEnv* env, const BoxNative_Vec& vec,
 }
 
 void FillJMutableVecOrThrow(JNIEnv* env, const ParallelogramNative_Vec& vec,
+                            jobject mutable_vec) {
+  FillJMutableVecOrThrow(env, vec.x, vec.y, mutable_vec);
+}
+
+void FillJMutableVecOrThrow(JNIEnv* env, const MeshNative_Vec& vec,
+                            jobject mutable_vec) {
+  FillJMutableVecOrThrow(env, vec.x, vec.y, mutable_vec);
+}
+
+void FillJMutableVecOrThrow(JNIEnv* env, const PartitionedMeshNative_Vec& vec,
                             jobject mutable_vec) {
   FillJMutableVecOrThrow(env, vec.x, vec.y, mutable_vec);
 }

@@ -26,10 +26,10 @@
 #include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_string_util.h"
-#include "ink/jni/internal/jni_throw_util.h"
+#include "ink/jni/internal/status_jni_helper.h"
 #include "ink/types/duration.h"
 
 namespace {
@@ -37,27 +37,27 @@ namespace {
 using ::ink::BrushCoat;
 using ::ink::BrushFamily;
 using ::ink::Duration32;
-using ::ink::jni::CastToBrushCoat;
-using ::ink::jni::CastToBrushFamily;
-using ::ink::jni::CastToInputModel;
-using ::ink::jni::DeleteNativeBrushFamily;
-using ::ink::jni::DeleteNativeInputModel;
 using ::ink::jni::JStringToStdString;
-using ::ink::jni::NewNativeBrushCoat;
-using ::ink::jni::NewNativeBrushFamily;
-using ::ink::jni::NewNativeInputModel;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::CastToBrushCoat;
+using ::ink::native::CastToBrushFamily;
+using ::ink::native::CastToInputModel;
+using ::ink::native::DeleteNativeBrushFamily;
+using ::ink::native::DeleteNativeInputModel;
+using ::ink::native::NewNativeBrushCoat;
+using ::ink::native::NewNativeBrushFamily;
+using ::ink::native::NewNativeInputModel;
 
 // 0 is reserved for internal use.
 // 1 is reserved (was previously the "spring model").
 // 2 is reserved (was previously the experimental "raw position" model).
-constexpr jint kExperimentalNaiveModel = 3;
+constexpr jint kPassthroughModel = 3;
 constexpr jint kSlidingWindowModel = 4;
 
 BrushFamily::InputModel TypeToInputModel(jint input_model_value) {
   switch (input_model_value) {
-    case kExperimentalNaiveModel:
-      return BrushFamily::ExperimentalNaiveModel();
+    case kPassthroughModel:
+      return BrushFamily::PassthroughModel();
     case kSlidingWindowModel:
       return BrushFamily::SlidingWindowModel();
     default:
@@ -67,9 +67,7 @@ BrushFamily::InputModel TypeToInputModel(jint input_model_value) {
 
 jint InputModelType(const BrushFamily::InputModel& input_model) {
   constexpr auto visitor = absl::Overload{
-      [](const BrushFamily::ExperimentalNaiveModel&) {
-        return kExperimentalNaiveModel;
-      },
+      [](const BrushFamily::PassthroughModel&) { return kPassthroughModel; },
       [](const BrushFamily::SlidingWindowModel&) {
         return kSlidingWindowModel;
       },
@@ -157,6 +155,11 @@ JNI_METHOD(brush, BrushFamilyNative, jint, calculateMinimumRequiredVersion)
 (JNIEnv* env, jobject object, jlong native_pointer) {
   const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
   return brush_family.CalculateMinimumRequiredVersion().value();
+}
+
+JNI_METHOD(brush, BrushFamilyNative, jboolean, hasFallbacks)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  return CastToBrushFamily(native_pointer).HasFallbacks();
 }
 
 JNI_METHOD(brush, InputModelNative, jlong, createNoParametersModel)

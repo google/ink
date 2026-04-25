@@ -344,6 +344,13 @@ Version CalculateMinimumRequiredVersion(
 Version CalculateMinimumRequiredVersion(const BrushPaint& paint) {
   Version max_version = CalculateMinimumRequiredVersion(paint.self_overlap);
   for (const auto& layer : paint.texture_layers) {
+    // LINT.IfChange(animation_defaults)
+    if (layer.animation_frames != 1 || layer.animation_rows != 1 ||
+        layer.animation_columns != 1 ||
+        layer.animation_duration != absl::Milliseconds(1000)) {
+      return Version::kDevelopment();
+    }
+    // LINT.ThenChange(../storage/proto/brush_family.proto:animation_defaults)
     max_version = std::max(max_version, CalculateMinimumRequiredVersion(layer));
   }
   for (const ColorFunction& color_function : paint.color_functions) {

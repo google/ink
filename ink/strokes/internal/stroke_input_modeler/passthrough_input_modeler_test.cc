@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/strokes/internal/stroke_input_modeler/naive_input_modeler.h"
-
 #include <vector>
 
 #include "gmock/gmock.h"
@@ -89,7 +87,7 @@ std::vector<StrokeInputBatch> MakeStylusInputBatchSequence() {
   return batches;
 }
 
-TEST(NaiveInputModelerTest, ModeledInputsMatchRawInputs) {
+TEST(PassthroughInputModelerTest, ModeledInputsMatchRawInputs) {
   std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
   StrokeInputBatch synthetic_real_inputs;
   for (const StrokeInputBatch& input_batch : MakeStylusInputBatchSequence()) {
@@ -97,7 +95,7 @@ TEST(NaiveInputModelerTest, ModeledInputsMatchRawInputs) {
   }
 
   StrokeInputModeler modeler;
-  modeler.StartStroke(BrushFamily::ExperimentalNaiveModel{},
+  modeler.StartStroke(BrushFamily::PassthroughModel{},
                       /*brush_epsilon=*/0.001);
   modeler.ExtendStroke(synthetic_real_inputs, {}, Duration32::Seconds(5));
 
@@ -114,11 +112,11 @@ TEST(NaiveInputModelerTest, ModeledInputsMatchRawInputs) {
   }
 }
 
-TEST(NaiveInputModelerTest, RealAndCompleteElapsedTime) {
+TEST(PassthroughInputModelerTest, RealAndCompleteElapsedTime) {
   std::vector<StrokeInputBatch> input_batches = MakeStylusInputBatchSequence();
 
   StrokeInputModeler modeler;
-  modeler.StartStroke(BrushFamily::ExperimentalNaiveModel{},
+  modeler.StartStroke(BrushFamily::PassthroughModel{},
                       /*brush_epsilon=*/0.001);
   modeler.ExtendStroke(input_batches[1], input_batches[2], Duration32::Zero());
 
@@ -132,20 +130,21 @@ TEST(NaiveInputModelerTest, RealAndCompleteElapsedTime) {
 
 void CanModelAnyStrokeInputBatch(const StrokeInputBatch& inputs) {
   StrokeInputModeler modeler;
-  modeler.StartStroke(BrushFamily::ExperimentalNaiveModel{},
+  modeler.StartStroke(BrushFamily::PassthroughModel{},
                       /*brush_epsilon=*/1);
   modeler.ExtendStroke(inputs, {}, Duration32::Zero());
-  // The `NaiveInputModeler` always produces exactly one modeled input for each
-  // raw input.
+  // The `PassthroughInputModeler` always produces exactly one modeled input for
+  // each raw input.
   EXPECT_EQ(modeler.GetModeledInputs().size(), inputs.Size());
   // Since there were no predicted inputs, all modeled inputs should be real.
   EXPECT_EQ(modeler.GetState().real_input_count,
             modeler.GetModeledInputs().size());
-  // For the `NaiveInputModeler`, all real modeled inputs are always stable.
+  // For the `PassthroughInputModeler`, all real modeled inputs are always
+  // stable.
   EXPECT_EQ(modeler.GetState().stable_input_count,
             modeler.GetState().real_input_count);
 }
-FUZZ_TEST(NaiveInputModelerTest, CanModelAnyStrokeInputBatch)
+FUZZ_TEST(PassthroughInputModelerTest, CanModelAnyStrokeInputBatch)
     .WithDomains(ArbitraryStrokeInputBatch());
 
 }  // namespace

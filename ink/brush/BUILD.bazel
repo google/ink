@@ -129,6 +129,18 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "brush_family_internal_accessor",
+    hdrs = ["internal/brush_family_internal_accessor.h"],
+    visibility = [
+        "//ink/brush:__subpackages__",
+        "//ink/storage:__subpackages__",
+    ],
+    deps = [
+        ":brush_family",
+    ],
+)
+
 cc_test(
     name = "brush_family_test",
     srcs = ["brush_family_test.cc"],

@@ -123,7 +123,7 @@ cc_library(
         "//ink/brush:brush_family",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/strokes/internal/stroke_input_modeler:input_model_impl",
-        "//ink/strokes/internal/stroke_input_modeler:naive_input_modeler",
+        "//ink/strokes/internal/stroke_input_modeler:passthrough_input_modeler",
         "//ink/strokes/internal/stroke_input_modeler:sliding_window_input_modeler",
         "//ink/types:duration",
         "@com_google_absl//absl/base:nullability",

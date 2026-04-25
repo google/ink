@@ -22,12 +22,9 @@ namespace ink::jni {
 
 namespace {
 
-static jclass class_illegal_state_exception = nullptr;
-static jclass class_illegal_argument_exception = nullptr;
-static jclass class_no_such_element_exception = nullptr;
-static jclass class_index_out_of_bounds_exception = nullptr;
-static jclass class_unsupported_operation_exception = nullptr;
-static jclass class_runtime_exception = nullptr;
+static jclass class_native_exception_handling = nullptr;
+static jmethodID method_native_exception_handling_throw_for_non_ok_status =
+    nullptr;
 
 static jclass class_immutable_vec = nullptr;
 static jmethodID method_immutable_vec_init_x_y = nullptr;
@@ -101,13 +98,8 @@ void UnloadJvmInterface(JNIEnv* env) {
   // lazily. This library is monolithic, but the library that consumes it is
   // more modular. This avoids needing to attempt to load classes that are not
   // actually defined.
-
-  DeleteCachedClass(env, class_illegal_state_exception);
-  DeleteCachedClass(env, class_illegal_argument_exception);
-  DeleteCachedClass(env, class_no_such_element_exception);
-  DeleteCachedClass(env, class_index_out_of_bounds_exception);
-  DeleteCachedClass(env, class_unsupported_operation_exception);
-  DeleteCachedClass(env, class_runtime_exception);
+  DeleteCachedClass(env, class_native_exception_handling);
+  method_native_exception_handling_throw_for_non_ok_status = nullptr;
 
   DeleteCachedClass(env, class_immutable_vec);
   method_immutable_vec_init_x_y = nullptr;
@@ -143,52 +135,21 @@ void UnloadJvmInterface(JNIEnv* env) {
   method_stroke_input_update = nullptr;
 }
 
-jclass ClassIllegalStateException(JNIEnv* env) {
-  if (class_illegal_state_exception == nullptr) {
-    class_illegal_state_exception =
-        FindAndCacheClass(env, "java/lang/IllegalStateException");
+jclass ClassNativeExceptionHandling(JNIEnv* env) {
+  if (class_native_exception_handling == nullptr) {
+    class_native_exception_handling = FindAndCacheClass(
+        env, "androidx/ink/nativeloader/NativeExceptionHandling");
   }
-  return class_illegal_state_exception;
+  return class_native_exception_handling;
 }
 
-jclass ClassIllegalArgumentException(JNIEnv* env) {
-  if (class_illegal_argument_exception == nullptr) {
-    class_illegal_argument_exception =
-        FindAndCacheClass(env, "java/lang/IllegalArgumentException");
+jmethodID MethodNativeExceptionHandlingThrowForNonOkStatus(JNIEnv* env) {
+  if (method_native_exception_handling_throw_for_non_ok_status == nullptr) {
+    method_native_exception_handling_throw_for_non_ok_status =
+        GetStaticMethodId(env, ClassNativeExceptionHandling(env),
+                          "throwForNonOkStatus", "(ILjava/lang/String;)V");
   }
-  return class_illegal_argument_exception;
-}
-
-jclass ClassNoSuchElementException(JNIEnv* env) {
-  if (class_no_such_element_exception == nullptr) {
-    class_no_such_element_exception =
-        FindAndCacheClass(env, "java/util/NoSuchElementException");
-  }
-  return class_no_such_element_exception;
-}
-
-jclass ClassIndexOutOfBoundsException(JNIEnv* env) {
-  if (class_index_out_of_bounds_exception == nullptr) {
-    class_index_out_of_bounds_exception =
-        FindAndCacheClass(env, "java/lang/IndexOutOfBoundsException");
-  }
-  return class_index_out_of_bounds_exception;
-}
-
-jclass ClassUnsupportedOperationException(JNIEnv* env) {
-  if (class_unsupported_operation_exception == nullptr) {
-    class_unsupported_operation_exception =
-        FindAndCacheClass(env, "java/lang/UnsupportedOperationException");
-  }
-  return class_unsupported_operation_exception;
-}
-
-jclass ClassRuntimeException(JNIEnv* env) {
-  if (class_runtime_exception == nullptr) {
-    class_runtime_exception =
-        FindAndCacheClass(env, "java/lang/RuntimeException");
-  }
-  return class_runtime_exception;
+  return method_native_exception_handling_throw_for_non_ok_status;
 }
 
 jclass ClassImmutableVec(JNIEnv* env) {

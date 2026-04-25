@@ -17,7 +17,9 @@
 
 #include <jni.h>
 
+#include "ink/geometry/internal/jni/mesh_native.h"
 #include "ink/geometry/internal/jni/parallelogram_native.h"
+#include "ink/geometry/internal/jni/partitioned_mesh_native.h"
 #include "ink/geometry/rect.h"
 
 namespace ink::jni {
@@ -31,6 +33,9 @@ jobject CreateJImmutableBoxOrThrow(JNIEnv* env, float x_min, float y_min,
 jobject CreateJImmutableBoxOrThrow(JNIEnv* env, const Rect& rect);
 jobject CreateJImmutableBoxOrThrow(JNIEnv* env,
                                    const ParallelogramNative_Box& box);
+jobject CreateJImmutableBoxOrThrow(JNIEnv* env, const MeshNative_Box& box);
+jobject CreateJImmutableBoxOrThrow(JNIEnv* env,
+                                   const PartitionedMeshNative_Box& box);
 
 // Calls back into the JVM to populate an existing MutableBox object with the
 // provided input. The caller must check if an exception was thrown by this

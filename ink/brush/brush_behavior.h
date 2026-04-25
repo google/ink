@@ -107,8 +107,6 @@ struct BrushBehavior {
   // List of input properties along with their units that can act as sources for
   // a `BrushBehavior`.
   //
-  // This should match the enum in BrushBehavior.kt.
-  //
   // Behaviors that consider properties of the stroke input do not consider
   // alterations to the visible position of that point in the stroke by brush
   // behaviors that modify that position (e.g.
@@ -255,7 +253,6 @@ struct BrushBehavior {
 
   // List of tip properties that can be modified by a `BrushBehavior`.
   //
-  // This should match the enum in BrushBehavior.kt.
   enum class Target : int8_t {
     // `kWidthMultiplier` and `kHeightMultiplier` scale the brush-tip size along
     // one dimension, starting from the values calculated using
@@ -329,7 +326,6 @@ struct BrushBehavior {
 
   // List of vector tip properties that can be modified by a `BrushBehavior`.
   //
-  // This should match the enum in BrushBehavior.kt.
   enum class PolarTarget : int8_t {
     // Adds the vector to the brush tip's absolute x/y position in stroke space,
     // where the angle input is measured in radians and the magnitude input is
@@ -353,7 +349,6 @@ struct BrushBehavior {
   // The desired behavior when an input value is outside the bounds of
   // `source_value_range`.
   //
-  // This should match the enum in BrushBehavior.kt.
   enum class OutOfRange : int8_t {
     // Values outside the range will be clamped to not exceed the bounds.
     kClamp,
@@ -427,6 +422,7 @@ struct BrushBehavior {
   // LINT.ThenChange(
   //   fuzz_domains.cc:progress_domain,
   //   ../storage/proto/brush_family.proto:progress_domain,
+  //   ../../../third_party/java/androidx/ink/brush/main/behavior/ProgressDomain.kt:progress_domain,
   // )
 
   // An interpolation function for combining three values in an

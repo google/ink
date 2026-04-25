@@ -1,4 +1,4 @@
-// Copyright 2024-2025 Google LLC
+// Copyright 2024-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INK_JNI_INTERNAL_JNI_THROW_UTIL_H_
-#define INK_JNI_INTERNAL_JNI_THROW_UTIL_H_
+#ifndef INK_JNI_INTERNAL_STATUS_JNI_HELPER_H_
+#define INK_JNI_INTERNAL_STATUS_JNI_HELPER_H_
 
 #include <jni.h>
 
@@ -30,6 +30,12 @@ namespace ink::jni {
 // exception can be processed.
 void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status);
 
+// Version of ThrowExceptionFromStatus that can be used as a callback across the
+// C interface used for Kotlin-native interop. (That interface can't use JNIEnv
+// so it handles that as a void* pass-through.)
+void ThrowExceptionFromStatusCallback(void* jni_env, int status_code,
+                                      const char* status_string);
+
 }  // namespace ink::jni
 
-#endif  // INK_JNI_INTERNAL_JNI_THROW_UTIL_H_
+#endif  // INK_JNI_INTERNAL_STATUS_JNI_HELPER_H_

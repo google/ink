@@ -105,11 +105,14 @@ Version BrushFamily::CalculateMinimumRequiredVersion() const {
   return max_version;
 }
 
+bool BrushFamily::HasFallbacks() const {
+  return !opaque_decoded_proto_bytes_with_fallbacks_.empty();
+}
+
 namespace brush_internal {
 namespace {
 
-absl::Status ValidateInputModel(
-    const BrushFamily::ExperimentalNaiveModel& model) {
+absl::Status ValidateInputModel(const BrushFamily::PassthroughModel& model) {
   return absl::OkStatus();
 }
 
@@ -128,9 +131,8 @@ absl::Status ValidateInputModel(const BrushFamily::SlidingWindowModel& model) {
   return absl::OkStatus();
 }
 
-std::string ToFormattedString(
-    const BrushFamily::ExperimentalNaiveModel& model) {
-  return "ExperimentalNaiveModel";
+std::string ToFormattedString(const BrushFamily::PassthroughModel& model) {
+  return "PassthroughModel";
 }
 
 std::string ToFormattedString(const BrushFamily::SlidingWindowModel& model) {

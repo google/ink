@@ -26,7 +26,6 @@ cc_library(
         ":brush_serialization_jni",
         ":stroke_input_batch_serialization_jni",
     ],
-    alwayslink = 1,
 )
 
 cc_library(
@@ -36,7 +35,7 @@ cc_library(
     deps = [
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_proto_util",
-        "//ink/jni/internal:jni_throw_util",
+        "//ink/jni/internal:status_jni_helper",
         "//ink/storage:stroke_input_batch",
         "//ink/storage/proto:stroke_input_batch_cc_proto",
         "//ink/strokes/input:stroke_input_batch",
@@ -66,12 +65,13 @@ cc_library(
         "//ink/brush:brush_family",
         "//ink/brush:brush_paint",
         "//ink/brush:brush_tip",
-        "//ink/brush/internal/jni:brush_jni_helper",
+        "//ink/brush:version",
+        "//ink/brush/internal/jni:brush_native_helper",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_jvm_interface",
         "//ink/jni/internal:jni_proto_util",
         "//ink/jni/internal:jni_string_util",
-        "//ink/jni/internal:jni_throw_util",
+        "//ink/jni/internal:status_jni_helper",
         "//ink/storage:brush",
         "//ink/storage/proto:brush_cc_proto",
         "//ink/storage/proto:brush_family_cc_proto",

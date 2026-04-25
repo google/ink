@@ -30,9 +30,9 @@ using ::benchmark::internal::Benchmark;
 
 // LINT.IfChange(input_model_types)
 const std::array<absl::string_view, 2> input_model_names = {
-    "NaiveModel", "SlidingWindowModel"};
+    "PassthroughModel", "SlidingWindowModel"};
 const std::array<BrushFamily::InputModel, 2> input_models = {
-    BrushFamily::ExperimentalNaiveModel{}, BrushFamily::SlidingWindowModel{}};
+    BrushFamily::PassthroughModel{}, BrushFamily::SlidingWindowModel{}};
 // LINT.ThenChange(../../brush/brush_family.h:input_model_types)
 
 void TestCases(Benchmark* b) {

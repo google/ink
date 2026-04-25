@@ -18,6 +18,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
@@ -66,6 +67,12 @@ void EncodeBrushFamily(
     TextureBitmapProvider get_bitmap = [](absl::string_view id) {
       return std::nullopt;
     });
+void EncodeMultipleBrushFamilies(
+    const std::vector<BrushFamily>& families,
+    proto::BrushFamily& family_proto_out,
+    TextureBitmapProvider get_bitmap = [](absl::string_view id) {
+      return std::nullopt;
+    });
 void EncodeBrushFamilyTextureMap(
     const BrushFamily& family,
     google::protobuf::Map<std::string, std::string>& texture_id_to_bitmap_out,
@@ -88,10 +95,21 @@ absl::StatusOr<Brush> DecodeBrush(
         [](absl::string_view encoded_id, absl::string_view bitmap) {
           return std::string(encoded_id);
         },
-    // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.cc:decode_brush_get_client_texture_id)
+    // LINT.ThenChange(brush.cc:decode_brush_get_client_texture_id)
     Version max_version = Version::kMaxSupported());
 absl::StatusOr<Brush> DecodeBrush(const proto::Brush& brush_proto,
                                   Version max_version);
+absl::StatusOr<std::vector<BrushFamily>> DecodeMultipleBrushFamilies(
+    const proto::BrushFamily& family_proto,
+    // LINT.IfChange(decode_multiple_brush_families_get_client_texture_id)
+    ClientTextureIdProviderAndBitmapReceiver get_client_texture_id =
+        [](absl::string_view encoded_id, absl::string_view bitmap) {
+          return std::string(encoded_id);
+        },
+    // LINT.ThenChange(brush.cc:decode_multiple_brush_families_get_client_texture_id)
+    Version max_version = Version::kMaxSupported());
+absl::StatusOr<std::vector<BrushFamily>> DecodeMultipleBrushFamilies(
+    const proto::BrushFamily& family_proto, Version max_version);
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto,
     // LINT.IfChange(decode_brush_family_get_client_texture_id)
@@ -99,7 +117,7 @@ absl::StatusOr<BrushFamily> DecodeBrushFamily(
         [](absl::string_view encoded_id, absl::string_view bitmap) {
           return std::string(encoded_id);
         },
-    // LINT.ThenChange(//depot/google3/third_party/ink/storage/brush.cc:decode_brush_family_get_client_texture_id)
+    // LINT.ThenChange(brush.cc:decode_brush_family_get_client_texture_id)
     Version max_version = Version::kMaxSupported());
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
     const proto::BrushFamily& family_proto, Version max_version);

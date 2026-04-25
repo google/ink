@@ -14,12 +14,9 @@
 
 #include <jni.h>
 
-#include "ink/brush/brush.h"
-#include "ink/brush/internal/jni/brush_jni_helper.h"
-#include "ink/geometry/internal/jni/partitioned_mesh_jni_helper.h"
-#include "ink/geometry/partitioned_mesh.h"
+#include "ink/brush/internal/jni/brush_native_helper.h"
+#include "ink/geometry/internal/jni/partitioned_mesh_native_helper.h"
 #include "ink/jni/internal/jni_defines.h"
-#include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/jni/stroke_input_jni_helper.h"
 #include "ink/strokes/internal/jni/stroke_jni_helper.h"
 #include "ink/strokes/stroke.h"
@@ -27,14 +24,14 @@
 namespace {
 
 using ::ink::Stroke;
-using ::ink::jni::CastToBrush;
-using ::ink::jni::CastToPartitionedMesh;
 using ::ink::jni::CastToStroke;
 using ::ink::jni::CastToStrokeInputBatch;
 using ::ink::jni::DeleteNativeStroke;
-using ::ink::jni::NewNativePartitionedMesh;
 using ::ink::jni::NewNativeStroke;
 using ::ink::jni::NewNativeStrokeInputBatch;
+using ::ink::native::CastToBrush;
+using ::ink::native::CastToPartitionedMesh;
+using ::ink::native::NewNativePartitionedMesh;
 
 }  // namespace
 
