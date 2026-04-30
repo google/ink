@@ -23,6 +23,7 @@ cc_library(
     tags = ["keep_dep"],
     deps = [
         ":brush_behavior_jni",
+        ":brush_behavior_node_jni",
         ":brush_coat_jni",
         ":brush_family_jni",
         ":brush_jni",
@@ -42,6 +43,7 @@ filegroup(
 cc_library(
     name = "cinterop",
     deps = [
+        ":brush_behavior_node_native",
         ":easing_function_native",
     ],
 )
@@ -92,11 +94,45 @@ cc_library(
 )
 
 cc_library(
+    name = "brush_behavior_node_jni",
+    srcs = ["brush_behavior_node_jni.cc"],
+    tags = ["keep_dep"],
+    deps = [
+        ":brush_behavior_node_native",
+        ":brush_native_helper",
+        "//ink/brush",
+        "//ink/brush:brush_behavior",
+        "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_string_util",
+        "//ink/jni/internal:status_jni_helper",
+        "//ink/types:duration",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "brush_behavior_node_native",
+    srcs = ["brush_behavior_node_native.cc"],
+    hdrs = ["brush_behavior_node_native.h"],
+    deps = [
+        ":brush_native_helper",
+        "//ink/brush:brush_behavior",
+        "@com_google_absl//absl/status",
+    ],
+)
+
+cc_library(
     name = "brush_tip_jni",
     srcs = ["brush_tip_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":brush_behavior_jni",
         ":brush_native_helper",
         "//ink/brush",
         "//ink/brush:brush_behavior",
@@ -178,7 +214,6 @@ cc_library(
     srcs = ["stock_brushes_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":brush_coat_jni",
         ":brush_native_helper",
         "//ink/brush",
         "//ink/brush:brush_coat",
