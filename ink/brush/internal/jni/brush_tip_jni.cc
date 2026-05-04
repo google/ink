@@ -36,10 +36,16 @@ JNI_METHOD(brush, BrushTipNative, jlong, create)
       env->GetArrayLength(behavior_native_pointers_array);
   jlong* behavior_pointers =
       env->GetLongArrayElements(behavior_native_pointers_array, nullptr);
+  // Both `jlong` and `int64_t` are required to be 64-bit integers which JNI and
+  // Kotlin-cinterop respectively both map to Kotlin `Long`. However, on MacOS
+  // they represent two distinct (though equivalent) types, `jlong` is `long`
+  // but `int64_t` is `long long`.
+  static_assert(sizeof(jlong) == sizeof(int64_t));
   int64_t result = BrushTipNative_create(
       env, scale_x, scale_y, corner_rounding, slant_degrees, pinch,
       rotation_degrees, particle_gap_distance_scale,
-      particle_gap_duration_millis, behavior_pointers, num_behaviors,
+      particle_gap_duration_millis,
+      reinterpret_cast<int64_t*>(behavior_pointers), num_behaviors,
       &ThrowExceptionFromStatusCallback);
   env->ReleaseLongArrayElements(behavior_native_pointers_array,
                                 behavior_pointers, JNI_ABORT);

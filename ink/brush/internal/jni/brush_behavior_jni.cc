@@ -45,8 +45,13 @@ JNI_METHOD(brush, BrushBehaviorNative, jlong, createFromOrderedNodes)
   jlong* node_pointers =
       env->GetLongArrayElements(node_native_pointer_array, nullptr);
   ABSL_CHECK(node_pointers != nullptr);
+  // Both `jlong` and `int64_t` are required to be 64-bit integers which JNI and
+  // Kotlin-cinterop respectively both map to Kotlin `Long`. However, on MacOS
+  // they represent two distinct (though equivalent) types, `jlong` is `long`
+  // but `int64_t` is `long long`.
+  static_assert(sizeof(jlong) == sizeof(int64_t));
   int64_t result = BrushBehaviorNative_createFromOrderedNodes(
-      env, node_pointers, num_nodes,
+      env, reinterpret_cast<int64_t*>(node_pointers), num_nodes,
       JStringToStdString(env, developer_comment).c_str(),
       &ThrowExceptionFromStatusCallback);
   env->ReleaseLongArrayElements(
