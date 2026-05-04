@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
@@ -27,7 +28,7 @@ cc_binary(
     ],
     features = ["-legacy_whole_archive"],
     linkopts = select({
-        "@platforms//os:macos": [
+        "@platforms//os:ios": [
             "-Wl,-exported_symbols_list,$(location :exported_symbols.txt)",
         ],
         "//conditions:default": [
@@ -40,6 +41,11 @@ cc_binary(
     deps = [
         ":android_all_jni",
     ],
+)
+
+build_test(
+    name = "libink_so_build_test",
+    targets = [":libink.so"],
 )
 
 cc_library(

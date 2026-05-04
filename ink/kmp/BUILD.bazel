@@ -24,6 +24,7 @@ package(
 cc_static_library(
     name = "ink",
     deps = [
+        "//ink/brush/internal/jni:cinterop",
         "//ink/geometry/internal/jni:cinterop",
         "//ink/jni/internal:cinterop",
     ],
