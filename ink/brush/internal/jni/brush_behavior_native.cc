@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "absl/functional/overload.h"
-#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/internal/jni/brush_native_helper.h"
