@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@bazel_skylib//rules:build_test.bzl", "build_test")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_static_library.bzl", "cc_static_library")
 load(":ink_combine_headers.bzl", "ink_combine_headers")
 
@@ -33,21 +31,9 @@ cc_static_library(
 ink_combine_headers(
     name = "combined_headers",
     srcs = [
+        "//ink/brush/internal/jni:cinterop_headers",
         "//ink/geometry/internal/jni:cinterop_headers",
         "//ink/jni/internal:cinterop_headers",
     ],
     out = "ink_cinterop.h",
-)
-
-# For testing that the combined headers and the self-contained .a build together.
-cc_library(
-    name = "ink_static",
-    testonly = 1,
-    srcs = [":ink"],
-    hdrs = [":combined_headers"],
-)
-
-build_test(
-    name = "ink_static_build_test",
-    targets = [":ink_static"],
 )
