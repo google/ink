@@ -23,7 +23,7 @@
 #include "ink/jni/internal/jni_string_util.h"
 #include "ink/jni/internal/status_jni_helper.h"
 
-using ::ink::jni::ComputeColorLongFromComponentsCallback;
+using ::ink::jni::ComposeColorLongFromComponentsCallback;
 using ::ink::jni::JStringToStdString;
 using ::ink::jni::ThrowExceptionFromStatusCallback;
 
@@ -251,7 +251,7 @@ JNI_METHOD(brush, ColorFunctionNative, jfloat, getOpacityMultiplier)
 JNI_METHOD(brush, ColorFunctionNative, jlong, computeReplaceColorLong)
 (JNIEnv* env, jobject object, jlong native_pointer) {
   return ColorFunctionNative_computeReplaceColorLong(
-      env, native_pointer, &ComputeColorLongFromComponentsCallback);
+      env, native_pointer, &ComposeColorLongFromComponentsCallback);
 }
 
 }  // extern "C"

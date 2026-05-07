@@ -46,6 +46,7 @@ cc_library(
         ":brush_behavior_node_native",
         ":brush_coat_native",
         ":brush_family_native",
+        ":brush_native",
         ":brush_paint_native",
         ":brush_tip_native",
         ":easing_function_native",
@@ -325,6 +326,20 @@ cc_library(
 )
 
 cc_library(
+    name = "brush_native",
+    srcs = ["brush_native.cc"],
+    hdrs = ["brush_native.h"],
+    deps = [
+        ":brush_native_helper",
+        "//ink/brush",
+        "//ink/brush:brush_family",
+        "//ink/color",
+        "//ink/color/internal/jni:color_native_helper",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+cc_library(
     name = "brush_family_jni",
     srcs = ["brush_family_jni.cc"],
     tags = ["keep_dep"],
@@ -348,15 +363,10 @@ cc_library(
     srcs = ["brush_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":brush_native_helper",
-        "//ink/brush",
-        "//ink/brush:brush_family",
-        "//ink/color",
+        ":brush_native",
         "//ink/color/internal/jni:color_jni_helper",
-        "//ink/color/internal/jni:color_native_helper",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:status_jni_helper",
-        "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [

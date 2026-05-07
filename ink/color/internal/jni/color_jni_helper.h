@@ -19,15 +19,11 @@
 
 #include <cstdint>
 
-#include "ink/color/color.h"
-#include "ink/color/color_space.h"
-
 namespace ink::jni {
 
-// Converts an Ink `Color` into a Kotlin `ColorLong`.
-jlong ComputeColorLong(JNIEnv* env, const Color& color);
-
-int64_t ComputeColorLongFromComponentsCallback(
+// Converts an Ink `Color` into a Kotlin `ColorLong`, suitable for use from
+// C-compatible Kotlin native interface.
+int64_t ComposeColorLongFromComponentsCallback(
     void* jni_env, int color_space_id, float red_gamma_corrected,
     float green_gamma_corrected, float blue_gamma_corrected, float alpha);
 

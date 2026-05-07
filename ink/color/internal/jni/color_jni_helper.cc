@@ -18,18 +18,11 @@
 
 #include <cstdint>
 
-#include "ink/color/color.h"
-#include "ink/color/internal/jni/color_native_helper.h"
 #include "ink/jni/internal/jni_jvm_interface.h"
 
 namespace ink::jni {
 
-jlong ComputeColorLong(JNIEnv* env, const Color& color) {
-  return ::ink::native::ComputeColorLong(
-      static_cast<void*>(env), color, ComputeColorLongFromComponentsCallback);
-}
-
-int64_t ComputeColorLongFromComponentsCallback(
+int64_t ComposeColorLongFromComponentsCallback(
     void* jni_env, int color_space_id, float red_gamma_corrected,
     float green_gamma_corrected, float blue_gamma_corrected, float alpha) {
   JNIEnv* env = static_cast<JNIEnv*>(jni_env);

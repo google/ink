@@ -113,8 +113,9 @@ float ColorFunctionNative_getOpacityMultiplier(int64_t native_ptr);
 
 int64_t ColorFunctionNative_computeReplaceColorLong(
     void* jni_env_pass_through, int64_t native_ptr,
-    int64_t (*compute_compose_color_long_from_components_callback)(
-        void*, int, float, float, float, float));
+    int64_t (*compose_color_long_from_components_callback)(void*, int, float,
+                                                           float, float,
+                                                           float));
 
 #ifdef __cplusplus
 }  // extern "C"
