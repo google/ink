@@ -45,6 +45,7 @@ cc_library(
         ":brush_behavior_native",
         ":brush_behavior_node_native",
         ":brush_coat_native",
+        ":brush_family_native",
         ":brush_paint_native",
         ":brush_tip_native",
         ":easing_function_native",
@@ -308,24 +309,31 @@ cc_library(
 )
 
 cc_library(
-    name = "brush_family_jni",
-    srcs = ["brush_family_jni.cc"],
-    tags = ["keep_dep"],
+    name = "brush_family_native",
+    srcs = ["brush_family_native.cc"],
+    hdrs = ["brush_family_native.h"],
     deps = [
         ":brush_native_helper",
-        "//ink/brush",
         "//ink/brush:brush_coat",
         "//ink/brush:brush_family",
-        "//ink/brush:brush_paint",
-        "//ink/brush:brush_tip",
-        "//ink/jni/internal:jni_defines",
-        "//ink/jni/internal:jni_string_util",
-        "//ink/jni/internal:status_jni_helper",
         "//ink/types:duration",
         "@com_google_absl//absl/functional:overload",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "brush_family_jni",
+    srcs = ["brush_family_jni.cc"],
+    tags = ["keep_dep"],
+    deps = [
+        ":brush_family_native",
+        "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_string_util",
+        "//ink/jni/internal:status_jni_helper",
+        "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
