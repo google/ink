@@ -18,7 +18,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_tip.h"
