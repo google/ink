@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
@@ -27,11 +28,12 @@
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
 #include "ink/color/color.h"
-#include "ink/geometry/mutable_mesh.h"
+#include "ink/geometry/mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
 #include "ink/strokes/internal/stroke_shape_builder.h"
+#include "ink/strokes/internal/stroke_subtraction.h"
 #include "ink/strokes/internal/stroke_vertex.h"
 #include "ink/types/duration.h"
 
@@ -216,8 +218,18 @@ std::vector<Stroke> Stroke::PartialErase(
     const PartitionedMesh& eraser_shape,
     const AffineTransform& eraser_transform,
     const AffineTransform& stroke_transform) const {
-  // TODO(b/504681427): Implement mesh subtraction.
-  return {*this};
+  absl::StatusOr<PartitionedMesh> remaining_mesh = strokes_internal::Subtract(
+      shape_, stroke_transform, eraser_shape, eraser_transform);
+  if (!remaining_mesh.ok()) return {*this};
+
+  // If the entire stroke is erased, return an empty list.
+  if (absl::c_none_of(remaining_mesh->Meshes(), [](const Mesh& mesh) {
+        return mesh.TriangleCount() > 0;
+      })) {
+    return {};
+  }
+
+  return {Stroke(brush_, inputs_, *remaining_mesh)};
 }
 
 }  // namespace ink

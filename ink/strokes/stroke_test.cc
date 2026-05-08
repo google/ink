@@ -34,6 +34,7 @@
 #include "ink/brush/fuzz_domains.h"
 #include "ink/brush/type_matchers.h"
 #include "ink/color/color.h"
+#include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/mesh_test_helpers.h"
@@ -609,8 +610,7 @@ FUZZ_TEST(DISABLED_StrokeTest, CanConstructStrokeFromAnyInputBatch)
     .WithDomains(ValidBrush(), ArbitraryStrokeInputBatch());
 
 TEST(StrokeTest, PartialEraseWithEmptyEraserShapeReturnsStroke) {
-  Brush brush = CreateBrush();
-  Stroke stroke(brush);
+  Stroke stroke(CreateBrush(), CreateFilledInputs());
   PartitionedMesh empty_eraser_shape;
   AffineTransform identity = AffineTransform::Identity();
 
@@ -620,6 +620,21 @@ TEST(StrokeTest, PartialEraseWithEmptyEraserShapeReturnsStroke) {
   ASSERT_THAT(result, SizeIs(1));
   EXPECT_THAT(result[0].GetBrush(), BrushEq(stroke.GetBrush()));
   EXPECT_THAT(result[0].GetInputs(), StrokeInputBatchEq(stroke.GetInputs()));
+}
+
+TEST(StrokeTest, PartialEraseWithDegenerateTransformReturnsStroke) {
+  Stroke stroke(CreateBrush(), CreateFilledInputs());
+  PartitionedMesh eraser_shape = CreateFilledShape();
+  AffineTransform identity = AffineTransform::Identity();
+  AffineTransform degenerate = AffineTransform::Scale(1, 0);
+
+  std::vector<Stroke> result =
+      stroke.PartialErase(eraser_shape, identity, degenerate);
+
+  ASSERT_THAT(result, SizeIs(1));
+  EXPECT_THAT(result[0].GetBrush(), BrushEq(stroke.GetBrush()));
+  EXPECT_THAT(result[0].GetInputs(), StrokeInputBatchEq(stroke.GetInputs()));
+  EXPECT_THAT(result[0].GetShape(), PartitionedMeshDeepEq(stroke.GetShape()));
 }
 
 }  // namespace

@@ -113,6 +113,9 @@ class Stroke {
   // `eraser_transform` and `stroke_transform` that map the eraser and stroke
   // to common coordinates.
   //
+  // The coordinate transformations are expected to be non-degenerate; otherwise
+  // the stroke is returned as is.
+  //
   // Each resulting fragment retains the original brush and inputs, but has a
   // newly computed shape representing the portion remaining after erasure. The
   // order of the fragments in the returned vector is arbitrary and carries no

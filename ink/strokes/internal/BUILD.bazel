@@ -729,3 +729,36 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_library(
+    name = "stroke_subtraction",
+    srcs = ["stroke_subtraction.cc"],
+    hdrs = ["stroke_subtraction.h"],
+    deps = [
+        ":stroke_vertex",
+        "//ink/geometry:affine_transform",
+        "//ink/geometry:intersects",
+        "//ink/geometry:mesh",
+        "//ink/geometry:mesh_format",
+        "//ink/geometry:mutable_mesh",
+        "//ink/geometry:partitioned_mesh",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "stroke_subtraction_test",
+    srcs = ["stroke_subtraction_test.cc"],
+    deps = [
+        ":stroke_subtraction",
+        "//ink/geometry:affine_transform",
+        "//ink/geometry:mesh_format",
+        "//ink/geometry:mutable_mesh",
+        "//ink/geometry:partitioned_mesh",
+        "//ink/geometry:point",
+        "@com_google_absl//absl/status:status_matchers",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
