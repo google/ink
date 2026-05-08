@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,75 +14,47 @@
 
 #include <jni.h>
 
-#include <utility>
+#include <string>
 
-#include "ink/brush/brush_family.h"
-#include "ink/brush/brush_paint.h"
-#include "ink/brush/internal/jni/brush_native_helper.h"
-#include "ink/brush/stock_brushes.h"
+#include "ink/brush/internal/jni/stock_brushes_native.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_string_util.h"
 
-namespace {
-
-using ::ink::BrushFamily;
-using ::ink::BrushPaint;
 using ::ink::jni::JStringToStdString;
-using ::ink::native::NewNativeBrushBehavior;
-using ::ink::native::NewNativeBrushFamily;
-using ::ink::stock_brushes::DashedLine;
-using ::ink::stock_brushes::DashedLineVersion;
-using ::ink::stock_brushes::EmojiHighlighter;
-using ::ink::stock_brushes::EmojiHighlighterVersion;
-using ::ink::stock_brushes::Highlighter;
-using ::ink::stock_brushes::HighlighterVersion;
-using ::ink::stock_brushes::Marker;
-using ::ink::stock_brushes::MarkerVersion;
-using ::ink::stock_brushes::PredictionFadeOutBehavior;
-using ::ink::stock_brushes::PressurePen;
-using ::ink::stock_brushes::PressurePenVersion;
 
 extern "C" {
 
-JNI_METHOD(brush, StockBrushesNative, jlong, marker)
+JNI_METHOD(brush, StockBrushesNative, jlong, createMarker)
 (JNIEnv* env, jobject object, jint version) {
-  BrushFamily family = Marker(MarkerVersion(version));
-  return NewNativeBrushFamily(std::move(family));
+  return StockBrushesNative_createMarker(version);
 }
 
-JNI_METHOD(brush, StockBrushesNative, jlong, dashedLine)
+JNI_METHOD(brush, StockBrushesNative, jlong, createDashedLine)
 (JNIEnv* env, jobject object, jint version) {
-  BrushFamily family = DashedLine(DashedLineVersion(version));
-  return NewNativeBrushFamily(std::move(family));
+  return StockBrushesNative_createDashedLine(version);
 }
 
-JNI_METHOD(brush, StockBrushesNative, jlong, pressurePen)
+JNI_METHOD(brush, StockBrushesNative, jlong, createPressurePen)
 (JNIEnv* env, jobject object, jint version) {
-  BrushFamily family = PressurePen(PressurePenVersion(version));
-  return NewNativeBrushFamily(std::move(family));
+  return StockBrushesNative_createPressurePen(version);
 }
 
-JNI_METHOD(brush, StockBrushesNative, jlong, highlighter)
+JNI_METHOD(brush, StockBrushesNative, jlong, createHighlighter)
 (JNIEnv* env, jobject object, jint self_overlap, jint version) {
-  BrushFamily family =
-      Highlighter(static_cast<BrushPaint::SelfOverlap>(self_overlap),
-                  HighlighterVersion(version));
-  return NewNativeBrushFamily(std::move(family));
+  return StockBrushesNative_createHighlighter(self_overlap, version);
 }
 
-JNI_METHOD(brush, StockBrushesNative, jlong, emojiHighlighter)
+JNI_METHOD(brush, StockBrushesNative, jlong, createEmojiHighlighter)
 (JNIEnv* env, jobject object, jstring client_texture_id,
  jboolean show_mini_emoji_trail, jint self_overlap, jint version) {
-  BrushFamily family = EmojiHighlighter(
-      JStringToStdString(env, client_texture_id), show_mini_emoji_trail,
-      static_cast<BrushPaint::SelfOverlap>(self_overlap),
-      EmojiHighlighterVersion(version));
-  return NewNativeBrushFamily(std::move(family));
+  std::string c_texture_id = JStringToStdString(env, client_texture_id);
+  return StockBrushesNative_createEmojiHighlighter(
+      c_texture_id.c_str(), show_mini_emoji_trail, self_overlap, version);
 }
 
-JNI_METHOD(brush, StockBrushesNative, jlong, predictionFadeOutBehavior)
+JNI_METHOD(brush, StockBrushesNative, jlong, createPredictionFadeOutBehavior)
 (JNIEnv* env, jobject object) {
-  return NewNativeBrushBehavior(std::move(PredictionFadeOutBehavior()));
+  return StockBrushesNative_createPredictionFadeOutBehavior();
 }
+
 }  // extern "C"
-}  // namespace
