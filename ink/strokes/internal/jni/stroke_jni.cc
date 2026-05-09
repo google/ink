@@ -14,6 +14,9 @@
 
 #include <jni.h>
 
+#include <cstddef>
+#include <vector>
+
 #include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/internal/jni/partitioned_mesh_native_helper.h"
