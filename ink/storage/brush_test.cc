@@ -160,24 +160,15 @@ TEST(BrushTest, DecodeBrushProto) {
   absl::StatusOr<BrushFamily> expected_family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.5f},
       {.texture_layers =
-           {{.client_texture_id = std::string(kTestTextureId1Decoded),
-             .mapping = BrushPaint::TextureMapping::kStamping,
-             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
-             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-             .size = {10, 15},
-             .blend_mode = BrushPaint::BlendMode::kDstOut},
-            {.client_texture_id = std::string(kTestTextureId2Decoded),
-             .mapping = BrushPaint::TextureMapping::kStamping,
-             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
-             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-             .size = {4, 10},
-             .blend_mode = BrushPaint::BlendMode::kDstOut},
-            {.client_texture_id = std::string(kTestTextureId1Decoded),
-             .mapping = BrushPaint::TextureMapping::kStamping,
-             .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
-             .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-             .size = {1, 2},
-             .blend_mode = BrushPaint::BlendMode::kDstOut}}},
+           {BrushPaint::StampingTexture{
+                .client_texture_id = std::string(kTestTextureId1Decoded),
+                .blend_mode = BrushPaint::BlendMode::kDstOut},
+            BrushPaint::StampingTexture{
+                .client_texture_id = std::string(kTestTextureId2Decoded),
+                .blend_mode = BrushPaint::BlendMode::kDstOut},
+            BrushPaint::StampingTexture{
+                .client_texture_id = std::string(kTestTextureId1Decoded),
+                .blend_mode = BrushPaint::BlendMode::kDstOut}}},
       BrushFamily::PassthroughModel{});
 
   ASSERT_EQ(expected_family.status(), absl::OkStatus());
@@ -398,12 +389,9 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
           .particle_gap_distance_scale = 1,
           .particle_gap_duration = Duration32::Seconds(2),
       },
-      {.texture_layers = {{.client_texture_id = std::string(kTestTextureId1),
-                           .mapping = BrushPaint::TextureMapping::kStamping,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .wrap_y = BrushPaint::TextureWrap::kMirror,
-                           .size = {10, 15},
-                           .blend_mode = BrushPaint::BlendMode::kSrcIn}},
+      {.texture_layers = {BrushPaint::StampingTexture{
+           .client_texture_id = std::string(kTestTextureId1),
+           .blend_mode = BrushPaint::BlendMode::kSrcIn}},
        .self_overlap = BrushPaint::SelfOverlap::kDiscard},
       BrushFamily::PassthroughModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
@@ -445,17 +433,6 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
       paint_proto->add_texture_layers();
   layer_proto->set_client_texture_id("test-texture-one");
   layer_proto->set_mapping(proto::BrushPaint::TextureLayer::MAPPING_STAMPING);
-  layer_proto->set_origin(
-      proto::BrushPaint::TextureLayer::ORIGIN_STROKE_SPACE_ORIGIN);
-  layer_proto->set_size_x(10);
-  layer_proto->set_size_y(15);
-  layer_proto->set_size_unit(
-      proto::BrushPaint::TextureLayer::SIZE_UNIT_BRUSH_SIZE);
-  layer_proto->set_wrap_x(proto::BrushPaint::TextureLayer::WRAP_REPEAT);
-  layer_proto->set_wrap_y(proto::BrushPaint::TextureLayer::WRAP_MIRROR);
-  layer_proto->set_offset_x(0.f);
-  layer_proto->set_offset_y(0.f);
-  layer_proto->set_rotation_in_radians(0.f);
   layer_proto->set_blend_mode(
       proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
   paint_proto->set_self_overlap(proto::BrushPaint::SELF_OVERLAP_DISCARD);
@@ -471,12 +448,12 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
           .particle_gap_distance_scale = 1,
           .particle_gap_duration = Duration32::Seconds(2),
       },
-      {.texture_layers = {{.client_texture_id = std::string(kTestTextureId1),
-                           .mapping = BrushPaint::TextureMapping::kStamping,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .wrap_y = BrushPaint::TextureWrap::kMirror,
-                           .size = {10, 15},
-                           .blend_mode = BrushPaint::BlendMode::kSrcIn}},
+      {.texture_layers = {BrushPaint::TilingTexture{
+           .client_texture_id = std::string(kTestTextureId1),
+           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
+           .wrap_y = BrushPaint::TextureWrap::kMirror,
+           .size = {10, 15},
+           .blend_mode = BrushPaint::BlendMode::kSrcIn}},
        .self_overlap = BrushPaint::SelfOverlap::kAccumulate},
       BrushFamily::PassthroughModel{});
   ASSERT_EQ(family.status(), absl::OkStatus());
@@ -527,7 +504,7 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
       paint_proto->add_texture_layers();
   texture_layer_proto->set_client_texture_id(kTestTextureId1);
   texture_layer_proto->set_mapping(
-      proto::BrushPaint::TextureLayer::MAPPING_STAMPING);
+      proto::BrushPaint::TextureLayer::MAPPING_TILING);
   texture_layer_proto->set_origin(
       proto::BrushPaint::TextureLayer::ORIGIN_STROKE_SPACE_ORIGIN);
   texture_layer_proto->set_size_x(10);
@@ -550,24 +527,15 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
 TEST(BrushTest, EncodeBrushFamilyTextureMap) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.25f},
-      {.texture_layers = {{.client_texture_id = std::string(kTestTextureId1),
-                           .mapping = BrushPaint::TextureMapping::kStamping,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .wrap_y = BrushPaint::TextureWrap::kMirror,
-                           .size = {10, 15},
-                           .blend_mode = BrushPaint::BlendMode::kSrcIn},
-                          {.client_texture_id = std::string(kTestTextureId2),
-                           .mapping = BrushPaint::TextureMapping::kStamping,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .wrap_y = BrushPaint::TextureWrap::kMirror,
-                           .size = {10, 15},
-                           .blend_mode = BrushPaint::BlendMode::kSrcIn},
-                          {.client_texture_id = "unknown",
-                           .mapping = BrushPaint::TextureMapping::kStamping,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .wrap_y = BrushPaint::TextureWrap::kMirror,
-                           .size = {10, 15},
-                           .blend_mode = BrushPaint::BlendMode::kSrcIn}},
+      {.texture_layers = {BrushPaint::StampingTexture{
+                              .client_texture_id = std::string(kTestTextureId1),
+                              .blend_mode = BrushPaint::BlendMode::kSrcIn},
+                          BrushPaint::StampingTexture{
+                              .client_texture_id = std::string(kTestTextureId2),
+                              .blend_mode = BrushPaint::BlendMode::kSrcIn},
+                          BrushPaint::StampingTexture{
+                              .client_texture_id = "unknown",
+                              .blend_mode = BrushPaint::BlendMode::kSrcIn}},
        .self_overlap = BrushPaint::SelfOverlap::kDiscard});
   ASSERT_EQ(family.status(), absl::OkStatus());
   google::protobuf::Map<std::string, std::string> texture_id_to_bitmap_proto_out;
@@ -620,10 +588,8 @@ TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
   // Create a brush family with no ID.
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{.corner_rounding = 0.25f},
-      {.texture_layers = {{.client_texture_id = std::string(kTestTextureId1),
-                           .mapping = BrushPaint::TextureMapping::kStamping,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .size = {10, 15}}}});
+      {.texture_layers = {BrushPaint::StampingTexture{
+           .client_texture_id = std::string(kTestTextureId1)}}});
   ASSERT_EQ(family.status(), absl::OkStatus());
   // Initialize the proto with a non-empty ID, and a different brush tip.
   proto::BrushFamily family_proto_out;
@@ -678,26 +644,12 @@ TEST(BrushTest, DecodeBrushPaintReturnsErrorStatusFromCallback) {
   ASSERT_THAT(paint, StatusIs(absl::StatusCode::kInternal, "test error"));
 }
 
-TEST(BrushTest, EncodeBrushPaintWithInvalidTextureMapping) {
-  BrushPaint paint;
-  paint.texture_layers.push_back(
-      {.client_texture_id = std::string(kTestTextureId1),
-       .mapping = static_cast<BrushPaint::TextureMapping>(99),
-       .size = {10, 15}});
-  proto::BrushPaint paint_proto;
-  EncodeBrushPaint(paint, paint_proto);
-  ASSERT_EQ(paint_proto.texture_layers(0).size_x(), 10);
-  ASSERT_EQ(paint_proto.texture_layers(0).size_y(), 15);
-  EXPECT_EQ(paint_proto.texture_layers(0).mapping(),
-            proto::BrushPaint::TextureLayer::MAPPING_UNSPECIFIED);
-}
-
 TEST(BrushTest, EncodeBrushPaintWithInvalidTextureOrigin) {
   BrushPaint paint;
-  paint.texture_layers.push_back(
-      {.client_texture_id = std::string(kTestTextureId1),
-       .origin = static_cast<BrushPaint::TextureOrigin>(99),
-       .size = {10, 15}});
+  paint.texture_layers.push_back(BrushPaint::TilingTexture{
+      .client_texture_id = std::string(kTestTextureId1),
+      .origin = static_cast<BrushPaint::TextureOrigin>(99),
+      .size = {10, 15}});
   proto::BrushPaint paint_proto;
   EncodeBrushPaint(paint, paint_proto);
   ASSERT_EQ(paint_proto.texture_layers(0).size_x(), 10);

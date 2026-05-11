@@ -74,11 +74,10 @@ BrushFamily CreateTestFamily() {
               },
           }}},
       },
-      {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kStamping,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .size = {3, 5},
-                           .blend_mode = BrushPaint::BlendMode::kDstIn}}},
+      {.texture_layers = {BrushPaint::StampingTexture{
+           .client_texture_id = std::string(kTestTextureId),
+           .blend_mode = BrushPaint::BlendMode::kDstIn,
+       }}},
       BrushFamily::DefaultInputModel(),
       {.client_brush_family_id = "/brush-family:test-family"});
   ABSL_CHECK_OK(family);
@@ -86,15 +85,13 @@ BrushFamily CreateTestFamily() {
 }
 
 TEST(BrushTest, Stringify) {
-  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
-      BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-      {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kStamping,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .size = {3, 5},
-                           .blend_mode = BrushPaint::BlendMode::kDstOut}}},
-      BrushFamily::PassthroughModel{},
-      {.client_brush_family_id = "big-square"});
+  absl::StatusOr<BrushFamily> family =
+      BrushFamily::Create(BrushTip{.scale = {3, 3}, .corner_rounding = 0},
+                          {.texture_layers = {BrushPaint::StampingTexture{
+                               .client_texture_id = std::string(kTestTextureId),
+                               .blend_mode = BrushPaint::BlendMode::kDstOut}}},
+                          BrushFamily::PassthroughModel{},
+                          {.client_brush_family_id = "big-square"});
   ASSERT_THAT(family, IsOk());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Blue(), 3, .1);
   ASSERT_THAT(brush, IsOk());
@@ -104,12 +101,9 @@ TEST(BrushTest, Stringify) {
       "size=3, epsilon=0.1, "
       "family=BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
       "corner_rounding=0}, "
-      "paint_preferences={BrushPaint{texture_layers={TextureLayer{client_"
-      "texture_id=test-texture, mapping=kStamping, "
-      "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
-      "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
-      "animation_frames=1, animation_rows=1, animation_columns=1, "
-      "animation_duration=1s, blend_mode=kDstOut}}, "
+      "paint_preferences={BrushPaint{texture_layers={StampingTexture{client_"
+      "texture_id=test-texture, animation_frames=1, animation_rows=1, "
+      "animation_columns=1, animation_duration=1s, blend_mode=kDstOut}}, "
       "self_overlap=kAny}}}], input_model=PassthroughModel, "
       "client_brush_family_id='big-square'))");
 }
@@ -212,11 +206,9 @@ TEST(BrushTest, SetNewFamily) {
 
   auto new_family = BrushFamily::Create(
       BrushTip{},
-      {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kStamping,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .size = {3, 5},
-                           .blend_mode = BrushPaint::BlendMode::kDstIn}}},
+      {.texture_layers = {BrushPaint::StampingTexture{
+           .client_texture_id = std::string(kTestTextureId),
+           .blend_mode = BrushPaint::BlendMode::kDstIn}}},
       BrushFamily::DefaultInputModel(),
       {.client_brush_family_id = "/brush-family:new-test-family"});
   ASSERT_THAT(new_family, IsOk());

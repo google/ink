@@ -356,9 +356,8 @@ BrushCoat MiniEmojiCoat(
                     distance_traveled_to_offset_y_behavior},
   };
   BrushPaint paint = {
-      .texture_layers = {{
+      .texture_layers = {BrushPaint::StampingTexture{
           .client_texture_id = client_texture_id,
-          .mapping = BrushPaint::TextureMapping::kStamping,
           .blend_mode = BrushPaint::BlendMode::kModulate,
       }},
   };
@@ -500,7 +499,7 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                   .behaviors = {distance_to_size_behavior},
               },
           .paint_preferences = {{
-              .texture_layers = {{
+              .texture_layers = {BrushPaint::TilingTexture{
                   .client_texture_id = client_texture_id,
                   .origin = BrushPaint::TextureOrigin::kLastStrokeInput,
                   .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,

@@ -81,11 +81,13 @@ class MeshDrawable {
   // construction before being blended with any texture layers.
   void SetBrushColor(const Color& brush_color);
 
-  // Sets the value of the texture-mapping uniform if present.
+  // Sets the value of the texture-mapping uniform if present. The argument
+  // should be equal to the `std::variant::index()` of the
+  // `BrushPaint::TextureLayer` being used.
   //
   // TODO: b/375203215 - Get rid of this uniform once we are able to mix
   // different texture mapping modes in a single `BrushPaint`.
-  void SetTextureMapping(BrushPaint::TextureMapping mapping);
+  void SetTextureMappingMode(int mapping);
 
   // Sets the value of the texture animation progress uniform if present.
   void SetTextureAnimationProgress(float progress);
@@ -132,9 +134,8 @@ inline void MeshDrawable::SetBrushColor(const Color& brush_color) {
       ColorFunction::ApplyAll(color_functions_, brush_color));
 }
 
-inline void MeshDrawable::SetTextureMapping(
-    BrushPaint::TextureMapping mapping) {
-  uniform_data_.SetTextureMapping(mapping);
+inline void MeshDrawable::SetTextureMappingMode(int mapping) {
+  uniform_data_.SetTextureMappingMode(mapping);
 }
 
 inline void MeshDrawable::SetTextureAnimationProgress(float progress) {

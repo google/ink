@@ -1008,31 +1008,6 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorPolarTargetNode(
   };
 }
 
-proto::BrushPaint::TextureLayer::Mapping EncodeBrushPaintTextureMapping(
-    BrushPaint::TextureMapping mapping) {
-  switch (mapping) {
-    case BrushPaint::TextureMapping::kStamping:
-      return proto::BrushPaint::TextureLayer::MAPPING_STAMPING;
-    case BrushPaint::TextureMapping::kTiling:
-      return proto::BrushPaint::TextureLayer::MAPPING_TILING;
-  }
-  return proto::BrushPaint::TextureLayer::MAPPING_UNSPECIFIED;
-}
-
-absl::StatusOr<BrushPaint::TextureMapping> DecodeBrushPaintTextureMapping(
-    proto::BrushPaint::TextureLayer::Mapping mapping_proto) {
-  switch (mapping_proto) {
-    case proto::BrushPaint::TextureLayer::MAPPING_STAMPING:
-      return BrushPaint::TextureMapping::kStamping;
-    case proto::BrushPaint::TextureLayer::MAPPING_TILING:
-      return BrushPaint::TextureMapping::kTiling;
-    default:
-      return absl::InvalidArgumentError(absl::StrCat(
-          "invalid ink.proto.BrushPaint.TextureLayer.mapping value: ",
-          mapping_proto));
-  }
-}
-
 proto::BrushPaint::TextureLayer::Origin EncodeBrushPaintTextureOrigin(
     BrushPaint::TextureOrigin origin) {
   switch (origin) {
@@ -1184,16 +1159,16 @@ absl::StatusOr<BrushPaint::BlendMode> DecodeBrushPaintBlendMode(
   }
 }
 
-void EncodeBrushPaintTextureLayer(
-    const BrushPaint::TextureLayer& layer,
-    proto::BrushPaint::TextureLayer& layer_proto_out) {
+void EncodeBrushPaintTexture(const BrushPaint::TilingTexture& layer,
+                             proto::BrushPaint::TextureLayer& layer_proto_out) {
+  layer_proto_out.Clear();
+  layer_proto_out.set_mapping(proto::BrushPaint::TextureLayer::MAPPING_TILING);
   layer_proto_out.set_client_texture_id(layer.client_texture_id);
   layer_proto_out.set_size_unit(EncodeBrushPaintSizeUnit(layer.size_unit));
   layer_proto_out.set_wrap_x(EncodeBrushPaintWrap(layer.wrap_x));
   layer_proto_out.set_wrap_y(EncodeBrushPaintWrap(layer.wrap_y));
   layer_proto_out.set_size_x(layer.size.x);
   layer_proto_out.set_size_y(layer.size.y);
-  layer_proto_out.set_mapping(EncodeBrushPaintTextureMapping(layer.mapping));
   layer_proto_out.set_origin(EncodeBrushPaintTextureOrigin(layer.origin));
   layer_proto_out.set_offset_x(layer.offset.x);
   layer_proto_out.set_offset_y(layer.offset.y);
@@ -1201,13 +1176,28 @@ void EncodeBrushPaintTextureLayer(
   layer_proto_out.set_blend_mode(EncodeBrushPaintBlendMode(layer.blend_mode));
 }
 
-absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
+void EncodeBrushPaintTexture(const BrushPaint::StampingTexture& layer,
+                             proto::BrushPaint::TextureLayer& layer_proto_out) {
+  layer_proto_out.Clear();
+  layer_proto_out.set_mapping(
+      proto::BrushPaint::TextureLayer::MAPPING_STAMPING);
+  layer_proto_out.set_client_texture_id(layer.client_texture_id);
+  layer_proto_out.set_blend_mode(EncodeBrushPaintBlendMode(layer.blend_mode));
+}
+
+void EncodeBrushPaintTextureLayer(
+    const BrushPaint::TextureLayer& layer,
+    proto::BrushPaint::TextureLayer& layer_proto_out) {
+  std::visit(
+      [&layer_proto_out](const auto& texture) {
+        EncodeBrushPaintTexture(texture, layer_proto_out);
+      },
+      layer);
+}
+
+absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTilingTexture(
     const proto::BrushPaint::TextureLayer& layer_proto,
     ClientTextureIdProvider get_client_texture_id) {
-  auto mapping = DecodeBrushPaintTextureMapping(layer_proto.mapping());
-  if (!mapping.ok()) {
-    return mapping.status();
-  }
   auto origin = DecodeBrushPaintTextureOrigin(layer_proto.origin());
   if (!origin.ok()) {
     return origin.status();
@@ -1234,9 +1224,9 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
   if (!client_texture_id.ok()) {
     return client_texture_id.status();
   }
-  BrushPaint::TextureLayer texture_layer{
+
+  BrushPaint::TextureLayer texture_layer = {BrushPaint::TilingTexture{
       .client_texture_id = *client_texture_id,
-      .mapping = *mapping,
       .origin = *origin,
       .size_unit = *size_unit,
       .wrap_x = *wrap_x,
@@ -1244,13 +1234,57 @@ absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
       .size = {layer_proto.size_x(), layer_proto.size_y()},
       .offset = {layer_proto.offset_x(), layer_proto.offset_y()},
       .rotation = Angle::Radians(layer_proto.rotation_in_radians()),
-      .blend_mode = *blend_mode};
+      .blend_mode = *blend_mode,
+  }};
   if (absl::Status status =
           brush_internal::ValidateBrushPaintTextureLayer(texture_layer);
       !status.ok()) {
     return status;
   }
   return std::move(texture_layer);
+}
+
+absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintStampingTexture(
+    const proto::BrushPaint::TextureLayer& layer_proto,
+    ClientTextureIdProvider get_client_texture_id) {
+  absl::StatusOr<BrushPaint::BlendMode> blend_mode =
+      DecodeBrushPaintBlendMode(layer_proto.blend_mode());
+  if (!blend_mode.ok()) {
+    return blend_mode.status();
+  }
+
+  absl::StatusOr<std::string> client_texture_id =
+      get_client_texture_id(layer_proto.client_texture_id());
+  if (!client_texture_id.ok()) {
+    return client_texture_id.status();
+  }
+
+  BrushPaint::TextureLayer texture_layer = {BrushPaint::StampingTexture{
+      .client_texture_id = *client_texture_id,
+      .blend_mode = *blend_mode,
+  }};
+  if (absl::Status status =
+          brush_internal::ValidateBrushPaintTextureLayer(texture_layer);
+      !status.ok()) {
+    return status;
+  }
+  return std::move(texture_layer);
+}
+
+absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTextureLayer(
+    const proto::BrushPaint::TextureLayer& layer_proto,
+    ClientTextureIdProvider get_client_texture_id) {
+  switch (layer_proto.mapping()) {
+    case proto::BrushPaint::TextureLayer::MAPPING_STAMPING:
+      return DecodeBrushPaintStampingTexture(layer_proto,
+                                             get_client_texture_id);
+    case proto::BrushPaint::TextureLayer::MAPPING_TILING:
+      return DecodeBrushPaintTilingTexture(layer_proto, get_client_texture_id);
+    default:
+      return absl::InvalidArgumentError(absl::StrCat(
+          "invalid ink.proto.BrushPaint.TextureLayer.mapping value: ",
+          layer_proto.mapping()));
+  }
 }
 
 proto::BrushPaint::SelfOverlap EncodeBrushPaintSelfOverlap(
@@ -1597,17 +1631,19 @@ void EncodeBrushFamilyTextureMap(
   for (const BrushCoat& coat : family.GetCoats()) {
     for (const BrushPaint& paint : coat.paint_preferences) {
       for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
-        if (seen_ids.find(layer.client_texture_id) != seen_ids.end()) {
+        const std::string& client_texture_id = std::visit(
+            [](const auto& layer) { return layer.client_texture_id; }, layer);
+        if (seen_ids.find(client_texture_id) != seen_ids.end()) {
           continue;
         }
 
-        std::optional<std::string> bitmap = get_bitmap(layer.client_texture_id);
-        seen_ids.insert(layer.client_texture_id);
+        std::optional<std::string> bitmap = get_bitmap(client_texture_id);
+        seen_ids.insert(client_texture_id);
         if (!bitmap.has_value()) {
           continue;
         }
 
-        texture_id_to_bitmap_out.insert({layer.client_texture_id, *bitmap});
+        texture_id_to_bitmap_out.insert({client_texture_id, *bitmap});
       }
     }
   }

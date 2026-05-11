@@ -116,9 +116,9 @@ class BrushFamily {
   //    - opacity must be in interval [0, 1].
   //    - animation_frames must be greater than 0.
   //  * All texture layers must have the same animation_frames value.
-  //  * For now, all texture layers must use the same `TextureMapping` value.
+  //  * For now, all texture layers must use the same `TextureLayer` variant.
   //    TODO: b/375203215 - Relax this requirement once we are able to mix
-  //    rendering tiling and winding textures in a single `BrushPaint`.
+  //    rendering tiling and stamping textures in a single `BrushPaint`.
   //  * Every enum property must be equal to one of the named enumerators for
   //    that property's type.
   static absl::StatusOr<BrushFamily> Create(

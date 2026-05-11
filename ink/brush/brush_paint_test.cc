@@ -51,30 +51,28 @@ TEST(BrushPaintTest, DefaultValues) {
   EXPECT_EQ(paint.self_overlap, BrushPaint::SelfOverlap::kAny);
 }
 
-TEST(BrushPaintTest, TextureLayerSupportsAbslHash) {
+TEST(BrushPaintTest, TilingTextureSupportsAbslHash) {
   std::string id1 = "foo";
   std::string id2 = "bar";
   EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
-      BrushPaint::TextureLayer{.client_texture_id = id1},
-      BrushPaint::TextureLayer{.client_texture_id = id2},
-      BrushPaint::TextureLayer{
-          .client_texture_id = id1,
-          .mapping = BrushPaint::TextureMapping::kStamping},
-      BrushPaint::TextureLayer{
+      BrushPaint::TilingTexture{.client_texture_id = id1},
+      BrushPaint::TilingTexture{.client_texture_id = id2},
+      BrushPaint::TilingTexture{
           .client_texture_id = id1,
           .origin = BrushPaint::TextureOrigin::kFirstStrokeInput},
-      BrushPaint::TextureLayer{
+      BrushPaint::TilingTexture{
           .client_texture_id = id1,
           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize},
-      BrushPaint::TextureLayer{.client_texture_id = id1,
-                               .wrap_x = BrushPaint::TextureWrap::kMirror},
-      BrushPaint::TextureLayer{.client_texture_id = id1,
-                               .wrap_y = BrushPaint::TextureWrap::kClamp},
-      BrushPaint::TextureLayer{.client_texture_id = id1, .size = {2, 2}},
-      BrushPaint::TextureLayer{.client_texture_id = id1, .offset = {1, 1}},
-      BrushPaint::TextureLayer{.client_texture_id = id1, .rotation = kHalfTurn},
-      BrushPaint::TextureLayer{.client_texture_id = id1,
-                               .blend_mode = BrushPaint::BlendMode::kXor},
+      BrushPaint::TilingTexture{.client_texture_id = id1,
+                                .wrap_x = BrushPaint::TextureWrap::kMirror},
+      BrushPaint::TilingTexture{.client_texture_id = id1,
+                                .wrap_y = BrushPaint::TextureWrap::kClamp},
+      BrushPaint::TilingTexture{.client_texture_id = id1, .size = {2, 2}},
+      BrushPaint::TilingTexture{.client_texture_id = id1, .offset = {1, 1}},
+      BrushPaint::TilingTexture{.client_texture_id = id1,
+                                .rotation = kHalfTurn},
+      BrushPaint::TilingTexture{.client_texture_id = id1,
+                                .blend_mode = BrushPaint::BlendMode::kXor},
   }));
 }
 
@@ -83,26 +81,31 @@ TEST(BrushPaintTest, BrushPaintSupportsAbslHash) {
   std::string id2 = "bar";
   EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
       BrushPaint{},
-      BrushPaint{.texture_layers = {{.client_texture_id = id1}}},
-      BrushPaint{.texture_layers = {{.client_texture_id = id2}}},
-      BrushPaint{.texture_layers = {{.client_texture_id = id1},
-                                    {.client_texture_id = id2}}},
+      BrushPaint{.texture_layers = {BrushPaint::TilingTexture{
+                     .client_texture_id = id1}}},
+      BrushPaint{.texture_layers = {BrushPaint::TilingTexture{
+                     .client_texture_id = id2}}},
+      BrushPaint{.texture_layers =
+                     {BrushPaint::TilingTexture{.client_texture_id = id1},
+                      BrushPaint::TilingTexture{.client_texture_id = id2}}},
+      BrushPaint{.texture_layers = {BrushPaint::StampingTexture{
+                     .client_texture_id = id1}}},
       BrushPaint{.color_functions = {{ColorFunction::OpacityMultiplier{0.5}}}},
       BrushPaint{
           .color_functions = {{ColorFunction::ReplaceColor{Color::Red()}}}},
       BrushPaint{
-          .texture_layers = {{.client_texture_id = id1}},
+          .texture_layers = {BrushPaint::TilingTexture{.client_texture_id =
+                                                           id1}},
           .color_functions = {{ColorFunction::ReplaceColor{Color::Red()}}}},
       BrushPaint{.self_overlap = BrushPaint::SelfOverlap::kAccumulate},
   }));
 }
 
-TEST(BrushPaintTest, TextureLayerEqualAndNotEqual) {
+TEST(BrushPaintTest, TilingTextureEqualAndNotEqual) {
   std::string id1 = "foo";
   std::string id2 = "bar";
-  BrushPaint::TextureLayer layer = {
+  BrushPaint::TilingTexture layer = {
       .client_texture_id = id1,
-      .mapping = BrushPaint::TextureMapping::kTiling,
       .origin = BrushPaint::TextureOrigin::kStrokeSpaceOrigin,
       .size_unit = BrushPaint::TextureSizeUnit::kStrokeCoordinates,
       .wrap_x = BrushPaint::TextureWrap::kRepeat,
@@ -113,15 +116,11 @@ TEST(BrushPaintTest, TextureLayerEqualAndNotEqual) {
       .blend_mode = BrushPaint::BlendMode::kModulate,
   };
 
-  BrushPaint::TextureLayer other = layer;
+  BrushPaint::TilingTexture other = layer;
   EXPECT_EQ(layer, other);
 
   other = layer;
   other.client_texture_id = id2;
-  EXPECT_NE(layer, other);
-
-  other = layer;
-  other.mapping = BrushPaint::TextureMapping::kStamping;
   EXPECT_NE(layer, other);
 
   other = layer;
@@ -160,13 +159,13 @@ TEST(BrushPaintTest, TextureLayerEqualAndNotEqual) {
 TEST(BrushPaintTest, BrushPaintEqualAndNotEqual) {
   std::string id1 = "foo";
   std::string id2 = "bar";
-  BrushPaint paint = {{{.client_texture_id = id1}}};
+  BrushPaint paint = {{BrushPaint::TilingTexture{.client_texture_id = id1}}};
 
   BrushPaint other = paint;
   EXPECT_EQ(paint, other);
 
   other = paint;
-  other.texture_layers[0].client_texture_id = id2;
+  other.texture_layers[0] = BrushPaint::TilingTexture{.client_texture_id = id2};
   EXPECT_NE(paint, other);
 
   other = paint;
@@ -174,19 +173,13 @@ TEST(BrushPaintTest, BrushPaintEqualAndNotEqual) {
   EXPECT_NE(paint, other);
 
   other = paint;
-  other.texture_layers.push_back({.client_texture_id = id2});
+  other.texture_layers.push_back(
+      BrushPaint::TilingTexture{.client_texture_id = id2});
   EXPECT_NE(paint, other);
 
   other = paint;
   other.self_overlap = BrushPaint::SelfOverlap::kAccumulate;
   EXPECT_NE(paint, other);
-}
-
-TEST(BrushPaintTest, StringifyTextureMapping) {
-  EXPECT_EQ(absl::StrCat(BrushPaint::TextureMapping::kStamping), "kStamping");
-  EXPECT_EQ(absl::StrCat(BrushPaint::TextureMapping::kTiling), "kTiling");
-  EXPECT_EQ(absl::StrCat(static_cast<BrushPaint::TextureMapping>(99)),
-            "TextureMapping(99)");
 }
 
 TEST(BrushPaintTest, StringifyTextureOrigin) {
@@ -234,27 +227,20 @@ TEST(BrushPaintTest, StringifyBlendMode) {
             "BlendMode(99)");
 }
 
-TEST(BrushPaintTest, StringifyTextureLayer) {
-  EXPECT_EQ(absl::StrCat(BrushPaint::TextureLayer{}),
-            "TextureLayer{client_texture_id=, mapping=kTiling, "
-            "origin=kStrokeSpaceOrigin, size_unit=kStrokeCoordinates, "
-            "wrap_x=kRepeat, wrap_y=kRepeat, "
-            "size=<1, 1>, offset=<0, 0>, rotation=0π, "
-            "animation_frames=1, animation_rows=1, animation_columns=1, "
-            "animation_duration=1s, blend_mode=kModulate}");
-  EXPECT_EQ(absl::StrCat(BrushPaint::TextureLayer{
+TEST(BrushPaintTest, StringifyTilingTexture) {
+  EXPECT_EQ(absl::StrCat(BrushPaint::TilingTexture{}),
+            "TilingTexture{client_texture_id=, origin=kStrokeSpaceOrigin, "
+            "size_unit=kStrokeCoordinates, wrap_x=kRepeat, wrap_y=kRepeat, "
+            "size=<1, 1>, offset=<0, 0>, rotation=0π, blend_mode=kModulate}");
+  EXPECT_EQ(absl::StrCat(BrushPaint::TilingTexture{
                 .client_texture_id = std::string(kTestTextureId)}),
-            "TextureLayer{client_texture_id=test-texture, "
-            "mapping=kTiling, origin=kStrokeSpaceOrigin, "
-            "size_unit=kStrokeCoordinates, wrap_x=kRepeat, "
-            "wrap_y=kRepeat, size=<1, 1>, offset=<0, 0>, rotation=0π, "
-            "animation_frames=1, animation_rows=1, "
-            "animation_columns=1, animation_duration=1s, "
-            "blend_mode=kModulate}");
+            "TilingTexture{client_texture_id=test-texture, "
+            "origin=kStrokeSpaceOrigin, size_unit=kStrokeCoordinates, "
+            "wrap_x=kRepeat, wrap_y=kRepeat, size=<1, 1>, offset=<0, 0>, "
+            "rotation=0π, blend_mode=kModulate}");
   EXPECT_EQ(
-      absl::StrCat(BrushPaint::TextureLayer{
+      absl::StrCat(BrushPaint::TilingTexture{
           .client_texture_id = std::string(kTestTextureId),
-          .mapping = BrushPaint::TextureMapping::kStamping,
           .origin = BrushPaint::TextureOrigin::kFirstStrokeInput,
           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
           .wrap_x = BrushPaint::TextureWrap::kMirror,
@@ -262,20 +248,12 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
           .size = {3, 5},
           .offset = {2, 0.2},
           .rotation = kQuarterTurn,
-          .animation_frames = 2,
-          .animation_rows = 3,
-          .animation_columns = 4,
-          .animation_duration = absl::Seconds(5),
           .blend_mode = BrushPaint::BlendMode::kDstIn}),
-      "TextureLayer{client_texture_id=test-texture, "
-      "mapping=kStamping, origin=kFirstStrokeInput, size_unit=kBrushSize, "
-      "wrap_x=kMirror, wrap_y=kClamp, "
-      "size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, "
-      "animation_frames=2, animation_rows=3, animation_columns=4, "
-      "animation_duration=5s, blend_mode=kDstIn}");
-  EXPECT_EQ(absl::StrCat(BrushPaint::TextureLayer{
+      "TilingTexture{client_texture_id=test-texture, origin=kFirstStrokeInput, "
+      "size_unit=kBrushSize, wrap_x=kMirror, wrap_y=kClamp, size=<3, 5>, "
+      "offset=<2, 0.2>, rotation=0.5π, blend_mode=kDstIn}");
+  EXPECT_EQ(absl::StrCat(BrushPaint::TilingTexture{
                 .client_texture_id = std::string(kTestTextureId),
-                .mapping = BrushPaint::TextureMapping::kStamping,
                 .origin = BrushPaint::TextureOrigin::kLastStrokeInput,
                 .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
                 .wrap_x = BrushPaint::TextureWrap::kClamp,
@@ -283,189 +261,85 @@ TEST(BrushPaintTest, StringifyTextureLayer) {
                 .size = {3, 5},
                 .offset = {2, 0.2},
                 .rotation = kQuarterTurn,
+                .blend_mode = BrushPaint::BlendMode::kSrcAtop}),
+            "TilingTexture{client_texture_id=test-texture, "
+            "origin=kLastStrokeInput, size_unit=kBrushSize, "
+            "wrap_x=kClamp, wrap_y=kMirror, size=<3, 5>, offset=<2, 0.2>, "
+            "rotation=0.5π, blend_mode=kSrcAtop}");
+}
+
+TEST(BrushPaintTest, StringifyStampingTexture) {
+  EXPECT_EQ(absl::StrCat(BrushPaint::StampingTexture{}),
+            "StampingTexture{client_texture_id=, animation_frames=1, "
+            "animation_rows=1, animation_columns=1, animation_duration=1s, "
+            "blend_mode=kModulate}");
+  EXPECT_EQ(absl::StrCat(BrushPaint::StampingTexture{
+                .client_texture_id = std::string(kTestTextureId)}),
+            "StampingTexture{client_texture_id=test-texture, "
+            "animation_frames=1, animation_rows=1, animation_columns=1, "
+            "animation_duration=1s, blend_mode=kModulate}");
+  EXPECT_EQ(absl::StrCat(BrushPaint::StampingTexture{
+                .client_texture_id = std::string(kTestTextureId),
+                .animation_frames = 2,
+                .animation_rows = 3,
+                .animation_columns = 4,
+                .animation_duration = absl::Seconds(5),
+                .blend_mode = BrushPaint::BlendMode::kDstIn}),
+            "StampingTexture{client_texture_id=test-texture, "
+            "animation_frames=2, animation_rows=3, animation_columns=4, "
+            "animation_duration=5s, blend_mode=kDstIn}");
+  EXPECT_EQ(absl::StrCat(BrushPaint::StampingTexture{
+                .client_texture_id = std::string(kTestTextureId),
                 .animation_frames = 2,
                 .animation_rows = 3,
                 .animation_columns = 4,
                 .animation_duration = absl::Seconds(5),
                 .blend_mode = BrushPaint::BlendMode::kSrcAtop}),
-            "TextureLayer{client_texture_id=test-texture, "
-            "mapping=kStamping, origin=kLastStrokeInput, size_unit=kBrushSize, "
-            "wrap_x=kClamp, wrap_y=kMirror, "
-            "size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, "
+            "StampingTexture{client_texture_id=test-texture, "
             "animation_frames=2, animation_rows=3, animation_columns=4, "
             "animation_duration=5s, blend_mode=kSrcAtop}");
 }
 
 TEST(BrushPaintTest, StringifyBrushPaint) {
   EXPECT_EQ(absl::StrCat(BrushPaint{}), "BrushPaint{self_overlap=kAny}");
-  EXPECT_EQ(absl::StrCat(BrushPaint{.texture_layers = {{}}}),
-            "BrushPaint{texture_layers={TextureLayer{client_texture_id=, "
-            "mapping=kTiling, origin=kStrokeSpaceOrigin, "
-            "size_unit=kStrokeCoordinates, wrap_x=kRepeat, "
-            "wrap_y=kRepeat, size=<1, 1>, offset=<0, 0>, "
-            "rotation=0π, animation_frames=1, animation_rows=1, "
-            "animation_columns=1, animation_duration=1s, "
-            "blend_mode=kModulate}}, self_overlap=kAny}");
+  EXPECT_EQ(absl::StrCat(BrushPaint{
+                .texture_layers = {BrushPaint::TilingTexture{
+                    .client_texture_id = std::string(kTestTextureId)}}}),
+            "BrushPaint{texture_layers={TilingTexture{client_texture_id=test-"
+            "texture, origin=kStrokeSpaceOrigin, size_unit=kStrokeCoordinates, "
+            "wrap_x=kRepeat, wrap_y=kRepeat, size=<1, 1>, offset=<0, 0>, "
+            "rotation=0π, blend_mode=kModulate}}, self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(
-          BrushPaint{.texture_layers = {{.client_texture_id =
-                                             std::string(kTestTextureId)}}}),
-      "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kTiling, origin=kStrokeSpaceOrigin, "
-      "size_unit=kStrokeCoordinates, wrap_x=kRepeat, wrap_y=kRepeat, "
-      "size=<1, 1>, offset=<0, 0>, rotation=0π, "
-      "animation_frames=1, animation_rows=1, animation_columns=1, "
-      "animation_duration=1s, blend_mode=kModulate}}, "
-      "self_overlap=kAny}");
-  EXPECT_EQ(
-      absl::StrCat(BrushPaint{
-          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .mapping = BrushPaint::TextureMapping::kStamping,
-                              .size_unit =
-                                  BrushPaint::TextureSizeUnit::kBrushSize}}}),
-      "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kStamping, origin=kStrokeSpaceOrigin, "
-      "size_unit=kBrushSize, wrap_x=kRepeat, wrap_y=kRepeat, "
-      "size=<1, 1>, offset=<0, 0>, rotation=0π, "
-      "animation_frames=1, animation_rows=1, animation_columns=1, "
-      "animation_duration=1s, blend_mode=kModulate}}, "
-      "self_overlap=kAny}");
-  EXPECT_EQ(
-      absl::StrCat(BrushPaint{
-          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .mapping = BrushPaint::TextureMapping::kStamping,
-                              .size_unit =
-                                  BrushPaint::TextureSizeUnit::kBrushSize,
-                              .size = {3, 5}}}}),
-      "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
-      "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, "
-      "rotation=0π, animation_frames=1, animation_rows=1, "
-      "animation_columns=1, animation_duration=1s, "
-      "blend_mode=kModulate}}, self_overlap=kAny}");
-  EXPECT_EQ(
-      absl::StrCat(BrushPaint{
-          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .size = {3, 5}}}}),
-      "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kTiling, origin=kStrokeSpaceOrigin, "
-      "size_unit=kStrokeCoordinates, wrap_x=kRepeat, wrap_y=kRepeat, "
-      "size=<3, 5>, offset=<0, 0>, rotation=0π, "
-      "animation_frames=1, animation_rows=1, animation_columns=1, "
-      "animation_duration=1s, blend_mode=kModulate}}, "
-      "self_overlap=kAny}");
-  EXPECT_EQ(
-      absl::StrCat(BrushPaint{
-          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .size = {3, 5},
-                              .offset = {2, 0.2}}}}),
-      "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kTiling, origin=kStrokeSpaceOrigin, "
-      "size_unit=kStrokeCoordinates, wrap_x=kRepeat, wrap_y=kRepeat, "
-      "size=<3, 5>, offset=<2, 0.2>, rotation=0π, "
-      "animation_frames=1, animation_rows=1, animation_columns=1, "
-      "animation_duration=1s, blend_mode=kModulate}}, "
-      "self_overlap=kAny}");
-  EXPECT_EQ(
-      absl::StrCat(BrushPaint{
-          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .size = {3, 5},
-                              .offset = {2, 0.2},
-                              .rotation = kQuarterTurn}}}),
-      "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kTiling, origin=kStrokeSpaceOrigin, "
-      "size_unit=kStrokeCoordinates, wrap_x=kRepeat, wrap_y=kRepeat, "
-      "size=<3, 5>, offset=<2, 0.2>, rotation=0.5π, "
-      "animation_frames=1, animation_rows=1, animation_columns=1, "
-      "animation_duration=1s, blend_mode=kModulate}}, "
-      "self_overlap=kAny}");
-  EXPECT_EQ(
-      absl::StrCat(BrushPaint{
-          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .mapping = BrushPaint::TextureMapping::kStamping,
-                              .size_unit =
-                                  BrushPaint::TextureSizeUnit::kBrushSize,
-                              .size = {3, 5},
-                              .offset = {2, 0.2},
-                              .blend_mode = BrushPaint::BlendMode::kSrcIn}}}),
-      "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
-      "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
-      "rotation=0π, animation_frames=1, animation_rows=1, "
-      "animation_columns=1, animation_duration=1s, "
-      "blend_mode=kSrcIn}}, self_overlap=kAny}");
-  EXPECT_EQ(
-      absl::StrCat(BrushPaint{
-          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .mapping = BrushPaint::TextureMapping::kStamping,
-                              .size_unit =
-                                  BrushPaint::TextureSizeUnit::kBrushSize,
-                              .size = {3, 5},
-                              .offset = {2, 0.2},
-                              .rotation = kQuarterTurn}}}),
-      "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
-      "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
-      "rotation=0.5π, animation_frames=1, animation_rows=1, "
-      "animation_columns=1, animation_duration=1s, "
-      "blend_mode=kModulate}}, self_overlap=kAny}");
-  EXPECT_EQ(
-      absl::StrCat(BrushPaint{
-          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .mapping = BrushPaint::TextureMapping::kStamping,
-                              .size_unit =
-                                  BrushPaint::TextureSizeUnit::kBrushSize,
-                              .size = {3, 5},
-                              .offset = {2, 0.2},
-                              .rotation = kQuarterTurn,
-                              .blend_mode = BrushPaint::BlendMode::kSrcIn}}}),
-      "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
-      "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
-      "rotation=0.5π, animation_frames=1, animation_rows=1, "
-      "animation_columns=1, animation_duration=1s, blend_mode=kSrcIn}}, "
-      "self_overlap=kAny}");
-  EXPECT_EQ(
-      absl::StrCat(BrushPaint{
-          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .mapping = BrushPaint::TextureMapping::kStamping,
-                              .size_unit =
-                                  BrushPaint::TextureSizeUnit::kBrushSize,
-                              .size = {3, 5},
-                              .offset = {2, 0.2},
-                              .rotation = kQuarterTurn}}}),
-      "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
-      "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
-      "rotation=0.5π, animation_frames=1, animation_rows=1, "
-      "animation_columns=1, animation_duration=1s, blend_mode=kModulate}}, "
-      "self_overlap=kAny}");
+          BrushPaint{.texture_layers = {BrushPaint::StampingTexture{
+                         .client_texture_id = std::string(kTestTextureId)}}}),
+      "BrushPaint{texture_layers={StampingTexture{client_texture_id=test-"
+      "texture, animation_frames=1, animation_rows=1, animation_columns=1, "
+      "animation_duration=1s, blend_mode=kModulate}}, self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers =
-              {{.client_texture_id = std::string(kTestTextureId),
-                .mapping = BrushPaint::TextureMapping::kStamping,
-                .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                .size = {3, 5},
-                .offset = {2, 0.2},
-                .rotation = kQuarterTurn,
-                .blend_mode = BrushPaint::BlendMode::kSrcIn},
-               {.client_texture_id = std::string(kTestTextureId),
-                .mapping = BrushPaint::TextureMapping::kTiling,
-                .size_unit = BrushPaint::TextureSizeUnit::kStrokeCoordinates,
-                .size = {1, 4},
-                .blend_mode = BrushPaint::BlendMode::kDstIn}}}),
-      "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-texture, "
-      "mapping=kStamping, origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
+              {BrushPaint::TilingTexture{
+                   .client_texture_id = std::string(kTestTextureId),
+                   .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
+                   .size = {3, 5},
+                   .offset = {2, 0.2},
+                   .rotation = kQuarterTurn,
+                   .blend_mode = BrushPaint::BlendMode::kSrcIn},
+               BrushPaint::TilingTexture{
+                   .client_texture_id = std::string(kTestTextureId),
+                   .size_unit = BrushPaint::TextureSizeUnit::kStrokeCoordinates,
+                   .size = {1, 4},
+                   .blend_mode = BrushPaint::BlendMode::kDstIn}}}),
+      "BrushPaint{texture_layers={"
+      "TilingTexture{client_texture_id=test-texture, "
+      "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<3, 5>, offset=<2, 0.2>, "
-      "rotation=0.5π, animation_frames=1, animation_rows=1, "
-      "animation_columns=1, animation_duration=1s, blend_mode=kSrcIn}, "
-      "TextureLayer{client_texture_id=test-texture, mapping=kTiling, "
+      "rotation=0.5π, blend_mode=kSrcIn}, "
+      "TilingTexture{client_texture_id=test-texture, "
       "origin=kStrokeSpaceOrigin, size_unit=kStrokeCoordinates, "
       "wrap_x=kRepeat, wrap_y=kRepeat, size=<1, 4>, offset=<0, 0>, "
-      "rotation=0π, animation_frames=1, animation_rows=1, "
-      "animation_columns=1, animation_duration=1s, "
-      "blend_mode=kDstIn}}, self_overlap=kAny}");
+      "rotation=0π, blend_mode=kDstIn}}, self_overlap=kAny}");
   EXPECT_EQ(absl::StrCat(
                 BrushPaint{.self_overlap = BrushPaint::SelfOverlap::kDiscard}),
             "BrushPaint{self_overlap=kDiscard}");
@@ -474,44 +348,55 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
             "BrushPaint{color_functions={OpacityMultiplier{0.5}}, "
             "self_overlap=kAny}");
   EXPECT_EQ(absl::StrCat(BrushPaint{
-                .texture_layers = {{.client_texture_id =
-                                        std::string(kTestTextureId)}},
+                .texture_layers = {BrushPaint::TilingTexture{
+                    .client_texture_id = std::string(kTestTextureId)}},
                 .color_functions = {{ColorFunction::OpacityMultiplier{0.5}}}}),
-            "BrushPaint{texture_layers={TextureLayer{client_texture_id=test-"
-            "texture, mapping=kTiling, origin=kStrokeSpaceOrigin, "
-            "size_unit=kStrokeCoordinates, wrap_x=kRepeat, wrap_y=kRepeat, "
-            "size=<1, 1>, offset=<0, 0>, rotation=0π, "
-            "animation_frames=1, animation_rows=1, animation_columns=1, "
-            "animation_duration=1s, blend_mode=kModulate}}, "
+            "BrushPaint{texture_layers={TilingTexture{client_texture_id=test-"
+            "texture, origin=kStrokeSpaceOrigin, size_unit=kStrokeCoordinates, "
+            "wrap_x=kRepeat, wrap_y=kRepeat, size=<1, 1>, offset=<0, 0>, "
+            "rotation=0π, blend_mode=kModulate}}, "
             "color_functions={OpacityMultiplier{0.5}}, self_overlap=kAny}");
 }
 
 TEST(BrushPaintTest, InvalidTextureLayerRotation) {
-  EXPECT_THAT(
-      brush_internal::ValidateBrushPaint(BrushPaint{
-          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .rotation = Angle::Radians(kInfinity)}}}),
-      StatusIs(absl::StatusCode::kInvalidArgument,
-               HasSubstr("rotation` must be finite")));
+  EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
+                  .texture_layers = {BrushPaint::TilingTexture{
+                      .client_texture_id = std::string(kTestTextureId),
+                      .rotation = Angle::Radians(kInfinity)}}}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("rotation` must be finite")));
+  EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
+                  .texture_layers = {BrushPaint::TilingTexture{
+                      .client_texture_id = std::string(kTestTextureId),
+                      .rotation = Angle::Radians(kNan)}}}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("rotation` must be finite")));
+}
 
+TEST(BrushPaintTest, InvalidTextureLayerBlendMode) {
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaint(BrushPaint{
-          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                              .rotation = Angle::Radians(kNan)}}}),
+      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TilingTexture{
+          .client_texture_id = std::string(kTestTextureId),
+          .blend_mode = static_cast<BrushPaint::BlendMode>(123)}),
       StatusIs(absl::StatusCode::kInvalidArgument,
-               HasSubstr("rotation` must be finite")));
+               HasSubstr("blend_mode` holds non-enumerator value")));
+  EXPECT_THAT(brush_internal::ValidateBrushPaintTextureLayer(
+                  BrushPaint::StampingTexture{
+                      .client_texture_id = std::string(kTestTextureId),
+                      .blend_mode = static_cast<BrushPaint::BlendMode>(123)}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("blend_mode` holds non-enumerator value")));
 }
 
 TEST(BrushPaintTest, InvalidTextureLayerTextureWrap) {
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
+      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TilingTexture{
           .client_texture_id = std::string(kTestTextureId),
           .wrap_x = static_cast<BrushPaint::TextureWrap>(123)}),
       StatusIs(absl::StatusCode::kInvalidArgument,
                HasSubstr("wrap_x` holds non-enumerator value")));
-
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
+      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TilingTexture{
           .client_texture_id = std::string(kTestTextureId),
           .wrap_y = static_cast<BrushPaint::TextureWrap>(123)}),
       StatusIs(absl::StatusCode::kInvalidArgument,
@@ -520,23 +405,26 @@ TEST(BrushPaintTest, InvalidTextureLayerTextureWrap) {
 
 TEST(BrushPaintTest, InvalidTextureLayerAnimationFrames) {
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_frames = -1}),
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_frames = -1}),
       StatusIs(
           absl::StatusCode::kInvalidArgument,
           HasSubstr("animation_frames` must be in the interval [1, 2^24]")));
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_frames = 0}),
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_frames = 0}),
       StatusIs(
           absl::StatusCode::kInvalidArgument,
           HasSubstr("animation_frames` must be in the interval [1, 2^24]")));
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_frames = (1 << 24) + 1}),
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_frames = (1 << 24) + 1}),
       StatusIs(
           absl::StatusCode::kInvalidArgument,
           HasSubstr("animation_frames` must be in the interval [1, 2^24]")));
@@ -544,76 +432,85 @@ TEST(BrushPaintTest, InvalidTextureLayerAnimationFrames) {
 
 TEST(BrushPaintTest, InvalidTextureLayerAnimationGridDimensions) {
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_rows = -1}),
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_rows = -1}),
       StatusIs(absl::StatusCode::kInvalidArgument,
                HasSubstr("animation_rows` must be in the interval [1, 2^12]")));
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_rows = 0}),
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_rows = 0}),
       StatusIs(absl::StatusCode::kInvalidArgument,
                HasSubstr("animation_rows` must be in the interval [1, 2^12]")));
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_rows = (1 << 12) + 1}),
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_rows = (1 << 12) + 1}),
       StatusIs(absl::StatusCode::kInvalidArgument,
                HasSubstr("animation_rows` must be in the interval [1, 2^12]")));
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_columns = -1}),
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_columns = -1}),
       StatusIs(
           absl::StatusCode::kInvalidArgument,
           HasSubstr("animation_columns` must be in the interval [1, 2^12]")));
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_columns = 0}),
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_columns = 0}),
       StatusIs(
           absl::StatusCode::kInvalidArgument,
           HasSubstr("animation_columns` must be in the interval [1, 2^12]")));
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_columns = (1 << 12) + 1}),
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_columns = (1 << 12) + 1}),
       StatusIs(
           absl::StatusCode::kInvalidArgument,
           HasSubstr("animation_columns` must be in the interval [1, 2^12]")));
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_frames = 7,
-          .animation_rows = 2,
-          .animation_columns = 3}),
-      StatusIs(
-          absl::StatusCode::kInvalidArgument,
-          HasSubstr(
-              "TextureLayer::animation_frames` must be less than or equal to "
-              "the product of `animation_rows` and `animation_columns`")));
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_frames = 7,
+              .animation_rows = 2,
+              .animation_columns = 3}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr(
+                   "animation_frames` must be less than or equal to "
+                   "the product of `animation_rows` and `animation_columns`")));
 }
 
 TEST(BrushPaintTest, InvalidTextureLayerAnimationDuration) {
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_duration = absl::Seconds(-1)}),
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_duration = absl::Seconds(-1)}),
       StatusIs(absl::StatusCode::kInvalidArgument,
                HasSubstr("animation_duration` must be a whole number of "
                          "milliseconds in the interval [0, 2^24]")));
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_duration = absl::InfiniteDuration()}),
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_duration = absl::InfiniteDuration()}),
       StatusIs(absl::StatusCode::kInvalidArgument,
                HasSubstr("animation_duration` must be a whole number of "
                          "milliseconds in the interval [0, 2^24]")));
   EXPECT_THAT(
-      brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
-          .client_texture_id = std::string(kTestTextureId),
-          .animation_duration = absl::Milliseconds(1.5)}),
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_duration = absl::Milliseconds(1.5)}),
       StatusIs(absl::StatusCode::kInvalidArgument,
                HasSubstr("animation_duration` must be a whole number of "
                          "milliseconds in the interval [0, 2^24]")));
@@ -628,61 +525,64 @@ TEST(BrushPaintTest, InvalidColorFunction) {
 
 TEST(BrushPaintTest, MismatchedTextureMappings) {
   EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
-                  {{.client_texture_id = std::string(kTestTextureId),
-                    .mapping = BrushPaint::TextureMapping::kTiling},
-                   {.client_texture_id = std::string(kTestTextureId),
-                    .mapping = BrushPaint::TextureMapping::kStamping}}}),
+                  {BrushPaint::TilingTexture{.client_texture_id =
+                                                 std::string(kTestTextureId)},
+                   BrushPaint::StampingTexture{
+                       .client_texture_id = std::string(kTestTextureId)}}}),
               StatusIs(absl::StatusCode::kInvalidArgument,
-                       HasSubstr("TextureLayer::mapping` must be the same")));
+                       HasSubstr("must use the same mapping mode")));
 }
 
 TEST(BrushPaintTest, MismatchedAnimationFrames) {
-  EXPECT_THAT(
-      brush_internal::ValidateBrushPaint(
-          BrushPaint{{{.client_texture_id = std::string(kTestTextureId),
+  EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
+                  {BrushPaint::StampingTexture{
+                       .client_texture_id = std::string(kTestTextureId),
                        .animation_frames = 12,
                        .animation_rows = 3,
                        .animation_columns = 4},
-                      {.client_texture_id = std::string(kTestTextureId),
+                   BrushPaint::StampingTexture{
+                       .client_texture_id = std::string(kTestTextureId),
                        .animation_frames = 8,
                        .animation_rows = 3,
                        .animation_columns = 4}}}),
-      StatusIs(absl::StatusCode::kInvalidArgument,
-               HasSubstr("TextureLayer::animation_frames` must be the same")));
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("animation_frames` must be the same")));
 }
 
 TEST(BrushPaintTest, MismatchedAnimationRows) {
-  EXPECT_THAT(
-      brush_internal::ValidateBrushPaint(
-          BrushPaint{{{.client_texture_id = std::string(kTestTextureId),
+  EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
+                  {BrushPaint::StampingTexture{
+                       .client_texture_id = std::string(kTestTextureId),
                        .animation_rows = 12},
-                      {.client_texture_id = std::string(kTestTextureId),
+                   BrushPaint::StampingTexture{
+                       .client_texture_id = std::string(kTestTextureId),
                        .animation_rows = 8}}}),
-      StatusIs(absl::StatusCode::kInvalidArgument,
-               HasSubstr("TextureLayer::animation_rows` must be the same")));
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("animation_rows` must be the same")));
 }
 
 TEST(BrushPaintTest, MismatchedAnimationColumns) {
-  EXPECT_THAT(
-      brush_internal::ValidateBrushPaint(
-          BrushPaint{{{.client_texture_id = std::string(kTestTextureId),
+  EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
+                  {BrushPaint::StampingTexture{
+                       .client_texture_id = std::string(kTestTextureId),
                        .animation_columns = 12},
-                      {.client_texture_id = std::string(kTestTextureId),
+                   BrushPaint::StampingTexture{
+                       .client_texture_id = std::string(kTestTextureId),
                        .animation_columns = 8}}}),
-      StatusIs(absl::StatusCode::kInvalidArgument,
-               HasSubstr("TextureLayer::animation_columns` must be the same")));
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("animation_columns` must be the same")));
 }
 
 TEST(BrushPaintTest, MismatchedAnimationDuration) {
-  EXPECT_THAT(
-      brush_internal::ValidateBrushPaint(
-          BrushPaint{{{.client_texture_id = std::string(kTestTextureId),
+  EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
+                  {BrushPaint::StampingTexture{
+                       .client_texture_id = std::string(kTestTextureId),
                        .animation_duration = absl::Seconds(12)},
-                      {.client_texture_id = std::string(kTestTextureId),
+                   BrushPaint::StampingTexture{
+                       .client_texture_id = std::string(kTestTextureId),
                        .animation_duration = absl::Seconds(8)}}}),
-      StatusIs(
-          absl::StatusCode::kInvalidArgument,
-          HasSubstr("TextureLayer::animation_duration` must be the same")));
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("animation_duration` must be the same")));
 }
 
 TEST(BrushPaintTest, InvalidSelfOverlap) {

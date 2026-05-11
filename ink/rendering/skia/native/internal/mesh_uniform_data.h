@@ -82,7 +82,7 @@ class MeshUniformData {
   // do nothing if the uniform is not in the mesh specification.
   void SetObjectToCanvasLinearComponent(const AffineTransform& transform);
   void SetBrushColor(const Color& color);
-  void SetTextureMapping(BrushPaint::TextureMapping mapping);
+  void SetTextureMappingMode(int mapping);
   void SetTextureAnimationProgress(float progress);
   void SetNumTextureAnimationFrames(int num_frames);
   void SetNumTextureAnimationRows(int num_rows);

@@ -195,9 +195,8 @@ void MeshUniformData::SetBrushColor(const Color& color) {
   SetUniformIfPresent(WritableData(), brush_color_offset_, rgba);
 }
 
-void MeshUniformData::SetTextureMapping(BrushPaint::TextureMapping mapping) {
-  SetUniformIfPresent(WritableData(), texture_mapping_offset_,
-                      static_cast<int>(mapping));
+void MeshUniformData::SetTextureMappingMode(int mapping) {
+  SetUniformIfPresent(WritableData(), texture_mapping_offset_, mapping);
 }
 
 void MeshUniformData::SetTextureAnimationProgress(float progress) {

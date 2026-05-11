@@ -88,12 +88,9 @@ BrushTip CreatePressureTestTip() {
 }
 
 BrushPaint CreateTestPaint() {
-  return {
-      .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                          .mapping = BrushPaint::TextureMapping::kStamping,
-                          .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                          .size = {3, 5},
-                          .blend_mode = BrushPaint::BlendMode::kDstIn}}};
+  return {.texture_layers = {BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .blend_mode = BrushPaint::BlendMode::kDstIn}}};
 }
 
 BrushCoat CreateTestCoat() {
@@ -122,17 +119,15 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
                .particle_gap_duration = Duration32::Seconds(2)},
       CreateTestPaint(), BrushFamily::PassthroughModel{});
   ASSERT_THAT(family, IsOk());
-  EXPECT_EQ(absl::StrCat(*family),
-            "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
-            "corner_rounding=0, particle_gap_distance_scale=0.1, "
-            "particle_gap_duration=2s}, "
-            "paint_preferences={BrushPaint{texture_layers={TextureLayer{"
-            "client_texture_id=test-paint, mapping=kStamping, "
-            "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
-            "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
-            "animation_frames=1, animation_rows=1, "
-            "animation_columns=1, animation_duration=1s, blend_mode=kDstIn}}, "
-            "self_overlap=kAny}}}], input_model=PassthroughModel)");
+  EXPECT_EQ(
+      absl::StrCat(*family),
+      "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
+      "corner_rounding=0, particle_gap_distance_scale=0.1, "
+      "particle_gap_duration=2s}, "
+      "paint_preferences={BrushPaint{texture_layers={StampingTexture{"
+      "client_texture_id=test-paint, animation_frames=1, animation_rows=1, "
+      "animation_columns=1, animation_duration=1s, blend_mode=kDstIn}}, "
+      "self_overlap=kAny}}}], input_model=PassthroughModel)");
 }
 
 TEST(BrushFamilyTest, StringifyWithId) {
@@ -141,17 +136,15 @@ TEST(BrushFamilyTest, StringifyWithId) {
                           CreateTestPaint(), BrushFamily::PassthroughModel{},
                           {.client_brush_family_id = "big-square"});
   ASSERT_THAT(family, IsOk());
-  EXPECT_EQ(absl::StrCat(*family),
-            "BrushFamily(coats=[BrushCoat{tip=BrushTip{scale=<3, 3>, "
-            "corner_rounding=0}, "
-            "paint_preferences={BrushPaint{texture_layers={TextureLayer{client_"
-            "texture_id=test-paint, mapping=kStamping, "
-            "origin=kStrokeSpaceOrigin, size_unit=kBrushSize, wrap_x=kRepeat, "
-            "wrap_y=kRepeat, size=<3, 5>, offset=<0, 0>, rotation=0π, "
-            "animation_frames=1, animation_rows=1, "
-            "animation_columns=1, animation_duration=1s, blend_mode=kDstIn}}, "
-            "self_overlap=kAny}}}], input_model=PassthroughModel, "
-            "client_brush_family_id='big-square')");
+  EXPECT_EQ(
+      absl::StrCat(*family),
+      "BrushFamily(coats=[BrushCoat{"
+      "tip=BrushTip{scale=<3, 3>, corner_rounding=0}, "
+      "paint_preferences={BrushPaint{texture_layers={StampingTexture{client_"
+      "texture_id=test-paint, animation_frames=1, animation_rows=1, "
+      "animation_columns=1, animation_duration=1s, blend_mode=kDstIn}}, "
+      "self_overlap=kAny}}}], input_model=PassthroughModel, "
+      "client_brush_family_id='big-square')");
 }
 
 TEST(BrushFamilyTest, CreateWithoutId) {
@@ -740,75 +733,64 @@ TEST(BrushFamilyTest, CopyAndMove) {
 }
 
 TEST(BrushFamilyTest, CreateWithInvalidBrushPaint) {
-  // `TextureLayer::mapping` has invalid enum value
-  EXPECT_THAT(
-      BrushFamily::Create(
-          BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-          {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                               .mapping =
-                                   static_cast<BrushPaint::TextureMapping>(-1),
-                               .size = {1, 4}}}}),
-      StatusIs(kInvalidArgument,
-               HasSubstr("BrushPaint::texture_layers::mapping")));
   // `TextureLayer::origin` has invalid enum value
-  EXPECT_THAT(
-      BrushFamily::Create(
-          BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-          {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                               .origin =
-                                   static_cast<BrushPaint::TextureOrigin>(-1),
-                               .size = {1, 4}}}}),
-      StatusIs(kInvalidArgument,
-               HasSubstr("BrushPaint::texture_layers::origin")));
+  EXPECT_THAT(BrushFamily::Create(
+                  BrushTip{.scale = {3, 3}, .corner_rounding = 0},
+                  {.texture_layers = {BrushPaint::TilingTexture{
+                       .client_texture_id = std::string(kTestTextureId),
+                       .origin = static_cast<BrushPaint::TextureOrigin>(-1),
+                       .size = {1, 4}}}}),
+              StatusIs(kInvalidArgument,
+                       HasSubstr("BrushPaint::TilingTexture::origin")));
   // TextureLayer::size_unit has invalid enum value
   EXPECT_THAT(
       BrushFamily::Create(
           BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-          {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                               .size_unit =
-                                   static_cast<BrushPaint::TextureSizeUnit>(-1),
-                               .size = {1, 4}}}}),
+          {.texture_layers = {BrushPaint::TilingTexture{
+               .client_texture_id = std::string(kTestTextureId),
+               .size_unit = static_cast<BrushPaint::TextureSizeUnit>(-1),
+               .size = {1, 4}}}}),
       StatusIs(kInvalidArgument,
-               HasSubstr("BrushPaint::texture_layers::size_unit")));
+               HasSubstr("BrushPaint::TilingTexture::size_unit")));
   // `TextureLayer::size` has negative component.
   EXPECT_THAT(
-      BrushFamily::Create(
-          BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-          {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
+      BrushFamily::Create(BrushTip{.scale = {3, 3}, .corner_rounding = 0},
+                          {.texture_layers = {BrushPaint::TilingTexture{
+                               .client_texture_id = std::string(kTestTextureId),
                                .size = {-1, 4}}}}),
-      StatusIs(kInvalidArgument, HasSubstr("BrushPaint::TextureLayer::size")));
+      StatusIs(kInvalidArgument, HasSubstr("BrushPaint::TilingTexture::size")));
   // `TextureLayer::size` has zero-size component.
   EXPECT_THAT(
-      BrushFamily::Create(
-          BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-          {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
+      BrushFamily::Create(BrushTip{.scale = {3, 3}, .corner_rounding = 0},
+                          {.texture_layers = {BrushPaint::TilingTexture{
+                               .client_texture_id = std::string(kTestTextureId),
                                .size = {0, 4}}}}),
-      StatusIs(kInvalidArgument, HasSubstr("BrushPaint::TextureLayer::size")));
+      StatusIs(kInvalidArgument, HasSubstr("BrushPaint::TilingTexture::size")));
   // `TextureLayer::size` is non-finite.
   EXPECT_THAT(
-      BrushFamily::Create(
-          BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-          {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
+      BrushFamily::Create(BrushTip{.scale = {3, 3}, .corner_rounding = 0},
+                          {.texture_layers = {BrushPaint::TilingTexture{
+                               .client_texture_id = std::string(kTestTextureId),
                                .size = {3, kInfinity}}}}),
-      StatusIs(kInvalidArgument, HasSubstr("BrushPaint::TextureLayer::size")));
+      StatusIs(kInvalidArgument, HasSubstr("BrushPaint::TilingTexture::size")));
   // `TextureLayer::offset` is infinite.
   EXPECT_THAT(
-      BrushFamily::Create(
-          BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-          {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
+      BrushFamily::Create(BrushTip{.scale = {3, 3}, .corner_rounding = 0},
+                          {.texture_layers = {BrushPaint::TilingTexture{
+                               .client_texture_id = std::string(kTestTextureId),
                                .size = {1, 3},
                                .offset = {kInfinity, 0.4}}}}),
       StatusIs(kInvalidArgument,
-               HasSubstr("BrushPaint::TextureLayer::offset")));
+               HasSubstr("BrushPaint::TilingTexture::offset")));
   // `TextureLayer::offset` is NaN.
   EXPECT_THAT(
-      BrushFamily::Create(
-          BrushTip{.scale = {3, 3}, .corner_rounding = 0},
-          {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
+      BrushFamily::Create(BrushTip{.scale = {3, 3}, .corner_rounding = 0},
+                          {.texture_layers = {BrushPaint::TilingTexture{
+                               .client_texture_id = std::string(kTestTextureId),
                                .size = {1, 3},
                                .offset = {1, kNan}}}}),
       StatusIs(kInvalidArgument,
-               HasSubstr("BrushPaint::TextureLayer::offset")));
+               HasSubstr("BrushPaint::TilingTexture::offset")));
 }
 
 void CanCreateAnyValidBrushFamily(absl::Span<const BrushCoat> coats,

@@ -158,7 +158,8 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
         return varyings;
       }
   )";
-  static_assert(static_cast<int>(BrushPaint::TextureMapping::kStamping) == 1);
+  static_assert(
+      BrushPaint::TextureLayer{BrushPaint::StampingTexture{}}.index() == 1);
 
   // Translate from `MeshFormat` to `MeshSpecificationData` attributes. Where
   // applicable below, multiple `MeshFormat` attributes are combined into one
@@ -301,7 +302,8 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
   // Case 1: 12-bit surface U and V and 8-bit animation offset. This is used for
   // particle-based meshes to support (potentially-animated) "stamping" textured
   // particles.
-  static_assert(static_cast<int>(BrushPaint::TextureMapping::kStamping) == 1);
+  static_assert(
+      BrushPaint::TextureLayer{BrushPaint::StampingTexture{}}.index() == 1);
   constexpr absl::string_view
       kVertexMainTextureUvWithSurfaceUvAndAnimationOffset = R"(
         if (uTextureMapping == 1) {

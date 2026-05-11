@@ -95,8 +95,9 @@ TEST(ShaderCacheTest, GetShaderForEmptyBrushPaint) {
 TEST(ShaderCacheTest, TryGetTextureShaderWithoutTextureProvider) {
   ShaderCache cache(nullptr);
   absl::StatusOr<sk_sp<SkShader>> shader = cache.GetShaderForPaint(
-      BrushPaint{{{.client_texture_id = std::string(kTestTextureId)}}}, 10,
-      StrokeInputBatch());
+      BrushPaint{{BrushPaint::TilingTexture{.client_texture_id =
+                                                std::string(kTestTextureId)}}},
+      10, StrokeInputBatch());
   EXPECT_EQ(shader.status().code(), absl::StatusCode::kFailedPrecondition);
   EXPECT_THAT(shader.status().message(),
               AllOf(HasSubstr("TextureBitmapStore"), HasSubstr("null")));
@@ -110,8 +111,9 @@ TEST(ShaderCacheTest, GetShaderForTexturedBrushPaint) {
   FakeBitmapStore provider(*test_image);
   ShaderCache cache(&provider);
   absl::StatusOr<sk_sp<SkShader>> shader = cache.GetShaderForPaint(
-      BrushPaint{{{.client_texture_id = std::string(kTestTextureId)}}}, 10,
-      StrokeInputBatch());
+      BrushPaint{{BrushPaint::TilingTexture{.client_texture_id =
+                                                std::string(kTestTextureId)}}},
+      10, StrokeInputBatch());
   ASSERT_EQ(shader.status(), absl::OkStatus());
   ASSERT_THAT(*shader, NotNull());
   SkImage* image = (*shader)->isAImage(nullptr, nullptr);

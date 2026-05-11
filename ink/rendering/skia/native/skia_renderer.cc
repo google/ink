@@ -118,11 +118,11 @@ bool IsMeshRenderingSupported(GrDirectContext* const absl_nullable context,
 
 // Returns whether path rendering is supported for the given `paint`.
 bool IsPathRenderingSupported(const BrushPaint& paint) {
-  return std::all_of(paint.texture_layers.begin(), paint.texture_layers.end(),
-                     [](const BrushPaint::TextureLayer& layer) {
-                       return layer.mapping ==
-                              BrushPaint::TextureMapping::kTiling;
-                     }) &&
+  return std::all_of(
+             paint.texture_layers.begin(), paint.texture_layers.end(),
+             [](const BrushPaint::TextureLayer& layer) {
+               return std::holds_alternative<BrushPaint::TilingTexture>(layer);
+             }) &&
          brush_internal::AllowsSelfOverlapMode(
              paint, BrushPaint::SelfOverlap::kDiscard);
 }
@@ -152,10 +152,13 @@ absl::StatusOr<MeshDrawable> CreateAndInitializeMeshDrawable(
                                                : brush_paint.texture_layers[0];
   // TODO: b/375203215 - Get rid of this uniform once we are able to mix
   // different texture mapping modes in a single `BrushPaint`.
-  mesh_drawable->SetTextureMapping(texture_layer.mapping);
-  mesh_drawable->SetNumTextureAnimationFrames(texture_layer.animation_frames);
-  mesh_drawable->SetNumTextureAnimationRows(texture_layer.animation_rows);
-  mesh_drawable->SetNumTextureAnimationColumns(texture_layer.animation_columns);
+  mesh_drawable->SetTextureMappingMode(texture_layer.index());
+  if (const auto* stamping =
+          std::get_if<BrushPaint::StampingTexture>(&texture_layer)) {
+    mesh_drawable->SetNumTextureAnimationFrames(stamping->animation_frames);
+    mesh_drawable->SetNumTextureAnimationRows(stamping->animation_rows);
+    mesh_drawable->SetNumTextureAnimationColumns(stamping->animation_columns);
+  }
   // Actual updates of this need to be done on draw.
   mesh_drawable->SetTextureAnimationProgress(0.0f);
   return *std::move(mesh_drawable);

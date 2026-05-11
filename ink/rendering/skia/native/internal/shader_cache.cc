@@ -1,8 +1,10 @@
 #include "ink/rendering/skia/native/internal/shader_cache.h"
 
 #include <utility>
+#include <variant>
 
 #include "absl/base/nullability.h"
+#include "absl/functional/overload.h"
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -108,18 +110,25 @@ AffineTransform ComputeTexelToSizeUnitTransform(
   AffineTransform texel_to_uv =
       AffineTransform::Scale(1.0f / static_cast<float>(bitmap_width),
                              1.0f / static_cast<float>(bitmap_height));
-  // The texture offset is specified as fractions of the texture size; in other
-  // words, it should be applied within texture UV space.
-  AffineTransform uv_offset = AffineTransform::Translate(layer.offset);
   // Transform from UV space (where the texture image is a unit square) to
   // size-unit space (where distance is measured in the layer's chosen
   // `TextureSizeUnit`). Stamping textures don't use TextureSizeUnit and stay
   // in texture UV space.
-  AffineTransform uv_to_size_unit =
-      layer.mapping == BrushPaint::TextureMapping::kStamping
-          ? AffineTransform::Identity()
-          : AffineTransform::Scale(layer.size.x, layer.size.y);
-  return uv_to_size_unit * uv_offset * texel_to_uv;
+  AffineTransform uv_to_size_unit = std::visit(
+      absl::Overload(
+          [](const BrushPaint::StampingTexture& stamping) {
+            return AffineTransform::Identity();
+          },
+          [](const BrushPaint::TilingTexture& tiling) {
+            // The texture offset is specified as fractions of the texture size;
+            // in other words, it should be applied within texture UV space.
+            AffineTransform uv_offset =
+                AffineTransform::Translate(tiling.offset);
+            return AffineTransform::Scale(tiling.size.x, tiling.size.y) *
+                   uv_offset;
+          }),
+      layer);
+  return uv_to_size_unit * texel_to_uv;
 }
 
 // Computes the transform for a `TextureLayer` from size-unit space to stroke
@@ -128,42 +137,79 @@ AffineTransform ComputeTexelToSizeUnitTransform(
 AffineTransform ComputeSizeUnitToStrokeSpaceTransform(
     const BrushPaint::TextureLayer& layer, float brush_size,
     const StrokeInputBatch& inputs) {
-  if (layer.mapping == BrushPaint::TextureMapping::kStamping) {
-    // Stamping textures don't use TextureOrigin or TextureSizeUnit.
-    return AffineTransform::Identity();
-  }
+  return std::visit(
+      absl::Overload(
+          [](const BrushPaint::StampingTexture& stamping) {
+            return AffineTransform::Identity();
+          },
+          [brush_size, &inputs](const BrushPaint::TilingTexture& tiling) {
+            // Transform from size-unit space (where distance is measured in the
+            // layer's chosen `TextureSizeUnit`) to stroke space (where distance
+            // is measured in stroke coordinates).
+            AffineTransform size_unit_to_stroke;
+            switch (tiling.size_unit) {
+              case BrushPaint::TextureSizeUnit::kBrushSize:
+                size_unit_to_stroke = AffineTransform::Scale(brush_size);
+                break;
+              case BrushPaint::TextureSizeUnit::kStrokeCoordinates:
+                break;
+            }
+            // While we're in stroke space, shift the origin to the position
+            // specified by the layer.
+            AffineTransform stroke_space_offset;
+            switch (tiling.origin) {
+              case BrushPaint::TextureOrigin::kStrokeSpaceOrigin:
+                break;
+              case BrushPaint::TextureOrigin::kFirstStrokeInput:
+                if (!inputs.IsEmpty()) {
+                  stroke_space_offset = AffineTransform::Translate(
+                      inputs.First().position.Offset());
+                }
+                break;
+              case BrushPaint::TextureOrigin::kLastStrokeInput:
+                if (!inputs.IsEmpty()) {
+                  stroke_space_offset = AffineTransform::Translate(
+                      inputs.Last().position.Offset());
+                }
+                break;
+            }
+            return stroke_space_offset * size_unit_to_stroke;
+          }),
+      layer);
+}
 
-  // Transform from size-unit space (where distance is measured in the layer's
-  // chosen `TextureSizeUnit`) to stroke space (where distance is measured in
-  // stroke coordinates).
-  AffineTransform size_unit_to_stroke;
-  switch (layer.size_unit) {
-    case BrushPaint::TextureSizeUnit::kBrushSize:
-      size_unit_to_stroke = AffineTransform::Scale(brush_size);
-      break;
-    case BrushPaint::TextureSizeUnit::kStrokeCoordinates:
-      break;
-  }
-  // While we're in stroke space, shift the origin to the position specified by
-  // the layer.
-  AffineTransform stroke_space_offset;
-  switch (layer.origin) {
-    case BrushPaint::TextureOrigin::kStrokeSpaceOrigin:
-      break;
-    case BrushPaint::TextureOrigin::kFirstStrokeInput:
-      if (!inputs.IsEmpty()) {
-        stroke_space_offset =
-            AffineTransform::Translate(inputs.First().position.Offset());
-      }
-      break;
-    case BrushPaint::TextureOrigin::kLastStrokeInput:
-      if (!inputs.IsEmpty()) {
-        stroke_space_offset =
-            AffineTransform::Translate(inputs.Last().position.Offset());
-      }
-      break;
-  }
-  return stroke_space_offset * size_unit_to_stroke;
+absl::string_view GetClientTextureId(const BrushPaint::TextureLayer& layer) {
+  return std::visit(
+      [](const auto& layer) {
+        return absl::string_view(layer.client_texture_id);
+      },
+      layer);
+}
+
+BrushPaint::BlendMode GetBlendMode(const BrushPaint::TextureLayer& layer) {
+  return std::visit([](const auto& layer) { return layer.blend_mode; }, layer);
+}
+
+BrushPaint::TextureWrap GetWrapX(const BrushPaint::TextureLayer& layer) {
+  return std::visit(absl::Overload(
+                        [](const BrushPaint::StampingTexture& stamping) {
+                          return BrushPaint::TextureWrap::kRepeat;
+                        },
+                        [](const BrushPaint::TilingTexture& tiling) {
+                          return tiling.wrap_x;
+                        }),
+                    layer);
+}
+
+BrushPaint::TextureWrap GetWrapY(const BrushPaint::TextureLayer& layer) {
+  return std::visit(absl::Overload(
+                        [](const BrushPaint::StampingTexture& stamping) {
+                          return BrushPaint::TextureWrap::kRepeat;
+                        },
+                        [](const BrushPaint::TilingTexture& tiling) {
+                          return tiling.wrap_y;
+                        }),
+                    layer);
 }
 
 }  // namespace
@@ -175,7 +221,8 @@ sk_sp<SkBlender> ShaderCache::GetBlenderForPaint(const BrushPaint& paint) {
   if (paint.texture_layers.empty()) return nullptr;
   // `SkBlender::Mode` returns a singleton for each `SkBlendMode`, so no caching
   // is needed on our end.
-  return SkBlender::Mode(ToSkBlendMode(paint.texture_layers.back().blend_mode));
+  return SkBlender::Mode(
+      ToSkBlendMode(GetBlendMode(paint.texture_layers.back())));
 }
 
 absl::StatusOr<sk_sp<SkShader>> ShaderCache::GetShaderForPaint(
@@ -193,7 +240,7 @@ absl::StatusOr<sk_sp<SkShader>> ShaderCache::GetShaderForPaint(
       paint_shader = SkShaders::Blend(blend_mode, *std::move(layer_shader),
                                       std::move(paint_shader));
     }
-    blend_mode = ToSkBlendMode(layer.blend_mode);
+    blend_mode = ToSkBlendMode(GetBlendMode(layer));
   }
   return paint_shader;
 }
@@ -214,13 +261,13 @@ absl::StatusOr<sk_sp<SkShader>> ShaderCache::GetShaderForLayer(
 absl::StatusOr<sk_sp<SkShader>> ShaderCache::CreateBaseShaderForLayer(
     const BrushPaint::TextureLayer& layer) {
   absl::StatusOr<sk_sp<SkImage>> image =
-      GetImageForTexture(layer.client_texture_id);
+      GetImageForTexture(GetClientTextureId(layer));
   if (!image.ok()) return image.status();
   SkISize size = (*image)->dimensions();
   SkMatrix matrix = ToSkMatrix(
       ComputeTexelToSizeUnitTransform(layer, size.width(), size.height()));
-  return SkShaders::Image(*std::move(image), ToSkTileMode(layer.wrap_x),
-                          ToSkTileMode(layer.wrap_y), SkSamplingOptions(),
+  return SkShaders::Image(*std::move(image), ToSkTileMode(GetWrapX(layer)),
+                          ToSkTileMode(GetWrapY(layer)), SkSamplingOptions(),
                           &matrix);
 }
 

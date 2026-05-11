@@ -276,8 +276,7 @@ TEST(StrokeShapeBuilderTest, StampingNonParticleBrushDoesNotHaveSurfaceUvs) {
   BrushCoat brush_coat{
       .tip = BrushTip{},
       .paint_preferences = {
-          {.texture_layers = {
-               {.mapping = BrushPaint::TextureMapping::kStamping}}}}};
+          {.texture_layers = {BrushPaint::StampingTexture{}}}}};
   float brush_epsilon = 0.1;
   input_modeler.StartStroke(BrushFamily::DefaultInputModel(), brush_epsilon);
   builder.StartStroke(brush_coat, /* brush_size = */ 10, brush_epsilon);
@@ -327,9 +326,7 @@ TEST(StrokeShapeBuilderTest, TiledTextureParticleDistanceBrushHasSurfaceUvs) {
   StrokeShapeBuilder builder;
   BrushCoat brush_coat{
       .tip = BrushTip{.particle_gap_distance_scale = 0.05},
-      .paint_preferences = {
-          {.texture_layers = {
-               {.mapping = BrushPaint::TextureMapping::kTiling}}}}};
+      .paint_preferences = {{.texture_layers = {BrushPaint::TilingTexture{}}}}};
   float brush_epsilon = 0.1;
   input_modeler.StartStroke(BrushFamily::DefaultInputModel(), brush_epsilon);
   builder.StartStroke(brush_coat, /* brush_size = */ 10, brush_epsilon);
@@ -387,8 +384,7 @@ TEST(StrokeShapeBuilderTest, StampingParticleDistanceBrushHasSurfaceUvs) {
   BrushCoat brush_coat{
       .tip = BrushTip{.particle_gap_distance_scale = 0.05},
       .paint_preferences = {
-          {.texture_layers = {
-               {.mapping = BrushPaint::TextureMapping::kStamping}}}}};
+          {.texture_layers = {BrushPaint::StampingTexture{}}}}};
   float brush_epsilon = 0.1;
   input_modeler.StartStroke(BrushFamily::DefaultInputModel(), brush_epsilon);
   builder.StartStroke(brush_coat, /* brush_size = */ 10, brush_epsilon);
@@ -418,8 +414,7 @@ TEST(StrokeShapeBuilderTest, StampingParticleDurationBrushHasSurfaceUvs) {
   BrushCoat brush_coat{
       .tip = BrushTip{.particle_gap_duration = Duration32::Seconds(0.05)},
       .paint_preferences = {
-          {.texture_layers = {
-               {.mapping = BrushPaint::TextureMapping::kStamping}}}}};
+          {.texture_layers = {BrushPaint::StampingTexture{}}}}};
   float brush_epsilon = 0.1;
   input_modeler.StartStroke(BrushFamily::DefaultInputModel(), brush_epsilon);
   builder.StartStroke(brush_coat, /* brush_size = */ 10, brush_epsilon);

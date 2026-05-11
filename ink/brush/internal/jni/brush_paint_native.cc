@@ -140,8 +140,7 @@ int BrushPaintNative_getTextureLayerCount(int64_t native_ptr) {
 }
 
 int BrushPaintNative_getTextureLayerMappingInt(int64_t native_ptr, int index) {
-  return static_cast<int>(
-      CastToBrushPaint(native_ptr).texture_layers[index].mapping);
+  return CastToBrushPaint(native_ptr).texture_layers[index].index();
 }
 
 int64_t BrushPaintNative_newCopyOfTextureLayer(int64_t native_ptr, int index) {
@@ -196,9 +195,8 @@ int64_t TilingTextureNative_create(
     float size_y, float offset_x, float offset_y, float rotation_degrees,
     int size_unit, int origin, int wrap_x, int wrap_y, int blend_mode,
     void (*throw_from_status_callback)(void*, int, const char*)) {
-  BrushPaint::TextureLayer texture_layer{
+  BrushPaint::TextureLayer texture_layer = {BrushPaint::TilingTexture{
       .client_texture_id = client_texture_id,
-      .mapping = BrushPaint::TextureMapping::kTiling,
       .origin = IntToOrigin(origin),
       .size_unit = IntToSizeUnit(size_unit),
       .wrap_x = IntToWrap(wrap_x),
@@ -207,7 +205,7 @@ int64_t TilingTextureNative_create(
       .offset = Vec{offset_x, offset_y},
       .rotation = Angle::Degrees(rotation_degrees),
       .blend_mode = IntToBlendMode(blend_mode),
-  };
+  }};
   if (absl::Status status = ValidateBrushPaintTextureLayer(texture_layer);
       !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
@@ -223,15 +221,14 @@ int64_t StampingTextureNative_create(
     int animation_frames, int animation_rows, int animation_columns,
     int64_t animation_duration_millis, int blend_mode,
     void (*throw_from_status_callback)(void*, int, const char*)) {
-  BrushPaint::TextureLayer texture_layer{
+  BrushPaint::TextureLayer texture_layer = {BrushPaint::StampingTexture{
       .client_texture_id = client_texture_id,
-      .mapping = BrushPaint::TextureMapping::kStamping,
       .animation_frames = animation_frames,
       .animation_rows = animation_rows,
       .animation_columns = animation_columns,
       .animation_duration = absl::Milliseconds(animation_duration_millis),
       .blend_mode = IntToBlendMode(blend_mode),
-  };
+  }};
   if (absl::Status status = ValidateBrushPaintTextureLayer(texture_layer);
       !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
@@ -247,72 +244,93 @@ void TextureLayerNative_free(int64_t native_ptr) {
 }
 
 const char* TilingTextureNative_getClientTextureId(int64_t native_ptr) {
-  return CastToTextureLayer(native_ptr).client_texture_id.c_str();
+  return std::get<BrushPaint::TilingTexture>(CastToTextureLayer(native_ptr))
+      .client_texture_id.c_str();
 }
 
 float TilingTextureNative_getSizeX(int64_t native_ptr) {
-  return CastToTextureLayer(native_ptr).size.x;
+  return std::get<BrushPaint::TilingTexture>(CastToTextureLayer(native_ptr))
+      .size.x;
 }
 
 float TilingTextureNative_getSizeY(int64_t native_ptr) {
-  return CastToTextureLayer(native_ptr).size.y;
+  return std::get<BrushPaint::TilingTexture>(CastToTextureLayer(native_ptr))
+      .size.y;
 }
 
 float TilingTextureNative_getOffsetX(int64_t native_ptr) {
-  return CastToTextureLayer(native_ptr).offset.x;
+  return std::get<BrushPaint::TilingTexture>(CastToTextureLayer(native_ptr))
+      .offset.x;
 }
 
 float TilingTextureNative_getOffsetY(int64_t native_ptr) {
-  return CastToTextureLayer(native_ptr).offset.y;
+  return std::get<BrushPaint::TilingTexture>(CastToTextureLayer(native_ptr))
+      .offset.y;
 }
 
 float TilingTextureNative_getRotationDegrees(int64_t native_ptr) {
-  return CastToTextureLayer(native_ptr).rotation.ValueInDegrees();
+  return std::get<BrushPaint::TilingTexture>(CastToTextureLayer(native_ptr))
+      .rotation.ValueInDegrees();
 }
 
 const char* StampingTextureNative_getClientTextureId(int64_t native_ptr) {
-  return CastToTextureLayer(native_ptr).client_texture_id.c_str();
+  return std::get<BrushPaint::StampingTexture>(CastToTextureLayer(native_ptr))
+      .client_texture_id.c_str();
 }
 
 int StampingTextureNative_getAnimationFrames(int64_t native_ptr) {
-  return CastToTextureLayer(native_ptr).animation_frames;
+  return std::get<BrushPaint::StampingTexture>(CastToTextureLayer(native_ptr))
+      .animation_frames;
 }
 
 int StampingTextureNative_getAnimationRows(int64_t native_ptr) {
-  return CastToTextureLayer(native_ptr).animation_rows;
+  return std::get<BrushPaint::StampingTexture>(CastToTextureLayer(native_ptr))
+      .animation_rows;
 }
 
 int StampingTextureNative_getAnimationColumns(int64_t native_ptr) {
-  return CastToTextureLayer(native_ptr).animation_columns;
+  return std::get<BrushPaint::StampingTexture>(CastToTextureLayer(native_ptr))
+      .animation_columns;
 }
 
 int64_t StampingTextureNative_getAnimationDurationMillis(int64_t native_ptr) {
   return absl::ToInt64Milliseconds(
-      CastToTextureLayer(native_ptr).animation_duration);
+      std::get<BrushPaint::StampingTexture>(CastToTextureLayer(native_ptr))
+          .animation_duration);
 }
 
 int TilingTextureNative_getSizeUnitInt(int64_t native_ptr) {
-  return static_cast<int>(CastToTextureLayer(native_ptr).size_unit);
+  return static_cast<int>(
+      std::get<BrushPaint::TilingTexture>(CastToTextureLayer(native_ptr))
+          .size_unit);
 }
 
 int TilingTextureNative_getOriginInt(int64_t native_ptr) {
-  return static_cast<int>(CastToTextureLayer(native_ptr).origin);
+  return static_cast<int>(
+      std::get<BrushPaint::TilingTexture>(CastToTextureLayer(native_ptr))
+          .origin);
 }
 
 int TextureLayerNative_getMappingInt(int64_t native_ptr) {
-  return static_cast<int>(CastToTextureLayer(native_ptr).mapping);
+  return CastToTextureLayer(native_ptr).index();
 }
 
 int TilingTextureNative_getWrapXInt(int64_t native_ptr) {
-  return static_cast<int>(CastToTextureLayer(native_ptr).wrap_x);
+  return static_cast<int>(
+      std::get<BrushPaint::TilingTexture>(CastToTextureLayer(native_ptr))
+          .wrap_x);
 }
 
 int TilingTextureNative_getWrapYInt(int64_t native_ptr) {
-  return static_cast<int>(CastToTextureLayer(native_ptr).wrap_y);
+  return static_cast<int>(
+      std::get<BrushPaint::TilingTexture>(CastToTextureLayer(native_ptr))
+          .wrap_y);
 }
 
 int TextureLayerNative_getBlendModeInt(int64_t native_ptr) {
-  return static_cast<int>(CastToTextureLayer(native_ptr).blend_mode);
+  return static_cast<int>(
+      std::visit([](const auto& layer) { return layer.blend_mode; },
+                 CastToTextureLayer(native_ptr)));
 }
 
 // ************ Native C-API of BrushPaint ColorFunction ************

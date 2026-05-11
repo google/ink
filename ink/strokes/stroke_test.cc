@@ -59,16 +59,10 @@ constexpr absl::string_view kTestTextureId = "test-texture";
 
 Brush CreateBrush() {
   auto family = BrushFamily::Create(
-      {
-          .scale = {0.5, 0.7},
-          .corner_rounding = 0,
-          .rotation = kFullTurn / 8,
-      },
-      {.texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                           .mapping = BrushPaint::TextureMapping::kStamping,
-                           .size_unit = BrushPaint::TextureSizeUnit::kBrushSize,
-                           .size = {3, 5},
-                           .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
+      {.scale = {0.5, 0.7}, .corner_rounding = 0, .rotation = kFullTurn / 8},
+      {.texture_layers = {BrushPaint::StampingTexture{
+           .client_texture_id = std::string(kTestTextureId),
+           .blend_mode = BrushPaint::BlendMode::kSrcAtop}}},
       BrushFamily::DefaultInputModel(),
       {.client_brush_family_id =
            "//test/brush-family:awesome-rectangular-brush"});

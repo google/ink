@@ -129,9 +129,8 @@ TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithColorShift) {
 
 TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithoutStampingTextures) {
   BrushPaint paint = {
-      .texture_layers = {BrushPaint::TextureLayer{
+      .texture_layers = {BrushPaint::TilingTexture{
           .client_texture_id = std::string(kTestTextureId),
-          .mapping = BrushPaint::TextureMapping::kTiling,
       }},
   };
   BrushCoat coat = {.tip = BrushTip(), .paint_preferences = {paint}};
@@ -143,9 +142,8 @@ TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithoutStampingTextures) {
 
 TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithStampingTextures) {
   BrushPaint paint = {
-      .texture_layers = {BrushPaint::TextureLayer{
+      .texture_layers = {BrushPaint::StampingTexture{
           .client_texture_id = std::string(kTestTextureId),
-          .mapping = BrushPaint::TextureMapping::kStamping,
       }},
   };
   BrushCoat coat = {.tip = BrushTip(), .paint_preferences = {paint}};

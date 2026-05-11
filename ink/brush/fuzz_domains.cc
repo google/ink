@@ -579,15 +579,6 @@ Domain<BrushPaint::TextureSizeUnit> ArbitraryBrushPaintTextureSizeUnit() {
 }
 // LINT.ThenChange(brush_paint.h:texture_size_unit)
 
-// LINT.IfChange(texture_mapping)
-Domain<BrushPaint::TextureMapping> ArbitraryBrushPaintTextureMapping() {
-  return ElementOf({
-      BrushPaint::TextureMapping::kTiling,
-      BrushPaint::TextureMapping::kStamping,
-  });
-}
-// LINT.ThenChange(brush_paint.h:texture_mapping)
-
 // LINT.IfChange(texture_origin)
 Domain<BrushPaint::TextureOrigin> ArbitraryBrushPaintTextureOrigin() {
   return ElementOf({
@@ -627,34 +618,77 @@ Domain<BrushPaint::BlendMode> ArbitraryBrushPaintBlendMode() {
 }
 // LINT.ThenChange(brush_paint.h:blend_mode)
 
-Domain<BrushPaint::TextureLayer>
-ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
-    BrushPaint::TextureMapping mapping, int animation_frames,
-    int animation_rows, int animation_columns,
+// Casts a domain over a specific texture layer type (e.g. `TilingTexture`) into
+// a domain over `TextureLayer`.
+template <typename T>
+Domain<BrushPaint::TextureLayer> BrushPaintTextureLayerOf(Domain<T> domain) {
+  return Map([](const BrushPaint::TextureLayer& layer) { return layer; },
+             domain);
+}
+
+Domain<BrushPaint::TilingTexture> ValidBrushPaintTilingTexture() {
+  return StructOf<BrushPaint::TilingTexture>(
+      Arbitrary<std::string>(), ArbitraryBrushPaintTextureOrigin(),
+      ArbitraryBrushPaintTextureSizeUnit(), ArbitraryBrushPaintTextureWrap(),
+      ArbitraryBrushPaintTextureWrap(),
+      StructOf<Vec>(FinitePositiveFloat(), FinitePositiveFloat()),
+      StructOf<Vec>(InRange<float>(0.f, 1.f), InRange<float>(0.f, 1.f)),
+      FiniteAngle(), ArbitraryBrushPaintBlendMode());
+}
+
+Domain<std::vector<BrushPaint::TextureLayer>> ValidBrushPaintTilingTextures() {
+  return VectorOf(BrushPaintTextureLayerOf(ValidBrushPaintTilingTexture()));
+}
+
+Domain<BrushPaint::StampingTexture>
+ValidBrushPaintStampingTextureWithAnimationParameters(
+    int animation_frames, int animation_rows, int animation_columns,
     absl::Duration animation_duration, DomainVariant variant) {
-  auto texture_layer = [=](Vec size) {
-    auto animation_frames_domain = Just(animation_frames);
-    auto animation_rows_domain = Just(animation_rows);
-    auto animation_columns_domain = Just(animation_columns);
-    auto animation_duration_domain = Just(animation_duration);
-    if (variant == DomainVariant::kValidAndSerializable) {
-      animation_frames_domain = Just(1);
-      animation_rows_domain = Just(1);
-      animation_columns_domain = Just(1);
-      animation_duration_domain = Just(absl::Seconds(1));
-    }
-    return StructOf<BrushPaint::TextureLayer>(
-        Arbitrary<std::string>(), Just(mapping),
-        ArbitraryBrushPaintTextureOrigin(),
-        ArbitraryBrushPaintTextureSizeUnit(), ArbitraryBrushPaintTextureWrap(),
-        ArbitraryBrushPaintTextureWrap(), Just(size),
-        StructOf<Vec>(InRange<float>(0.f, 1.f), InRange<float>(0.f, 1.f)),
-        FiniteAngle(), animation_frames_domain, animation_rows_domain,
-        animation_columns_domain, animation_duration_domain,
-        ArbitraryBrushPaintBlendMode());
-  };
-  return FlatMap(texture_layer,
-                 StructOf<Vec>(FinitePositiveFloat(), FinitePositiveFloat()));
+  auto animation_frames_domain = Just(animation_frames);
+  auto animation_rows_domain = Just(animation_rows);
+  auto animation_columns_domain = Just(animation_columns);
+  auto animation_duration_domain = Just(animation_duration);
+  if (variant == DomainVariant::kValidAndSerializable) {
+    animation_frames_domain = Just(1);
+    animation_rows_domain = Just(1);
+    animation_columns_domain = Just(1);
+    animation_duration_domain = Just(absl::Seconds(1));
+  }
+  return StructOf<BrushPaint::StampingTexture>(
+      Arbitrary<std::string>(), animation_frames_domain, animation_rows_domain,
+      animation_columns_domain, animation_duration_domain,
+      ArbitraryBrushPaintBlendMode());
+}
+
+Domain<std::vector<BrushPaint::TextureLayer>> ValidBrushPaintStampingTextures(
+    DomainVariant variant) {
+  return FlatMap(
+      [=](std::tuple<int, int, int> animation_frames_rows_columns,
+          absl::Duration animation_duration) {
+        return std::apply(
+            [&](int frames, int rows, int columns) {
+              return VectorOf(BrushPaintTextureLayerOf(
+                  ValidBrushPaintStampingTextureWithAnimationParameters(
+                      frames, rows, columns, animation_duration, variant)));
+            },
+            animation_frames_rows_columns);
+      },
+      FlatMap(
+          [](int rows, int columns) {
+            return TupleOf(InRange<int>(1, rows * columns), Just(rows),
+                           Just(columns));
+          },
+          InRange<int>(1, 1 << 12), InRange<int>(1, 1 << 12)),
+      Map([](int64_t ms) { return absl::Milliseconds(ms); },
+          InRange(0, 1 << 24)));
+}
+
+Domain<std::vector<BrushPaint::TextureLayer>> ValidBrushPaintTextureLayers(
+    DomainVariant variant) {
+  // LINT.IfChange(texture_mapping)
+  return OneOf(ValidBrushPaintTilingTextures(),
+               ValidBrushPaintStampingTextures(variant));
+  // LINT.ThenChange(brush_paint.h:texture_mapping)
 }
 
 // LINT.IfChange(self_overlap)
@@ -668,31 +702,9 @@ Domain<BrushPaint::SelfOverlap> ArbitraryBrushPaintSelfOverlap() {
 // LINT.ThenChange(brush_paint.h:self_overlap)
 
 Domain<BrushPaint> ValidBrushPaint(DomainVariant variant) {
-  return FlatMap(
-      [=](BrushPaint::TextureMapping mapping,
-          std::tuple<int, int, int> animation_frames_rows_columns,
-          absl::Duration animation_duration) {
-        return std::apply(
-            [&](int frames, int rows, int columns) {
-              return fuzztest::StructOf<BrushPaint>(
-                  VectorOf(
-                      ValidBrushPaintTextureLayerWithMappingAndAnimationFrames(
-                          mapping, frames, rows, columns, animation_duration,
-                          variant)),
-                  VectorOf(ValidColorFunction()),
-                  ArbitraryBrushPaintSelfOverlap());
-            },
-            animation_frames_rows_columns);
-      },
-      ArbitraryBrushPaintTextureMapping(),
-      FlatMap(
-          [](int rows, int columns) {
-            return TupleOf(InRange<int>(1, rows * columns), Just(rows),
-                           Just(columns));
-          },
-          InRange<int>(1, 1 << 12), InRange<int>(1, 1 << 12)),
-      fuzztest::Map([](int64_t ms) { return absl::Milliseconds(ms); },
-                    fuzztest::InRange(0, 1 << 24)));
+  return StructOf<BrushPaint>(ValidBrushPaintTextureLayers(variant),
+                              VectorOf(ValidColorFunction()),
+                              ArbitraryBrushPaintSelfOverlap());
 }
 
 Domain<BrushTip> ValidBrushTip(DomainVariant variant) {

@@ -78,7 +78,7 @@ struct MeshSpecificationData {
     kPositionUnpackingTransform = 2,
     kSideDerivativeUnpackingTransform = 3,
     kForwardDerivativeUnpackingTransform = 4,
-    // The `BrushPaint::TextureMapping` value.
+    // The `std::variant::index()` of the `BrushPaint::TextureLayer` being used.
     // TODO: b/375203215 - Get rid of this uniform once we are able to mix
     // different texture mapping modes in a single `BrushPaint`.
     kTextureMapping = 5,
