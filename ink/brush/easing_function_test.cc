@@ -20,12 +20,15 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/strings/str_cat.h"
 #include "ink/brush/fuzz_domains.h"
 
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::testing::HasSubstr;
 
 static_assert(std::numeric_limits<float>::has_quiet_NaN);
@@ -170,189 +173,139 @@ TEST(EasingFunctionTest, EasingFunctionEqualAndNotEqual) {
 }
 
 TEST(EasingFunctionTest, InvalidPredefined) {
-  absl::Status invalid_predefined = brush_internal::ValidateEasingFunction(
-      {static_cast<EasingFunction::Predefined>(-1)});
-  EXPECT_EQ(invalid_predefined.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(invalid_predefined.message(), HasSubstr("Predefined"));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {static_cast<EasingFunction::Predefined>(-1)}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Predefined")));
 }
 
 TEST(BrushFamilyTest, InvalidCubicBezier) {
   // X value < 0:
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::CubicBezier{.x1 = -1, .y1 = 0, .x2 = 1, .y2 = 1}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("CubicBezier"));
-  }
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::CubicBezier{.x1 = 0, .y1 = 0, .x2 = -1, .y2 = 1}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("CubicBezier"));
-  }
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::CubicBezier{.x1 = -1, .y1 = 0, .x2 = 1, .y2 = 1}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("CubicBezier")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::CubicBezier{.x1 = 0, .y1 = 0, .x2 = -1, .y2 = 1}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("CubicBezier")));
+
   // X value > 1:
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::CubicBezier{.x1 = 2, .y1 = 0, .x2 = 1, .y2 = 1}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("CubicBezier"));
-  }
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::CubicBezier{.x1 = 0, .y1 = 0, .x2 = 2, .y2 = 1}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("CubicBezier"));
-  }
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::CubicBezier{.x1 = 2, .y1 = 0, .x2 = 1, .y2 = 1}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("CubicBezier")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::CubicBezier{.x1 = 0, .y1 = 0, .x2 = 2, .y2 = 1}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("CubicBezier")));
+
   // Infinite X or Y value:
-  {
-    absl::Status status =
-        brush_internal::ValidateEasingFunction({EasingFunction::CubicBezier{
-            .x1 = kInfinity, .y1 = 0, .x2 = 1, .y2 = 1}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("CubicBezier"));
-  }
-  {
-    absl::Status status =
-        brush_internal::ValidateEasingFunction({EasingFunction::CubicBezier{
-            .x1 = 0, .y1 = kInfinity, .x2 = 1, .y2 = 1}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("CubicBezier"));
-  }
-  {
-    absl::Status status =
-        brush_internal::ValidateEasingFunction({EasingFunction::CubicBezier{
-            .x1 = 0, .y1 = 0, .x2 = kInfinity, .y2 = 1}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("CubicBezier"));
-  }
-  {
-    absl::Status status =
-        brush_internal::ValidateEasingFunction({EasingFunction::CubicBezier{
-            .x1 = 0, .y1 = 0, .x2 = 1, .y2 = kInfinity}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("CubicBezier"));
-  }
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction({EasingFunction::CubicBezier{
+          .x1 = kInfinity, .y1 = 0, .x2 = 1, .y2 = 1}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("CubicBezier")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction({EasingFunction::CubicBezier{
+          .x1 = 0, .y1 = kInfinity, .x2 = 1, .y2 = 1}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("CubicBezier")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction({EasingFunction::CubicBezier{
+          .x1 = 0, .y1 = 0, .x2 = kInfinity, .y2 = 1}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("CubicBezier")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction({EasingFunction::CubicBezier{
+          .x1 = 0, .y1 = 0, .x2 = 1, .y2 = kInfinity}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("CubicBezier")));
+
   // NaN X or Y value:
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::CubicBezier{.x1 = kNan, .y1 = 0, .x2 = 1, .y2 = 1}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("CubicBezier"));
-  }
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::CubicBezier{.x1 = 0, .y1 = kNan, .x2 = 1, .y2 = 1}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("CubicBezier"));
-  }
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::CubicBezier{.x1 = 0, .y1 = 0, .x2 = kNan, .y2 = 1}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("CubicBezier"));
-  }
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::CubicBezier{.x1 = 0, .y1 = 0, .x2 = 1, .y2 = kNan}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("CubicBezier"));
-  }
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::CubicBezier{.x1 = kNan, .y1 = 0, .x2 = 1, .y2 = 1}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("CubicBezier")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::CubicBezier{.x1 = 0, .y1 = kNan, .x2 = 1, .y2 = 1}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("CubicBezier")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::CubicBezier{.x1 = 0, .y1 = 0, .x2 = kNan, .y2 = 1}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("CubicBezier")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::CubicBezier{.x1 = 0, .y1 = 0, .x2 = 1, .y2 = kNan}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("CubicBezier")));
 }
 
 TEST(EasingFunctionTest, InvalidLinear) {
   // Non-finite Y-position:
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::Linear{{{0, kNan}}}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("y-position"));
-  }
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::Linear{{{0, kInfinity}}}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("y-position"));
-  }
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::Linear{{{0, -kInfinity}}}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("y-position"));
-  }
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::Linear{{{0, kNan}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("y-position")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::Linear{{{0, kInfinity}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("y-position")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::Linear{{{0, -kInfinity}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("y-position")));
+
   // Non-finite X-position:
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::Linear{{{kNan, 0}}}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("x-position"));
-  }
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::Linear{{{kInfinity, 0}}}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("x-position"));
-  }
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::Linear{{{-kInfinity, 0}}}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("x-position"));
-  }
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::Linear{{{kNan, 0}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("x-position")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::Linear{{{kInfinity, 0}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("x-position")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::Linear{{{-kInfinity, 0}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("x-position")));
+
   // X-position out of range:
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::Linear{{{-0.1, 0}}}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("x-position"));
-  }
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::Linear{{{1.1, 0}}}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("x-position"));
-  }
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::Linear{{{-0.1, 0}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("x-position")));
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::Linear{{{1.1, 0}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("x-position")));
+
   // X-positions that aren't monotonicly non-decreasing:
-  {
-    absl::Status status = brush_internal::ValidateEasingFunction(
-        {EasingFunction::Linear{{{0.75, 0}, {0.25, 1}}}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("monotonic"));
-  }
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction(
+          {EasingFunction::Linear{{{0.75, 0}, {0.25, 1}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("monotonic")));
 }
 
 TEST(EasingFunctionTest, InvalidSteps) {
   // Step count < 1:
-  {
-    absl::Status status =
-        brush_internal::ValidateEasingFunction({EasingFunction::Steps{
-            .step_count = 0,
-            .step_position = EasingFunction::StepPosition::kJumpEnd}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("Steps"));
-  }
+  EXPECT_THAT(brush_internal::ValidateEasingFunction({EasingFunction::Steps{
+                  .step_count = 0,
+                  .step_position = EasingFunction::StepPosition::kJumpEnd}}),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Steps")));
+
   // Invalid StepPosition value:
-  {
-    absl::Status status =
-        brush_internal::ValidateEasingFunction({EasingFunction::Steps{
-            .step_count = 1,
-            .step_position = static_cast<EasingFunction::StepPosition>(-1)}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("Steps"));
-  }
+  EXPECT_THAT(
+      brush_internal::ValidateEasingFunction({EasingFunction::Steps{
+          .step_count = 1,
+          .step_position = static_cast<EasingFunction::StepPosition>(-1)}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Steps")));
+
   // Step count < 2 with StepPosition::kJumpNone:
-  {
-    absl::Status status =
-        brush_internal::ValidateEasingFunction({EasingFunction::Steps{
-            .step_count = 1,
-            .step_position = EasingFunction::StepPosition::kJumpNone}});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("Steps"));
-  }
+  EXPECT_THAT(brush_internal::ValidateEasingFunction({EasingFunction::Steps{
+                  .step_count = 1,
+                  .step_position = EasingFunction::StepPosition::kJumpNone}}),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Steps")));
 }
 
 void CanValidateValidEasingFunction(const EasingFunction& easing_function) {
-  EXPECT_EQ(absl::OkStatus(),
-            brush_internal::ValidateEasingFunction(easing_function));
+  EXPECT_THAT(brush_internal::ValidateEasingFunction(easing_function), IsOk());
 }
 FUZZ_TEST(EasingFunctionTest, CanValidateValidEasingFunction)
     .WithDomains(ValidEasingFunction());

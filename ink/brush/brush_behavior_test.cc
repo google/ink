@@ -672,90 +672,93 @@ TEST(BrushBehaviorTest, BrushBehaviorEqualAndNotEqual) {
 }
 
 TEST(BrushBehaviorTest, ValidateSourceNode) {
-  EXPECT_EQ(
+  EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
           .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
           .source_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
           .source_value_range = {0, 2},
       }),
-      absl::OkStatus());
+      IsOk());
 
-  absl::Status status =
+  EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
           .source = static_cast<BrushBehavior::Source>(123),
           .source_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
           .source_value_range = {0, 2},
-      });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("non-enumerator value 123"));
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("non-enumerator value 123")));
 
-  status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
-      .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
-      .source_out_of_range_behavior =
-          static_cast<BrushBehavior::OutOfRange>(123),
-      .source_value_range = {0, 2},
-  });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("non-enumerator value 123"));
-
-  status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
-      .source = BrushBehavior::Source::kTimeSinceInputInSeconds,
-      .source_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
-      .source_value_range = {0, 2},
-  });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("`kTimeSince*` sources can only be used with a "
-                        "`source_out_of_range_behavior` of `kClamp`"));
-
-  status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
-      .source = BrushBehavior::Source::kTimeSinceStrokeEndInSeconds,
-      .source_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
-      .source_value_range = {0, 2},
-  });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("`kTimeSince*` sources can only be used with a "
-                        "`source_out_of_range_behavior` of `kClamp`"));
-
-  status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
-      .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
-      .source_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
-      .source_value_range = {0, kInfinity},
-  });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(
-      status.message(),
-      HasSubstr("source_value_range` must hold 2 finite and distinct values"));
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
+          .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
+          .source_out_of_range_behavior =
+              static_cast<BrushBehavior::OutOfRange>(123),
+          .source_value_range = {0, 2},
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("non-enumerator value 123")));
 
-  status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
-      .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
-      .source_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
-      .source_value_range = {2, 2},
-  });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(
-      status.message(),
-      HasSubstr("source_value_range` must hold 2 finite and distinct values"));
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
+          .source = BrushBehavior::Source::kTimeSinceInputInSeconds,
+          .source_out_of_range_behavior = BrushBehavior::OutOfRange::kRepeat,
+          .source_value_range = {0, 2},
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("`kTimeSince*` sources can only be used with a "
+                         "`source_out_of_range_behavior` of `kClamp`")));
+
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
+          .source = BrushBehavior::Source::kTimeSinceStrokeEndInSeconds,
+          .source_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
+          .source_value_range = {0, 2},
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("`kTimeSince*` sources can only be used with a "
+                         "`source_out_of_range_behavior` of `kClamp`")));
+
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
+          .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
+          .source_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
+          .source_value_range = {0, kInfinity},
+      }),
+      StatusIs(
+          absl::StatusCode::kInvalidArgument,
+          HasSubstr(
+              "source_value_range` must hold 2 finite and distinct values")));
+
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::SourceNode{
+          .source = BrushBehavior::Source::kDistanceTraveledInCentimeters,
+          .source_out_of_range_behavior = BrushBehavior::OutOfRange::kMirror,
+          .source_value_range = {2, 2},
+      }),
+      StatusIs(
+          absl::StatusCode::kInvalidArgument,
+          HasSubstr(
+              "source_value_range` must hold 2 finite and distinct values")));
 }
 
 TEST(BrushBehaviorTest, ValidateConstantNode) {
-  EXPECT_EQ(brush_internal::ValidateBrushBehaviorNode(
-                BrushBehavior::ConstantNode{-1}),
-            absl::OkStatus());
-  EXPECT_EQ(
+  EXPECT_THAT(brush_internal::ValidateBrushBehaviorNode(
+                  BrushBehavior::ConstantNode{-1}),
+              IsOk());
+  EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::ConstantNode{7}),
-      absl::OkStatus());
+      IsOk());
 
-  absl::Status status = brush_internal::ValidateBrushBehaviorNode(
-      BrushBehavior::ConstantNode{kInfinity});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("must be finite"));
+  EXPECT_THAT(brush_internal::ValidateBrushBehaviorNode(
+                  BrushBehavior::ConstantNode{kInfinity}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("must be finite")));
 
-  status = brush_internal::ValidateBrushBehaviorNode(
-      BrushBehavior::ConstantNode{kNan});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("must be finite"));
+  EXPECT_THAT(brush_internal::ValidateBrushBehaviorNode(
+                  BrushBehavior::ConstantNode{kNan}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("must be finite")));
 }
 
 TEST(BrushBehaviorTest, ValidateNoiseNode) {
@@ -806,50 +809,50 @@ TEST(BrushBehaviorTest, ValidateToolTypeFilterNode) {
 }
 
 TEST(BrushBehaviorTest, ValidateDampingNode) {
-  EXPECT_EQ(
+  EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
           .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .damping_gap = 0.25,
       }),
-      absl::OkStatus());
+      IsOk());
 
-  absl::Status status =
+  EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
           .damping_source = static_cast<BrushBehavior::ProgressDomain>(123),
           .damping_gap = 0.25,
-      });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("non-enumerator value 123"));
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("non-enumerator value 123")));
 
-  status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
-      .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-      .damping_gap = -1,
-  });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("damping_gap` must be finite and non-negative"));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
+          .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
+          .damping_gap = -1,
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("damping_gap` must be finite and non-negative")));
 
-  status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
-      .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-      .damping_gap = kInfinity,
-  });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("damping_gap` must be finite and non-negative"));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
+          .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
+          .damping_gap = kInfinity,
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("damping_gap` must be finite and non-negative")));
 }
 
 TEST(BrushBehaviorTest, ValidateResponseNode) {
-  EXPECT_EQ(
+  EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(
           BrushBehavior::ResponseNode{EasingFunction::Predefined::kEaseIn}),
-      absl::OkStatus());
+      IsOk());
 
-  absl::Status status = brush_internal::ValidateBrushBehaviorNode(
-      BrushBehavior::ResponseNode{EasingFunction::Steps{
-          .step_count = -1,
-          .step_position = EasingFunction::StepPosition::kJumpEnd,
-      }});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(brush_internal::ValidateBrushBehaviorNode(
+                  BrushBehavior::ResponseNode{EasingFunction::Steps{
+                      .step_count = -1,
+                      .step_position = EasingFunction::StepPosition::kJumpEnd,
+                  }}),
+              StatusIs(absl::StatusCode::kInvalidArgument));
 }
 
 TEST(BrushBehaviorTest, ValidateIntegralNode) {
@@ -892,65 +895,66 @@ TEST(BrushBehaviorTest, ValidateIntegralNode) {
 }
 
 TEST(BrushBehaviorTest, ValidateBinaryOpNode) {
-  EXPECT_EQ(brush_internal::ValidateBrushBehaviorNode(
-                BrushBehavior::BinaryOpNode{BrushBehavior::BinaryOp::kSum}),
-            absl::OkStatus());
+  EXPECT_THAT(brush_internal::ValidateBrushBehaviorNode(
+                  BrushBehavior::BinaryOpNode{BrushBehavior::BinaryOp::kSum}),
+              IsOk());
 
-  absl::Status status = brush_internal::ValidateBrushBehaviorNode(
-      BrushBehavior::BinaryOpNode{static_cast<BrushBehavior::BinaryOp>(123)});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("non-enumerator value 123"));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::BinaryOpNode{
+          static_cast<BrushBehavior::BinaryOp>(123)}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("non-enumerator value 123")));
 }
 
 TEST(BrushBehaviorTest, ValidateInterpolationNode) {
-  EXPECT_EQ(brush_internal::ValidateBrushBehaviorNode(
-                BrushBehavior::InterpolationNode{
-                    .interpolation = BrushBehavior::Interpolation::kLerp,
-                }),
-            absl::OkStatus());
+  EXPECT_THAT(brush_internal::ValidateBrushBehaviorNode(
+                  BrushBehavior::InterpolationNode{
+                      .interpolation = BrushBehavior::Interpolation::kLerp,
+                  }),
+              IsOk());
 
-  absl::Status status = brush_internal::ValidateBrushBehaviorNode(
-      BrushBehavior::InterpolationNode{
-          .interpolation = static_cast<BrushBehavior::Interpolation>(123),
-      });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("non-enumerator value 123"));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(
+          BrushBehavior::InterpolationNode{
+              .interpolation = static_cast<BrushBehavior::Interpolation>(123),
+          }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("non-enumerator value 123")));
 }
 
 TEST(BrushBehaviorTest, ValidateTargetNode) {
-  EXPECT_EQ(brush_internal::ValidateBrushBehaviorNode(BrushBehavior::TargetNode{
-                .target = BrushBehavior::Target::kSizeMultiplier,
-                .target_modifier_range = {0, 2},
-            }),
-            absl::OkStatus());
+  EXPECT_THAT(
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::TargetNode{
+          .target = BrushBehavior::Target::kSizeMultiplier,
+          .target_modifier_range = {0, 2},
+      }),
+      IsOk());
 
-  absl::Status status =
+  EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::TargetNode{
           .target = static_cast<BrushBehavior::Target>(123),
           .target_modifier_range = {0, 2},
-      });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("non-enumerator value 123"));
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("non-enumerator value 123")));
 
-  status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::TargetNode{
-      .target = BrushBehavior::Target::kSizeMultiplier,
-      .target_modifier_range = {0, kInfinity},
-  });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(
-      status.message(),
-      HasSubstr(
-          "target_modifier_range` must hold 2 finite and distinct values"));
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::TargetNode{
+          .target = BrushBehavior::Target::kSizeMultiplier,
+          .target_modifier_range = {0, kInfinity},
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("target_modifier_range` must hold 2 finite and "
+                         "distinct values")));
 
-  status = brush_internal::ValidateBrushBehaviorNode(BrushBehavior::TargetNode{
-      .target = BrushBehavior::Target::kSizeMultiplier,
-      .target_modifier_range = {2, 2},
-  });
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(
-      status.message(),
-      HasSubstr(
-          "target_modifier_range` must hold 2 finite and distinct values"));
+      brush_internal::ValidateBrushBehaviorNode(BrushBehavior::TargetNode{
+          .target = BrushBehavior::Target::kSizeMultiplier,
+          .target_modifier_range = {2, 2},
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("target_modifier_range` must hold 2 finite and "
+                         "distinct values")));
 }
 
 TEST(BrushBehaviorTest, ValidatePolarTargetNode) {

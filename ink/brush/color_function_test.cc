@@ -159,8 +159,7 @@ FUZZ_TEST(ColorFunctionTest, ReplaceColorIgnoresInputColor)
     .WithDomains(ArbitraryColor(), ArbitraryColor());
 
 void CanValidateValidColorFunction(const ColorFunction& color_function) {
-  EXPECT_EQ(absl::OkStatus(),
-            brush_internal::ValidateColorFunction(color_function));
+  EXPECT_THAT(brush_internal::ValidateColorFunction(color_function), IsOk());
 }
 FUZZ_TEST(ColorFunctionTest, CanValidateValidColorFunction)
     .WithDomains(ValidColorFunction());

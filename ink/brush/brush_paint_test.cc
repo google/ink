@@ -487,35 +487,35 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
 }
 
 TEST(BrushPaintTest, InvalidTextureLayerRotation) {
-  absl::Status status = brush_internal::ValidateBrushPaint(BrushPaint{
-      .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                          .rotation = Angle::Radians(kInfinity)}}});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("rotation` must be finite"));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushPaint(BrushPaint{
+          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
+                              .rotation = Angle::Radians(kInfinity)}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("rotation` must be finite")));
 
-  status = brush_internal::ValidateBrushPaint(BrushPaint{
-      .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
-                          .rotation = Angle::Radians(kNan)}}});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("rotation` must be finite"));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushPaint(BrushPaint{
+          .texture_layers = {{.client_texture_id = std::string(kTestTextureId),
+                              .rotation = Angle::Radians(kNan)}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("rotation` must be finite")));
 }
 
 TEST(BrushPaintTest, InvalidTextureLayerTextureWrap) {
-  absl::Status status =
+  EXPECT_THAT(
       brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
           .client_texture_id = std::string(kTestTextureId),
-          .wrap_x = static_cast<BrushPaint::TextureWrap>(123)});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("wrap_x` holds non-enumerator value"));
+          .wrap_x = static_cast<BrushPaint::TextureWrap>(123)}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("wrap_x` holds non-enumerator value")));
 
-  status =
+  EXPECT_THAT(
       brush_internal::ValidateBrushPaintTextureLayer(BrushPaint::TextureLayer{
           .client_texture_id = std::string(kTestTextureId),
-          .wrap_y = static_cast<BrushPaint::TextureWrap>(123)});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("wrap_y` holds non-enumerator value"));
+          .wrap_y = static_cast<BrushPaint::TextureWrap>(123)}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("wrap_y` holds non-enumerator value")));
 }
 
 TEST(BrushPaintTest, InvalidTextureLayerAnimationFrames) {

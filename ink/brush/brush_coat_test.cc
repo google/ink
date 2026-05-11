@@ -21,6 +21,7 @@
 #include "fuzztest/fuzztest.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "ink/brush/brush_behavior.h"
@@ -32,6 +33,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::testing::Contains;
 using ::testing::HasSubstr;
 using ::testing::Not;
@@ -46,20 +49,20 @@ TEST(BrushCoatTest, Stringify) {
 }
 
 TEST(BrushCoatTest, CoatWithDefaultTipAndPaintIsValid) {
-  absl::Status status = brush_internal::ValidateBrushCoat(
-      BrushCoat{.tip = BrushTip{}, .paint_preferences = {BrushPaint{}}});
-  EXPECT_EQ(status, absl::OkStatus());
+  EXPECT_THAT(brush_internal::ValidateBrushCoat(BrushCoat{
+                  .tip = BrushTip{}, .paint_preferences = {BrushPaint{}}}),
+              IsOk());
 }
 
 TEST(BrushCoatTest, CoatWithInvalidTipIsInvalid) {
-  absl::Status status = brush_internal::ValidateBrushCoat(BrushCoat{
-      .tip = BrushTip{.pinch = -1}, .paint_preferences = {BrushPaint{}}});
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("pinch"));
+  EXPECT_THAT(
+      brush_internal::ValidateBrushCoat(BrushCoat{
+          .tip = BrushTip{.pinch = -1}, .paint_preferences = {BrushPaint{}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pinch")));
 }
 
 void CanValidateValidBrushCoat(const BrushCoat& coat) {
-  EXPECT_EQ(absl::OkStatus(), brush_internal::ValidateBrushCoat(coat));
+  EXPECT_THAT(brush_internal::ValidateBrushCoat(coat), IsOk());
 }
 FUZZ_TEST(EasingFunctionTest, CanValidateValidBrushCoat)
     .WithDomains(ValidBrushCoat());
