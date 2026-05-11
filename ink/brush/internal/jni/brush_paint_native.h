@@ -64,7 +64,7 @@ int64_t StampingTextureNative_create(
 
 void TextureLayerNative_free(int64_t native_ptr);
 
-const char* TextureLayerNative_getClientTextureId(int64_t native_ptr);
+const char* TilingTextureNative_getClientTextureId(int64_t native_ptr);
 
 float TilingTextureNative_getSizeX(int64_t native_ptr);
 
@@ -75,6 +75,8 @@ float TilingTextureNative_getOffsetX(int64_t native_ptr);
 float TilingTextureNative_getOffsetY(int64_t native_ptr);
 
 float TilingTextureNative_getRotationDegrees(int64_t native_ptr);
+
+const char* StampingTextureNative_getClientTextureId(int64_t native_ptr);
 
 int StampingTextureNative_getAnimationFrames(int64_t native_ptr);
 

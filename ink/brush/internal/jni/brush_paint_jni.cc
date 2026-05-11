@@ -141,10 +141,10 @@ JNI_METHOD(brush, TextureLayerNative, void, free)
   TextureLayerNative_free(native_pointer);
 }
 
-JNI_METHOD(brush, TextureLayerNative, jstring, getClientTextureId)
+JNI_METHOD(brush, TilingTextureNative, jstring, getClientTextureId)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return env->NewStringUTF(
-      TextureLayerNative_getClientTextureId(native_pointer));
+      TilingTextureNative_getClientTextureId(native_pointer));
 }
 
 JNI_METHOD(brush, TilingTextureNative, jfloat, getSizeX)
@@ -170,6 +170,12 @@ JNI_METHOD(brush, TilingTextureNative, jfloat, getOffsetY)
 JNI_METHOD(brush, TilingTextureNative, jfloat, getRotationDegrees)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return TilingTextureNative_getRotationDegrees(native_pointer);
+}
+
+JNI_METHOD(brush, StampingTextureNative, jstring, getClientTextureId)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return env->NewStringUTF(
+      StampingTextureNative_getClientTextureId(native_pointer));
 }
 
 JNI_METHOD(brush, StampingTextureNative, jint, getAnimationFrames)

@@ -246,7 +246,7 @@ void TextureLayerNative_free(int64_t native_ptr) {
   DeleteNativeTextureLayer(native_ptr);
 }
 
-const char* TextureLayerNative_getClientTextureId(int64_t native_ptr) {
+const char* TilingTextureNative_getClientTextureId(int64_t native_ptr) {
   return CastToTextureLayer(native_ptr).client_texture_id.c_str();
 }
 
@@ -268,6 +268,10 @@ float TilingTextureNative_getOffsetY(int64_t native_ptr) {
 
 float TilingTextureNative_getRotationDegrees(int64_t native_ptr) {
   return CastToTextureLayer(native_ptr).rotation.ValueInDegrees();
+}
+
+const char* StampingTextureNative_getClientTextureId(int64_t native_ptr) {
+  return CastToTextureLayer(native_ptr).client_texture_id.c_str();
 }
 
 int StampingTextureNative_getAnimationFrames(int64_t native_ptr) {
