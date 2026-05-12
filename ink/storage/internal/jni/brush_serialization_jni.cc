@@ -14,7 +14,6 @@
 
 #include <jni.h>
 
-#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string>
