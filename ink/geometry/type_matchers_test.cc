@@ -22,6 +22,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/geometry/angle.h"
@@ -38,6 +39,7 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
 using ::testing::HasSubstr;
 using ::testing::Not;
 
@@ -283,7 +285,7 @@ TEST(MeshEqTest, Equal) {
   std::vector<uint32_t> triangles = {0, 1, 2};
   absl::StatusOr<Mesh> mesh =
       Mesh::Create(MeshFormat(), {position_x, position_y}, triangles);
-  ASSERT_EQ(mesh.status(), absl::OkStatus());
+  ASSERT_THAT(mesh, IsOk());
   Mesh clone = *mesh;
 
   EXPECT_THAT(*mesh, MeshEq(*mesh));
@@ -296,16 +298,16 @@ TEST(MeshEqTest, DifferentMeshFormat) {
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(alternate_format.status(), absl::OkStatus());
+  ASSERT_THAT(alternate_format, IsOk());
   std::vector<float> position_x = {0, 10, 10};
   std::vector<float> position_y = {0, 0, 10};
   std::vector<uint32_t> triangles = {0, 1, 2};
   absl::StatusOr<Mesh> mesh1 =
       Mesh::Create(MeshFormat(), {position_x, position_y}, triangles);
-  ASSERT_EQ(mesh1.status(), absl::OkStatus());
+  ASSERT_THAT(mesh1, IsOk());
   absl::StatusOr<Mesh> mesh2 =
       Mesh::Create(*alternate_format, {position_x, position_y}, triangles);
-  ASSERT_EQ(mesh2.status(), absl::OkStatus());
+  ASSERT_THAT(mesh2, IsOk());
 
   EXPECT_THAT(*mesh1, Not(MeshEq(*mesh2)));
   EXPECT_THAT(*mesh2, Not(MeshEq(*mesh1)));
@@ -316,17 +318,17 @@ TEST(MeshEqTest, DifferentUnpackingParams) {
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(packed_format.status(), absl::OkStatus());
+  ASSERT_THAT(packed_format, IsOk());
   std::vector<float> position_x = {0, 10, 10};
   std::vector<float> position_y = {0, 0, 10};
   std::vector<float> alternate_position_y = {0, 0, 5};
   std::vector<uint32_t> triangles = {0, 1, 2};
   absl::StatusOr<Mesh> mesh1 =
       Mesh::Create(*packed_format, {position_x, position_y}, triangles);
-  ASSERT_EQ(mesh1.status(), absl::OkStatus());
+  ASSERT_THAT(mesh1, IsOk());
   absl::StatusOr<Mesh> mesh2 = Mesh::Create(
       *packed_format, {position_x, alternate_position_y}, triangles);
-  ASSERT_EQ(mesh2.status(), absl::OkStatus());
+  ASSERT_THAT(mesh2, IsOk());
 
   EXPECT_THAT(*mesh1, Not(MeshEq(*mesh2)));
   EXPECT_THAT(*mesh2, Not(MeshEq(*mesh1)));
@@ -339,10 +341,10 @@ TEST(MeshEqTest, DifferentAttributeValues) {
   std::vector<uint32_t> triangles = {0, 1, 2};
   absl::StatusOr<Mesh> mesh1 =
       Mesh::Create(MeshFormat(), {position_x, position_y}, triangles);
-  ASSERT_EQ(mesh1.status(), absl::OkStatus());
+  ASSERT_THAT(mesh1, IsOk());
   absl::StatusOr<Mesh> mesh2 =
       Mesh::Create(MeshFormat(), {position_x, alternate_position_y}, triangles);
-  ASSERT_EQ(mesh2.status(), absl::OkStatus());
+  ASSERT_THAT(mesh2, IsOk());
 
   EXPECT_THAT(*mesh1, Not(MeshEq(*mesh2)));
   EXPECT_THAT(*mesh2, Not(MeshEq(*mesh1)));
@@ -356,10 +358,10 @@ TEST(MeshEqTest, DifferentVertexCount) {
   std::vector<uint32_t> triangles = {0, 1, 2};
   absl::StatusOr<Mesh> mesh1 =
       Mesh::Create(MeshFormat(), {position_x, position_y}, triangles);
-  ASSERT_EQ(mesh1.status(), absl::OkStatus());
+  ASSERT_THAT(mesh1, IsOk());
   absl::StatusOr<Mesh> mesh2 = Mesh::Create(
       MeshFormat(), {alternate_position_x, alternate_position_y}, triangles);
-  ASSERT_EQ(mesh2.status(), absl::OkStatus());
+  ASSERT_THAT(mesh2, IsOk());
 
   EXPECT_THAT(*mesh1, Not(MeshEq(*mesh2)));
   EXPECT_THAT(*mesh2, Not(MeshEq(*mesh1)));
@@ -372,10 +374,10 @@ TEST(MeshEqTest, DifferentTriangleIndices) {
   std::vector<uint32_t> alternate_triangles = {0, 1, 3};
   absl::StatusOr<Mesh> mesh1 =
       Mesh::Create(MeshFormat(), {position_x, position_y}, triangles);
-  ASSERT_EQ(mesh1.status(), absl::OkStatus());
+  ASSERT_THAT(mesh1, IsOk());
   absl::StatusOr<Mesh> mesh2 =
       Mesh::Create(MeshFormat(), {position_x, position_y}, alternate_triangles);
-  ASSERT_EQ(mesh2.status(), absl::OkStatus());
+  ASSERT_THAT(mesh2, IsOk());
 
   EXPECT_THAT(*mesh1, Not(MeshEq(*mesh2)));
   EXPECT_THAT(*mesh2, Not(MeshEq(*mesh1)));
@@ -388,10 +390,10 @@ TEST(MeshEqTest, DifferentTriangleCount) {
   std::vector<uint32_t> alternate_triangles = {0, 1, 2, 0, 2, 3};
   absl::StatusOr<Mesh> mesh1 =
       Mesh::Create(MeshFormat(), {position_x, position_y}, triangles);
-  ASSERT_EQ(mesh1.status(), absl::OkStatus());
+  ASSERT_THAT(mesh1, IsOk());
   absl::StatusOr<Mesh> mesh2 =
       Mesh::Create(MeshFormat(), {position_x, position_y}, alternate_triangles);
-  ASSERT_EQ(mesh2.status(), absl::OkStatus());
+  ASSERT_THAT(mesh2, IsOk());
 
   EXPECT_THAT(*mesh1, Not(MeshEq(*mesh2)));
   EXPECT_THAT(*mesh2, Not(MeshEq(*mesh1)));
@@ -403,7 +405,7 @@ TEST(MeshEqTest, Describe) {
   std::vector<uint32_t> triangles = {0, 1, 2};
   absl::StatusOr<Mesh> mesh =
       Mesh::Create(MeshFormat(), {position_x, position_y}, triangles);
-  ASSERT_EQ(mesh.status(), absl::OkStatus());
+  ASSERT_THAT(mesh, IsOk());
   testing::Matcher<Mesh> matcher = MeshEq(*mesh);
 
   std::stringstream s;
@@ -430,7 +432,7 @@ TEST(PartitionedMeshEqTest, DeepVsShallowEquality) {
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(20, MakeSinglePackedPositionFormat()),
       {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   PartitionedMesh shape_with_same_meshes = *shape;
   EXPECT_THAT(*shape, PartitionedMeshDeepEq(shape_with_same_meshes));
@@ -440,7 +442,7 @@ TEST(PartitionedMeshEqTest, DeepVsShallowEquality) {
       PartitionedMesh::FromMutableMesh(
           MakeStraightLineMutableMesh(20, MakeSinglePackedPositionFormat()),
           {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}});
-  ASSERT_EQ(shape_with_equivalent_meshes.status(), absl::OkStatus());
+  ASSERT_THAT(shape_with_equivalent_meshes, IsOk());
   EXPECT_THAT(*shape, PartitionedMeshDeepEq(*shape_with_equivalent_meshes));
   EXPECT_THAT(*shape,
               Not(PartitionedMeshShallowEq(*shape_with_equivalent_meshes)));
@@ -450,7 +452,7 @@ TEST(PartitionedMeshEqTest, DifferentMeshes) {
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(20, MakeSinglePackedPositionFormat()),
       {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   // Equivalent outlines, different number of meshes.
 
@@ -472,8 +474,7 @@ TEST(PartitionedMeshEqTest, DifferentMeshes) {
       shape_with_equivalent_outlines_but_different_mesh_count =
           PartitionedMesh::FromMeshes(absl::MakeSpan(meshes_twice),
                                       absl::MakeSpan(outlines));
-  ASSERT_EQ(shape_with_equivalent_outlines_but_different_mesh_count.status(),
-            absl::OkStatus());
+  ASSERT_THAT(shape_with_equivalent_outlines_but_different_mesh_count, IsOk());
 
   EXPECT_THAT(*shape_with_equivalent_outlines_but_different_mesh_count,
               Not(PartitionedMeshShallowEq(*shape)));
@@ -486,7 +487,7 @@ TEST(PartitionedMeshEqTest, DifferentMeshes) {
       PartitionedMesh::FromMutableMesh(
           MakeStraightLineMutableMesh(11, MakeSinglePackedPositionFormat()),
           {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}});
-  ASSERT_EQ(other_shape.status(), absl::OkStatus());
+  ASSERT_THAT(other_shape, IsOk());
   std::vector<Mesh> other_meshes;
   for (size_t i = 0; i < shape->Meshes().size(); ++i) {
     // Add the same number of meshes in the original shape, but with a mesh from
@@ -497,8 +498,7 @@ TEST(PartitionedMeshEqTest, DifferentMeshes) {
       shape_with_equivalent_outlines_but_different_meshes =
           PartitionedMesh::FromMeshes(absl::MakeSpan(other_meshes),
                                       absl::MakeSpan(outlines));
-  ASSERT_EQ(shape_with_equivalent_outlines_but_different_meshes.status(),
-            absl::OkStatus());
+  ASSERT_THAT(shape_with_equivalent_outlines_but_different_meshes, IsOk());
 
   EXPECT_THAT(*shape_with_equivalent_outlines_but_different_meshes,
               Not(PartitionedMeshShallowEq(*shape)));
@@ -510,14 +510,13 @@ TEST(PartitionedMeshEqTest, DifferentOutlines) {
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(20, MakeSinglePackedPositionFormat()),
       {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   // Equivalent meshes but different number of outlines.
 
   absl::StatusOr<PartitionedMesh> shape_with_equivalent_meshes_but_no_outline =
       PartitionedMesh::FromMeshes(shape->Meshes());
-  ASSERT_EQ(shape_with_equivalent_meshes_but_no_outline.status(),
-            absl::OkStatus());
+  ASSERT_THAT(shape_with_equivalent_meshes_but_no_outline, IsOk());
   EXPECT_THAT(*shape_with_equivalent_meshes_but_no_outline,
               Not(PartitionedMeshShallowEq(*shape)));
   EXPECT_THAT(*shape_with_equivalent_meshes_but_no_outline,
@@ -534,8 +533,7 @@ TEST(PartitionedMeshEqTest, DifferentOutlines) {
   absl::StatusOr<PartitionedMesh>
       shape_with_equivalent_meshes_but_different_outlines =
           PartitionedMesh::FromMeshes(shape->Meshes(), outlines);
-  ASSERT_EQ(shape_with_equivalent_meshes_but_different_outlines.status(),
-            absl::OkStatus());
+  ASSERT_THAT(shape_with_equivalent_meshes_but_different_outlines, IsOk());
 
   EXPECT_THAT(*shape_with_equivalent_meshes_but_different_outlines,
               Not(PartitionedMeshShallowEq(*shape)));

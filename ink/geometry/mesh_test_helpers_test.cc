@@ -26,6 +26,7 @@
 #include "absl/strings/substitute.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
@@ -134,7 +135,7 @@ TEST(MeshTestHelpersTest, MakeStraightLineMutableMeshWithAlternateFormat) {
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
   MutableMesh m = MakeStraightLineMutableMesh(2, *format);
 
@@ -237,7 +238,7 @@ TEST(MeshTestHelpersTest, MakeCoiledRingMutableMeshWithAlternateFormat) {
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
   MutableMesh m = MakeCoiledRingMutableMesh(12, 3, *format);
 
@@ -358,7 +359,7 @@ TEST(MeshTestHelpersTest, MakeStarMutableMeshWithAlternateFormat) {
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
   MutableMesh m = MakeStarMutableMesh(10, *format);
 
@@ -398,8 +399,8 @@ TEST(MeshTestHelpersTest, MakeStarMutableMeshWithTransform) {
 
 TEST(MeshTestHelpersTest, LoadedMeshesHaveTriangles) {
   for (const auto& filename : kTestMeshFiles) {
-    auto mesh = LoadMesh(filename);
-    EXPECT_THAT(mesh.status(), IsOk());
+    absl::StatusOr<Mesh> mesh = LoadMesh(filename);
+    ASSERT_THAT(mesh, IsOk());
     EXPECT_GT(mesh->TriangleCount(), 0);
   }
 }

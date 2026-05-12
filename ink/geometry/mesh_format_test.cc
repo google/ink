@@ -33,6 +33,7 @@ namespace ink {
 namespace {
 
 using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::FieldsAre;
 using ::testing::HasSubstr;
@@ -103,7 +104,7 @@ TEST(MeshFormatTest, StringifyMeshFormat) {
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
   EXPECT_EQ(
       absl::StrCat(*format),
       "MeshFormat({{kFloat4PackedInOneFloat, kColorShiftHsl}, "
@@ -129,7 +130,7 @@ TEST(MeshFormatTest, ConstructWithOneAttribute) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
   EXPECT_THAT(format->Attributes(),
               ElementsAre(FieldsAre(AttrType::kFloat2PackedInOneFloat,
@@ -148,7 +149,7 @@ TEST(MeshFormatTest, ConstructWithMultipleAttributes) {
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
   EXPECT_THAT(format->Attributes(),
               ElementsAre(FieldsAre(AttrType::kFloat4PackedInOneFloat,
@@ -166,85 +167,69 @@ TEST(MeshFormatTest, ConstructWithMultipleAttributes) {
 }
 
 TEST(MeshFormatTest, ConstructionErrorEmptyAttributes) {
-  absl::Status empty_attributes =
-      MeshFormat::Create({}, MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)
-          .status();
-  EXPECT_EQ(empty_attributes.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(empty_attributes.message(), HasSubstr("Empty"));
+  EXPECT_THAT(MeshFormat::Create(
+                  {}, MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Empty")));
 }
 
 TEST(MeshFormatTest, ConstructionErrorTooManyAttributes) {
   std::vector<std::pair<AttrType, AttrId>> attrs(
       MeshFormat::MaxAttributes() + 1,
       std::make_pair(AttrType::kFloat2Unpacked, AttrId::kPosition));
-  absl::Status too_many_attributes =
+  EXPECT_THAT(
       MeshFormat::Create(absl::MakeSpan(attrs),
-                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)
-          .status();
-  EXPECT_EQ(too_many_attributes.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(too_many_attributes.message(), HasSubstr("Maximum"));
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Maximum")));
 }
 
 TEST(MeshFormatTest, ConstructionErrorNoPosition) {
-  absl::Status no_position =
+  EXPECT_THAT(
       MeshFormat::Create({{AttrType::kFloat2Unpacked, AttrId::kColorShiftHsl}},
-                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)
-          .status();
-  EXPECT_EQ(no_position.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(no_position.message(), HasSubstr("Missing a kPosition"));
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("Missing a kPosition")));
 }
 
 TEST(MeshFormatTest, ConstructionErrorMultiplePositions) {
-  absl::Status multiple_positions =
+  EXPECT_THAT(
       MeshFormat::Create({{AttrType::kFloat2Unpacked, AttrId::kPosition},
                           {AttrType::kFloat2Unpacked, AttrId::kPosition}},
-                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)
-          .status();
-  EXPECT_EQ(multiple_positions.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(multiple_positions.message(),
-              HasSubstr("more than one kPosition"));
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("more than one kPosition")));
 }
 
 TEST(MeshFormatTest, ConstructionErrorMultipleSideLabels) {
-  absl::Status multiple_side_labels =
+  EXPECT_THAT(
       MeshFormat::Create({{AttrType::kFloat1Unpacked, AttrId::kSideLabel},
                           {AttrType::kFloat2Unpacked, AttrId::kPosition},
                           {AttrType::kFloat1Unpacked, AttrId::kSideLabel}},
-                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)
-          .status();
-  EXPECT_EQ(multiple_side_labels.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(multiple_side_labels.message(),
-              HasSubstr("more than one kSideLabel"));
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("more than one kSideLabel")));
 }
 
 TEST(MeshFormatTest, ConstructionErrorPositionDoesNotHaveTwoComponents) {
-  absl::Status position_does_not_have_two_components =
+  EXPECT_THAT(
       MeshFormat::Create({{AttrType::kFloat1Unpacked, AttrId::kPosition}},
-                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)
-          .status();
-  EXPECT_EQ(position_does_not_have_two_components.code(),
-            absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(position_does_not_have_two_components.message(),
-              HasSubstr("components"));
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("components")));
 }
 
 TEST(MeshFormatTest, ConstructionErrorBadAttributeType) {
-  absl::Status bad_attr_type =
+  EXPECT_THAT(
       MeshFormat::Create({{static_cast<AttrType>(200), AttrId::kPosition}},
-                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)
-          .status();
-  EXPECT_EQ(bad_attr_type.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(bad_attr_type.message(), HasSubstr("unrecognized AttributeType"));
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("unrecognized AttributeType")));
 }
 
 TEST(MeshFormatTest, ConstructionErrorBadAttributeId) {
-  absl::Status bad_attr_id =
-      MeshFormat::Create(
-          {{AttrType::kFloat2Unpacked, static_cast<AttrId>(100)}},
-          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)
-          .status();
-  EXPECT_EQ(bad_attr_id.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(bad_attr_id.message(), HasSubstr("unrecognized AttributeId"));
+  EXPECT_THAT(MeshFormat::Create(
+                  {{AttrType::kFloat2Unpacked, static_cast<AttrId>(100)}},
+                  MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("unrecognized AttributeId")));
 }
 
 TEST(MeshFormatTest, WithoutAttributesRemoveOne) {
@@ -253,12 +238,12 @@ TEST(MeshFormatTest, WithoutAttributesRemoveOne) {
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(original.status(), absl::OkStatus());
+  ASSERT_THAT(original, IsOk());
   absl::StatusOr<MeshFormat> expected = MeshFormat::Create(
       {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(expected.status(), absl::OkStatus());
+  ASSERT_THAT(expected, IsOk());
   absl::StatusOr<MeshFormat> actual =
       original->WithoutAttributes({AttrId::kColorShiftHsl});
   EXPECT_EQ(actual, expected);
@@ -271,12 +256,12 @@ TEST(MeshFormatTest, WithoutAttributesRemoveMultiple) {
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom1}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(original.status(), absl::OkStatus());
+  ASSERT_THAT(original, IsOk());
   absl::StatusOr<MeshFormat> expected = MeshFormat::Create(
       {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom1}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(expected.status(), absl::OkStatus());
+  ASSERT_THAT(expected, IsOk());
   absl::StatusOr<MeshFormat> actual =
       original->WithoutAttributes({AttrId::kCustom0, AttrId::kColorShiftHsl});
   EXPECT_EQ(actual, expected);
@@ -287,12 +272,11 @@ TEST(MeshFormatTest, WithoutAttributesPosition) {
       {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
   // You can't ever remove the position attribute.
-  absl::Status can_not_remove_position =
-      format->WithoutAttributes({AttrId::kPosition}).status();
-  EXPECT_EQ(can_not_remove_position.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(can_not_remove_position.message(), HasSubstr("cannot remove"));
+  EXPECT_THAT(
+      format->WithoutAttributes({AttrId::kPosition}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("cannot remove")));
 }
 
 TEST(MeshFormatTest, WithoutAttributesMissing) {
@@ -300,12 +284,11 @@ TEST(MeshFormatTest, WithoutAttributesMissing) {
       {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
   // You can't remove an attribute that isn't in the original format.
-  absl::Status missing_attr_removed =
-      format->WithoutAttributes({AttrId::kOpacityShift}).status();
-  EXPECT_EQ(missing_attr_removed.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(missing_attr_removed.message(), HasSubstr("cannot remove"));
+  EXPECT_THAT(
+      format->WithoutAttributes({AttrId::kOpacityShift}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("cannot remove")));
 }
 
 TEST(MeshFormatTest, TotalComponentCount) {
@@ -481,7 +464,7 @@ TEST(MeshFormatTest, IsPackedEquivalent) {
           {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(original.status(), absl::OkStatus());
+  ASSERT_THAT(original, IsOk());
 
   absl::StatusOr<MeshFormat> exact = MeshFormat::Create(
       {
@@ -490,7 +473,7 @@ TEST(MeshFormatTest, IsPackedEquivalent) {
           {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(exact.status(), absl::OkStatus());
+  ASSERT_THAT(exact, IsOk());
 
   EXPECT_TRUE(MeshFormat::IsPackedEquivalent(*original, *exact));
 
@@ -501,7 +484,7 @@ TEST(MeshFormatTest, IsPackedEquivalent) {
           {AttrType::kFloat3Unpacked, AttrId::kCustom0},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(position_type_changed.status(), absl::OkStatus());
+  ASSERT_THAT(position_type_changed, IsOk());
 
   EXPECT_FALSE(
       MeshFormat::IsPackedEquivalent(*original, *position_type_changed));
@@ -513,7 +496,7 @@ TEST(MeshFormatTest, IsPackedEquivalent) {
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(position_index_changed.status(), absl::OkStatus());
+  ASSERT_THAT(position_index_changed, IsOk());
 
   EXPECT_FALSE(
       MeshFormat::IsPackedEquivalent(*original, *position_index_changed));
@@ -526,7 +509,7 @@ TEST(MeshFormatTest, IsPackedEquivalent) {
           {AttrType::kFloat4PackedInThreeFloats, AttrId::kCustom1},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(extra_attribute.status(), absl::OkStatus());
+  ASSERT_THAT(extra_attribute, IsOk());
 
   EXPECT_FALSE(MeshFormat::IsPackedEquivalent(*original, *extra_attribute));
 
@@ -536,7 +519,7 @@ TEST(MeshFormatTest, IsPackedEquivalent) {
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(missing_attribute.status(), absl::OkStatus());
+  ASSERT_THAT(missing_attribute, IsOk());
 
   EXPECT_FALSE(MeshFormat::IsPackedEquivalent(*original, *missing_attribute));
 }
@@ -549,7 +532,7 @@ TEST(MeshFormatTest, IsUnpackedEquivalent) {
           {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(original.status(), absl::OkStatus());
+  ASSERT_THAT(original, IsOk());
 
   absl::StatusOr<MeshFormat> exact = MeshFormat::Create(
       {
@@ -558,7 +541,7 @@ TEST(MeshFormatTest, IsUnpackedEquivalent) {
           {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(exact.status(), absl::OkStatus());
+  ASSERT_THAT(exact, IsOk());
   EXPECT_TRUE(MeshFormat::IsUnpackedEquivalent(*original, *exact));
 
   absl::StatusOr<MeshFormat> packing_scheme_change = MeshFormat::Create(
@@ -568,7 +551,7 @@ TEST(MeshFormatTest, IsUnpackedEquivalent) {
           {AttrType::kFloat3Unpacked, AttrId::kCustom0},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(packing_scheme_change.status(), absl::OkStatus());
+  ASSERT_THAT(packing_scheme_change, IsOk());
   EXPECT_TRUE(
       MeshFormat::IsUnpackedEquivalent(*original, *packing_scheme_change));
 
@@ -579,7 +562,7 @@ TEST(MeshFormatTest, IsUnpackedEquivalent) {
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(position_index_changed.status(), absl::OkStatus());
+  ASSERT_THAT(position_index_changed, IsOk());
   EXPECT_FALSE(
       MeshFormat::IsUnpackedEquivalent(*original, *position_index_changed));
 
@@ -591,7 +574,7 @@ TEST(MeshFormatTest, IsUnpackedEquivalent) {
           {AttrType::kFloat4PackedInThreeFloats, AttrId::kCustom1},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(extra_attribute.status(), absl::OkStatus());
+  ASSERT_THAT(extra_attribute, IsOk());
   EXPECT_FALSE(MeshFormat::IsUnpackedEquivalent(*original, *extra_attribute));
 
   absl::StatusOr<MeshFormat> missing_attribute = MeshFormat::Create(
@@ -600,7 +583,7 @@ TEST(MeshFormatTest, IsUnpackedEquivalent) {
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(missing_attribute.status(), absl::OkStatus());
+  ASSERT_THAT(missing_attribute, IsOk());
   EXPECT_FALSE(MeshFormat::IsUnpackedEquivalent(*original, *missing_attribute));
 }
 
@@ -611,7 +594,7 @@ TEST(MeshFormatTest, Equality) {
                           {MeshFormat::AttributeType::kFloat2Unpacked,
                            MeshFormat::AttributeId::kSideDerivative}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(original.status(), absl::OkStatus());
+  ASSERT_THAT(original, IsOk());
 
   EXPECT_TRUE(original == original);
   EXPECT_FALSE(original != original);
@@ -622,7 +605,7 @@ TEST(MeshFormatTest, Equality) {
                           {MeshFormat::AttributeType::kFloat2Unpacked,
                            MeshFormat::AttributeId::kSideDerivative}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(with_different_index_format.status(), absl::OkStatus());
+  ASSERT_THAT(with_different_index_format, IsOk());
 
   EXPECT_FALSE(original == with_different_index_format);
   EXPECT_TRUE(original != with_different_index_format);
@@ -635,7 +618,7 @@ TEST(MeshFormatTest, Equality) {
                           {MeshFormat::AttributeType::kFloat1Unpacked,
                            MeshFormat::AttributeId::kSideLabel}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(with_different_attribute_count.status(), absl::OkStatus());
+  ASSERT_THAT(with_different_attribute_count, IsOk());
 
   EXPECT_FALSE(original == with_different_attribute_count);
   EXPECT_TRUE(original != with_different_attribute_count);
@@ -646,7 +629,7 @@ TEST(MeshFormatTest, Equality) {
                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kSideDerivative}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(with_different_attribute_type.status(), absl::OkStatus());
+  ASSERT_THAT(with_different_attribute_type, IsOk());
 
   EXPECT_FALSE(original == with_different_attribute_type);
   EXPECT_TRUE(original != with_different_attribute_type);
@@ -657,7 +640,7 @@ TEST(MeshFormatTest, Equality) {
                           {MeshFormat::AttributeType::kFloat2Unpacked,
                            MeshFormat::AttributeId::kForwardDerivative}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(with_different_attribute_id.status(), absl::OkStatus());
+  ASSERT_THAT(with_different_attribute_id, IsOk());
 
   EXPECT_FALSE(original == with_different_attribute_id);
   EXPECT_TRUE(original != with_different_attribute_id);
@@ -668,13 +651,13 @@ TEST(MeshFormatTest, Hash) {
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(with_always_16_bit_indices.status(), absl::OkStatus());
+  ASSERT_THAT(with_always_16_bit_indices, IsOk());
 
   absl::StatusOr<MeshFormat> with_always_unpacked_position =
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2Unpacked,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(with_always_unpacked_position.status(), absl::OkStatus());
+  ASSERT_THAT(with_always_unpacked_position, IsOk());
 
   absl::StatusOr<MeshFormat> with_non_position_attributes = MeshFormat::Create(
       {
@@ -686,7 +669,7 @@ TEST(MeshFormatTest, Hash) {
            MeshFormat::AttributeId::kSideDerivative},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(with_non_position_attributes.status(), absl::OkStatus());
+  ASSERT_THAT(with_non_position_attributes, IsOk());
 
   absl::StatusOr<MeshFormat> with_non_position_attributes_reordered =
       MeshFormat::Create(
@@ -699,7 +682,7 @@ TEST(MeshFormatTest, Hash) {
                MeshFormat::AttributeId::kColorShiftHsl},
           },
           MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(with_non_position_attributes_reordered.status(), absl::OkStatus());
+  ASSERT_THAT(with_non_position_attributes_reordered, IsOk());
 
   EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
       MeshFormat(),

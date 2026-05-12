@@ -46,6 +46,8 @@ namespace ink {
 namespace {
 
 using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
+using ::absl_testing::StatusIs;
 using ::testing::AnyOf;
 using ::testing::ElementsAre;
 using ::testing::Eq;
@@ -91,14 +93,14 @@ TEST(PartitionedMeshTest, FromMutableMesh) {
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(100, MakeSinglePackedPositionFormat());
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes = mutable_mesh.AsMeshes();
-  ASSERT_EQ(meshes.status(), absl::OkStatus());
+  ASSERT_THAT(meshes, IsOk());
   ASSERT_THAT(*meshes, SizeIs(1));
   const Mesh& mesh = (*meshes)[0];
 
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMutableMesh(mutable_mesh);
 
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
   EXPECT_THAT(shape->Meshes(), ElementsAre(MeshEq(mesh)));
   ASSERT_EQ(shape->RenderGroupCount(), 1);
   EXPECT_THAT(shape->RenderGroupFormat(0), MeshFormatEq(mesh.Format()));
@@ -111,14 +113,14 @@ TEST(PartitionedMeshTest, FromMutableMeshWithOutlines) {
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(8, MakeSinglePackedPositionFormat());
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes = mutable_mesh.AsMeshes();
-  ASSERT_EQ(meshes.status(), absl::OkStatus());
+  ASSERT_THAT(meshes, IsOk());
   ASSERT_THAT(*meshes, SizeIs(1));
   const Mesh& mesh = (*meshes)[0];
 
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       mutable_mesh, {{1, 5, 4, 0}, {5, 9, 8, 4}});
 
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
   EXPECT_THAT(shape->Meshes(), ElementsAre(MeshEq(mesh)));
   ASSERT_EQ(shape->RenderGroupCount(), 1);
   EXPECT_THAT(shape->RenderGroupFormat(0), MeshFormatEq(mesh.Format()));
@@ -159,7 +161,7 @@ TEST(PartitionedMeshTest, FromMutableMeshWithPackingParams) {
       mutable_mesh, {}, {},
       {MeshAttributeCodingParams{
           {{.offset = -10, .scale = 1}, {.offset = -10, .scale = 1}}}});
-  ASSERT_THAT(shape.status(), Eq(absl::OkStatus()));
+  ASSERT_THAT(shape, IsOk());
 
   ASSERT_THAT(shape->Meshes(), SizeIs(1));
   const Mesh& packed_mesh = shape->Meshes()[0];
@@ -178,7 +180,7 @@ TEST(PartitionedMeshTest, FromMutableMeshThatRequiresPartitioning) {
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(1e5, MakeSinglePackedPositionFormat());
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes = mutable_mesh.AsMeshes();
-  ASSERT_EQ(meshes.status(), absl::OkStatus());
+  ASSERT_THAT(meshes, IsOk());
   ASSERT_THAT(*meshes, SizeIs(2));
   const Mesh& mesh0 = (*meshes)[0];
   const Mesh& mesh1 = (*meshes)[1];
@@ -186,7 +188,7 @@ TEST(PartitionedMeshTest, FromMutableMeshThatRequiresPartitioning) {
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMutableMesh(mutable_mesh);
 
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
   EXPECT_THAT(shape->Meshes(), ElementsAre(MeshEq(mesh0), MeshEq(mesh1)));
   ASSERT_THAT(shape->RenderGroupCount(), 1);
   EXPECT_THAT(shape->RenderGroupFormat(0), MeshFormatEq(mesh0.Format()));
@@ -199,7 +201,7 @@ TEST(PartitionedMeshTest, FromMutableMeshThatRequiresPartitioningWithOutlines) {
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(1e5, MakeSinglePackedPositionFormat());
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes = mutable_mesh.AsMeshes();
-  ASSERT_EQ(meshes.status(), absl::OkStatus());
+  ASSERT_THAT(meshes, IsOk());
   ASSERT_THAT(*meshes, SizeIs(2));
   const Mesh& mesh0 = (*meshes)[0];
   const Mesh& mesh1 = (*meshes)[1];
@@ -207,7 +209,7 @@ TEST(PartitionedMeshTest, FromMutableMeshThatRequiresPartitioningWithOutlines) {
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       mutable_mesh, {{0, 1, 99999, 99998}, {2, 3, 99997, 99996}});
 
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
   EXPECT_THAT(shape->Meshes(), ElementsAre(MeshEq(mesh0), MeshEq(mesh1)));
   ASSERT_THAT(shape->RenderGroupCount(), 1);
   EXPECT_THAT(shape->RenderGroupFormat(0), MeshFormatEq(mesh0.Format()));
@@ -243,7 +245,7 @@ TEST(PartitionedMeshTest, FromMutableMeshOmitAttribute) {
                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(original_format.status(), absl::OkStatus());
+  ASSERT_THAT(original_format, IsOk());
   MutableMesh mutable_mesh(*original_format);
   mutable_mesh.AppendVertex({0, 0});
   mutable_mesh.AppendVertex({4, 0});
@@ -253,12 +255,12 @@ TEST(PartitionedMeshTest, FromMutableMeshOmitAttribute) {
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(expected_format.status(), absl::OkStatus());
+  ASSERT_THAT(expected_format, IsOk());
 
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       mutable_mesh, {{0, 1, 2}}, {MeshFormat::AttributeId::kColorShiftHsl});
 
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
   ASSERT_EQ(shape->RenderGroupCount(), 1);
   EXPECT_EQ(shape->RenderGroupFormat(0), *expected_format);
   ASSERT_THAT(shape->Meshes(), SizeIs(1));
@@ -287,10 +289,9 @@ TEST(PartitionedMeshTest, FromMutableMeshPartitioningError) {
   // Non-finite values cause `MutableMesh::AsMeshes` to fail.
   mutable_mesh.SetVertexPosition(0, {std::nanf(""), 0});
 
-  absl::Status non_finite_value =
-      PartitionedMesh::FromMutableMesh(mutable_mesh).status();
-  EXPECT_EQ(non_finite_value.code(), absl::StatusCode::kFailedPrecondition);
-  EXPECT_THAT(non_finite_value.message(), HasSubstr("non-finite value"));
+  EXPECT_THAT(PartitionedMesh::FromMutableMesh(mutable_mesh),
+              StatusIs(absl::StatusCode::kFailedPrecondition,
+                       HasSubstr("non-finite value")));
 }
 
 TEST(PartitionedMeshTest, FromMutableMeshOutlineIsEmpty) {
@@ -312,10 +313,9 @@ TEST(PartitionedMeshTest, FromMutableMeshOutlineRefersToNonExistentVertex) {
   MutableMesh mutable_mesh =
       MakeStraightLineMutableMesh(8, MakeSinglePackedPositionFormat());
 
-  absl::Status missing_vertex =
-      PartitionedMesh::FromMutableMesh(mutable_mesh, {{10}}).status();
-  EXPECT_EQ(missing_vertex.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(missing_vertex.message(), HasSubstr("non-existent vertex"));
+  EXPECT_THAT(PartitionedMesh::FromMutableMesh(mutable_mesh, {{10}}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("non-existent vertex")));
 }
 
 TEST(PartitionedMeshTest, FromMeshes) {
@@ -326,14 +326,13 @@ TEST(PartitionedMeshTest, FromMeshes) {
         10 * (i + 1), MakeSinglePackedPositionFormat());
     absl::StatusOr<absl::InlinedVector<Mesh, 1>> partitions =
         mutable_mesh.AsMeshes();
-    ASSERT_EQ(partitions.status(), absl::OkStatus());
-    ASSERT_EQ(partitions->size(), 1);
+    ASSERT_THAT(partitions, IsOkAndHolds(SizeIs(1)));
     meshes[i] = std::move((*partitions)[0]);
   }
 
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMeshes(absl::MakeConstSpan(meshes));
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   ASSERT_THAT(shape->Meshes(), SizeIs(kMeshCount));
   EXPECT_THAT(shape->Meshes(), ElementsAre(MeshEq(meshes[0]), MeshEq(meshes[1]),
@@ -353,15 +352,14 @@ TEST(PartitionedMeshTest, FromMeshesWithOutlines) {
         10 * (i + 1), MakeSinglePackedPositionFormat());
     absl::StatusOr<absl::InlinedVector<Mesh, 1>> partitions =
         mutable_mesh.AsMeshes();
-    ASSERT_EQ(partitions.status(), absl::OkStatus());
-    ASSERT_EQ(partitions->size(), 1);
+    ASSERT_THAT(partitions, IsOkAndHolds(SizeIs(1)));
     meshes[i] = std::move((*partitions)[0]);
   }
 
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMeshes(
       absl::MakeConstSpan(meshes),
       {{{0, 0}, {1, 5}, {2, 10}}, {{1, 19}, {2, 29}, {0, 9}}});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   ASSERT_THAT(shape->Meshes(), SizeIs(kMeshCount));
   EXPECT_THAT(shape->Meshes(), ElementsAre(MeshEq(meshes[0]), MeshEq(meshes[1]),
@@ -392,8 +390,7 @@ TEST(PartitionedMeshTest, FromMultipleMeshGroupsWithOutlines) {
         10 * (i + 1), MakeSinglePackedPositionFormat());
     absl::StatusOr<absl::InlinedVector<Mesh, 1>> partitions =
         mutable_mesh.AsMeshes();
-    ASSERT_EQ(partitions.status(), absl::OkStatus());
-    ASSERT_EQ(partitions->size(), 1);
+    ASSERT_THAT(partitions, IsOkAndHolds(SizeIs(1)));
     meshes[i] = std::move((*partitions)[0]);
   }
 
@@ -411,7 +408,7 @@ TEST(PartitionedMeshTest, FromMultipleMeshGroupsWithOutlines) {
           .outlines = {{{0, 10}, {0, 29}}},
       },
   });
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   ASSERT_THAT(shape->Meshes(), SizeIs(kMeshCount));
   EXPECT_THAT(shape->Meshes(), ElementsAre(MeshEq(meshes[0]), MeshEq(meshes[1]),
@@ -430,7 +427,7 @@ TEST(PartitionedMeshTest, FromMultipleMeshGroupsWithOutlines) {
 
 TEST(PartitionedMeshTest, FromMeshesEmptyMeshSpan) {
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMeshes({});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   EXPECT_THAT(shape->Meshes(), IsEmpty());
   ASSERT_EQ(shape->RenderGroupCount(), 1);
@@ -440,18 +437,16 @@ TEST(PartitionedMeshTest, FromMeshesEmptyMeshSpan) {
 
 TEST(PartitionedMeshTest, FromMeshesTooManyMeshes) {
   std::vector<Mesh> too_many_meshes(65536);
-  absl::Status has_too_many_meshes =
-      PartitionedMesh::FromMeshes(absl::MakeSpan(too_many_meshes)).status();
-  EXPECT_EQ(has_too_many_meshes.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(has_too_many_meshes.message(), HasSubstr("Too many meshes"));
+  EXPECT_THAT(PartitionedMesh::FromMeshes(absl::MakeSpan(too_many_meshes)),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("Too many meshes")));
 }
 
 TEST(PartitionedMeshTest, FromMeshesEmptyMesh) {
   Mesh empty;
-  absl::Status no_triangles =
-      PartitionedMesh::FromMeshes(absl::MakeSpan(&empty, 1)).status();
-  EXPECT_EQ(no_triangles.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(no_triangles.message(), HasSubstr("contains no triangles"));
+  EXPECT_THAT(PartitionedMesh::FromMeshes(absl::MakeSpan(&empty, 1)),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("contains no triangles")));
 }
 
 TEST(PartitionedMeshTest, FromMeshesWithDifferentFormats) {
@@ -461,74 +456,65 @@ TEST(PartitionedMeshTest, FromMeshesWithDifferentFormats) {
                           {MeshFormat::AttributeType::kFloat3Unpacked,
                            MeshFormat::AttributeId::kColorShiftHsl}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format_a.status(), absl::OkStatus());
+  ASSERT_THAT(format_a, IsOk());
   absl::StatusOr<MeshFormat> format_b =
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2Unpacked,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat1Unpacked,
                            MeshFormat::AttributeId::kOpacityShift}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format_b.status(), absl::OkStatus());
+  ASSERT_THAT(format_b, IsOk());
   ASSERT_NE(format_a, format_b);
 
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes_a =
       MakeStraightLineMutableMesh(2, *format_a).AsMeshes();
-  ASSERT_EQ(meshes_a.status(), absl::OkStatus());
+  ASSERT_THAT(meshes_a, IsOkAndHolds(SizeIs(1)));
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes_b =
       MakeStraightLineMutableMesh(2, *format_b).AsMeshes();
-  ASSERT_EQ(meshes_b.status(), absl::OkStatus());
-  ASSERT_EQ(meshes_a->size(), 1);
-  ASSERT_EQ(meshes_b->size(), 1);
+  ASSERT_THAT(meshes_b, IsOkAndHolds(SizeIs(1)));
 
   Mesh meshes[2] = {std::move((*meshes_a)[0]), std::move((*meshes_b)[0])};
 
-  absl::Status inconsistent_format =
-      PartitionedMesh::FromMeshes(absl::MakeSpan(meshes)).status();
-  EXPECT_EQ(inconsistent_format.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(inconsistent_format.message(),
-              HasSubstr("must have the same format"));
+  EXPECT_THAT(PartitionedMesh::FromMeshes(absl::MakeSpan(meshes)),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("must have the same format")));
 }
 
 TEST(PartitionedMeshTest, FromMeshesEmptyOutline) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes =
       MakeStraightLineMutableMesh(20).AsMeshes();
-  ASSERT_EQ(meshes.status(), absl::OkStatus());
-  absl::Status no_points = PartitionedMesh::FromMeshes(absl::MakeSpan(*meshes),
-                                                       {{{0, 1}, {0, 2}}, {}})
-                               .status();
-  EXPECT_EQ(no_points.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(no_points.message(), HasSubstr("contains no points"));
+  ASSERT_THAT(meshes, IsOk());
+  EXPECT_THAT(PartitionedMesh::FromMeshes(absl::MakeSpan(*meshes),
+                                          {{{0, 1}, {0, 2}}, {}}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("contains no points")));
 }
 
 TEST(PartitionedMeshTest, FromMeshesOutlineRefersToNonExistentMesh) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes =
       MakeStraightLineMutableMesh(5).AsMeshes();
-  ASSERT_EQ(meshes.status(), absl::OkStatus());
-  absl::Status missing_mesh =
-      PartitionedMesh::FromMeshes(absl::MakeSpan(*meshes),
-                                  {{{0, 1}, {1, 2}, {0, 1}, {0, 3}}})
-          .status();
-  EXPECT_EQ(missing_mesh.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(missing_mesh.message(), HasSubstr("non-existent mesh"));
+  ASSERT_THAT(meshes, IsOk());
+  EXPECT_THAT(PartitionedMesh::FromMeshes(absl::MakeSpan(*meshes),
+                                          {{{0, 1}, {1, 2}, {0, 1}, {0, 3}}}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("non-existent mesh")));
 }
 
 TEST(PartitionedMeshTest, FromMeshesOutlineRefersToNonExistentVertex) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes =
       MakeStraightLineMutableMesh(3).AsMeshes();
-  ASSERT_EQ(meshes.status(), absl::OkStatus());
-  absl::Status missing_vertex =
-      PartitionedMesh::FromMeshes(absl::MakeSpan(*meshes),
-                                  {{{0, 1}, {0, 2}, {0, 5}, {0, 3}}})
-          .status();
-  EXPECT_EQ(missing_vertex.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(missing_vertex.message(), HasSubstr("non-existent vertex"));
+  ASSERT_THAT(meshes, IsOk());
+  EXPECT_THAT(PartitionedMesh::FromMeshes(absl::MakeSpan(*meshes),
+                                          {{{0, 1}, {0, 2}, {0, 5}, {0, 3}}}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("non-existent vertex")));
 }
 
 TEST(PartitionedMeshTest, FromMultipleMutableMeshGroups) {
   MutableMesh mutable_mesh0 = MakeStraightLineMutableMesh(8);
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes0 =
       mutable_mesh0.AsMeshes();
-  ASSERT_EQ(meshes0.status(), absl::OkStatus());
+  ASSERT_THAT(meshes0, IsOk());
   ASSERT_THAT(*meshes0, SizeIs(1));
   const Mesh& mesh0 = (*meshes0)[0];
 
@@ -536,7 +522,7 @@ TEST(PartitionedMeshTest, FromMultipleMutableMeshGroups) {
       MakeStraightLineMutableMesh(3, MakeSinglePackedPositionFormat());
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes1 =
       mutable_mesh1.AsMeshes();
-  ASSERT_EQ(meshes1.status(), absl::OkStatus());
+  ASSERT_THAT(meshes1, IsOk());
   ASSERT_THAT(*meshes1, SizeIs(1));
   const Mesh& mesh1 = (*meshes1)[0];
 
@@ -548,7 +534,7 @@ TEST(PartitionedMeshTest, FromMultipleMutableMeshGroups) {
           PartitionedMesh::MutableMeshGroup{.mesh = &mutable_mesh0},
           PartitionedMesh::MutableMeshGroup{.mesh = &mutable_mesh1},
       });
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   ASSERT_EQ(shape->RenderGroupCount(), 2u);
   EXPECT_THAT(shape->RenderGroupFormat(0), MeshFormatEq(mesh0.Format()));
@@ -564,14 +550,14 @@ TEST(PartitionedMeshTest, FromMultipleMutableMeshGroups) {
 TEST(PartitionedMeshTest, FromMultipleMeshGroups) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes0 =
       MakeStraightLineMutableMesh(8).AsMeshes();
-  ASSERT_EQ(meshes0.status(), absl::OkStatus());
+  ASSERT_THAT(meshes0, IsOk());
   ASSERT_THAT(*meshes0, SizeIs(1));
   const Mesh& mesh0 = (*meshes0)[0];
 
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> meshes1 =
       MakeStraightLineMutableMesh(3, MakeSinglePackedPositionFormat())
           .AsMeshes();
-  ASSERT_EQ(meshes1.status(), absl::OkStatus());
+  ASSERT_THAT(meshes1, IsOk());
   ASSERT_THAT(*meshes1, SizeIs(1));
   const Mesh& mesh1 = (*meshes1)[0];
 
@@ -582,7 +568,7 @@ TEST(PartitionedMeshTest, FromMultipleMeshGroups) {
       PartitionedMesh::MeshGroup{.meshes = *meshes0},
       PartitionedMesh::MeshGroup{.meshes = *meshes1},
   });
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   ASSERT_EQ(shape->RenderGroupCount(), 2u);
   EXPECT_THAT(shape->RenderGroupFormat(0), MeshFormatEq(mesh0.Format()));
@@ -598,7 +584,7 @@ TEST(PartitionedMeshTest, FromMultipleMeshGroups) {
 TEST(PartitionedMeshTest, InitializeSpatialIndex) {
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMutableMesh(MakeStraightLineMutableMesh(100));
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   EXPECT_FALSE(shape->IsSpatialIndexInitialized());
 
@@ -610,16 +596,14 @@ TEST(PartitionedMeshTest, InitializeSpatialIndex) {
 TEST(PartitionedMeshTest, InitializeSpatialIndexWithMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(10).AsMeshes();
-  ASSERT_EQ(first_mesh.status(), absl::OkStatus());
+  ASSERT_THAT(first_mesh, IsOkAndHolds(SizeIs(1)));
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> second_mesh =
       MakeStarMutableMesh(10).AsMeshes();
-  ASSERT_EQ(second_mesh.status(), absl::OkStatus());
-  ASSERT_EQ(first_mesh->size(), 1);
-  ASSERT_EQ(second_mesh->size(), 1);
+  ASSERT_THAT(second_mesh, IsOkAndHolds(SizeIs(1)));
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   EXPECT_FALSE(shape->IsSpatialIndexInitialized());
 
@@ -631,7 +615,7 @@ TEST(PartitionedMeshTest, InitializeSpatialIndexWithMultipleMeshes) {
 TEST(PartitionedMeshTest, SpatialIndexIsSharedBetweenCopies) {
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(100, MakeSinglePackedPositionFormat()));
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
   PartitionedMesh copy = *shape;
 
   EXPECT_FALSE(shape->IsSpatialIndexInitialized());
@@ -692,16 +676,14 @@ TEST(PartitionedMeshTest, VisitIntersectedTrianglesPointQuery) {
 TEST(PartitionedMeshTest, VisitIntersectedTrianglesPointQueryMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(3).AsMeshes();
-  ASSERT_EQ(first_mesh.status(), absl::OkStatus());
+  ASSERT_THAT(first_mesh, IsOkAndHolds(SizeIs(1)));
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> second_mesh =
       MakeStarMutableMesh(4).AsMeshes();
-  ASSERT_EQ(second_mesh.status(), absl::OkStatus());
-  ASSERT_EQ(first_mesh->size(), 1);
-  ASSERT_EQ(second_mesh->size(), 1);
+  ASSERT_THAT(second_mesh, IsOkAndHolds(SizeIs(1)));
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   EXPECT_THAT(GetAllIntersectedTriangles(*shape, Point{0, -2}), IsEmpty());
   EXPECT_THAT(GetAllIntersectedTriangles(*shape, Point{2, -.5}),
@@ -789,16 +771,14 @@ TEST(PartitionedMeshTest, VisitIntersectedTrianglesSegmentQuery) {
 TEST(PartitionedMeshTest, VisitIntersectedTrianglesSegmentQueryMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(3).AsMeshes();
-  ASSERT_EQ(first_mesh.status(), absl::OkStatus());
+  ASSERT_THAT(first_mesh, IsOkAndHolds(SizeIs(1)));
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> second_mesh =
       MakeStarMutableMesh(4).AsMeshes();
-  ASSERT_EQ(second_mesh.status(), absl::OkStatus());
-  ASSERT_EQ(first_mesh->size(), 1);
-  ASSERT_EQ(second_mesh->size(), 1);
+  ASSERT_THAT(second_mesh, IsOkAndHolds(SizeIs(1)));
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   EXPECT_THAT(GetAllIntersectedTriangles(*shape, Segment{{0, -2}, {3, -2}}),
               IsEmpty());
@@ -897,16 +877,14 @@ TEST(PartitionedMeshTest,
      VisitIntersectedTrianglesTriangleQueryMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(3).AsMeshes();
-  ASSERT_EQ(first_mesh.status(), absl::OkStatus());
+  ASSERT_THAT(first_mesh, IsOkAndHolds(SizeIs(1)));
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> second_mesh =
       MakeStarMutableMesh(4).AsMeshes();
-  ASSERT_EQ(second_mesh.status(), absl::OkStatus());
-  ASSERT_EQ(first_mesh->size(), 1);
-  ASSERT_EQ(second_mesh->size(), 1);
+  ASSERT_THAT(second_mesh, IsOkAndHolds(SizeIs(1)));
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   EXPECT_THAT(
       GetAllIntersectedTriangles(*shape, Triangle{{0, -2}, {3, -2}, {1, -1.5}}),
@@ -1023,16 +1001,14 @@ TEST(PartitionedMeshTest,
 TEST(PartitionedMeshTest, VisitIntersectedTrianglesRectQueryMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(3).AsMeshes();
-  ASSERT_EQ(first_mesh.status(), absl::OkStatus());
+  ASSERT_THAT(first_mesh, IsOkAndHolds(SizeIs(1)));
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> second_mesh =
       MakeStarMutableMesh(4).AsMeshes();
-  ASSERT_EQ(second_mesh.status(), absl::OkStatus());
-  ASSERT_EQ(first_mesh->size(), 1);
-  ASSERT_EQ(second_mesh->size(), 1);
+  ASSERT_THAT(second_mesh, IsOkAndHolds(SizeIs(1)));
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   EXPECT_THAT(
       GetAllIntersectedTriangles(*shape, Rect::FromTwoPoints({0, -3}, {3, -2})),
@@ -1138,16 +1114,14 @@ TEST(PartitionedMeshTest, VisitIntersectedTrianglesQuadQuery) {
 TEST(PartitionedMeshTest, VisitIntersectedTrianglesQuadQueryMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(3).AsMeshes();
-  ASSERT_EQ(first_mesh.status(), absl::OkStatus());
+  ASSERT_THAT(first_mesh, IsOkAndHolds(SizeIs(1)));
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> second_mesh =
       MakeStarMutableMesh(4).AsMeshes();
-  ASSERT_EQ(second_mesh.status(), absl::OkStatus());
-  ASSERT_EQ(first_mesh->size(), 1);
-  ASSERT_EQ(second_mesh->size(), 1);
+  ASSERT_THAT(second_mesh, IsOkAndHolds(SizeIs(1)));
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   EXPECT_THAT(GetAllIntersectedTriangles(
                   *shape, Quad::FromCenterDimensionsRotationAndSkew(
@@ -1227,16 +1201,14 @@ TEST(PartitionedMeshTest,
 TEST(PartitionedMeshTest, VisitIntersectedTrianglesPartitionedMeshQuery) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> first_mesh =
       MakeStraightLineMutableMesh(3).AsMeshes();
-  ASSERT_EQ(first_mesh.status(), absl::OkStatus());
+  ASSERT_THAT(first_mesh, IsOkAndHolds(SizeIs(1)));
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> second_mesh =
       MakeStarMutableMesh(4).AsMeshes();
-  ASSERT_EQ(second_mesh.status(), absl::OkStatus());
-  ASSERT_EQ(first_mesh->size(), 1);
-  ASSERT_EQ(second_mesh->size(), 1);
+  ASSERT_THAT(second_mesh, IsOkAndHolds(SizeIs(1)));
   Mesh meshes[2] = {std::move((*first_mesh)[0]), std::move((*second_mesh)[0])};
   absl::StatusOr<PartitionedMesh> star_and_line =
       PartitionedMesh::FromMeshes(absl::MakeSpan(meshes));
-  ASSERT_EQ(star_and_line.status(), absl::OkStatus());
+  ASSERT_THAT(star_and_line, IsOk());
   PartitionedMesh ring = MakeCoiledRingPartitionedMesh(14, 6);
 
   EXPECT_THAT(
@@ -1886,35 +1858,35 @@ TEST(PartitionedMeshTest, QueryAgainstCopyEmptyShape) {
 TEST(PartitionedMeshDeathTest, OutlineGroupIndexOutOfBounds) {
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(10), {{1, 5, 4, 0}, {5, 9, 4}});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(shape->Outline(2, 0), "");
 }
 
 TEST(PartitionedMeshDeathTest, OutlineOutlineIndexOutOfBounds) {
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(10), {{1, 5, 4, 0}, {5, 9, 4}});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(shape->Outline(0, 2), "");
 }
 
 TEST(PartitionedMeshDeathTest, OutlinePositionGroupIndexOutOfBounds) {
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(10), {{1, 5, 4, 0}, {5, 9, 4}});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(shape->OutlinePosition(2, 0, 0), "");
 }
 
 TEST(PartitionedMeshDeathTest, OutlinePositionOutlineIndexOutOfBounds) {
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(10), {{1, 5, 4, 0}, {5, 9, 4}});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(shape->OutlinePosition(0, 2, 0), "");
 }
 
 TEST(PartitionedMeshDeathTest, OutlinePositionVertexIndexOutOfBounds) {
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(10), {{1, 5, 4, 0}, {5, 9, 4}});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(shape->OutlinePosition(0, 0, 4), "");
   EXPECT_DEATH_IF_SUPPORTED(shape->OutlinePosition(0, 1, 3), "");
 }

@@ -25,6 +25,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/geometry/internal/mesh_packing.h"
@@ -38,6 +39,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::Eq;
@@ -78,7 +81,7 @@ TEST(MeshTest, CreateWithDefaultFormat) {
                                          {50, -30, 12}},
                                         // Triangles
                                         {0, 1, 2});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_EQ(m->VertexCount(), 3);
   EXPECT_EQ(m->TriangleCount(), 1);
@@ -110,7 +113,7 @@ TEST(MeshTest, CreateWithCustomFormat) {
                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
   absl::StatusOr<Mesh> m = Mesh::Create(*format,
                                         {// Custom attribute
@@ -127,7 +130,7 @@ TEST(MeshTest, CreateWithCustomFormat) {
                                          {123, 456, 789}},
                                         // Triangles
                                         {0, 1, 2});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_EQ(m->VertexCount(), 3);
   EXPECT_EQ(m->TriangleCount(), 1);
@@ -195,7 +198,7 @@ TEST(MeshTest, CreateWithCustomFormat) {
 
 TEST(MeshTest, CreateEmptyMeshWithDefaultFormat) {
   absl::StatusOr<Mesh> m = Mesh::Create(MeshFormat(), {{}, {}}, {});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_EQ(m->VertexCount(), 0);
   EXPECT_EQ(m->TriangleCount(), 0);
@@ -217,11 +220,11 @@ TEST(MeshTest, CreateEmptyMeshWithCustomFormat) {
                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
   absl::StatusOr<Mesh> m =
       Mesh::Create(*format, {{}, {}, {}, {}, {}, {}, {}, {}, {}}, {});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_EQ(m->VertexCount(), 0);
   EXPECT_EQ(m->TriangleCount(), 0);
@@ -262,7 +265,7 @@ TEST(MeshTest, CreateWithMultipleTriangles) {
                                          0, 4, 5,  //
                                          0, 5, 6,  //
                                          0, 6, 1});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_EQ(m->VertexCount(), 7);
   EXPECT_EQ(m->TriangleCount(), 6);
@@ -328,7 +331,7 @@ TEST(MeshTest, CreateWithAllPackingParams) {
                                   {.offset = 0, .scale = 0.1}}},
        MeshAttributeCodingParams{
            {{.offset = -20, .scale = 0.5}, {.offset = 100, .scale = .2}}}});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_THAT(m->VertexAttributeUnpackingParams(0),
               MeshAttributeCodingParamsEq({{{.offset = -1000, .scale = 1},
@@ -393,7 +396,7 @@ TEST(MeshTest, CreateWithSomePackingParams) {
                                   {.offset = 0, .scale = 0.1},
                                   {.offset = 0, .scale = 0.1}}},
        std::nullopt});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_THAT(m->VertexAttributeUnpackingParams(0),
               MeshAttributeCodingParamsEq(
@@ -455,7 +458,7 @@ TEST(MeshTest, RawVertexDataDefaultFormat) {
                                          {15, 20}},
                                         // Triangles
                                         {});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_THAT(m->RawVertexData(),
               ElementsAreArray(AsByteVector<float>({5, 15, 10, 20})));
@@ -478,7 +481,7 @@ TEST(MeshTest, RawVertexDataCustomFormat) {
        {123, 456, 789}},
       // Triangles
       {});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
   EXPECT_THAT(m->RawVertexData(),
               ElementsAreArray(AsByteVector<float>(
                   {258048, 16773120, 8261568, 2047, 16515072, 9838591})));
@@ -494,7 +497,7 @@ TEST(MeshTest, RawIndexData) {
                                          0, 2, 3,  //
                                          0, 3, 4,  //
                                          0, 4, 1});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_THAT(m->RawIndexData(),
               ElementsAreArray(AsByteVector<uint16_t>({0, 1, 2,  //
@@ -504,33 +507,25 @@ TEST(MeshTest, RawIndexData) {
 }
 
 TEST(MeshTest, CreateErrorWhenPositionMissingComponent) {
-  absl::Status position_missing_component =
-      Mesh::Create(MeshFormat(),
-                   {// Position -- missing a component
-                    {5, 10, 20}},
-                   // Triangles
-                   {})
-          .status();
-  EXPECT_EQ(position_missing_component.code(),
-            absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(position_missing_component.message(),
-              HasSubstr("Wrong number of vertex attributes"));
+  EXPECT_THAT(Mesh::Create(MeshFormat(),
+                           {// Position -- missing a component
+                            {5, 10, 20}},
+                           // Triangles
+                           {}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("Wrong number of vertex attributes")));
 }
 
 TEST(MeshTest, CreateErrorWhenPositionHasExtraComponent) {
-  absl::Status position_has_extra_component =
-      Mesh::Create(MeshFormat(),
-                   {// Position -- extra component
-                    {5, 10, 20},
-                    {50, -30, 12},
-                    {1, 2, 3}},
-                   // Triangles
-                   {})
-          .status();
-  EXPECT_EQ(position_has_extra_component.code(),
-            absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(position_has_extra_component.message(),
-              HasSubstr("Wrong number of vertex attributes"));
+  EXPECT_THAT(Mesh::Create(MeshFormat(),
+                           {// Position -- extra component
+                            {5, 10, 20},
+                            {50, -30, 12},
+                            {1, 2, 3}},
+                           // Triangles
+                           {}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("Wrong number of vertex attributes")));
 }
 
 TEST(MeshTest, CreationErrorTooManyVerticesForIndex) {
@@ -539,56 +534,51 @@ TEST(MeshTest, CreationErrorTooManyVerticesForIndex) {
   std::vector<float> position_y;
   position_x.resize(kMaxVerticesForIndex);
   position_y.resize(kMaxVerticesForIndex);
-  EXPECT_EQ(absl::OkStatus(),
-            Mesh::Create(MeshFormat(), {position_x, position_y}, {}).status());
+  EXPECT_THAT(Mesh::Create(MeshFormat(), {position_x, position_y}, {}), IsOk());
 
   position_x.resize(kMaxVerticesForIndex + 1);
   position_y.resize(kMaxVerticesForIndex + 1);
-  absl::Status too_many_vertices =
-      Mesh::Create(MeshFormat(), {position_x, position_y}, {}).status();
-  EXPECT_EQ(too_many_vertices.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(too_many_vertices.message(),
-              HasSubstr("more vertices than can be represented by the index"));
+  EXPECT_THAT(
+      Mesh::Create(MeshFormat(), {position_x, position_y}, {}),
+      StatusIs(
+          absl::StatusCode::kInvalidArgument,
+          HasSubstr("more vertices than can be represented by the index")));
 }
 
 TEST(MeshTest, CreationErrorAttributesHaveDifferentSizes) {
-  absl::Status different_attr_sizes = Mesh::Create(MeshFormat(),
-                                                   {// Position
-                                                    {1, 2, 3, 4},
-                                                    {5, 6, 7, 8, 9}},
-                                                   // Triangles
-                                                   {})
-                                          .status();
-  EXPECT_EQ(different_attr_sizes.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(different_attr_sizes.message(), HasSubstr("unequal lengths"));
+  EXPECT_THAT(Mesh::Create(MeshFormat(),
+                           {// Position
+                            {1, 2, 3, 4},
+                            {5, 6, 7, 8, 9}},
+                           // Triangles
+                           {}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("unequal lengths")));
 }
 
 TEST(MeshTest, CreatonErrorInfValue) {
   constexpr float kInf = std::numeric_limits<float>::infinity();
-  absl::Status inf_value =
-      Mesh::Create(MeshFormat(), {{1, 2, 3}, {1, 2, kInf}}, {}).status();
-  EXPECT_EQ(inf_value.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(inf_value.message(), HasSubstr("Non-finite value"));
+  EXPECT_THAT(Mesh::Create(MeshFormat(), {{1, 2, 3}, {1, 2, kInf}}, {}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("Non-finite value")));
 }
 
 TEST(MeshTest, CreatonErrorNegInfValue) {
   constexpr float kInf = std::numeric_limits<float>::infinity();
-  absl::Status neg_inf_value =
-      Mesh::Create(MeshFormat(), {{1, 2, 3}, {1, 2, -kInf}}, {}).status();
-  EXPECT_EQ(neg_inf_value.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(neg_inf_value.message(), HasSubstr("Non-finite value"));
+  EXPECT_THAT(Mesh::Create(MeshFormat(), {{1, 2, 3}, {1, 2, -kInf}}, {}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("Non-finite value")));
 }
 
 TEST(MeshTest, CreatonErrorNanValue) {
-  absl::Status nan_value =
-      Mesh::Create(MeshFormat(), {{1, 2, 3}, {1, 2, std::nanf("")}}, {})
-          .status();
-  EXPECT_EQ(nan_value.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(nan_value.message(), HasSubstr("Non-finite value"));
+  EXPECT_THAT(
+      Mesh::Create(MeshFormat(), {{1, 2, 3}, {1, 2, std::nanf("")}}, {}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("Non-finite value")));
 }
 
 TEST(MeshTest, CreationErrorRangeLargerThanFloatMax) {
-  absl::Status range_too_large =
+  EXPECT_THAT(
       Mesh::Create(*MeshFormat::Create(
                        {{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                          MeshFormat::AttributeId::kPosition}},
@@ -597,50 +587,46 @@ TEST(MeshTest, CreationErrorRangeLargerThanFloatMax) {
                     {1, 3e38, -3e38},
                     {1, 2, 3}},
                    // Triangles
-                   {})
-          .status();
-  EXPECT_EQ(range_too_large.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(range_too_large.message(), HasSubstr("exceeds float precision"));
+                   {}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("exceeds float precision")));
 }
 
 TEST(MeshTest, CreationErrorTriangleIndicesTwoNotDivisibleByThree) {
-  absl::Status wrong_triangle_indices = Mesh::Create(MeshFormat(),
-                                                     {// Position
-                                                      {1, 2, 3, 4},
-                                                      {5, 6, 7, 9}},
-                                                     // Triangles
-                                                     {0, 1})
-                                            .status();
-  EXPECT_EQ(wrong_triangle_indices.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(wrong_triangle_indices.message(), HasSubstr("divisible by 3"));
+  EXPECT_THAT(Mesh::Create(MeshFormat(),
+                           {// Position
+                            {1, 2, 3, 4},
+                            {5, 6, 7, 9}},
+                           // Triangles
+                           {0, 1}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("divisible by 3")));
 }
 
 TEST(MeshTest, CreationErrorTriangleIndicesFourNotDivisibleByThree) {
-  absl::Status wrong_triangle_indices = Mesh::Create(MeshFormat(),
-                                                     {// Position
-                                                      {1, 2, 3, 4},
-                                                      {5, 6, 7, 9}},
-                                                     // Triangles
-                                                     {0, 1, 2, 3})
-                                            .status();
-  EXPECT_EQ(wrong_triangle_indices.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(wrong_triangle_indices.message(), HasSubstr("divisible by 3"));
+  EXPECT_THAT(Mesh::Create(MeshFormat(),
+                           {// Position
+                            {1, 2, 3, 4},
+                            {5, 6, 7, 9}},
+                           // Triangles
+                           {0, 1, 2, 3}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("divisible by 3")));
 }
 
 TEST(MeshTest, CreationErrorTriangleRefersToNonExistentVertex) {
-  absl::Status non_existent_vertex = Mesh::Create(MeshFormat(),
-                                                  {// Position
-                                                   {1, 2, 3, 4},
-                                                   {5, 6, 7, 9}},
-                                                  // Triangles;
-                                                  {0, 1, 4})
-                                         .status();
-  EXPECT_EQ(non_existent_vertex.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(non_existent_vertex.message(), HasSubstr("non-existent vertex"));
+  EXPECT_THAT(Mesh::Create(MeshFormat(),
+                           {// Position
+                            {1, 2, 3, 4},
+                            {5, 6, 7, 9}},
+                           // Triangles;
+                           {0, 1, 4}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("non-existent vertex")));
 }
 
 TEST(MeshTest, CreationErrorWrongNumberOfPackingParams) {
-  absl::Status wrong_number_of_packaing_params =
+  EXPECT_THAT(
       Mesh::Create(
           // The default format has one attribute (position) with two components
           MeshFormat(),
@@ -651,16 +637,13 @@ TEST(MeshTest, CreationErrorWrongNumberOfPackingParams) {
           {MeshAttributeCodingParams{
                {{.offset = -20, .scale = 0.25}, {.offset = 1, .scale = 0.5}}},
            MeshAttributeCodingParams{
-               {{.offset = -20, .scale = 0.25}, {.offset = 1, .scale = 0.5}}}})
-          .status();
-  EXPECT_EQ(wrong_number_of_packaing_params.code(),
-            absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(wrong_number_of_packaing_params.message(),
-              HasSubstr("Wrong number of coding params"));
+               {{.offset = -20, .scale = 0.25}, {.offset = 1, .scale = 0.5}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("Wrong number of coding params")));
 }
 
 TEST(MeshTest, CreationErrorPackingParamsForUnpackedType) {
-  absl::Status packing_params_for_unpacked =
+  EXPECT_THAT(
       Mesh::Create(
           *MeshFormat::Create(
               {{AttrType::kFloat1Unpacked, MeshFormat::AttributeId::kCustom0},
@@ -675,51 +658,38 @@ TEST(MeshTest, CreationErrorPackingParamsForUnpackedType) {
           {0, 1, 2},
           {MeshAttributeCodingParams{{{.offset = 1234, .scale = .1234}}},
            MeshAttributeCodingParams{{{.offset = -20, .scale = 0.25},
-                                      {.offset = 100, .scale = 0.5}}}})
-          .status();
-  EXPECT_EQ(packing_params_for_unpacked.code(),
-            absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(packing_params_for_unpacked.message(),
-              HasSubstr("but the attribute type is unpacked"));
+                                      {.offset = 100, .scale = 0.5}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("but the attribute type is unpacked")));
 }
 
 TEST(MeshTest, CreationErrorInvalidPackingParams) {
-  {
-    absl::Status invalid_packing_params =
-        Mesh::Create(
-            MakeSinglePackedPositionFormat(),
-            // Position
-            {{1, 2, 3}, {4, 5, 6}},
-            // Triangles
-            {0, 1, 2},
-            {MeshAttributeCodingParams{{{.offset = -20, .scale = 0.25}}}})
-            .status();
-    EXPECT_EQ(invalid_packing_params.code(),
-              absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(invalid_packing_params.message(),
-                HasSubstr("not valid for that type"));
-  }
+  EXPECT_THAT(
+      Mesh::Create(
+          MakeSinglePackedPositionFormat(),
+          // Position
+          {{1, 2, 3}, {4, 5, 6}},
+          // Triangles
+          {0, 1, 2},
+          {MeshAttributeCodingParams{{{.offset = -20, .scale = 0.25}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("not valid for that type")));
 
-  {
-    absl::Status invalid_packing_params =
-        Mesh::Create(
-            MakeSinglePackedPositionFormat(),
-            // Position
-            {{1, 2, 3}, {4, 5, 6}},
-            // Triangles
-            {0, 1, 2},
-            {MeshAttributeCodingParams{{{.offset = -20, .scale = std::nanf("")},
-                                        {.offset = 1, .scale = 0.5}}}})
-            .status();
-    EXPECT_EQ(invalid_packing_params.code(),
-              absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(invalid_packing_params.message(),
-                HasSubstr("not valid for that type"));
-  }
+  EXPECT_THAT(
+      Mesh::Create(
+          MakeSinglePackedPositionFormat(),
+          // Position
+          {{1, 2, 3}, {4, 5, 6}},
+          // Triangles
+          {0, 1, 2},
+          {MeshAttributeCodingParams{{{.offset = -20, .scale = std::nanf("")},
+                                      {.offset = 1, .scale = 0.5}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("not valid for that type")));
 }
 
 TEST(MeshTest, CreationErrorPackingParamsCanNotRepresentAllValues) {
-  absl::Status can_not_represent_all_values =
+  EXPECT_THAT(
       Mesh::Create(
           MakeSinglePackedPositionFormat(),
           // Position
@@ -732,12 +702,9 @@ TEST(MeshTest, CreationErrorPackingParamsCanNotRepresentAllValues) {
                {.offset = 0, .scale = 0.25},
                // This can represent value in [-2047, 0.5], which does not
                // cover the range of values needed for the y-coordinate.
-               {.offset = -2047, .scale = 0.5}}}})
-          .status();
-  EXPECT_EQ(can_not_represent_all_values.code(),
-            absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(can_not_represent_all_values.message(),
-              HasSubstr("cannot represent all values"));
+               {.offset = -2047, .scale = 0.5}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("cannot represent all values")));
 }
 
 TEST(MeshTest, CloneDefaultConstructedMesh) {
@@ -771,7 +738,7 @@ TEST(MeshTest, CloneNonDefaultEmptyMesh) {
                             MeshFormat::AttributeId::kPosition}},
                           MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
       {{}, {}, {}, {}, {}, {}, {}, {}, {}}, {});
-  ASSERT_EQ(original.status(), absl::OkStatus());
+  ASSERT_THAT(original, IsOk());
 
   Mesh clone = *original;
 
@@ -822,7 +789,7 @@ TEST(MeshTest, CloneNonEmptyMesh) {
        {123, 456, 789}},
       // Triangles
       {0, 1, 2});
-  ASSERT_EQ(original.status(), absl::OkStatus());
+  ASSERT_THAT(original, IsOk());
 
   Mesh clone = *original;
 
@@ -886,7 +853,7 @@ TEST(MeshDeathTest, VertexIndexOutOfBounds) {
                                          {3, 4}},
                                         // Triangles
                                         {});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_DEATH_IF_SUPPORTED(m->FloatVertexAttribute(3, 0), "");
   EXPECT_DEATH_IF_SUPPORTED(m->VertexPosition(3), "");
@@ -905,7 +872,7 @@ TEST(MeshDeathTest, AttributeIndexOutOfBounds) {
                                          {3, 4}},
                                         // Triangles
                                         {});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_DEATH_IF_SUPPORTED(m->FloatVertexAttribute(0, 1), "");
   EXPECT_DEATH_IF_SUPPORTED(m->VertexAttributeUnpackingParams(1), "");
@@ -926,7 +893,7 @@ TEST(MeshDeathTest, TriangleIndexOutOfBounds) {
                                         // Triangles
                                         {0, 1, 2,  //
                                          0, 2, 3});
-  ASSERT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_DEATH_IF_SUPPORTED(m->TriangleIndices(3), "");
   EXPECT_DEATH_IF_SUPPORTED(m->GetTriangle(3), "");
@@ -941,7 +908,7 @@ TEST(MeshTest, CreateFromQuantizedData) {
        {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
        {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
   std::vector<MeshAttributeCodingParams> coding_params = {
       {{{.offset = 10, .scale = 10.f / kMax12Bits},
@@ -963,7 +930,7 @@ TEST(MeshTest, CreateFromQuantizedData) {
 
   absl::StatusOr<Mesh> m = Mesh::CreateFromQuantizedData(
       *format, {x, y, h0, h1, h2, h3, c0}, triangles, coding_params);
-  EXPECT_EQ(m.status(), absl::OkStatus());
+  ASSERT_THAT(m, IsOk());
 
   EXPECT_THAT(m->Format(), MeshFormatEq(*format));
 
@@ -1006,35 +973,31 @@ TEST(MeshTest, CreateFromQuantizedDataErrorsWithUnpackedFormat) {
   absl::StatusOr<MeshFormat> format =
       MeshFormat::Create({{AttrType::kFloat2Unpacked, AttrId::kPosition}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
-  absl::Status status =
+  EXPECT_THAT(
       Mesh::CreateFromQuantizedData(
           *format, {{1}, {1}}, {},
           {MeshAttributeCodingParams{
-              {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}}})
-          .status();
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("packed"));
+              {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("packed")));
 }
 
 TEST(MeshTest, CreateFromQuantizedDataErrorsWithAttributeOutOfBounds) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
   std::vector<MeshAttributeCodingParams> coding_params = {
       {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}};
 
-  absl::Status status = Mesh::CreateFromQuantizedData(*format,
-                                                      {// kPosition
-                                                       {5000},
-                                                       {1}},
-                                                      {}, coding_params)
-                            .status();
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("range"));
+  EXPECT_THAT(Mesh::CreateFromQuantizedData(*format,
+                                            {// kPosition
+                                             {5000},
+                                             {1}},
+                                            {}, coding_params),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("range")));
 }
 
 }  // namespace

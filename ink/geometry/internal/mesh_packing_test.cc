@@ -28,6 +28,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/types/span.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_packing_types.h"
@@ -38,6 +39,9 @@
 namespace ink::mesh_internal {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
+using ::absl_testing::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::FieldsAre;
@@ -1684,7 +1688,7 @@ TEST(MeshPackingTest, ReadUnpackedFloatAttributeFromByteArrayCustomFormat) {
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
   std::vector<std::byte> bytes =
       AsByteVector<float>({25,                    // custom
                            50, 40,                // position
@@ -1803,7 +1807,7 @@ TEST(MeshPackingTest, PartitionTriangles16BitIndex) {
 TEST(MeshPackingTest, ComputeCodingParamskFloat1Unpacked) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params = ComputeCodingParams(
       AttrType::kFloat1Unpacked, {.minimum = {1, 0}, .maximum = {1, 1}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params,
               MeshAttributeCodingParamsEq({{{.offset = 0, .scale = 1}}}));
 }
@@ -1812,7 +1816,7 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat1PackedInOneUnsignedByte) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
       ComputeCodingParams(AttrType::kFloat1PackedInOneUnsignedByte,
                           {.minimum = {2}, .maximum = {10}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params, MeshAttributeCodingParamsEq(
                                   {{{.offset = 2, .scale = 8.f / kMax8Bit}}}));
 }
@@ -1820,7 +1824,7 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat1PackedInOneUnsignedByte) {
 TEST(MeshPackingTest, ComputeCodingParamskFloat2Unpacked) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params = ComputeCodingParams(
       AttrType::kFloat2Unpacked, {.minimum = {2, 0}, .maximum = {2, 1}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params,
               MeshAttributeCodingParamsEq(
                   {{{.offset = 0, .scale = 1}, {.offset = 0, .scale = 1}}}));
@@ -1830,7 +1834,7 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat2PackedInOneFloat) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
       ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                           {.minimum = {0, 1}, .maximum = {5, 10}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params, MeshAttributeCodingParamsEq(
                                   {{{.offset = 0, .scale = 5.f / kMax12Bit},
                                     {.offset = 1, .scale = 9.f / kMax12Bit}}}));
@@ -1841,7 +1845,7 @@ TEST(MeshPackingTest,
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
       ComputeCodingParams(AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
                           {.minimum = {0, 1}, .maximum = {5, 10}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params, MeshAttributeCodingParamsEq(
                                   {{{.offset = 0, .scale = 5.f / kMax12Bit},
                                     {.offset = 1, .scale = 9.f / kMax12Bit}}}));
@@ -1852,7 +1856,7 @@ TEST(MeshPackingTest,
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
       ComputeCodingParams(AttrType::kFloat2PackedInFourUnsignedBytes_X12_Y20,
                           {.minimum = {2, 5}, .maximum = {10, 21}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params,
               MeshAttributeCodingParamsEq(
                   {{{.offset = 2, .scale = 8.f / kMax12Bit},
@@ -1862,7 +1866,7 @@ TEST(MeshPackingTest,
 TEST(MeshPackingTest, ComputeCodingParamskFloat3Unpacked) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params = ComputeCodingParams(
       AttrType::kFloat3Unpacked, {.minimum = {3, 0, 5}, .maximum = {3, 1, 7}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params,
               MeshAttributeCodingParamsEq({{{.offset = 0, .scale = 1},
                                             {.offset = 0, .scale = 1},
@@ -1873,7 +1877,7 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat3PackedInOneFloat) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
       ComputeCodingParams(AttrType::kFloat3PackedInOneFloat,
                           {.minimum = {4, 5, 6}, .maximum = {5, 10, 15}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params, MeshAttributeCodingParamsEq(
                                   {{{.offset = 4, .scale = 1.f / kMax8Bit},
                                     {.offset = 5, .scale = 5.f / kMax8Bit},
@@ -1884,7 +1888,7 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat3PackedInTwoFloats) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
       ComputeCodingParams(AttrType::kFloat3PackedInTwoFloats,
                           {.minimum = {-4, -8, -4}, .maximum = {20, 30, 10}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params,
               MeshAttributeCodingParamsEq(
                   {{{.offset = -4, .scale = 24.f / kMax16Bit},
@@ -1897,7 +1901,7 @@ TEST(MeshPackingTest,
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
       ComputeCodingParams(AttrType::kFloat3PackedInFourUnsignedBytes_XYZ10,
                           {.minimum = {12, -21, -13}, .maximum = {28, 4, 37}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params,
               MeshAttributeCodingParamsEq(
                   {{{.offset = 12, .scale = 16.f / kMax10Bit},
@@ -1909,7 +1913,7 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat4Unpacked) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params = ComputeCodingParams(
       AttrType::kFloat4Unpacked,
       {.minimum = {4, 0, 2, 5}, .maximum = {4, 20, 50, 10}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params,
               MeshAttributeCodingParamsEq({{{.offset = 0, .scale = 1},
                                             {.offset = 0, .scale = 1},
@@ -1921,7 +1925,7 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat4PackedInOneFloat) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
       ComputeCodingParams(AttrType::kFloat4PackedInOneFloat,
                           {.minimum = {-1, 1, -3, 3}, .maximum = {1, 2, 3, 5}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params, MeshAttributeCodingParamsEq(
                                   {{{.offset = -1, .scale = 2.f / kMax6Bit},
                                     {.offset = 1, .scale = 1.f / kMax6Bit},
@@ -1933,7 +1937,7 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat4PackedInTwoFloats) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params = ComputeCodingParams(
       AttrType::kFloat4PackedInTwoFloats,
       {.minimum = {100, 200, 300, 400}, .maximum = {900, 400, 310, 500}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params,
               MeshAttributeCodingParamsEq(
                   {{{.offset = 100, .scale = 800.f / kMax12Bit},
@@ -1946,7 +1950,7 @@ TEST(MeshPackingTest, ComputeCodingParamskFloat4PackedInThreeFloats) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params = ComputeCodingParams(
       AttrType::kFloat4PackedInThreeFloats,
       {.minimum = {0.1, -0.5, 1.3, -2.9}, .maximum = {0.2, -0.1, 1.5, -2.7}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params,
               MeshAttributeCodingParamsEq(
                   {{{.offset = 0.1, .scale = 0.1f / kMax18Bit},
@@ -1959,56 +1963,59 @@ TEST(MeshPackingTest, ComputeCodingParamsHandlesMinAndMaxBeingTheSame) {
   absl::StatusOr<MeshAttributeCodingParams> coding_params =
       ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                           {.minimum = {10, 20}, .maximum = {10, 20}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   EXPECT_THAT(*coding_params,
               MeshAttributeCodingParamsEq(
                   {{{.offset = 10, .scale = 1}, {.offset = 20, .scale = 1}}}));
 }
 
 TEST(MeshPackingTest, ComputeCodingParamsRangeIsLargerThanFloatMax) {
-  absl::Status status =
+  EXPECT_THAT(
       ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
-                          {.minimum = {10, -3e38}, .maximum = {10, 3e38}})
-          .status();
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("exceeds float precision"));
+                          {.minimum = {10, -3e38}, .maximum = {10, 3e38}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("exceeds float precision")));
 }
 
 TEST(MeshPackingTest, ComputeCodingParamsArray) {
-  absl::StatusOr<CodingParamsArray> coding_params_array =
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  EXPECT_THAT(
       ComputeCodingParamsArray(
-          *MeshFormat::Create(
-              {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-              MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+          *format,
           {{.minimum = {-3}, .maximum = {500}},
            {.minimum = {-50, 5}, .maximum = {100, 10}},
-           {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}});
-  ASSERT_EQ(coding_params_array.status(), absl::OkStatus());
-  EXPECT_THAT(
-      *coding_params_array,
-      Property("Values", &CodingParamsArray::Values,
-               ElementsAre(
-                   MeshAttributeCodingParamsEq({{{.offset = 0, .scale = 1}}}),
-                   MeshAttributeCodingParamsEq(
-                       {{{.offset = -50, .scale = 150. / kMax12Bit},
-                         {.offset = 5, .scale = 5. / kMax12Bit}}}),
-                   MeshAttributeCodingParamsEq(
-                       {{{.offset = -1, .scale = 3. / kMax6Bit},
-                         {.offset = 0, .scale = 1. / kMax6Bit},
-                         {.offset = 0.5, .scale = 0.25 / kMax6Bit},
-                         {.offset = 0.25, .scale = 0.55 / kMax6Bit}}}))));
+           {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}}),
+      IsOkAndHolds(Property(
+          "Values", &CodingParamsArray::Values,
+          ElementsAre(
+              MeshAttributeCodingParamsEq({{{.offset = 0, .scale = 1}}}),
+              MeshAttributeCodingParamsEq(
+                  {{{.offset = -50, .scale = 150. / kMax12Bit},
+                    {.offset = 5, .scale = 5. / kMax12Bit}}}),
+              MeshAttributeCodingParamsEq(
+                  {{{.offset = -1, .scale = 3. / kMax6Bit},
+                    {.offset = 0, .scale = 1. / kMax6Bit},
+                    {.offset = 0.5, .scale = 0.25 / kMax6Bit},
+                    {.offset = 0.25, .scale = 0.55 / kMax6Bit}}})))));
 }
 
 TEST(MeshPackingTest, ComputeCodingParamsArrayWithCustomParams) {
-  absl::StatusOr<CodingParamsArray> coding_params_array =
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  EXPECT_THAT(
       ComputeCodingParamsArray(
-          *MeshFormat::Create(
-              {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-              MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+          *format,
           {{.minimum = {-3}, .maximum = {500}},
            {.minimum = {-50, 5}, .maximum = {100, 10}},
            {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}},
@@ -2018,11 +2025,8 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayWithCustomParams) {
            MeshAttributeCodingParams{{{.offset = -1, .scale = .1},
                                       {.offset = -1, .scale = .1},
                                       {.offset = -1, .scale = .1},
-                                      {.offset = -1, .scale = .1}}}});
-  ASSERT_EQ(coding_params_array.status(), absl::OkStatus());
-  EXPECT_THAT(
-      *coding_params_array,
-      Property(
+                                      {.offset = -1, .scale = .1}}}}),
+      IsOkAndHolds(Property(
           "Values", &CodingParamsArray::Values,
           ElementsAre(
               MeshAttributeCodingParamsEq({{{.offset = 0, .scale = 1}}}),
@@ -2031,53 +2035,57 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayWithCustomParams) {
               MeshAttributeCodingParamsEq({{{.offset = -1, .scale = .1},
                                             {.offset = -1, .scale = .1},
                                             {.offset = -1, .scale = .1},
-                                            {.offset = -1, .scale = .1}}}))));
+                                            {.offset = -1, .scale = .1}}})))));
 }
 
 TEST(MeshPackingTest, ComputeCodingParamsArrayWrongNumberOfBounds) {
-  absl::Status size_mismatch =
-      ComputeCodingParamsArray(
-          *MeshFormat::Create(
-              {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-              MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
-          {{.minimum = {-3}, .maximum = {500}},
-           {.minimum = {-50, 5}, .maximum = {100, 10}}})
-          .status();
-  EXPECT_EQ(size_mismatch.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(size_mismatch.message(), HasSubstr("Size mismatch"));
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  EXPECT_THAT(
+      ComputeCodingParamsArray(*format,
+                               {{.minimum = {-3}, .maximum = {500}},
+                                {.minimum = {-50, 5}, .maximum = {100, 10}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Size mismatch")));
 }
 
 TEST(MeshPackingTest, ComputeCodingParamsArrayWrongNumberOfCustomParams) {
-  absl::Status wrong_num_params =
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  EXPECT_THAT(
       ComputeCodingParamsArray(
-          *MeshFormat::Create(
-              {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-              MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+          *format,
           {{.minimum = {-3}, .maximum = {500}},
            {.minimum = {-50, 5}, .maximum = {100, 10}},
            {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}},
           {std::nullopt,
            MeshAttributeCodingParams{
-               {{.offset = -200, .scale = .1}, {.offset = 0, .scale = .01}}}})
-          .status();
-  EXPECT_EQ(wrong_num_params.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(wrong_num_params.message(),
-              HasSubstr("Wrong number of coding params"));
+               {{.offset = -200, .scale = .1}, {.offset = 0, .scale = .01}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("Wrong number of coding params")));
 }
 
 TEST(MeshPackingTest,
      ComputeCodingParamsArrayCustomParamsForUnpackedAttribute) {
-  absl::Status status =
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  EXPECT_THAT(
       ComputeCodingParamsArray(
-          *MeshFormat::Create(
-              {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-              MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+          *format,
           {{.minimum = {-3}, .maximum = {500}},
            {.minimum = {-50, 5}, .maximum = {100, 10}},
            {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}},
@@ -2087,130 +2095,110 @@ TEST(MeshPackingTest,
            MeshAttributeCodingParams{{{.offset = -1, .scale = .1},
                                       {.offset = -1, .scale = .1},
                                       {.offset = -1, .scale = .1},
-                                      {.offset = -1, .scale = .1}}}})
-          .status();
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("but the attribute type is unpacked"));
+                                      {.offset = -1, .scale = .1}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("but the attribute type is unpacked")));
 }
 
 TEST(MeshPackingTest, ComputeCodingParamsArrayCustomParamsIsInvalid) {
-  {
-    absl::Status wrong_num_components =
-        ComputeCodingParamsArray(
-            *MeshFormat::Create(
-                {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-                 {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-                 {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-                MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
-            {{.minimum = {-3}, .maximum = {500}},
-             {.minimum = {-50, 5}, .maximum = {100, 10}},
-             {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}},
-            {std::nullopt,
-             MeshAttributeCodingParams{
-                 {{.offset = -200, .scale = .1}, {.offset = 0, .scale = .01}}},
-             // Wrong number of components.
-             MeshAttributeCodingParams{{{.offset = -1, .scale = .1},
-                                        {.offset = -1, .scale = .1},
-                                        {.offset = -1, .scale = .1}}}})
-            .status();
-    EXPECT_EQ(wrong_num_components.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(wrong_num_components.message(),
-                HasSubstr("not valid for that type"));
-  }
-  {
-    absl::Status non_finite_value =
-        ComputeCodingParamsArray(
-            *MeshFormat::Create(
-                {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-                 {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-                 {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-                MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
-            {{.minimum = {-3}, .maximum = {500}},
-             {.minimum = {-50, 5}, .maximum = {100, 10}},
-             {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}},
-            {std::nullopt,
-             // Non-finite value.
-             MeshAttributeCodingParams{{{.offset = std::nanf(""), .scale = .1},
-                                        {.offset = 0, .scale = .01}}},
-             MeshAttributeCodingParams{{{.offset = -1, .scale = .1},
-                                        {.offset = -1, .scale = .1},
-                                        {.offset = -1, .scale = .1},
-                                        {.offset = -1, .scale = .1}}}})
-            .status();
-    EXPECT_EQ(non_finite_value.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(non_finite_value.message(),
-                HasSubstr("not valid for that type"));
-  }
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  EXPECT_THAT(
+      ComputeCodingParamsArray(
+          *format,
+          {{.minimum = {-3}, .maximum = {500}},
+           {.minimum = {-50, 5}, .maximum = {100, 10}},
+           {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}},
+          {std::nullopt,
+           MeshAttributeCodingParams{
+               {{.offset = -200, .scale = .1}, {.offset = 0, .scale = .01}}},
+           // Wrong number of components.
+           MeshAttributeCodingParams{{{.offset = -1, .scale = .1},
+                                      {.offset = -1, .scale = .1},
+                                      {.offset = -1, .scale = .1}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("not valid for that type")));
+  EXPECT_THAT(
+      ComputeCodingParamsArray(
+          *format,
+          {{.minimum = {-3}, .maximum = {500}},
+           {.minimum = {-50, 5}, .maximum = {100, 10}},
+           {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}},
+          {std::nullopt,
+           // Non-finite value.
+           MeshAttributeCodingParams{{{.offset = std::nanf(""), .scale = .1},
+                                      {.offset = 0, .scale = .01}}},
+           MeshAttributeCodingParams{{{.offset = -1, .scale = .1},
+                                      {.offset = -1, .scale = .1},
+                                      {.offset = -1, .scale = .1},
+                                      {.offset = -1, .scale = .1}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("not valid for that type")));
 }
 
 TEST(MeshPackingTest,
      ComputeCodingParamsArrayCustomParamsCannotRepresentValues) {
-  {
-    absl::Status range_starts_too_high =
-        ComputeCodingParamsArray(
-            *MeshFormat::Create(
-                {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-                 {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-                 {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-                MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
-            {{.minimum = {-3}, .maximum = {500}},
-             {.minimum = {-50, 5}, .maximum = {100, 10}},
-             {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}},
-            {std::nullopt,
-             // This can't represent the minimum value.
-             MeshAttributeCodingParams{
-                 {{.offset = -20, .scale = .1}, {.offset = 0, .scale = .01}}},
-             MeshAttributeCodingParams{{{.offset = -1, .scale = .1},
-                                        {.offset = -1, .scale = .1},
-                                        {.offset = -1, .scale = .1},
-                                        {.offset = -1, .scale = .1}}}})
-            .status();
-    EXPECT_EQ(range_starts_too_high.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(range_starts_too_high.message(),
-                HasSubstr("cannot represent all values of that attribute"));
-  }
-  {
-    absl::Status range_ends_too_low =
-        ComputeCodingParamsArray(
-            *MeshFormat::Create(
-                {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-                 {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-                 {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-                MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
-            {{.minimum = {-3}, .maximum = {500}},
-             {.minimum = {-50, 5}, .maximum = {100, 10}},
-             {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}},
-            {std::nullopt,
-             MeshAttributeCodingParams{
-                 {{.offset = -200, .scale = .1}, {.offset = 0, .scale = .01}}},
-             // This can't represent the maximum value.
-             MeshAttributeCodingParams{{{.offset = -1, .scale = .1},
-                                        {.offset = 0, .scale = .01},
-                                        {.offset = -1, .scale = .1},
-                                        {.offset = -1, .scale = .1}}}})
-            .status();
-    EXPECT_EQ(range_ends_too_low.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(range_ends_too_low.message(),
-                HasSubstr("cannot represent all values of that attribute"));
-  }
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  EXPECT_THAT(
+      ComputeCodingParamsArray(
+          *format,
+          {{.minimum = {-3}, .maximum = {500}},
+           {.minimum = {-50, 5}, .maximum = {100, 10}},
+           {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}},
+          {std::nullopt,
+           // This can't represent the minimum value.
+           MeshAttributeCodingParams{
+               {{.offset = -20, .scale = .1}, {.offset = 0, .scale = .01}}},
+           MeshAttributeCodingParams{{{.offset = -1, .scale = .1},
+                                      {.offset = -1, .scale = .1},
+                                      {.offset = -1, .scale = .1},
+                                      {.offset = -1, .scale = .1}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("cannot represent all values of that attribute")));
+  EXPECT_THAT(
+      ComputeCodingParamsArray(
+          *format,
+          {{.minimum = {-3}, .maximum = {500}},
+           {.minimum = {-50, 5}, .maximum = {100, 10}},
+           {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}},
+          {std::nullopt,
+           MeshAttributeCodingParams{
+               {{.offset = -200, .scale = .1}, {.offset = 0, .scale = .01}}},
+           // This can't represent the maximum value.
+           MeshAttributeCodingParams{{{.offset = -1, .scale = .1},
+                                      {.offset = 0, .scale = .01},
+                                      {.offset = -1, .scale = .1},
+                                      {.offset = -1, .scale = .1}}}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("cannot represent all values of that attribute")));
 }
 
 TEST(MeshPackingTest, ComputeCodingParamsArrayPercolatesErrors) {
-  absl::Status exceeds_precision =
-      ComputeCodingParamsArray(
-          *MeshFormat::Create(
-              {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-              MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
-          {{.minimum = {-3}, .maximum = {500}},
-           {.minimum = {-3e38, 5}, .maximum = {3e38, 10}},
-           {.minimum = {-1, 0, 0.5, 0.25}, .maximum = {2, 1, 0.75, 0.8}}})
-          .status();
-  EXPECT_EQ(exceeds_precision.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(exceeds_precision.message(),
-              HasSubstr("exceeds float precision"));
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  EXPECT_THAT(ComputeCodingParamsArray(
+                  *format, {{.minimum = {-3}, .maximum = {500}},
+                            {.minimum = {-3e38, 5}, .maximum = {3e38, 10}},
+                            {.minimum = {-1, 0, 0.5, 0.25},
+                             .maximum = {2, 1, 0.75, 0.8}}}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("exceeds float precision")));
 }
 
 TEST(MeshPackingTest, CopyAndPackPartitionVerticesDefaultFormat) {
@@ -2224,7 +2212,7 @@ TEST(MeshPackingTest, CopyAndPackPartitionVerticesDefaultFormat) {
   CodingParamsArray unpacking_params_array(1);
   absl::StatusOr<MeshAttributeCodingParams> coding_params = ComputeCodingParams(
       AttrType::kFloat2Unpacked, {.minimum = {-4, 5}, .maximum = {16, 30}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   unpacking_params_array[0] = *coding_params;
 
   EXPECT_THAT(
@@ -2239,7 +2227,7 @@ TEST(MeshPackingTest, CopyAndPackPartitionVerticesCustomFormat) {
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
   std::vector<std::byte> bytes =
       AsByteVector<float>({30,                 // custom
                            0,   10,            // position
@@ -2258,21 +2246,21 @@ TEST(MeshPackingTest, CopyAndPackPartitionVerticesCustomFormat) {
     absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
         ComputeCodingParams(AttrType::kFloat1Unpacked,
                             {.minimum = {-20}, .maximum = {60}});
-    ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+    ASSERT_THAT(unpacking_params, IsOk());
     unpacking_params_array[0] = *unpacking_params;
   }
   {
     absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
         ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                             {.minimum = {-50, -200}, .maximum = {200, 100}});
-    ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+    ASSERT_THAT(unpacking_params, IsOk());
     unpacking_params_array[1] = *unpacking_params;
   }
   {
     absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
         ComputeCodingParams(AttrType::kFloat4PackedInOneFloat,
                             {.minimum = {0, 0, 0, 0}, .maximum = {1, 1, 1, 1}});
-    ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+    ASSERT_THAT(unpacking_params, IsOk());
     unpacking_params_array[2] = *unpacking_params;
   }
 
@@ -2302,7 +2290,7 @@ TEST(MeshPackingTest,
   absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
       ComputeCodingParams(AttrType::kFloat2Unpacked,
                           {.minimum = {-4, 5}, .maximum = {16, 30}});
-  ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+  ASSERT_THAT(unpacking_params, IsOk());
   unpacking_params_array[0] = *unpacking_params;
   absl::flat_hash_map<uint32_t, Point> corrected_positions = {{1, {100, 200}},
                                                               {3, {30, 50}}};
@@ -2320,7 +2308,7 @@ TEST(MeshPackingTest,
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
   std::vector<std::byte> bytes =
       AsByteVector<float>({30,                 // custom
                            0,   10,            // position
@@ -2340,21 +2328,21 @@ TEST(MeshPackingTest,
     absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
         ComputeCodingParams(AttrType::kFloat1Unpacked,
                             {.minimum = {-20}, .maximum = {60}});
-    ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+    ASSERT_THAT(unpacking_params, IsOk());
     unpacking_params_array[0] = *unpacking_params;
   }
   {
     absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
         ComputeCodingParams(AttrType::kFloat2PackedInOneFloat,
                             {.minimum = {-50, -200}, .maximum = {200, 100}});
-    ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+    ASSERT_THAT(unpacking_params, IsOk());
     unpacking_params_array[1] = *unpacking_params;
   }
   {
     absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
         ComputeCodingParams(AttrType::kFloat4PackedInOneFloat,
                             {.minimum = {0, 0, 0, 0}, .maximum = {1, 1, 1, 1}});
-    ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+    ASSERT_THAT(unpacking_params, IsOk());
     unpacking_params_array[2] = *unpacking_params;
   }
 
@@ -2441,16 +2429,16 @@ TEST(MeshPackingDeathTest,
   // The default format has an unpacked vertex stride of 8 bytes (2 floats).
   EXPECT_DEATH_IF_SUPPORTED(
       ReadUnpackedFloatAttributeFromByteArray(0, 0, bytes, MeshFormat()), "");
+
   // This custom format has an unpacked vertex stride of 24 bytes (6 floats).
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(
-      ReadUnpackedFloatAttributeFromByteArray(
-          0, 0, bytes,
-          *MeshFormat::Create(
-              {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-              MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)),
-      "");
+      ReadUnpackedFloatAttributeFromByteArray(0, 0, bytes, *format), "");
 #else
   GTEST_SKIP() << "This tests behavior that is disabled in opt builds.";
 #endif
@@ -2467,15 +2455,15 @@ TEST(MeshPackingDeathTest,
 
   EXPECT_DEATH_IF_SUPPORTED(
       ReadUnpackedFloatAttributeFromByteArray(6, 0, bytes, MeshFormat()), "");
+
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(
-      ReadUnpackedFloatAttributeFromByteArray(
-          2, 0, bytes,
-          *MeshFormat::Create(
-              {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-              MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)),
-      "");
+      ReadUnpackedFloatAttributeFromByteArray(2, 0, bytes, *format), "");
 #else
   GTEST_SKIP() << "This tests behavior that is disabled in opt builds.";
 #endif
@@ -2491,16 +2479,16 @@ TEST(MeshPackingDeathTest,
   // The default format has only one attribute.
   EXPECT_DEATH_IF_SUPPORTED(
       ReadUnpackedFloatAttributeFromByteArray(0, 1, bytes, MeshFormat()), "");
+
   // This custom format has three attributes.
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(
-      ReadUnpackedFloatAttributeFromByteArray(
-          0, 3, bytes,
-          *MeshFormat::Create(
-              {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
-               {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-               {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
-              MeshFormat::IndexFormat::k16BitUnpacked16BitPacked)),
-      "");
+      ReadUnpackedFloatAttributeFromByteArray(0, 3, bytes, *format), "");
 #else
   GTEST_SKIP() << "This tests behavior that is disabled in opt builds.";
 #endif
@@ -2554,7 +2542,7 @@ TEST(MeshPackingDeathTest,
   absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
       ComputeCodingParams(AttrType::kFloat2Unpacked,
                           {.minimum = {0, 0}, .maximum = {1, 1}});
-  ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+  ASSERT_THAT(unpacking_params, IsOk());
   unpacking_params_array[0] = *unpacking_params;
 
   EXPECT_DEATH_IF_SUPPORTED(
@@ -2573,7 +2561,7 @@ TEST(MeshPackingDeathTest, CopyAndPackPartitionVerticesPartitionIsEmpty) {
   absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
       ComputeCodingParams(AttrType::kFloat2Unpacked,
                           {.minimum = {0, 0}, .maximum = {1, 1}});
-  ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+  ASSERT_THAT(unpacking_params, IsOk());
   unpacking_params_array[0] = *unpacking_params;
 
   EXPECT_DEATH_IF_SUPPORTED(
@@ -2590,7 +2578,7 @@ TEST(MeshPackingDeathTest,
   absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
       ComputeCodingParams(AttrType::kFloat2Unpacked,
                           {.minimum = {0, 0}, .maximum = {1, 1}});
-  ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+  ASSERT_THAT(unpacking_params, IsOk());
   unpacking_params_array[0] = *unpacking_params;
 
   EXPECT_DEATH_IF_SUPPORTED(
@@ -2611,14 +2599,14 @@ TEST(MeshPackingDeathTest,
     absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
         ComputeCodingParams(AttrType::kFloat2Unpacked,
                             {.minimum = {0, 0}, .maximum = {1, 1}});
-    ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+    ASSERT_THAT(unpacking_params, IsOk());
     unpacking_params_array[0] = *unpacking_params;
   }
   {
     absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
         ComputeCodingParams(AttrType::kFloat2Unpacked,
                             {.minimum = {0, 0}, .maximum = {1, 1}});
-    ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+    ASSERT_THAT(unpacking_params, IsOk());
     unpacking_params_array[1] = *unpacking_params;
   }
   EXPECT_DEATH_IF_SUPPORTED(
@@ -2637,7 +2625,7 @@ TEST(MeshPackingDeathTest,
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition}},
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
   std::vector<std::byte> bytes = AsByteVector<float>({0, 1,  //
                                                       2, 3,  //
                                                       4, 5,  //
@@ -2646,7 +2634,7 @@ TEST(MeshPackingDeathTest,
   absl::StatusOr<MeshAttributeCodingParams> unpacking_params =
       ComputeCodingParams(AttrType::kFloat3PackedInOneFloat,
                           {.minimum = {0, 0, 0}, .maximum = {1, 1, 1}});
-  ASSERT_EQ(unpacking_params.status(), absl::OkStatus());
+  ASSERT_THAT(unpacking_params, IsOk());
   unpacking_params_array[0] = *unpacking_params;
 
   EXPECT_DEATH_IF_SUPPORTED(
@@ -2671,7 +2659,7 @@ TEST(MeshPackingDeathTest,
   CodingParamsArray unpacking_params_array(1);
   absl::StatusOr<MeshAttributeCodingParams> coding_params = ComputeCodingParams(
       AttrType::kFloat2Unpacked, {.minimum = {0, 0}, .maximum = {1, 1}});
-  ASSERT_EQ(coding_params.status(), absl::OkStatus());
+  ASSERT_THAT(coding_params, IsOk());
   unpacking_params_array[0] = *coding_params;
 
   EXPECT_DEATH_IF_SUPPORTED(

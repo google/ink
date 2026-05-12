@@ -21,6 +21,7 @@
 #include "gtest/gtest.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/geometry/affine_transform.h"
@@ -40,12 +41,14 @@ namespace ink {
 namespace geometry_internal {
 namespace {
 
+using ::absl_testing::IsOkAndHolds;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::FloatEq;
 using ::testing::FloatNear;
 using ::testing::Optional;
 using ::testing::Pair;
+using ::testing::SizeIs;
 
 TEST(GetBarycentricCoordinatesTest, NonDegenerateTriangle) {
   Triangle triangle{.p0 = {1, 2}, .p1 = {4, 2}, .p2 = {1, 8}};
@@ -408,14 +411,12 @@ TEST(SegmentIntersectionTest, NoIntersection) {
 TEST(CalculateCollapsedSegmentTest, CollapseToPointSingleMesh) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> star_meshes =
       MakeStarMutableMesh(6).AsMeshes();
-  ASSERT_EQ(star_meshes.status(), absl::OkStatus());
+  ASSERT_THAT(star_meshes, IsOkAndHolds(SizeIs(1)));
 
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> line_meshes =
       MakeStraightLineMutableMesh(3).AsMeshes();
-  ASSERT_EQ(line_meshes.status(), absl::OkStatus());
+  ASSERT_THAT(line_meshes, IsOkAndHolds(SizeIs(1)));
 
-  ASSERT_EQ(star_meshes->size(), 1);
-  ASSERT_EQ(line_meshes->size(), 1);
   const Mesh& star_mesh = (*star_meshes)[0];
   const Mesh& line_mesh = (*line_meshes)[0];
 
@@ -435,14 +436,12 @@ TEST(CalculateCollapsedSegmentTest, CollapseToPointSingleMesh) {
 TEST(CalculateCollapsedSegmentTest, CollapseToPointMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> star_meshes =
       MakeStarMutableMesh(6).AsMeshes();
-  ASSERT_EQ(star_meshes.status(), absl::OkStatus());
+  ASSERT_THAT(star_meshes, IsOkAndHolds(SizeIs(1)));
 
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> line_meshes =
       MakeStraightLineMutableMesh(3).AsMeshes();
-  ASSERT_EQ(line_meshes.status(), absl::OkStatus());
+  ASSERT_THAT(line_meshes, IsOkAndHolds(SizeIs(1)));
 
-  ASSERT_EQ(star_meshes->size(), 1);
-  ASSERT_EQ(line_meshes->size(), 1);
   std::vector<Mesh> meshes = {(*star_meshes)[0], (*line_meshes)[0]};
   Envelope bounds = meshes[0].Bounds();
   bounds.Add(meshes[1].Bounds());
@@ -460,14 +459,12 @@ TEST(CalculateCollapsedSegmentTest, CollapseToPointMultipleMeshes) {
 TEST(CalculateCollapsedSegmentTest, CollapseToSegmentSingleMesh) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> star_meshes =
       MakeStarMutableMesh(6).AsMeshes();
-  ASSERT_EQ(star_meshes.status(), absl::OkStatus());
+  ASSERT_THAT(star_meshes, IsOkAndHolds(SizeIs(1)));
 
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> line_meshes =
       MakeStraightLineMutableMesh(3).AsMeshes();
-  ASSERT_EQ(line_meshes.status(), absl::OkStatus());
+  ASSERT_THAT(line_meshes, IsOkAndHolds(SizeIs(1)));
 
-  ASSERT_EQ(star_meshes->size(), 1);
-  ASSERT_EQ(line_meshes->size(), 1);
   const Mesh& star_mesh = (*star_meshes)[0];
   const Mesh& line_mesh = (*line_meshes)[0];
 
@@ -494,14 +491,12 @@ TEST(CalculateCollapsedSegmentTest, CollapseToSegmentSingleMesh) {
 TEST(CalculateCollapsedSegmentTest, CollapseToSegmentMultipleMeshes) {
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> star_meshes =
       MakeStarMutableMesh(6).AsMeshes();
-  ASSERT_EQ(star_meshes.status(), absl::OkStatus());
+  ASSERT_THAT(star_meshes, IsOkAndHolds(SizeIs(1)));
 
   absl::StatusOr<absl::InlinedVector<Mesh, 1>> line_meshes =
       MakeStraightLineMutableMesh(3).AsMeshes();
-  ASSERT_EQ(line_meshes.status(), absl::OkStatus());
+  ASSERT_THAT(line_meshes, IsOkAndHolds(SizeIs(1)));
 
-  ASSERT_EQ(star_meshes->size(), 1);
-  ASSERT_EQ(line_meshes->size(), 1);
   std::vector<Mesh> meshes = {(*star_meshes)[0], (*line_meshes)[0]};
   Envelope bounds = meshes[0].Bounds();
   bounds.Add(meshes[1].Bounds());
