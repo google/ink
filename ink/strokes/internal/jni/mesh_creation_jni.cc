@@ -31,7 +31,7 @@
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/status_jni_helper.h"
 #include "ink/strokes/input/stroke_input_batch.h"
-#include "ink/strokes/internal/jni/stroke_input_jni_helper.h"
+#include "ink/strokes/internal/jni/stroke_input_batch_native_helper.h"
 
 namespace {
 
@@ -39,8 +39,8 @@ using ::ink::Mesh;
 using ::ink::PartitionedMesh;
 using ::ink::Point;
 using ::ink::StrokeInputBatch;
-using ::ink::jni::CastToStrokeInputBatch;
 using ::ink::jni::ThrowExceptionFromStatus;
+using ::ink::native::CastToStrokeInputBatch;
 using ::ink::native::NewNativePartitionedMesh;
 
 // private method to calculate the slope of a line segment. If the slope is

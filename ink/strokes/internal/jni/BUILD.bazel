@@ -31,11 +31,24 @@ cc_library(
     ],
 )
 
+filegroup(
+    name = "cinterop_headers",
+    srcs = glob(["*_native.h"]),
+)
+
+cc_library(
+    name = "cinterop",
+    deps = [
+        ":stroke_input_batch_native",
+    ],
+)
+
 cc_library(
     name = "stroke_jni",
     srcs = ["stroke_jni.cc"],
     tags = ["keep_dep"],
     deps = [
+        ":stroke_input_batch_native_helper",
         ":stroke_input_jni_helper",
         ":stroke_jni_helper",
         "//ink/brush",
@@ -77,6 +90,7 @@ cc_library(
     tags = ["keep_dep"],
     deps = [
         ":in_progress_stroke_jni_helper",
+        ":stroke_input_batch_native_helper",
         ":stroke_input_jni_helper",
         ":stroke_jni_helper",
         "//ink/brush",
@@ -152,15 +166,10 @@ cc_library(
     srcs = ["stroke_input_jni_helper.cc"],
     hdrs = ["stroke_input_jni_helper.h"],
     deps = [
-        "//ink/geometry:angle",
+        ":stroke_input_batch_native",
+        ":stroke_input_native_helper",
         "//ink/jni/internal:jni_jvm_interface",
         "//ink/strokes/input:stroke_input",
-        "//ink/strokes/input:stroke_input_batch",
-        "//ink/types:duration",
-        "//ink/types:physical_distance",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -170,20 +179,51 @@ cc_library(
 )
 
 cc_library(
+    name = "stroke_input_native_helper",
+    srcs = ["stroke_input_native_helper.cc"],
+    hdrs = ["stroke_input_native_helper.h"],
+    deps = [
+        "//ink/strokes/input:stroke_input",
+    ],
+)
+
+cc_library(
+    name = "stroke_input_batch_native_helper",
+    hdrs = ["stroke_input_batch_native_helper.h"],
+    deps = [
+        "//ink/strokes/input:stroke_input_batch",
+        "@com_google_absl//absl/log:absl_check",
+    ],
+)
+
+cc_library(
+    name = "stroke_input_batch_native",
+    srcs = ["stroke_input_batch_native.cc"],
+    hdrs = ["stroke_input_batch_native.h"],
+    deps = [
+        ":stroke_input_batch_native_helper",
+        ":stroke_input_native_helper",
+        "//ink/geometry:angle",
+        "//ink/strokes/input:stroke_input",
+        "//ink/types:duration",
+        "//ink/types:physical_distance",
+        "@com_google_absl//absl/status",
+    ],
+)
+
+cc_library(
     name = "stroke_input_batch_jni",
     srcs = ["stroke_input_batch_jni.cc"],
     tags = ["keep_dep"],
     deps = [
+        ":stroke_input_batch_native",
+        ":stroke_input_batch_native_helper",
         ":stroke_input_jni_helper",
-        "//ink/geometry:angle",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:status_jni_helper",
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
-        "//ink/types:duration",
-        "//ink/types:physical_distance",
         "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -198,6 +238,7 @@ cc_library(
     srcs = ["mesh_creation_jni.cc"],
     tags = ["keep_dep"],
     deps = [
+        ":stroke_input_batch_native_helper",
         ":stroke_input_jni_helper",
         "//ink/geometry:mesh",
         "//ink/geometry:mesh_format",

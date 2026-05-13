@@ -16,43 +16,25 @@
 
 #include <jni.h>
 
-#include "ink/geometry/angle.h"
 #include "ink/jni/internal/jni_jvm_interface.h"
 #include "ink/strokes/input/stroke_input.h"
-#include "ink/types/duration.h"
-#include "ink/types/physical_distance.h"
+#include "ink/strokes/internal/jni/stroke_input_batch_native.h"
+#include "ink/strokes/internal/jni/stroke_input_native_helper.h"
 
 namespace ink::jni {
 
 namespace {
 
+using ::ink::native::IntToToolType;
+using ::ink::native::ToolTypeToInt;
+
 jobject ToolTypeToJObjectOrThrow(JNIEnv* env, StrokeInput::ToolType tool_type) {
   return env->CallStaticObjectMethod(ClassInputToolType(env),
                                      MethodInputToolTypeFromInt(env),
-                                     ToolTypeToJInt(tool_type));
+                                     ToolTypeToInt(tool_type));
 }
 
 }  // namespace
-
-// Convert an int to an StrokeInput::ToolType enum.
-//
-// This should match the enum in InputToolType.kt.
-StrokeInput::ToolType JIntToToolType(jint val) {
-  return static_cast<StrokeInput::ToolType>(val);
-}
-
-jint ToolTypeToJInt(StrokeInput::ToolType type) {
-  switch (type) {
-    case StrokeInput::ToolType::kMouse:
-      return 1;
-    case StrokeInput::ToolType::kTouch:
-      return 2;
-    case StrokeInput::ToolType::kStylus:
-      return 3;
-    default:
-      return 0;
-  }
-}
 
 void UpdateJStrokeInputOrThrow(JNIEnv* env, const StrokeInput& input_in,
                                jobject j_input_out) {
@@ -65,6 +47,19 @@ void UpdateJStrokeInputOrThrow(JNIEnv* env, const StrokeInput& input_in,
       input_in.position.y, elapsed_time_millis, j_inputtooltype,
       input_in.stroke_unit_length.ToCentimeters(), input_in.pressure,
       input_in.tilt.ValueInRadians(), input_in.orientation.ValueInRadians());
+}
+
+void UpdateJStrokeInputOrThrow(JNIEnv* env,
+                               const StrokeInputBatchNative_Input& input_in,
+                               jobject j_input_out) {
+  jobject j_inputtooltype =
+      ToolTypeToJObjectOrThrow(env, IntToToolType(input_in.tool_type));
+  if (env->ExceptionCheck()) return;
+
+  env->CallVoidMethod(j_input_out, MethodStrokeInputUpdate(env), input_in.x,
+                      input_in.y, input_in.elapsed_time_millis, j_inputtooltype,
+                      input_in.stroke_unit_length_cm, input_in.pressure,
+                      input_in.tilt_radians, input_in.orientation_radians);
 }
 
 }  // namespace ink::jni

@@ -33,6 +33,7 @@
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/jni/in_progress_stroke_jni_helper.h"
+#include "ink/strokes/internal/jni/stroke_input_batch_native_helper.h"
 #include "ink/strokes/internal/jni/stroke_input_jni_helper.h"
 #include "ink/strokes/internal/jni/stroke_jni_helper.h"
 #include "ink/types/duration.h"
@@ -45,8 +46,6 @@ using ::ink::StrokeInput;
 using ::ink::StrokeInputBatch;
 using ::ink::jni::CastToInProgressStrokeWrapper;
 using ::ink::jni::CastToMutableInProgressStrokeWrapper;
-using ::ink::jni::CastToMutableStrokeInputBatch;
-using ::ink::jni::CastToStrokeInputBatch;
 using ::ink::jni::DeleteNativeInProgressStroke;
 using ::ink::jni::FillJBoxAccumulatorOrThrow;
 using ::ink::jni::FillJMutableVecOrThrow;
@@ -56,6 +55,8 @@ using ::ink::jni::NewNativeStroke;
 using ::ink::jni::ThrowExceptionFromStatus;
 using ::ink::jni::UpdateJStrokeInputOrThrow;
 using ::ink::native::CastToBrush;
+using ::ink::native::CastToMutableStrokeInputBatch;
+using ::ink::native::CastToStrokeInputBatch;
 using ::ink::native::NewNativeMeshFormat;
 
 extern "C" {
