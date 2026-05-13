@@ -27,10 +27,7 @@ cc_binary(
         "exported_symbols.txt",
         "jni.lds",
     ],
-    features = [
-        "-legacy_whole_archive",
-        "exported_symbols",
-    ],
+    features = ["-legacy_whole_archive"],
     linkopts = selects.with_or({
         (
             "@platforms//os:ios",
