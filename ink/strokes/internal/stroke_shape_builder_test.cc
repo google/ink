@@ -103,12 +103,12 @@ TEST(StrokeShapeBuilderTest, NonEmptyExtend) {
       {.position = {6, 8}, .elapsed_time = Duration32::Seconds(1. / 60)},
       {.position = {7, 9}, .elapsed_time = Duration32::Seconds(2. / 60)},
   });
-  ASSERT_EQ(real_inputs.status(), absl::OkStatus());
+  ASSERT_THAT(real_inputs, IsOk());
 
   absl::StatusOr<StrokeInputBatch> predicted_inputs = StrokeInputBatch::Create({
       {.position = {8, 10}, .elapsed_time = Duration32::Seconds(3. / 60)},
   });
-  ASSERT_EQ(predicted_inputs.status(), absl::OkStatus());
+  ASSERT_THAT(predicted_inputs, IsOk());
 
   input_modeler.ExtendStroke(*real_inputs, *predicted_inputs,
                              Duration32::Zero());
@@ -128,7 +128,7 @@ TEST(StrokeShapeBuilderTest, NonEmptyExtend) {
   real_inputs = StrokeInputBatch::Create({
       {.position = {7, 8}, .elapsed_time = Duration32::Seconds(3. / 60)},
   });
-  ASSERT_EQ(real_inputs.status(), absl::OkStatus());
+  ASSERT_THAT(real_inputs, IsOk());
   input_modeler.ExtendStroke(*real_inputs, {}, Duration32::Zero());
   update = builder.ExtendStroke(input_modeler);
 
@@ -155,7 +155,7 @@ TEST(StrokeShapeBuilderTest, StartAfterExtendEmptiesMeshAndOutline) {
 
   absl::StatusOr<StrokeInputBatch> inputs =
       StrokeInputBatch::Create({{.position = {5, 7}}});
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
+  ASSERT_THAT(inputs, IsOk());
 
   input_modeler.ExtendStroke(*inputs, {}, Duration32::Zero());
   builder.ExtendStroke(input_modeler);
@@ -259,7 +259,7 @@ TEST(StrokeShapeBuilderTest, NonTexturedNonParticleBrushDoesNotHaveSurfaceUvs) {
 
   absl::StatusOr<StrokeInputBatch> inputs =
       StrokeInputBatch::Create({{.position = {5, 7}}});
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
+  ASSERT_THAT(inputs, IsOk());
 
   input_modeler.ExtendStroke(*inputs, {}, Duration32::Zero());
   builder.ExtendStroke(input_modeler);
@@ -283,7 +283,7 @@ TEST(StrokeShapeBuilderTest, StampingNonParticleBrushDoesNotHaveSurfaceUvs) {
 
   absl::StatusOr<StrokeInputBatch> inputs =
       StrokeInputBatch::Create({{.position = {5, 7}}});
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
+  ASSERT_THAT(inputs, IsOk());
 
   input_modeler.ExtendStroke(*inputs, {}, Duration32::Zero());
   builder.ExtendStroke(input_modeler);
@@ -304,7 +304,7 @@ TEST(StrokeShapeBuilderTest, NonTexturedParticleDistanceBrushHasSurfaceUvs) {
 
   absl::StatusOr<StrokeInputBatch> inputs =
       StrokeInputBatch::Create({{.position = {5, 7}}});
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
+  ASSERT_THAT(inputs, IsOk());
 
   input_modeler.ExtendStroke(*inputs, {}, Duration32::Zero());
   builder.ExtendStroke(input_modeler);
@@ -333,7 +333,7 @@ TEST(StrokeShapeBuilderTest, TiledTextureParticleDistanceBrushHasSurfaceUvs) {
 
   absl::StatusOr<StrokeInputBatch> inputs =
       StrokeInputBatch::Create({{.position = {5, 7}}});
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
+  ASSERT_THAT(inputs, IsOk());
 
   input_modeler.ExtendStroke(*inputs, {}, Duration32::Zero());
   builder.ExtendStroke(input_modeler);
@@ -361,7 +361,7 @@ TEST(StrokeShapeBuilderTest, NonStampingParticleDurationBrushHasSurfaceUvs) {
 
   absl::StatusOr<StrokeInputBatch> inputs =
       StrokeInputBatch::Create({{.position = {5, 7}}});
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
+  ASSERT_THAT(inputs, IsOk());
 
   input_modeler.ExtendStroke(*inputs, {}, Duration32::Zero());
   builder.ExtendStroke(input_modeler);
@@ -391,7 +391,7 @@ TEST(StrokeShapeBuilderTest, StampingParticleDistanceBrushHasSurfaceUvs) {
 
   absl::StatusOr<StrokeInputBatch> inputs =
       StrokeInputBatch::Create({{.position = {5, 7}}});
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
+  ASSERT_THAT(inputs, IsOk());
 
   input_modeler.ExtendStroke(*inputs, {}, Duration32::Zero());
   builder.ExtendStroke(input_modeler);
@@ -421,7 +421,7 @@ TEST(StrokeShapeBuilderTest, StampingParticleDurationBrushHasSurfaceUvs) {
 
   absl::StatusOr<StrokeInputBatch> inputs =
       StrokeInputBatch::Create({{.position = {5, 7}}});
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
+  ASSERT_THAT(inputs, IsOk());
 
   input_modeler.ExtendStroke(*inputs, {}, Duration32::Zero());
   builder.ExtendStroke(input_modeler);

@@ -142,7 +142,7 @@ TEST(StrokeVertexTest,
        {MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
         MeshFormat::AttributeId::kForwardDerivative}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(mesh_format.status(), absl::OkStatus());
+  ASSERT_THAT(mesh_format, IsOk());
 
   StrokeVertex::CustomPackingArray packing_array =
       StrokeVertex::MakeCustomPackingArray(*mesh_format);
@@ -164,7 +164,7 @@ TEST(StrokeVertexTest,
        {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
         MeshFormat::AttributeId::kForwardLabel}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(mesh_format.status(), absl::OkStatus());
+  ASSERT_THAT(mesh_format, IsOk());
 
   StrokeVertex::CustomPackingArray packing_array =
       StrokeVertex::MakeCustomPackingArray(*mesh_format);
@@ -196,7 +196,7 @@ TEST(StrokeVertexTest, MakeCustomPackingArraySkipsMatchingAttributes) {
        {MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
         MeshFormat::AttributeId::kForwardDerivative}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(mesh_format.status(), absl::OkStatus());
+  ASSERT_THAT(mesh_format, IsOk());
 
   std::vector<MeshFormat::AttributeId> skipped_attribute_ids = {
       MeshFormat::AttributeId::kOpacityShift,
@@ -221,7 +221,7 @@ TEST(StrokeVertexTest, CanPackValidAnimationOffsets) {
        {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
         MeshFormat::AttributeId::kAnimationOffset}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_THAT(mesh_format.status(), IsOk());
+  ASSERT_THAT(mesh_format, IsOk());
   StrokeVertex::CustomPackingArray packing_array =
       StrokeVertex::MakeCustomPackingArray(*mesh_format);
   ASSERT_TRUE(packing_array[1].has_value());
@@ -373,7 +373,7 @@ TEST(StrokeVertexTest, FindAttributeIndicesReturnsMinusOneForNotFound) {
                           {MeshFormat::AttributeType::kFloat3Unpacked,
                            MeshFormat::AttributeId::kCustom1}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
   StrokeVertex::FormatAttributeIndices indices =
       StrokeVertex::FindAttributeIndices(*format);
@@ -1021,7 +1021,7 @@ TEST(StrokeVertexDeathTest, MakeCustomPackingArrayWithTooManyAttributes) {
                           {MeshFormat::AttributeType::kFloat2Unpacked,
                            MeshFormat::AttributeId::kCustom8}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
   EXPECT_DEATH_IF_SUPPORTED(StrokeVertex::MakeCustomPackingArray(*format), "");
 }

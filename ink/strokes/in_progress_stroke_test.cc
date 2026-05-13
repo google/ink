@@ -24,6 +24,7 @@
 #include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -48,6 +49,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::ink::geometry_internal::CalculateEnvelope;
 using ::testing::AllOf;
 using ::testing::Contains;
@@ -107,22 +110,6 @@ std::vector<MeshFormat::AttributeId> GetAttributeIds(const MeshFormat& format) {
   return ids;
 }
 
-MATCHER_P(IsFailedPreconditionErrorThat, message_matcher, "") {
-  return ExplainMatchResult(
-      AllOf(Property("code", &absl::Status::code,
-                     Eq(absl::StatusCode::kFailedPrecondition)),
-            Property("message", &absl::Status::message, message_matcher)),
-      arg, result_listener);
-}
-
-MATCHER_P(IsInvalidArgumentErrorThat, message_matcher, "") {
-  return ExplainMatchResult(
-      AllOf(Property("code", &absl::Status::code,
-                     Eq(absl::StatusCode::kInvalidArgument)),
-            Property("message", &absl::Status::message, message_matcher)),
-      arg, result_listener);
-}
-
 MATCHER_P3(UpdateShapeFailsAndDoesNotModifyStroke, current_elapsed_time,
            expected_status_code, error_message_matcher, "") {
   const Brush* brush_before_update = arg->GetBrush();
@@ -147,10 +134,8 @@ MATCHER_P3(UpdateShapeFailsAndDoesNotModifyStroke, current_elapsed_time,
   absl::Status status = arg->UpdateShape(current_elapsed_time);
 
   Envelope updated_region_before_update = arg->GetUpdatedRegion();
-  if (!ExplainMatchResult(Eq(expected_status_code), status.code(),
-                          result_listener) ||
-      !ExplainMatchResult(error_message_matcher, status.message(),
-                          result_listener)) {
+  if (!ExplainMatchResult(StatusIs(expected_status_code, error_message_matcher),
+                          status, result_listener)) {
     return false;
   }
 
@@ -216,10 +201,10 @@ TEST(InProgressStrokeTest, MoveConstructedAndAssigned) {
   absl::StatusOr<StrokeInputBatch> predicted_inputs = StrokeInputBatch::Create({
       {.position = {5, 6}},
   });
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
-  ASSERT_EQ(predicted_inputs.status(), absl::OkStatus());
-  ASSERT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*inputs, *predicted_inputs));
-  ASSERT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
+  ASSERT_THAT(inputs, IsOk());
+  ASSERT_THAT(predicted_inputs, IsOk());
+  ASSERT_THAT(stroke.EnqueueInputs(*inputs, *predicted_inputs), IsOk());
+  ASSERT_THAT(stroke.UpdateShape(Duration32::Zero()), IsOk());
   EXPECT_EQ(stroke.InputCount(), 3);
   EXPECT_EQ(stroke.RealInputCount(), 2);
   EXPECT_EQ(stroke.PredictedInputCount(), 1);
@@ -272,14 +257,16 @@ TEST(InProgressStrokeTest, ClearAfterStart) {
 
 TEST(InProgressStrokeTest, EnqueueInputsWithoutStart) {
   InProgressStroke stroke;
-  EXPECT_THAT(stroke.EnqueueInputs({}, {}),
-              IsFailedPreconditionErrorThat(HasSubstr("Start")));
+  EXPECT_THAT(
+      stroke.EnqueueInputs({}, {}),
+      StatusIs(absl::StatusCode::kFailedPrecondition, HasSubstr("Start")));
 }
 
 TEST(InProgressStrokeTest, UpdateShapeWithoutStart) {
   InProgressStroke stroke;
-  EXPECT_THAT(stroke.UpdateShape(Duration32::Zero()),
-              IsFailedPreconditionErrorThat(HasSubstr("Start")));
+  EXPECT_THAT(
+      stroke.UpdateShape(Duration32::Zero()),
+      StatusIs(absl::StatusCode::kFailedPrecondition, HasSubstr("Start")));
 }
 
 TEST(InProgressStrokeTest, EnqueueInputsAfterFinishInputs) {
@@ -288,14 +275,15 @@ TEST(InProgressStrokeTest, EnqueueInputsAfterFinishInputs) {
   stroke.FinishInputs();
   EXPECT_TRUE(stroke.InputsAreFinished());
   EXPECT_THAT(stroke.EnqueueInputs({}, {}),
-              IsFailedPreconditionErrorThat(HasSubstr("FinishInputs")));
+              StatusIs(absl::StatusCode::kFailedPrecondition,
+                       HasSubstr("FinishInputs")));
 }
 
 TEST(InProgressStrokeTest, EmptyEnqueueInputsDoesNotNeedUpdate) {
   InProgressStroke stroke;
   stroke.Start(CreateRectangularTestBrush());
 
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, {}));
+  EXPECT_THAT(stroke.EnqueueInputs({}, {}), IsOk());
 
   EXPECT_FALSE(stroke.NeedsUpdate());
   EXPECT_FALSE(stroke.ChangesWithTime());
@@ -308,8 +296,8 @@ TEST(InProgressStrokeTest, NonEmptyEnqueueInputsNeedsUpdate) {
   absl::StatusOr<StrokeInputBatch> real_inputs = StrokeInputBatch::Create({
       {.position = {1, 2}, .elapsed_time = Duration32::Seconds(0.0)},
   });
-  ASSERT_EQ(absl::OkStatus(), real_inputs.status());
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*real_inputs, {}));
+  ASSERT_THAT(real_inputs, IsOk());
+  EXPECT_THAT(stroke.EnqueueInputs(*real_inputs, {}), IsOk());
 
   EXPECT_TRUE(stroke.NeedsUpdate());
   EXPECT_FALSE(stroke.ChangesWithTime());
@@ -319,8 +307,8 @@ TEST(InProgressStrokeTest, EmptyEnqueueInputsAndUpdateAfterStart) {
   InProgressStroke stroke;
   stroke.Start(CreateRectangularTestBrush());
 
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, {}));
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
+  EXPECT_THAT(stroke.EnqueueInputs({}, {}), IsOk());
+  EXPECT_THAT(stroke.UpdateShape(Duration32::Zero()), IsOk());
 
   EXPECT_TRUE(stroke.GetInputs().IsEmpty());
   ASSERT_EQ(stroke.BrushCoatCount(), 1u);
@@ -340,13 +328,13 @@ TEST(InProgressStrokeTest, EnqueueInputsPredictionOnlyAndUpdate) {
   absl::StatusOr<StrokeInputBatch> predicted_inputs = StrokeInputBatch::Create({
       {.position = {1, 2}, .elapsed_time = Duration32::Seconds(0.0)},
   });
-  ASSERT_EQ(absl::OkStatus(), predicted_inputs.status());
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *predicted_inputs));
+  ASSERT_THAT(predicted_inputs, IsOk());
+  EXPECT_THAT(stroke.EnqueueInputs({}, *predicted_inputs), IsOk());
 
   EXPECT_TRUE(stroke.NeedsUpdate());
   EXPECT_FALSE(stroke.ChangesWithTime());
 
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
+  EXPECT_THAT(stroke.UpdateShape(Duration32::Zero()), IsOk());
 
   EXPECT_FALSE(stroke.GetInputs().IsEmpty());
   ASSERT_EQ(stroke.BrushCoatCount(), 1u);
@@ -364,17 +352,16 @@ TEST(InProgressStrokeTest, NonEmptyInputs) {
       {.position = {1, 2}, .elapsed_time = Duration32::Seconds(0.0)},
       {.position = {3, 2}, .elapsed_time = Duration32::Seconds(0.1)},
   });
-  ASSERT_EQ(real_inputs_0.status(), absl::OkStatus());
+  ASSERT_THAT(real_inputs_0, IsOk());
   absl::StatusOr<StrokeInputBatch> predicted_inputs = StrokeInputBatch::Create(
       {{.position = {3, 4}, .elapsed_time = Duration32::Seconds(0.2)}});
-  ASSERT_EQ(predicted_inputs.status(), absl::OkStatus());
+  ASSERT_THAT(predicted_inputs, IsOk());
 
-  EXPECT_EQ(absl::OkStatus(),
-            stroke.EnqueueInputs(*real_inputs_0, *predicted_inputs));
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.15)));
+  EXPECT_THAT(stroke.EnqueueInputs(*real_inputs_0, *predicted_inputs), IsOk());
+  EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(0.15)), IsOk());
 
   StrokeInputBatch combined_inputs = *real_inputs_0;
-  ASSERT_EQ(absl::OkStatus(), combined_inputs.Append(*predicted_inputs));
+  ASSERT_THAT(combined_inputs.Append(*predicted_inputs), IsOk());
 
   EXPECT_THAT(stroke.GetInputs(), StrokeInputBatchEq(combined_inputs));
   ASSERT_EQ(stroke.BrushCoatCount(), 1u);
@@ -391,18 +378,17 @@ TEST(InProgressStrokeTest, NonEmptyInputs) {
 
   absl::StatusOr<StrokeInputBatch> real_inputs_1 = StrokeInputBatch::Create(
       {{.position = {3, 0}, .elapsed_time = Duration32::Seconds(0.2)}});
-  ASSERT_EQ(real_inputs_1.status(), absl::OkStatus());
+  ASSERT_THAT(real_inputs_1, IsOk());
   predicted_inputs = StrokeInputBatch::Create(
       {{.position = {4, -1}, .elapsed_time = Duration32::Seconds(0.3)}});
-  ASSERT_EQ(predicted_inputs.status(), absl::OkStatus());
+  ASSERT_THAT(predicted_inputs, IsOk());
 
-  EXPECT_EQ(absl::OkStatus(),
-            stroke.EnqueueInputs(*real_inputs_1, *predicted_inputs));
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.2)));
+  EXPECT_THAT(stroke.EnqueueInputs(*real_inputs_1, *predicted_inputs), IsOk());
+  EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(0.2)), IsOk());
 
   combined_inputs = *real_inputs_0;
-  ASSERT_EQ(absl::OkStatus(), combined_inputs.Append(*real_inputs_1));
-  ASSERT_EQ(absl::OkStatus(), combined_inputs.Append(*predicted_inputs));
+  ASSERT_THAT(combined_inputs.Append(*real_inputs_1), IsOk());
+  ASSERT_THAT(combined_inputs.Append(*predicted_inputs), IsOk());
 
   EXPECT_THAT(stroke.GetInputs(), StrokeInputBatchEq(combined_inputs));
   EXPECT_NE(stroke.GetMesh(0).VertexCount(), 0u);
@@ -426,25 +412,24 @@ TEST(InProgressStrokeTest,
       {.position = {1, 2}, .elapsed_time = Duration32::Seconds(0.0)},
       {.position = {3, 2}, .elapsed_time = Duration32::Seconds(0.1)},
   });
-  ASSERT_EQ(real_inputs_0.status(), absl::OkStatus());
+  ASSERT_THAT(real_inputs_0, IsOk());
   absl::StatusOr<StrokeInputBatch> predicted_inputs = StrokeInputBatch::Create(
       {{.position = {3, 4}, .elapsed_time = Duration32::Seconds(0.2)}});
-  ASSERT_EQ(predicted_inputs.status(), absl::OkStatus());
+  ASSERT_THAT(predicted_inputs, IsOk());
 
-  EXPECT_EQ(absl::OkStatus(),
-            stroke.EnqueueInputs(*real_inputs_0, *predicted_inputs));
+  EXPECT_THAT(stroke.EnqueueInputs(*real_inputs_0, *predicted_inputs), IsOk());
   EXPECT_TRUE(stroke.NeedsUpdate());
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.15)));
+  EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(0.15)), IsOk());
   EXPECT_FALSE(stroke.NeedsUpdate());
 
   StrokeInputBatch combined_inputs = *real_inputs_0;
-  ASSERT_EQ(absl::OkStatus(), combined_inputs.Append(*predicted_inputs));
+  ASSERT_THAT(combined_inputs.Append(*predicted_inputs), IsOk());
 
   EXPECT_THAT(stroke.GetInputs(), StrokeInputBatchEq(combined_inputs));
 
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, {}));
+  EXPECT_THAT(stroke.EnqueueInputs({}, {}), IsOk());
   EXPECT_TRUE(stroke.NeedsUpdate());
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.2)));
+  EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(0.2)), IsOk());
 
   EXPECT_THAT(stroke.GetInputs(), StrokeInputBatchEq(*real_inputs_0));
   EXPECT_FALSE(stroke.NeedsUpdate());
@@ -458,10 +443,10 @@ TEST(InProgressStrokeTest, ExtendWithEmptyPredictedButNonEmptyReal) {
       {.position = {1, 2}, .elapsed_time = Duration32::Seconds(0.0)},
       {.position = {3, 2}, .elapsed_time = Duration32::Seconds(0.1)},
   });
-  ASSERT_EQ(real_inputs_0.status(), absl::OkStatus());
+  ASSERT_THAT(real_inputs_0, IsOk());
 
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*real_inputs_0, {}));
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.15)));
+  EXPECT_THAT(stroke.EnqueueInputs(*real_inputs_0, {}), IsOk());
+  EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(0.15)), IsOk());
 
   EXPECT_THAT(stroke.GetInputs(), StrokeInputBatchEq(*real_inputs_0));
   ASSERT_EQ(stroke.BrushCoatCount(), 1u);
@@ -479,13 +464,13 @@ TEST(InProgressStrokeTest, ExtendWithEmptyPredictedButNonEmptyReal) {
 
   absl::StatusOr<StrokeInputBatch> real_inputs_1 = StrokeInputBatch::Create(
       {{.position = {3, 0}, .elapsed_time = Duration32::Seconds(0.2)}});
-  ASSERT_EQ(real_inputs_1.status(), absl::OkStatus());
+  ASSERT_THAT(real_inputs_1, IsOk());
 
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*real_inputs_1, {}));
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.2)));
+  EXPECT_THAT(stroke.EnqueueInputs(*real_inputs_1, {}), IsOk());
+  EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(0.2)), IsOk());
 
   StrokeInputBatch combined_inputs = *real_inputs_0;
-  ASSERT_EQ(absl::OkStatus(), combined_inputs.Append(*real_inputs_1));
+  ASSERT_THAT(combined_inputs.Append(*real_inputs_1), IsOk());
 
   EXPECT_THAT(stroke.GetInputs(), StrokeInputBatchEq(combined_inputs));
   EXPECT_NE(stroke.GetMesh(0).VertexCount(), 0u);
@@ -509,38 +494,41 @@ TEST(InProgressStrokeTest, EnqueueInputsWithDifferentToolTypes) {
 
   absl::StatusOr<StrokeInputBatch> mouse_input = StrokeInputBatch::Create(
       {{.tool_type = StrokeInput::ToolType::kMouse, .position = {1, 2}}});
-  ASSERT_EQ(mouse_input.status(), absl::OkStatus());
+  ASSERT_THAT(mouse_input, IsOk());
   absl::StatusOr<StrokeInputBatch> touch_input = StrokeInputBatch::Create(
       {{.tool_type = StrokeInput::ToolType::kTouch, .position = {3, 4}}});
-  ASSERT_EQ(touch_input.status(), absl::OkStatus());
+  ASSERT_THAT(touch_input, IsOk());
 
   // We can't add real mouse inputs while simultanously predicting touch inputs.
-  EXPECT_THAT(stroke.EnqueueInputs(*mouse_input, *touch_input),
-              IsInvalidArgumentErrorThat(HasSubstr("tool_type")));
+  EXPECT_THAT(
+      stroke.EnqueueInputs(*mouse_input, *touch_input),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tool_type")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
   EXPECT_FALSE(stroke.ChangesWithTime());
 
   // We *can* predict touch inputs (with no real inputs so far)...
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *touch_input));
+  EXPECT_THAT(stroke.EnqueueInputs({}, *touch_input), IsOk());
   EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
   EXPECT_FALSE(stroke.ChangesWithTime());
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
+  EXPECT_THAT(stroke.UpdateShape(Duration32::Zero()), IsOk());
   // ...and then actually end up with real mouse inputs (which replace the
   // predicted touch inputs).
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*mouse_input, {}));
+  EXPECT_THAT(stroke.EnqueueInputs(*mouse_input, {}), IsOk());
   EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
   EXPECT_FALSE(stroke.ChangesWithTime());
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
+  EXPECT_THAT(stroke.UpdateShape(Duration32::Zero()), IsOk());
 
   // But now that we have real mouse inputs, we can't predict further touch
   // inputs...
-  EXPECT_THAT(stroke.EnqueueInputs({}, *touch_input),
-              IsInvalidArgumentErrorThat(HasSubstr("tool_type")));
+  EXPECT_THAT(
+      stroke.EnqueueInputs({}, *touch_input),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tool_type")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
   EXPECT_FALSE(stroke.ChangesWithTime());
   // ...nor can we add real touch inputs.
-  EXPECT_THAT(stroke.EnqueueInputs(*touch_input, {}),
-              IsInvalidArgumentErrorThat(HasSubstr("tool_type")));
+  EXPECT_THAT(
+      stroke.EnqueueInputs(*touch_input, {}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tool_type")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
   EXPECT_FALSE(stroke.ChangesWithTime());
 }
@@ -552,13 +540,13 @@ TEST(InProgressStrokeTest, EnqueuingInputsWithOverlappingTimeIntervals) {
       {{.position = {1, 2}, .elapsed_time = Duration32::Seconds(0)},
        {.position = {1, 2}, .elapsed_time = Duration32::Seconds(1)},
        {.position = {1, 2}, .elapsed_time = Duration32::Seconds(2)}});
-  ASSERT_EQ(first_inputs.status(), absl::OkStatus());
+  ASSERT_THAT(first_inputs, IsOk());
 
   absl::StatusOr<StrokeInputBatch> second_inputs = StrokeInputBatch::Create(
       {{.position = {3, 4}, .elapsed_time = Duration32::Seconds(1)},
        {.position = {3, 4}, .elapsed_time = Duration32::Seconds(2)},
        {.position = {3, 4}, .elapsed_time = Duration32::Seconds(3)}});
-  ASSERT_EQ(second_inputs.status(), absl::OkStatus());
+  ASSERT_THAT(second_inputs, IsOk());
 
   {
     InProgressStroke stroke;
@@ -566,9 +554,9 @@ TEST(InProgressStrokeTest, EnqueuingInputsWithOverlappingTimeIntervals) {
     // Enqueuing inputs with times that overlap is valid; we drop the new
     // inputs with timestamps earlier than latest previously queued input.
     // Note also that we allow inputs with the same time but different position.
-    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*first_inputs, {}));
-    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*second_inputs, {}));
-    EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(3)));
+    EXPECT_THAT(stroke.EnqueueInputs(*first_inputs, {}), IsOk());
+    EXPECT_THAT(stroke.EnqueueInputs(*second_inputs, {}), IsOk());
+    EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(3)), IsOk());
     EXPECT_THAT(
         stroke.GetInputs(),
         StrokeInputBatchIsArray(
@@ -584,9 +572,9 @@ TEST(InProgressStrokeTest, EnqueuingInputsWithOverlappingTimeIntervals) {
     stroke.Start(brush);
     // Similarly, predictions with overlap is valid; the predictions are
     // overwritten.
-    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *first_inputs));
-    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *second_inputs));
-    EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(4)));
+    EXPECT_THAT(stroke.EnqueueInputs({}, *first_inputs), IsOk());
+    EXPECT_THAT(stroke.EnqueueInputs({}, *second_inputs), IsOk());
+    EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(4)), IsOk());
     EXPECT_THAT(
         stroke.GetInputs(),
         StrokeInputBatchIsArray(
@@ -601,9 +589,9 @@ TEST(InProgressStrokeTest, EnqueuingInputsWithOverlappingTimeIntervals) {
     // Enqueuing real inputs and subsequently predictions with
     // overlap is valid; we drop the predictions with timestamps earlier than
     // the queued inputs.
-    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*first_inputs, {}));
-    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *second_inputs));
-    EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(4)));
+    EXPECT_THAT(stroke.EnqueueInputs(*first_inputs, {}), IsOk());
+    EXPECT_THAT(stroke.EnqueueInputs({}, *second_inputs), IsOk());
+    EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(4)), IsOk());
     EXPECT_THAT(
         stroke.GetInputs(),
         StrokeInputBatchIsArray(
@@ -619,10 +607,10 @@ TEST(InProgressStrokeTest, EnqueuingInputsWithOverlappingTimeIntervals) {
     stroke.Start(brush);
     // Enqueuing predictions and subsequently queued real inputs with overlap
     // is valid; the predictions are reset.
-    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs({}, *second_inputs));
-    EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(3)));
-    EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*first_inputs, {}));
-    EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(4)));
+    EXPECT_THAT(stroke.EnqueueInputs({}, *second_inputs), IsOk());
+    EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(3)), IsOk());
+    EXPECT_THAT(stroke.EnqueueInputs(*first_inputs, {}), IsOk());
+    EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(4)), IsOk());
     EXPECT_THAT(
         stroke.GetInputs(),
         StrokeInputBatchIsArray(
@@ -639,33 +627,36 @@ TEST(InProgressStrokeTest, EnqueueInputsWithDifferentOptionalPropertyFormats) {
 
   absl::StatusOr<StrokeInputBatch> pressure_input =
       StrokeInputBatch::Create({{.position = {1, 2}, .pressure = 0.5}});
-  ASSERT_EQ(pressure_input.status(), absl::OkStatus());
+  ASSERT_THAT(pressure_input, IsOk());
   absl::StatusOr<StrokeInputBatch> no_pressure_input =
       StrokeInputBatch::Create({{.position = {2, 3}}});
-  ASSERT_EQ(no_pressure_input.status(), absl::OkStatus());
+  ASSERT_THAT(no_pressure_input, IsOk());
 
   // We can't add real inputs with pressure data while simultanously predicting
   // inputs without pressure data.
-  EXPECT_THAT(stroke.EnqueueInputs(*pressure_input, *no_pressure_input),
-              IsInvalidArgumentErrorThat(HasSubstr("pressure")));
+  EXPECT_THAT(
+      stroke.EnqueueInputs(*pressure_input, *no_pressure_input),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pressure")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
   EXPECT_FALSE(stroke.ChangesWithTime());
 
   // Add some real inputs with pressure data.
-  EXPECT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*pressure_input, {}));
+  EXPECT_THAT(stroke.EnqueueInputs(*pressure_input, {}), IsOk());
   EXPECT_TRUE(stroke.NeedsUpdate());  // inputs were enqueued
   EXPECT_FALSE(stroke.ChangesWithTime());
-  EXPECT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
+  EXPECT_THAT(stroke.UpdateShape(Duration32::Zero()), IsOk());
 
   // Now that we have real inputs with pressure data, we can't predict further
   // inputs without pressure data...
-  EXPECT_THAT(stroke.EnqueueInputs({}, *no_pressure_input),
-              IsInvalidArgumentErrorThat(HasSubstr("pressure")));
+  EXPECT_THAT(
+      stroke.EnqueueInputs({}, *no_pressure_input),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pressure")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
   EXPECT_FALSE(stroke.ChangesWithTime());
   // ...nor can we add further real inputs without pressure data.
-  EXPECT_THAT(stroke.EnqueueInputs(*no_pressure_input, {}),
-              IsInvalidArgumentErrorThat(HasSubstr("pressure")));
+  EXPECT_THAT(
+      stroke.EnqueueInputs(*no_pressure_input, {}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pressure")));
   EXPECT_FALSE(stroke.NeedsUpdate());  // no inputs were enqueued
   EXPECT_FALSE(stroke.ChangesWithTime());
 }
@@ -687,7 +678,7 @@ TEST(InProgressStrokeTest, UpdateShapeWithDecreasingCurrentElapsedTime) {
 
   stroke.Start(brush);
 
-  ASSERT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Millis(25)));
+  ASSERT_THAT(stroke.UpdateShape(Duration32::Millis(25)), IsOk());
   EXPECT_THAT(&stroke,
               UpdateShapeFailsAndDoesNotModifyStroke(
                   Duration32::Millis(24), absl::StatusCode::kInvalidArgument,
@@ -710,14 +701,13 @@ TEST(InProgressStrokeTest, ResetUpdatedRegionAfterExtendingStroke) {
       {.position = {1, 2}, .elapsed_time = Duration32::Seconds(0.0)},
       {.position = {3, 2}, .elapsed_time = Duration32::Seconds(0.1)},
   });
-  ASSERT_EQ(real_inputs.status(), absl::OkStatus());
+  ASSERT_THAT(real_inputs, IsOk());
   absl::StatusOr<StrokeInputBatch> predicted_inputs = StrokeInputBatch::Create(
       {{.position = {3, 4}, .elapsed_time = Duration32::Seconds(0.2)}});
-  ASSERT_EQ(predicted_inputs.status(), absl::OkStatus());
+  ASSERT_THAT(predicted_inputs, IsOk());
 
-  ASSERT_EQ(absl::OkStatus(),
-            stroke.EnqueueInputs(*real_inputs, *predicted_inputs));
-  ASSERT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.15)));
+  ASSERT_THAT(stroke.EnqueueInputs(*real_inputs, *predicted_inputs), IsOk());
+  ASSERT_THAT(stroke.UpdateShape(Duration32::Seconds(0.15)), IsOk());
 
   ASSERT_FALSE(stroke.GetUpdatedRegion().IsEmpty());
   stroke.ResetUpdatedRegion();
@@ -737,9 +727,9 @@ TEST(InProgressStrokeTest, StartAfterExtendingStroke) {
       {.position = {3, 2}},
       {.position = {3, 4}},
   });
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
-  ASSERT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*inputs, {}));
-  ASSERT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
+  ASSERT_THAT(inputs, IsOk());
+  ASSERT_THAT(stroke.EnqueueInputs(*inputs, {}), IsOk());
+  ASSERT_THAT(stroke.UpdateShape(Duration32::Zero()), IsOk());
 
   ASSERT_THAT(stroke.GetBrush(), Pointee(BrushEq(starting_brush)));
   ASSERT_FALSE(stroke.GetInputs().IsEmpty());
@@ -774,10 +764,10 @@ TEST(InProgressStrokeTest, InputCount) {
   absl::StatusOr<StrokeInputBatch> predicted_inputs = StrokeInputBatch::Create({
       {.position = {3, 5}},
   });
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
-  ASSERT_EQ(predicted_inputs.status(), absl::OkStatus());
-  ASSERT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*inputs, *predicted_inputs));
-  ASSERT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Zero()));
+  ASSERT_THAT(inputs, IsOk());
+  ASSERT_THAT(predicted_inputs, IsOk());
+  ASSERT_THAT(stroke.EnqueueInputs(*inputs, *predicted_inputs), IsOk());
+  ASSERT_THAT(stroke.UpdateShape(Duration32::Zero()), IsOk());
   ASSERT_EQ(stroke.InputCount(), 4);
   ASSERT_EQ(stroke.RealInputCount(), 3);
   ASSERT_EQ(stroke.PredictedInputCount(), 1);
@@ -792,24 +782,23 @@ TEST(InProgressStrokeTest, CopyToStroke) {
       {.position = {1, 2}, .elapsed_time = Duration32::Seconds(0.0)},
       {.position = {3, 2}, .elapsed_time = Duration32::Seconds(0.1)},
   });
-  ASSERT_EQ(real_inputs_0.status(), absl::OkStatus());
+  ASSERT_THAT(real_inputs_0, IsOk());
   absl::StatusOr<StrokeInputBatch> predicted_inputs = StrokeInputBatch::Create(
       {{.position = {3, 4}, .elapsed_time = Duration32::Seconds(0.2)}});
-  ASSERT_EQ(predicted_inputs.status(), absl::OkStatus());
+  ASSERT_THAT(predicted_inputs, IsOk());
 
-  ASSERT_EQ(absl::OkStatus(),
-            stroke.EnqueueInputs(*real_inputs_0, *predicted_inputs));
-  ASSERT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.15)));
+  ASSERT_THAT(stroke.EnqueueInputs(*real_inputs_0, *predicted_inputs), IsOk());
+  ASSERT_THAT(stroke.UpdateShape(Duration32::Seconds(0.15)), IsOk());
 
   StrokeInputBatch all_original_inputs = *real_inputs_0;
 
   absl::StatusOr<StrokeInputBatch> real_inputs_1 = StrokeInputBatch::Create(
       {{.position = {3, 0}, .elapsed_time = Duration32::Seconds(0.2)}});
-  ASSERT_EQ(real_inputs_1.status(), absl::OkStatus());
+  ASSERT_THAT(real_inputs_1, IsOk());
 
-  ASSERT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*real_inputs_1, {}));
-  ASSERT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.2)));
-  ASSERT_EQ(absl::OkStatus(), all_original_inputs.Append(*real_inputs_1));
+  ASSERT_THAT(stroke.EnqueueInputs(*real_inputs_1, {}), IsOk());
+  ASSERT_THAT(stroke.UpdateShape(Duration32::Seconds(0.2)), IsOk());
+  ASSERT_THAT(all_original_inputs.Append(*real_inputs_1), IsOk());
 
   Stroke finished_stroke = stroke.CopyToStroke();
 
@@ -834,8 +823,8 @@ TEST(InProgressStrokeTest, CopyToStroke) {
   // Changing the brush and inputs of the `InProgressStroke` should not affect
   // the results of `CopyToStroke`.
   stroke.Start(CreateRectangularTestBrush());
-  ASSERT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*real_inputs_1, {}));
-  ASSERT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.1)));
+  ASSERT_THAT(stroke.EnqueueInputs(*real_inputs_1, {}), IsOk());
+  ASSERT_THAT(stroke.UpdateShape(Duration32::Seconds(0.1)), IsOk());
 
   EXPECT_THAT(finished_stroke.GetBrush(), BrushEq(original_brush));
   EXPECT_THAT(finished_stroke.GetInputs(),
@@ -854,9 +843,9 @@ TEST(InProgressStrokeTest, CopyToStrokeOmitUnneededAttributes) {
       {.position = {1, 2}, .elapsed_time = Duration32::Seconds(0.0)},
       {.position = {3, 2}, .elapsed_time = Duration32::Seconds(0.1)},
   });
-  ASSERT_EQ(real_inputs.status(), absl::OkStatus());
-  ASSERT_EQ(absl::OkStatus(), stroke.EnqueueInputs(*real_inputs, {}));
-  ASSERT_EQ(absl::OkStatus(), stroke.UpdateShape(Duration32::Seconds(0.15)));
+  ASSERT_THAT(real_inputs, IsOk());
+  ASSERT_THAT(stroke.EnqueueInputs(*real_inputs, {}), IsOk());
+  ASSERT_THAT(stroke.UpdateShape(Duration32::Seconds(0.15)), IsOk());
 
   // The full mesh should include a color shift attribute, but since this brush
   // doesn't need that, it should be omitted from the finished stroke if we use

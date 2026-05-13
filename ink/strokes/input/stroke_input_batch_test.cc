@@ -22,6 +22,7 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -35,6 +36,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::testing::HasSubstr;
 
 std::vector<StrokeInput> MakeValidTestInputSequence(
@@ -90,14 +93,14 @@ StrokeInput MakeValidTestInput(
 TEST(StrokeInputBatchTest, Stringify) {
   StrokeInputBatch batch;
   EXPECT_EQ(absl::StrCat(batch), "StrokeInputBatch[]");
-  ASSERT_EQ(absl::OkStatus(),
-            batch.Append(
-                {.position = {1, 2}, .elapsed_time = Duration32::Seconds(1)}));
+  ASSERT_THAT(batch.Append(
+                  {.position = {1, 2}, .elapsed_time = Duration32::Seconds(1)}),
+              IsOk());
   EXPECT_EQ(absl::StrCat(batch),
             "StrokeInputBatch[StrokeInput[Unknown, (1, 2), 1s]]");
-  ASSERT_EQ(absl::OkStatus(),
-            batch.Append(
-                {.position = {3, 4}, .elapsed_time = Duration32::Seconds(2)}));
+  ASSERT_THAT(batch.Append(
+                  {.position = {3, 4}, .elapsed_time = Duration32::Seconds(2)}),
+              IsOk());
   EXPECT_EQ(absl::StrCat(batch),
             "StrokeInputBatch[StrokeInput[Unknown, (1, 2), 1s],"
             " StrokeInput[Unknown, (3, 4), 2s]]");
@@ -116,7 +119,7 @@ TEST(StrokeInputBatchTest, DefaultConstructed) {
 
 TEST(StrokeInputBatchTest, CreateFromEmptySpan) {
   auto empty_batch = StrokeInputBatch::Create({});
-  ASSERT_EQ(absl::OkStatus(), empty_batch.status());
+  ASSERT_THAT(empty_batch, IsOk());
   EXPECT_EQ(empty_batch->Size(), 0);
   EXPECT_TRUE(empty_batch->IsEmpty());
   EXPECT_FALSE(empty_batch->HasStrokeUnitLength());
@@ -130,7 +133,7 @@ TEST(StrokeInputBatchTest, CreateFromNonEmptySpan) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
 
   auto batch = StrokeInputBatch::Create(input_vector);
-  ASSERT_EQ(absl::OkStatus(), batch.status());
+  ASSERT_THAT(batch, IsOk());
   EXPECT_THAT(*batch, StrokeInputBatchIsArray(input_vector));
   EXPECT_EQ(batch->Size(), input_vector.size());
   EXPECT_FALSE(batch->IsEmpty());
@@ -145,7 +148,7 @@ TEST(StrokeInputBatchTest, AppendOneToEmpty) {
   StrokeInputBatch batch;
 
   StrokeInput input = MakeValidTestInput();
-  EXPECT_EQ(absl::OkStatus(), batch.Append(input));
+  EXPECT_THAT(batch.Append(input), IsOk());
 
   EXPECT_EQ(batch.Size(), 1);
   EXPECT_FALSE(batch.IsEmpty());
@@ -161,9 +164,9 @@ TEST(StrokeInputBatchTest, AppendOneToNonEmpty) {
 
   absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create(
       absl::MakeSpan(&input_vector[0], input_vector.size() - 1));
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
 
-  EXPECT_EQ(absl::OkStatus(), batch->Append(input_vector.back()));
+  EXPECT_THAT(batch->Append(input_vector.back()), IsOk());
   EXPECT_THAT(*batch, StrokeInputBatchIsArray(input_vector));
 }
 
@@ -171,7 +174,7 @@ TEST(StrokeInputBatchTest, AppendSpanToEmpty) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
 
   StrokeInputBatch batch;
-  EXPECT_EQ(absl::OkStatus(), batch.Append(input_vector));
+  EXPECT_THAT(batch.Append(input_vector), IsOk());
   EXPECT_THAT(batch, StrokeInputBatchIsArray(input_vector));
 }
 
@@ -180,10 +183,11 @@ TEST(StrokeInputBatchTest, AppendSpanToNonEmpty) {
 
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create({input_vector[0]});
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
 
-  EXPECT_EQ(absl::OkStatus(), batch->Append(absl::MakeSpan(
-                                  &input_vector[1], input_vector.size() - 1)));
+  EXPECT_THAT(
+      batch->Append(absl::MakeSpan(&input_vector[1], input_vector.size() - 1)),
+      IsOk());
   EXPECT_THAT(*batch, StrokeInputBatchIsArray(input_vector));
 }
 
@@ -192,12 +196,12 @@ TEST(StrokeInputBatchTest, AppendEmptyToEmpty) {
 
   // Create a vector of StrokeInput but don't add any values.
   std::vector<StrokeInput> input_vector;
-  EXPECT_EQ(absl::OkStatus(), batch.Append(input_vector));
+  EXPECT_THAT(batch.Append(input_vector), IsOk());
   EXPECT_EQ(batch.Size(), 0);
   EXPECT_TRUE(batch.IsEmpty());
 
   StrokeInputBatch input_batch;
-  EXPECT_EQ(absl::OkStatus(), batch.Append(input_batch));
+  EXPECT_THAT(batch.Append(input_batch), IsOk());
   EXPECT_EQ(batch.Size(), 0);
   EXPECT_TRUE(batch.IsEmpty());
 }
@@ -206,12 +210,12 @@ TEST(StrokeInputBatchTest, AppendEmptyToNonEmpty) {
   StrokeInputBatch batch;
 
   StrokeInput input = MakeValidTestInput();
-  ASSERT_EQ(absl::OkStatus(), batch.Append(input));
+  ASSERT_THAT(batch.Append(input), IsOk());
 
-  EXPECT_EQ(absl::OkStatus(), batch.Append(absl::Span<const StrokeInput>()));
+  EXPECT_THAT(batch.Append(absl::Span<const StrokeInput>()), IsOk());
   EXPECT_THAT(batch, StrokeInputBatchIsArray({input}));
 
-  EXPECT_EQ(absl::OkStatus(), batch.Append(StrokeInputBatch()));
+  EXPECT_THAT(batch.Append(StrokeInputBatch()), IsOk());
   EXPECT_THAT(batch, StrokeInputBatchIsArray({input}));
 }
 
@@ -219,10 +223,10 @@ TEST(StrokeInputBatchTest, SetReplacingOnlyExistingValue) {
   StrokeInputBatch batch;
 
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
-  ASSERT_EQ(absl::OkStatus(), batch.Append(input_vector[0]));
+  ASSERT_THAT(batch.Append(input_vector[0]), IsOk());
 
   StrokeInput replacement = input_vector[1];
-  EXPECT_EQ(absl::OkStatus(), batch.Set(0, replacement));
+  EXPECT_THAT(batch.Set(0, replacement), IsOk());
   EXPECT_THAT(batch, StrokeInputBatchIsArray({replacement}));
 }
 
@@ -231,9 +235,9 @@ TEST(StrokeInputBatchTest, Set) {
 
   absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create(
       {input_vector[0], input_vector[1], input_vector[3]});
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
 
-  EXPECT_EQ(absl::OkStatus(), batch->Set(1, input_vector[2]));
+  EXPECT_THAT(batch->Set(1, input_vector[2]), IsOk());
   EXPECT_THAT(*batch, StrokeInputBatchIsArray(
                           {input_vector[0], input_vector[2], input_vector[3]}));
 }
@@ -241,13 +245,13 @@ TEST(StrokeInputBatchTest, Set) {
 TEST(StrokeInputBatchTest, SetReplacingOnlyValueWithDifferentFormat) {
   StrokeInput input = MakeValidTestInput(StrokeInput::ToolType::kStylus);
   absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create({input});
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
 
   StrokeInput replacement = input;
   replacement.tool_type = StrokeInput::ToolType::kMouse;
   replacement.tilt = StrokeInput::kNoTilt;
 
-  EXPECT_EQ(absl::OkStatus(), batch->Set(0, replacement));
+  EXPECT_THAT(batch->Set(0, replacement), IsOk());
   EXPECT_THAT(*batch, StrokeInputBatchIsArray({replacement}));
 }
 
@@ -259,10 +263,10 @@ TEST(StrokeInputBatchTest, SetReplacingFirstValueOfMany) {
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(initial_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     StrokeInput replacement = input_vector[0];
-    EXPECT_EQ(absl::OkStatus(), batch->Set(0, replacement));
+    EXPECT_THAT(batch->Set(0, replacement), IsOk());
 
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({replacement, initial_inputs[1],
                                                  initial_inputs[2]}));
@@ -270,16 +274,16 @@ TEST(StrokeInputBatchTest, SetReplacingFirstValueOfMany) {
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(initial_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     // Attempt to replace first value with an incompatible input because it has
     // no orientation.
     StrokeInput replacement = input_vector[0];
     ASSERT_TRUE(replacement.HasOrientation());
     replacement.orientation = StrokeInput::kNoOrientation;
-    absl::Status missing_orientation = batch->Set(0, replacement);
-    EXPECT_EQ(missing_orientation.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(missing_orientation.message(), HasSubstr("orientation"));
+    EXPECT_THAT(
+        batch->Set(0, replacement),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
 
     EXPECT_THAT(*batch, StrokeInputBatchIsArray(initial_inputs));
   }
@@ -293,10 +297,10 @@ TEST(StrokeInputBatchTest, SetReplacingLastValueOfMany) {
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(initial_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     StrokeInput replacement = input_vector[initial_inputs.size()];
-    EXPECT_EQ(absl::OkStatus(), batch->Set(batch->Size() - 1, replacement));
+    EXPECT_THAT(batch->Set(batch->Size() - 1, replacement), IsOk());
 
     EXPECT_THAT(*batch,
                 StrokeInputBatchIsArray(
@@ -305,16 +309,16 @@ TEST(StrokeInputBatchTest, SetReplacingLastValueOfMany) {
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(initial_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     // Attempt to replace first value with an incompatible input because it has
     // a different tool type.
     StrokeInput replacement = input_vector[initial_inputs.size()];
     replacement.tool_type = StrokeInput::ToolType::kMouse;
 
-    absl::Status wrong_tool_type = batch->Set(2, replacement);
-    EXPECT_EQ(wrong_tool_type.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(wrong_tool_type.message(), HasSubstr("tool_type"));
+    EXPECT_THAT(
+        batch->Set(2, replacement),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tool_type")));
 
     EXPECT_THAT(*batch, StrokeInputBatchIsArray(initial_inputs));
   }
@@ -324,7 +328,7 @@ TEST(StrokeInputBatchTest, Clear) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(input_vector, /*noise_seed=*/12345);
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
 
   ASSERT_FALSE(batch->IsEmpty());
   ASSERT_EQ(batch->Size(), input_vector.size());
@@ -353,13 +357,13 @@ TEST(StrokeInputBatchTest, AppendAfterClear) {
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(initial_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     ASSERT_FALSE(batch->IsEmpty());
 
     // Clear and then append with same format
     batch->Clear();
     StrokeInput input = input_vector[0];
-    EXPECT_EQ(absl::OkStatus(), batch->Append(input));
+    EXPECT_THAT(batch->Append(input), IsOk());
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({input}));
     EXPECT_EQ(batch->GetToolType(), StrokeInput::ToolType::kStylus);
     EXPECT_TRUE(batch->HasPressure());
@@ -369,7 +373,7 @@ TEST(StrokeInputBatchTest, AppendAfterClear) {
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(input_vector);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     ASSERT_FALSE(batch->IsEmpty());
 
     // Clear and then append with a different format
@@ -378,7 +382,7 @@ TEST(StrokeInputBatchTest, AppendAfterClear) {
     StrokeInput input = input_vector[0];
     input.tool_type = StrokeInput::ToolType::kMouse;
     input.tilt = StrokeInput::kNoTilt;
-    EXPECT_EQ(absl::OkStatus(), batch->Append(input));
+    EXPECT_THAT(batch->Append(input), IsOk());
 
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({input}));
     EXPECT_EQ(batch->GetToolType(), StrokeInput::ToolType::kMouse);
@@ -398,7 +402,7 @@ TEST(StrokeInputBatchTest, ClearAfterCopy) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(input_vector);
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
 
   StrokeInputBatch copied_batch = *batch;
   EXPECT_THAT(copied_batch, StrokeInputBatchEq(*batch));
@@ -416,7 +420,7 @@ TEST(StrokeInputTest, HasOptionalFields) {
     StrokeInput input = MakeValidTestInput();
     ASSERT_TRUE(input.HasPressure());
 
-    EXPECT_EQ(absl::OkStatus(), batch.Append(input));
+    EXPECT_THAT(batch.Append(input), IsOk());
     EXPECT_TRUE(batch.HasPressure());
   }
   {
@@ -426,7 +430,7 @@ TEST(StrokeInputTest, HasOptionalFields) {
     StrokeInput input = MakeValidTestInput();
     input.pressure = -1;
 
-    EXPECT_EQ(absl::OkStatus(), batch.Append(input));
+    EXPECT_THAT(batch.Append(input), IsOk());
     EXPECT_FALSE(batch.HasPressure());
   }
   {
@@ -436,7 +440,7 @@ TEST(StrokeInputTest, HasOptionalFields) {
     StrokeInput input = MakeValidTestInput();
     ASSERT_TRUE(input.HasTilt());
 
-    EXPECT_EQ(absl::OkStatus(), batch.Append(input));
+    EXPECT_THAT(batch.Append(input), IsOk());
     EXPECT_TRUE(batch.HasTilt());
   }
   {
@@ -446,7 +450,7 @@ TEST(StrokeInputTest, HasOptionalFields) {
     StrokeInput input = MakeValidTestInput();
     input.tilt = StrokeInput::kNoTilt;
 
-    EXPECT_EQ(absl::OkStatus(), batch.Append(input));
+    EXPECT_THAT(batch.Append(input), IsOk());
     EXPECT_FALSE(batch.HasTilt());
   }
   {
@@ -456,7 +460,7 @@ TEST(StrokeInputTest, HasOptionalFields) {
     StrokeInput input = MakeValidTestInput();
     ASSERT_TRUE(input.HasOrientation());
 
-    EXPECT_EQ(absl::OkStatus(), batch.Append(input));
+    EXPECT_THAT(batch.Append(input), IsOk());
     EXPECT_TRUE(batch.HasOrientation());
   }
   {
@@ -466,7 +470,7 @@ TEST(StrokeInputTest, HasOptionalFields) {
     StrokeInput input = MakeValidTestInput();
     input.orientation = StrokeInput::kNoOrientation;
 
-    EXPECT_EQ(absl::OkStatus(), batch.Append(input));
+    EXPECT_THAT(batch.Append(input), IsOk());
     EXPECT_FALSE(batch.HasOrientation());
   }
 }
@@ -475,11 +479,8 @@ TEST(StrokeInputBatchTest, StrokeUnitLengthBelowValidRange) {
   StrokeInputBatch batch;
   StrokeInput input = MakeValidTestInput();
   input.stroke_unit_length = PhysicalDistance::Centimeters(-1);
-  absl::Status stroke_unit_length_too_low = batch.Append(input);
-  EXPECT_EQ(stroke_unit_length_too_low.code(),
-            absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(stroke_unit_length_too_low.message(),
-              HasSubstr("stroke_unit_length"));
+  EXPECT_THAT(batch.Append(input), StatusIs(absl::StatusCode::kInvalidArgument,
+                                            HasSubstr("stroke_unit_length")));
   EXPECT_TRUE(batch.IsEmpty());
   EXPECT_EQ(batch.GetToolType(), StrokeInput::ToolType::kUnknown);
   EXPECT_FALSE(batch.HasStrokeUnitLength());
@@ -490,9 +491,8 @@ TEST(StrokeInputBatchTest, PressureAboveValidRange) {
   // Valid pressure should be in the range [0, 1], setting to 2.
   StrokeInput input = MakeValidTestInput();
   input.pressure = 2;
-  absl::Status pressure_too_high = batch.Append(input);
-  EXPECT_EQ(pressure_too_high.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(pressure_too_high.message(), HasSubstr("pressure"));
+  EXPECT_THAT(batch.Append(input), StatusIs(absl::StatusCode::kInvalidArgument,
+                                            HasSubstr("pressure")));
   EXPECT_TRUE(batch.IsEmpty());
   EXPECT_EQ(batch.GetToolType(), StrokeInput::ToolType::kUnknown);
 }
@@ -503,9 +503,8 @@ TEST(StrokeInputBatchTest, PressureBelowValidRange) {
   StrokeInput input = MakeValidTestInput();
   input.pressure = -0.5;
 
-  absl::Status pressure_too_low = batch.Append(input);
-  EXPECT_EQ(pressure_too_low.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(pressure_too_low.message(), HasSubstr("pressure"));
+  EXPECT_THAT(batch.Append(input), StatusIs(absl::StatusCode::kInvalidArgument,
+                                            HasSubstr("pressure")));
   EXPECT_TRUE(batch.IsEmpty());
   EXPECT_EQ(batch.GetToolType(), StrokeInput::ToolType::kUnknown);
 }
@@ -516,9 +515,8 @@ TEST(StrokeInputBatchTest, TiltAboveValidRange) {
   StrokeInput input = MakeValidTestInput();
   input.tilt = Angle::Radians(4);
 
-  absl::Status tilt_too_high = batch.Append(input);
-  EXPECT_EQ(tilt_too_high.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(tilt_too_high.message(), HasSubstr("tilt"));
+  EXPECT_THAT(batch.Append(input),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tilt")));
   EXPECT_TRUE(batch.IsEmpty());
   EXPECT_EQ(batch.GetToolType(), StrokeInput::ToolType::kUnknown);
 }
@@ -529,9 +527,8 @@ TEST(StrokeInputBatchTest, TiltBelowValidRange) {
   StrokeInput input = MakeValidTestInput();
   input.tilt = Angle::Radians(-2);
 
-  absl::Status tilt_too_low = batch.Append(input);
-  EXPECT_EQ(tilt_too_low.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(tilt_too_low.message(), HasSubstr("tilt"));
+  EXPECT_THAT(batch.Append(input),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tilt")));
   EXPECT_TRUE(batch.IsEmpty());
   EXPECT_EQ(batch.GetToolType(), StrokeInput::ToolType::kUnknown);
 }
@@ -542,9 +539,8 @@ TEST(StrokeInputBatchTest, OrientationAboveValidRange) {
   StrokeInput input = MakeValidTestInput();
   input.orientation = Angle::Radians(10.f);
 
-  absl::Status orientation_too_high = batch.Append(input);
-  EXPECT_EQ(orientation_too_high.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(orientation_too_high.message(), HasSubstr("orientation"));
+  EXPECT_THAT(batch.Append(input), StatusIs(absl::StatusCode::kInvalidArgument,
+                                            HasSubstr("orientation")));
   EXPECT_TRUE(batch.IsEmpty());
   EXPECT_EQ(batch.GetToolType(), StrokeInput::ToolType::kUnknown);
 }
@@ -555,9 +551,8 @@ TEST(StrokeInputBatchTest, OrientationBelowValidRange) {
   StrokeInput input = MakeValidTestInput();
   input.orientation = Angle::Radians(-3.f);
 
-  absl::Status orientation_too_low = batch.Append(input);
-  EXPECT_EQ(orientation_too_low.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(orientation_too_low.message(), HasSubstr("orientation"));
+  EXPECT_THAT(batch.Append(input), StatusIs(absl::StatusCode::kInvalidArgument,
+                                            HasSubstr("orientation")));
   EXPECT_TRUE(batch.IsEmpty());
   EXPECT_EQ(batch.GetToolType(), StrokeInput::ToolType::kUnknown);
 }
@@ -568,9 +563,8 @@ TEST(StrokeInputBatchTest, ToolTypeNonEnumeratorValue) {
   StrokeInput input = MakeValidTestInput();
   input.tool_type = static_cast<StrokeInput::ToolType>(99);
 
-  absl::Status invalid_tool_type = batch.Append(input);
-  EXPECT_EQ(invalid_tool_type.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(invalid_tool_type.message(), HasSubstr("tool_type"));
+  EXPECT_THAT(batch.Append(input), StatusIs(absl::StatusCode::kInvalidArgument,
+                                            HasSubstr("tool_type")));
   EXPECT_TRUE(batch.IsEmpty());
   EXPECT_EQ(batch.GetToolType(), StrokeInput::ToolType::kUnknown);
 }
@@ -579,11 +573,11 @@ TEST(StrokeInputBatchTest, AppendWithOnlyXChange) {
   StrokeInputBatch batch;
   StrokeInput first = MakeValidTestInput();
 
-  ASSERT_EQ(absl::OkStatus(), batch.Append(first));
+  ASSERT_THAT(batch.Append(first), IsOk());
   // Make sure that we still pass if at least one of xyt changes.
   StrokeInput second = first;
   second.position.x += 1;
-  EXPECT_EQ(absl::OkStatus(), batch.Append(second));
+  EXPECT_THAT(batch.Append(second), IsOk());
   EXPECT_THAT(batch, StrokeInputBatchIsArray({first, second}));
 }
 
@@ -591,11 +585,11 @@ TEST(StrokeInputBatchTest, AppendWithOnlyYChange) {
   StrokeInputBatch batch;
   StrokeInput first = MakeValidTestInput();
 
-  ASSERT_EQ(absl::OkStatus(), batch.Append(first));
+  ASSERT_THAT(batch.Append(first), IsOk());
   // Make sure that we still pass if at least one of xyt changes.
   StrokeInput second = first;
   second.position.y += 1;
-  EXPECT_EQ(absl::OkStatus(), batch.Append(second));
+  EXPECT_THAT(batch.Append(second), IsOk());
   EXPECT_THAT(batch, StrokeInputBatchIsArray({first, second}));
 }
 
@@ -603,17 +597,17 @@ TEST(StrokeInputBatchTest, AppendWithOnlyTChange) {
   StrokeInputBatch batch;
   StrokeInput first = MakeValidTestInput();
 
-  ASSERT_EQ(absl::OkStatus(), batch.Append(first));
+  ASSERT_THAT(batch.Append(first), IsOk());
   // Make sure that we still pass if at least one of xyt changes.
   StrokeInput second = first;
   second.elapsed_time = first.elapsed_time + Duration32::Seconds(1);
-  EXPECT_EQ(absl::OkStatus(), batch.Append(second));
+  EXPECT_THAT(batch.Append(second), IsOk());
   EXPECT_THAT(batch, StrokeInputBatchIsArray({first, second}));
 }
 
 void CanAppendAnyValidStrokeInputToAnEmptyBatch(const StrokeInput& input) {
   StrokeInputBatch batch;
-  EXPECT_EQ(absl::OkStatus(), batch.Append(input));
+  EXPECT_THAT(batch.Append(input), IsOk());
   EXPECT_EQ(batch.Size(), 1);
   EXPECT_THAT(batch.First(), StrokeInputEq(input));
   EXPECT_THAT(batch.Last(), StrokeInputEq(input));
@@ -625,13 +619,13 @@ TEST(StrokeInputBatchTest, SetNonFiniteValueOnSingleInputBatch) {
   StrokeInput input = MakeValidTestInput();
 
   absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create({input});
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
   ASSERT_THAT(*batch, StrokeInputBatchIsArray({input}));
 
-  absl::Status non_finite =
-      batch->Set(0, {.position = {std::numeric_limits<float>::infinity(), 0}});
-  EXPECT_EQ(non_finite.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(non_finite.message(), HasSubstr("must be finite"));
+  EXPECT_THAT(
+      batch->Set(0, {.position = {std::numeric_limits<float>::infinity(), 0}}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("must be finite")));
   EXPECT_THAT(*batch, StrokeInputBatchIsArray({input}));
 }
 
@@ -642,23 +636,23 @@ TEST(StrokeInputBatchTest, SetCausingDecreasingTime) {
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(initial_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     ASSERT_GT(input_vector[4].elapsed_time, batch->Last().elapsed_time);
 
-    absl::Status decreating_time = batch->Set(1, input_vector[4]);
-    EXPECT_EQ(decreating_time.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(decreating_time.message(), HasSubstr("elapsed_time"));
+    EXPECT_THAT(batch->Set(1, input_vector[4]),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("elapsed_time")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray(initial_inputs));
   }
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(initial_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     ASSERT_LT(input_vector[0].elapsed_time, batch->Get(0).elapsed_time);
 
-    absl::Status decreasing_time = batch->Set(1, input_vector[0]);
-    EXPECT_EQ(decreasing_time.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(decreasing_time.message(), HasSubstr("elapsed_time"));
+    EXPECT_THAT(batch->Set(1, input_vector[0]),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("elapsed_time")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray(initial_inputs));
   }
 }
@@ -668,12 +662,12 @@ TEST(StrokeInputBatchTest, AppendDecreasingTime) {
 
   absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create(
       {input_vector[0], input_vector[1], input_vector[3]});
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
 
   ASSERT_GT(batch->Last().elapsed_time, input_vector[2].elapsed_time);
-  absl::Status decreasing_time = batch->Append(input_vector[2]);
-  EXPECT_EQ(decreasing_time.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(decreasing_time.message(), HasSubstr("elapsed_time"));
+  EXPECT_THAT(
+      batch->Append(input_vector[2]),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("elapsed_time")));
   EXPECT_THAT(*batch, StrokeInputBatchIsArray(
                           {input_vector[0], input_vector[1], input_vector[3]}));
 }
@@ -684,128 +678,100 @@ TEST(StrokeInputBatchTest, NonFiniteValues) {
     StrokeInput input = MakeValidTestInput();
     input.position.x = std::numeric_limits<float>::infinity();
 
-    {
-      absl::Status status = StrokeInputBatch::Create({input}).status();
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("StrokeInput::position"));
-    }
+    EXPECT_THAT(StrokeInputBatch::Create({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("StrokeInput::position")));
 
     StrokeInputBatch batch;
-    {
-      absl::Status status = batch.Append(input);
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("StrokeInput::position"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(batch.Append(input),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("StrokeInput::position")));
+    EXPECT_TRUE(batch.IsEmpty());
 
-    {
-      absl::Status status = batch.Append({input});
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("StrokeInput::position"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(batch.Append({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("StrokeInput::position")));
+    EXPECT_TRUE(batch.IsEmpty());
   }
   {
     // Passing in a NaN value for x should fail.
     StrokeInput input = MakeValidTestInput();
     input.position.x = std::nanf("");
 
-    {
-      absl::Status status = StrokeInputBatch::Create({input}).status();
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("StrokeInput::position"));
-    }
-    StrokeInputBatch batch;
-    {
-      absl::Status status = batch.Append(input);
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("StrokeInput::position"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(StrokeInputBatch::Create({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("StrokeInput::position")));
 
-    {
-      absl::Status status = batch.Append({input});
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("StrokeInput::position"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    StrokeInputBatch batch;
+    EXPECT_THAT(batch.Append(input),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("StrokeInput::position")));
+    EXPECT_TRUE(batch.IsEmpty());
+
+    EXPECT_THAT(batch.Append({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("StrokeInput::position")));
+    EXPECT_TRUE(batch.IsEmpty());
   }
   {
     // Passing in an infinite value for y should fail.
     StrokeInput input = MakeValidTestInput();
     input.position.y = std::numeric_limits<float>::infinity();
 
-    {
-      absl::Status status = StrokeInputBatch::Create({input}).status();
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("StrokeInput::position"));
-    }
+    EXPECT_THAT(StrokeInputBatch::Create({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("StrokeInput::position")));
 
     StrokeInputBatch batch;
-    {
-      absl::Status status = batch.Append(input);
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("StrokeInput::position"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(batch.Append(input),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("StrokeInput::position")));
+    EXPECT_TRUE(batch.IsEmpty());
 
-    {
-      absl::Status status = batch.Append({input});
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("StrokeInput::position"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(batch.Append({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("StrokeInput::position")));
+    EXPECT_TRUE(batch.IsEmpty());
   }
   {
     // Passing in a NaN value for y should fail.
     StrokeInput input = MakeValidTestInput();
     input.position.y = std::nanf("");
 
-    {
-      absl::Status status = StrokeInputBatch::Create({input}).status();
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("StrokeInput::position"));
-    }
+    EXPECT_THAT(StrokeInputBatch::Create({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("StrokeInput::position")));
 
     StrokeInputBatch batch;
-    {
-      absl::Status status = batch.Append(input);
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("StrokeInput::position"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
-    {
-      absl::Status status = batch.Append({input});
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("StrokeInput::position"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(batch.Append(input),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("StrokeInput::position")));
+    EXPECT_TRUE(batch.IsEmpty());
+
+    EXPECT_THAT(batch.Append({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("StrokeInput::position")));
+    EXPECT_TRUE(batch.IsEmpty());
   }
   {
     // Passing in an infinite value for elapsed_time should fail.
     StrokeInput input = MakeValidTestInput();
     input.elapsed_time = Duration32::Infinite();
 
-    {
-      absl::Status status = StrokeInputBatch::Create({input}).status();
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("elapsed_time"));
-    }
+    EXPECT_THAT(StrokeInputBatch::Create({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("elapsed_time")));
 
     StrokeInputBatch batch;
-    {
-      absl::Status status = batch.Append(input);
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("elapsed_time"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(batch.Append(input),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("elapsed_time")));
+    EXPECT_TRUE(batch.IsEmpty());
 
-    {
-      absl::Status status = batch.Append({input});
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("elapsed_time"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(batch.Append({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("elapsed_time")));
+    EXPECT_TRUE(batch.IsEmpty());
   }
   {
     // Passing in an infinite value for stroke_unit_length should fail.
@@ -813,35 +779,29 @@ TEST(StrokeInputBatchTest, NonFiniteValues) {
     input.stroke_unit_length =
         PhysicalDistance::Centimeters(std::numeric_limits<float>::infinity());
 
-    {
-      absl::Status status = StrokeInputBatch::Create({input}).status();
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("stroke_unit_length"));
-    }
+    EXPECT_THAT(StrokeInputBatch::Create({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("stroke_unit_length")));
 
     StrokeInputBatch batch;
-    {
-      absl::Status status = batch.Append(input);
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("stroke_unit_length"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(batch.Append(input),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("stroke_unit_length")));
+    EXPECT_TRUE(batch.IsEmpty());
 
-    {
-      absl::Status status = batch.Append({input});
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("stroke_unit_length"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(batch.Append({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("stroke_unit_length")));
+    EXPECT_TRUE(batch.IsEmpty());
   }
   {
     StrokeInputBatch batch;
     // Passing in a NaN value for stroke_unit_length should fail.
     StrokeInput input = MakeValidTestInput();
     input.stroke_unit_length = PhysicalDistance::Centimeters(std::nanf(""));
-    absl::Status status = batch.Append(input);
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("stroke_unit_length"));
+    EXPECT_THAT(batch.Append(input),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("stroke_unit_length")));
     EXPECT_TRUE(batch.IsEmpty());
   }
   {
@@ -849,35 +809,29 @@ TEST(StrokeInputBatchTest, NonFiniteValues) {
     StrokeInput input = MakeValidTestInput();
     input.pressure = std::numeric_limits<float>::infinity();
 
-    {
-      absl::Status status = StrokeInputBatch::Create({input}).status();
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("pressure"));
-    }
+    EXPECT_THAT(
+        StrokeInputBatch::Create({input}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pressure")));
 
     StrokeInputBatch batch;
-    {
-      absl::Status status = batch.Append(input);
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("pressure"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(
+        batch.Append(input),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pressure")));
+    EXPECT_TRUE(batch.IsEmpty());
 
-    {
-      absl::Status status = batch.Append({input});
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("pressure"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(
+        batch.Append({input}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pressure")));
+    EXPECT_TRUE(batch.IsEmpty());
   }
   {
     StrokeInputBatch batch;
     // Passing in a NaN value for pressure should fail.
     StrokeInput input = MakeValidTestInput();
     input.pressure = std::nanf("");
-    absl::Status status = batch.Append(input);
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("pressure"));
+    EXPECT_THAT(
+        batch.Append(input),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pressure")));
     EXPECT_TRUE(batch.IsEmpty());
   }
   {
@@ -885,104 +839,80 @@ TEST(StrokeInputBatchTest, NonFiniteValues) {
     StrokeInput input = MakeValidTestInput();
     input.tilt = Angle::Radians(std::numeric_limits<float>::infinity());
 
-    {
-      absl::Status status = StrokeInputBatch::Create({input}).status();
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("tilt"));
-    }
+    EXPECT_THAT(
+        StrokeInputBatch::Create({input}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tilt")));
 
     StrokeInputBatch batch;
-    {
-      absl::Status status = batch.Append(input);
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("tilt"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(
+        batch.Append(input),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tilt")));
+    EXPECT_TRUE(batch.IsEmpty());
 
-    {
-      absl::Status status = batch.Append({input});
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("tilt"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(
+        batch.Append({input}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tilt")));
+    EXPECT_TRUE(batch.IsEmpty());
   }
   {
     // Passing in a NaN value for tilt should fail.
     StrokeInput input = MakeValidTestInput();
     input.tilt = Angle::Radians(std::nanf(""));
 
-    {
-      absl::Status status = StrokeInputBatch::Create({input}).status();
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("tilt"));
-    }
+    EXPECT_THAT(
+        StrokeInputBatch::Create({input}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tilt")));
 
     StrokeInputBatch batch;
-    {
-      absl::Status status = batch.Append(input);
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("tilt"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(
+        batch.Append(input),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tilt")));
+    EXPECT_TRUE(batch.IsEmpty());
 
-    {
-      absl::Status status = batch.Append({input});
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("tilt"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(
+        batch.Append({input}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tilt")));
+    EXPECT_TRUE(batch.IsEmpty());
   }
   {
     // Passing in an infinite value for tilt should fail.
     StrokeInput input = MakeValidTestInput();
     input.orientation = Angle::Radians(std::numeric_limits<float>::infinity());
 
-    {
-      absl::Status status = StrokeInputBatch::Create({input}).status();
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("orientation"));
-    }
+    EXPECT_THAT(
+        StrokeInputBatch::Create({input}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
 
     StrokeInputBatch batch;
-    {
-      absl::Status status = batch.Append(input);
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("orientation"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(
+        batch.Append(input),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
+    EXPECT_TRUE(batch.IsEmpty());
 
-    {
-      absl::Status status = batch.Append({input});
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("orientation"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(
+        batch.Append({input}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
+    EXPECT_TRUE(batch.IsEmpty());
   }
   {
     // Passing in a NaN value for orientation should fail.
     StrokeInput input = MakeValidTestInput();
     input.orientation = Angle::Radians(std::nanf(""));
 
-    {
-      absl::Status status = StrokeInputBatch::Create({input}).status();
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("orientation"));
-    }
+    EXPECT_THAT(
+        StrokeInputBatch::Create({input}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
 
     StrokeInputBatch batch;
-    {
-      absl::Status status = batch.Append(input);
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("orientation"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(
+        batch.Append(input),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
+    EXPECT_TRUE(batch.IsEmpty());
 
-    {
-      absl::Status status = batch.Append({input});
-      EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(status.message(), HasSubstr("orientation"));
-      EXPECT_TRUE(batch.IsEmpty());
-    }
+    EXPECT_THAT(
+        batch.Append({input}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
+    EXPECT_TRUE(batch.IsEmpty());
   }
 }
 
@@ -992,34 +922,31 @@ TEST(StrokeInputBatchTest, AppendSpanWithChangedFormatFails) {
         MakeValidTestInputSequence(StrokeInput::ToolType::kMouse);
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0]});
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     // Next input has a different tool type:
     StrokeInput changed_tool_type = input_vector[1];
     changed_tool_type.tool_type = StrokeInput::ToolType::kTouch;
 
-    absl::Status mismatched_tool_type = batch->Append(changed_tool_type);
-    EXPECT_EQ(mismatched_tool_type.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(mismatched_tool_type.message(), HasSubstr("tool_type"));
+    EXPECT_THAT(
+        batch->Append(changed_tool_type),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tool_type")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
   }
   {
     std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0]});
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     // Next input has a different stroke_unit_length:
     StrokeInput changed_stroke_unit_length = input_vector[1];
     changed_stroke_unit_length.stroke_unit_length +=
         PhysicalDistance::Centimeters(0.1);
 
-    absl::Status mismatched_stroke_unit_length =
-        batch->Append(changed_stroke_unit_length);
-    EXPECT_EQ(mismatched_stroke_unit_length.code(),
-              absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(mismatched_stroke_unit_length.message(),
-                HasSubstr("stroke_unit_length"));
+    EXPECT_THAT(batch->Append(changed_stroke_unit_length),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("stroke_unit_length")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
   }
   {
@@ -1028,16 +955,15 @@ TEST(StrokeInputBatchTest, AppendSpanWithChangedFormatFails) {
     ASSERT_TRUE(input_vector[0].HasPressure());
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0]});
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     // Next input has no value for pressure, append should fail.
     StrokeInput no_pressure = input_vector[1];
     no_pressure.pressure = -1;
 
-    absl::Status mismatched_has_pressure = batch->Append(no_pressure);
-    EXPECT_EQ(mismatched_has_pressure.code(),
-              absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(mismatched_has_pressure.message(), HasSubstr("pressure"));
+    EXPECT_THAT(
+        batch->Append(no_pressure),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pressure")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
   }
   {
@@ -1045,16 +971,15 @@ TEST(StrokeInputBatchTest, AppendSpanWithChangedFormatFails) {
     input_vector[0].pressure = -1;
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0]});
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     // Next input has a value for pressure, append should fail.
     StrokeInput with_pressure = input_vector[1];
     ASSERT_TRUE(with_pressure.HasPressure());
 
-    absl::Status mismatched_has_pressure = batch->Append(with_pressure);
-    EXPECT_EQ(mismatched_has_pressure.code(),
-              absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(mismatched_has_pressure.message(), HasSubstr("pressure"));
+    EXPECT_THAT(
+        batch->Append(with_pressure),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("pressure")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
   }
   {
@@ -1063,15 +988,15 @@ TEST(StrokeInputBatchTest, AppendSpanWithChangedFormatFails) {
     ASSERT_TRUE(input_vector[0].HasTilt());
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0]});
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     // Next input has no value for tilt, append should fail.
     StrokeInput no_tilt = input_vector[1];
     no_tilt.tilt = StrokeInput::kNoTilt;
 
-    absl::Status mismatched_has_tilt = batch->Append(no_tilt);
-    EXPECT_EQ(mismatched_has_tilt.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(mismatched_has_tilt.message(), HasSubstr("tilt"));
+    EXPECT_THAT(
+        batch->Append(no_tilt),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tilt")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
   }
   {
@@ -1079,15 +1004,15 @@ TEST(StrokeInputBatchTest, AppendSpanWithChangedFormatFails) {
     input_vector[0].tilt = StrokeInput::kNoTilt;
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0]});
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     // Next input has a value for tilt, append should fail.
     StrokeInput with_tilt = input_vector[1];
     ASSERT_TRUE(with_tilt.HasTilt());
 
-    absl::Status mismatched_has_tilt = batch->Append(with_tilt);
-    EXPECT_EQ(mismatched_has_tilt.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(mismatched_has_tilt.message(), HasSubstr("tilt"));
+    EXPECT_THAT(
+        batch->Append(with_tilt),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tilt")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
   }
   {
@@ -1096,16 +1021,15 @@ TEST(StrokeInputBatchTest, AppendSpanWithChangedFormatFails) {
     ASSERT_TRUE(input_vector[0].HasOrientation());
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0]});
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     // Next input has no value for orientation, append should fail.
     StrokeInput no_orientation = input_vector[1];
     no_orientation.orientation = StrokeInput::kNoOrientation;
 
-    absl::Status mismatched_has_orientation = batch->Append(no_orientation);
-    EXPECT_EQ(mismatched_has_orientation.code(),
-              absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(mismatched_has_orientation.message(), HasSubstr("orientation"));
+    EXPECT_THAT(
+        batch->Append(no_orientation),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
   }
   {
@@ -1114,16 +1038,15 @@ TEST(StrokeInputBatchTest, AppendSpanWithChangedFormatFails) {
     input_vector[0].orientation = StrokeInput::kNoOrientation;
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0]});
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     // Next input has a value for orientation, append should fail.
     StrokeInput with_orientation = input_vector[1];
     ASSERT_TRUE(with_orientation.HasOrientation());
 
-    absl::Status mismatched_has_orientation = batch->Append(with_orientation);
-    EXPECT_EQ(mismatched_has_orientation.code(),
-              absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(mismatched_has_orientation.message(), HasSubstr("orientation"));
+    EXPECT_THAT(
+        batch->Append(with_orientation),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
   }
 }
@@ -1132,12 +1055,12 @@ TEST(StrokeInputBatchTest, AppendRepeatedPositionAndTime) {
   StrokeInputBatch batch;
 
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
-  ASSERT_EQ(absl::OkStatus(), batch.Append(input_vector));
+  ASSERT_THAT(batch.Append(input_vector), IsOk());
 
   // Adding the last input again, thus repeating an xyt triplet should fail.
-  absl::Status duplicate_input = batch.Append(input_vector.back());
-  EXPECT_EQ(duplicate_input.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(duplicate_input.message(), HasSubstr("duplicate"));
+  EXPECT_THAT(
+      batch.Append(input_vector.back()),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("duplicate")));
   EXPECT_THAT(batch, StrokeInputBatchIsArray(input_vector));
 }
 
@@ -1145,21 +1068,19 @@ TEST(StrokeInputBatchTest, SetCausingRepeatedPositionAndTime) {
   StrokeInputBatch batch;
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
 
-  ASSERT_EQ(absl::OkStatus(), batch.Append(input_vector));
+  ASSERT_THAT(batch.Append(input_vector), IsOk());
+
   // Replacing the second value with the third or first would create a
   // duplicated triplet and thus should fail.
-  {
-    absl::Status duplicate_input = batch.Set(1, input_vector[2]);
-    EXPECT_EQ(duplicate_input.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(duplicate_input.message(), HasSubstr("duplicate"));
-    EXPECT_THAT(batch, StrokeInputBatchIsArray(input_vector));
-  }
-  {
-    absl::Status duplicate_input = batch.Set(1, input_vector[0]);
-    EXPECT_EQ(duplicate_input.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(duplicate_input.message(), HasSubstr("duplicate"));
-    EXPECT_THAT(batch, StrokeInputBatchIsArray(input_vector));
-  }
+  EXPECT_THAT(
+      batch.Set(1, input_vector[2]),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("duplicate")));
+  EXPECT_THAT(batch, StrokeInputBatchIsArray(input_vector));
+
+  EXPECT_THAT(
+      batch.Set(1, input_vector[0]),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("duplicate")));
+  EXPECT_THAT(batch, StrokeInputBatchIsArray(input_vector));
 }
 
 TEST(StrokeInputBatchTest, AppendInvalidSpan) {
@@ -1167,82 +1088,78 @@ TEST(StrokeInputBatchTest, AppendInvalidSpan) {
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0], input_vector[1]});
-    EXPECT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     // Append Span where first StrokeInput repeats last existing x, y,
     // elapsed_time
-    absl::Status duplicate_input =
-        batch->Append({input_vector[1], input_vector[1], input_vector[2]});
-    EXPECT_EQ(duplicate_input.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(duplicate_input.message(), HasSubstr("duplicate"));
+    EXPECT_THAT(
+        batch->Append({input_vector[1], input_vector[1], input_vector[2]}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("duplicate")));
     EXPECT_THAT(*batch,
                 StrokeInputBatchIsArray({input_vector[0], input_vector[1]}));
   }
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0], input_vector[1]});
-    EXPECT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     // Append Span where two StrokeInputBatch repeat x, y, elapsed_time
-    absl::Status duplicate_input = batch->Append(
-        {input_vector[2], input_vector[3], input_vector[3], input_vector[4]});
-    EXPECT_EQ(duplicate_input.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(duplicate_input.message(), HasSubstr("duplicate"));
+    EXPECT_THAT(
+        batch->Append({input_vector[2], input_vector[3], input_vector[3],
+                       input_vector[4]}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("duplicate")));
     EXPECT_THAT(*batch,
                 StrokeInputBatchIsArray({input_vector[0], input_vector[1]}));
   }
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0], input_vector[2]});
-    EXPECT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     // Append Span where first StrokeInput has decreasing elapsed_time to
     // existing last entry
-    absl::Status decreasing_time =
-        batch->Append({input_vector[1], input_vector[3], input_vector[4]});
-    EXPECT_EQ(decreasing_time.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(decreasing_time.message(),
-                HasSubstr("non-decreasing `elapsed_time`"));
+    EXPECT_THAT(
+        batch->Append({input_vector[1], input_vector[3], input_vector[4]}),
+        StatusIs(absl::StatusCode::kInvalidArgument,
+                 HasSubstr("non-decreasing `elapsed_time`")));
     EXPECT_THAT(*batch,
                 StrokeInputBatchIsArray({input_vector[0], input_vector[2]}));
   }
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0], input_vector[1]});
-    EXPECT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     // Append Span containing decreasing `elapsed_time`.
-    absl::Status decreasing_time =
-        batch->Append({input_vector[3], input_vector[2], input_vector[4]});
-    EXPECT_EQ(decreasing_time.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(decreasing_time.message(),
-                HasSubstr("non-decreasing `elapsed_time`"));
+    EXPECT_THAT(
+        batch->Append({input_vector[3], input_vector[2], input_vector[4]}),
+        StatusIs(absl::StatusCode::kInvalidArgument,
+                 HasSubstr("non-decreasing `elapsed_time`")));
     EXPECT_THAT(*batch,
                 StrokeInputBatchIsArray({input_vector[0], input_vector[1]}));
   }
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0], input_vector[1]});
-    EXPECT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     // Append Span with different optional fields from what is in the batch.
     StrokeInput no_pressure[2] = {input_vector[2], input_vector[3]};
     no_pressure[0].pressure = -1;
     no_pressure[1].pressure = -1;
 
-    absl::Status status = batch->Append(no_pressure);
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("all or none"));
+    EXPECT_THAT(
+        batch->Append(no_pressure),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("all or none")));
     EXPECT_THAT(*batch,
                 StrokeInputBatchIsArray({input_vector[0], input_vector[1]}));
   }
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create({input_vector[0], input_vector[1]});
-    EXPECT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     // Append Span with inconsistent optional fields.
     StrokeInput no_pressure = input_vector[3];
     no_pressure.pressure = -1;
 
-    absl::Status status =
-        batch->Append({input_vector[2], no_pressure, input_vector[4]});
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("all or none"));
+    EXPECT_THAT(
+        batch->Append({input_vector[2], no_pressure, input_vector[4]}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("all or none")));
     EXPECT_THAT(*batch,
                 StrokeInputBatchIsArray({input_vector[0], input_vector[1]}));
   }
@@ -1253,19 +1170,19 @@ TEST(StrokeInputBatchTest, AppendBatch) {
 
   absl::StatusOr<StrokeInputBatch> first_batch =
       StrokeInputBatch::Create(absl::MakeSpan(&input_vector[0], 3));
-  ASSERT_EQ(first_batch.status(), absl::OkStatus());
+  ASSERT_THAT(first_batch, IsOk());
 
   StrokeInputBatch batch;
-  EXPECT_EQ(absl::OkStatus(), batch.Append(*first_batch));
+  EXPECT_THAT(batch.Append(*first_batch), IsOk());
   EXPECT_THAT(batch, StrokeInputBatchEq(*first_batch));
   EXPECT_THAT(batch,
               StrokeInputBatchIsArray(absl::MakeSpan(&input_vector[0], 3)));
 
   absl::StatusOr<StrokeInputBatch> second_batch = StrokeInputBatch::Create(
       absl::MakeSpan(&input_vector[3], input_vector.size() - 3));
-  ASSERT_EQ(second_batch.status(), absl::OkStatus());
+  ASSERT_THAT(second_batch, IsOk());
 
-  EXPECT_EQ(absl::OkStatus(), batch.Append(*second_batch));
+  EXPECT_THAT(batch.Append(*second_batch), IsOk());
   EXPECT_THAT(batch, StrokeInputBatchIsArray(input_vector));
 }
 
@@ -1277,24 +1194,24 @@ TEST(StrokeInputBatchTest, AppendIncompatibleBatch) {
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(initial_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     // Try to append a batch with a different tool type.
     StrokeInput changed_tool_type = input_vector[3];
     changed_tool_type.tool_type = StrokeInput::ToolType::kUnknown;
     absl::StatusOr<StrokeInputBatch> batch_to_append =
         StrokeInputBatch::Create({changed_tool_type});
-    ASSERT_EQ(batch_to_append.status(), absl::OkStatus());
+    ASSERT_THAT(batch_to_append, IsOk());
 
-    absl::Status different_tool_type = batch->Append(*batch_to_append);
-    EXPECT_EQ(different_tool_type.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(different_tool_type.message(), HasSubstr("tool_type"));
+    EXPECT_THAT(
+        batch->Append(*batch_to_append),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tool_type")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray(initial_inputs));
   }
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(initial_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     ASSERT_TRUE(batch->HasPressure());
 
     // Try to append a batch without pressure
@@ -1302,18 +1219,17 @@ TEST(StrokeInputBatchTest, AppendIncompatibleBatch) {
     no_pressure.pressure = -1;
     absl::StatusOr<StrokeInputBatch> batch_to_append =
         StrokeInputBatch::Create({no_pressure});
-    ASSERT_EQ(batch_to_append.status(), absl::OkStatus());
+    ASSERT_THAT(batch_to_append, IsOk());
 
-    absl::Status mismatched_has_pressure = batch->Append(*batch_to_append);
-    EXPECT_EQ(mismatched_has_pressure.code(),
-              absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(mismatched_has_pressure.message(), HasSubstr("all or none"));
+    EXPECT_THAT(
+        batch->Append(*batch_to_append),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("all or none")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray(initial_inputs));
   }
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(initial_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     ASSERT_TRUE(batch->HasTilt());
 
     // Try to append a batch without tilt
@@ -1321,17 +1237,17 @@ TEST(StrokeInputBatchTest, AppendIncompatibleBatch) {
     no_tilt.tilt = StrokeInput::kNoTilt;
     absl::StatusOr<StrokeInputBatch> batch_to_append =
         StrokeInputBatch::Create({no_tilt});
-    ASSERT_EQ(batch_to_append.status(), absl::OkStatus());
+    ASSERT_THAT(batch_to_append, IsOk());
 
-    absl::Status mismatched_has_tilt = batch->Append(*batch_to_append);
-    EXPECT_EQ(mismatched_has_tilt.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(mismatched_has_tilt.message(), HasSubstr("all or none"));
+    EXPECT_THAT(
+        batch->Append(*batch_to_append),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("all or none")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray(initial_inputs));
   }
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(initial_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     ASSERT_TRUE(batch->HasOrientation());
 
     // Try to append a batch without orientation
@@ -1339,26 +1255,26 @@ TEST(StrokeInputBatchTest, AppendIncompatibleBatch) {
     no_orientation.orientation = StrokeInput::kNoOrientation;
     absl::StatusOr<StrokeInputBatch> batch_to_append =
         StrokeInputBatch::Create({no_orientation});
-    ASSERT_EQ(batch_to_append.status(), absl::OkStatus());
+    ASSERT_THAT(batch_to_append, IsOk());
 
-    absl::Status status = batch->Append(*batch_to_append);
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("all or none"));
+    EXPECT_THAT(
+        batch->Append(*batch_to_append),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("all or none")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray(initial_inputs));
   }
   {
     absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create(
         {input_vector[0], input_vector[1], input_vector[3]});
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
 
     // Try to append a batch with lower initial `elapsed_time`.
     absl::StatusOr<StrokeInputBatch> batch_to_append =
         StrokeInputBatch::Create({input_vector[2]});
-    ASSERT_EQ(batch_to_append.status(), absl::OkStatus());
+    ASSERT_THAT(batch_to_append, IsOk());
 
-    absl::Status status = batch->Append(*batch_to_append);
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("non-decreasing `elapsed_time`"));
+    EXPECT_THAT(batch->Append(*batch_to_append),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("non-decreasing `elapsed_time`")));
     EXPECT_THAT(*batch,
                 StrokeInputBatchIsArray(
                     {input_vector[0], input_vector[1], input_vector[3]}));
@@ -1369,7 +1285,7 @@ TEST(StrokeInputBatchTest, EraseWithZeroCount) {
   std::vector<StrokeInput> test_inputs = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(test_inputs);
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
   batch->Erase(1, 0);
   EXPECT_THAT(*batch, StrokeInputBatchIsArray(test_inputs));
 }
@@ -1378,7 +1294,7 @@ TEST(StrokeInputBatchTest, EraseWithStartPlusCountLessThanSize) {
   std::vector<StrokeInput> test_inputs = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(test_inputs);
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
   batch->Erase(1, 2);
   EXPECT_THAT(*batch, StrokeInputBatchIsArray(
                           {test_inputs[0], test_inputs[3], test_inputs[4]}));
@@ -1389,7 +1305,7 @@ TEST(StrokeInputBatchTest, EraseWithStartPlusCountGreaterThanSize) {
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(test_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     batch->Erase(1, batch->Size());
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({test_inputs[0]}));
   }
@@ -1397,7 +1313,7 @@ TEST(StrokeInputBatchTest, EraseWithStartPlusCountGreaterThanSize) {
   {
     absl::StatusOr<StrokeInputBatch> batch =
         StrokeInputBatch::Create(test_inputs);
-    ASSERT_EQ(batch.status(), absl::OkStatus());
+    ASSERT_THAT(batch, IsOk());
     batch->Erase(3);
     EXPECT_THAT(*batch, StrokeInputBatchIsArray(
                             {test_inputs[0], test_inputs[1], test_inputs[2]}));
@@ -1408,7 +1324,7 @@ TEST(StrokeInputBatchTest, EraseWithStartEqualToSize) {
   std::vector<StrokeInput> test_inputs = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(test_inputs);
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
 
   batch->Erase(test_inputs.size(), 0);
   EXPECT_THAT(*batch, StrokeInputBatchIsArray(test_inputs));
@@ -1423,7 +1339,7 @@ TEST(StrokeInputBatchTest, EraseWithStartEqualToSize) {
 TEST(StrokeInputBatchTest, EraseAll) {
   absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create(
       MakeValidTestInputSequence(StrokeInput::ToolType::kStylus));
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
   batch->Erase(0, batch->Size());
   EXPECT_TRUE(batch->IsEmpty());
   EXPECT_EQ(batch->GetToolType(), StrokeInput::ToolType::kUnknown);
@@ -1448,7 +1364,7 @@ TEST(StrokeInputBatchTest, EraseWithNoPressure) {
        .orientation = Angle::Radians(1.1)}};
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(test_inputs);
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
   batch->Erase(0, 1);
   EXPECT_THAT(*batch,
               StrokeInputBatchIsArray({test_inputs[1], test_inputs[2]}));
@@ -1474,7 +1390,7 @@ TEST(StrokeInputBatchTest, EraseWithNoTilt) {
   };
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(test_inputs);
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
   batch->Erase(1, 1);
   EXPECT_THAT(*batch,
               StrokeInputBatchIsArray({test_inputs[0], test_inputs[2]}));
@@ -1499,7 +1415,7 @@ TEST(StrokeInputBatchTest, EraseWithNoOrientation) {
        .orientation = StrokeInput::kNoOrientation}};
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(test_inputs);
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
   batch->Erase(2, 1);
   EXPECT_THAT(*batch,
               StrokeInputBatchIsArray({test_inputs[0], test_inputs[1]}));
@@ -1513,7 +1429,7 @@ TEST(StrokeInputBatch, GetDurationOnEmptyInput) {
 TEST(StrokeInputBatch, GetDuration) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   auto batch = StrokeInputBatch::Create(input_vector);
-  ASSERT_EQ(absl::OkStatus(), batch.status());
+  ASSERT_THAT(batch, IsOk());
 
   EXPECT_EQ(batch->GetDuration(), input_vector.back().elapsed_time -
                                       input_vector.front().elapsed_time);
@@ -1522,7 +1438,7 @@ TEST(StrokeInputBatch, GetDuration) {
 TEST(StrokeInputBatch, DeepCopy) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   auto batch = StrokeInputBatch::Create(input_vector);
-  ASSERT_EQ(absl::OkStatus(), batch.status());
+  ASSERT_THAT(batch, IsOk());
   // Make the copy
   StrokeInputBatch copied_batch = batch->MakeDeepCopy();
 
@@ -1537,15 +1453,15 @@ TEST(StrokeInputBatch, DeepCopy) {
   EXPECT_THAT(copied_batch, StrokeInputBatchIsArray(input_vector));
 
   // Adding another item to the copied batch
-  ASSERT_EQ(absl::OkStatus(),
-            copied_batch.Append(
-                {.tool_type = StrokeInput::ToolType::kStylus,
-                 .position = {4, 3.2},
-                 .elapsed_time = Duration32::Seconds(10),
-                 .stroke_unit_length = PhysicalDistance::Centimeters(0.1),
-                 .pressure = 1.0,
-                 .tilt = Angle::Radians(1.3),
-                 .orientation = Angle::Radians(1.5)}));
+  ASSERT_THAT(copied_batch.Append(
+                  {.tool_type = StrokeInput::ToolType::kStylus,
+                   .position = {4, 3.2},
+                   .elapsed_time = Duration32::Seconds(10),
+                   .stroke_unit_length = PhysicalDistance::Centimeters(0.1),
+                   .pressure = 1.0,
+                   .tilt = Angle::Radians(1.3),
+                   .orientation = Angle::Radians(1.5)}),
+              IsOk());
 
   // The original batch should still be empty
   EXPECT_TRUE(batch->IsEmpty());
@@ -1554,14 +1470,14 @@ TEST(StrokeInputBatch, DeepCopy) {
 TEST(StrokeInputBatchDeathTest, SetWithIndexOutOfBounds) {
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(MakeValidTestInputSequence());
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(auto status = batch->Set(batch->Size(), {}), "");
 }
 
 TEST(StrokeInputBatchDeathTest, GetWithIndexOutOfBounds) {
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(MakeValidTestInputSequence());
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(batch->Get(batch->Size()), "");
 }
 
@@ -1578,7 +1494,7 @@ TEST(StrokeInputBatchDeathTest, LastOnEmptyBatch) {
 TEST(StrokeInputBatchDeathTest, EraseWithStartOutOfBounds) {
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(MakeValidTestInputSequence());
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(batch->Erase(batch->Size() + 1, 1), "");
 }
 
@@ -1586,10 +1502,10 @@ TEST(StrokeInputBatchTest, AppendRangeToEmptyBatch) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> source_batch =
       StrokeInputBatch::Create(input_vector);
-  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+  ASSERT_THAT(source_batch, IsOk());
 
   StrokeInputBatch batch;
-  EXPECT_EQ(absl::OkStatus(), batch.Append(*source_batch, 1, 4));
+  EXPECT_THAT(batch.Append(*source_batch, 1, 4), IsOk());
   EXPECT_THAT(batch,
               StrokeInputBatchIsArray(absl::MakeSpan(&input_vector[1], 3)));
 }
@@ -1598,12 +1514,12 @@ TEST(StrokeInputBatchTest, AppendRangeToNonEmptyBatch) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> source_batch =
       StrokeInputBatch::Create(input_vector);
-  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+  ASSERT_THAT(source_batch, IsOk());
 
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create({input_vector[0]});
-  ASSERT_EQ(batch.status(), absl::OkStatus());
-  EXPECT_EQ(absl::OkStatus(), batch->Append(*source_batch, 1, 3));
+  ASSERT_THAT(batch, IsOk());
+  EXPECT_THAT(batch->Append(*source_batch, 1, 3), IsOk());
   EXPECT_THAT(*batch,
               StrokeInputBatchIsArray(absl::MakeSpan(&input_vector[0], 3)));
 }
@@ -1612,12 +1528,12 @@ TEST(StrokeInputBatchTest, AppendEmptyRange) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> source_batch =
       StrokeInputBatch::Create(input_vector);
-  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+  ASSERT_THAT(source_batch, IsOk());
 
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create({input_vector[0]});
-  ASSERT_EQ(batch.status(), absl::OkStatus());
-  EXPECT_EQ(absl::OkStatus(), batch->Append(*source_batch, 2, 2));
+  ASSERT_THAT(batch, IsOk());
+  EXPECT_THAT(batch->Append(*source_batch, 2, 2), IsOk());
   EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
 }
 
@@ -1625,11 +1541,10 @@ TEST(StrokeInputBatchTest, AppendFullRange) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> source_batch =
       StrokeInputBatch::Create(input_vector);
-  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+  ASSERT_THAT(source_batch, IsOk());
 
   StrokeInputBatch batch;
-  EXPECT_EQ(absl::OkStatus(),
-            batch.Append(*source_batch, 0, source_batch->Size()));
+  EXPECT_THAT(batch.Append(*source_batch, 0, source_batch->Size()), IsOk());
   EXPECT_THAT(batch, StrokeInputBatchEq(*source_batch));
 }
 
@@ -1645,8 +1560,8 @@ TEST(StrokeInputBatchTest, AppendRangeWithoutOptionalAttributes) {
                                 {.tool_type = StrokeInput::ToolType::kStylus,
                                  .position = {30, 40},
                                  .elapsed_time = Duration32::Seconds(5)}});
-  ASSERT_EQ(source_batch.status(), absl::OkStatus());
-  EXPECT_EQ(absl::OkStatus(), batch.Append(*source_batch, 1, 2));
+  ASSERT_THAT(source_batch, IsOk());
+  EXPECT_THAT(batch.Append(*source_batch, 1, 2), IsOk());
   EXPECT_THAT(batch, StrokeInputBatchIsArray({source_batch->Get(1)}));
 }
 
@@ -1654,16 +1569,16 @@ TEST(StrokeInputBatchTest, AppendRangeWithDecreasingTime) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> source_batch =
       StrokeInputBatch::Create(input_vector);
-  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+  ASSERT_THAT(source_batch, IsOk());
 
   // Attempt to append a range that fails validation due to non-decreasing
   // `elapsed_time`.
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create({input_vector[3]});
-  ASSERT_EQ(batch.status(), absl::OkStatus());
-  absl::Status status = batch->Append(*source_batch, 1, 3);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("non-decreasing `elapsed_time`"));
+  ASSERT_THAT(batch, IsOk());
+  EXPECT_THAT(batch->Append(*source_batch, 1, 3),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("non-decreasing `elapsed_time`")));
   EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[3]}));
 }
 
@@ -1671,22 +1586,22 @@ TEST(StrokeInputBatchTest, AppendRangeWithIncompatibleFormat) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> source_batch =
       StrokeInputBatch::Create(input_vector);
-  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+  ASSERT_THAT(source_batch, IsOk());
 
   // Append a range with an incompatible format.
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create({input_vector[0]});
-  ASSERT_EQ(batch.status(), absl::OkStatus());
+  ASSERT_THAT(batch, IsOk());
 
   std::vector<StrokeInput> different_format_vector =
       MakeValidTestInputSequence(StrokeInput::ToolType::kMouse);
   absl::StatusOr<StrokeInputBatch> different_format_batch =
       StrokeInputBatch::Create(different_format_vector);
-  ASSERT_EQ(different_format_batch.status(), absl::OkStatus());
+  ASSERT_THAT(different_format_batch, IsOk());
 
-  absl::Status status = batch->Append(*different_format_batch, 1, 3);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("tool_type"));
+  EXPECT_THAT(
+      batch->Append(*different_format_batch, 1, 3),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("tool_type")));
   EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
 }
 
@@ -1694,7 +1609,7 @@ TEST(StrokeInputBatchTest, AppendRangeWithIndexOutOfBounds) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> source_batch =
       StrokeInputBatch::Create(input_vector);
-  ASSERT_EQ(source_batch.status(), absl::OkStatus());
+  ASSERT_THAT(source_batch, IsOk());
 
   StrokeInputBatch batch;
   EXPECT_DEATH_IF_SUPPORTED(auto status = batch.Append(*source_batch, -1, 1),

@@ -98,6 +98,7 @@ cc_test(
         "//ink/types:duration",
         "//ink/types:physical_distance",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_matchers",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
@@ -118,6 +119,7 @@ cc_test(
         "//ink/geometry:type_matchers",
         "//ink/types:duration",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_matchers",
         "@com_google_fuzztest//fuzztest",
         "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
     ],
@@ -134,6 +136,7 @@ cc_test(
         "//ink/geometry:angle",
         "//ink/types:duration",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_matchers",
         "@com_google_googletest//:gtest_main",
     ],
 )

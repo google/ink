@@ -19,6 +19,7 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/type_matchers.h"
 #include "ink/strokes/input/fuzz_domains.h"
@@ -29,6 +30,8 @@
 
 namespace ink {
 namespace {
+
+using ::absl_testing::IsOk;
 
 TEST(StrokeInputBatchConstIteratorTest, EmptyBatch) {
   StrokeInputBatch inputs;
@@ -59,7 +62,7 @@ TEST(StrokeInputBatchConstIteratorTest, MultipleElementBatch) {
                         .orientation = Angle::Radians(1.1)};
   std::vector<StrokeInput> input_vector = {input0, input1, input2};
 
-  ASSERT_EQ(absl::OkStatus(), inputs.Append(input_vector));
+  ASSERT_THAT(inputs.Append(input_vector), IsOk());
   EXPECT_THAT(*(inputs.begin()), StrokeInputEq(input0));
   StrokeInputBatch::ConstIterator iter = inputs.begin();
   EXPECT_THAT(*iter, StrokeInputEq(input0));
@@ -78,7 +81,7 @@ TEST(StrokeInputBatchConstIteratorTest, SingleInputBatch) {
                         .tilt = Angle::Radians(1),
                         .orientation = Angle::Radians(2)};
 
-  ASSERT_EQ(absl::OkStatus(), inputs.Append(input0));
+  ASSERT_THAT(inputs.Append(input0), IsOk());
   StrokeInputBatch::ConstIterator iter = inputs.begin();
   EXPECT_THAT(*iter, StrokeInputEq(input0));
   EXPECT_THAT(iter->position, PointEq({10, 20}));
@@ -96,7 +99,7 @@ TEST(StrokeInputBatchConstIteratorTest, LazyInit) {
                         .tilt = Angle::Radians(1),
                         .orientation = Angle::Radians(2)};
 
-  ASSERT_EQ(absl::OkStatus(), inputs.Append(input0));
+  ASSERT_THAT(inputs.Append(input0), IsOk());
   StrokeInputBatch::ConstIterator iter;
   iter = inputs.begin();
   EXPECT_EQ(iter, inputs.begin());

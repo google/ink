@@ -23,6 +23,7 @@
 #include "fuzztest/fuzztest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -50,6 +51,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::testing::Ge;
 using ::testing::IsEmpty;
 using ::testing::Not;
@@ -132,11 +135,11 @@ TEST(StrokeTest, ConstructFromBrushAndInputs) {
 
   // Modifying the original brush and inputs should not modify the Stroke since
   // it has its own copies.
-  ASSERT_EQ(absl::OkStatus(), brush.SetSize(27));
-  ASSERT_EQ(absl::OkStatus(),
-            inputs.Append({.tool_type = StrokeInput::ToolType::kStylus,
-                           .position = {4, 5},
-                           .elapsed_time = Duration32::Seconds(3)}));
+  ASSERT_THAT(brush.SetSize(27), IsOk());
+  ASSERT_THAT(inputs.Append({.tool_type = StrokeInput::ToolType::kStylus,
+                             .position = {4, 5},
+                             .elapsed_time = Duration32::Seconds(3)}),
+              IsOk());
 
   EXPECT_EQ(stroke.GetBrush().GetSize(), 10u);
   EXPECT_EQ(stroke.GetInputs().Size(), 3u);
@@ -153,11 +156,11 @@ TEST(StrokeTest, ConstructFromBrushAndInputsAndShape) {
 
   // Modifying the original brush and inputs should not modify the Stroke since
   // it has its own copies.
-  ASSERT_EQ(absl::OkStatus(), brush.SetSize(27));
-  ASSERT_EQ(absl::OkStatus(),
-            inputs.Append({.tool_type = StrokeInput::ToolType::kStylus,
-                           .position = {4, 5},
-                           .elapsed_time = Duration32::Seconds(3)}));
+  ASSERT_THAT(brush.SetSize(27), IsOk());
+  ASSERT_THAT(inputs.Append({.tool_type = StrokeInput::ToolType::kStylus,
+                             .position = {4, 5},
+                             .elapsed_time = Duration32::Seconds(3)}),
+              IsOk());
 
   EXPECT_EQ(stroke.GetBrush().GetSize(), 10u);
   EXPECT_EQ(stroke.GetInputs().Size(), 3u);
@@ -185,14 +188,14 @@ TEST(StrokeTest, GetBoundsWithEmptyMesh) {
 
 TEST(StrokeTest, GetBrush) {
   auto brush = Brush::Create({}, Color::Red(), 12, 1);
-  ASSERT_EQ(absl::OkStatus(), brush.status());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateEmptyInputs());
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*brush));
 }
 
 TEST(StrokeTest, SetBrushColor) {
   auto brush = Brush::Create({}, Color::Red(), 12, 1);
-  ASSERT_EQ(absl::OkStatus(), brush.status());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateEmptyInputs());
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*brush));
 
@@ -202,12 +205,12 @@ TEST(StrokeTest, SetBrushColor) {
 
 TEST(StrokeTest, SetValidBrushSize) {
   auto brush = Brush::Create({}, Color::Red(), 12, 1);
-  ASSERT_EQ(absl::OkStatus(), brush.status());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   auto mbr_before = stroke.GetShape().Bounds().AsRect();
   ASSERT_TRUE(mbr_before.has_value());
   EXPECT_EQ(stroke.GetBrush().GetSize(), 12u);
-  EXPECT_EQ(absl::OkStatus(), stroke.SetBrushSize(80));
+  EXPECT_THAT(stroke.SetBrushSize(80), IsOk());
   EXPECT_EQ(stroke.GetBrush().GetSize(), 80u);
   auto mbr_after = stroke.GetShape().Bounds().AsRect();
   EXPECT_TRUE(mbr_after.has_value());
@@ -216,33 +219,33 @@ TEST(StrokeTest, SetValidBrushSize) {
 
 TEST(StrokeTest, SetInvalidBrushSize) {
   auto brush = Brush::Create({}, Color::Red(), 12, 1);
-  ASSERT_EQ(absl::OkStatus(), brush.status());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   EXPECT_EQ(stroke.GetBrush().GetSize(), 12);
-  absl::Status status = stroke.SetBrushSize(-2);
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(stroke.SetBrushSize(-2),
+              StatusIs(absl::StatusCode::kInvalidArgument));
   EXPECT_EQ(stroke.GetBrush().GetSize(), 12);
 }
 
 TEST(StrokeTest, SetBrushSizeToSameValueDoesNotRegenerateShape) {
   absl::StatusOr<Brush> brush = Brush::Create({}, Color::Red(), 12, 1);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   PartitionedMesh shape = stroke.GetShape();
 
   // Setting to the same size should not regenerate the shape.
-  EXPECT_EQ(absl::OkStatus(), stroke.SetBrushSize(12));
+  EXPECT_THAT(stroke.SetBrushSize(12), IsOk());
   EXPECT_THAT(stroke.GetShape(), PartitionedMeshShallowEq(shape));
 }
 
 TEST(StrokeTest, SetBrushEpsilonChangesEpsilonAndShape) {
   absl::StatusOr<Brush> brush = Brush::Create({}, Color::Red(), 12, 1.25);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   EXPECT_EQ(stroke.GetBrush().GetEpsilon(), 1.25);
   PartitionedMesh shape = stroke.GetShape();
 
-  EXPECT_EQ(absl::OkStatus(), stroke.SetBrushEpsilon(0.5));
+  EXPECT_THAT(stroke.SetBrushEpsilon(0.5), IsOk());
   EXPECT_EQ(stroke.GetBrush().GetEpsilon(), 0.5);
   EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshShallowEq(shape)));
   EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshDeepEq(shape)));
@@ -250,29 +253,29 @@ TEST(StrokeTest, SetBrushEpsilonChangesEpsilonAndShape) {
 
 TEST(StrokeTest, SetBrushEpsilonToInvalidValueReturnsError) {
   absl::StatusOr<Brush> brush = Brush::Create({}, Color::Red(), 12, 1.25);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   EXPECT_EQ(stroke.GetBrush().GetEpsilon(), 1.25);
 
-  EXPECT_EQ(stroke.SetBrushEpsilon(-2).code(),
-            absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(stroke.SetBrushEpsilon(-2),
+              StatusIs(absl::StatusCode::kInvalidArgument));
   EXPECT_EQ(stroke.GetBrush().GetEpsilon(), 1.25);
 }
 
 TEST(StrokeTest, SetBrushEpsilonToSameValueDoesNotRegenerateShape) {
   absl::StatusOr<Brush> brush = Brush::Create({}, Color::Red(), 12, 1.25);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   PartitionedMesh shape = stroke.GetShape();
 
   // Setting to the same epsilon should not regenerate the shape.
-  EXPECT_EQ(absl::OkStatus(), stroke.SetBrushEpsilon(1.25));
+  EXPECT_THAT(stroke.SetBrushEpsilon(1.25), IsOk());
   EXPECT_THAT(stroke.GetShape(), PartitionedMeshShallowEq(shape));
 }
 
 TEST(StrokeTest, ConstructorBrushOnly) {
   auto brush = Brush::Create({}, Color::Red(), 12, 1);
-  ASSERT_EQ(absl::OkStatus(), brush.status());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush);
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*brush));
   EXPECT_EQ(stroke.GetInputs().Size(), 0u);
@@ -282,7 +285,7 @@ TEST(StrokeTest, ConstructorBrushOnly) {
 TEST(StrokeTest, ConstructorBrushStrokeInputBatch) {
   auto brush = Brush::Create({}, Color::Red(), 12, 1);
   auto inputs = CreateFilledInputs();
-  ASSERT_EQ(absl::OkStatus(), brush.status());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, inputs);
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*brush));
   EXPECT_EQ(stroke.GetInputs().Size(), inputs.Size());
@@ -293,13 +296,13 @@ TEST(StrokeTest, ConstructorBrushStrokeInputBatch) {
 
 TEST(StrokeTest, ConstructorBrushStrokeInputBatchSize1) {
   absl::StatusOr<Brush> brush = Brush::Create({}, Color::Red(), 12, 1);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   absl::StatusOr<StrokeInputBatch> inputs =
       StrokeInputBatch::Create({{.tool_type = StrokeInput::ToolType::kStylus,
                                  .position = {-1.0f, -1.0f},
                                  .elapsed_time = Duration32::Seconds(5),
                                  .pressure = -1}});
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
+  ASSERT_THAT(inputs, IsOk());
   Stroke stroke(*brush, *inputs);
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*brush));
   EXPECT_EQ(stroke.GetInputs().Size(), inputs->Size());
@@ -310,7 +313,7 @@ TEST(StrokeTest, ConstructorBrushStrokeInputBatchSize1) {
 
 TEST(StrokeTest, ConstructorBrushEmptyStrokeInputBatch) {
   absl::StatusOr<Brush> brush = Brush::Create({}, Color::Red(), 12, 1);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, StrokeInputBatch());
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*brush));
   EXPECT_EQ(stroke.GetInputs().Size(), 0u);
@@ -434,14 +437,14 @@ TEST(StrokeTest, SetInputGetInputs) {
 
 TEST(StrokeTest, SetBrushDifferentColor) {
   auto brush = Brush::Create({}, Color::Black(), 12, 1);
-  ASSERT_EQ(absl::OkStatus(), brush.status());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   ASSERT_THAT(stroke.GetBrush(), BrushEq(*brush));
   PartitionedMesh shape = stroke.GetShape();
 
   // Color change should change the brush but not regenerate the shape.
   auto new_brush = Brush::Create({}, Color::Red(), 12, 1);
-  ASSERT_EQ(absl::OkStatus(), new_brush.status());
+  ASSERT_THAT(new_brush, IsOk());
   stroke.SetBrush(*new_brush);
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*new_brush));
   EXPECT_THAT(stroke.GetShape(), PartitionedMeshShallowEq(shape));
@@ -449,7 +452,7 @@ TEST(StrokeTest, SetBrushDifferentColor) {
 
 TEST(StrokeTest, SetBrushDifferentSize) {
   auto brush = Brush::Create({}, Color::Black(), 12, 1);
-  ASSERT_EQ(absl::OkStatus(), brush.status());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   ASSERT_THAT(stroke.GetBrush(), BrushEq(*brush));
   PartitionedMesh shape = stroke.GetShape();
@@ -458,7 +461,7 @@ TEST(StrokeTest, SetBrushDifferentSize) {
 
   // Changing brush size should change the brush and regenerate the shape.
   auto new_brush = Brush::Create({}, Color::Red(), 5, 1);
-  ASSERT_EQ(absl::OkStatus(), new_brush.status());
+  ASSERT_THAT(new_brush, IsOk());
   stroke.SetBrush(*new_brush);
   ASSERT_THAT(stroke.GetBrush(), BrushEq(*new_brush));
   EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshShallowEq(shape)));
@@ -474,14 +477,14 @@ TEST(StrokeTest, SetBrushDifferentSize) {
 
 TEST(StrokeTest, SetBrushDifferentEpsilon) {
   auto brush = Brush::Create({}, Color::Black(), 12, 1);
-  ASSERT_EQ(absl::OkStatus(), brush.status());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   ASSERT_THAT(stroke.GetBrush(), BrushEq(*brush));
   PartitionedMesh shape = stroke.GetShape();
 
   // Changing brush epsilon should change the brush and regenerate the shape.
   auto new_brush = Brush::Create({}, Color::Red(), 12, 0.6);
-  ASSERT_EQ(absl::OkStatus(), new_brush.status());
+  ASSERT_THAT(new_brush, IsOk());
   stroke.SetBrush(*new_brush);
   ASSERT_THAT(stroke.GetBrush(), BrushEq(*new_brush));
   EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshShallowEq(shape)));
@@ -491,10 +494,10 @@ TEST(StrokeTest, SetBrushDifferentEpsilon) {
 TEST(StrokeTest, SetBrushWithDifferentTipRegeneratesShape) {
   absl::StatusOr<BrushFamily> brush_family =
       BrushFamily::Create({.scale = {1, 0.5}}, {});
-  ASSERT_EQ(brush_family.status(), absl::OkStatus());
+  ASSERT_THAT(brush_family, IsOk());
   absl::StatusOr<Brush> brush =
       Brush::Create(*brush_family, Color::Black(), 12, 0.6);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*brush));
   PartitionedMesh shape = stroke.GetShape();
@@ -502,10 +505,10 @@ TEST(StrokeTest, SetBrushWithDifferentTipRegeneratesShape) {
   // Changing brush tip should change the brush and regenerate the shape.
   absl::StatusOr<BrushFamily> new_family =
       BrushFamily::Create({.scale = {0.3, 1}}, {});
-  ASSERT_EQ(new_family.status(), absl::OkStatus());
+  ASSERT_THAT(new_family, IsOk());
   absl::StatusOr<Brush> new_brush =
       Brush::Create(*new_family, Color::Black(), 12, 0.6);
-  ASSERT_EQ(new_brush.status(), absl::OkStatus());
+  ASSERT_THAT(new_brush, IsOk());
   stroke.SetBrush(*new_brush);
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*new_brush));
   EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshShallowEq(shape)));
@@ -516,9 +519,9 @@ TEST(StrokeTest, GetBrushFamily) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{}, BrushPaint{}, BrushFamily::DefaultInputModel(),
       {.client_brush_family_id = "ink://ink/brush-family:highlighter:1"});
-  ASSERT_EQ(family.status(), absl::OkStatus());
+  ASSERT_THAT(family, IsOk());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Red(), 12, 1);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
 
   EXPECT_THAT(stroke.GetBrushFamily(), BrushFamilyEq(*family));
@@ -528,16 +531,16 @@ TEST(StrokeTest, SetBrushFamily) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create(
       BrushTip{}, BrushPaint{}, BrushFamily::DefaultInputModel(),
       {.client_brush_family_id = "ink://ink/brush-family:highlighter:1"});
-  ASSERT_EQ(family.status(), absl::OkStatus());
+  ASSERT_THAT(family, IsOk());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Red(), 12, 1);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   EXPECT_THAT(stroke.GetBrushFamily(), BrushFamilyEq(*family));
 
   absl::StatusOr<BrushFamily> new_family = BrushFamily::Create(
       BrushTip{}, BrushPaint{}, BrushFamily::DefaultInputModel(),
       {.client_brush_family_id = "ink://ink/brush-family:marker"});
-  ASSERT_EQ(new_family.status(), absl::OkStatus());
+  ASSERT_THAT(new_family, IsOk());
   stroke.SetBrushFamily(*new_family);
   EXPECT_THAT(stroke.GetBrushFamily(), Not(BrushFamilyEq(*family)));
   EXPECT_THAT(stroke.GetBrushFamily(), BrushFamilyEq(*new_family));
@@ -546,9 +549,9 @@ TEST(StrokeTest, SetBrushFamily) {
 TEST(StrokeTest, SetBrushFamilyWithDifferentTipRegeneratesShape) {
   absl::StatusOr<BrushFamily> family =
       BrushFamily::Create({.scale = {1, 0.5}}, {});
-  ASSERT_EQ(family.status(), absl::OkStatus());
+  ASSERT_THAT(family, IsOk());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Red(), 12, 1);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
   EXPECT_THAT(stroke.GetBrushFamily(), BrushFamilyEq(*family));
   PartitionedMesh shape = stroke.GetShape();
@@ -556,7 +559,7 @@ TEST(StrokeTest, SetBrushFamilyWithDifferentTipRegeneratesShape) {
   // Changing brush tip should change the brush and regenerate the shape.
   absl::StatusOr<BrushFamily> new_family =
       BrushFamily::Create({.scale = {0.3, 1}}, {});
-  ASSERT_EQ(new_family.status(), absl::OkStatus());
+  ASSERT_THAT(new_family, IsOk());
   stroke.SetBrushFamily(*new_family);
   EXPECT_THAT(stroke.GetBrushFamily(), BrushFamilyEq(*new_family));
   EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshShallowEq(shape)));
@@ -580,9 +583,9 @@ TEST(StrokeTest, GetInputDuration) {
 TEST(StrokeDeathTest, ConstructFromMismatchedShapeAndBrush) {
   BrushCoat coat = BrushCoat{.tip = BrushTip()};
   absl::StatusOr<BrushFamily> family = BrushFamily::Create({coat, coat});
-  ASSERT_EQ(family.status(), absl::OkStatus());
+  ASSERT_THAT(family, IsOk());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::White(), 10, 0.1);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   StrokeInputBatch inputs = CreateFilledInputs();
   PartitionedMesh shape = CreateFilledShape();
 

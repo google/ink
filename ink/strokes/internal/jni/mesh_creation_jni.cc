@@ -100,7 +100,7 @@ JNI_METHOD(strokes, MeshCreationNative, jlong,
   } else {
     mesh = ink::CreateMeshFromPolyline(processed_points);
   }
-  if (!mesh.status().ok() && processed_points.size() >= 2) {
+  if (!mesh.ok() && processed_points.size() >= 2) {
     // determine if input points are colinear
     float min_x = std::min(processed_points[0].x, processed_points[1].x);
     float max_x = std::max(processed_points[0].x, processed_points[1].x);
