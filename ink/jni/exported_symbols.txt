@@ -1,2 +1,3 @@
-Java_*;
-JNI_*;
+# This matches the JNI function names prefixed by underscore.
+_Java_*
+_JNI_*
