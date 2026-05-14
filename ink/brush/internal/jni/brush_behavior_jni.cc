@@ -15,12 +15,8 @@
 #include <jni.h>
 
 #include <cstdint>
-#include <utility>
-#include <variant>
-#include <vector>
 
 #include "absl/log/absl_check.h"
-#include "absl/status/status.h"
 #include "ink/brush/brush_behavior.h"
 #include "ink/brush/internal/jni/brush_behavior_native.h"
 #include "ink/brush/internal/jni/brush_native_helper.h"
