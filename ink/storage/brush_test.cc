@@ -170,11 +170,11 @@ TEST(BrushTest, DecodeBrushProto) {
                 .client_texture_id = std::string(kTestTextureId1Decoded),
                 .blend_mode = BrushPaint::BlendMode::kDstOut}}},
       BrushFamily::PassthroughModel{});
+  ASSERT_THAT(expected_family, IsOk());
 
-  ASSERT_EQ(expected_family.status(), absl::OkStatus());
   absl::StatusOr<Brush> expected_brush =
       Brush::Create(*expected_family, Color::Green(), 10, 1.1);
-  ASSERT_EQ(expected_brush.status(), absl::OkStatus());
+  ASSERT_THAT(expected_brush, IsOk());
 
   std::map<std::string, std::string> decoded_bitmaps = {};
   ClientTextureIdProviderAndBitmapReceiver callback =
@@ -193,10 +193,9 @@ TEST(BrushTest, DecodeBrushProto) {
     }
     return new_id;
   };
-  absl::StatusOr<Brush> brush = DecodeBrush(brush_proto, callback);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
-  EXPECT_THAT(*brush, BrushEq(*expected_brush));
-  ASSERT_EQ(decoded_bitmaps.size(), 2);
+  ASSERT_THAT(DecodeBrush(brush_proto, callback),
+              IsOkAndHolds(BrushEq(*expected_brush)));
+  ASSERT_THAT(decoded_bitmaps, SizeIs(2));
 
   EXPECT_NE(decoded_bitmaps.find(std::string(kTestTextureId1Decoded)),
             decoded_bitmaps.end());
@@ -218,9 +217,8 @@ TEST(BrushTest, DecodeBrushWithInvalidBrushSize) {
   EncodeColor(Color::Green(), *brush_proto.mutable_color());
   brush_proto.mutable_brush_family()->add_coats()->mutable_tip();
 
-  absl::Status invalid_size = DecodeBrush(brush_proto).status();
-  EXPECT_EQ(invalid_size.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(invalid_size.message(), HasSubstr("size"));
+  EXPECT_THAT(DecodeBrush(brush_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("size")));
 }
 
 TEST(BrushTest, DecodeBrushWithInvalidBrushEpsilon) {
@@ -230,27 +228,24 @@ TEST(BrushTest, DecodeBrushWithInvalidBrushEpsilon) {
   EncodeColor(Color::Green(), *brush_proto.mutable_color());
   brush_proto.mutable_brush_family()->add_coats()->mutable_tip();
 
-  absl::Status invalid_epsilon = DecodeBrush(brush_proto).status();
-  EXPECT_EQ(invalid_epsilon.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(invalid_epsilon.message(), HasSubstr("epsilon"));
+  EXPECT_THAT(
+      DecodeBrush(brush_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("epsilon")));
 }
 
 // This test ensures that we set correct proto field defaults when adding new
 // BrushCoat struct fields, to avoid a repeat of b/337238252.
 TEST(BrushTest, EmptyBrushCoatProtoDecodesToDefaultBrushCoat) {
   proto::BrushCoat coat_proto;
-  absl::StatusOr<BrushCoat> brush_coat = DecodeBrushCoat(coat_proto);
-  ASSERT_EQ(brush_coat.status(), absl::OkStatus());
-  EXPECT_THAT(*brush_coat, BrushCoatEq(BrushCoat()));
+  EXPECT_THAT(DecodeBrushCoat(coat_proto),
+              IsOkAndHolds(BrushCoatEq(BrushCoat())));
 }
 
 // This test ensures that we set correct proto field defaults when adding new
 // BrushTip struct fields, to avoid a repeat of b/337238252.
 TEST(BrushTest, EmptyBrushTipProtoDecodesToDefaultBrushTip) {
   proto::BrushTip tip_proto;
-  absl::StatusOr<BrushTip> brush_tip = DecodeBrushTip(tip_proto);
-  ASSERT_EQ(brush_tip.status(), absl::OkStatus());
-  EXPECT_THAT(*brush_tip, BrushTipEq(BrushTip()));
+  EXPECT_THAT(DecodeBrushTip(tip_proto), IsOkAndHolds(BrushTipEq(BrushTip())));
 }
 
 TEST(BrushTest, DecodeBrushBehaviorWithInvalidSourceValueRange) {
@@ -276,10 +271,10 @@ TEST(BrushTest, DecodeBrushBehaviorWithInvalidSourceValueRange) {
 
 TEST(BrushTest, DecodeEmptyBrushBehaviorNode) {
   proto::BrushBehavior::Node node;
-  absl::Status status = DecodeBrushBehaviorNode(node).status();
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("ink.proto.BrushBehavior.Node must specify a node"));
+  EXPECT_THAT(
+      DecodeBrushBehaviorNode(node),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("ink.proto.BrushBehavior.Node must specify a node")));
 }
 
 TEST(BrushTest, DecodeInvalidBrushBehaviorNode) {
@@ -291,7 +286,7 @@ TEST(BrushTest, DecodeInvalidBrushBehaviorNode) {
       proto::BrushBehavior::OUT_OF_RANGE_CLAMP);
   source_node->set_source_value_range_start(0);
   source_node->set_source_value_range_end(0);
-  EXPECT_THAT(DecodeBrushBehaviorNode(node).status(),
+  EXPECT_THAT(DecodeBrushBehaviorNode(node),
               StatusIs(absl::StatusCode::kInvalidArgument,
                        HasSubstr("source_value_range")));
 }
@@ -300,31 +295,31 @@ TEST(BrushTest, DecodeBrushBehaviorBinaryOpNodeWithUnspecifiedBinaryOp) {
   proto::BrushBehavior::Node node;
   node.mutable_binary_op_node()->set_operation(
       proto::BrushBehavior::BINARY_OP_UNSPECIFIED);
-  absl::Status status = DecodeBrushBehaviorNode(node).status();
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("invalid ink.proto.BrushBehavior.BinaryOp value"));
+  EXPECT_THAT(
+      DecodeBrushBehaviorNode(node),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("invalid ink.proto.BrushBehavior.BinaryOp value")));
 }
 
 TEST(BrushTest, DecodeBrushBehaviorDampingNodeWithUnspecifiedProgressDomain) {
   proto::BrushBehavior::Node node;
   node.mutable_damping_node()->set_damping_source(
       proto::BrushBehavior::PROGRESS_DOMAIN_UNSPECIFIED);
-  absl::Status status = DecodeBrushBehaviorNode(node).status();
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(
-      status.message(),
-      HasSubstr("invalid ink.proto.BrushBehavior.ProgressDomain value"));
+      DecodeBrushBehaviorNode(node),
+      StatusIs(
+          absl::StatusCode::kInvalidArgument,
+          HasSubstr("invalid ink.proto.BrushBehavior.ProgressDomain value")));
 }
 
 TEST(BrushTest, DecodeBrushBehaviorResponseNodeWithNoResponseCurve) {
   proto::BrushBehavior::Node node;
   node.mutable_response_node();
-  absl::Status status = DecodeBrushBehaviorNode(node).status();
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("ink.proto.BrushBehavior.ResponseNode must specify a "
-                        "response_curve"));
+  EXPECT_THAT(
+      DecodeBrushBehaviorNode(node),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("ink.proto.BrushBehavior.ResponseNode must specify a "
+                         "response_curve")));
 }
 
 TEST(BrushTest, DecodeBrushBehaviorSourceNodeWithUnspecifiedOutOfRange) {
@@ -335,19 +330,18 @@ TEST(BrushTest, DecodeBrushBehaviorSourceNodeWithUnspecifiedOutOfRange) {
       proto::BrushBehavior::OUT_OF_RANGE_UNSPECIFIED);
   source_node->set_source_value_range_start(0);
   source_node->set_source_value_range_end(1);
-  absl::Status status = DecodeBrushBehaviorNode(node).status();
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(),
-              HasSubstr("invalid ink.proto.BrushBehavior.OutOfRange value"));
+  EXPECT_THAT(
+      DecodeBrushBehaviorNode(node),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("invalid ink.proto.BrushBehavior.OutOfRange value")));
 }
 
 // This test ensures that we set correct proto field defaults when adding new
 // BrushPaint struct fields, to avoid a repeat of b/337238252.
 TEST(BrushTest, EmptyBrushPaintProtoDecodesToDefaultBrushPaint) {
   proto::BrushPaint paint_proto;
-  absl::StatusOr<BrushPaint> brush_paint = DecodeBrushPaint(paint_proto);
-  ASSERT_EQ(brush_paint.status(), absl::OkStatus());
-  EXPECT_THAT(*brush_paint, BrushPaintEq(BrushPaint()));
+  EXPECT_THAT(DecodeBrushPaint(paint_proto),
+              IsOkAndHolds(BrushPaintEq(BrushPaint())));
 }
 
 // This test ensures that we set correct proto field defaults when adding new
@@ -359,7 +353,7 @@ TEST(BrushTest, MostlyEmptyTextureLayerProtoDecodesWithDefaultValues) {
   // struct.
   paint_proto.add_texture_layers();
   absl::StatusOr<BrushPaint> brush_paint = DecodeBrushPaint(paint_proto);
-  ASSERT_EQ(brush_paint.status(), absl::OkStatus());
+  ASSERT_THAT(brush_paint, IsOk());
   EXPECT_THAT(
       brush_paint->texture_layers,
       ElementsAre(BrushPaintTextureLayerEq(BrushPaint::TextureLayer{})));
@@ -394,9 +388,9 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
            .blend_mode = BrushPaint::BlendMode::kSrcIn}},
        .self_overlap = BrushPaint::SelfOverlap::kDiscard},
       BrushFamily::PassthroughModel{});
-  ASSERT_EQ(family.status(), absl::OkStatus());
+  ASSERT_THAT(family, IsOk());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   proto::Brush brush_proto_out;
   int callback_count = 0;
   TextureBitmapProvider callback = [&callback_count](absl::string_view id) {
@@ -456,9 +450,9 @@ TEST(BrushTest, EncodeBrushWithTextureMap) {
            .blend_mode = BrushPaint::BlendMode::kSrcIn}},
        .self_overlap = BrushPaint::SelfOverlap::kAccumulate},
       BrushFamily::PassthroughModel{});
-  ASSERT_EQ(family.status(), absl::OkStatus());
+  ASSERT_THAT(family, IsOk());
   absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
-  ASSERT_EQ(brush.status(), absl::OkStatus());
+  ASSERT_THAT(brush, IsOk());
   proto::Brush brush_proto_out;
   int callback_count = 0;
   TextureBitmapProvider callback =
@@ -537,7 +531,7 @@ TEST(BrushTest, EncodeBrushFamilyTextureMap) {
                               .client_texture_id = "unknown",
                               .blend_mode = BrushPaint::BlendMode::kSrcIn}},
        .self_overlap = BrushPaint::SelfOverlap::kDiscard});
-  ASSERT_EQ(family.status(), absl::OkStatus());
+  ASSERT_THAT(family, IsOk());
   google::protobuf::Map<std::string, std::string> texture_id_to_bitmap_proto_out;
   int distinct_texture_ids_count = 0;
   TextureBitmapProvider callback =
@@ -567,7 +561,7 @@ TEST(BrushTest, EncodeBrushFamilyTextureMap) {
 
 TEST(BrushTest, EncodeBrushFamilyTextureMapWithNonEmptyProto) {
   absl::StatusOr<BrushFamily> family = BrushFamily();
-  ASSERT_EQ(family.status(), absl::OkStatus());
+  ASSERT_THAT(family, IsOk());
   google::protobuf::Map<std::string, std::string> texture_id_to_bitmap_proto_out;
   texture_id_to_bitmap_proto_out.insert({"existing_id", TestPngBytes1x1()});
 
@@ -590,7 +584,7 @@ TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
       BrushTip{.corner_rounding = 0.25f},
       {.texture_layers = {BrushPaint::StampingTexture{
            .client_texture_id = std::string(kTestTextureId1)}}});
-  ASSERT_EQ(family.status(), absl::OkStatus());
+  ASSERT_THAT(family, IsOk());
   // Initialize the proto with a non-empty ID, and a different brush tip.
   proto::BrushFamily family_proto_out;
   family_proto_out.add_coats()->mutable_tip()->set_corner_rounding(1.0f);
@@ -771,8 +765,7 @@ void EncodeDecodeBrushRoundTrip(const Brush& brush_in) {
   // max_version must be kDevelopment.
   absl::StatusOr<Brush> brush_out =
       DecodeBrush(brush_proto_in, decode_callback, Version::kDevelopment());
-  ASSERT_EQ(brush_out.status(), absl::OkStatus());
-  EXPECT_THAT(*brush_out, BrushEq(brush_in));
+  ASSERT_THAT(brush_out, IsOkAndHolds(BrushEq(brush_in)));
   EXPECT_EQ(encode_callback_count, decode_callback_count);
 
   encode_callback_count = 0;  // Reset the callback count.
@@ -792,8 +785,7 @@ void EncodeDecodeBrushFamilyRoundTrip(const BrushFamily& family_in) {
   // max_version must be kDevelopment.
   absl::StatusOr<BrushFamily> family_out =
       DecodeBrushFamily(family_proto_in, Version::kDevelopment());
-  ASSERT_EQ(family_out.status(), absl::OkStatus());
-  EXPECT_THAT(*family_out, BrushFamilyEq(family_in));
+  ASSERT_THAT(family_out, IsOkAndHolds(BrushFamilyEq(family_in)));
 
   proto::BrushFamily family_proto_out;
   EncodeBrushFamily(*family_out, family_proto_out);
@@ -834,9 +826,9 @@ void EncodeDecodeMultipleBrushFamiliesRoundTrip(
   for (const BrushFamily& family : families_in_filtered) {
     families_in_filtered_matchers.push_back(BrushFamilyEq(family));
   }
-  ASSERT_THAT(families_out, IsOk());
-  EXPECT_THAT(*families_out,
-              UnorderedElementsAreArray(families_in_filtered_matchers));
+  ASSERT_THAT(
+      families_out,
+      IsOkAndHolds(UnorderedElementsAreArray(families_in_filtered_matchers)));
 
   proto::BrushFamily family_proto_out;
   EncodeMultipleBrushFamilies(*families_out, family_proto_out);
@@ -847,9 +839,9 @@ void EncodeDecodeMultipleBrushFamiliesRoundTrip(
     for (const BrushFamily& f : families_in_filtered) {
       absl::StatusOr<BrushFamily> out = DecodeBrushFamily(
           family_proto_out, f.CalculateMinimumRequiredVersion());
-      ASSERT_THAT(out, IsOk());
-      EXPECT_THAT(*out, AllOf(BrushFamilyEq(f),
-                              Property(&BrushFamily::HasFallbacks, true)));
+      ASSERT_THAT(
+          out, IsOkAndHolds(AllOf(BrushFamilyEq(f),
+                                  Property(&BrushFamily::HasFallbacks, true))));
       proto::BrushFamily out_proto;
       EncodeBrushFamily(*out, out_proto);
       EXPECT_THAT(out_proto, EqualsProto(family_proto_in));
@@ -878,8 +870,7 @@ void EncodeDecodeValidBrushCoatRoundTrip(const BrushCoat& coat_in) {
   EncodeBrushCoat(coat_in, coat_proto_in);
 
   absl::StatusOr<BrushCoat> coat_out = DecodeBrushCoat(coat_proto_in);
-  ASSERT_EQ(coat_out.status(), absl::OkStatus());
-  EXPECT_THAT(*coat_out, BrushCoatEq(coat_in));
+  ASSERT_THAT(coat_out, IsOkAndHolds(BrushCoatEq(coat_in)));
 
   proto::BrushCoat coat_proto_out;
   EncodeBrushCoat(*coat_out, coat_proto_out);
@@ -896,8 +887,7 @@ void EncodeDecodeValidBrushPaintRoundTrip(const BrushPaint& paint_in) {
   EncodeBrushPaint(paint_in, paint_proto_in);
 
   absl::StatusOr<BrushPaint> paint_out = DecodeBrushPaint(paint_proto_in);
-  ASSERT_EQ(paint_out.status(), absl::OkStatus());
-  EXPECT_THAT(*paint_out, BrushPaintEq(paint_in));
+  ASSERT_THAT(paint_out, IsOkAndHolds(BrushPaintEq(paint_in)));
 
   proto::BrushPaint paint_proto_out;
   EncodeBrushPaint(*paint_out, paint_proto_out);
@@ -914,8 +904,7 @@ void EncodeDecodeValidBrushTipRoundTrip(const BrushTip& tip_in) {
   EncodeBrushTip(tip_in, tip_proto_in);
 
   absl::StatusOr<BrushTip> tip_out = DecodeBrushTip(tip_proto_in);
-  ASSERT_EQ(tip_out.status(), absl::OkStatus());
-  EXPECT_THAT(*tip_out, BrushTipEq(tip_in));
+  ASSERT_THAT(tip_out, IsOkAndHolds(BrushTipEq(tip_in)));
 
   proto::BrushTip tip_proto_out;
   EncodeBrushTip(*tip_out, tip_proto_out);
@@ -934,8 +923,7 @@ void EncodeDecodeValidBrushBehaviorNodeRoundTrip(
 
   absl::StatusOr<BrushBehavior::Node> node_out =
       DecodeBrushBehaviorNode(node_proto_in);
-  ASSERT_EQ(node_out.status(), absl::OkStatus());
-  EXPECT_THAT(*node_out, BrushBehaviorNodeEq(node_in));
+  ASSERT_THAT(node_out, IsOkAndHolds(BrushBehaviorNodeEq(node_in)));
 
   proto::BrushBehavior::Node node_proto_out;
   EncodeBrushBehaviorNode(*node_out, node_proto_out);
@@ -1264,13 +1252,12 @@ TEST(BrushTest, DecodeBrushFamilyPreservesOpaqueFallbacks) {
   // Decode with k1Jetpack1_1_0Alpha01 (should pick "v1")
   absl::StatusOr<BrushFamily> family =
       DecodeBrushFamily(family_proto, Version::k1Jetpack1_1_0Alpha01());
-  ASSERT_THAT(family, IsOk());
-  EXPECT_THAT(
-      *family,
-      AllOf(Property(&BrushFamily::GetMetadata,
-                     Field(&BrushFamily::Metadata::client_brush_family_id,
-                           Eq("v1"))),
-            Property(&BrushFamily::HasFallbacks, true)));
+  ASSERT_THAT(family,
+              IsOkAndHolds(AllOf(
+                  Property(&BrushFamily::GetMetadata,
+                           Field(&BrushFamily::Metadata::client_brush_family_id,
+                                 Eq("v1"))),
+                  Property(&BrushFamily::HasFallbacks, true))));
 
   // Re-encode and verify result is identical to original proto
   proto::BrushFamily family_proto_out;
@@ -1302,13 +1289,12 @@ TEST(BrushTest, DecodeBrushFamilyPreservesUnreadableFallbacks) {
   // Decode with k0Jetpack1_0_0 (should pick "v0")
   absl::StatusOr<BrushFamily> family =
       DecodeBrushFamily(family_proto, Version::k0Jetpack1_0_0());
-  ASSERT_THAT(family, IsOk());
-  EXPECT_THAT(
-      *family,
-      AllOf(Property(&BrushFamily::GetMetadata,
-                     Field(&BrushFamily::Metadata::client_brush_family_id,
-                           Eq("v0"))),
-            Property(&BrushFamily::HasFallbacks, true)));
+  ASSERT_THAT(family,
+              IsOkAndHolds(AllOf(
+                  Property(&BrushFamily::GetMetadata,
+                           Field(&BrushFamily::Metadata::client_brush_family_id,
+                                 Eq("v0"))),
+                  Property(&BrushFamily::HasFallbacks, true))));
   // Re-encode and verify result is identical to original proto
   proto::BrushFamily family_proto_out;
   EncodeBrushFamily(*family, family_proto_out);
@@ -1317,13 +1303,12 @@ TEST(BrushTest, DecodeBrushFamilyPreservesUnreadableFallbacks) {
   // should succeed, but of course not decode the unknown fields.
   absl::StatusOr<BrushFamily> familyUnrecognized =
       DecodeBrushFamily(family_proto_out, Version::kDevelopment());
-  ASSERT_THAT(familyUnrecognized, IsOk());
-  EXPECT_THAT(
-      *familyUnrecognized,
-      AllOf(Property(&BrushFamily::GetMetadata,
-                     Field(&BrushFamily::Metadata::client_brush_family_id,
-                           Eq("v1000"))),
-            Property(&BrushFamily::HasFallbacks, true)));
+  ASSERT_THAT(familyUnrecognized,
+              IsOkAndHolds(AllOf(
+                  Property(&BrushFamily::GetMetadata,
+                           Field(&BrushFamily::Metadata::client_brush_family_id,
+                                 Eq("v1000"))),
+                  Property(&BrushFamily::HasFallbacks, true))));
   // Re-encode and verify result is identical to original proto -- the
   // unrecognized fields are preserved by the stored proto bytes.
   proto::BrushFamily family_proto_out2;
@@ -1605,16 +1590,14 @@ TEST(BrushTest, EncodeMultipleDecodeSingleBrushFamilyRoundTrip) {
   // Decode with k1Jetpack1_1_0Alpha01 (should pick family1)
   absl::StatusOr<BrushFamily> family1_out =
       DecodeBrushFamily(family_proto, Version::k1Jetpack1_1_0Alpha01());
-  ASSERT_THAT(family1_out, IsOk());
-  EXPECT_THAT(*family1_out, BrushFamilyEq(*family1));
+  ASSERT_THAT(family1_out, IsOkAndHolds(BrushFamilyEq(*family1)));
   // Re-encode and verify result is identical to original proto
   EncodeBrushFamily(*family1_out, family_proto_out);
   EXPECT_THAT(family_proto_out, EqualsProto(family_proto));
   // Decode with k0Jetpack1_0_0 (should pick family0)
   absl::StatusOr<BrushFamily> family0_out =
       DecodeBrushFamily(family_proto, Version::k0Jetpack1_0_0());
-  ASSERT_THAT(family0_out, IsOk());
-  EXPECT_THAT(*family0_out, BrushFamilyEq(family0));
+  ASSERT_THAT(family0_out, IsOkAndHolds(BrushFamilyEq(family0)));
   // Re-encode and verify result is identical to original proto
   EncodeBrushFamily(*family0_out, family_proto_out);
   EXPECT_THAT(family_proto_out, EqualsProto(family_proto));

@@ -20,6 +20,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/type_matchers.h"
@@ -35,6 +36,9 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
+using ::absl_testing::StatusIs;
 using ::ink::numbers::kPi;
 using ::google::protobuf::TextFormat;
 using ::testing::ElementsAre;
@@ -75,7 +79,7 @@ TEST(CodedStrokeInputBatchIteratorTest, DecodeStylusStrokeInputBatch) {
 
   absl::StatusOr<iterator_range<CodedStrokeInputBatchIterator>> range =
       DecodeStrokeInputBatchProto(coded);
-  ASSERT_EQ(range.status(), absl::OkStatus());
+  ASSERT_THAT(range, IsOk());
   std::vector<StrokeInput> values(range->begin(), range->end());
   EXPECT_THAT(
       values,
@@ -139,7 +143,7 @@ TEST(CodedStrokeInputBatchIteratorTest, DecodeMouseStrokeInputBatch) {
 
   absl::StatusOr<iterator_range<CodedStrokeInputBatchIterator>> range =
       DecodeStrokeInputBatchProto(coded);
-  ASSERT_EQ(range.status(), absl::OkStatus());
+  ASSERT_THAT(range, IsOk());
   std::vector<StrokeInput> values(range->begin(), range->end());
   ASSERT_THAT(values,
               ElementsAre(StrokeInputEq({
@@ -183,7 +187,7 @@ TEST(CodedStrokeInputBatchIteratorTest, IteratorPostIncrement) {
 
   absl::StatusOr<iterator_range<CodedStrokeInputBatchIterator>> range =
       DecodeStrokeInputBatchProto(coded);
-  ASSERT_EQ(range.status(), absl::OkStatus());
+  ASSERT_THAT(range, IsOk());
   CodedStrokeInputBatchIterator iter = range->begin();
   const CodedStrokeInputBatchIterator iter0 = iter++;
   const CodedStrokeInputBatchIterator iter1 = iter++;
@@ -199,18 +203,16 @@ TEST(CodedStrokeInputBatchIteratorTest, DecodeEmptyStrokeInputBatch) {
   proto::CodedStrokeInputBatch coded;
   absl::StatusOr<iterator_range<CodedStrokeInputBatchIterator>> batch =
       DecodeStrokeInputBatchProto(coded);
-  ASSERT_EQ(batch.status(), absl::OkStatus());
-  EXPECT_THAT(*batch, ElementsAre());
+  EXPECT_THAT(batch, IsOkAndHolds(ElementsAre()));
 }
 
 TEST(CodedStrokeInputBatchIteratorTest,
      DecodeStrokeInputBatchWithMismatchedLengths) {
   proto::CodedStrokeInputBatch coded;
   coded.mutable_pressure()->add_deltas(1);
-  absl::Status mismatched_lengths = DecodeStrokeInputBatchProto(coded).status();
-  EXPECT_EQ(mismatched_lengths.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(mismatched_lengths.message(),
-              HasSubstr("mismatched numeric run lengths"));
+  EXPECT_THAT(DecodeStrokeInputBatchProto(coded),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("mismatched numeric run lengths")));
 }
 
 TEST(CodedStrokeInputBatchIteratorTest,
@@ -221,9 +223,9 @@ TEST(CodedStrokeInputBatchIteratorTest,
   coded.mutable_elapsed_time_seconds()->add_deltas(0);
   coded.mutable_pressure()->add_deltas(0);
   coded.mutable_pressure()->set_scale(std::numeric_limits<float>::infinity());
-  absl::Status non_finite_scale = DecodeStrokeInputBatchProto(coded).status();
-  EXPECT_EQ(non_finite_scale.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(non_finite_scale.message(), HasSubstr("non-finite scale"));
+  EXPECT_THAT(DecodeStrokeInputBatchProto(coded),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("non-finite scale")));
 }
 
 }  // namespace

@@ -18,6 +18,7 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/fuzz_domains.h"
 #include "ink/geometry/mesh_format.h"
@@ -28,6 +29,9 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
+using ::absl_testing::StatusIs;
 using ::testing::HasSubstr;
 
 TEST(MeshTest, DecodeMeshFormatValid) {
@@ -36,10 +40,10 @@ TEST(MeshTest, DecodeMeshFormatValid) {
       proto::MeshFormat::ATTR_TYPE_FLOAT2_UNPACKED);
   format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_POSITION);
 
-  absl::StatusOr<MeshFormat> mesh_format = DecodeMeshFormat(
-      format_proto, MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(mesh_format.status(), absl::OkStatus());
-  EXPECT_THAT(*mesh_format, MeshFormatEq(MeshFormat()));
+  EXPECT_THAT(
+      DecodeMeshFormat(format_proto,
+                       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
+      IsOkAndHolds(MeshFormatEq(MeshFormat())));
 }
 
 TEST(MeshTest, DecodeMeshFormatWithTooManyAttributes) {
@@ -51,12 +55,11 @@ TEST(MeshTest, DecodeMeshFormatWithTooManyAttributes) {
     format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_POSITION);
   }
 
-  absl::Status status =
+  EXPECT_THAT(
       DecodeMeshFormat(format_proto,
-                       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked)
-          .status();
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("too many attributes"));
+                       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("too many attributes")));
 }
 
 TEST(MeshTest, DecodeMeshFormatWithAttributeCountMismatch) {
@@ -69,14 +72,11 @@ TEST(MeshTest, DecodeMeshFormatWithAttributeCountMismatch) {
       proto::MeshFormat::ATTR_TYPE_FLOAT3_UNPACKED);
   format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_POSITION);
 
-  absl::Status attribute_count_mismatch =
+  EXPECT_THAT(
       DecodeMeshFormat(format_proto,
-                       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked)
-          .status();
-  EXPECT_EQ(attribute_count_mismatch.code(),
-            absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(attribute_count_mismatch.message(),
-              HasSubstr("attribute count mismatch"));
+                       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("attribute count mismatch")));
 }
 
 TEST(MeshTest, DecodeMeshFormatWithInvalidAttributeIdValue) {
@@ -85,13 +85,11 @@ TEST(MeshTest, DecodeMeshFormatWithInvalidAttributeIdValue) {
       proto::MeshFormat::ATTR_TYPE_FLOAT2_UNPACKED);
   format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_UNSPECIFIED);
 
-  absl::Status invalid_attr_id =
+  EXPECT_THAT(
       DecodeMeshFormat(format_proto,
-                       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked)
-          .status();
-  EXPECT_EQ(invalid_attr_id.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(invalid_attr_id.message(),
-              HasSubstr("invalid ink.proto.MeshFormat.AttributeId value: 0"));
+                       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("invalid ink.proto.MeshFormat.AttributeId value: 0")));
 }
 
 TEST(MeshTest, EncodeMeshFormatClearsExistingProto) {
@@ -106,7 +104,7 @@ TEST(MeshTest, EncodeMeshFormatClearsExistingProto) {
                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
   EncodeMeshFormat(*format, format_proto);
 
   proto::MeshFormat expected_proto;
@@ -132,10 +130,8 @@ void EncodeMeshFormatRoundTrip(const MeshFormat& format) {
   MeshFormat::IndexFormat index_format = format.GetIndexFormat();
   proto::MeshFormat format_proto;
   EncodeMeshFormat(format, format_proto);
-  absl::StatusOr<MeshFormat> mesh_format =
-      DecodeMeshFormat(format_proto, index_format);
-  ASSERT_EQ(mesh_format.status(), absl::OkStatus());
-  EXPECT_THAT(*mesh_format, MeshFormatEq(format));
+  EXPECT_THAT(DecodeMeshFormat(format_proto, index_format),
+              IsOkAndHolds(MeshFormatEq(format)));
 }
 FUZZ_TEST(MeshTest, EncodeMeshFormatRoundTrip)
     .WithDomains(ArbitraryMeshFormat());

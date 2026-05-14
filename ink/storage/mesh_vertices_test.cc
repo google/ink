@@ -19,6 +19,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/type_matchers.h"
 #include "ink/storage/proto/mesh.pb.h"
@@ -29,10 +30,14 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
+using ::absl_testing::StatusIs;
 using ::ink::proto::CodedMesh;
 using ::google::protobuf::TextFormat;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
+using ::testing::SizeIs;
 
 TEST(CodedMeshVertexIteratorTest, DecodeTriangleMesh) {
   CodedMesh coded;
@@ -52,10 +57,10 @@ TEST(CodedMeshVertexIteratorTest, DecodeTriangleMesh) {
 
   absl::StatusOr<iterator_range<CodedMeshVertexIterator>> range =
       DecodeMeshVertices(coded);
-  ASSERT_EQ(range.status(), absl::OkStatus());
+  ASSERT_THAT(range, IsOk());
   std::vector<strokes_internal::LegacyVertex> vertices(range->begin(),
                                                        range->end());
-  ASSERT_EQ(vertices.size(), 3);
+  ASSERT_THAT(vertices, SizeIs(3));
 
   EXPECT_THAT(vertices[0].position, PointEq({2.5f, 2.5f}));
   EXPECT_THAT(vertices[1].position, PointEq({7.5f, 0.0f}));
@@ -64,19 +69,15 @@ TEST(CodedMeshVertexIteratorTest, DecodeTriangleMesh) {
 
 TEST(CodedMeshVertexIteratorTest, DecodeEmptyMesh) {
   CodedMesh coded;
-  absl::StatusOr<iterator_range<CodedMeshVertexIterator>> mesh_vertices =
-      DecodeMeshVertices(coded);
-  ASSERT_EQ(mesh_vertices.status(), absl::OkStatus());
-  EXPECT_THAT(*mesh_vertices, ElementsAre());
+  EXPECT_THAT(DecodeMeshVertices(coded), IsOkAndHolds(ElementsAre()));
 }
 
 TEST(CodedMeshVertexIteratorTest, DecodeMeshWithMismatchedLengths) {
   CodedMesh coded;
   coded.mutable_y_stroke_space()->add_deltas(1);
-  absl::Status mismatched_run_lengths = DecodeMeshVertices(coded).status();
-  EXPECT_EQ(mismatched_run_lengths.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(mismatched_run_lengths.message(),
-              HasSubstr("mismatched numeric run lengths"));
+  EXPECT_THAT(DecodeMeshVertices(coded),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("mismatched numeric run lengths")));
 }
 
 TEST(CodedMeshVertexIteratorTest, IteratorPostIncrement) {
@@ -91,7 +92,7 @@ TEST(CodedMeshVertexIteratorTest, IteratorPostIncrement) {
 
   absl::StatusOr<iterator_range<CodedMeshVertexIterator>> range =
       DecodeMeshVertices(coded);
-  ASSERT_EQ(range.status(), absl::OkStatus());
+  ASSERT_THAT(range, IsOk());
   CodedMeshVertexIterator iter = range->begin();
   const CodedMeshVertexIterator iter0 = iter++;
   const CodedMeshVertexIterator iter1 = iter++;

@@ -19,7 +19,9 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/geometry/angle.h"
@@ -36,6 +38,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
 using ::ink::proto::CodedStrokeInputBatch;
 using ::testing::ElementsAre;
 using ::testing::FloatEq;
@@ -97,7 +101,7 @@ class StrokeInputBatchTest : public ::testing::Test {
           .pressure = 0.6,
           .tilt = Angle::Radians(0.5),
           .orientation = Angle::Radians(0.7)}});
-    ASSERT_EQ(input_batch.status(), absl::OkStatus());
+    ABSL_CHECK_OK(input_batch);
     input_batch_ = *std::move(input_batch);
   }
 
@@ -107,18 +111,14 @@ class StrokeInputBatchTest : public ::testing::Test {
 };
 
 TEST_F(StrokeInputBatchTest, DecodeInputs) {
-  absl::StatusOr<StrokeInputBatch> decoded =
-      DecodeStrokeInputBatch(input_proto_);
-  ASSERT_EQ(decoded.status(), absl::OkStatus());
-  EXPECT_THAT(*decoded, StrokeInputBatchEq(input_batch_));
+  EXPECT_THAT(DecodeStrokeInputBatch(input_proto_),
+              IsOkAndHolds(StrokeInputBatchEq(input_batch_)));
 }
 
 TEST_F(StrokeInputBatchTest, DecodeEmptyInputs) {
   CodedStrokeInputBatch empty_proto;
-  absl::StatusOr<StrokeInputBatch> input_batch =
-      DecodeStrokeInputBatch(empty_proto);
-  ASSERT_EQ(input_batch.status(), absl::OkStatus());
-  EXPECT_THAT(*input_batch, StrokeInputBatchEq(StrokeInputBatch()));
+  EXPECT_THAT(DecodeStrokeInputBatch(empty_proto),
+              IsOkAndHolds(StrokeInputBatchEq(StrokeInputBatch())));
 }
 
 TEST_F(StrokeInputBatchTest, EncodeInputs) {
@@ -126,52 +126,28 @@ TEST_F(StrokeInputBatchTest, EncodeInputs) {
   EncodeStrokeInputBatch(input_batch_, encoded_input_proto);
 
   const float epsilon = 1e-3;
-  {
-    absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(encoded_input_proto.x_stroke_space());
-    ASSERT_EQ(float_run.status(), absl::OkStatus());
-    EXPECT_THAT(*float_run,
-                ElementsAre(FloatNear(10, epsilon), FloatNear(7, epsilon),
-                            FloatNear(8, epsilon)));
-  }
-  {
-    absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(encoded_input_proto.y_stroke_space());
-    ASSERT_EQ(float_run.status(), absl::OkStatus());
-    EXPECT_THAT(*float_run,
-                ElementsAre(FloatNear(3, epsilon), FloatNear(4, epsilon),
-                            FloatNear(2, epsilon)));
-  }
-  {
-    absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(encoded_input_proto.elapsed_time_seconds());
-    ASSERT_EQ(float_run.status(), absl::OkStatus());
-    EXPECT_THAT(*float_run, ElementsAre(0.0f, 0.5f, 1.0f));
-  }
-  {
-    absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(encoded_input_proto.pressure());
-    ASSERT_EQ(float_run.status(), absl::OkStatus());
-    EXPECT_THAT(*float_run,
-                ElementsAre(FloatNear(0.2f, epsilon), FloatNear(0.3f, epsilon),
-                            FloatNear(0.6f, epsilon)));
-  }
-  {
-    absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(encoded_input_proto.tilt());
-    ASSERT_EQ(float_run.status(), absl::OkStatus());
-    EXPECT_THAT(*float_run,
-                ElementsAre(FloatNear(0.4f, epsilon), FloatNear(0.4f, epsilon),
-                            FloatNear(0.5f, epsilon)));
-  }
-  {
-    absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(encoded_input_proto.orientation());
-    ASSERT_EQ(float_run.status(), absl::OkStatus());
-    EXPECT_THAT(*float_run,
-                ElementsAre(FloatNear(0.5f, epsilon), FloatNear(0.6f, epsilon),
-                            FloatNear(0.7f, epsilon)));
-  }
+  EXPECT_THAT(
+      DecodeFloatNumericRun(encoded_input_proto.x_stroke_space()),
+      IsOkAndHolds(ElementsAre(FloatNear(10, epsilon), FloatNear(7, epsilon),
+                               FloatNear(8, epsilon))));
+  EXPECT_THAT(
+      DecodeFloatNumericRun(encoded_input_proto.y_stroke_space()),
+      IsOkAndHolds(ElementsAre(FloatNear(3, epsilon), FloatNear(4, epsilon),
+                               FloatNear(2, epsilon))));
+  EXPECT_THAT(DecodeFloatNumericRun(encoded_input_proto.elapsed_time_seconds()),
+              IsOkAndHolds(ElementsAre(0.0f, 0.5f, 1.0f)));
+  EXPECT_THAT(DecodeFloatNumericRun(encoded_input_proto.pressure()),
+              IsOkAndHolds(ElementsAre(FloatNear(0.2f, epsilon),
+                                       FloatNear(0.3f, epsilon),
+                                       FloatNear(0.6f, epsilon))));
+  EXPECT_THAT(DecodeFloatNumericRun(encoded_input_proto.tilt()),
+              IsOkAndHolds(ElementsAre(FloatNear(0.4f, epsilon),
+                                       FloatNear(0.4f, epsilon),
+                                       FloatNear(0.5f, epsilon))));
+  EXPECT_THAT(DecodeFloatNumericRun(encoded_input_proto.orientation()),
+              IsOkAndHolds(ElementsAre(FloatNear(0.5f, epsilon),
+                                       FloatNear(0.6f, epsilon),
+                                       FloatNear(0.7f, epsilon))));
 
   EXPECT_NE(encoded_input_proto.x_stroke_space().scale(), 1.0f);
   EXPECT_NE(encoded_input_proto.y_stroke_space().scale(), 1.0f);
@@ -188,23 +164,15 @@ TEST_F(StrokeInputBatchTest, EncodeLargishPositions) {
                                 {.tool_type = StrokeInput::ToolType::kStylus,
                                  .position = {0, 4000},
                                  .elapsed_time = Duration32::Seconds(1.0)}});
-  ASSERT_EQ(input_batch.status(), absl::OkStatus());
+  ASSERT_THAT(input_batch, IsOk());
 
   CodedStrokeInputBatch encoded_input_proto;
   EncodeStrokeInputBatch(*input_batch, encoded_input_proto);
 
-  {
-    absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(encoded_input_proto.x_stroke_space());
-    ASSERT_EQ(float_run.status(), absl::OkStatus());
-    EXPECT_THAT(*float_run, ElementsAre(FloatEq(0), FloatEq(4000), FloatEq(0)));
-  }
-  {
-    absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(encoded_input_proto.y_stroke_space());
-    ASSERT_EQ(float_run.status(), absl::OkStatus());
-    EXPECT_THAT(*float_run, ElementsAre(FloatEq(0), FloatEq(0), FloatEq(4000)));
-  }
+  EXPECT_THAT(DecodeFloatNumericRun(encoded_input_proto.x_stroke_space()),
+              IsOkAndHolds(ElementsAre(FloatEq(0), FloatEq(4000), FloatEq(0))));
+  EXPECT_THAT(DecodeFloatNumericRun(encoded_input_proto.y_stroke_space()),
+              IsOkAndHolds(ElementsAre(FloatEq(0), FloatEq(0), FloatEq(4000))));
 }
 
 TEST_F(StrokeInputBatchTest, EncodeEmptyInputs) {
@@ -231,32 +199,19 @@ TEST_F(StrokeInputBatchTest, EncodeSingleInputPosition) {
   absl::StatusOr<StrokeInputBatch> single_input_batch =
       StrokeInputBatch::Create(
           {{.position = {1.75, 2.25}, .elapsed_time = Duration32::Zero()}});
-  ASSERT_EQ(single_input_batch.status(), absl::OkStatus());
+  ASSERT_THAT(single_input_batch, IsOk());
 
   // Encode the input.
   CodedStrokeInputBatch input_proto;
   EncodeStrokeInputBatch(*single_input_batch, input_proto);
   // The CodedStrokeInputBatch should be valid even though the envelope of input
   // positions is empty (we should avoid calculating an infinite scale).
-  {
-    absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(input_proto.x_stroke_space());
-    ASSERT_EQ(float_run.status(), absl::OkStatus());
-    EXPECT_THAT(*float_run, ElementsAre(1.75f));
-  }
-  {
-    absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(input_proto.y_stroke_space());
-    ASSERT_EQ(float_run.status(), absl::OkStatus());
-    EXPECT_THAT(*float_run, ElementsAre(2.25f));
-  }
-
-  {
-    absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-        DecodeFloatNumericRun(input_proto.elapsed_time_seconds());
-    ASSERT_EQ(float_run.status(), absl::OkStatus());
-    EXPECT_THAT(*float_run, ElementsAre(0.f));
-  }
+  EXPECT_THAT(DecodeFloatNumericRun(input_proto.x_stroke_space()),
+              IsOkAndHolds(ElementsAre(1.75f)));
+  EXPECT_THAT(DecodeFloatNumericRun(input_proto.y_stroke_space()),
+              IsOkAndHolds(ElementsAre(2.25f)));
+  EXPECT_THAT(DecodeFloatNumericRun(input_proto.elapsed_time_seconds()),
+              IsOkAndHolds(ElementsAre(0.f)));
   EXPECT_EQ(input_proto.x_stroke_space().scale(), 1.0f);
   EXPECT_EQ(input_proto.y_stroke_space().scale(), 1.0f);
 }
@@ -281,15 +236,13 @@ TEST_F(StrokeInputBatchTest, EncodeLargeTimeValues) {
                                  .pressure = 0.7,
                                  .tilt = Angle::Radians(0.9),
                                  .orientation = Angle::Radians(1.1)}});
-  ASSERT_EQ(input_batch.status(), absl::OkStatus());
+  ASSERT_THAT(input_batch, IsOk());
 
   CodedStrokeInputBatch input_proto;
   EncodeStrokeInputBatch(*input_batch, input_proto);
 
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-      DecodeFloatNumericRun(input_proto.elapsed_time_seconds());
-  ASSERT_EQ(float_run.status(), absl::OkStatus());
-  EXPECT_THAT(*float_run, ElementsAre(0.f, 20000.f, 40000.f));
+  EXPECT_THAT(DecodeFloatNumericRun(input_proto.elapsed_time_seconds()),
+              IsOkAndHolds(ElementsAre(0.f, 20000.f, 40000.f)));
 }
 
 // Regression test for b/349965543
@@ -311,17 +264,15 @@ TEST_F(StrokeInputBatchTest, RoundTripInputsThatQuantizeTheSame) {
                         .pressure = 0.75};
   absl::StatusOr<StrokeInputBatch> input_batch =
       StrokeInputBatch::Create({input1, input2, input3});
-  ASSERT_EQ(input_batch.status(), absl::OkStatus());
+  ASSERT_THAT(input_batch, IsOk());
 
   CodedStrokeInputBatch input_proto;
   EncodeStrokeInputBatch(*input_batch, input_proto);
 
   // Because of quantization in the encoding, the first two timestamps will be
   // encoded as the same value.
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-      DecodeFloatNumericRun(input_proto.elapsed_time_seconds());
-  ASSERT_EQ(float_run.status(), absl::OkStatus());
-  EXPECT_THAT(*float_run, ElementsAre(0.f, 0.f, 1e30f));
+  EXPECT_THAT(DecodeFloatNumericRun(input_proto.elapsed_time_seconds()),
+              IsOkAndHolds(ElementsAre(0.f, 0.f, 1e30f)));
 
   // Duplicate XYT triples are forbidden by `StrokeInputBatch::Create` (it will
   // return an error), so in order to decode the whole `CodedStrokeInputBatch`
@@ -329,11 +280,9 @@ TEST_F(StrokeInputBatchTest, RoundTripInputsThatQuantizeTheSame) {
   // different pressure value). This is unfortunate, but it's better than
   // completely failing to decode a proto that originated from a valid
   // `StrokeInputBatch`, and the encoding is already lossy.
-  absl::StatusOr<StrokeInputBatch> decoded =
-      DecodeStrokeInputBatch(input_proto);
-  ASSERT_EQ(decoded.status(), absl::OkStatus());
-  EXPECT_THAT(*decoded,
-              ElementsAre(StrokeInputEq(input1), StrokeInputEq(input3)));
+  EXPECT_THAT(
+      DecodeStrokeInputBatch(input_proto),
+      IsOkAndHolds(ElementsAre(StrokeInputEq(input1), StrokeInputEq(input3))));
 }
 
 TEST_F(StrokeInputBatchTest, ClearPressureTiltOrientation) {
@@ -351,7 +300,7 @@ TEST_F(StrokeInputBatchTest, ClearPressureTiltOrientation) {
                                  .pressure = StrokeInput::kNoPressure,
                                  .tilt = StrokeInput::kNoTilt,
                                  .orientation = StrokeInput::kNoOrientation}});
-  ASSERT_EQ(inputs.status(), absl::OkStatus());
+  ASSERT_THAT(inputs, IsOk());
   EncodeStrokeInputBatch(*inputs, input_batch);
 
   // The CodedStrokeInputBatch should now have position data, but the
@@ -387,7 +336,7 @@ void StrokeInputBatchRoundTrip(const StrokeInputBatch& inputs) {
   // Any proto that is the result of encoding a valid `StrokeInputBatch` should
   // decode successfully.
   absl::StatusOr<StrokeInputBatch> decoded = DecodeStrokeInputBatch(proto);
-  ASSERT_EQ(decoded.status(), absl::OkStatus());
+  ASSERT_THAT(decoded, IsOk());
   // Because of quantization, the decoded batch is not guaranteed to exactly
   // match the original.  However, some data should match exactly:
   EXPECT_EQ(decoded->GetToolType(), inputs.GetToolType());
@@ -402,7 +351,7 @@ void EncodeDecodeRoundtripIsIdempotent(const StrokeInputBatch& input) {
   EncodeStrokeInputBatch(input, proto);
   absl::StatusOr<StrokeInputBatch> first_roundtrip =
       DecodeStrokeInputBatch(proto);
-  ASSERT_EQ(first_roundtrip.status(), absl::OkStatus());
+  ASSERT_THAT(first_roundtrip, IsOk());
 
   // While the first encoding may be lossy, the subsequent encoding/decoding
   // roundtrips should stabilize.
@@ -410,10 +359,11 @@ void EncodeDecodeRoundtripIsIdempotent(const StrokeInputBatch& input) {
   EncodeStrokeInputBatch(*first_roundtrip, proto);
   absl::StatusOr<StrokeInputBatch> second_roundtrip =
       DecodeStrokeInputBatch(proto);
-  ASSERT_EQ(second_roundtrip.status(), absl::OkStatus());
+  ASSERT_THAT(second_roundtrip, IsOk());
   EXPECT_THAT(*first_roundtrip, StrokeInputBatchEq(*second_roundtrip));
 }
 FUZZ_TEST(StrokeInputBatchFuzzTest, EncodeDecodeRoundtripIsIdempotent)
     .WithDomains(ArbitraryStrokeInputBatch());
+
 }  // namespace
 }  // namespace ink

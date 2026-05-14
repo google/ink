@@ -21,6 +21,7 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/geometry/mesh.h"
@@ -37,6 +38,8 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::ink::proto::CodedModeledShape;
 using ::google::protobuf::TextFormat;
 using ::testing::ElementsAre;
@@ -52,9 +55,8 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithGroupCountMismatch) {
   shape_proto.add_group_first_mesh_indices(0);
   shape_proto.add_group_first_outline_indices(0);
 
-  absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
-  EXPECT_EQ(shape.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(shape.status().message(), HasSubstr("group"));
+  EXPECT_THAT(DecodePartitionedMesh(shape_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("group")));
 }
 
 TEST(PartitionedMeshTest, DecodePartitionedMeshWithNonzeroFirstMeshIndex) {
@@ -65,9 +67,9 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithNonzeroFirstMeshIndex) {
   shape_proto.add_group_first_mesh_indices(1);
   shape_proto.add_group_first_outline_indices(0);
 
-  absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
-  EXPECT_EQ(shape.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(shape.status().message(), HasSubstr("start with zero"));
+  EXPECT_THAT(DecodePartitionedMesh(shape_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("start with zero")));
 }
 
 TEST(PartitionedMeshTest, DecodePartitionedMeshWithNonzeroFirstOutlineIndex) {
@@ -76,9 +78,9 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithNonzeroFirstOutlineIndex) {
   shape_proto.add_group_first_mesh_indices(0);
   shape_proto.add_group_first_outline_indices(1);
 
-  absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
-  EXPECT_EQ(shape.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(shape.status().message(), HasSubstr("start with zero"));
+  EXPECT_THAT(DecodePartitionedMesh(shape_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("start with zero")));
 }
 
 TEST(PartitionedMeshTest, DecodePartitionedMeshWithOutOfBoundsMeshIndex) {
@@ -92,9 +94,9 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithOutOfBoundsMeshIndex) {
   shape_proto.add_group_first_outline_indices(0);
   shape_proto.add_group_first_outline_indices(0);
 
-  absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
-  EXPECT_EQ(shape.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(shape.status().message(), HasSubstr("meshes_size"));
+  EXPECT_THAT(
+      DecodePartitionedMesh(shape_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("meshes_size")));
 }
 
 TEST(PartitionedMeshTest, DecodePartitionedMeshWithOutOfBoundsOutlineIndex) {
@@ -108,9 +110,9 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithOutOfBoundsOutlineIndex) {
   shape_proto.add_group_first_outline_indices(0);
   shape_proto.add_group_first_outline_indices(1);
 
-  absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
-  EXPECT_EQ(shape.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(shape.status().message(), HasSubstr("outlines_size"));
+  EXPECT_THAT(
+      DecodePartitionedMesh(shape_proto),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("outlines_size")));
 }
 
 TEST(PartitionedMeshTest, DecodePartitionedMeshWithDecreasingFirstMeshIndices) {
@@ -128,9 +130,9 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithDecreasingFirstMeshIndices) {
   shape_proto.add_group_first_outline_indices(0);
   shape_proto.add_group_first_outline_indices(0);
 
-  absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
-  EXPECT_EQ(shape.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(shape.status().message(), HasSubstr("group_first_mesh_indices"));
+  EXPECT_THAT(DecodePartitionedMesh(shape_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("group_first_mesh_indices")));
 }
 
 TEST(PartitionedMeshTest,
@@ -149,10 +151,9 @@ TEST(PartitionedMeshTest,
   shape_proto.add_group_first_outline_indices(2);
   shape_proto.add_group_first_outline_indices(1);
 
-  absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
-  EXPECT_EQ(shape.status().code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(shape.status().message(),
-              HasSubstr("group_first_outline_indices"));
+  EXPECT_THAT(DecodePartitionedMesh(shape_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("group_first_outline_indices")));
 }
 
 TEST(PartitionedMeshTest, EncodeEmptyPartitionedMesh) {
@@ -171,7 +172,7 @@ TEST(PartitionedMeshTest, EncodeEmptyPartitionedMesh) {
 TEST(PartitionedMeshTest, DecodeEmptyCodedModeledShape) {
   absl::StatusOr<PartitionedMesh> shape =
       DecodePartitionedMesh(CodedModeledShape());
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
   EXPECT_THAT(*shape, PartitionedMeshDeepEq(PartitionedMesh()));
 }
 
@@ -180,16 +181,16 @@ TEST(PartitionedMeshTest, EncodePartitionedMeshWithOneTriangleMesh) {
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format, IsOk());
 
   absl::StatusOr<Mesh> mesh =
       Mesh::Create(*format, {{10, 30, 20}, {5, 5, 25}}, {0, 1, 2});
-  ASSERT_EQ(mesh.status(), absl::OkStatus());
+  ASSERT_THAT(mesh, IsOk());
 
   std::vector<VertexIndexPair> outline = {{0, 0}, {0, 1}, {0, 2}};
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMeshes(absl::MakeSpan(&(*mesh), 1), {outline});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   CodedModeledShape shape_proto;
   EncodePartitionedMesh(*shape, shape_proto);
@@ -202,7 +203,7 @@ TEST(PartitionedMeshTest, EncodePartitionedMeshWithOneTriangleMesh) {
   ASSERT_EQ(shape_proto.outlines_size(), 1);
   absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
       DecodeFloatNumericRun(shape_proto.outlines(0));
-  ASSERT_EQ(float_run.status(), absl::OkStatus());
+  ASSERT_THAT(float_run, IsOk());
   EXPECT_THAT(*float_run, ElementsAre(0, 1, 2));
 }
 
@@ -226,7 +227,7 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithOneTriangleMesh) {
       &shape_proto));
 
   absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   ASSERT_EQ(shape->RenderGroupCount(), 1);
   const MeshFormat& format = shape->RenderGroupFormat(0);
@@ -249,11 +250,11 @@ TEST(PartitionedMeshTest, EncodePartitionedMeshWithTwoTriangleMeshes) {
   // Create two meshes, each with one triangle, that together form a square.
   absl::StatusOr<Mesh> mesh0 =
       Mesh::Create(format, {{0, 1, 1}, {0, 0, 1}}, {0, 1, 2});
-  ASSERT_EQ(mesh0.status(), absl::OkStatus());
+  ASSERT_THAT(mesh0, IsOk());
 
   absl::StatusOr<Mesh> mesh1 =
       Mesh::Create(format, {{1, 0, 0}, {1, 1, 0}}, {0, 1, 2});
-  ASSERT_EQ(mesh1.status(), absl::OkStatus());
+  ASSERT_THAT(mesh1, IsOk());
 
   std::vector<Mesh> meshes;
   meshes.push_back(*std::move(mesh0));
@@ -263,7 +264,7 @@ TEST(PartitionedMeshTest, EncodePartitionedMeshWithTwoTriangleMeshes) {
 
   absl::StatusOr<PartitionedMesh> shape =
       PartitionedMesh::FromMeshes(absl::MakeSpan(meshes), {outline});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   CodedModeledShape shape_proto;
   EncodePartitionedMesh(*shape, shape_proto);
@@ -272,7 +273,7 @@ TEST(PartitionedMeshTest, EncodePartitionedMeshWithTwoTriangleMeshes) {
   ASSERT_EQ(shape_proto.outlines_size(), 1);
   absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
       DecodeFloatNumericRun(shape_proto.outlines(0));
-  ASSERT_EQ(float_run.status(), absl::OkStatus());
+  ASSERT_THAT(float_run, IsOk());
   EXPECT_THAT(*float_run, ElementsAre(0x00000, 0x00001, 0x10000, 0x10001));
 }
 
@@ -295,7 +296,7 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoTriangleMeshes) {
       &shape_proto));
 
   absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   ASSERT_EQ(shape->RenderGroupCount(), 1);
   EXPECT_THAT(shape->RenderGroupFormat(0), MeshFormatEq(MeshFormat()));
@@ -315,16 +316,16 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoTriangleMeshes) {
 TEST(PartitionedMeshTest, EncodePartitionedMeshWithTwoGroups) {
   absl::StatusOr<Mesh> mesh0 =
       Mesh::Create(MeshFormat(), {{0, 1, 1}, {0, 0, 1}}, {0, 1, 2});
-  ASSERT_EQ(mesh0.status(), absl::OkStatus());
+  ASSERT_THAT(mesh0, IsOk());
 
   absl::StatusOr<Mesh> mesh1 =
       Mesh::Create(MeshFormat(), {{1, 0, 0}, {1, 1, 0}}, {0, 1, 2});
-  ASSERT_EQ(mesh1.status(), absl::OkStatus());
+  ASSERT_THAT(mesh1, IsOk());
 
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMeshGroups(
       {{.meshes = absl::MakeConstSpan(&*mesh0, 1)},
        {.meshes = absl::MakeConstSpan(&*mesh1, 1)}});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   CodedModeledShape shape_proto;
   EncodePartitionedMesh(*shape, shape_proto);
@@ -366,7 +367,7 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoGroups) {
       &shape_proto));
 
   absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
-  ASSERT_EQ(shape.status(), absl::OkStatus());
+  ASSERT_THAT(shape, IsOk());
 
   ASSERT_EQ(shape->RenderGroupCount(), 2u);
   ASSERT_THAT(shape->RenderGroupFormat(0).Attributes(), SizeIs(1));

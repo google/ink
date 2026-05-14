@@ -22,6 +22,7 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "ink/storage/proto/coded_numeric_run.pb.h"
 #include "ink/types/iterator_range.h"
@@ -29,6 +30,9 @@
 namespace ink {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
+using ::absl_testing::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::HasSubstr;
@@ -50,18 +54,12 @@ constexpr float kNonInt32Floats[] = {
 
 TEST(NumericRunTest, DecodeEmptyFloatNumericRun) {
   proto::CodedNumericRun coded;
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> float_run =
-      DecodeFloatNumericRun(coded);
-  ASSERT_EQ(float_run.status(), absl::OkStatus());
-  EXPECT_THAT(*float_run, ElementsAre());
+  EXPECT_THAT(DecodeFloatNumericRun(coded), IsOkAndHolds(ElementsAre()));
 }
 
 TEST(NumericRunTest, DecodeEmptyIntNumericRun) {
   proto::CodedNumericRun coded;
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>> int_run =
-      DecodeIntNumericRun(coded);
-  ASSERT_EQ(int_run.status(), absl::OkStatus());
-  EXPECT_THAT(*int_run, ElementsAre());
+  EXPECT_THAT(DecodeIntNumericRun(coded), IsOkAndHolds(ElementsAre()));
 }
 
 TEST(NumericRunTest, DecodeValidFloatNumericRun) {
@@ -74,10 +72,8 @@ TEST(NumericRunTest, DecodeValidFloatNumericRun) {
   coded.add_deltas(4);
   coded.add_deltas(5);
 
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> numeric_run =
-      DecodeFloatNumericRun(coded);
-  ASSERT_EQ(numeric_run.status(), absl::OkStatus());
-  EXPECT_THAT(*numeric_run, ElementsAre(3.0f, 2.0f, 3.5f, 5.5f, 8.0f));
+  EXPECT_THAT(DecodeFloatNumericRun(coded),
+              IsOkAndHolds(ElementsAre(3.0f, 2.0f, 3.5f, 5.5f, 8.0f)));
 }
 
 TEST(NumericRunTest, DecodeValidIntNumericRun) {
@@ -88,19 +84,17 @@ TEST(NumericRunTest, DecodeValidIntNumericRun) {
   coded.add_deltas(4);
   coded.add_deltas(5);
 
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>> int_run =
-      DecodeIntNumericRun(coded);
-  ASSERT_EQ(int_run.status(), absl::OkStatus());
-  EXPECT_THAT(*int_run, ElementsAre(1, -1, 2, 6, 11));
+  EXPECT_THAT(DecodeIntNumericRun(coded),
+              IsOkAndHolds(ElementsAre(1, -1, 2, 6, 11)));
 }
 
 TEST(NumericRunTest, DecodeFloatNumericRunWithNonFiniteOffset) {
   for (float invalid : kNonFiniteFloats) {
     proto::CodedNumericRun coded;
     coded.set_offset(invalid);
-    absl::Status non_finite_offset = DecodeFloatNumericRun(coded).status();
-    EXPECT_EQ(non_finite_offset.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(non_finite_offset.message(), HasSubstr("non-finite offset"));
+    EXPECT_THAT(DecodeFloatNumericRun(coded),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("non-finite offset")));
   }
 }
 
@@ -108,9 +102,9 @@ TEST(NumericRunTest, DecodeFloatNumericRunWithNonFiniteScale) {
   for (float invalid : kNonFiniteFloats) {
     proto::CodedNumericRun coded;
     coded.set_scale(invalid);
-    absl::Status non_finite_scale = DecodeFloatNumericRun(coded).status();
-    EXPECT_EQ(non_finite_scale.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(non_finite_scale.message(), HasSubstr("non-finite scale"));
+    EXPECT_THAT(DecodeFloatNumericRun(coded),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("non-finite scale")));
   }
 }
 
@@ -124,9 +118,9 @@ TEST(NumericRunTest, DecodeIntNumericRunWithNonIntegerOffset) {
   for (float invalid : kNonInt32Floats) {
     proto::CodedNumericRun coded;
     coded.set_offset(invalid);
-    absl::Status non_integer_offset = DecodeIntNumericRun(coded).status();
-    EXPECT_EQ(non_integer_offset.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(non_integer_offset.message(), HasSubstr("non-integer offset"));
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("non-integer offset")));
   }
 }
 
@@ -134,9 +128,9 @@ TEST(NumericRunTest, DecodeIntNumericRunWithNonIntegerScale) {
   for (float invalid : kNonInt32Floats) {
     proto::CodedNumericRun coded;
     coded.set_scale(invalid);
-    absl::Status non_integer_scale = DecodeIntNumericRun(coded).status();
-    EXPECT_EQ(non_integer_scale.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(non_integer_scale.message(), HasSubstr("non-integer scale"));
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("non-integer scale")));
   }
 }
 
@@ -154,7 +148,7 @@ TEST(NumericRunTest, IteratorPostIncrement) {
 
   absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>> range =
       DecodeIntNumericRun(coded);
-  ASSERT_EQ(range.status(), absl::OkStatus());
+  ASSERT_THAT(range, IsOk());
   CodedNumericRunIterator<int32_t> iter = range->begin();
   const CodedNumericRunIterator<int32_t> iter0 = iter++;
   const CodedNumericRunIterator<int32_t> iter1 = iter++;
@@ -170,30 +164,23 @@ TEST(NumericRunTest, EncodeEmptyIntNumericRun) {
   std::vector<int32_t> values = {};
   proto::CodedNumericRun coded;
   EncodeIntNumericRun(values.begin(), values.end(), &coded);
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>> int_run =
-      DecodeIntNumericRun(coded);
-  ASSERT_EQ(int_run.status(), absl::OkStatus());
-  EXPECT_THAT(*int_run, ElementsAre());
+  EXPECT_THAT(DecodeIntNumericRun(coded), IsOkAndHolds(ElementsAre()));
 }
 
 TEST(NumericRunTest, EncodeSignedIntNumericRun) {
   std::vector<int32_t> values = {1, 5, -8, 23, -3};
   proto::CodedNumericRun coded;
   EncodeIntNumericRun(values.begin(), values.end(), &coded);
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>> int_run =
-      DecodeIntNumericRun(coded);
-  ASSERT_EQ(int_run.status(), absl::OkStatus());
-  EXPECT_THAT(*int_run, ElementsAre(1, 5, -8, 23, -3));
+  EXPECT_THAT(DecodeIntNumericRun(coded),
+              IsOkAndHolds(ElementsAre(1, 5, -8, 23, -3)));
 }
 
 TEST(NumericRunTest, EncodeUnsignedIntNumericRun) {
   std::vector<uint32_t> values = {8, 23, 0, 19, 3};
   proto::CodedNumericRun coded;
   EncodeIntNumericRun(values.begin(), values.end(), &coded);
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>> int_run =
-      DecodeIntNumericRun(coded);
-  ASSERT_EQ(int_run.status(), absl::OkStatus());
-  EXPECT_THAT(*int_run, ElementsAre(8, 23, 0, 19, 3));
+  EXPECT_THAT(DecodeIntNumericRun(coded),
+              IsOkAndHolds(ElementsAre(8, 23, 0, 19, 3)));
 }
 
 // Test that arbitrary-ish integer sequences can round-trip through a
@@ -203,10 +190,8 @@ TEST(NumericRunTest, EncodeUnsignedIntNumericRun) {
 void EncodeSignedIntNumericRunRoundTrip(const std::vector<int32_t>& values) {
   proto::CodedNumericRun coded;
   EncodeIntNumericRun(values.begin(), values.end(), &coded);
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>> int_run =
-      DecodeIntNumericRun(coded);
-  ASSERT_EQ(int_run.status(), absl::OkStatus());
-  EXPECT_THAT(*int_run, ElementsAreArray(values));
+  EXPECT_THAT(DecodeIntNumericRun(coded),
+              IsOkAndHolds(ElementsAreArray(values)));
 }
 FUZZ_TEST(NumericRunTest, EncodeSignedIntNumericRunRoundTrip)
     .WithDomains(fuzztest::VectorOf(fuzztest::InRange<int32_t>(-1'000'000'000,
@@ -215,10 +200,8 @@ FUZZ_TEST(NumericRunTest, EncodeSignedIntNumericRunRoundTrip)
 void EncodeUnsignedIntNumericRunRoundTrip(const std::vector<uint32_t>& values) {
   proto::CodedNumericRun coded;
   EncodeIntNumericRun(values.begin(), values.end(), &coded);
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>> int_run =
-      DecodeIntNumericRun(coded);
-  ASSERT_EQ(int_run.status(), absl::OkStatus());
-  EXPECT_THAT(*int_run, ElementsAreArray(values));
+  EXPECT_THAT(DecodeIntNumericRun(coded),
+              IsOkAndHolds(ElementsAreArray(values)));
 }
 FUZZ_TEST(NumericRunTest, EncodeUnsignedIntNumericRunRoundTrip)
     .WithDomains(
