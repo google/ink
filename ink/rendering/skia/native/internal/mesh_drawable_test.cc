@@ -23,6 +23,7 @@
 #include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "ink/rendering/skia/common_internal/mesh_specification_data.h"
 #include "ink/rendering/skia/native/internal/create_mesh_specification.h"
 #include "ink/rendering/skia/native/internal/mesh_uniform_data.h"
@@ -34,6 +35,8 @@
 namespace ink::skia_native_internal {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::StatusIs;
 using ::ink::skia_common_internal::MeshSpecificationData;
 using ::ink::strokes_internal::StrokeVertex;
 using ::testing::HasSubstr;
@@ -72,36 +75,36 @@ MeshDrawable::Partition MakeNonEmptyTestPartition(int vertex_stride) {
 }
 
 TEST(MeshDrawableTest, CreateWithoutPartitionsIsNotAnError) {
-  auto drawable =
+  EXPECT_THAT(
       MeshDrawable::Create(SpecificationForInProgressStroke(),
                            /* blender= */ nullptr, /* shader= */ nullptr,
                            /* color_functions = */ {},
-                           /* partitions = */ {});
-  ASSERT_EQ(absl::OkStatus(), drawable.status());
+                           /* partitions = */ {}),
+      IsOk());
 }
 
 TEST(MeshDrawableTest, CreateNonEmptyWithoutUnpackingTransform) {
   sk_sp<SkMeshSpecification> spec = SpecificationForInProgressStroke();
 
-  auto drawable =
+  EXPECT_THAT(
       MeshDrawable::Create(spec, /* blender= */ nullptr, /* shader= */ nullptr,
                            /* color_functions = */ {},
                            {MakeNonEmptyTestPartition(spec->stride()),
-                            MakeNonEmptyTestPartition(spec->stride())});
-  ASSERT_EQ(absl::OkStatus(), drawable.status());
+                            MakeNonEmptyTestPartition(spec->stride())}),
+      IsOk());
 }
 
 TEST(MeshDrawableTest, CreateSucceedsWithProvidedStartingUniforms) {
   sk_sp<SkMeshSpecification> spec = SpecificationForFullFormatStroke();
 
   MeshUniformData starting_uniforms(*spec);
-  auto drawable =
+  EXPECT_THAT(
       MeshDrawable::Create(spec, /* blender= */ nullptr, /* shader= */ nullptr,
                            /* color_functions = */ {},
                            {MakeNonEmptyTestPartition(spec->stride()),
                             MakeNonEmptyTestPartition(spec->stride())},
-                           starting_uniforms);
-  ASSERT_EQ(absl::OkStatus(), drawable.status());
+                           starting_uniforms),
+      IsOk());
 }
 
 TEST(MeshDrawableTest, ReturnsSkiaError) {
@@ -110,14 +113,12 @@ TEST(MeshDrawableTest, ReturnsSkiaError) {
   int incompatible_stride = 4;
   ASSERT_NE(spec->stride(), incompatible_stride);
 
-  absl::Status skia_error =
+  EXPECT_THAT(
       MeshDrawable::Create(spec, /* blender= */ nullptr, /* shader= */ nullptr,
                            /* color_functions = */ {},
-                           {MakeNonEmptyTestPartition(incompatible_stride)})
-          .status();
-  EXPECT_EQ(skia_error.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(skia_error.message(),
-              HasSubstr("`SkMesh::MakeIndex()` returned error:"));
+                           {MakeNonEmptyTestPartition(incompatible_stride)}),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("`SkMesh::MakeIndex()` returned error:")));
 }
 
 TEST(MeshDrawableDeathTest, CreateWithNullSpecification) {

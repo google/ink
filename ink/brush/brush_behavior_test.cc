@@ -1115,13 +1115,13 @@ TEST(BrushBehaviorTest, ValidateBrushBehaviorTopLevel) {
 }
 
 void CanValidateValidBrushBehavior(const BrushBehavior& behavior) {
-  EXPECT_EQ(absl::OkStatus(), brush_internal::ValidateBrushBehavior(behavior));
+  EXPECT_THAT(brush_internal::ValidateBrushBehavior(behavior), IsOk());
 }
 FUZZ_TEST(EasingFunctionTest, CanValidateValidBrushBehavior)
     .WithDomains(ValidBrushBehavior());
 
 void CanValidateValidBrushBehaviorNode(const BrushBehavior::Node& node) {
-  EXPECT_EQ(absl::OkStatus(), brush_internal::ValidateBrushBehaviorNode(node));
+  EXPECT_THAT(brush_internal::ValidateBrushBehaviorNode(node), IsOk());
 }
 FUZZ_TEST(EasingFunctionTest, CanValidateValidBrushBehaviorNode)
     .WithDomains(ValidBrushBehaviorNode());

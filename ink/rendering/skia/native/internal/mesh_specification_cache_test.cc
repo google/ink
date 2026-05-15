@@ -18,6 +18,7 @@
 #include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_family.h"
@@ -37,6 +38,9 @@
 namespace ink::skia_native_internal {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
+using ::absl_testing::StatusIs;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::NotNull;
@@ -60,7 +64,7 @@ TEST(MeshSpecificationCacheTest, GetForInProgressStroke) {
   {
     absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
         cache.GetFor(first_stroke);
-    ASSERT_EQ(specification.status(), absl::OkStatus());
+    ASSERT_THAT(specification, IsOk());
     EXPECT_THAT(*specification, Pointer(NotNull()));
   }
 
@@ -69,7 +73,7 @@ TEST(MeshSpecificationCacheTest, GetForInProgressStroke) {
     // the cached value.
     absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
         cache.GetFor(first_stroke);
-    ASSERT_EQ(specification.status(), absl::OkStatus());
+    ASSERT_THAT(specification, IsOk());
     EXPECT_THAT(*specification, Eq(*specification));
   }
 
@@ -83,7 +87,7 @@ TEST(MeshSpecificationCacheTest, GetForInProgressStroke) {
     // mesh, this will also depend on the objects having the same `BrushPaint`.
     absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
         cache.GetFor(second_stroke);
-    ASSERT_EQ(specification.status(), absl::OkStatus());
+    ASSERT_THAT(specification, IsOk());
     EXPECT_THAT(*specification, Eq(*specification));
   }
 }
@@ -92,26 +96,19 @@ TEST(MeshSpecificationCacheTest, GetForStartedInProgressStrokeWithEmptyMesh) {
   MeshSpecificationCache cache;
   InProgressStroke stroke;
   stroke.Start(GetTestBrush());
-  absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
-      cache.GetFor(stroke);
-  ASSERT_EQ(specification.status(), absl::OkStatus());
-  EXPECT_THAT(*specification, Pointer(NotNull()));
+  EXPECT_THAT(cache.GetFor(stroke), IsOkAndHolds(Pointer(NotNull())));
 }
 
 TEST(MeshSpecificationCacheTest, GetForUnstartedInProgressStroke) {
   MeshSpecificationCache cache;
   InProgressStroke stroke;
-  absl::Status not_started = cache.GetFor(stroke).status();
-  EXPECT_EQ(not_started.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(not_started.message(), HasSubstr("stroke.Start()"));
+  EXPECT_THAT(cache.GetFor(stroke), StatusIs(absl::StatusCode::kInvalidArgument,
+                                             HasSubstr("stroke.Start()")));
 
   // The cache should be able to return a valid specification after previously
   // returning an error.
   stroke.Start(GetTestBrush());
-  absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
-      cache.GetFor(stroke);
-  ASSERT_EQ(specification.status(), absl::OkStatus());
-  EXPECT_THAT(*specification, Pointer(NotNull()));
+  EXPECT_THAT(cache.GetFor(stroke), IsOkAndHolds(Pointer(NotNull())));
 }
 
 StrokeInputBatch GetSingleValueTestBatch() {
@@ -127,53 +124,42 @@ TEST(MeshSpecificationCacheTest, GetForStrokeWithGeneratedShape) {
 
   absl::StatusOr<sk_sp<SkMeshSpecification>> original_spec =
       cache.GetForStroke(first_stroke.GetShape(), 0);
-  ASSERT_EQ(original_spec.status(), absl::OkStatus());
-  EXPECT_THAT(*original_spec, Pointer(NotNull()));
+  ASSERT_THAT(original_spec, IsOkAndHolds(Pointer(NotNull())));
 
-  {
-    // Getting the specification for the same stroke a second time should return
-    // the cached value.
-    absl::StatusOr<sk_sp<SkMeshSpecification>> new_spec =
-        cache.GetForStroke(first_stroke.GetShape(), 0);
-    ASSERT_EQ(new_spec.status(), absl::OkStatus());
-    EXPECT_THAT(*new_spec, Eq(*original_spec));
-  }
+  // Getting the specification for the same stroke a second time should return
+  // the cached value.
+  EXPECT_THAT(cache.GetForStroke(first_stroke.GetShape(), 0),
+              IsOkAndHolds(Eq(*original_spec)));
 
-  {
-    Stroke second_stroke(GetTestBrush(), GetSingleValueTestBatch());
-    // Getting the specification for another stroke with the same brush and a
-    // generated shape should return the cached value.
-    absl::StatusOr<sk_sp<SkMeshSpecification>> new_spec =
-        cache.GetForStroke(second_stroke.GetShape(), 0);
-    ASSERT_EQ(new_spec.status(), absl::OkStatus());
-    EXPECT_THAT(*new_spec, Eq(*original_spec));
-  }
+  Stroke second_stroke(GetTestBrush(), GetSingleValueTestBatch());
+  // Getting the specification for another stroke with the same brush and a
+  // generated shape should return the cached value.
+  EXPECT_THAT(cache.GetForStroke(second_stroke.GetShape(), 0),
+              IsOkAndHolds(Eq(*original_spec)));
 }
 
 TEST(MeshSpecificationCacheTest, GetForInvalidCoatIndex) {
   MeshSpecificationCache cache;
   Stroke stroke(GetTestBrush(), GetSingleValueTestBatch());
 
-  absl::Status status = cache.GetForStroke(stroke.GetShape(), 99).status();
-  EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(status.message(), HasSubstr("coat_index"));
+  EXPECT_THAT(
+      cache.GetForStroke(stroke.GetShape(), 99),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("coat_index")));
 
   // The cache should be able to return a valid specification after previously
   // returning an error.
-  absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
-      cache.GetForStroke(stroke.GetShape(), 0);
-  ASSERT_EQ(specification.status(), absl::OkStatus());
-  EXPECT_THAT(*specification, Pointer(NotNull()));
+  EXPECT_THAT(cache.GetForStroke(stroke.GetShape(), 0),
+              IsOkAndHolds(Pointer(NotNull())));
 }
 
 TEST(MeshSpecificationCacheTest, GetForStrokeWithEmptyShape) {
   MeshSpecificationCache cache;
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMeshGroups(
       {PartitionedMesh::MeshGroup{.meshes = {}, .outlines = {}}});
-  ASSERT_EQ(shape.status(), absl::OkStatus());
-  absl::Status no_meshes = cache.GetForStroke(*shape, 0).status();
-  EXPECT_EQ(no_meshes.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(no_meshes.message(), HasSubstr("has no meshes"));
+  ASSERT_THAT(shape, IsOk());
+  EXPECT_THAT(
+      cache.GetForStroke(*shape, 0),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("has no meshes")));
 }
 
 TEST(MeshSpecificationCacheTest, GetForProvidedUnsupportedShape) {
@@ -184,10 +170,9 @@ TEST(MeshSpecificationCacheTest, GetForProvidedUnsupportedShape) {
 
   // The provided shape has the default position-only `MeshFormat` , which means
   // it is missing a number of required attributes.
-  absl::Status missing_required_attr =
-      cache.GetForStroke(provided_shape, 0).status();
-  EXPECT_EQ(missing_required_attr.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(missing_required_attr.message(), HasSubstr("are required"));
+  EXPECT_THAT(
+      cache.GetForStroke(provided_shape, 0),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("are required")));
 }
 
 }  // namespace

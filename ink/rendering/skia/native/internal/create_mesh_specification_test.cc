@@ -21,6 +21,7 @@
 #include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/rendering/skia/common_internal/mesh_specification_data.h"
@@ -31,6 +32,9 @@
 namespace ink::skia_native_internal {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
+using ::absl_testing::StatusIs;
 using ::ink::skia_common_internal::MeshSpecificationData;
 using ::ink::strokes_internal::StrokeVertex;
 using ::testing::HasSubstr;
@@ -38,20 +42,16 @@ using ::testing::NotNull;
 using ::testing::Pointer;
 
 TEST(CreateMeshSpecificationTest, MakeForInProgressStroke) {
-  absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
-      CreateMeshSpecification(
-          MeshSpecificationData::CreateForInProgressStroke());
-  ASSERT_EQ(specification.status(), absl::OkStatus());
-  EXPECT_THAT(*specification, Pointer(NotNull()));
+  EXPECT_THAT(CreateMeshSpecification(
+                  MeshSpecificationData::CreateForInProgressStroke()),
+              IsOkAndHolds(Pointer(NotNull())));
 }
 
 TEST(CreateMeshSpecificationTest, MakeForStrokeWithFullMeshFormat) {
   absl::StatusOr<MeshSpecificationData> data =
       MeshSpecificationData::CreateForStroke(StrokeVertex::FullMeshFormat());
-  ASSERT_EQ(data.status(), absl::OkStatus());
-  auto specification = CreateMeshSpecification(*data);
-  ASSERT_EQ(specification.status(), absl::OkStatus());
-  EXPECT_THAT(*specification, Pointer(NotNull()));
+  ASSERT_THAT(data, IsOk());
+  EXPECT_THAT(CreateMeshSpecification(*data), IsOkAndHolds(Pointer(NotNull())));
 }
 
 // Returns a format identical to `starting_format` except that an attribute with
@@ -77,54 +77,47 @@ TEST(CreateMeshSpecificationTest, MakeForStrokeWithoutHslColorShift) {
       MeshSpecificationData::CreateForStroke(MakeFormatWithSkippedAttribute(
           StrokeVertex::FullMeshFormat(),
           MeshFormat::AttributeId::kColorShiftHsl));
-  ASSERT_EQ(data.status(), absl::OkStatus());
-  auto specification = CreateMeshSpecification(*data);
-  ASSERT_EQ(specification.status(), absl::OkStatus());
-  EXPECT_THAT(*specification, Pointer(NotNull()));
+  ASSERT_THAT(data, IsOk());
+  EXPECT_THAT(CreateMeshSpecification(*data), IsOkAndHolds(Pointer(NotNull())));
 }
 
 TEST(CreateMeshSpecificationTest, TryCreateWithShaderSourceError) {
-  absl::Status shader_source_error =
-      CreateMeshSpecification(
-          {
-              .attributes = {{
-                  .type = MeshSpecificationData::AttributeType::kFloat2,
-                  .name = "position",
-              }},
-              .vertex_stride = 8,
-              .varyings = {},
-              .uniforms = {},
-              .vertex_shader_source = R"(
+  EXPECT_THAT(CreateMeshSpecification({
+                  .attributes = {{
+                      .type = MeshSpecificationData::AttributeType::kFloat2,
+                      .name = "position",
+                  }},
+                  .vertex_stride = 8,
+                  .varyings = {},
+                  .uniforms = {},
+                  .vertex_shader_source = R"(
                     Varyings main(const Attributes attributes) {
                       Varyings varyings;
                       varyings.position = attributes.position;
                       // ERROR - Missing return statement.
                     }
                   )",
-              .fragment_shader_source = R"(
+                  .fragment_shader_source = R"(
                     float2 main(const Varyings varyings) {
                       return varyings.position;
                     }
                   )",
-          })
-          .status();
-  EXPECT_EQ(shader_source_error.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(shader_source_error.message(),
-              HasSubstr("`SkMeshSpecification::Make()` failed"));
+              }),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("`SkMeshSpecification::Make()` failed")));
 }
 
 TEST(CreateMeshSpecificationTest, TryCreateWithUnexpectedUniform) {
-  absl::Status unexpected_uniform =
-      CreateMeshSpecification(
-          {
-              .attributes = {{
-                  .type = MeshSpecificationData::AttributeType::kFloat2,
-                  .name = "position",
-              }},
-              .vertex_stride = 8,
-              .varyings = {},
-              .uniforms = {},
-              .vertex_shader_source = R"(
+  EXPECT_THAT(
+      CreateMeshSpecification({
+          .attributes = {{
+              .type = MeshSpecificationData::AttributeType::kFloat2,
+              .name = "position",
+          }},
+          .vertex_stride = 8,
+          .varyings = {},
+          .uniforms = {},
+          .vertex_shader_source = R"(
                     uniform float2 uPositionOffset;
 
                     Varyings main(const Attributes attributes) {
@@ -133,32 +126,28 @@ TEST(CreateMeshSpecificationTest, TryCreateWithUnexpectedUniform) {
                       return varyings;
                     }
                   )",
-              .fragment_shader_source = R"(
+          .fragment_shader_source = R"(
                     float2 main(const Varyings varyings) {
                       return varyings.position;
                     }
                   )",
-          })
-          .status();
-  EXPECT_EQ(unexpected_uniform.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(unexpected_uniform.message(), HasSubstr("uniform count"));
+      }),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("uniform count")));
 }
 
 TEST(CreateMeshSpecificationTest, TryCreateWithMissingExpectedUniform) {
-  absl::Status missing_uniform =
-      CreateMeshSpecification(
-          {
-              .attributes = {{
-                  .type = MeshSpecificationData::AttributeType::kFloat2,
-                  .name = "position",
-              }},
-              .vertex_stride = 8,
-              .varyings = {},
-              .uniforms = {{
-                  .type = MeshSpecificationData::UniformType::kFloat4,
-                  .id = MeshSpecificationData::UniformId::kBrushColor,
-              }},
-              .vertex_shader_source = R"(
+  EXPECT_THAT(CreateMeshSpecification({
+                  .attributes = {{
+                      .type = MeshSpecificationData::AttributeType::kFloat2,
+                      .name = "position",
+                  }},
+                  .vertex_stride = 8,
+                  .varyings = {},
+                  .uniforms = {{
+                      .type = MeshSpecificationData::UniformType::kFloat4,
+                      .id = MeshSpecificationData::UniformId::kBrushColor,
+                  }},
+                  .vertex_shader_source = R"(
                     uniform float2 uPositionOffset;
 
                     Varyings main(const Attributes attributes) {
@@ -167,39 +156,36 @@ TEST(CreateMeshSpecificationTest, TryCreateWithMissingExpectedUniform) {
                       return varyings;
                     }
                   )",
-              .fragment_shader_source = R"(
+                  .fragment_shader_source = R"(
                     float2 main(const Varyings varyings) {
                       return varyings.position;
                     }
                   )",
-          })
-          .status();
-  EXPECT_EQ(missing_uniform.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(missing_uniform.message(), HasSubstr("does not have uniform"));
+              }),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("does not have uniform")));
 }
 
 TEST(CreateMeshSpecificationTest, TryCreateWithUnexpectedUniformType) {
-  absl::Status unexpected_uniform_type =
-      CreateMeshSpecification(
-          {
-              .attributes = {{
-                  .type = MeshSpecificationData::AttributeType::kFloat2,
-                  .name = "position",
-              }},
-              .vertex_stride = 8,
-              .varyings = {},
-              .uniforms = {{
-                  .type = MeshSpecificationData::UniformType::kFloat4,
-                  .id = MeshSpecificationData::UniformId::kBrushColor,
-              }},
-              .vertex_shader_source = R"(
+  EXPECT_THAT(CreateMeshSpecification({
+                  .attributes = {{
+                      .type = MeshSpecificationData::AttributeType::kFloat2,
+                      .name = "position",
+                  }},
+                  .vertex_stride = 8,
+                  .varyings = {},
+                  .uniforms = {{
+                      .type = MeshSpecificationData::UniformType::kFloat4,
+                      .id = MeshSpecificationData::UniformId::kBrushColor,
+                  }},
+                  .vertex_shader_source = R"(
                     Varyings main(const Attributes attributes) {
                       Varyings varyings;
                       varyings.position = attributes.position;
                       return varyings;
                     }
                   )",
-              .fragment_shader_source = R"(
+                  .fragment_shader_source = R"(
                     layout(color) uniform float3 uBrushColor;  // WRONG TYPE
 
                     float2 main(const Varyings varyings, out float4 color) {
@@ -207,11 +193,9 @@ TEST(CreateMeshSpecificationTest, TryCreateWithUnexpectedUniformType) {
                       return varyings.position;
                     }
                   )",
-          })
-          .status();
-  EXPECT_EQ(unexpected_uniform_type.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(unexpected_uniform_type.message(),
-              HasSubstr("Unexpected type for uniform"));
+              }),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("Unexpected type for uniform")));
 }
 
 TEST(CreateMeshSpecificationDeathTest, MakeWithNonEnumeratorAttributeType) {

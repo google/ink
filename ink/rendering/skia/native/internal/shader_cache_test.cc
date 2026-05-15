@@ -24,6 +24,7 @@
 #include "fuzztest/fuzztest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -45,6 +46,9 @@
 namespace ink::skia_native_internal {
 namespace {
 
+using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
+using ::absl_testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::HasSubstr;
 using ::testing::IsNull;
@@ -86,42 +90,39 @@ absl::StatusOr<sk_sp<SkImage>> CreateImageFromSrgbLinearPixelData(
 
 TEST(ShaderCacheTest, GetShaderForEmptyBrushPaint) {
   ShaderCache cache(nullptr);
-  absl::StatusOr<sk_sp<SkShader>> shader =
-      cache.GetShaderForPaint(BrushPaint{}, 10, StrokeInputBatch());
-  ASSERT_EQ(shader.status(), absl::OkStatus());
-  EXPECT_THAT(*shader, IsNull());
+  EXPECT_THAT(cache.GetShaderForPaint(BrushPaint{}, 10, StrokeInputBatch()),
+              IsOkAndHolds(IsNull()));
 }
 
 TEST(ShaderCacheTest, TryGetTextureShaderWithoutTextureProvider) {
   ShaderCache cache(nullptr);
-  absl::StatusOr<sk_sp<SkShader>> shader = cache.GetShaderForPaint(
-      BrushPaint{{BrushPaint::TilingTexture{.client_texture_id =
-                                                std::string(kTestTextureId)}}},
-      10, StrokeInputBatch());
-  EXPECT_EQ(shader.status().code(), absl::StatusCode::kFailedPrecondition);
-  EXPECT_THAT(shader.status().message(),
-              AllOf(HasSubstr("TextureBitmapStore"), HasSubstr("null")));
+  EXPECT_THAT(
+      cache.GetShaderForPaint(
+          BrushPaint{{BrushPaint::TilingTexture{
+              .client_texture_id = std::string(kTestTextureId)}}},
+          10, StrokeInputBatch()),
+      StatusIs(absl::StatusCode::kFailedPrecondition,
+               AllOf(HasSubstr("TextureBitmapStore"), HasSubstr("null"))));
 }
 
 TEST(ShaderCacheTest, GetShaderForTexturedBrushPaint) {
   auto test_image = CreateImageFromSrgbLinearPixelData(
       /*width=*/2, /*height=*/1,
       std::vector<uint8_t>{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff});
-  ASSERT_THAT(test_image.status(), absl::OkStatus());
+  ASSERT_THAT(test_image, IsOk());
   FakeBitmapStore provider(*test_image);
   ShaderCache cache(&provider);
   absl::StatusOr<sk_sp<SkShader>> shader = cache.GetShaderForPaint(
       BrushPaint{{BrushPaint::TilingTexture{.client_texture_id =
                                                 std::string(kTestTextureId)}}},
       10, StrokeInputBatch());
-  ASSERT_EQ(shader.status(), absl::OkStatus());
-  ASSERT_THAT(*shader, NotNull());
+  ASSERT_THAT(shader, IsOkAndHolds(NotNull()));
   SkImage* image = (*shader)->isAImage(nullptr, nullptr);
   ASSERT_THAT(image, NotNull());
   EXPECT_EQ(image->width(), 2);
   EXPECT_EQ(image->height(), 1);
   EXPECT_EQ(image->alphaType(), SkAlphaType::kUnpremul_SkAlphaType);
-  EXPECT_EQ(image->colorType(), SkColorType::kRGBA_8888_SkColorType);
+  EXPECT_THAT(image->colorType(), SkColorType::kRGBA_8888_SkColorType);
   ASSERT_THAT(image->colorSpace(), NotNull());
   EXPECT_TRUE(image->colorSpace()->gammaIsLinear());
   EXPECT_FALSE(image->colorSpace()->isSRGB());
@@ -134,12 +135,10 @@ void CanGetShaderForAnyValidInputs(const BrushPaint& brush_paint,
       3, 2,
       {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc,
        0xdd, 0xee, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff});
-  ASSERT_THAT(test_image.status(), absl::OkStatus());
+  ASSERT_THAT(test_image, IsOk());
   FakeBitmapStore provider(*test_image);
   ShaderCache cache(&provider);
-  absl::StatusOr<sk_sp<SkShader>> shader =
-      cache.GetShaderForPaint(brush_paint, brush_size, inputs);
-  EXPECT_EQ(shader.status(), absl::OkStatus());
+  EXPECT_THAT(cache.GetShaderForPaint(brush_paint, brush_size, inputs), IsOk());
 }
 FUZZ_TEST(ShaderCacheTest, CanGetShaderForAnyValidInputs)
     .WithDomains(ValidBrushPaint(), fuzztest::Positive<float>(),

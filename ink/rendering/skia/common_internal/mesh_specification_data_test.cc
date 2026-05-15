@@ -39,6 +39,8 @@ namespace ink::skia_common_internal {
 namespace {
 
 using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
+using ::absl_testing::StatusIs;
 using ::ink::strokes_internal::StrokeVertex;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
@@ -263,10 +265,9 @@ TEST(MeshSpecificationDataTest, CreateForInProgressStroke) {
 }
 
 TEST(MeshSpecificationDataTest, CreateFromFullMeshFormatIsOk) {
-  EXPECT_EQ(MeshSpecificationData::CreateForInProgressStroke(
-                StrokeVertex::FullMeshFormat())
-                .status(),
-            absl::OkStatus());
+  EXPECT_THAT(MeshSpecificationData::CreateForInProgressStroke(
+                  StrokeVertex::FullMeshFormat()),
+              IsOk());
 }
 
 TEST(MeshSpecificationDataTest, CreateFromUnpackedStrokeFormat) {
@@ -372,21 +373,18 @@ TEST(MeshSpecificationDataTest,
            MeshFormat::AttributeId::kSideDerivative},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-  ASSERT_EQ(format.status(), absl::OkStatus());
+  ASSERT_THAT(format,
+              IsOkAndHolds(Not(MeshFormatEq(StrokeVertex::FullMeshFormat()))));
 
-  ASSERT_THAT(*format, Not(MeshFormatEq(StrokeVertex::FullMeshFormat())));
-
-  absl::Status not_in_progress =
-      MeshSpecificationData::CreateForInProgressStroke(*format).status();
-  EXPECT_EQ(not_in_progress.code(), absl::StatusCode::kInvalidArgument);
-  EXPECT_THAT(not_in_progress.message(),
-              HasSubstr("not from an `InProgressStroke`"));
+  EXPECT_THAT(MeshSpecificationData::CreateForInProgressStroke(*format),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("not from an `InProgressStroke`")));
 }
 
 TEST(MeshSpecificationDataTest, CreateForStrokeWithGeneratedShape) {
   absl::StatusOr<StrokeInputBatch> input = StrokeInputBatch::Create(
       {{.position = {0, 0}, .elapsed_time = Duration32::Zero()}});
-  ASSERT_EQ(input.status(), absl::OkStatus());
+  ASSERT_THAT(input, IsOk());
 
   Stroke stroke(Brush(), *input);
   ASSERT_THAT(stroke.GetShape().Meshes(), Not(IsEmpty()));
@@ -396,7 +394,7 @@ TEST(MeshSpecificationDataTest, CreateForStrokeWithGeneratedShape) {
 
   absl::StatusOr<MeshSpecificationData> data =
       MeshSpecificationData::CreateForStroke(format);
-  ASSERT_EQ(data.status(), absl::OkStatus());
+  ASSERT_THAT(data, IsOk());
 
   EXPECT_GE(data->attributes.Size(), 0);
   EXPECT_EQ(data->vertex_stride, format.PackedVertexStride());
@@ -429,75 +427,47 @@ MeshFormat MakeFormatWithSkippedAttribute(
 TEST(MeshSpecificationDataTest, CreateForStrokeWithoutHslColorShiftIsOk) {
   MeshFormat format_without_hsl = MakeFormatWithSkippedAttribute(
       StrokeVertex::FullMeshFormat(), MeshFormat::AttributeId::kColorShiftHsl);
-  EXPECT_EQ(MeshSpecificationData::CreateForStroke(format_without_hsl).status(),
-            absl::OkStatus());
+  EXPECT_THAT(MeshSpecificationData::CreateForStroke(format_without_hsl),
+              IsOk());
 }
 
 TEST(MeshSpecificationDataTest, CreateForStrokeWithoutSurfaceUvIsOk) {
   MeshFormat format_without_uv = MakeFormatWithSkippedAttribute(
       StrokeVertex::FullMeshFormat(), MeshFormat::AttributeId::kSurfaceUv);
-  EXPECT_EQ(MeshSpecificationData::CreateForStroke(format_without_uv).status(),
-            absl::OkStatus());
+  EXPECT_THAT(MeshSpecificationData::CreateForStroke(format_without_uv),
+              IsOk());
 }
 
 TEST(MeshSpecificationDataTest,
      CreateForStrokeWithoutRequiredAttributesReturnsError) {
-  MeshFormat format_with_missing_required_attribute =
-      MakeFormatWithSkippedAttribute(StrokeVertex::FullMeshFormat(),
-                                     MeshFormat::AttributeId::kOpacityShift);
-  {
-    absl::Status status = MeshSpecificationData::CreateForStroke(
-                              format_with_missing_required_attribute)
-                              .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("are required"));
-  }
+  EXPECT_THAT(
+      MeshSpecificationData::CreateForStroke(MakeFormatWithSkippedAttribute(
+          StrokeVertex::FullMeshFormat(),
+          MeshFormat::AttributeId::kOpacityShift)),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("are required")));
 
-  {
-    MeshFormat format_with_missing_required_attribute =
-        MakeFormatWithSkippedAttribute(
-            StrokeVertex::FullMeshFormat(),
-            MeshFormat::AttributeId::kSideDerivative);
-    absl::Status status = MeshSpecificationData::CreateForStroke(
-                              format_with_missing_required_attribute)
-                              .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("are required"));
-  }
+  EXPECT_THAT(
+      MeshSpecificationData::CreateForStroke(MakeFormatWithSkippedAttribute(
+          StrokeVertex::FullMeshFormat(),
+          MeshFormat::AttributeId::kSideDerivative)),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("are required")));
 
-  {
-    MeshFormat format_with_missing_required_attribute =
-        MakeFormatWithSkippedAttribute(StrokeVertex::FullMeshFormat(),
-                                       MeshFormat::AttributeId::kSideLabel);
-    absl::Status status = MeshSpecificationData::CreateForStroke(
-                              format_with_missing_required_attribute)
-                              .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("are required"));
-  }
+  EXPECT_THAT(
+      MeshSpecificationData::CreateForStroke(MakeFormatWithSkippedAttribute(
+          StrokeVertex::FullMeshFormat(), MeshFormat::AttributeId::kSideLabel)),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("are required")));
 
-  {
-    MeshFormat format_with_missing_required_attribute =
-        MakeFormatWithSkippedAttribute(
-            StrokeVertex::FullMeshFormat(),
-            MeshFormat::AttributeId::kForwardDerivative);
-    absl::Status status = MeshSpecificationData::CreateForStroke(
-                              format_with_missing_required_attribute)
-                              .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("are required"));
-  }
+  EXPECT_THAT(
+      MeshSpecificationData::CreateForStroke(MakeFormatWithSkippedAttribute(
+          StrokeVertex::FullMeshFormat(),
+          MeshFormat::AttributeId::kForwardDerivative)),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("are required")));
 
-  {
-    MeshFormat format_with_missing_required_attribute =
-        MakeFormatWithSkippedAttribute(StrokeVertex::FullMeshFormat(),
-                                       MeshFormat::AttributeId::kForwardLabel);
-    absl::Status status = MeshSpecificationData::CreateForStroke(
-                              format_with_missing_required_attribute)
-                              .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("are required"));
-  }
+  EXPECT_THAT(
+      MeshSpecificationData::CreateForStroke(MakeFormatWithSkippedAttribute(
+          StrokeVertex::FullMeshFormat(),
+          MeshFormat::AttributeId::kForwardLabel)),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("are required")));
 }
 
 std::vector<std::pair<MeshFormat::AttributeType, MeshFormat::AttributeId>>
@@ -526,13 +496,11 @@ TEST(MeshSpecificationDataTest,
       absl::StatusOr<MeshFormat> reordered_format = MeshFormat::Create(
           types_and_ids_with_swap,
           MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-      ASSERT_EQ(reordered_format.status(), absl::OkStatus());
+      ASSERT_THAT(reordered_format, IsOk());
 
-      absl::Status unsupported_order =
-          MeshSpecificationData::CreateForStroke(*reordered_format).status();
-      EXPECT_EQ(unsupported_order.code(), absl::StatusCode::kInvalidArgument);
-      EXPECT_THAT(unsupported_order.message(),
-                  HasSubstr("must be immediately after"));
+      EXPECT_THAT(MeshSpecificationData::CreateForStroke(*reordered_format),
+                  StatusIs(absl::StatusCode::kInvalidArgument,
+                           HasSubstr("must be immediately after")));
     }
   }
 }
@@ -554,101 +522,61 @@ TEST(MeshSpecificationDataTest,
      CreateForStrokeWithUnsupportedAttributeTypesReturnsError) {
   auto types_and_ids = GetFormatTypesAndIds(StrokeVertex::FullMeshFormat());
 
-  {
-    absl::Status status =
-        MeshSpecificationData::CreateForStroke(
-            MakeFormatWithModifiedType(
-                types_and_ids,
-                StrokeVertex::kFullFormatAttributeIndices.position,
-                MeshFormat::AttributeType::kFloat2Unpacked))
-            .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
-  }
+  EXPECT_THAT(
+      MeshSpecificationData::CreateForStroke(MakeFormatWithModifiedType(
+          types_and_ids, StrokeVertex::kFullFormatAttributeIndices.position,
+          MeshFormat::AttributeType::kFloat2Unpacked)),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("Unsupported type")));
 
-  {
-    absl::Status status =
-        MeshSpecificationData::CreateForStroke(
-            MakeFormatWithModifiedType(
-                types_and_ids,
-                StrokeVertex::kFullFormatAttributeIndices.opacity_shift,
-                MeshFormat::AttributeType::kFloat2Unpacked))
-            .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
-  }
+  EXPECT_THAT(MeshSpecificationData::CreateForStroke(MakeFormatWithModifiedType(
+                  types_and_ids,
+                  StrokeVertex::kFullFormatAttributeIndices.opacity_shift,
+                  MeshFormat::AttributeType::kFloat2Unpacked)),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("Unsupported type")));
 
-  {
-    absl::Status status =
-        MeshSpecificationData::CreateForStroke(
-            MakeFormatWithModifiedType(
-                types_and_ids,
-                StrokeVertex::kFullFormatAttributeIndices.hsl_shift,
-                MeshFormat::AttributeType::kFloat3PackedInOneFloat))
-            .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
-  }
+  EXPECT_THAT(
+      MeshSpecificationData::CreateForStroke(MakeFormatWithModifiedType(
+          types_and_ids, StrokeVertex::kFullFormatAttributeIndices.hsl_shift,
+          MeshFormat::AttributeType::kFloat3PackedInOneFloat)),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("Unsupported type")));
 
-  {
-    absl::Status status =
-        MeshSpecificationData::CreateForStroke(
-            MakeFormatWithModifiedType(
-                types_and_ids,
-                StrokeVertex::kFullFormatAttributeIndices.side_derivative,
-                MeshFormat::AttributeType::kFloat3PackedInOneFloat))
-            .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
-  }
+  EXPECT_THAT(MeshSpecificationData::CreateForStroke(MakeFormatWithModifiedType(
+                  types_and_ids,
+                  StrokeVertex::kFullFormatAttributeIndices.side_derivative,
+                  MeshFormat::AttributeType::kFloat3PackedInOneFloat)),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("Unsupported type")));
 
-  {
-    absl::Status status =
-        MeshSpecificationData::CreateForStroke(
-            MakeFormatWithModifiedType(
-                types_and_ids,
-                StrokeVertex::kFullFormatAttributeIndices.side_label,
-                MeshFormat::AttributeType::kFloat2PackedInOneFloat))
-            .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
-  }
+  EXPECT_THAT(
+      MeshSpecificationData::CreateForStroke(MakeFormatWithModifiedType(
+          types_and_ids, StrokeVertex::kFullFormatAttributeIndices.side_label,
+          MeshFormat::AttributeType::kFloat2PackedInOneFloat)),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("Unsupported type")));
 
-  {
-    absl::Status status =
-        MeshSpecificationData::CreateForStroke(
-            MakeFormatWithModifiedType(
-                types_and_ids,
-                StrokeVertex::kFullFormatAttributeIndices.forward_derivative,
-                MeshFormat::AttributeType::kFloat3PackedInOneFloat))
-            .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
-  }
+  EXPECT_THAT(MeshSpecificationData::CreateForStroke(MakeFormatWithModifiedType(
+                  types_and_ids,
+                  StrokeVertex::kFullFormatAttributeIndices.forward_derivative,
+                  MeshFormat::AttributeType::kFloat3PackedInOneFloat)),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("Unsupported type")));
 
-  {
-    absl::Status status =
-        MeshSpecificationData::CreateForStroke(
-            MakeFormatWithModifiedType(
-                types_and_ids,
-                StrokeVertex::kFullFormatAttributeIndices.forward_label,
-                MeshFormat::AttributeType::kFloat2PackedInOneFloat))
-            .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
-  }
+  EXPECT_THAT(MeshSpecificationData::CreateForStroke(MakeFormatWithModifiedType(
+                  types_and_ids,
+                  StrokeVertex::kFullFormatAttributeIndices.forward_label,
+                  MeshFormat::AttributeType::kFloat2PackedInOneFloat)),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("Unsupported type")));
 
-  {
-    absl::Status status =
-        MeshSpecificationData::CreateForStroke(
-            MakeFormatWithModifiedType(
-                types_and_ids,
-                StrokeVertex::kFullFormatAttributeIndices.surface_uv,
-                MeshFormat::AttributeType::kFloat3PackedInOneFloat))
-            .status();
-    EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
-    EXPECT_THAT(status.message(), HasSubstr("Unsupported type"));
-  }
+  EXPECT_THAT(
+      MeshSpecificationData::CreateForStroke(MakeFormatWithModifiedType(
+          types_and_ids, StrokeVertex::kFullFormatAttributeIndices.surface_uv,
+          MeshFormat::AttributeType::kFloat3PackedInOneFloat)),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("Unsupported type")));
 }
 
 }  // namespace
