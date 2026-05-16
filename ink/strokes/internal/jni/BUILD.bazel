@@ -39,6 +39,7 @@ filegroup(
 cc_library(
     name = "cinterop",
     deps = [
+        ":mesh_creation_native",
         ":stroke_input_batch_native",
     ],
 )
@@ -238,21 +239,9 @@ cc_library(
     srcs = ["mesh_creation_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":stroke_input_batch_native_helper",
-        ":stroke_input_jni_helper",
-        "//ink/geometry:mesh",
-        "//ink/geometry:mesh_format",
-        "//ink/geometry:partitioned_mesh",
-        "//ink/geometry:point",
-        "//ink/geometry:tessellator",
-        "//ink/geometry/internal:polyline_processing",
-        "//ink/geometry/internal/jni:partitioned_mesh_native_helper",
-        "//ink/geometry/internal/jni:vec_jni_helper",
+        ":mesh_creation_native",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:status_jni_helper",
-        "//ink/strokes/input:stroke_input_batch",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/types:span",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -260,4 +249,26 @@ cc_library(
         ],
     }),
     alwayslink = 1,
+)
+
+cc_library(
+    name = "mesh_creation_native",
+    srcs = ["mesh_creation_native.cc"],
+    hdrs = ["mesh_creation_native.h"],
+    deps = [
+        ":stroke_input_batch_native_helper",
+        "//ink/geometry:mesh",
+        "//ink/geometry:mesh_format",
+        "//ink/geometry:partitioned_mesh",
+        "//ink/geometry:point",
+        "//ink/geometry:tessellator",
+        "//ink/geometry/internal:polyline_processing",
+        "//ink/geometry/internal/jni:partitioned_mesh_native_helper",
+        "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:status_jni_helper",
+        "//ink/strokes/input:stroke_input_batch",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/types:span",
+    ],
 )
