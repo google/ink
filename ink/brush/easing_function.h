@@ -15,6 +15,7 @@
 #ifndef INK_STROKES_BRUSH_EASING_FUNCTION_H_
 #define INK_STROKES_BRUSH_EASING_FUNCTION_H_
 
+#include <cstdint>
 #include <string>
 #include <variant>
 #include <vector>
@@ -81,6 +82,11 @@ struct EasingFunction {
     float y2;
 
     friend bool operator==(const CubicBezier&, const CubicBezier&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const CubicBezier& cb) {
+      return H::combine(std::move(h), cb.x1, cb.y1, cb.x2, cb.y2);
+    }
   };
 
   // Parameters for a custom piecewise-linear easing function.
@@ -107,6 +113,11 @@ struct EasingFunction {
     std::vector<Point> points;
 
     friend bool operator==(const Linear&, const Linear&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const Linear& l) {
+      return H::combine(std::move(h), l.points);
+    }
   };
 
   // Setting to determine the desired output value of the first and last
@@ -151,6 +162,11 @@ struct EasingFunction {
     StepPosition step_position;
 
     friend bool operator==(const Steps&, const Steps&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const Steps& s) {
+      return H::combine(std::move(h), s.step_count, s.step_position);
+    }
   };
 
   // Union of possible easing function parameters.
@@ -160,6 +176,11 @@ struct EasingFunction {
 
   friend bool operator==(const EasingFunction&,
                          const EasingFunction&) = default;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const EasingFunction& func) {
+    return H::combine(std::move(h), func.parameters);
+  }
 };
 
 namespace brush_internal {

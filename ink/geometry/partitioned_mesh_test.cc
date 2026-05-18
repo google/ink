@@ -22,6 +22,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/hash/hash_testing.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
@@ -56,6 +57,41 @@ using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
+
+TEST(PartitionedMeshTest, Equality) {
+  PartitionedMesh shape1;
+  PartitionedMesh shape2;
+  EXPECT_EQ(shape1, shape2);
+
+  absl::StatusOr<PartitionedMesh> shape1_or =
+      PartitionedMesh::FromMutableMesh(MakeStraightLineMutableMesh(10));
+  ASSERT_THAT(shape1_or, IsOk());
+  shape1 = *shape1_or;
+  EXPECT_NE(shape1, shape2);
+  shape2 = shape1;
+  EXPECT_EQ(shape1, shape2);
+
+  absl::StatusOr<PartitionedMesh> shape3_status =
+      PartitionedMesh::FromMutableMesh(MakeStraightLineMutableMesh(10));
+  ASSERT_THAT(shape3_status, IsOk());
+  PartitionedMesh shape3 = *shape3_status;
+  EXPECT_NE(shape1, shape3);
+}
+
+TEST(PartitionedMeshTest, AbslHash) {
+  absl::StatusOr<PartitionedMesh> shape1 =
+      PartitionedMesh::FromMutableMesh(MakeStraightLineMutableMesh(1));
+  ASSERT_THAT(shape1, IsOk());
+  absl::StatusOr<PartitionedMesh> shape2 =
+      PartitionedMesh::FromMutableMesh(MakeStraightLineMutableMesh(2));
+  ASSERT_THAT(shape2, IsOk());
+  absl::StatusOr<PartitionedMesh> shape3 =
+      PartitionedMesh::FromMutableMesh(MakeStraightLineMutableMesh(3));
+  ASSERT_THAT(shape3, IsOk());
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
+      {PartitionedMesh(), *shape1, *shape2, *shape3, *shape1}));
+}
 
 TEST(PartitionedMeshTest, DefaultCtor) {
   PartitionedMesh shape;

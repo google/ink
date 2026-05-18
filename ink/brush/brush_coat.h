@@ -39,6 +39,13 @@ namespace ink {
 struct BrushCoat {
   BrushTip tip;
   absl::InlinedVector<BrushPaint, 1> paint_preferences = {BrushPaint{}};
+
+  bool operator==(const BrushCoat&) const = default;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const BrushCoat& coat) {
+    return H::combine(std::move(h), coat.tip, coat.paint_preferences);
+  }
 };
 
 namespace brush_internal {

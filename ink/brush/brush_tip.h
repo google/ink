@@ -114,6 +114,13 @@ struct BrushTip {
   std::vector<BrushBehavior> behaviors;
 
   friend bool operator==(const BrushTip&, const BrushTip&) = default;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const BrushTip& tip) {
+    return H::combine(std::move(h), tip.scale, tip.corner_rounding, tip.slant,
+                      tip.pinch, tip.rotation, tip.particle_gap_distance_scale,
+                      tip.particle_gap_duration, tip.behaviors);
+  }
 };
 
 namespace brush_internal {

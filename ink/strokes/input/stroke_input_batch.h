@@ -217,6 +217,17 @@ class StrokeInputBatch {
     sink.Append(batch.ToFormattedString());
   }
 
+  bool operator==(const StrokeInputBatch& rhs) const = default;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const StrokeInputBatch& batch) {
+    h = H::combine(std::move(h), batch.size_, batch.tool_type_,
+                   batch.stroke_unit_length_, batch.noise_seed_,
+                   batch.has_pressure_, batch.has_tilt_, batch.has_orientation_,
+                   batch.data_);
+    return h;
+  }
+
  private:
   absl::Status PrepareForAppend(const StrokeInput& first_new_input);
 

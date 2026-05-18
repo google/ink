@@ -19,6 +19,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/hash/hash_testing.h"
 
 namespace ink_internal {
 namespace {
@@ -187,6 +188,33 @@ TEST(CopyOnWriteTest, ValueOnEmpty) {
   CopyOnWrite<int> x;
   ASSERT_FALSE(x.HasValue());
   EXPECT_DEATH_IF_SUPPORTED(x.Value(), "");
+}
+
+TEST(CopyOnWriteTest, Equality) {
+  CopyOnWrite<int> x1;
+  CopyOnWrite<int> x2;
+  EXPECT_EQ(x1, x2);
+
+  x1.Emplace(1);
+  EXPECT_NE(x1, x2);
+  x2 = x1;
+  EXPECT_EQ(x1, x2);
+
+  CopyOnWrite<int> x3;
+  x3.Emplace(1);
+  EXPECT_NE(x1, x3);
+}
+
+TEST(CopyOnWriteTest, AbslHash) {
+  CopyOnWrite<int> x1;
+  x1.Emplace(1);
+  CopyOnWrite<int> x2;
+  x2.Emplace(2);
+  CopyOnWrite<int> x3;
+  x3.Emplace(3);
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
+      {CopyOnWrite<int>(), x1, x2, x3, x1}));
 }
 
 }  // namespace
