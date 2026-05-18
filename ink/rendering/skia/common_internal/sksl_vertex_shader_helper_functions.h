@@ -48,15 +48,21 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
 
     // Returns a 2D vector rotated by +90 degrees.
+    //
+    // LINT.IfChange(orthogonal)
     R"(
     float2 orthogonal(const float2 v) { return float2(-v.y, v.x); })"
+    // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:orthogonal)
 
     // Returns a new opacity by applying `opacityShift` to `baseOpacity`.
     // `opacityShift` is expected to be a value in the range [-1, 1].
+    //
+    // LINT.IfChange(apply_opacity_shift)
     R"(
     float applyOpacityShift(const float opacityShift, const float baseOpacity) {
       return saturate((opacityShift + 1) * baseOpacity);
     })"
+    // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:apply_opacity_shift)
 
     // Returns a new *unpremultiplied* color by applying `hslShift` and
     // `opacityShift` to `colorUnpremul`. Both the input color and the output
@@ -67,6 +73,8 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     //
     // NOTE: there is no separate `applyHSLShift()` taking two `float3`s to help
     // prevent accidentally passing arguments in the wrong order.
+    //
+    // LINT.IfChange(apply_hsl_and_opacity_shift)
     R"(
     float4 applyHSLAndOpacityShift(const float3 hslShift,
                                    const float opacityShift,
@@ -99,6 +107,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
                    dot(yiq, float3(1, -1.107,  1.704)));
       return float4(rgb, applyOpacityShift(opacityShift, colorUnpremul.a));
     })"
+    // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:apply_hsl_and_opacity_shift)
 
     // Decodes the values of the side and forward margins given the side and
     // forward `labels`.
@@ -113,7 +122,8 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
     // LINT.ThenChange(
     //     ../../../strokes/internal/stroke_vertex.cc:margin_encoding,
-    //     ../../../strokes/internal/stroke_vertex.h:margin_encoding)
+    //     ../../../strokes/internal/stroke_vertex.h:margin_encoding,
+    //     ../../../rendering/webgpu/StrokeShader.wgsl:decode_margins)
 
     // Computes per-vertex properties needed for antialiasing and returns an
     // offset that should be added to `varyings.position`.
@@ -197,6 +207,8 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     // combined, keeping in mind when the side and forward outsets may point in
     // the same direction. The final calculated outset is returned in
     // object/local-coordinates of the mesh.
+    //
+    // LINT.IfChange(calculate_antialiasing_and_position_outset)
     R"(
     float2 calculateAntialiasingAndPositionOutset(
         const float3 sideDerivativeAndLabel,
@@ -243,6 +255,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
 
       return sideOutset + (1.0 - commonForwardMagnitude) * forwardOutset;
     })"
+    // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
 
     // Calculates the texture UV coordinates that should be used for a
     // particular vertex of a stamping-textured mesh.
@@ -306,6 +319,8 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     // `MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12`. The
     // components of `unpackingTransform` are expected to be:
     //     {x-offset, x-scale, y-offset, y-scale}
+    //
+    // LINT.IfChange(float2_packed_into_ubyte3)
     R"(
     float2 unpackFloat2PackedIntoUByte3(const float4 unpackingTransform,
                                         const half3 packedValue) {
@@ -315,6 +330,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
                  4096.0 * fract(mixedXY) + 255.0 * float(packedValue.z));
       return unpackingTransform.yw * unpacked + unpackingTransform.xz;
     })"
+    // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:float2_packed_into_ubyte3)
 
     // ------------------------------------------------------------------------
     // Unpacking functions for particular shader vertex attributes

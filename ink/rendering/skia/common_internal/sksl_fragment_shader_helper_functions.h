@@ -82,6 +82,7 @@ inline constexpr absl::string_view kSkSLFragmentShaderHelpers =
     // "left-right" axis is sufficiently close to perpendicular to the
     // "front-back" axis.
     R"(
+    // LINT.IfChange(simulated_pixel_coverage)
     float simulatedPixelCoverage(const float2 pixelsPerDimension,
                                  const float4 normalizedToEdgeLRFB,
                                  const float4 outsetPixelsLRFB) {
@@ -99,6 +100,7 @@ inline constexpr absl::string_view kSkSLFragmentShaderHelpers =
               float2(1.0), isInterior);
       return coverage.x * coverage.y;
     }
+    // LINT.ThenChange(../../webgpu/StrokeShader.wgsl:simulated_pixel_coverage)
 )";
 
 }  // namespace ink::skia_common_internal

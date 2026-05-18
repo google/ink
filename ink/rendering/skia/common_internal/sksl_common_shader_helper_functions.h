@@ -45,10 +45,13 @@ inline constexpr absl::string_view kSkSLCommonShaderHelpers =
     // to a single pixel, but produces a greater amount of luminosity flicker
     // below that. So we compromise and transition back to a target outset of
     // 0.5 px when `widthInPixels` begins to drop below 1 px.
+    //
     R"(
+    // LINT.IfChange(target_antialiasing_pixel_outset)
     float targetAntialiasingPixelOutset(const float widthInPixels) {
       return mix(0.5, 0.707107, saturate(2.0 * (widthInPixels - 0.5)));
     }
+    // LINT.ThenChange(../../webgpu/StrokeShader.wgsl:target_antialiasing_pixel_outset)
 )";
 
 }  // namespace ink::skia_common_internal
