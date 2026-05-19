@@ -18,7 +18,6 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
-#include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/type_matchers.h"
