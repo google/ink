@@ -1,4 +1,4 @@
-#include "ink/strokes/internal/jni/in_progress_stroke_jni_helper.h"
+#include "ink/strokes/internal/jni/in_progress_stroke_native_helper.h"
 
 #include <cstdint>
 #include <limits>
@@ -7,11 +7,11 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-namespace ink::jni {
+namespace ink::native {
 namespace {
 
-using ::ink::jni::internal::PartitionedCoatIndices;
-using ::ink::jni::internal::UpdatePartitionedCoatIndices;
+using ::ink::native::internal::PartitionedCoatIndices;
+using ::ink::native::internal::UpdatePartitionedCoatIndices;
 using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::IsEmpty;
@@ -161,4 +161,4 @@ TEST(UpdatePartitionedCoatIndicesTest,
 }
 
 }  // namespace
-}  // namespace ink::jni
+}  // namespace ink::native

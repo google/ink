@@ -16,6 +16,7 @@
 
 #include <cstddef>
 
+#include "absl/base/nullability.h"
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/internal/jni/box_jni_helper.h"
@@ -23,11 +24,13 @@
 #include "ink/geometry/internal/jni/mesh_native_helper.h"
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/mesh.h"
+#include "ink/jni/internal/jni_buffer_util.h"
 #include "ink/jni/internal/jni_defines.h"
 
 namespace {
 
 using ::ink::Mesh;
+using ::ink::jni::ByteSpanToUnsafelyMutableDirectByteBuffer;
 using ::ink::jni::CreateJImmutableBoxOrThrow;
 using ::ink::jni::FillJMutableVecOrThrow;
 using ::ink::native::CastToMesh;
@@ -63,17 +66,14 @@ JNI_METHOD(geometry, MeshNative, jlong, newCopy)
 // Returns a direct [ByteBuffer] wrapped around the contents of
 // `ink::Mesh::RawVertexData`. It will be writeable, so be sure to only expose a
 // read-only wrapper of it.
-JNI_METHOD(geometry, JvmMeshNative, jobject,
+JNI_METHOD(geometry, JvmMeshNative, absl_nullable jobject,
            createUnsafelyMutableMeshOwnedRawVertexBuffer)
 (JNIEnv* env, jobject object, jlong native_pointer) {
   const Mesh& mesh = CastToMesh(native_pointer);
   const absl::Span<const std::byte> raw_vertex_data = mesh.RawVertexData();
-  if (raw_vertex_data.data() == nullptr) return nullptr;
-  return env->NewDirectByteBuffer(
-      // NewDirectByteBuffer needs a non-const void*. The resulting buffer is
-      // writeable, but it will be wrapped at the Kotlin layer in a read-only
-      // buffer that delegates to this one.
-      const_cast<std::byte*>(raw_vertex_data.data()), raw_vertex_data.size());
+  // The resulting buffer will be writeable, but it will be wrapped at the
+  // Kotlin layer in a read-only buffer that delegates to this one.
+  return ByteSpanToUnsafelyMutableDirectByteBuffer(env, raw_vertex_data);
 }
 
 // Return the number of bytes per vertex in `createRawVertexBuffer`.
@@ -99,13 +99,8 @@ JNI_METHOD(geometry, JvmMeshNative, jobject,
   ABSL_CHECK_EQ(mesh.IndexStride(), 2u);
   const absl::Span<const std::byte> raw_triangle_index_data =
       mesh.RawIndexData();
-  if (raw_triangle_index_data.data() == nullptr) return nullptr;
-  return env->NewDirectByteBuffer(
-      // NewDirectByteBuffer needs a non-const void*. The resulting buffer is
-      // writeable, but it will be wrapped at the Kotlin layer in a read-only
-      // buffer that delegates to this one.
-      const_cast<std::byte*>(raw_triangle_index_data.data()),
-      raw_triangle_index_data.size());
+  return ByteSpanToUnsafelyMutableDirectByteBuffer(env,
+                                                   raw_triangle_index_data);
 }
 
 // Return the number of triangles represented in `createRawTriangleIndexBuffer`.

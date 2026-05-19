@@ -90,7 +90,7 @@ cc_library(
     srcs = ["in_progress_stroke_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":in_progress_stroke_jni_helper",
+        ":in_progress_stroke_native_helper",
         ":stroke_input_batch_native_helper",
         ":stroke_input_jni_helper",
         ":stroke_jni_helper",
@@ -103,6 +103,7 @@ cc_library(
         "//ink/geometry/internal/jni:box_accumulator_jni_helper",
         "//ink/geometry/internal/jni:mesh_format_native_helper",
         "//ink/geometry/internal/jni:vec_jni_helper",
+        "//ink/jni/internal:jni_buffer_util",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:status_jni_helper",
         "//ink/strokes:in_progress_stroke",
@@ -125,39 +126,26 @@ cc_library(
 )
 
 cc_library(
-    name = "in_progress_stroke_jni_helper",
-    srcs = ["in_progress_stroke_jni_helper.cc"],
-    hdrs = ["in_progress_stroke_jni_helper.h"],
+    name = "in_progress_stroke_native_helper",
+    srcs = ["in_progress_stroke_native_helper.cc"],
+    hdrs = ["in_progress_stroke_native_helper.h"],
     deps = [
         "//ink/brush",
-        "//ink/geometry:angle",
         "//ink/geometry:mutable_mesh",
-        "//ink/jni/internal:jni_defines",
         "//ink/strokes:in_progress_stroke",
-        "//ink/strokes/input:stroke_input",
-        "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
-        "//ink/types:physical_distance",
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/types:span",
-    ] + select({
-        "@platforms//os:android": [],
-        "//conditions:default": [
-            "@rules_jni//jni",
-        ],
-    }),
+    ],
 )
 
 cc_test(
-    name = "in_progress_stroke_jni_helper_test",
-    srcs = ["in_progress_stroke_jni_helper_test.cc"],
+    name = "in_progress_stroke_native_helper_test",
+    srcs = ["in_progress_stroke_native_helper_test.cc"],
     deps = [
-        ":in_progress_stroke_jni_helper",
+        ":in_progress_stroke_native_helper",
         "@com_google_googletest//:gtest_main",
     ],
 )

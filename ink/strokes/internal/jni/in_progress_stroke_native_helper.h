@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INK_STROKES_INTERNAL_JNI_IN_PROGRESS_STROKE_JNI_HELPER_H_
-#define INK_STROKES_INTERNAL_JNI_IN_PROGRESS_STROKE_JNI_HELPER_H_
+#ifndef INK_STROKES_INTERNAL_JNI_IN_PROGRESS_STROKE_NATIVE_HELPER_H_
+#define INK_STROKES_INTERNAL_JNI_IN_PROGRESS_STROKE_NATIVE_HELPER_H_
 
-#include <jni.h>
-
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
-#include "absl/base/nullability.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
@@ -28,7 +26,7 @@
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/types/duration.h"
 
-namespace ink::jni {
+namespace ink::native {
 
 namespace internal {
 
@@ -102,12 +100,12 @@ class InProgressStrokeWrapper {
   // index buffers.
   absl::Status UpdateShape(Duration32 current_elapsed_time);
 
-  int MeshPartitionCount(jint coat_index) const;
-  int VertexCount(jint coat_index, jint mesh_partition_index) const;
-  absl_nullable jobject GetUnsafelyMutableRawVertexData(
-      JNIEnv* env, int coat_index, jint mesh_partition_index) const;
-  absl_nullable jobject GetUnsafelyMutableRawTriangleIndexData(
-      JNIEnv* env, int coat_index, jint mesh_partition_index) const;
+  int MeshPartitionCount(int coat_index) const;
+  int VertexCount(int coat_index, int mesh_partition_index) const;
+  absl::Span<const std::byte> GetRawVertexData(int coat_index,
+                                               int mesh_partition_index) const;
+  absl::Span<const std::byte> GetRawTriangleIndexData(
+      int coat_index, int mesh_partition_index) const;
 
  private:
   void UpdateCaches();
@@ -123,16 +121,16 @@ class InProgressStrokeWrapper {
 };
 
 // Creates a new heap-allocated `ink::jni::InProgressStrokeWrapper` containing
-// an empty `InProgressStroke` and returns a pointer to it as a jlong, suitable
-// for wrapping in a Kotlin InProgressStroke.
-inline jlong NewNativeInProgressStroke() {
-  return reinterpret_cast<jlong>(new InProgressStrokeWrapper());
+// an empty `InProgressStroke` and returns a pointer to it as a int64_t,
+// suitable for wrapping in a Kotlin InProgressStroke.
+inline int64_t NewNativeInProgressStroke() {
+  return reinterpret_cast<int64_t>(new InProgressStrokeWrapper());
 }
 
 // Casts a Kotlin InProgressStroke.nativePointer to a mutable reference to a
 // C++ InProgressStrokeWrapper.
 inline InProgressStrokeWrapper& CastToMutableInProgressStrokeWrapper(
-    jlong native_pointer) {
+    int64_t native_pointer) {
   ABSL_CHECK_NE(native_pointer, 0);
   return *reinterpret_cast<InProgressStrokeWrapper*>(native_pointer);
 }
@@ -140,17 +138,17 @@ inline InProgressStrokeWrapper& CastToMutableInProgressStrokeWrapper(
 // Casts a Kotlin InProgressStroke.nativePointer to a const reference to a
 // C++ InProgressStrokeWrapper.
 inline const InProgressStrokeWrapper& CastToInProgressStrokeWrapper(
-    jlong native_pointer) {
+    int64_t native_pointer) {
   ABSL_CHECK_NE(native_pointer, 0);
   return *reinterpret_cast<const InProgressStrokeWrapper*>(native_pointer);
 }
 
 // Frees a Kotlin InProgressStroke.nativePointer.
-inline void DeleteNativeInProgressStroke(jlong native_pointer) {
+inline void DeleteNativeInProgressStroke(int64_t native_pointer) {
   ABSL_CHECK_NE(native_pointer, 0);
   delete reinterpret_cast<InProgressStrokeWrapper*>(native_pointer);
 }
 
-}  // namespace ink::jni
+}  // namespace ink::native
 
-#endif  // INK_STROKES_INTERNAL_JNI_IN_PROGRESS_STROKE_JNI_HELPER_H_
+#endif  // INK_STROKES_INTERNAL_JNI_IN_PROGRESS_STROKE_NATIVE_HELPER_H_

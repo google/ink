@@ -1,6 +1,4 @@
-#include "ink/strokes/internal/jni/in_progress_stroke_jni_helper.h"
-
-#include <jni.h>
+#include "ink/strokes/internal/jni/in_progress_stroke_native_helper.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -8,7 +6,6 @@
 #include <limits>
 #include <vector>
 
-#include "absl/base/nullability.h"
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
@@ -17,7 +14,7 @@
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/types/duration.h"
 
-namespace ink::jni {
+namespace ink::native {
 
 namespace {
 
@@ -26,8 +23,8 @@ using internal::UpdatePartitionedCoatIndices;
 
 }  // namespace
 
-int InProgressStrokeWrapper::VertexCount(jint coat_index,
-                                         jint mesh_partition_index) const {
+int InProgressStrokeWrapper::VertexCount(int coat_index,
+                                         int mesh_partition_index) const {
   ABSL_CHECK_LT(coat_index, coat_buffer_partitions_.size());
   ABSL_CHECK_LT(mesh_partition_index,
                 coat_buffer_partitions_[coat_index].partitions.size());
@@ -158,22 +155,20 @@ void InProgressStrokeWrapper::UpdateCache(int coat_index) {
       coat_buffer_partitions_[coat_index]);
 }
 
-int InProgressStrokeWrapper::MeshPartitionCount(jint coat_index) const {
+int InProgressStrokeWrapper::MeshPartitionCount(int coat_index) const {
   ABSL_CHECK_LT(coat_index, coat_buffer_partitions_.size());
   return coat_buffer_partitions_[coat_index].partitions.size();
 }
 
-absl_nullable jobject InProgressStrokeWrapper::GetUnsafelyMutableRawVertexData(
-    JNIEnv* env, int coat_index, jint mesh_partition_index) const {
+absl::Span<const std::byte> InProgressStrokeWrapper::GetRawVertexData(
+    int coat_index, int mesh_partition_index) const {
   ABSL_CHECK_LT(coat_index, coat_buffer_partitions_.size());
   ABSL_CHECK_LT(mesh_partition_index,
                 coat_buffer_partitions_[coat_index].partitions.size());
   const absl::Span<const std::byte> raw_vertex_data =
       in_progress_stroke_.GetMesh(coat_index).RawVertexData();
-  // absl::Span::data() may be nullptr if empty, which NewDirectByteBuffer does
-  // not permit (even if the size is zero).
-  if (raw_vertex_data.data() == nullptr) {
-    return nullptr;
+  if (raw_vertex_data.empty()) {
+    return raw_vertex_data;
   }
   const PartitionedCoatIndices::Partition& partition =
       coat_buffer_partitions_[coat_index].partitions[mesh_partition_index];
@@ -184,28 +179,20 @@ absl_nullable jobject InProgressStrokeWrapper::GetUnsafelyMutableRawVertexData(
       (partition.vertex_buffer_offset + partition.vertex_buffer_size) *
           vertex_stride,
       raw_vertex_data.size());
-  return env->NewDirectByteBuffer(
-      // NewDirectByteBuffer needs a non-const void*. The resulting buffer is
-      // writeable, but it will be wrapped at the Kotlin layer in a read-only
-      // buffer that delegates to this one.
-      const_cast<std::byte*>(raw_vertex_data.data()) +
-          partition.vertex_buffer_offset * vertex_stride,
-      partition.vertex_buffer_size * vertex_stride);
+  return raw_vertex_data.subspan(partition.vertex_buffer_offset * vertex_stride,
+                                 partition.vertex_buffer_size * vertex_stride);
 }
 
-absl_nullable jobject
-InProgressStrokeWrapper::GetUnsafelyMutableRawTriangleIndexData(
-    JNIEnv* env, int coat_index, jint mesh_partition_index) const {
+absl::Span<const std::byte> InProgressStrokeWrapper::GetRawTriangleIndexData(
+    int coat_index, int mesh_partition_index) const {
   ABSL_CHECK_LT(coat_index, coat_buffer_partitions_.size());
   ABSL_CHECK_LT(mesh_partition_index,
                 coat_buffer_partitions_[coat_index].partitions.size());
   const PartitionedCoatIndices& cache = coat_buffer_partitions_[coat_index];
   const std::vector<uint16_t>& triangle_index_data =
       cache.converted_index_buffer;
-  // std::vector::data() may be nullptr if empty, which NewDirectByteBuffer
-  // does not permit (even if the size is zero).
-  if (triangle_index_data.data() == nullptr) {
-    return nullptr;
+  if (triangle_index_data.empty()) {
+    return absl::Span<const std::byte>();
   }
   const PartitionedCoatIndices::Partition& partition =
       cache.partitions[mesh_partition_index];
@@ -218,14 +205,10 @@ InProgressStrokeWrapper::GetUnsafelyMutableRawTriangleIndexData(
       next_partition_index_buffer_offset - partition.index_buffer_offset;
   ABSL_CHECK_LE(partition.index_buffer_offset + partition_index_buffer_size,
                 triangle_index_data.size());
-  return env->NewDirectByteBuffer(
-      // NewDirectByteBuffer needs a non-const void*. The resulting buffer
-      // is writeable, but it will be wrapped at the Kotlin layer in a
-      // read-only buffer that delegates to this one. This one needs to be
-      // compatible with ShortBuffer, which expects 16-bit values.
-      const_cast<uint16_t*>(triangle_index_data.data() +
-                            partition.index_buffer_offset),
+  return absl::Span<const std::byte>(
+      reinterpret_cast<const std::byte*>(triangle_index_data.data() +
+                                         partition.index_buffer_offset),
       partition_index_buffer_size * sizeof(uint16_t));
 }
 
-}  // namespace ink::jni
+}  // namespace ink::native

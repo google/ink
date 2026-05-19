@@ -175,7 +175,9 @@ cc_library(
         "//ink/geometry:mesh",
         "//ink/geometry:point",
         "//ink/geometry:rect",
+        "//ink/jni/internal:jni_buffer_util",
         "//ink/jni/internal:jni_defines",
+        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ] + select({

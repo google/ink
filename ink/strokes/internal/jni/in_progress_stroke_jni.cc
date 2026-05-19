@@ -27,12 +27,13 @@
 #include "ink/geometry/internal/jni/vec_jni_helper.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
+#include "ink/jni/internal/jni_buffer_util.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/status_jni_helper.h"
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/input/stroke_input_batch.h"
-#include "ink/strokes/internal/jni/in_progress_stroke_jni_helper.h"
+#include "ink/strokes/internal/jni/in_progress_stroke_native_helper.h"
 #include "ink/strokes/internal/jni/stroke_input_batch_native_helper.h"
 #include "ink/strokes/internal/jni/stroke_input_jni_helper.h"
 #include "ink/strokes/internal/jni/stroke_jni_helper.h"
@@ -44,19 +45,20 @@ using ::ink::InProgressStroke;
 using ::ink::Point;
 using ::ink::StrokeInput;
 using ::ink::StrokeInputBatch;
-using ::ink::jni::CastToInProgressStrokeWrapper;
-using ::ink::jni::CastToMutableInProgressStrokeWrapper;
-using ::ink::jni::DeleteNativeInProgressStroke;
+using ::ink::jni::ByteSpanToUnsafelyMutableDirectByteBuffer;
 using ::ink::jni::FillJBoxAccumulatorOrThrow;
 using ::ink::jni::FillJMutableVecOrThrow;
-using ::ink::jni::InProgressStrokeWrapper;
-using ::ink::jni::NewNativeInProgressStroke;
 using ::ink::jni::NewNativeStroke;
 using ::ink::jni::ThrowExceptionFromStatus;
 using ::ink::jni::UpdateJStrokeInputOrThrow;
 using ::ink::native::CastToBrush;
+using ::ink::native::CastToInProgressStrokeWrapper;
+using ::ink::native::CastToMutableInProgressStrokeWrapper;
 using ::ink::native::CastToMutableStrokeInputBatch;
 using ::ink::native::CastToStrokeInputBatch;
+using ::ink::native::DeleteNativeInProgressStroke;
+using ::ink::native::InProgressStrokeWrapper;
+using ::ink::native::NewNativeInProgressStroke;
 using ::ink::native::NewNativeMeshFormat;
 
 extern "C" {
@@ -281,8 +283,11 @@ JNI_METHOD(strokes, InProgressStrokeNative, absl_nullable jobject,
            getUnsafelyMutableRawVertexData)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint mesh_index) {
-  return CastToInProgressStrokeWrapper(native_pointer)
-      .GetUnsafelyMutableRawVertexData(env, coat_index, mesh_index);
+  // The resulting buffer will be writeable, but it will be wrapped at the
+  // Kotlin layer in a read-only buffer that delegates to this one.
+  return ByteSpanToUnsafelyMutableDirectByteBuffer(
+      env, CastToInProgressStrokeWrapper(native_pointer)
+               .GetRawVertexData(coat_index, mesh_index));
 }
 
 // Returns a direct byte buffer of the triangle index data in 16-bit format.
@@ -297,8 +302,11 @@ JNI_METHOD(strokes, InProgressStrokeNative, absl_nullable jobject,
            getUnsafelyMutableRawTriangleIndexData)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint mesh_index) {
-  return CastToInProgressStrokeWrapper(native_pointer)
-      .GetUnsafelyMutableRawTriangleIndexData(env, coat_index, mesh_index);
+  // The resulting buffer will be writeable, but it will be wrapped at the
+  // Kotlin layer in a read-only buffer that delegates to this one.
+  return ByteSpanToUnsafelyMutableDirectByteBuffer(
+      env, CastToInProgressStrokeWrapper(native_pointer)
+               .GetRawTriangleIndexData(coat_index, mesh_index));
 }
 
 // Return a newly allocated copy of the given `Mesh`'s `MeshFormat`.

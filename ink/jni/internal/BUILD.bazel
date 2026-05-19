@@ -38,6 +38,22 @@ cc_library(
 )
 
 cc_library(
+    name = "jni_buffer_util",
+    srcs = ["jni_buffer_util.cc"],
+    hdrs = ["jni_buffer_util.h"],
+    deps = [
+        "@com_google_absl//absl/base:nullability",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/types:span",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+)
+
+cc_library(
     name = "jni_string_util",
     srcs = ["jni_string_util.cc"],
     hdrs = ["jni_string_util.h"],
