@@ -24,6 +24,8 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/hash/hash.h"
+#include "absl/hash/hash_testing.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
@@ -998,6 +1000,38 @@ TEST(MeshTest, CreateFromQuantizedDataErrorsWithAttributeOutOfBounds) {
                                              {1}},
                                             {}, coding_params),
               StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("range")));
+}
+
+TEST(MeshTest, EqualityAndHashing) {
+  absl::StatusOr<Mesh> m1 = Mesh::Create(MeshFormat(),
+                                         {// Position
+                                          {5, 10, 20},
+                                          {50, -30, 12}},
+                                         // Triangles
+                                         {0, 1, 2});
+  ASSERT_THAT(m1, IsOk());
+
+  // Copy constructor should share data.
+  Mesh m2 = *m1;
+  EXPECT_EQ(*m1, m2);
+  EXPECT_EQ(absl::HashOf(*m1), absl::HashOf(m2));
+
+  // New instance with same content should NOT be equal because pointers differ
+  // (shallow equality).
+  absl::StatusOr<Mesh> m3 = Mesh::Create(MeshFormat(),
+                                         {// Position
+                                          {5, 10, 20},
+                                          {50, -30, 12}},
+                                         // Triangles
+                                         {0, 1, 2});
+  ASSERT_THAT(m3, IsOk());
+  EXPECT_NE(*m1, *m3);
+
+  absl::StatusOr<Mesh> m4 = Mesh::Create(MeshFormat(), {{}, {}}, {});
+  ASSERT_THAT(m4, IsOk());
+
+  EXPECT_TRUE(
+      absl::VerifyTypeImplementsAbslHashCorrectly({*m1, m2, *m3, *m4, Mesh()}));
 }
 
 }  // namespace

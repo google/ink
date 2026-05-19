@@ -106,6 +106,13 @@ class CopyOnWrite {
     return value_.get();
   }
 
+  bool operator==(const CopyOnWrite& other) const = default;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const CopyOnWrite& cow) {
+    return H::combine(std::move(h), cow.value_.get());
+  }
+
  private:
   absl_nullable std::shared_ptr<T> value_;
 };

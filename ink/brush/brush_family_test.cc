@@ -22,6 +22,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/hash/hash_testing.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
@@ -98,6 +99,73 @@ BrushCoat CreateTestCoat() {
       .tip = CreatePressureTestTip(),
       .paint_preferences = {CreateTestPaint()},
   };
+}
+
+TEST(BrushFamilyTest, Equality) {
+  absl::StatusOr<BrushFamily> family1 = BrushFamily::Create({});
+  ASSERT_THAT(family1, IsOk());
+  absl::StatusOr<BrushFamily> family2 = BrushFamily::Create({});
+  ASSERT_THAT(family2, IsOk());
+  EXPECT_EQ(*family1, *family2);
+
+  family1 = BrushFamily::Create(
+      {BrushCoat{.tip = {.pinch = 0.5f}}},
+      BrushFamily::SlidingWindowModel{.window_size = Duration32::Millis(1)},
+      {.client_brush_family_id = "family1"});
+  ASSERT_THAT(family1, IsOk());
+  EXPECT_NE(*family1, *family2);
+  family2 = BrushFamily::Create(
+      {BrushCoat{.tip = {.pinch = 0.5f}}},
+      BrushFamily::SlidingWindowModel{.window_size = Duration32::Millis(1)},
+      {.client_brush_family_id = "family1"});
+  ASSERT_THAT(family2, IsOk());
+  EXPECT_EQ(*family1, *family2);
+
+  // Different coats should make families unequal.
+  family2 = BrushFamily::Create(
+      {BrushCoat{.tip = {.pinch = 0.6f}}},
+      BrushFamily::SlidingWindowModel{.window_size = Duration32::Millis(1)},
+      {.client_brush_family_id = "family1"});
+  ASSERT_THAT(family2, IsOk());
+  EXPECT_NE(*family1, *family2);
+
+  // Different input model should make families unequal.
+  family2 = BrushFamily::Create(
+      {BrushCoat{.tip = {.pinch = 0.5f}}},
+      BrushFamily::SlidingWindowModel{.window_size = Duration32::Millis(2)},
+      {.client_brush_family_id = "family1"});
+  ASSERT_THAT(family2, IsOk());
+  EXPECT_NE(*family1, *family2);
+
+  // Different metadata should make families unequal.
+  family2 = BrushFamily::Create(
+      {BrushCoat{.tip = {.pinch = 0.5f}}},
+      BrushFamily::SlidingWindowModel{.window_size = Duration32::Millis(1)},
+      {.client_brush_family_id = "family2"});
+  ASSERT_THAT(family2, IsOk());
+  EXPECT_NE(*family1, *family2);
+}
+
+TEST(BrushFamilyTest, AbslHash) {
+  absl::StatusOr<BrushFamily> family_default = BrushFamily::Create({});
+  ASSERT_THAT(family_default, IsOk());
+  absl::StatusOr<BrushFamily> family1 = BrushFamily::Create(
+      {BrushCoat{.tip = {.pinch = 0.1f}}},
+      BrushFamily::SlidingWindowModel{.window_size = Duration32::Millis(1)},
+      {.client_brush_family_id = "family1"});
+  ASSERT_THAT(family1, IsOk());
+  absl::StatusOr<BrushFamily> family2 = BrushFamily::Create(
+      {BrushCoat{.tip = {.pinch = 0.2f}}},
+      BrushFamily::SlidingWindowModel{.window_size = Duration32::Millis(2)},
+      {.client_brush_family_id = "family2"});
+  ASSERT_THAT(family2, IsOk());
+  absl::StatusOr<BrushFamily> family3 = BrushFamily::Create(
+      {BrushCoat{.tip = {.pinch = 0.1f}}, BrushCoat{.tip = {.pinch = 0.2f}}},
+      BrushFamily::PassthroughModel{}, {.developer_comment = "comment"});
+  ASSERT_THAT(family3, IsOk());
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
+      {*family_default, *family1, *family2, *family3}));
 }
 
 TEST(BrushFamilyTest, StringifyInputModel) {

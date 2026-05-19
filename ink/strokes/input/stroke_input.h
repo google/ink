@@ -85,6 +85,15 @@ struct StrokeInput {
   // is a separate condition from the orientation being indeterminant when
   // `tilt` is 0.
   Angle orientation = kNoOrientation;
+
+  bool operator==(const StrokeInput&) const = default;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const StrokeInput& input) {
+    return H::combine(std::move(h), input.tool_type, input.position,
+                      input.elapsed_time, input.stroke_unit_length,
+                      input.pressure, input.tilt, input.orientation);
+  }
 };
 
 namespace stroke_input_internal {

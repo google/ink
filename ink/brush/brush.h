@@ -89,6 +89,14 @@ class Brush {
     sink.Append(brush.ToFormattedString());
   }
 
+  bool operator==(const Brush& other) const = default;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const Brush& brush) {
+    return H::combine(std::move(h), brush.family_, brush.color_, brush.size_,
+                      brush.epsilon_);
+  }
+
  private:
   Brush(const BrushFamily& family, const Color& color, float size,
         float epsilon);

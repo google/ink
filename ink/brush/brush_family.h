@@ -42,7 +42,13 @@ class BrushFamily {
   // the modeled inputs. This can be useful as a point of comparison for other
   // input models, or for callers who wish to do their own input modeling prior
   // to passing inputs into Ink.
-  struct PassthroughModel {};
+  struct PassthroughModel {
+    bool operator==(const PassthroughModel&) const = default;
+    template <typename H>
+    friend H AbslHashValue(H h, const PassthroughModel&) {
+      return h;
+    }
+  };
 
   // Averages nearby inputs together within a sliding time window. To be valid,
   // the window size must be finite and strictly positive, and the upsampling
@@ -57,6 +63,14 @@ class BrushFamily {
     // inserted between them. Set this to `Duration32::Infinite()` to disable
     // upsampling.
     Duration32 upsampling_period = Duration32::Seconds(1.0 / 180.0);
+
+    bool operator==(const SlidingWindowModel&) const = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const SlidingWindowModel& model) {
+      return H::combine(std::move(h), model.window_size,
+                        model.upsampling_period);
+    }
   };
 
   // Specifies a model for turning a sequence of raw hardware inputs (e.g. from
@@ -86,6 +100,12 @@ class BrushFamily {
     std::string developer_comment;
 
     bool operator==(const Metadata&) const = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const Metadata& metadata) {
+      return H::combine(std::move(h), metadata.client_brush_family_id,
+                        metadata.developer_comment);
+    }
   };
 
   // Returns the default `InputModel` that will be used by
@@ -158,6 +178,15 @@ class BrushFamily {
   template <typename Sink>
   friend void AbslStringify(Sink& sink, const BrushFamily& family) {
     sink.Append(family.ToFormattedString());
+  }
+
+  bool operator==(const BrushFamily& other) const = default;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const BrushFamily& family) {
+    return H::combine(std::move(h), family.coats_, family.input_model_,
+                      family.metadata_,
+                      family.opaque_decoded_proto_bytes_with_fallbacks_);
   }
 
   friend class BrushFamilyInternalAccessor;
