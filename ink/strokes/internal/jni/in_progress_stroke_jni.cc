@@ -187,8 +187,7 @@ JNI_METHOD(strokes, InProgressStrokeNative, jint, populateInputs)
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, void, getAndOverwriteInput)
-(JNIEnv* env, jobject thiz, jlong native_pointer, jobject j_input, jint index,
- jclass input_tool_type_class) {
+(JNIEnv* env, jobject thiz, jlong native_pointer, jobject j_input, jint index) {
   const InProgressStroke& in_progress_stroke =
       CastToInProgressStrokeWrapper(native_pointer).Stroke();
   StrokeInput input = in_progress_stroke.GetInputs().Get(index);
