@@ -68,9 +68,6 @@ jmethodID MethodMutableParallelogramSetCenterDimensionsRotationInDegreesAndSkew(
 jclass ClassColorCallbacks(JNIEnv* env);
 jmethodID MethodColorCallbacksComposeColorLongFromComponents(JNIEnv* env);
 
-jclass ClassInputToolType(JNIEnv* env);
-jmethodID MethodInputToolTypeFromInt(JNIEnv* env);
-
 jclass ClassStrokeInput(JNIEnv* env);
 jmethodID MethodStrokeInputUpdate(JNIEnv* env);
 

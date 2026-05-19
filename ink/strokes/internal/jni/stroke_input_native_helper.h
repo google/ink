@@ -19,10 +19,6 @@
 
 namespace ink::native {
 
-// Converts Kotlin jint representation of InputToolType enum to C++
-// StrokeInput::ToolType enum.
-StrokeInput::ToolType IntToToolType(int val);
-
 // Converts C++ StrokeInput::ToolType enum to Kotlin int representation of
 // InputToolType enum.
 int ToolTypeToInt(StrokeInput::ToolType type);

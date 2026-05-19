@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 typedef struct {
-  int tool_type;
+  int tool_type_int;
   float x;
   float y;
   int64_t elapsed_time_millis;

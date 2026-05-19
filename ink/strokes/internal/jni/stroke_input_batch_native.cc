@@ -52,16 +52,15 @@ int StrokeInputBatchNative_getSize(int64_t native_pointer) {
 StrokeInputBatchNative_Input StrokeInputBatchNative_getStrokeInput(
     int64_t native_pointer, int index) {
   StrokeInput input = CastToStrokeInputBatch(native_pointer).Get(index);
-  return StrokeInputBatchNative_Input{
-      .tool_type = ToolTypeToInt(input.tool_type),
-      .x = input.position.x,
-      .y = input.position.y,
-      .elapsed_time_millis =
-          static_cast<int64_t>(input.elapsed_time.ToMillis()),
-      .stroke_unit_length_cm = input.stroke_unit_length.ToCentimeters(),
-      .pressure = input.pressure,
-      .tilt_radians = input.tilt.ValueInRadians(),
-      .orientation_radians = input.orientation.ValueInRadians()};
+  return {.tool_type_int = ToolTypeToInt(input.tool_type),
+          .x = input.position.x,
+          .y = input.position.y,
+          .elapsed_time_millis =
+              static_cast<int64_t>(input.elapsed_time.ToMillis()),
+          .stroke_unit_length_cm = input.stroke_unit_length.ToCentimeters(),
+          .pressure = input.pressure,
+          .tilt_radians = input.tilt.ValueInRadians(),
+          .orientation_radians = input.orientation.ValueInRadians()};
 }
 
 int64_t StrokeInputBatchNative_getDurationMillis(int64_t native_pointer) {

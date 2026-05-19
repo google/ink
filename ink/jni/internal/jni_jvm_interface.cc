@@ -56,9 +56,6 @@ static jclass class_color_callbacks = nullptr;
 static jmethodID method_color_callbacks_compose_color_long_from_components =
     nullptr;
 
-static jclass class_input_tool_type = nullptr;
-static jmethodID method_input_tool_type_from = nullptr;
-
 static jclass class_stroke_input = nullptr;
 static jmethodID method_stroke_input_update = nullptr;
 
@@ -127,9 +124,6 @@ void UnloadJvmInterface(JNIEnv* env) {
 
   DeleteCachedClass(env, class_color_callbacks);
   method_color_callbacks_compose_color_long_from_components = nullptr;
-
-  DeleteCachedClass(env, class_input_tool_type);
-  method_input_tool_type_from = nullptr;
 
   DeleteCachedClass(env, class_stroke_input);
   method_stroke_input_update = nullptr;
@@ -319,23 +313,6 @@ jmethodID MethodColorCallbacksComposeColorLongFromComponents(JNIEnv* env) {
   return method_color_callbacks_compose_color_long_from_components;
 }
 
-jclass ClassInputToolType(JNIEnv* env) {
-  if (class_input_tool_type == nullptr) {
-    class_input_tool_type =
-        FindAndCacheClass(env, "androidx/ink/brush/InputToolType");
-  }
-  return class_input_tool_type;
-}
-
-jmethodID MethodInputToolTypeFromInt(JNIEnv* env) {
-  if (method_input_tool_type_from == nullptr) {
-    method_input_tool_type_from =
-        GetStaticMethodId(env, ClassInputToolType(env), "fromInt",
-                          "(I)Landroidx/ink/brush/InputToolType;");
-  }
-  return method_input_tool_type_from;
-}
-
 jclass ClassStrokeInput(JNIEnv* env) {
   if (class_stroke_input == nullptr) {
     class_stroke_input =
@@ -347,8 +324,7 @@ jclass ClassStrokeInput(JNIEnv* env) {
 jmethodID MethodStrokeInputUpdate(JNIEnv* env) {
   if (method_stroke_input_update == nullptr) {
     method_stroke_input_update =
-        GetMethodId(env, ClassStrokeInput(env), "update",
-                    "(FFJLandroidx/ink/brush/InputToolType;FFFF)V");
+        GetMethodId(env, ClassStrokeInput(env), "update", "(FFJIFFFF)V");
   }
   return method_stroke_input_update;
 }

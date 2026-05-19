@@ -21,10 +21,6 @@ namespace ink::native {
 // Convert an int to an StrokeInput::ToolType enum.
 //
 // This should match the enum in InputToolType.kt.
-StrokeInput::ToolType IntToToolType(int val) {
-  return static_cast<StrokeInput::ToolType>(val);
-}
-
 int ToolTypeToInt(StrokeInput::ToolType type) {
   switch (type) {
     case StrokeInput::ToolType::kMouse:

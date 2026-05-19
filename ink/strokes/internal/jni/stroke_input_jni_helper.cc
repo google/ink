@@ -23,28 +23,14 @@
 
 namespace ink::jni {
 
-namespace {
-
-using ::ink::native::IntToToolType;
 using ::ink::native::ToolTypeToInt;
-
-jobject ToolTypeToJObjectOrThrow(JNIEnv* env, StrokeInput::ToolType tool_type) {
-  return env->CallStaticObjectMethod(ClassInputToolType(env),
-                                     MethodInputToolTypeFromInt(env),
-                                     ToolTypeToInt(tool_type));
-}
-
-}  // namespace
 
 void UpdateJStrokeInputOrThrow(JNIEnv* env, const StrokeInput& input_in,
                                jobject j_input_out) {
-  jobject j_inputtooltype = ToolTypeToJObjectOrThrow(env, input_in.tool_type);
-  if (env->ExceptionCheck()) return;
-
-  jlong elapsed_time_millis = input_in.elapsed_time.ToMillis();
   env->CallVoidMethod(
       j_input_out, MethodStrokeInputUpdate(env), input_in.position.x,
-      input_in.position.y, elapsed_time_millis, j_inputtooltype,
+      input_in.position.y, static_cast<jlong>(input_in.elapsed_time.ToMillis()),
+      ToolTypeToInt(input_in.tool_type),
       input_in.stroke_unit_length.ToCentimeters(), input_in.pressure,
       input_in.tilt.ValueInRadians(), input_in.orientation.ValueInRadians());
 }
@@ -52,14 +38,11 @@ void UpdateJStrokeInputOrThrow(JNIEnv* env, const StrokeInput& input_in,
 void UpdateJStrokeInputOrThrow(JNIEnv* env,
                                const StrokeInputBatchNative_Input& input_in,
                                jobject j_input_out) {
-  jobject j_inputtooltype =
-      ToolTypeToJObjectOrThrow(env, IntToToolType(input_in.tool_type));
-  if (env->ExceptionCheck()) return;
-
   env->CallVoidMethod(j_input_out, MethodStrokeInputUpdate(env), input_in.x,
-                      input_in.y, input_in.elapsed_time_millis, j_inputtooltype,
-                      input_in.stroke_unit_length_cm, input_in.pressure,
-                      input_in.tilt_radians, input_in.orientation_radians);
+                      input_in.y, input_in.elapsed_time_millis,
+                      input_in.tool_type_int, input_in.stroke_unit_length_cm,
+                      input_in.pressure, input_in.tilt_radians,
+                      input_in.orientation_radians);
 }
 
 }  // namespace ink::jni
