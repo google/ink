@@ -24,6 +24,7 @@
 #include "absl/types/span.h"
 #include "ink/brush/version.h"
 #include "ink/color/color.h"
+#include "ink/geometry/angle.h"
 
 namespace ink {
 
@@ -38,6 +39,8 @@ struct ColorFunction {
   static Color ApplyAll(absl::Span<const ColorFunction> functions,
                         const Color& color);
 
+  // Applies a multiplier to the color's opacity.  The multiplier must be finite
+  // and nonnegative.  Typical multiplier values range between 0 and 1.
   struct OpacityMultiplier {
     float multiplier = 1;
 
@@ -46,6 +49,37 @@ struct ColorFunction {
                            const OpacityMultiplier&) = default;
   };
 
+  // Applies an additive offset to the color's hue angle.  The offset angle must
+  // be finite, but can be positive or negative (or zero).
+  struct HueOffset {
+    Angle offset;
+
+    Color operator()(const Color& color) const;
+    friend bool operator==(const HueOffset&, const HueOffset&) = default;
+  };
+
+  // Applies a multiplier to the color's saturation.  The multiplier must be
+  // finite and nonnegative.  Typical multiplier values range between 0 and 1.
+  struct SaturationMultiplier {
+    float multiplier = 1;
+
+    Color operator()(const Color& color) const;
+    friend bool operator==(const SaturationMultiplier&,
+                           const SaturationMultiplier&) = default;
+  };
+
+  // Applies an additive offset to the color's luminosity.  The offset must be
+  // finite, but can be positive or negative (or zero).  Typical offset values
+  // range between -1 and 1.
+  struct LuminosityOffset {
+    float offset = 0;
+
+    Color operator()(const Color& color) const;
+    friend bool operator==(const LuminosityOffset&,
+                           const LuminosityOffset&) = default;
+  };
+
+  // Ignores the original color and replaces it with a fixed color.
   struct ReplaceColor {
     Color color;
 
@@ -54,7 +88,11 @@ struct ColorFunction {
   };
 
   // Union of possible color function parameters.
-  using Parameters = std::variant<OpacityMultiplier, ReplaceColor>;
+  // LINT.IfChange(color_function_mapping)
+  using Parameters =
+      std::variant<OpacityMultiplier, HueOffset, SaturationMultiplier,
+                   LuminosityOffset, ReplaceColor>;
+  // LINT.ThenChange(../../java/androidx/ink/brush/main/BrushPaint.kt:color_function_mapping)
   Parameters parameters;
 
   Color operator()(const Color& color) const;
@@ -74,6 +112,11 @@ Version CalculateMinimumRequiredVersion(const ColorFunction& color_function);
 std::string ToFormattedString(const ColorFunction& color_function);
 std::string ToFormattedString(const ColorFunction::Parameters& parameters);
 std::string ToFormattedString(const ColorFunction::OpacityMultiplier& opacity);
+std::string ToFormattedString(const ColorFunction::HueOffset& hue);
+std::string ToFormattedString(
+    const ColorFunction::SaturationMultiplier& saturation);
+std::string ToFormattedString(
+    const ColorFunction::LuminosityOffset& luminosity);
 std::string ToFormattedString(const ColorFunction::ReplaceColor& replace);
 
 }  // namespace brush_internal
@@ -92,6 +135,21 @@ AbslStringify(Sink& sink, const P& params) {
 template <typename H>
 H AbslHashValue(H h, const ColorFunction::OpacityMultiplier& opacity) {
   return H::combine(std::move(h), opacity.multiplier);
+}
+
+template <typename H>
+H AbslHashValue(H h, const ColorFunction::HueOffset& hue) {
+  return H::combine(std::move(h), hue.offset);
+}
+
+template <typename H>
+H AbslHashValue(H h, const ColorFunction::SaturationMultiplier& saturation) {
+  return H::combine(std::move(h), saturation.multiplier);
+}
+
+template <typename H>
+H AbslHashValue(H h, const ColorFunction::LuminosityOffset& luminosity) {
+  return H::combine(std::move(h), luminosity.offset);
 }
 
 template <typename H>

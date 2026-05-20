@@ -26,6 +26,8 @@
 #include "ink/brush/fuzz_domains.h"
 #include "ink/color/color.h"
 #include "ink/color/fuzz_domains.h"
+#include "ink/color/type_matchers.h"
+#include "ink/geometry/angle.h"
 
 namespace ink {
 namespace {
@@ -43,6 +45,15 @@ TEST(ColorFunctionTest, SupportsAbslHash) {
       ColorFunction{ColorFunction::OpacityMultiplier{0}},
       ColorFunction{ColorFunction::OpacityMultiplier{0.5}},
       ColorFunction{ColorFunction::OpacityMultiplier{1}},
+      ColorFunction{ColorFunction::HueOffset{Angle::Degrees(-60)}},
+      ColorFunction{ColorFunction::HueOffset{Angle::Degrees(0)}},
+      ColorFunction{ColorFunction::HueOffset{Angle::Degrees(30)}},
+      ColorFunction{ColorFunction::SaturationMultiplier{0}},
+      ColorFunction{ColorFunction::SaturationMultiplier{0.5}},
+      ColorFunction{ColorFunction::SaturationMultiplier{1}},
+      ColorFunction{ColorFunction::LuminosityOffset{-0.5}},
+      ColorFunction{ColorFunction::LuminosityOffset{0}},
+      ColorFunction{ColorFunction::LuminosityOffset{0.5}},
       ColorFunction{ColorFunction::ReplaceColor{Color::Black()}},
       ColorFunction{ColorFunction::ReplaceColor{Color::Red()}},
   }));
@@ -53,6 +64,29 @@ TEST(ColorFunctionTest, StringifyOpacityMultiplier) {
             "OpacityMultiplier{1}");
   EXPECT_EQ(absl::StrCat(ColorFunction::OpacityMultiplier{.multiplier = 0.25}),
             "OpacityMultiplier{0.25}");
+}
+
+TEST(ColorFunctionTest, StringifyHueOffset) {
+  EXPECT_EQ(absl::StrCat(ColorFunction::HueOffset{.offset = Angle::Degrees(0)}),
+            "HueOffset{0π}");
+  EXPECT_EQ(
+      absl::StrCat(ColorFunction::HueOffset{.offset = Angle::Degrees(180)}),
+      "HueOffset{1π}");
+}
+
+TEST(ColorFunctionTest, StringifySaturationMultiplier) {
+  EXPECT_EQ(absl::StrCat(ColorFunction::SaturationMultiplier{.multiplier = 1}),
+            "SaturationMultiplier{1}");
+  EXPECT_EQ(
+      absl::StrCat(ColorFunction::SaturationMultiplier{.multiplier = 0.25}),
+      "SaturationMultiplier{0.25}");
+}
+
+TEST(ColorFunctionTest, StringifyLuminosityOffset) {
+  EXPECT_EQ(absl::StrCat(ColorFunction::LuminosityOffset{.offset = 0}),
+            "LuminosityOffset{0}");
+  EXPECT_EQ(absl::StrCat(ColorFunction::LuminosityOffset{.offset = -0.25}),
+            "LuminosityOffset{-0.25}");
 }
 
 TEST(ColorFunctionTest, StringifyReplaceColor) {
@@ -84,6 +118,30 @@ TEST(ColorFunctionTest, OpacityMultiplierEqualAndNotEqual) {
 
   EXPECT_EQ(opacity_multiplier, ColorFunction::OpacityMultiplier{0.5});
   EXPECT_NE(opacity_multiplier, ColorFunction::OpacityMultiplier{0.25});
+}
+
+TEST(ColorFunctionTest, HueOffsetEqualAndNotEqual) {
+  ColorFunction::HueOffset hue_offset =
+      ColorFunction::HueOffset{Angle::Degrees(30)};
+
+  EXPECT_EQ(hue_offset, ColorFunction::HueOffset{Angle::Degrees(30)});
+  EXPECT_NE(hue_offset, ColorFunction::HueOffset{Angle::Degrees(60)});
+}
+
+TEST(ColorFunctionTest, SaturationMultiplierEqualAndNotEqual) {
+  ColorFunction::SaturationMultiplier saturation_multiplier =
+      ColorFunction::SaturationMultiplier{0.5};
+
+  EXPECT_EQ(saturation_multiplier, ColorFunction::SaturationMultiplier{0.5});
+  EXPECT_NE(saturation_multiplier, ColorFunction::SaturationMultiplier{0.25});
+}
+
+TEST(ColorFunctionTest, LuminosityOffsetEqualAndNotEqual) {
+  ColorFunction::LuminosityOffset luminosity_offset =
+      ColorFunction::LuminosityOffset{0.5};
+
+  EXPECT_EQ(luminosity_offset, ColorFunction::LuminosityOffset{0.5});
+  EXPECT_NE(luminosity_offset, ColorFunction::LuminosityOffset{0.25});
 }
 
 TEST(ColorFunctionTest, ReplaceColorEqualAndNotEqual) {
@@ -132,6 +190,64 @@ TEST(ColorFunctionTest, ValidateOpacityMultiplier) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("finite")));
 }
 
+TEST(ColorFunctionTest, ValidateHueOffset) {
+  EXPECT_THAT(brush_internal::ValidateColorFunction(
+                  {ColorFunction::HueOffset{.offset = Angle::Degrees(0)}}),
+              IsOk());
+  EXPECT_THAT(brush_internal::ValidateColorFunction(
+                  {ColorFunction::HueOffset{.offset = Angle::Degrees(-60)}}),
+              IsOk());
+
+  EXPECT_THAT(
+      brush_internal::ValidateColorFunction(
+          {ColorFunction::HueOffset{.offset = Angle::Radians(kInfinity)}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("finite")));
+  EXPECT_THAT(
+      brush_internal::ValidateColorFunction(
+          {ColorFunction::HueOffset{.offset = Angle::Radians(kNan)}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("finite")));
+}
+
+TEST(ColorFunctionTest, ValidateSaturationMultiplier) {
+  EXPECT_THAT(brush_internal::ValidateColorFunction(
+                  {ColorFunction::SaturationMultiplier{.multiplier = 0}}),
+              IsOk());
+  EXPECT_THAT(brush_internal::ValidateColorFunction(
+                  {ColorFunction::SaturationMultiplier{.multiplier = 2.5}}),
+              IsOk());
+
+  EXPECT_THAT(
+      brush_internal::ValidateColorFunction(
+          {ColorFunction::SaturationMultiplier{.multiplier = -1}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("non-negative")));
+  EXPECT_THAT(
+      brush_internal::ValidateColorFunction(
+          {ColorFunction::SaturationMultiplier{.multiplier = kInfinity}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("finite")));
+  EXPECT_THAT(
+      brush_internal::ValidateColorFunction(
+          {ColorFunction::SaturationMultiplier{.multiplier = kNan}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("finite")));
+}
+
+TEST(ColorFunctionTest, ValidateLuminosityOffset) {
+  EXPECT_THAT(brush_internal::ValidateColorFunction(
+                  {ColorFunction::LuminosityOffset{.offset = 0}}),
+              IsOk());
+  EXPECT_THAT(brush_internal::ValidateColorFunction(
+                  {ColorFunction::LuminosityOffset{.offset = -0.5}}),
+              IsOk());
+
+  EXPECT_THAT(
+      brush_internal::ValidateColorFunction(
+          {ColorFunction::LuminosityOffset{.offset = kInfinity}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("finite")));
+  EXPECT_THAT(
+      brush_internal::ValidateColorFunction(
+          {ColorFunction::LuminosityOffset{.offset = kNan}}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("finite")));
+}
+
 TEST(ColorFunctionTest, ApplyOpacityMultiplier) {
   EXPECT_EQ((ColorFunction{ColorFunction::OpacityMultiplier{1}})(Color::Red()),
             Color::Red());
@@ -141,6 +257,62 @@ TEST(ColorFunctionTest, ApplyOpacityMultiplier) {
   EXPECT_EQ((ColorFunction{ColorFunction::OpacityMultiplier{0.5}})(
                 Color::FromFloat(1, 1, 1, 0.75)),
             Color::FromFloat(1, 1, 1, 0.375));
+}
+
+TEST(ColorFunctionTest, ApplyHueOffset) {
+  EXPECT_THAT(
+      (ColorFunction{ColorFunction::HueOffset{Angle::Degrees(0)}})(Color::Red())
+          .ClampedToGamut()
+          .AsFloat(Color::Format::kGammaEncoded),
+      ChannelStructNear({1, 0, 0, 1}, 1e-2));
+  EXPECT_THAT((ColorFunction{ColorFunction::HueOffset{Angle::Degrees(-90)}})(
+                  Color::Red())
+                  .ClampedToGamut()
+                  .AsFloat(Color::Format::kGammaEncoded),
+              ChannelStructNear({0.71, 0, 1, 1}, 1e-2));
+  EXPECT_THAT((ColorFunction{ColorFunction::HueOffset{Angle::Degrees(180)}})(
+                  Color::Red())
+                  .ClampedToGamut()
+                  .AsFloat(Color::Format::kGammaEncoded),
+              ChannelStructNear({0, 0.8, 0.8, 1}, 1e-2));
+}
+
+TEST(ColorFunctionTest, ApplySaturationMultiplier) {
+  EXPECT_THAT(
+      (ColorFunction{ColorFunction::SaturationMultiplier{1}})(Color::Red())
+          .AsFloat(Color::Format::kGammaEncoded),
+      ChannelStructNear({1, 0, 0, 1}, 1e-2));
+  EXPECT_THAT(
+      (ColorFunction{ColorFunction::SaturationMultiplier{0.5}})(Color::Red())
+          .AsFloat(Color::Format::kGammaEncoded),
+      ChannelStructNear({0.83, 0.42, 0.42, 1}, 1e-2));
+  EXPECT_THAT(
+      (ColorFunction{ColorFunction::SaturationMultiplier{0}})(Color::Red())
+          .AsFloat(Color::Format::kGammaEncoded),
+      ChannelStructNear({0.58, 0.58, 0.58, 1}, 1e-2));
+}
+
+TEST(ColorFunctionTest, ApplyLuminosityOffset) {
+  EXPECT_THAT((ColorFunction{ColorFunction::LuminosityOffset{0}})(Color::Red())
+                  .ClampedToGamut()
+                  .AsFloat(Color::Format::kGammaEncoded),
+              ChannelStructNear({1, 0, 0, 1}, 1e-2));
+  EXPECT_THAT(
+      (ColorFunction{ColorFunction::LuminosityOffset{0.5}})(Color::Red())
+          .ClampedToGamut()
+          .AsFloat(Color::Format::kGammaEncoded),
+      ChannelStructNear({1, 0.74, 0.74, 1}, 1e-2));
+  EXPECT_THAT(
+      (ColorFunction{ColorFunction::LuminosityOffset{-0.5}})(Color::Red())
+          .ClampedToGamut()
+          .AsFloat(Color::Format::kGammaEncoded),
+      ChannelStructNear({0.74, 0, 0, 1}, 1e-2));
+}
+
+TEST(ColorFunctionTest, ApplyReplaceColor) {
+  EXPECT_EQ((ColorFunction{ColorFunction::ReplaceColor{Color::Green()}})(
+                Color::Red()),
+            Color::Green());
 }
 
 void DefaultConstructedColorFunctionIsIdentity(const Color& color) {

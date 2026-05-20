@@ -93,9 +93,6 @@ int64_t ValidateAndHoistColorFunctionOrThrow(
   return NewNativeColorFunction(std::move(color_function));
 }
 
-static constexpr int kOpacityMultiplier = 0;
-static constexpr int kReplaceColor = 1;
-
 }  // namespace
 
 extern "C" {
@@ -154,15 +151,7 @@ int BrushPaintNative_getColorFunctionCount(int64_t native_ptr) {
 
 int BrushPaintNative_getColorFunctionParametersTypeInt(int64_t native_ptr,
                                                        int index) {
-  const ColorFunction::Parameters& parameters =
-      CastToBrushPaint(native_ptr).color_functions[index].parameters;
-  constexpr auto visitor = absl::Overload{
-      [](const ColorFunction::OpacityMultiplier&) {
-        return kOpacityMultiplier;
-      },
-      [](const ColorFunction::ReplaceColor&) { return kReplaceColor; },
-  };
-  return std::visit(visitor, parameters);
+  return CastToBrushPaint(native_ptr).color_functions[index].parameters.index();
 }
 
 int64_t BrushPaintNative_newCopyOfColorFunction(int64_t native_ptr, int index) {
@@ -343,6 +332,30 @@ int64_t ColorFunctionNative_createOpacityMultiplier(
       jni_env_pass_through, throw_from_status_callback);
 }
 
+int64_t ColorFunctionNative_createHueOffset(
+    void* jni_env_pass_through, float offsetDegrees,
+    void (*throw_from_status_callback)(void*, int, const char*)) {
+  return ValidateAndHoistColorFunctionOrThrow(
+      ColorFunction::HueOffset{.offset = Angle::Degrees(offsetDegrees)},
+      jni_env_pass_through, throw_from_status_callback);
+}
+
+int64_t ColorFunctionNative_createSaturationMultiplier(
+    void* jni_env_pass_through, float multiplier,
+    void (*throw_from_status_callback)(void*, int, const char*)) {
+  return ValidateAndHoistColorFunctionOrThrow(
+      ColorFunction::SaturationMultiplier{.multiplier = multiplier},
+      jni_env_pass_through, throw_from_status_callback);
+}
+
+int64_t ColorFunctionNative_createLuminosityOffset(
+    void* jni_env_pass_through, float offset,
+    void (*throw_from_status_callback)(void*, int, const char*)) {
+  return ValidateAndHoistColorFunctionOrThrow(
+      ColorFunction::LuminosityOffset{.offset = offset}, jni_env_pass_through,
+      throw_from_status_callback);
+}
+
 int64_t ColorFunctionNative_createReplaceColor(
     void* jni_env_pass_through, float color_red, float color_green,
     float color_blue, float color_alpha, int color_space_id,
@@ -365,6 +378,24 @@ float ColorFunctionNative_getOpacityMultiplier(int64_t native_ptr) {
       .multiplier;
 }
 
+float ColorFunctionNative_getHueOffsetDegrees(int64_t native_ptr) {
+  return std::get<ColorFunction::HueOffset>(
+             CastToColorFunction(native_ptr).parameters)
+      .offset.ValueInDegrees();
+}
+
+float ColorFunctionNative_getSaturationMultiplier(int64_t native_ptr) {
+  return std::get<ColorFunction::SaturationMultiplier>(
+             CastToColorFunction(native_ptr).parameters)
+      .multiplier;
+}
+
+float ColorFunctionNative_getLuminosityOffset(int64_t native_ptr) {
+  return std::get<ColorFunction::LuminosityOffset>(
+             CastToColorFunction(native_ptr).parameters)
+      .offset;
+}
+
 int64_t ColorFunctionNative_computeReplaceColorLong(
     void* jni_env_pass_through, int64_t native_ptr,
     int64_t (*compose_color_long_from_components_callback)(void*, int, float,
@@ -374,6 +405,20 @@ int64_t ColorFunctionNative_computeReplaceColorLong(
                           std::get<ColorFunction::ReplaceColor>(
                               CastToColorFunction(native_ptr).parameters)
                               .color,
+                          compose_color_long_from_components_callback);
+}
+
+int64_t ColorFunctionNative_computeTransformedColorLong(
+    void* jni_env_pass_through, int64_t native_ptr, float color_red,
+    float color_green, float color_blue, float color_alpha, int color_space_id,
+    int64_t (*compose_color_long_from_components_callback)(void*, int, float,
+                                                           float, float,
+                                                           float)) {
+  const Color input_color = Color::FromFloat(
+      color_red, color_green, color_blue, color_alpha,
+      Color::Format::kGammaEncoded, IntToColorSpace(color_space_id));
+  const Color output_color = CastToColorFunction(native_ptr)(input_color);
+  return ComputeColorLong(jni_env_pass_through, output_color,
                           compose_color_long_from_components_callback);
 }
 

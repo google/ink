@@ -107,7 +107,9 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
                    dot(yiq, float3(1, -1.107,  1.704)));
       return float4(rgb, applyOpacityShift(opacityShift, colorUnpremul.a));
     })"
-    // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:apply_hsl_and_opacity_shift)
+    // LINT.ThenChange(
+    //     ../../../brush/color_function.cc:yiq_transform,
+    //     ../../../rendering/webgpu/StrokeShader.wgsl:apply_hsl_and_opacity_shift)
 
     // Decodes the values of the side and forward margins given the side and
     // forward `labels`.

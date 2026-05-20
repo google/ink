@@ -104,6 +104,18 @@ int64_t ColorFunctionNative_createOpacityMultiplier(
     void* jni_env_pass_through, float multiplier,
     void (*throw_from_status_callback)(void*, int, const char*));
 
+int64_t ColorFunctionNative_createHueOffset(
+    void* jni_env_pass_through, float offsetDegrees,
+    void (*throw_from_status_callback)(void*, int, const char*));
+
+int64_t ColorFunctionNative_createSaturationMultiplier(
+    void* jni_env_pass_through, float multiplier,
+    void (*throw_from_status_callback)(void*, int, const char*));
+
+int64_t ColorFunctionNative_createLuminosityOffset(
+    void* jni_env_pass_through, float offset,
+    void (*throw_from_status_callback)(void*, int, const char*));
+
 int64_t ColorFunctionNative_createReplaceColor(
     void* jni_env_pass_through, float color_red, float color_green,
     float color_blue, float color_alpha, int color_space_id,
@@ -113,8 +125,21 @@ void ColorFunctionNative_free(int64_t native_ptr);
 
 float ColorFunctionNative_getOpacityMultiplier(int64_t native_ptr);
 
+float ColorFunctionNative_getHueOffsetDegrees(int64_t native_ptr);
+
+float ColorFunctionNative_getSaturationMultiplier(int64_t native_ptr);
+
+float ColorFunctionNative_getLuminosityOffset(int64_t native_ptr);
+
 int64_t ColorFunctionNative_computeReplaceColorLong(
     void* jni_env_pass_through, int64_t native_ptr,
+    int64_t (*compose_color_long_from_components_callback)(void*, int, float,
+                                                           float, float,
+                                                           float));
+
+int64_t ColorFunctionNative_computeTransformedColorLong(
+    void* jni_env_pass_through, int64_t native_ptr, float color_red,
+    float color_green, float color_blue, float color_alpha, int color_space_id,
     int64_t (*compose_color_long_from_components_callback)(void*, int, float,
                                                            float, float,
                                                            float));

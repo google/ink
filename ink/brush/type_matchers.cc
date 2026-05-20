@@ -53,6 +53,28 @@ MATCHER_P(OpacityMultiplierParametersEqMatcher, expected, "") {
       arg, result_listener);
 }
 
+MATCHER_P(HueOffsetParametersEqMatcher, expected, "") {
+  return ExplainMatchResult(
+      AllOf(Field("offset", &ColorFunction::HueOffset::offset,
+                  AngleEq(expected.offset))),
+      arg, result_listener);
+}
+
+MATCHER_P(SaturationMultiplierParametersEqMatcher, expected, "") {
+  return ExplainMatchResult(
+      AllOf(Field("multiplier",
+                  &ColorFunction::SaturationMultiplier::multiplier,
+                  FloatEq(expected.multiplier))),
+      arg, result_listener);
+}
+
+MATCHER_P(LuminosityOffsetParametersEqMatcher, expected, "") {
+  return ExplainMatchResult(
+      AllOf(Field("offset", &ColorFunction::LuminosityOffset::offset,
+                  FloatEq(expected.offset))),
+      arg, result_listener);
+}
+
 MATCHER_P(ReplaceColorParametersEqMatcher, expected, "") {
   return ExplainMatchResult(
       AllOf(Field("color", &ColorFunction::ReplaceColor::color,
@@ -64,6 +86,24 @@ MATCHER_P(ReplaceColorParametersEqMatcher, expected, "") {
     ColorFunction::OpacityMultiplier opacity) {
   return VariantWith<ColorFunction::OpacityMultiplier>(
       OpacityMultiplierParametersEqMatcher(opacity));
+}
+
+[[maybe_unused]] Matcher<ColorFunction::Parameters> ColorFunctionParametersEq(
+    ColorFunction::HueOffset hue) {
+  return VariantWith<ColorFunction::HueOffset>(
+      HueOffsetParametersEqMatcher(hue));
+}
+
+[[maybe_unused]] Matcher<ColorFunction::Parameters> ColorFunctionParametersEq(
+    ColorFunction::SaturationMultiplier saturation) {
+  return VariantWith<ColorFunction::SaturationMultiplier>(
+      SaturationMultiplierParametersEqMatcher(saturation));
+}
+
+[[maybe_unused]] Matcher<ColorFunction::Parameters> ColorFunctionParametersEq(
+    ColorFunction::LuminosityOffset luminosity) {
+  return VariantWith<ColorFunction::LuminosityOffset>(
+      LuminosityOffsetParametersEqMatcher(luminosity));
 }
 
 [[maybe_unused]] Matcher<ColorFunction::Parameters> ColorFunctionParametersEq(

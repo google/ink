@@ -236,6 +236,24 @@ JNI_METHOD(brush, ColorFunctionNative, jlong, createOpacityMultiplier)
       env, multiplier, &ThrowExceptionFromStatusCallback);
 }
 
+JNI_METHOD(brush, ColorFunctionNative, jlong, createHueOffset)
+(JNIEnv* env, jobject thiz, jfloat offsetDegrees) {
+  return ColorFunctionNative_createHueOffset(env, offsetDegrees,
+                                             &ThrowExceptionFromStatusCallback);
+}
+
+JNI_METHOD(brush, ColorFunctionNative, jlong, createSaturationMultiplier)
+(JNIEnv* env, jobject thiz, jfloat multiplier) {
+  return ColorFunctionNative_createSaturationMultiplier(
+      env, multiplier, &ThrowExceptionFromStatusCallback);
+}
+
+JNI_METHOD(brush, ColorFunctionNative, jlong, createLuminosityOffset)
+(JNIEnv* env, jobject thiz, jfloat offset) {
+  return ColorFunctionNative_createLuminosityOffset(
+      env, offset, &ThrowExceptionFromStatusCallback);
+}
+
 JNI_METHOD(brush, ColorFunctionNative, jlong, createReplaceColor)
 (JNIEnv* env, jobject thiz, jfloat color_red, jfloat color_green,
  jfloat color_blue, jfloat color_alpha, jint color_space_id) {
@@ -254,10 +272,33 @@ JNI_METHOD(brush, ColorFunctionNative, jfloat, getOpacityMultiplier)
   return ColorFunctionNative_getOpacityMultiplier(native_pointer);
 }
 
+JNI_METHOD(brush, ColorFunctionNative, jfloat, getHueOffsetDegrees)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return ColorFunctionNative_getHueOffsetDegrees(native_pointer);
+}
+
+JNI_METHOD(brush, ColorFunctionNative, jfloat, getSaturationMultiplier)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return ColorFunctionNative_getSaturationMultiplier(native_pointer);
+}
+
+JNI_METHOD(brush, ColorFunctionNative, jfloat, getLuminosityOffset)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return ColorFunctionNative_getLuminosityOffset(native_pointer);
+}
+
 JNI_METHOD(brush, ColorFunctionNative, jlong, computeReplaceColorLong)
 (JNIEnv* env, jobject object, jlong native_pointer) {
   return ColorFunctionNative_computeReplaceColorLong(
       env, native_pointer, &ComposeColorLongFromComponentsCallback);
+}
+
+JNI_METHOD(brush, ColorFunctionNative, jlong, computeTransformedColorLong)
+(JNIEnv* env, jobject object, jlong native_pointer, jfloat color_red,
+ jfloat color_green, jfloat color_blue, jfloat color_alpha, jint color_space) {
+  return ColorFunctionNative_computeTransformedColorLong(
+      env, native_pointer, color_red, color_green, color_blue, color_alpha,
+      color_space, &ComposeColorLongFromComponentsCallback);
 }
 
 }  // extern "C"

@@ -556,6 +556,23 @@ void EncodeColorFunctionParameters(
   proto_out.set_opacity_multiplier(opacity.multiplier);
 }
 
+void EncodeColorFunctionParameters(const ColorFunction::HueOffset& hue,
+                                   proto::ColorFunction& proto_out) {
+  proto_out.set_hue_offset_radians(hue.offset.ValueInRadians());
+}
+
+void EncodeColorFunctionParameters(
+    const ColorFunction::SaturationMultiplier& saturation,
+    proto::ColorFunction& proto_out) {
+  proto_out.set_saturation_multiplier(saturation.multiplier);
+}
+
+void EncodeColorFunctionParameters(
+    const ColorFunction::LuminosityOffset& luminosity,
+    proto::ColorFunction& proto_out) {
+  proto_out.set_luminosity_offset(luminosity.offset);
+}
+
 void EncodeColorFunctionParameters(const ColorFunction::ReplaceColor& replace,
                                    proto::ColorFunction& proto_out) {
   EncodeColor(replace.color, *proto_out.mutable_replace_color());
@@ -579,6 +596,15 @@ absl::StatusOr<ColorFunction> DecodeColorFunction(
     case proto::ColorFunction::kReplaceColor:
       return ColorFunction{ColorFunction::ReplaceColor{
           .color = DecodeColor(proto.replace_color())}};
+    case proto::ColorFunction::kHueOffsetRadians:
+      return ColorFunction{ColorFunction::HueOffset{
+          .offset = Angle::Radians(proto.hue_offset_radians())}};
+    case proto::ColorFunction::kSaturationMultiplier:
+      return ColorFunction{ColorFunction::SaturationMultiplier{
+          .multiplier = proto.saturation_multiplier()}};
+    case proto::ColorFunction::kLuminosityOffset:
+      return ColorFunction{
+          ColorFunction::LuminosityOffset{.offset = proto.luminosity_offset()}};
     case proto::ColorFunction::FUNCTION_NOT_SET:
       break;
   }

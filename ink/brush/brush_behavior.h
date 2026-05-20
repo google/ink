@@ -303,6 +303,12 @@ struct BrushBehavior {
     // The following are targets for tip color adjustments, including opacity.
     // Renderers can apply them to the brush color when a stroke is drawn to
     // contribute to the local color of each part of the stroke.
+    //
+    // These targets are best used for dynamic color shifts that vary over the
+    // stroke.  For a uniform, constant color shift, consider using a
+    // `ColorFunction` on the `BrushPaint` instead, as `ColorFunctions` can be
+    // supported by any renderer, whereas some renderers cannot support the
+    // per-vertex color shifts created by these targets.
 
     // Shifts the hue of the base brush color.  A positive offset shifts around
     // the hue wheel from red towards orange, while a negative offset shifts the

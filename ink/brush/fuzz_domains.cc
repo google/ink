@@ -267,6 +267,20 @@ Domain<ColorFunction::OpacityMultiplier> ValidColorFunctionOpacityMultiplier() {
   return StructOf<ColorFunction::OpacityMultiplier>(FiniteNonNegativeFloat());
 }
 
+Domain<ColorFunction::HueOffset> ValidColorFunctionHueOffset() {
+  return StructOf<ColorFunction::HueOffset>(FiniteAngle());
+}
+
+Domain<ColorFunction::SaturationMultiplier>
+ValidColorFunctionSaturationMultiplier() {
+  return StructOf<ColorFunction::SaturationMultiplier>(
+      FiniteNonNegativeFloat());
+}
+
+Domain<ColorFunction::LuminosityOffset> ValidColorFunctionLuminosityOffset() {
+  return StructOf<ColorFunction::LuminosityOffset>(Finite<float>());
+}
+
 Domain<ColorFunction::ReplaceColor> ValidColorFunctionReplaceColor() {
   return StructOf<ColorFunction::ReplaceColor>(ArbitraryColor());
 }
@@ -777,7 +791,9 @@ Domain<BrushTip> SerializableBrushTip() {
 
 Domain<ColorFunction> ValidColorFunction() {
   return StructOf<ColorFunction>(VariantOf(
-      ValidColorFunctionOpacityMultiplier(), ValidColorFunctionReplaceColor()));
+      ValidColorFunctionOpacityMultiplier(), ValidColorFunctionHueOffset(),
+      ValidColorFunctionSaturationMultiplier(),
+      ValidColorFunctionLuminosityOffset(), ValidColorFunctionReplaceColor()));
 }
 
 Domain<EasingFunction> ValidEasingFunction() {
