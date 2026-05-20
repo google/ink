@@ -19,18 +19,15 @@
 #include "ink/jni/internal/jni_jvm_interface.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/internal/jni/stroke_input_batch_native.h"
-#include "ink/strokes/internal/jni/stroke_input_native_helper.h"
 
 namespace ink::jni {
-
-using ::ink::native::ToolTypeToInt;
 
 void UpdateJStrokeInputOrThrow(JNIEnv* env, const StrokeInput& input_in,
                                jobject j_input_out) {
   env->CallVoidMethod(
       j_input_out, MethodStrokeInputUpdate(env), input_in.position.x,
       input_in.position.y, static_cast<jlong>(input_in.elapsed_time.ToMillis()),
-      ToolTypeToInt(input_in.tool_type),
+      static_cast<jint>(input_in.tool_type),
       input_in.stroke_unit_length.ToCentimeters(), input_in.pressure,
       input_in.tilt.ValueInRadians(), input_in.orientation.ValueInRadians());
 }

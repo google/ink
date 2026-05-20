@@ -156,7 +156,6 @@ cc_library(
     hdrs = ["stroke_input_jni_helper.h"],
     deps = [
         ":stroke_input_batch_native",
-        ":stroke_input_native_helper",
         "//ink/jni/internal:jni_jvm_interface",
         "//ink/strokes/input:stroke_input",
     ] + select({
@@ -165,15 +164,6 @@ cc_library(
             "@rules_jni//jni",
         ],
     }),
-)
-
-cc_library(
-    name = "stroke_input_native_helper",
-    srcs = ["stroke_input_native_helper.cc"],
-    hdrs = ["stroke_input_native_helper.h"],
-    deps = [
-        "//ink/strokes/input:stroke_input",
-    ],
 )
 
 cc_library(
@@ -191,7 +181,6 @@ cc_library(
     hdrs = ["stroke_input_batch_native.h"],
     deps = [
         ":stroke_input_batch_native_helper",
-        ":stroke_input_native_helper",
         "//ink/geometry:angle",
         "//ink/strokes/input:stroke_input",
         "//ink/types:duration",

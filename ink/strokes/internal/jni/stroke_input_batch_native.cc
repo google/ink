@@ -21,7 +21,6 @@
 #include "ink/geometry/angle.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/strokes/internal/jni/stroke_input_batch_native_helper.h"
-#include "ink/strokes/internal/jni/stroke_input_native_helper.h"
 #include "ink/types/duration.h"
 #include "ink/types/physical_distance.h"
 
@@ -33,7 +32,6 @@ using ::ink::native::CastToMutableStrokeInputBatch;
 using ::ink::native::CastToStrokeInputBatch;
 using ::ink::native::DeleteNativeStrokeInputBatch;
 using ::ink::native::NewNativeStrokeInputBatch;
-using ::ink::native::ToolTypeToInt;
 
 extern "C" {
 
@@ -52,7 +50,7 @@ int StrokeInputBatchNative_getSize(int64_t native_pointer) {
 StrokeInputBatchNative_Input StrokeInputBatchNative_getStrokeInput(
     int64_t native_pointer, int index) {
   StrokeInput input = CastToStrokeInputBatch(native_pointer).Get(index);
-  return {.tool_type_int = ToolTypeToInt(input.tool_type),
+  return {.tool_type_int = static_cast<int>(input.tool_type),
           .x = input.position.x,
           .y = input.position.y,
           .elapsed_time_millis =
