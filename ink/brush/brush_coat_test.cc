@@ -20,6 +20,7 @@
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/hash/hash_testing.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/strings/str_cat.h"
@@ -41,6 +42,43 @@ using ::testing::Not;
 using ::testing::UnorderedElementsAre;
 
 constexpr absl::string_view kTestTextureId = "test-paint";
+
+TEST(BrushCoatTest, Equality) {
+  BrushCoat coat1, coat2;
+  EXPECT_EQ(coat1, coat2);
+
+  coat1.tip.pinch = 0.5;
+  EXPECT_NE(coat1, coat2);
+  coat2.tip.pinch = 0.5;
+  EXPECT_EQ(coat1, coat2);
+
+  coat1.paint_preferences.push_back(BrushPaint{});
+  EXPECT_NE(coat1, coat2);
+  coat2.paint_preferences.push_back(BrushPaint{});
+  EXPECT_EQ(coat1, coat2);
+
+  coat1.paint_preferences[0] =
+      BrushPaint{.self_overlap = BrushPaint::SelfOverlap::kDiscard};
+  EXPECT_NE(coat1, coat2);
+  coat2.paint_preferences[0] =
+      BrushPaint{.self_overlap = BrushPaint::SelfOverlap::kDiscard};
+  EXPECT_EQ(coat1, coat2);
+}
+
+TEST(BrushCoatTest, AbslHash) {
+  BrushPaint paint_a = {.self_overlap = BrushPaint::SelfOverlap::kDiscard};
+  BrushPaint paint_b = {};
+  BrushTip tip_a = {.pinch = 0.1f};
+  BrushTip tip_b = {.pinch = 0.2f};
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
+      {BrushCoat{}, BrushCoat{.tip = tip_a}, BrushCoat{.tip = tip_b},
+       BrushCoat{.paint_preferences = {paint_a}},
+       BrushCoat{.paint_preferences = {paint_b}},
+       BrushCoat{.paint_preferences = {paint_a, paint_b}},
+       BrushCoat{.tip = tip_a, .paint_preferences = {paint_a}},
+       BrushCoat{.tip = tip_b, .paint_preferences = {paint_b}}}));
+}
 
 TEST(BrushCoatTest, Stringify) {
   EXPECT_EQ(absl::StrCat(BrushCoat{.tip = BrushTip{}}),

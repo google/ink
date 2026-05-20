@@ -21,6 +21,8 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/hash/hash.h"
+#include "absl/hash/hash_testing.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
@@ -1619,6 +1621,76 @@ TEST(StrokeInputBatchTest, AppendRangeWithIndexOutOfBounds) {
       "");
   EXPECT_DEATH_IF_SUPPORTED(auto status = batch.Append(*source_batch, 5, 0),
                             "");
+}
+
+TEST(StrokeInputBatchTest, AbslHash) {
+  StrokeInputBatch empty_batch;
+  StrokeInputBatch one_input_batch;
+  ASSERT_THAT(one_input_batch.Append(MakeValidTestInput()), IsOk());
+  absl::StatusOr<StrokeInputBatch> multi_input_batch =
+      StrokeInputBatch::Create(MakeValidTestInputSequence());
+  ASSERT_THAT(multi_input_batch, IsOk());
+  absl::StatusOr<StrokeInputBatch> different_tool_batch =
+      StrokeInputBatch::Create(
+          MakeValidTestInputSequence(StrokeInput::ToolType::kMouse));
+  ASSERT_THAT(different_tool_batch, IsOk());
+  std::vector<StrokeInput> no_pressure_inputs = MakeValidTestInputSequence();
+  for (auto& input : no_pressure_inputs) {
+    input.pressure = StrokeInput::kNoPressure;
+  }
+  absl::StatusOr<StrokeInputBatch> no_pressure_batch =
+      StrokeInputBatch::Create(no_pressure_inputs);
+  ASSERT_THAT(no_pressure_batch, IsOk());
+  std::vector<StrokeInput> no_tilt_inputs = MakeValidTestInputSequence();
+  for (auto& input : no_tilt_inputs) {
+    input.tilt = StrokeInput::kNoTilt;
+  }
+  absl::StatusOr<StrokeInputBatch> no_tilt_batch =
+      StrokeInputBatch::Create(no_tilt_inputs);
+  ASSERT_THAT(no_tilt_batch, IsOk());
+  std::vector<StrokeInput> no_orientation_inputs = MakeValidTestInputSequence();
+  for (auto& input : no_orientation_inputs) {
+    input.orientation = StrokeInput::kNoOrientation;
+  }
+  absl::StatusOr<StrokeInputBatch> no_orientation_batch =
+      StrokeInputBatch::Create(no_orientation_inputs);
+  ASSERT_THAT(no_orientation_batch, IsOk());
+  std::vector<StrokeInput> different_stroke_unit_length_inputs =
+      MakeValidTestInputSequence();
+  for (auto& input : different_stroke_unit_length_inputs) {
+    input.stroke_unit_length = PhysicalDistance::Centimeters(0.2);
+  }
+  absl::StatusOr<StrokeInputBatch> different_stroke_unit_length_batch =
+      StrokeInputBatch::Create(different_stroke_unit_length_inputs);
+  ASSERT_THAT(different_stroke_unit_length_batch, IsOk());
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
+      {empty_batch, one_input_batch, *multi_input_batch, *different_tool_batch,
+       *no_pressure_batch, *no_tilt_batch, *no_orientation_batch,
+       *different_stroke_unit_length_batch}));
+}
+
+TEST(StrokeInputBatchTest, EqualityAndHashing) {
+  std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
+  absl::StatusOr<StrokeInputBatch> batch1 =
+      StrokeInputBatch::Create(input_vector);
+  ASSERT_THAT(batch1, IsOk());
+
+  // Copy constructor should share data.
+  StrokeInputBatch batch2 = *batch1;
+  EXPECT_EQ(*batch1, batch2);
+  EXPECT_EQ(absl::HashOf(*batch1), absl::HashOf(batch2));
+
+  // Deep copy should NOT share data.
+  StrokeInputBatch batch3 = batch1->MakeDeepCopy();
+  EXPECT_NE(*batch1, batch3);
+
+  // Modification should trigger copy-on-write and make them unequal.
+  StrokeInput input = MakeValidTestInput();
+  input.elapsed_time =
+      input_vector.back().elapsed_time + Duration32::Seconds(1);
+  ASSERT_THAT(batch2.Append(input), IsOk());
+  EXPECT_NE(*batch1, batch2);
 }
 
 }  // namespace

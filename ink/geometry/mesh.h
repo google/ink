@@ -122,6 +122,13 @@ class Mesh {
   Mesh(const Mesh&) = default;
   Mesh& operator=(const Mesh&) = default;
 
+  bool operator==(const Mesh& other) const = default;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const Mesh& mesh) {
+    return H::combine(std::move(h), mesh.data_.get());
+  }
+
   // Returns the number of vertices in the mesh.
   uint32_t VertexCount() const {
     ABSL_DCHECK_EQ(data_->vertex_data.size() % VertexStride(), 0u);

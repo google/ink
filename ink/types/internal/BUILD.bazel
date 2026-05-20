@@ -33,6 +33,7 @@ cc_test(
     srcs = ["copy_on_write_test.cc"],
     deps = [
         ":copy_on_write",
+        "@com_google_absl//absl/hash:hash_testing",
         "@com_google_googletest//:gtest_main",
     ],
 )

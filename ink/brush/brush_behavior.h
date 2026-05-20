@@ -16,6 +16,7 @@
 #define INK_STROKES_BRUSH_BRUSH_BEHAVIOR_H_
 
 #include <array>
+#include <cstdint>
 #include <string>
 #include <variant>
 #include <vector>
@@ -378,6 +379,12 @@ struct BrushBehavior {
 
     friend bool operator==(const EnabledToolTypes&,
                            const EnabledToolTypes&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const EnabledToolTypes& ett) {
+      return H::combine(std::move(h), ett.unknown, ett.mouse, ett.touch,
+                        ett.stylus);
+    }
   };
 
   static constexpr EnabledToolTypes kAllToolTypes = {
@@ -461,6 +468,12 @@ struct BrushBehavior {
     std::array<float, 2> source_value_range;
 
     friend bool operator==(const SourceNode&, const SourceNode&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const SourceNode& sn) {
+      return H::combine(std::move(h), sn.source,
+                        sn.source_out_of_range_behavior, sn.source_value_range);
+    }
   };
 
   // Value node for producing a constant value.
@@ -471,6 +484,11 @@ struct BrushBehavior {
     float value;
 
     friend bool operator==(const ConstantNode&, const ConstantNode&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const ConstantNode& cn) {
+      return H::combine(std::move(h), cn.value);
+    }
   };
 
   // Value node for producing a continuous random noise function with values
@@ -492,6 +510,11 @@ struct BrushBehavior {
     float base_period;
 
     friend bool operator==(const NoiseNode&, const NoiseNode&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const NoiseNode& nn) {
+      return H::combine(std::move(h), nn.seed, nn.vary_over, nn.base_period);
+    }
   };
 
   //////////////////////////
@@ -509,6 +532,11 @@ struct BrushBehavior {
 
     friend bool operator==(const ToolTypeFilterNode&,
                            const ToolTypeFilterNode&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const ToolTypeFilterNode& ttfn) {
+      return H::combine(std::move(h), ttfn.enabled_tool_types);
+    }
   };
 
   ////////////////////////////
@@ -534,6 +562,11 @@ struct BrushBehavior {
     float damping_gap;
 
     friend bool operator==(const DampingNode&, const DampingNode&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const DampingNode& dn) {
+      return H::combine(std::move(h), dn.damping_source, dn.damping_gap);
+    }
   };
 
   // Value node for mapping a value through a response curve.
@@ -546,6 +579,11 @@ struct BrushBehavior {
     EasingFunction response_curve;
 
     friend bool operator==(const ResponseNode&, const ResponseNode&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const ResponseNode& rn) {
+      return H::combine(std::move(h), rn.response_curve);
+    }
   };
 
   // Value node for integrating an input value over time or distance.
@@ -571,6 +609,13 @@ struct BrushBehavior {
     std::array<float, 2> integral_value_range;
 
     friend bool operator==(const IntegralNode&, const IntegralNode&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const IntegralNode& in) {
+      return H::combine(std::move(h), in.integrate_over,
+                        in.integral_out_of_range_behavior,
+                        in.integral_value_range);
+    }
   };
 
   // Value node for combining two other values with a binary operation.
@@ -583,6 +628,11 @@ struct BrushBehavior {
     BinaryOp operation;
 
     friend bool operator==(const BinaryOpNode&, const BinaryOpNode&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const BinaryOpNode& bon) {
+      return H::combine(std::move(h), bon.operation);
+    }
   };
 
   // Value node for interpolating to/from a range of two values.
@@ -596,6 +646,11 @@ struct BrushBehavior {
 
     friend bool operator==(const InterpolationNode&,
                            const InterpolationNode&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const InterpolationNode& in) {
+      return H::combine(std::move(h), in.interpolation);
+    }
   };
 
   //////////////////////
@@ -617,6 +672,11 @@ struct BrushBehavior {
     std::array<float, 2> target_modifier_range;
 
     friend bool operator==(const TargetNode&, const TargetNode&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const TargetNode& tn) {
+      return H::combine(std::move(h), tn.target, tn.target_modifier_range);
+    }
   };
 
   // Terminal node that consumes two input values (angle and magnitude), forming
@@ -638,6 +698,12 @@ struct BrushBehavior {
 
     friend bool operator==(const PolarTargetNode&,
                            const PolarTargetNode&) = default;
+
+    template <typename H>
+    friend H AbslHashValue(H h, const PolarTargetNode& ptn) {
+      return H::combine(std::move(h), ptn.target, ptn.angle_range,
+                        ptn.magnitude_range);
+    }
   };
 
   // A single node in a behavior's graph.  Each node type is either a "value
@@ -659,6 +725,11 @@ struct BrushBehavior {
   std::string developer_comment;
 
   friend bool operator==(const BrushBehavior&, const BrushBehavior&) = default;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const BrushBehavior& behavior) {
+    return H::combine(std::move(h), behavior.nodes, behavior.developer_comment);
+  }
 };
 
 namespace brush_internal {

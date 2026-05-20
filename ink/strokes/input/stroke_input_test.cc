@@ -15,6 +15,7 @@
 #include "ink/strokes/input/stroke_input.h"
 
 #include "gtest/gtest.h"
+#include "absl/hash/hash_testing.h"
 #include "absl/strings/str_cat.h"
 #include "ink/geometry/angle.h"
 #include "ink/types/duration.h"
@@ -105,6 +106,45 @@ TEST(StrokeInputTest, NoOrientation) {
   EXPECT_TRUE(input.HasPressure());
   EXPECT_TRUE(input.HasTilt());
   EXPECT_FALSE(input.HasOrientation());
+}
+
+TEST(StrokeInputTest, EqualityAndHashing) {
+  StrokeInput input;
+  EXPECT_EQ(input, StrokeInput{});
+
+  StrokeInput input_with_tool_type = input;
+  input_with_tool_type.tool_type = StrokeInput::ToolType::kMouse;
+  EXPECT_NE(input, input_with_tool_type);
+
+  StrokeInput input_with_position = input;
+  input_with_position.position = {1, 1};
+  EXPECT_NE(input, input_with_position);
+
+  StrokeInput input_with_time = input;
+  input_with_time.elapsed_time = Duration32::Seconds(1);
+  EXPECT_NE(input, input_with_time);
+
+  StrokeInput input_with_stroke_unit_length = input;
+  input_with_stroke_unit_length.stroke_unit_length =
+      PhysicalDistance::Centimeters(1);
+  EXPECT_NE(input, input_with_stroke_unit_length);
+
+  StrokeInput input_with_pressure = input;
+  input_with_pressure.pressure = 0.5;
+  EXPECT_NE(input, input_with_pressure);
+
+  StrokeInput input_with_tilt = input;
+  input_with_tilt.tilt = Angle::Degrees(45);
+  EXPECT_NE(input, input_with_tilt);
+
+  StrokeInput input_with_orientation = input;
+  input_with_orientation.orientation = Angle::Degrees(90);
+  EXPECT_NE(input, input_with_orientation);
+
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
+      {input, input_with_tool_type, input_with_position, input_with_time,
+       input_with_stroke_unit_length, input_with_pressure, input_with_tilt,
+       input_with_orientation}));
 }
 
 }  // namespace

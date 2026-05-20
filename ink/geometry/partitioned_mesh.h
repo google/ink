@@ -151,6 +151,16 @@ class PartitionedMesh {
   PartitionedMesh& operator=(const PartitionedMesh&) = default;
   PartitionedMesh& operator=(PartitionedMesh&&) = default;
 
+  // Compare by pointer equality, not the contents of the data. Notably for this
+  // class, the default deep equality would take into account the spatial index,
+  // which is not desirable as it is derived state.
+  bool operator==(const PartitionedMesh& other) const = default;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const PartitionedMesh& mesh) {
+    return H::combine(std::move(h), mesh.data_.get());
+  }
+
   // Returns the number of render groups in this modeled shape.
   uint32_t RenderGroupCount() const;
 
