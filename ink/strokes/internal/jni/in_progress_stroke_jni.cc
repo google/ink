@@ -278,8 +278,8 @@ JNI_METHOD(strokes, InProgressStrokeNative, jint, getVertexCount)
       .VertexCount(coat_index, mesh_index);
 }
 
-JNI_METHOD(strokes, InProgressStrokeNative, absl_nullable jobject,
-           getUnsafelyMutableRawVertexData)
+JNI_METHOD(strokes, JvmInProgressStrokeNative, absl_nullable jobject,
+           getUnsafelyMutableInProgressStrokeOwnedRawVertexData)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint mesh_index) {
   // The resulting buffer will be writeable, but it will be wrapped at the
@@ -297,8 +297,8 @@ JNI_METHOD(strokes, InProgressStrokeNative, absl_nullable jobject,
 // method (which is typically used for rendering).
 // TODO: b/294561921 - Simplify this when the underlying index data is in 16 bit
 //   values.
-JNI_METHOD(strokes, InProgressStrokeNative, absl_nullable jobject,
-           getUnsafelyMutableRawTriangleIndexData)
+JNI_METHOD(strokes, JvmInProgressStrokeNative, absl_nullable jobject,
+           getUnsafelyMutableInProgressStrokeOwnedRawTriangleIndexData)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint coat_index,
  jint mesh_index) {
   // The resulting buffer will be writeable, but it will be wrapped at the
