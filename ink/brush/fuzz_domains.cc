@@ -61,7 +61,6 @@ using fuzztest::Map;
 using fuzztest::NonEmpty;
 using fuzztest::NonNegative;
 using fuzztest::OneOf;
-using fuzztest::OptionalOf;
 using fuzztest::PairOf;
 using fuzztest::Positive;
 using fuzztest::StructOf;

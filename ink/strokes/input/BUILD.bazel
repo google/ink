@@ -34,6 +34,7 @@ cc_library(
         "//ink/types:duration",
         "//ink/types:fuzz_domains",
         "//ink/types:physical_distance",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/status:statusor",
         "@com_google_fuzztest//fuzztest",
     ],

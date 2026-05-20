@@ -23,6 +23,7 @@
 #include <variant>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
@@ -1713,10 +1714,10 @@ void EncodeMultipleBrushFamilies(const std::vector<BrushFamily>& families,
   // `newer_brush_families` field, in order from lowest to highest version.
   // Decoding does not depend on the order, but sorting ensures that a given set
   // of brush families will always be serialized in exactly the same way.
-  std::sort(family_protos.begin(), family_protos.end(),
-            [](const proto::BrushFamily& a, const proto::BrushFamily& b) {
-              return a.min_version() < b.min_version();
-            });
+  absl::c_sort(family_protos,
+               [](const proto::BrushFamily& a, const proto::BrushFamily& b) {
+                 return a.min_version() < b.min_version();
+               });
   family_proto_out = family_protos[0];
   for (const proto::BrushFamily& family_proto : family_protos) {
     // Don't pack the top-level brush family into itself.

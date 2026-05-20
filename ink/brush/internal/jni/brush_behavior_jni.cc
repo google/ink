@@ -26,7 +26,6 @@
 
 namespace {
 
-using ::ink::BrushBehavior;
 using ::ink::jni::JStringToStdString;
 using ::ink::jni::ThrowExceptionFromStatusCallback;
 

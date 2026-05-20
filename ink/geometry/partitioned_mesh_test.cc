@@ -51,7 +51,6 @@ using ::absl_testing::IsOkAndHolds;
 using ::absl_testing::StatusIs;
 using ::testing::AnyOf;
 using ::testing::ElementsAre;
-using ::testing::Eq;
 using ::testing::FloatNear;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;

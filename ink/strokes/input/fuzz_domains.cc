@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "fuzztest/fuzztest.h"
+#include "absl/algorithm/container.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/fuzz_domains.h"
@@ -58,11 +59,10 @@ fuzztest::Domain<Angle> ValidOrientation() { return NormalizedAngle(); }
 std::vector<std::pair<Point, Duration32>> XytsSortedByTime(
     const std::vector<std::pair<Point, Duration32>>& unsorted) {
   std::vector<std::pair<Point, Duration32>> sorted = unsorted;
-  std::sort(
-      sorted.begin(), sorted.end(),
-      [](std::pair<Point, Duration32> lhs, std::pair<Point, Duration32> rhs) {
-        return lhs.second < rhs.second;
-      });
+  absl::c_sort(sorted, [](std::pair<Point, Duration32> lhs,
+                          std::pair<Point, Duration32> rhs) {
+    return lhs.second < rhs.second;
+  });
   return sorted;
 }
 
