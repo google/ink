@@ -37,7 +37,7 @@ int64_t ValidateAndHoistNode(void* jni_env_pass_through,
   if (absl::Status status = ValidateBrushBehaviorNode(node); !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(status.code()),
-                               status.message().data());
+                               status.ToString().c_str());
     return 0;
   }
   return NewNativeBrushBehaviorNode(std::move(node));

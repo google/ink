@@ -66,7 +66,7 @@ int64_t BrushTipNative_create(
   if (absl::Status status = ValidateBrushTip(tip); !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(status.code()),
-                               status.message().data());
+                               status.ToString().c_str());
     return 0;
   }
   return NewNativeBrushTip(std::move(tip));

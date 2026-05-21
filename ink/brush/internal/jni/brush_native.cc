@@ -52,7 +52,7 @@ int64_t BrushNative_create(
   if (!brush.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(brush.status().code()),
-                               brush.status().message().data());
+                               brush.status().ToString().c_str());
     return 0;
   }
 

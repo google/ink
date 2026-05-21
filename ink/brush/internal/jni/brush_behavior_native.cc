@@ -63,7 +63,7 @@ int64_t BrushBehaviorNative_createFromOrderedNodes(
       !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(status.code()),
-                               status.message().data());
+                               status.ToString().c_str());
     return 0;
   }
   return NewNativeBrushBehavior(std::move(brush_behavior));

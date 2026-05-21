@@ -87,7 +87,7 @@ int64_t ValidateAndHoistColorFunctionOrThrow(
       !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(status.code()),
-                               status.message().data());
+                               status.ToString().c_str());
     return 0;
   }
   return NewNativeColorFunction(std::move(color_function));
@@ -122,7 +122,7 @@ int64_t BrushPaintNative_create(
   if (absl::Status status = ValidateBrushPaint(brush_paint); !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(status.code()),
-                               status.message().data());
+                               status.ToString().c_str());
     return 0;
   }
   return NewNativeBrushPaint(std::move(brush_paint));
@@ -199,7 +199,7 @@ int64_t TilingTextureNative_create(
       !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(status.code()),
-                               status.message().data());
+                               status.ToString().c_str());
     return 0;
   }
   return NewNativeTextureLayer(std::move(texture_layer));
@@ -222,7 +222,7 @@ int64_t StampingTextureNative_create(
       !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(status.code()),
-                               status.message().data());
+                               status.ToString().c_str());
     return 0;
   }
   return NewNativeTextureLayer(std::move(texture_layer));

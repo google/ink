@@ -42,7 +42,7 @@ int64_t ValidateAndHoistEasingFunction(
       !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(status.code()),
-                               status.message().data());
+                               status.ToString().c_str());
     return 0;
   }
   return NewNativeEasingFunction(std::move(easing_function));

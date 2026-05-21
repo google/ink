@@ -97,7 +97,7 @@ int64_t BrushFamilyNative_create(
   if (!brush_family.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(brush_family.status().code()),
-                               brush_family.status().message().data());
+                               brush_family.status().ToString().c_str());
     return 0;
   }
 

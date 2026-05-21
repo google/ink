@@ -120,7 +120,7 @@ bool MutableStrokeInputBatchNative_appendSingle(
       !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(status.code()),
-                               status.message().data());
+                               status.ToString().c_str());
     return false;
   }
   return true;
@@ -136,7 +136,7 @@ bool MutableStrokeInputBatchNative_appendBatch(
       !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(status.code()),
-                               status.message().data());
+                               status.ToString().c_str());
     return false;
   }
   return true;
