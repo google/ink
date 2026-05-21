@@ -201,7 +201,6 @@ cc_library(
         "//ink/geometry:mesh_packing_types",
         "//ink/geometry:point",
         "//ink/geometry:rect",
-        "@com_google_absl//absl/base",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/types:span",
     ],
@@ -464,6 +463,7 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_jvm_interface",
+        "//ink/strokes/internal/jni:in_progress_stroke_native",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],

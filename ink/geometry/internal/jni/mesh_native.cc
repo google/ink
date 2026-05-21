@@ -76,6 +76,8 @@ MeshNative_Box MeshNative_getBounds(int64_t native_ptr) {
 int MeshNative_fillAttributeUnpackingParams(int64_t native_ptr,
                                             int attribute_index, float* offsets,
                                             float* scales) {
+  ABSL_CHECK_GE(attribute_index, 0);
+  ABSL_CHECK_LT(attribute_index, MeshNative_getAttributeCount(native_ptr));
   absl::Span<const ink::MeshAttributeCodingParams::ComponentCodingParams>
       coding_params = CastToMesh(native_ptr)
                           .VertexAttributeUnpackingParams(attribute_index)

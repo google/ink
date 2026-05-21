@@ -12,35 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INK_STROKES_INTERNAL_JNI_STROKE_JNI_HELPER_H_
-#define INK_STROKES_INTERNAL_JNI_STROKE_JNI_HELPER_H_
+#ifndef INK_STROKES_INTERNAL_JNI_STROKE_NATIVE_HELPER_H_
+#define INK_STROKES_INTERNAL_JNI_STROKE_NATIVE_HELPER_H_
 
-#include <jni.h>
+#include <cstdint>
 
 #include "absl/log/absl_check.h"
 #include "ink/strokes/stroke.h"
 
-namespace ink::jni {
+namespace ink::native {
 
 // Creates a new heap-allocated copy of the `Stroke` and returns a pointer
-// to it as a jlong, suitable for wrapping in a Kotlin Stroke.
-inline jlong NewNativeStroke(const Stroke& stroke) {
-  return reinterpret_cast<jlong>(new Stroke(stroke));
+// to it as a int64_t, suitable for wrapping in a Kotlin Stroke.
+inline int64_t NewNativeStroke(const Stroke& stroke) {
+  return reinterpret_cast<int64_t>(new Stroke(stroke));
 }
 
 // Casts a Kotlin Stroke.nativePointer to a C++ Stroke. The returned
 // Stroke is a const ref as the Kotlin Stroke is immutable.
-inline const Stroke& CastToStroke(jlong native_pointer) {
+inline const Stroke& CastToStroke(int64_t native_pointer) {
   ABSL_CHECK_NE(native_pointer, 0);
   return *reinterpret_cast<Stroke*>(native_pointer);
 }
 
 // Frees a Kotlin Stroke.nativePointer.
-inline void DeleteNativeStroke(jlong native_pointer) {
+inline void DeleteNativeStroke(int64_t native_pointer) {
   ABSL_CHECK_NE(native_pointer, 0);
   delete reinterpret_cast<Stroke*>(native_pointer);
 }
 
-}  // namespace ink::jni
+}  // namespace ink::native
 
-#endif  // INK_STROKES_INTERNAL_JNI_STROKE_JNI_HELPER_H_
+#endif  // INK_STROKES_INTERNAL_JNI_STROKE_NATIVE_HELPER_H_

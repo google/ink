@@ -18,6 +18,7 @@
 #include <jni.h>
 
 #include "ink/strokes/input/stroke_input.h"
+#include "ink/strokes/internal/jni/in_progress_stroke_native.h"
 #include "ink/strokes/internal/jni/stroke_input_batch_native.h"
 
 namespace ink::jni {
@@ -30,6 +31,9 @@ void UpdateJStrokeInputOrThrow(JNIEnv* env, const StrokeInput& input_in,
                                jobject j_input_out);
 void UpdateJStrokeInputOrThrow(JNIEnv* env,
                                const StrokeInputBatchNative_Input& input_in,
+                               jobject j_input_out);
+void UpdateJStrokeInputOrThrow(JNIEnv* env,
+                               const InProgressStrokeNative_Input& input_in,
                                jobject j_input_out);
 
 }  // namespace ink::jni

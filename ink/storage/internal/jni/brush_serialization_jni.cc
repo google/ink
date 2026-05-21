@@ -89,7 +89,7 @@ using ::ink::native::NewNativeBrushTip;
 
 using MultipleBrushFamilies = std::vector<std::unique_ptr<BrushFamily>>;
 
-jlong NewMultipleBrushFamilies(MultipleBrushFamilies&& families) {
+jlong NewNativeMultipleBrushFamilies(MultipleBrushFamilies&& families) {
   return reinterpret_cast<jlong>(
       new MultipleBrushFamilies(std::forward<MultipleBrushFamilies>(families)));
 }
@@ -432,7 +432,7 @@ JNI_METHOD(storage, MultipleBrushFamiliesNative, jlong, createFromProto)
   for (BrushFamily& brush_family : *brush_families) {
     result.push_back(std::make_unique<BrushFamily>(std::move(brush_family)));
   }
-  return NewMultipleBrushFamilies(std::move(result));
+  return NewNativeMultipleBrushFamilies(std::move(result));
 }
 
 JNI_METHOD(storage, MultipleBrushFamiliesNative, jint, getBrushFamilyCount)
