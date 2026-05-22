@@ -17,6 +17,7 @@
 #include <jni.h>
 
 #include <cstddef>
+#include <limits>
 
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
@@ -83,10 +84,11 @@ absl::Status ParseProtoFromEither(JNIEnv* env,
 
 jbyteArray SerializeProto(JNIEnv* env, const google::protobuf::MessageLite& src) {
   size_t size = src.ByteSizeLong();
+  ABSL_CHECK_LE(size, std::numeric_limits<jsize>::max());
   jbyteArray serialized_proto = env->NewByteArray(size);
-  ABSL_CHECK(serialized_proto);
+  ABSL_CHECK(serialized_proto != nullptr);
   jbyte* bytes = env->GetByteArrayElements(serialized_proto, nullptr);
-  ABSL_CHECK(bytes);
+  ABSL_CHECK(bytes != nullptr);
   bool success = src.SerializeToArray(bytes, size);
   // Here the array elements must be copied back to the JVM.
   env->ReleaseByteArrayElements(serialized_proto, bytes, 0);
