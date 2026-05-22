@@ -26,19 +26,15 @@
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/jni/stroke_input_batch_native_helper.h"
 
-namespace {
-
 using ::ink::DecodeStrokeInputBatch;
 using ::ink::EncodeStrokeInputBatch;
 using ::ink::StrokeInputBatch;
-using ::ink::jni::ParseProtoFromEither;
+using ::ink::jni::ParseProtoFromByteArray;
 using ::ink::jni::SerializeProto;
 using ::ink::jni::ThrowExceptionFromStatus;
 using ::ink::native::CastToStrokeInputBatch;
 using ::ink::native::NewNativeStrokeInputBatch;
 using ::ink::proto::CodedStrokeInputBatch;
-
-}  // namespace
 
 extern "C" {
 
@@ -46,12 +42,12 @@ extern "C" {
 // which can be passed in as either a direct `ByteBuffer` or as an array of
 // bytes. This returns the address of a heap-allocated `StrokeInputBatch`, which
 // must later be freed by the caller.
-JNI_METHOD(storage, StrokeInputBatchSerializationNative, jlong, newFromProto)
-(JNIEnv* env, jclass klass, jobject direct_byte_buffer, jbyteArray byte_array,
- jint offset, jint length) {
+JNI_METHOD(storage, StrokeInputBatchSerializationNative, jlong, createFromProto)
+(JNIEnv* env, jclass klass, jbyteArray byte_array, jint length) {
   CodedStrokeInputBatch coded_input;
-  if (absl::Status status = ParseProtoFromEither(
-          env, direct_byte_buffer, byte_array, offset, length, coded_input);
+  constexpr int kOffset = 0;
+  if (absl::Status status = ParseProtoFromByteArray(env, byte_array, kOffset,
+                                                    length, coded_input);
       !status.ok()) {
     ThrowExceptionFromStatus(env, status);
     return 0;
@@ -64,7 +60,7 @@ JNI_METHOD(storage, StrokeInputBatchSerializationNative, jlong, newFromProto)
   return NewNativeStrokeInputBatch(*std::move(input));
 }
 
-JNI_METHOD(storage, StrokeInputBatchSerializationNative, jbyteArray, serialize)
+JNI_METHOD(storage, StrokeInputBatchSerializationNative, jbyteArray, encode)
 (JNIEnv* env, jclass klass, jlong stroke_input_batch_native_pointer) {
   CodedStrokeInputBatch coded_input;
   EncodeStrokeInputBatch(
