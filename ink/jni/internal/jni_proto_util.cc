@@ -23,8 +23,7 @@
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/message_lite.h"
 
-namespace ink {
-namespace jni {
+namespace ink::jni {
 
 absl::Status ParseProtoFromByteArray(JNIEnv* env, jbyteArray serialized_proto,
                                      google::protobuf::MessageLite& dest) {
@@ -41,7 +40,8 @@ absl::Status ParseProtoFromByteArray(JNIEnv* env, jbyteArray serialized_proto,
   jbyte* bytes = env->GetByteArrayElements(serialized_proto, nullptr);
   ABSL_CHECK(bytes);
   bool success = dest.ParseFromArray(bytes + offset, size);
-  env->ReleaseByteArrayElements(serialized_proto, bytes, 0);
+  // No need to copy back the array, which is not modified.
+  env->ReleaseByteArrayElements(serialized_proto, bytes, JNI_ABORT);
   if (!success) {
     return absl::InvalidArgumentError(absl::StrCat(
         "Failed to parse ", dest.GetTypeName(), " proto from byte[]."));
@@ -88,10 +88,10 @@ jbyteArray SerializeProto(JNIEnv* env, const google::protobuf::MessageLite& src)
   jbyte* bytes = env->GetByteArrayElements(serialized_proto, nullptr);
   ABSL_CHECK(bytes);
   bool success = src.SerializeToArray(bytes, size);
+  // Here the array elements must be copied back to the JVM.
   env->ReleaseByteArrayElements(serialized_proto, bytes, 0);
   ABSL_CHECK(success);
   return serialized_proto;
 }
 
-}  // namespace jni
-}  // namespace ink
+}  // namespace ink::jni

@@ -20,8 +20,7 @@
 #include "absl/status/status.h"
 #include "google/protobuf/message_lite.h"
 
-namespace ink {
-namespace jni {
+namespace ink::jni {
 
 // Attempts to parse a serialized proto from either a direct java.nio.ByteBuffer
 // or a jbyteArray, one of which must be non-null. If the proto doesn't parse,
@@ -62,7 +61,6 @@ absl::Status ParseProtoFromBuffer(JNIEnv* env,
 [[nodiscard]] jbyteArray SerializeProto(JNIEnv* env,
                                         const google::protobuf::MessageLite& src);
 
-}  // namespace jni
-}  // namespace ink
+}  // namespace ink::jni
 
 #endif  // INK_JNI_INTERNAL_JNI_PROTO_UTIL_H_
