@@ -14,7 +14,6 @@
 
 #include "ink/strokes/input/fuzz_domains.h"
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
