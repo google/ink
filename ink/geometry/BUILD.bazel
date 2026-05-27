@@ -784,3 +784,25 @@ cc_test(
         "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
+
+cc_library(
+    name = "outline_processing",
+    srcs = ["outline_processing.cc"],
+    hdrs = ["outline_processing.h"],
+    deps = [
+        ":point",
+        "//ink/geometry/internal:algorithms",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:inlined_vector",
+    ],
+)
+
+cc_test(
+    name = "outline_processing_test",
+    srcs = ["outline_processing_test.cc"],
+    deps = [
+        ":outline_processing",
+        ":point",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
