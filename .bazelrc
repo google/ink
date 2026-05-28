@@ -4,6 +4,10 @@ build --cxxopt=-std=c++20
 # Enable Bzlmod for all Bazel commands.
 common --enable_bzlmod
 
+# Check that directly declared dependency maches resolved version from
+# transitive dependencies.
+common --check_direct_dependencies=error
+
 # To create this file, please run:
 #  bazel run @com_google_fuzztest//bazel:setup_configs > fuzztest.bazelrc
 try-import %workspace%/fuzztest.bazelrc
