@@ -18,34 +18,39 @@ package(
     default_visibility = ["//ink:__subpackages__"],
 )
 
+filegroup(
+    name = "cinterop_headers",
+    srcs = glob(["*_native.h"]),
+)
+
+cc_library(
+    name = "cinterop",
+    deps = [
+        ":byte_vector_native",
+        ":stroke_input_batch_serialization_native",
+    ],
+)
+
 cc_library(
     name = "jni",
     tags = ["keep_dep"],
     visibility = ["//visibility:public"],
     deps = [
         ":brush_family_serialization_jni",
+        ":byte_vector_jni",
         ":stroke_input_batch_serialization_jni",
     ],
 )
 
 cc_library(
-    name = "stroke_input_batch_serialization_jni",
-    srcs = ["stroke_input_batch_serialization_jni.cc"],
+    name = "byte_vector_jni",
+    srcs = ["byte_vector_jni.cc"],
     tags = ["keep_dep"],
     deps = [
+        ":byte_vector_native",
+        ":byte_vector_native_helper",
         "//ink/jni/internal:jni_defines",
-        "//ink/jni/internal:jni_proto_util",
-        "//ink/jni/internal:status_jni_helper",
-        "//ink/storage:stroke_input_batch",
-        "//ink/storage/proto:stroke_input_batch_cc_proto",
-        "//ink/strokes/input:stroke_input_batch",
-        "//ink/strokes/internal/jni:stroke_input_batch_native_helper",
-        "//ink/strokes/internal/jni:stroke_input_jni_helper",
         "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/types:span",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -53,6 +58,57 @@ cc_library(
         ],
     }),
     alwayslink = 1,
+)
+
+cc_library(
+    name = "byte_vector_native",
+    srcs = ["byte_vector_native.cc"],
+    hdrs = ["byte_vector_native.h"],
+    deps = [
+        ":byte_vector_native_helper",
+    ],
+)
+
+cc_library(
+    name = "byte_vector_native_helper",
+    hdrs = ["byte_vector_native_helper.h"],
+)
+
+cc_library(
+    name = "stroke_input_batch_serialization_jni",
+    srcs = ["stroke_input_batch_serialization_jni.cc"],
+    tags = ["keep_dep"],
+    deps = [
+        ":byte_vector_native_helper",
+        ":stroke_input_batch_serialization_native",
+        "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_proto_util",
+        "//ink/jni/internal:status_jni_helper",
+        "//ink/storage/proto:stroke_input_batch_cc_proto",
+        "@com_google_absl//absl/log:absl_check",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "stroke_input_batch_serialization_native",
+    srcs = ["stroke_input_batch_serialization_native.cc"],
+    hdrs = ["stroke_input_batch_serialization_native.h"],
+    deps = [
+        ":byte_vector_native_helper",
+        "//ink/storage:stroke_input_batch",
+        "//ink/storage/proto:stroke_input_batch_cc_proto",
+        "//ink/strokes/input:stroke_input_batch",
+        "//ink/strokes/internal/jni:stroke_input_batch_native_helper",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+    ],
 )
 
 cc_library(

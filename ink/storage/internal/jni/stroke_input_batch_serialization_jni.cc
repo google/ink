@@ -14,27 +14,14 @@
 
 #include <jni.h>
 
-#include <utility>
-
-#include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_proto_util.h"
 #include "ink/jni/internal/status_jni_helper.h"
+#include "ink/storage/internal/jni/stroke_input_batch_serialization_native.h"
 #include "ink/storage/proto/stroke_input_batch.pb.h"
-#include "ink/storage/stroke_input_batch.h"
-#include "ink/strokes/input/stroke_input_batch.h"
-#include "ink/strokes/internal/jni/stroke_input_batch_native_helper.h"
 
-using ::ink::DecodeStrokeInputBatch;
-using ::ink::EncodeStrokeInputBatch;
-using ::ink::StrokeInputBatch;
-using ::ink::jni::ParseProtoFromByteArray;
-using ::ink::jni::SerializeProto;
-using ::ink::jni::ThrowExceptionFromStatus;
-using ::ink::native::CastToStrokeInputBatch;
-using ::ink::native::NewNativeStrokeInputBatch;
-using ::ink::proto::CodedStrokeInputBatch;
+using ::ink::jni::JvmBytes;
+using ::ink::jni::ThrowExceptionFromStatusCallback;
 
 extern "C" {
 
@@ -44,28 +31,16 @@ extern "C" {
 // must later be freed by the caller.
 JNI_METHOD(storage, StrokeInputBatchSerializationNative, jlong, createFromProto)
 (JNIEnv* env, jobject object, jbyteArray byte_array, jint length) {
-  CodedStrokeInputBatch coded_input;
-  constexpr int kOffset = 0;
-  if (absl::Status status = ParseProtoFromByteArray(env, byte_array, kOffset,
-                                                    length, coded_input);
-      !status.ok()) {
-    ThrowExceptionFromStatus(env, status);
-    return 0;
-  }
-  absl::StatusOr<StrokeInputBatch> input = DecodeStrokeInputBatch(coded_input);
-  if (!input.ok()) {
-    ThrowExceptionFromStatus(env, input.status());
-    return 0;
-  }
-  return NewNativeStrokeInputBatch(*std::move(input));
+  JvmBytes jvm_bytes = JvmBytes::FromByteArray(env, byte_array);
+  jlong native_pointer = StrokeInputBatchSerializationNative_createFromProto(
+      env, jvm_bytes.NativeBytes(), length, &ThrowExceptionFromStatusCallback);
+  return native_pointer;
 }
 
-JNI_METHOD(storage, StrokeInputBatchSerializationNative, jbyteArray, encode)
-(JNIEnv* env, jobject object, jlong stroke_input_batch_native_pointer) {
-  CodedStrokeInputBatch coded_input;
-  EncodeStrokeInputBatch(
-      CastToStrokeInputBatch(stroke_input_batch_native_pointer), coded_input);
-  return SerializeProto(env, coded_input);
+JNI_METHOD(storage, StrokeInputBatchSerializationNative, jlong,
+           encodeToByteVector)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  return StrokeInputBatchSerializationNative_encodeToByteVector(native_pointer);
 }
 
 }  // extern "C"

@@ -17,10 +17,45 @@
 
 #include <jni.h>
 
+#include <cstdint>
+
+#include "absl/base/nullability.h"
 #include "absl/status/status.h"
 #include "google/protobuf/message_lite.h"
 
 namespace ink::jni {
+
+// A read-only view of bytes from the JVM passed via either a direct
+// java.nio.ByteBuffer or a jbyteArray. Handles cleanup when the object goes out
+// of scope.
+class JvmBytes {
+ public:
+  static JvmBytes FromDirectByteBuffer(JNIEnv* env, jobject direct_byte_buffer);
+  static JvmBytes FromByteArray(JNIEnv* env, jbyteArray byte_array);
+  static JvmBytes FromEither(JNIEnv* env, jobject direct_byte_buffer,
+                             jbyteArray byte_array);
+  ~JvmBytes();
+
+  // Not copyable or movable, meant to handle access and cleanup in a single
+  // scope.
+  JvmBytes(const JvmBytes&) = delete;
+  JvmBytes& operator=(const JvmBytes&) = delete;
+  JvmBytes(JvmBytes&&) = delete;
+  JvmBytes& operator=(JvmBytes&&) = delete;
+
+  const int8_t* NativeBytes() const {
+    return reinterpret_cast<int8_t*>(bytes_);
+  }
+
+ private:
+  JvmBytes(JNIEnv* env, absl_nullable jobject direct_byte_buffer,
+           absl_nullable jbyteArray byte_array);
+
+  JNIEnv* env_;
+  jobject direct_byte_buffer_;
+  jbyteArray byte_array_;
+  jbyte* bytes_;
+};
 
 // Attempts to parse a serialized proto from either a direct java.nio.ByteBuffer
 // or a jbyteArray, one of which must be non-null. If the proto doesn't parse,

@@ -91,6 +91,7 @@ cc_library(
     hdrs = ["jni_proto_util.h"],
     deps = [
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
@@ -109,16 +110,16 @@ filegroup(
 )
 
 cc_library(
-    name = "jni",
+    name = "cinterop",
     deps = [
-        ":status_jni",
+        ":status_native",
     ],
 )
 
 cc_library(
-    name = "cinterop",
+    name = "jni",
     deps = [
-        ":status_native",
+        ":status_jni",
     ],
 )
 
