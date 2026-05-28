@@ -68,8 +68,9 @@ absl::StatusOr<BrushFamily> BrushFamily::Create(
     const Metadata& metadata) {
   if (coats.size() > MaxBrushCoats()) {
     return absl::InvalidArgumentError(
-        absl::StrCat("A `BrushFamily` cannot have more than ", MaxBrushCoats(),
-                     " `BrushCoat`s, but `coats.size()` was ", coats.size()));
+        absl::StrCat("`BrushFamily` is currently limited to at most ",
+                     MaxBrushCoats(), " `BrushCoat`s, but got ", coats.size(),
+                     ". (This limit may be increased in the future.)"));
   }
   for (const BrushCoat& coat : coats) {
     if (absl::Status status = brush_internal::ValidateBrushCoat(coat);

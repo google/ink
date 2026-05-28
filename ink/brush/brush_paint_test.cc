@@ -585,6 +585,16 @@ TEST(BrushPaintTest, MismatchedAnimationDuration) {
                        HasSubstr("animation_duration` must be the same")));
 }
 
+TEST(BrushPaintTest, TooManyTextureLayers) {
+  EXPECT_THAT(
+      brush_internal::ValidateBrushPaint(
+          BrushPaint{std::vector<BrushPaint::TextureLayer>(
+              BrushPaint::MaxTextureLayers() + 1,
+              BrushPaint::TilingTexture{.client_texture_id =
+                                            std::string(kTestTextureId)})}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("at most")));
+}
+
 TEST(BrushPaintTest, InvalidSelfOverlap) {
   EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
                   .self_overlap = static_cast<BrushPaint::SelfOverlap>(123)}),

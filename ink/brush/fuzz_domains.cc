@@ -650,7 +650,8 @@ Domain<BrushPaint::TilingTexture> ValidBrushPaintTilingTexture() {
 }
 
 Domain<std::vector<BrushPaint::TextureLayer>> ValidBrushPaintTilingTextures() {
-  return VectorOf(BrushPaintTextureLayerOf(ValidBrushPaintTilingTexture()));
+  return VectorOf(BrushPaintTextureLayerOf(ValidBrushPaintTilingTexture()))
+      .WithMaxSize(BrushPaint::MaxTextureLayers());
 }
 
 Domain<BrushPaint::StampingTexture>
@@ -678,13 +679,12 @@ Domain<std::vector<BrushPaint::TextureLayer>> ValidBrushPaintStampingTextures(
   return FlatMap(
       [=](std::tuple<int, int, int> animation_frames_rows_columns,
           absl::Duration animation_duration) {
-        return std::apply(
-            [&](int frames, int rows, int columns) {
-              return VectorOf(BrushPaintTextureLayerOf(
-                  ValidBrushPaintStampingTextureWithAnimationParameters(
-                      frames, rows, columns, animation_duration, variant)));
-            },
-            animation_frames_rows_columns);
+        auto [frames, rows, columns] = animation_frames_rows_columns;
+        return VectorOf(
+                   BrushPaintTextureLayerOf(
+                       ValidBrushPaintStampingTextureWithAnimationParameters(
+                           frames, rows, columns, animation_duration, variant)))
+            .WithMaxSize(BrushPaint::MaxTextureLayers());
       },
       FlatMap(
           [](int rows, int columns) {

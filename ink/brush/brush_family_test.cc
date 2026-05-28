@@ -254,7 +254,7 @@ TEST(BrushFamilyTest, CreateWithTooManyCoats) {
                                CreateTestCoat());
   EXPECT_THAT(
       BrushFamily::Create(coats),
-      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("coats.size()")));
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("at most")));
 }
 
 TEST(BrushFamilyTest, CreateWithInvalidInputModel) {

@@ -297,6 +297,10 @@ struct BrushPaint {
     kDiscard,
   };
 
+  // Returns the maximum number of `TextureLayer`s that a valid `BrushPaint` is
+  // allowed to have. Note that this limit may increase in the future.
+  static uint32_t MaxTextureLayers();
+
   std::vector<TextureLayer> texture_layers;
   // Transformations to apply to the base brush color (in order) before drawing
   // this coat of paint. When this list is empty, the base brush color will be

@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <variant>
 
@@ -30,7 +31,19 @@
 #include "ink/brush/version.h"
 #include "ink/geometry/mesh_format.h"
 
-namespace ink::brush_internal {
+namespace ink {
+
+uint32_t BrushPaint::MaxTextureLayers() {
+  // This value was chosen somewhat arbitrarily. Some of our renderer
+  // implementions need to declare the number of textures they will be sampling
+  // from, so we need some limit. We can always raise this limit in the future,
+  // but lowering it will be harder once clients start relying on being able to
+  // have a certain number of texture layers. So for now, the limit is fairly
+  // conservative.
+  return 4;
+}
+
+namespace brush_internal {
 namespace {
 
 bool IsValidBrushPaintTextureOrigin(BrushPaint::TextureOrigin origin) {
@@ -262,6 +275,14 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
       }
     }
     previous = &layer;
+  }
+
+  if (paint.texture_layers.size() > BrushPaint::MaxTextureLayers()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("`BrushPaint` is currently limited to at most ",
+                     BrushPaint::MaxTextureLayers(),
+                     " `TextureLayer`s, but got ", paint.texture_layers.size(),
+                     ". (This limit may be increased in the future.)"));
   }
 
   if (!IsValidBrushPaintSelfOverlap(paint.self_overlap)) {
@@ -533,4 +554,5 @@ std::string ToFormattedString(const BrushPaint& paint) {
   return formatted;
 }
 
-}  // namespace ink::brush_internal
+}  // namespace brush_internal
+}  // namespace ink
