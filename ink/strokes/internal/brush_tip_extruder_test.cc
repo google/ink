@@ -14,14 +14,17 @@
 
 #include "ink/strokes/internal/brush_tip_extruder.h"
 
+#include <cmath>
 #include <cstdint>
 #include <optional>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/envelope.h"
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
@@ -30,18 +33,23 @@
 #include "ink/strokes/internal/brush_tip_state.h"
 #include "ink/strokes/internal/stroke_shape_update.h"
 #include "ink/strokes/internal/stroke_vertex.h"
+#include "ink/types/small_array.h"
 
 namespace ink::strokes_internal {
 namespace {
 
 using ::ink::geometry_internal::CalculateEnvelope;
+using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::Eq;
 using ::testing::Gt;
 using ::testing::IsEmpty;
+using ::testing::IsFalse;
 using ::testing::Not;
 using ::testing::Optional;
 using ::testing::SizeIs;
+
+MATCHER(IsFinite, "") { return std::isfinite(arg); }
 
 constexpr float kBrushEpsilon = 0.05;
 
@@ -548,6 +556,41 @@ TEST_F(BrushTipExtruderTest, OneDimensionLessThanEpsilonIsNotABreakPoint) {
   EXPECT_NE(mesh_.TriangleCount(), 0);
 }
 
+TEST_F(BrushTipExtruderTest,
+       OneDimensionZeroIsNotABreakPointAndHasFiniteSurfaceUVOnParticleBrush) {
+  // We allow zero-width or zero-height tip states, but they must produce
+  // finite surace UV vertex attribute values.
+  BrushTipExtruder extruder;
+  extruder.StartStroke(/* brush_epsilon = */ 0.1,
+                       /* is_particle_brush = */ true, mesh_);
+  StrokeShapeUpdate update = extruder.ExtendStroke(
+      {
+          {.position = {0, 0}, .width = 0, .height = 1},
+          {.position = {1, 0}, .width = 0.5, .height = 0},
+      },
+      {});
+
+  // The update and geometry should not be empty, because only one dimension of
+  // each tip state was less than epsilon.
+  EXPECT_THAT(update.region.IsEmpty(), IsFalse());
+  EXPECT_THAT(update.first_index_offset, Optional(Eq(0)));
+  EXPECT_THAT(update.first_vertex_offset, Optional(Eq(0)));
+  EXPECT_THAT(mesh_.VertexCount(), Not(Eq(0)));
+  EXPECT_THAT(mesh_.TriangleCount(), Not(Eq(0)));
+
+  for (uint32_t i = 0; i < mesh_.VertexCount(); ++i) {
+    SCOPED_TRACE(absl::StrCat("Vertex ", i));
+    EXPECT_THAT(mesh_.VertexPosition(i), IsFinitePoint());
+
+    // For a particle brush, surface UV is the meaningful attribute to check
+    // since its transform is computed from dividing by the width and
+    // height, which can be zero (see ComputeParticleSurfaceUvTransform).
+    const SmallArray<float, 4>& surface_uv = mesh_.FloatVertexAttribute(
+        i, StrokeVertex::kFullFormatAttributeIndices.surface_uv);
+    EXPECT_THAT(surface_uv.Values(), ElementsAre(IsFinite(), IsFinite()));
+  }
+}
+
 TEST_F(BrushTipExtruderTest, AddBreakPointsToNonEmptyStroke) {
   BrushTipExtruder extruder;
   extruder.StartStroke(/* brush_epsilon = */ 0.06,
@@ -575,7 +618,7 @@ TEST_F(BrushTipExtruderTest, AddBreakPointsToNonEmptyStroke) {
   uint32_t last_vertex_count = mesh_.VertexCount();
 
   // A new non-break-point extrusion should be disconnected from the segment
-  // that prececed the break-point.
+  // that preceded the break-point.
   update = extruder.ExtendStroke({MakeCircularTipState({10, 10}, 1)}, {});
   EXPECT_THAT(update.region.AsRect(),
               Optional(RectNear(Rect::FromTwoPoints({9, 9}, {11, 11}), 0.06)));

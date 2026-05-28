@@ -28,6 +28,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
+#include "ink/brush/brush_behavior.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
@@ -632,6 +633,30 @@ TEST(StrokeTest, PartialEraseWithDegenerateTransformReturnsStroke) {
   EXPECT_THAT(result[0].GetBrush(), BrushEq(stroke.GetBrush()));
   EXPECT_THAT(result[0].GetInputs(), StrokeInputBatchEq(stroke.GetInputs()));
   EXPECT_THAT(result[0].GetShape(), PartitionedMeshDeepEq(stroke.GetShape()));
+}
+
+TEST(StrokeTest, ParticleBrushWithOneDimensionZero) {
+  // Brush which will create a tip geometry with a width that is 0 and is a
+  // particle brush, so it will hit the case in
+  // ComputeParticleSurfaceUVTransform where we must guard against division by
+  // zero.
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
+      BrushTip{.particle_gap_distance_scale = 0.2f,
+               .behaviors = {BrushBehavior{
+                   {BrushBehavior::SourceNode(
+                        BrushBehavior::Source::
+                            kDistanceTraveledInMultiplesOfBrushSize,
+                        BrushBehavior::OutOfRange::kMirror, {0, 1}),
+                    BrushBehavior::TargetNode(
+                        BrushBehavior::Target::kWidthMultiplier, {0, 2})}}}},
+      {});
+  ASSERT_THAT(family, IsOk());
+  absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Black(), 1, 0.1);
+  ASSERT_THAT(brush, IsOk());
+  Stroke stroke(*brush, CreateFilledInputs());
+  // If we did divide by zero, RegenerateShape would produce a PartitionedMesh
+  // with no meshes.
+  EXPECT_THAT(stroke.GetShape().Meshes(), SizeIs(1));
 }
 
 }  // namespace
