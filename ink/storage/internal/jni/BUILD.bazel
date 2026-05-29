@@ -71,7 +71,12 @@ cc_library(
 
 cc_library(
     name = "byte_vector_native_helper",
+    srcs = ["byte_vector_native_helper.cc"],
     hdrs = ["byte_vector_native_helper.h"],
+    deps = [
+        "@com_google_absl//absl/log:absl_check",
+        "@protobuf//:protobuf_lite",
+    ],
 )
 
 cc_library(

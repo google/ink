@@ -30,7 +30,7 @@
 using ::ink::DecodeStrokeInputBatch;
 using ::ink::StrokeInputBatch;
 using ::ink::native::CastToStrokeInputBatch;
-using ::ink::native::NewNativeByteVector;
+using ::ink::native::NewNativeByteVectorFromProto;
 using ::ink::native::NewNativeStrokeInputBatch;
 using ::ink::proto::CodedStrokeInputBatch;
 
@@ -63,9 +63,7 @@ int64_t StrokeInputBatchSerializationNative_encodeToByteVector(
     int64_t native_pointer) {
   CodedStrokeInputBatch coded_input;
   EncodeStrokeInputBatch(CastToStrokeInputBatch(native_pointer), coded_input);
-  std::vector<int8_t> bytes(coded_input.ByteSizeLong());
-  ABSL_CHECK(coded_input.SerializeToArray(bytes.data(), bytes.size()));
-  return NewNativeByteVector(std::move(bytes));
+  return NewNativeByteVectorFromProto(coded_input);
 }
 
 }  // extern "C"
