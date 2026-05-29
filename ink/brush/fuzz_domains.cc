@@ -692,8 +692,12 @@ Domain<std::vector<BrushPaint::TextureLayer>> ValidBrushPaintStampingTextures(
                            Just(columns));
           },
           InRange<int>(1, 1 << 12), InRange<int>(1, 1 << 12)),
-      Map([](int64_t ms) { return absl::Milliseconds(ms); },
-          InRange(0, 1 << 24)));
+      // TODO: b/512471476 - Allow for non-power-of-2 values of
+      // `animation_duration`, once we can find a way to avoid generating a
+      // `BrushFamily` with too large an LCM.
+      OneOf(Just(absl::ZeroDuration()),
+            Map([](int power) { return absl::Milliseconds(1 << power); },
+                InRange(0, 24))));
 }
 
 Domain<std::vector<BrushPaint::TextureLayer>> ValidBrushPaintTextureLayers(

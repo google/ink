@@ -24,6 +24,7 @@
 #include "absl/functional/overload.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_family.h"
@@ -116,6 +117,13 @@ const char* BrushFamilyNative_getClientBrushFamilyId(int64_t native_pointer) {
 const char* BrushFamilyNative_getDeveloperComment(int64_t native_pointer) {
   const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
   return brush_family.GetMetadata().developer_comment.c_str();
+}
+
+int64_t BrushFamilyNative_getTextureAnimationLoopDurationMillis(
+    int64_t native_pointer) {
+  const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
+  return absl::ToInt64Milliseconds(
+      brush_family.GetTextureAnimationLoopDuration());
 }
 
 int64_t BrushFamilyNative_getBrushCoatCount(int64_t native_pointer) {

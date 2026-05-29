@@ -36,6 +36,9 @@ const char* BrushFamilyNative_getClientBrushFamilyId(int64_t native_pointer);
 // The caller must free the returned string.
 const char* BrushFamilyNative_getDeveloperComment(int64_t native_pointer);
 
+int64_t BrushFamilyNative_getTextureAnimationLoopDurationMillis(
+    int64_t native_pointer);
+
 int64_t BrushFamilyNative_getBrushCoatCount(int64_t native_pointer);
 
 int64_t BrushFamilyNative_newCopyOfBrushCoat(int64_t native_pointer, int index);

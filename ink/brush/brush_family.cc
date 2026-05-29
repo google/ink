@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <numeric>
 #include <string>
 #include <variant>
 #include <vector>
@@ -25,6 +26,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
@@ -49,10 +51,12 @@ uint32_t BrushFamily::MaxBrushCoats() {
 
 BrushFamily::BrushFamily(absl::Span<const BrushCoat> coats,
                          const InputModel& input_model,
-                         const Metadata& metadata)
+                         const Metadata& metadata,
+                         absl::Duration texture_animation_loop_duration)
     : coats_(coats.begin(), coats.end()),
       input_model_(input_model),
-      metadata_(metadata) {}
+      metadata_(metadata),
+      texture_animation_loop_duration_(texture_animation_loop_duration) {}
 
 absl::StatusOr<BrushFamily> BrushFamily::Create(const BrushTip& tip,
                                                 const BrushPaint& paint,
@@ -82,7 +86,52 @@ absl::StatusOr<BrushFamily> BrushFamily::Create(
       !status.ok()) {
     return status;
   }
-  return BrushFamily(coats, input_model, metadata);
+
+  int64_t full_duration_ms = 0;
+  for (const BrushCoat& coat : coats) {
+    // Only one paint preference for a given coat will be in use at a time, but
+    // we can't know ahead of time which one, so we take the LCM across all of
+    // them.  This is OK, because (1) even if the LCM turns out to be larger
+    // than necessary, it will still form a closed animation loop, and (2) in
+    // most practical cases, each paint preferences for a given coat will
+    // probably either have the same animation duration, or be a non-animated
+    // fallback.
+    for (const BrushPaint& paint : coat.paint_preferences) {
+      for (const BrushPaint::TextureLayer& texture_layer :
+           paint.texture_layers) {
+        if (const auto* stamping_texture =
+                std::get_if<BrushPaint::StampingTexture>(&texture_layer)) {
+          if (stamping_texture->animation_duration == absl::ZeroDuration() ||
+              stamping_texture->animation_frames == 1) {
+            continue;  // This texture is not animated.
+          }
+          // Because we've already validated each `BrushCoat`, we know that each
+          // texture's `animation_duration` is a whole number of milliseconds,
+          // so `ToInt64Milliseconds` isn't losing any precision here.
+          int64_t texture_duration_ms =
+              absl::ToInt64Milliseconds(stamping_texture->animation_duration);
+          if (full_duration_ms == 0) {
+            full_duration_ms = texture_duration_ms;
+            continue;
+          }
+          // Because we've already validated each `BrushCoat`, we know that
+          // `texture_duration_ms` is at most (1 << 24), and similarly we know
+          // that `full_duration_ms` is at most (1 << 24) so far, so their
+          // product is at most (1 << 48), and therefore this 64-bit `std::lcm`
+          // call can't overflow.
+          full_duration_ms = std::lcm(full_duration_ms, texture_duration_ms);
+          if (full_duration_ms > (1 << 24)) {
+            return absl::InvalidArgumentError(
+                "The LCM of all texture animation durations in a `BrushFamily` "
+                "must be no more than 2^24 milliseconds");
+          }
+        }
+      }
+    }
+  }
+
+  return BrushFamily(coats, input_model, metadata,
+                     absl::Milliseconds(full_duration_ms));
 }
 
 std::string BrushFamily::ToFormattedString() const {

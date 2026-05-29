@@ -21,6 +21,7 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
@@ -141,6 +142,11 @@ class BrushFamily {
   //    rendering tiling and stamping textures in a single `BrushPaint`.
   //  * Every enum property must be equal to one of the named enumerators for
   //    that property's type.
+  //
+  // Finally, there is the additional constraint that the texture animation loop
+  // duration for the whole brush family (that is, the LCM of the animation
+  // durations across all animated textures within the brush family) must be no
+  // more than 2^24 milliseconds (about 4.66 hours).
   static absl::StatusOr<BrushFamily> Create(
       const BrushTip& tip, const BrushPaint& paint,
       const InputModel& input_model = DefaultInputModel(),
@@ -166,6 +172,14 @@ class BrushFamily {
   // considered when comparing `BrushFamily` objects for equality, but is not
   // otherwise used internally by Ink.
   const Metadata& GetMetadata() const;
+
+  // Returns the duration of a complete texture animation loop for an entire
+  // stroke with this brush family (such that each animated texture in the brush
+  // goes through an integral number of complete loops and returns to its
+  // starting frame), or zero if this family contains no animated textures. If
+  // nonzero, this duration will be a whole number of milliseconds, and no
+  // greater than 2^24 ms (about 4.66 hours).
+  absl::Duration GetTextureAnimationLoopDuration() const;
 
   // Returns true if this brush family has fallback data that was preserved
   // during decoding.
@@ -193,7 +207,8 @@ class BrushFamily {
 
  private:
   BrushFamily(absl::Span<const BrushCoat> coats, const InputModel& input_model,
-              const Metadata& metadata);
+              const Metadata& metadata,
+              absl::Duration texture_animation_loop_duration);
 
   // Implementation helper for AbslStringify.
   std::string ToFormattedString() const;
@@ -202,6 +217,7 @@ class BrushFamily {
   InputModel input_model_ = DefaultInputModel();
   Metadata metadata_;
   std::string opaque_decoded_proto_bytes_with_fallbacks_;
+  absl::Duration texture_animation_loop_duration_;
 };
 
 namespace brush_internal {
@@ -230,6 +246,10 @@ inline const BrushFamily::InputModel& BrushFamily::GetInputModel() const {
 
 inline const BrushFamily::Metadata& BrushFamily::GetMetadata() const {
   return metadata_;
+}
+
+inline absl::Duration BrushFamily::GetTextureAnimationLoopDuration() const {
+  return texture_animation_loop_duration_;
 }
 
 }  // namespace ink

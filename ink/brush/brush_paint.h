@@ -242,7 +242,7 @@ struct BrushPaint {
     // zero to disable looping animations (in which case the animation frame is
     // controlled solely by any `kTextureAnimationProgressOffset` behavior
     // targets). If nonzero, this duration must be a whole number of
-    // milliseconds between 1 and 2^24 (inclusive).
+    // milliseconds, and no greater than 2^24 ms (about 4.66 hours).
     //
     // Note that this duration is ignored if `animation_frames` is 1 (its
     // default value), because that indicates that animation is disabled.
