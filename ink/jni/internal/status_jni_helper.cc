@@ -26,6 +26,11 @@ namespace {
 
 void ThrowExceptionFromStatus(JNIEnv* env, absl::StatusCode status_code,
                               absl::string_view status_string) {
+  // If an exception was already raised (e.g. from an earlier callback),
+  // propagate that as-is.
+  if (env->ExceptionCheck()) {
+    return;
+  }
   env->CallStaticVoidMethod(
       ClassNativeExceptionHandling(env),
       MethodNativeExceptionHandlingThrowForNonOkStatus(env), status_code,

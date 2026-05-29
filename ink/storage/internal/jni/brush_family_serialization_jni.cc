@@ -114,11 +114,7 @@ JNI_METHOD(storage, BrushFamilySerializationNative, jlong, createFromProto)
   absl::StatusOr<BrushFamily> brush_family = DecodeBrushFamily(
       brush_family_proto, decode_texture_jni_wrapper, max_version.value());
   if (!brush_family.ok()) {
-    // If the callback raised an exception we want to raise that as-is
-    // instead of replacing it with the status.
-    if (!env->ExceptionCheck()) {
-      ThrowExceptionFromStatus(env, brush_family.status());
-    }
+    ThrowExceptionFromStatus(env, brush_family.status());
     return 0;
   }
   return NewNativeBrushFamily(*std::move(brush_family));
@@ -148,9 +144,7 @@ JNI_METHOD(storage, MultipleBrushFamiliesNative, jlong, createFromProto)
       DecodeMultipleBrushFamilies(
           brush_family_proto, decode_texture_jni_wrapper, max_version.value());
   if (!brush_families.ok()) {
-    if (!env->ExceptionCheck()) {
-      ThrowExceptionFromStatus(env, brush_families.status());
-    }
+    ThrowExceptionFromStatus(env, brush_families.status());
     return 0;
   }
 
