@@ -16,6 +16,7 @@
 #define INK_STORAGE_BRUSH_H_
 
 #include <functional>
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <vector>
@@ -68,7 +69,21 @@ void EncodeBrushFamily(
       return std::nullopt;
     });
 void EncodeMultipleBrushFamilies(
+    const std::vector<std::reference_wrapper<const BrushFamily>>& families,
+    proto::BrushFamily& family_proto_out,
+    TextureBitmapProvider get_bitmap = [](absl::string_view id) {
+      return std::nullopt;
+    });
+void EncodeMultipleBrushFamilies(
     const std::vector<BrushFamily>& families,
+    proto::BrushFamily& family_proto_out,
+    TextureBitmapProvider get_bitmap = [](absl::string_view id) {
+      return std::nullopt;
+    });
+// Given an initializer list passed brush family references, prefer wrapping
+// the references to copying the underlying BrushFamilies.
+void EncodeMultipleBrushFamilies(
+    std::initializer_list<std::reference_wrapper<const BrushFamily>> families,
     proto::BrushFamily& family_proto_out,
     TextureBitmapProvider get_bitmap = [](absl::string_view id) {
       return std::nullopt;

@@ -17,8 +17,11 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <functional>
+#include <initializer_list>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -1715,9 +1718,12 @@ void EncodeSingleBrushFamily(const BrushFamily& family,
       family.CalculateMinimumRequiredVersion().value());
 }
 
-void EncodeMultipleBrushFamilies(const std::vector<BrushFamily>& families,
-                                 proto::BrushFamily& family_proto_out,
-                                 TextureBitmapProvider get_bitmap) {
+namespace {
+
+template <typename T>
+void EncodeMultipleBrushFamiliesInternal(const std::vector<T>& families,
+                                         proto::BrushFamily& family_proto_out,
+                                         TextureBitmapProvider get_bitmap) {
   if (families.empty()) {
     return;
   }
@@ -1752,6 +1758,30 @@ void EncodeMultipleBrushFamilies(const std::vector<BrushFamily>& families,
     }
     *family_proto_out.add_newer_brush_families() = family_proto;
   }
+}
+
+}  // namespace
+
+void EncodeMultipleBrushFamilies(
+    const std::vector<std::reference_wrapper<const BrushFamily>>& families,
+    proto::BrushFamily& family_proto_out, TextureBitmapProvider get_bitmap) {
+  EncodeMultipleBrushFamiliesInternal(families, family_proto_out, get_bitmap);
+}
+
+void EncodeMultipleBrushFamilies(const std::vector<BrushFamily>& families,
+                                 proto::BrushFamily& family_proto_out,
+                                 TextureBitmapProvider get_bitmap) {
+  EncodeMultipleBrushFamiliesInternal(families, family_proto_out, get_bitmap);
+}
+
+// Having an overload for initializer_list avoids an ambiguous overload when
+// this function is called with an initializer list of BrushFamilies.
+void EncodeMultipleBrushFamilies(
+    std::initializer_list<std::reference_wrapper<const BrushFamily>> families,
+    proto::BrushFamily& family_proto_out, TextureBitmapProvider get_bitmap) {
+  EncodeMultipleBrushFamiliesInternal(
+      std::vector<std::reference_wrapper<const BrushFamily>>(families),
+      family_proto_out, get_bitmap);
 }
 
 void EncodeBrushFamily(const BrushFamily& family,

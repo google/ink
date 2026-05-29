@@ -14,6 +14,7 @@
 
 #include <jni.h>
 
+#include <functional>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -75,7 +76,8 @@ JNI_METHOD(storage, BrushFamilySerializationNative, jbyteArray, encodeMultiple)
   jsize pointers_length = env->GetArrayLength(brush_family_native_pointers);
   jlong* pointers =
       env->GetLongArrayElements(brush_family_native_pointers, nullptr);
-  std::vector<BrushFamily> families;
+  // Pass by reference to avoid a copy of all the brush families.
+  std::vector<std::reference_wrapper<const BrushFamily>> families;
   families.reserve(pointers_length);
   for (jsize i = 0; i < pointers_length; ++i) {
     families.push_back(CastToBrushFamily(pointers[i]));
