@@ -78,7 +78,11 @@ Angle Vec::SignedAngleBetween(const Vec& a, const Vec& b) {
   // sign of the determinant, mathematically it would be just as good to use
   // Determinant(a, b); however, using the unit vectors avoids problems such as
   // Determinant returning NaN if both multiplications overflow to infinity.
-  Angle angle = Acos(std::clamp(DotProduct(a_unit, b_unit), -1.0f, 1.0f));
+  float dot = DotProduct(a_unit, b_unit);
+  if (std::isnan(dot)) {
+    return Angle::Radians(std::numeric_limits<float>::quiet_NaN());
+  }
+  Angle angle = Acos(std::clamp(dot, -1.0f, 1.0f));
   // Negate the angle if the determinant is negative, with one weird exception
   // for `angle == kHalfTurn` that's needed due to floating point rounding.
   //

@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <string>
 
 #include "absl/log/absl_check.h"
@@ -93,8 +94,11 @@ struct Vec {
   // or:
   //   Abs(Vec::SignedAngleBetween(a, b))
   static Angle AbsoluteAngleBetween(const Vec& a, const Vec& b) {
-    return Acos(
-        std::clamp(Vec::DotProduct(a.AsUnitVec(), b.AsUnitVec()), -1.0f, 1.0f));
+    float dot = Vec::DotProduct(a.AsUnitVec(), b.AsUnitVec());
+    if (std::isnan(dot)) {
+      return Angle::Radians(std::numeric_limits<float>::quiet_NaN());
+    }
+    return Acos(std::clamp(dot, -1.0f, 1.0f));
   }
 
   // Returns the signed angle between the given vectors. If either component of
