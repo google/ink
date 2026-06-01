@@ -27,6 +27,7 @@
 #include "ink/brush/color_function.h"
 #include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/color/color.h"
+#include "ink/color/color_space.h"
 #include "ink/color/internal/jni/color_native_helper.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/internal/jni/mesh_format_native_helper.h"
@@ -39,6 +40,7 @@ using ::ink::Angle;
 using ::ink::BrushPaint;
 using ::ink::Color;
 using ::ink::ColorFunction;
+using ::ink::ColorSpace;
 using ::ink::MeshFormat;
 using ::ink::Vec;
 using ::ink::brush_internal::AddAttributeIdsRequiredByPaint;
@@ -52,30 +54,9 @@ using ::ink::native::ComputeColorLong;
 using ::ink::native::DeleteNativeBrushPaint;
 using ::ink::native::DeleteNativeColorFunction;
 using ::ink::native::DeleteNativeTextureLayer;
-using ::ink::native::IntToColorSpace;
 using ::ink::native::NewNativeBrushPaint;
 using ::ink::native::NewNativeColorFunction;
 using ::ink::native::NewNativeTextureLayer;
-
-BrushPaint::TextureSizeUnit IntToSizeUnit(int val) {
-  return static_cast<BrushPaint::TextureSizeUnit>(val);
-}
-
-BrushPaint::TextureOrigin IntToOrigin(int val) {
-  return static_cast<BrushPaint::TextureOrigin>(val);
-}
-
-BrushPaint::TextureWrap IntToWrap(int val) {
-  return static_cast<BrushPaint::TextureWrap>(val);
-}
-
-BrushPaint::BlendMode IntToBlendMode(int val) {
-  return static_cast<BrushPaint::BlendMode>(val);
-}
-
-BrushPaint::SelfOverlap IntToSelfOverlap(int val) {
-  return static_cast<BrushPaint::SelfOverlap>(val);
-}
 
 int64_t ValidateAndHoistColorFunctionOrThrow(
     ColorFunction::Parameters parameters, void* jni_env_pass_through,
@@ -115,9 +96,10 @@ int64_t BrushPaintNative_create(
         CastToColorFunction(color_function_native_pointers[i]));
   }
 
-  BrushPaint brush_paint{.texture_layers = std::move(texture_layers),
-                         .color_functions = std::move(color_functions),
-                         .self_overlap = IntToSelfOverlap(self_overlap_int)};
+  BrushPaint brush_paint{
+      .texture_layers = std::move(texture_layers),
+      .color_functions = std::move(color_functions),
+      .self_overlap = static_cast<BrushPaint::SelfOverlap>(self_overlap_int)};
   if (absl::Status status = ValidateBrushPaint(brush_paint); !status.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(status.code()),
@@ -185,14 +167,14 @@ int64_t TilingTextureNative_create(
     void (*throw_from_status_callback)(void*, int, const char*)) {
   BrushPaint::TextureLayer texture_layer = {BrushPaint::TilingTexture{
       .client_texture_id = client_texture_id,
-      .origin = IntToOrigin(origin),
-      .size_unit = IntToSizeUnit(size_unit),
-      .wrap_x = IntToWrap(wrap_x),
-      .wrap_y = IntToWrap(wrap_y),
+      .origin = static_cast<BrushPaint::TextureOrigin>(origin),
+      .size_unit = static_cast<BrushPaint::TextureSizeUnit>(size_unit),
+      .wrap_x = static_cast<BrushPaint::TextureWrap>(wrap_x),
+      .wrap_y = static_cast<BrushPaint::TextureWrap>(wrap_y),
       .size = Vec{size_x, size_y},
       .offset = Vec{offset_x, offset_y},
       .rotation = Angle::Degrees(rotation_degrees),
-      .blend_mode = IntToBlendMode(blend_mode),
+      .blend_mode = static_cast<BrushPaint::BlendMode>(blend_mode),
   }};
   if (absl::Status status = ValidateBrushPaintTextureLayer(texture_layer);
       !status.ok()) {
@@ -215,7 +197,7 @@ int64_t StampingTextureNative_create(
       .animation_rows = animation_rows,
       .animation_columns = animation_columns,
       .animation_duration = absl::Milliseconds(animation_duration_millis),
-      .blend_mode = IntToBlendMode(blend_mode),
+      .blend_mode = static_cast<BrushPaint::BlendMode>(blend_mode),
   }};
   if (absl::Status status = ValidateBrushPaintTextureLayer(texture_layer);
       !status.ok()) {
@@ -363,7 +345,7 @@ int64_t ColorFunctionNative_createReplaceColor(
       ColorFunction::ReplaceColor{
           .color = Color::FromFloat(color_red, color_green, color_blue,
                                     color_alpha, Color::Format::kGammaEncoded,
-                                    IntToColorSpace(color_space_id))},
+                                    static_cast<ColorSpace>(color_space_id))},
       jni_env_pass_through, throw_from_status_callback);
 }
 
@@ -415,7 +397,7 @@ int64_t ColorFunctionNative_computeTransformedColorLong(
                                                            float)) {
   const Color input_color = Color::FromFloat(
       color_red, color_green, color_blue, color_alpha,
-      Color::Format::kGammaEncoded, IntToColorSpace(color_space_id));
+      Color::Format::kGammaEncoded, static_cast<ColorSpace>(color_space_id));
   const Color output_color = CastToColorFunction(native_ptr)(input_color);
   return ComputeColorLong(jni_env_pass_through, output_color,
                           compose_color_long_from_components_callback);

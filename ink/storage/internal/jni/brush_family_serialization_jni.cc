@@ -24,7 +24,6 @@
 #include "absl/status/statusor.h"
 #include "ink/brush/brush_family.h"
 #include "ink/brush/internal/jni/brush_native_helper.h"
-#include "ink/brush/version.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_proto_util.h"
 #include "ink/jni/internal/status_jni_helper.h"
@@ -40,7 +39,6 @@ using ::ink::DecodeMultipleBrushFamilies;
 using ::ink::EncodeBrushFamily;
 using ::ink::EncodeMultipleBrushFamilies;
 using ::ink::TextureBitmapProvider;
-using ::ink::Version;
 using ::ink::jni::CastToMutableMultipleBrushFamilies;
 using ::ink::jni::CreateDecodeTextureJniWrapper;
 using ::ink::jni::CreateTextureBitmapProvider;
@@ -93,7 +91,7 @@ JNI_METHOD(storage, BrushFamilySerializationNative, jbyteArray, encodeMultiple)
 
 JNI_METHOD(storage, BrushFamilySerializationNative, jlong, createFromProto)
 (JNIEnv* env, jobject object, jbyteArray brush_family_byte_array, jint length,
- absl_nullable jobject callback, jint max_version_value) {
+ absl_nullable jobject callback, jint max_version) {
   ink::proto::BrushFamily brush_family_proto;
   constexpr int kOffset = 0;
   if (absl::Status status = ParseProtoFromByteArray(
@@ -106,13 +104,9 @@ JNI_METHOD(storage, BrushFamilySerializationNative, jlong, createFromProto)
   ClientTextureIdProviderAndBitmapReceiver decode_texture_jni_wrapper =
       CreateDecodeTextureJniWrapper(env, callback);
 
-  absl::StatusOr<Version> max_version = IntToVersion(max_version_value);
-  if (!max_version.ok()) {
-    ThrowExceptionFromStatus(env, max_version.status());
-    return 0;
-  }
-  absl::StatusOr<BrushFamily> brush_family = DecodeBrushFamily(
-      brush_family_proto, decode_texture_jni_wrapper, max_version.value());
+  absl::StatusOr<BrushFamily> brush_family =
+      DecodeBrushFamily(brush_family_proto, decode_texture_jni_wrapper,
+                        IntToVersion(max_version));
   if (!brush_family.ok()) {
     ThrowExceptionFromStatus(env, brush_family.status());
     return 0;
@@ -122,7 +116,7 @@ JNI_METHOD(storage, BrushFamilySerializationNative, jlong, createFromProto)
 
 JNI_METHOD(storage, MultipleBrushFamiliesNative, jlong, createFromProto)
 (JNIEnv* env, jobject object, jbyteArray brush_family_byte_array, jint length,
- absl_nullable jobject callback, jint max_version_value) {
+ absl_nullable jobject callback, jint max_version) {
   constexpr int kOffset = 0;
   ink::proto::BrushFamily brush_family_proto;
   if (absl::Status status = ParseProtoFromByteArray(
@@ -135,14 +129,10 @@ JNI_METHOD(storage, MultipleBrushFamiliesNative, jlong, createFromProto)
   ClientTextureIdProviderAndBitmapReceiver decode_texture_jni_wrapper =
       CreateDecodeTextureJniWrapper(env, callback);
 
-  absl::StatusOr<Version> max_version = IntToVersion(max_version_value);
-  if (!max_version.ok()) {
-    ThrowExceptionFromStatus(env, max_version.status());
-    return 0;
-  }
   absl::StatusOr<std::vector<BrushFamily>> brush_families =
-      DecodeMultipleBrushFamilies(
-          brush_family_proto, decode_texture_jni_wrapper, max_version.value());
+      DecodeMultipleBrushFamilies(brush_family_proto,
+                                  decode_texture_jni_wrapper,
+                                  IntToVersion(max_version));
   if (!brush_families.ok()) {
     ThrowExceptionFromStatus(env, brush_families.status());
     return 0;

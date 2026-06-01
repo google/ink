@@ -43,6 +43,5 @@ cc_library(
     deps = [
         "//ink/color",
         "//ink/color:color_space",
-        "@com_google_absl//absl/log:absl_check",
     ],
 )

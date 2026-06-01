@@ -123,7 +123,6 @@ cc_library(
     deps = [
         ":brush_family_serialization_jni_helper",
         "//ink/brush:brush_family",
-        "//ink/brush:version",
         "//ink/brush/internal/jni:brush_native_helper",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_proto_util",

@@ -17,14 +17,12 @@
 #include <cstdint>
 #include <limits>
 
-#include "absl/status/status.h"
-#include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
+#include "absl/log/absl_check.h"
 #include "ink/brush/version.h"
 
 namespace ink::native {
 
-absl::StatusOr<Version> IntToVersion(int version) {
+Version IntToVersion(int version) {
   switch (version) {
     case 0:
       return Version::k0Jetpack1_0_0();
@@ -33,8 +31,7 @@ absl::StatusOr<Version> IntToVersion(int version) {
     case std::numeric_limits<int32_t>::max():
       return Version::kDevelopment();
     default:
-      return absl::InvalidArgumentError(
-          absl::StrCat("Invalid version: ", version));
+      ABSL_CHECK(false) << "Invalid version: " << version;
   }
 }
 

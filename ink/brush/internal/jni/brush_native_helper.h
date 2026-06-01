@@ -260,7 +260,7 @@ inline void DeleteNativeEasingFunction(int64_t easing_function_native_pointer) {
 }
 
 // Converts the integer value of a Kotlin `Version` into a C++ `Version`.
-absl::StatusOr<Version> IntToVersion(int version);
+Version IntToVersion(int version);
 
 }  // namespace ink::native
 

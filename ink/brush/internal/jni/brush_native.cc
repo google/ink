@@ -22,16 +22,17 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/color/color.h"
+#include "ink/color/color_space.h"
 #include "ink/color/internal/jni/color_native_helper.h"
 
 using ::ink::Brush;
 using ::ink::BrushFamily;
 using ::ink::Color;
+using ::ink::ColorSpace;
 using ::ink::native::CastToBrush;
 using ::ink::native::CastToBrushFamily;
 using ::ink::native::ComputeColorLong;
 using ::ink::native::DeleteNativeBrush;
-using ::ink::native::IntToColorSpace;
 using ::ink::native::NewNativeBrush;
 using ::ink::native::NewNativeBrushFamily;
 
@@ -46,7 +47,7 @@ int64_t BrushNative_create(
 
   const Color color = Color::FromFloat(
       color_red, color_green, color_blue, color_alpha,
-      Color::Format::kGammaEncoded, IntToColorSpace(color_space_id));
+      Color::Format::kGammaEncoded, static_cast<ColorSpace>(color_space_id));
 
   absl::StatusOr<Brush> brush = Brush::Create(family, color, size, epsilon);
   if (!brush.ok()) {

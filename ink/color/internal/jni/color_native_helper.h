@@ -18,11 +18,8 @@
 #include <cstdint>
 
 #include "ink/color/color.h"
-#include "ink/color/color_space.h"
 
 namespace ink::native {
-
-ColorSpace IntToColorSpace(int color_space_id);
 
 int64_t ComputeColorLong(
     void* jni_env_pass_through, const Color& color,

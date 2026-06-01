@@ -16,29 +16,12 @@
 
 #include <cstdint>
 
-#include "absl/log/absl_check.h"
 #include "ink/color/color.h"
 #include "ink/color/color_space.h"
 
 namespace ink::native {
 
 namespace {
-
-// Color space ID constants.
-//
-// These should match the platform constants in ColorExtensions.kt.
-constexpr int kColorSpaceIdSrgb = 0;
-constexpr int kColorSpaceIdDisplayP3 = 1;
-
-int ColorSpaceToInt(ColorSpace color_space) {
-  switch (color_space) {
-    case ColorSpace::kSrgb:
-      return kColorSpaceIdSrgb;
-    case ColorSpace::kDisplayP3:
-      return kColorSpaceIdDisplayP3;
-  }
-  ABSL_CHECK(false) << "Unknown color space: " << color_space;
-}
 
 bool ColorSpaceIsSupportedInJetpack(ColorSpace color_space) {
   // Currently this is defensive coding, all of the color spaces supported in
@@ -52,17 +35,6 @@ bool ColorSpaceIsSupportedInJetpack(ColorSpace color_space) {
 }
 
 }  // namespace
-
-ColorSpace IntToColorSpace(int color_space_id) {
-  switch (color_space_id) {
-    case kColorSpaceIdSrgb:
-      return ColorSpace::kSrgb;
-    case kColorSpaceIdDisplayP3:
-      return ColorSpace::kDisplayP3;
-    default:
-      ABSL_CHECK(false) << "Unknown color space id: " << color_space_id;
-  }
-}
 
 int64_t ComputeColorLong(
     void* jni_env_pass_through, const Color& color,
@@ -79,7 +51,7 @@ int64_t ComputeColorLong(
   const Color::RgbaFloat rgba =
       supported_color.AsFloat(Color::Format::kGammaEncoded);
   return compute_compose_color_long_from_components_callback(
-      jni_env_pass_through, ColorSpaceToInt(supported_color.GetColorSpace()),
+      jni_env_pass_through, static_cast<int>(supported_color.GetColorSpace()),
       rgba.r, rgba.g, rgba.b, rgba.a);
 }
 
