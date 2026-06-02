@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/geometry/outline_processing.h"
+#include "ink/geometry/internal/outline_processing.h"
 
 #include <vector>
 
@@ -20,7 +20,7 @@
 #include "gtest/gtest.h"
 #include "ink/geometry/point.h"
 
-namespace ink {
+namespace ink::geometry_internal {
 namespace {
 
 using ::testing::UnorderedElementsAre;
@@ -176,4 +176,4 @@ TEST(OutlineProcessingTest, DisjointPolygons) {
 }
 
 }  // namespace
-}  // namespace ink
+}  // namespace ink::geometry_internal

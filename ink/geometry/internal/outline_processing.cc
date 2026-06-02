@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/geometry/outline_processing.h"
+#include "ink/geometry/internal/outline_processing.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -28,7 +28,7 @@
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/point.h"
 
-namespace ink {
+namespace ink::geometry_internal {
 
 // TODO(b/509625875): Improve numerical robustness -- it's common
 // in line-sweep algorithms to quantize points to a grid to avoid precision
@@ -113,9 +113,9 @@ absl::flat_hash_map<uint32_t, std::vector<Point>> FindIntersections(
           std::minmax(segments[j].start.y, segments[j].end.y);
       if (i_ymax < j_ymin || i_ymin > j_ymax) continue;
 
-      if (auto ratios = geometry_internal::SegmentIntersectionRatio(
-              {segments[i].start, segments[i].end},
-              {segments[j].start, segments[j].end})) {
+      if (auto ratios =
+              SegmentIntersectionRatio({segments[i].start, segments[i].end},
+                                       {segments[j].start, segments[j].end})) {
         if (ratios->first > 0.0f && ratios->first < 1.0f &&
             ratios->second > 0.0f && ratios->second < 1.0f) {
           Point p = segments[i].start +
@@ -330,4 +330,4 @@ std::vector<std::vector<Point>> ComputeMonotoneBoundaryChains(
   return ExtractChains(segments);
 }
 
-}  // namespace ink
+}  // namespace ink::geometry_internal

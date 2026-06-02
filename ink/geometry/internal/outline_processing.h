@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INK_GEOMETRY_OUTLINE_PROCESSING_H_
-#define INK_GEOMETRY_OUTLINE_PROCESSING_H_
+#ifndef INK_GEOMETRY_INTERNAL_OUTLINE_PROCESSING_H_
+#define INK_GEOMETRY_INTERNAL_OUTLINE_PROCESSING_H_
 
 #include <vector>
 
 #include "ink/geometry/point.h"
 
-namespace ink {
+namespace ink::geometry_internal {
 
 // Given a polygon (or set of polygons) defined by a set of closed polygonal
 // chains, returns a monotone chain boundary representation of the polygon.
@@ -43,6 +43,6 @@ namespace ink {
 std::vector<std::vector<Point>> ComputeMonotoneBoundaryChains(
     const std::vector<std::vector<Point>>& loops);
 
-}  // namespace ink
+}  // namespace ink::geometry_internal
 
-#endif  // INK_GEOMETRY_OUTLINE_PROCESSING_H_
+#endif  // INK_GEOMETRY_INTERNAL_OUTLINE_PROCESSING_H_
