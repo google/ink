@@ -17,40 +17,92 @@
 
 #include <jni.h>
 
-#include <memory>
-#include <utility>
+#include <cstdint>
+#include <string>
 #include <vector>
 
 #include "absl/base/nullability.h"
-#include "ink/brush/brush_family.h"
+#include "absl/log/absl_check.h"
 #include "ink/storage/brush.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/brush_family.pb.h"
 
 namespace ink::jni {
 
-using MultipleBrushFamilies = std::vector<std::unique_ptr<BrushFamily>>;
+class OnDecodeTextureCallback {
+ public:
+  OnDecodeTextureCallback(JNIEnv* env, absl_nullable jobject callback);
 
-inline jlong NewNativeMultipleBrushFamilies(MultipleBrushFamilies&& families) {
-  return reinterpret_cast<jlong>(
-      new MultipleBrushFamilies(std::forward<MultipleBrushFamilies>(families)));
-}
+  OnDecodeTextureCallback(const OnDecodeTextureCallback&) = delete;
+  OnDecodeTextureCallback& operator=(const OnDecodeTextureCallback&) = delete;
+  OnDecodeTextureCallback(OnDecodeTextureCallback&&) = delete;
+  OnDecodeTextureCallback& operator=(OnDecodeTextureCallback&&) = delete;
 
-inline MultipleBrushFamilies& CastToMutableMultipleBrushFamilies(
-    jlong native_pointer) {
-  return *reinterpret_cast<MultipleBrushFamilies*>(native_pointer);
-}
+  // The returned pointer is valid until the next call to this operator or the
+  // destruction of this object. This allows the caller to pass through a
+  // pure-C interface to the KMP-common native implementation while the pointer
+  // stays in scope. Returns nullptr if an exception is thrown by the JVM
+  // callback. This should not be called directly, it should be called via
+  // OnDecodeTextureNativeCallback which provides the C-compatible interface
+  // to be used along with a pass-through pointer to this object from
+  // KMP-compatible native code.
+  const char* absl_nullable OnDecodeTexture(const char* absl_nonnull encoded_id,
+                                            const int8_t* absl_nonnull bitmap,
+                                            int bitmap_size);
 
-inline void DeleteMultipleBrushFamilies(jlong native_pointer) {
-  delete reinterpret_cast<MultipleBrushFamilies*>(native_pointer);
-}
+ private:
+  JNIEnv* env_;
+  absl_nullable jobject callback_;
+  jclass callback_class_;
+  jmethodID on_decode_texture_method_;
+  std::string last_texture_string_;
+};
+
+class JniTextureMap {
+ public:
+  JniTextureMap(JNIEnv* env, jobjectArray texture_map_keys,
+                jobjectArray texture_map_values);
+
+  const char* absl_nonnull* absl_nonnull TextureIds() {
+    return texture_ids_ptrs_.data();
+  }
+  const int8_t* absl_nullable* absl_nonnull Bitmaps() {
+    return reinterpret_cast<const int8_t**>(bitmaps_ptrs_.data());
+  }
+  const int* absl_nonnull BitmapLengths() { return bitmap_lengths_.data(); }
+  int NumTextures() {
+    ABSL_CHECK_EQ(texture_ids_.size(), bitmaps_.size());
+    ABSL_CHECK_EQ(texture_ids_.size(), texture_ids_ptrs_.size());
+    ABSL_CHECK_EQ(bitmaps_.size(), bitmaps_ptrs_.size());
+    ABSL_CHECK_EQ(texture_ids_.size(), bitmap_lengths_.size());
+    return texture_ids_.size();
+  }
+
+ private:
+  std::vector<std::string> texture_ids_;
+  std::vector<const char* absl_nonnull> texture_ids_ptrs_;
+  std::vector<std::string> bitmaps_;
+  std::vector<const char* absl_nonnull> bitmaps_ptrs_;
+  std::vector<int> bitmap_lengths_;
+};
 
 TextureBitmapProvider CreateTextureBitmapProvider(
     JNIEnv* env, jobjectArray texture_map_keys,
     jobjectArray texture_map_values);
 
-ClientTextureIdProviderAndBitmapReceiver CreateDecodeTextureJniWrapper(
-    JNIEnv* env, absl_nullable jobject callback);
+ClientTextureIdProviderAndBitmapReceiver OnDecodeTextureJniWrapper(
+    OnDecodeTextureCallback& on_decode_texture_callback);
+
+// This also should not be called directly, it should be wrapped in a lambda
+// suitable for passing to Ink's DecodeBrushFamily or similar by
+// ink::native::ClientTextureIdProviderAndBitmapReceiverFromNativeCallback.
+// Returns the passed in encoded_id for the default behavior, so that must be
+// from something that outlives the span of the call. Returns nullptr if the
+// JVM callback throws an exception.
+const char* absl_nullable OnDecodeTextureNativeCallback(
+    void* absl_nonnull jni_decode_texture_callback,
+    const char* absl_nonnull encoded_id, const int8_t* absl_nonnull bitmap,
+    int bitmap_size);
 
 }  // namespace ink::jni
 

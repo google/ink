@@ -14,7 +14,6 @@
 
 #include "ink/storage/brush.h"
 
-#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <functional>

@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "absl/base/nullability.h"
 #include "absl/log/absl_check.h"
 #include "absl/strings/string_view.h"
 
@@ -40,7 +41,11 @@ JStringView::~JStringView() {
   }
 }
 
-jbyteArray AbslStringViewToJByteArray(JNIEnv* env, absl::string_view str) {
+absl_nullable jbyteArray
+AbslStringViewToOptionalJByteArray(JNIEnv* env, absl::string_view str) {
+  if (str.empty()) {
+    return nullptr;
+  }
   jbyteArray array = env->NewByteArray(str.size());
   env->SetByteArrayRegion(array, 0, str.size(),
                           reinterpret_cast<const jbyte*>(str.data()));
@@ -48,14 +53,12 @@ jbyteArray AbslStringViewToJByteArray(JNIEnv* env, absl::string_view str) {
 }
 
 std::string JByteArrayToStdString(JNIEnv* env, jbyteArray byteArray) {
-  std::string result;
   ABSL_CHECK(byteArray != nullptr);
   jsize length = env->GetArrayLength(byteArray);
   jbyte* buffer = env->GetByteArrayElements(byteArray, nullptr);
   ABSL_CHECK(buffer != nullptr);
-  result.assign(reinterpret_cast<char*>(buffer), length);
+  std::string result(reinterpret_cast<char*>(buffer), length);
   env->ReleaseByteArrayElements(byteArray, buffer, JNI_ABORT);
-
   return result;
 }
 

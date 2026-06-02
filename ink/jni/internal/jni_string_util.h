@@ -19,6 +19,7 @@
 
 #include <string>
 
+#include "absl/base/nullability.h"
 #include "absl/strings/string_view.h"
 
 namespace ink {
@@ -44,8 +45,10 @@ inline std::string JStringToStdString(JNIEnv* env, jstring j_string) {
   return std::string(JStringView(env, j_string).string_view());
 }
 
-// Converts an `absl::string_view to a JVM `jbyteArray`.
-jbyteArray AbslStringViewToJByteArray(JNIEnv* env, absl::string_view str);
+// Converts an `absl::string_view to a JVM `jbyteArray`. Returns `nullptr` if
+// the input string view is empty.
+absl_nullable jbyteArray
+AbslStringViewToOptionalJByteArray(JNIEnv* env, absl::string_view str);
 
 // Converts a JVM `jbyteArray` to a `std::string`.
 std::string JByteArrayToStdString(JNIEnv* env, jbyteArray byteArray);
