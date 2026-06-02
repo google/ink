@@ -12,20 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/storage/internal/jni/byte_vector_native_helper.h"
+#include "ink/storage/internal/jni/byte_array_native_helper.h"
 
 #include <cstdint>
-#include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/log/absl_check.h"
 #include "google/protobuf/message_lite.h"
 
 namespace ink::native {
 
-int64_t NewNativeByteVectorFromProto(const google::protobuf::MessageLite& src) {
-  auto* bytes = new std::vector<int8_t>(src.ByteSizeLong());
-  ABSL_CHECK(src.SerializeToArray(bytes->data(), bytes->size()));
-  return reinterpret_cast<int64_t>(bytes);
+int8_t* NewNativeByteArrayFromProto(
+    void* absl_nonnull alloc_native_array_pass_through,
+    const google::protobuf::MessageLite& src,
+    int8_t* absl_nullable (*absl_nonnull alloc_native_array_callback)(
+        void* absl_nonnull pass_through, int size)) {
+  int size = src.ByteSizeLong();
+  int8_t* native_array =
+      alloc_native_array_callback(alloc_native_array_pass_through, size);
+  ABSL_CHECK(src.SerializeToArray(native_array, size));
+  return native_array;
 }
 
 }  // namespace ink::native

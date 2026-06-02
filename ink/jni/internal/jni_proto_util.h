@@ -20,6 +20,7 @@
 #include <cstdint>
 
 #include "absl/base/nullability.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "google/protobuf/message_lite.h"
 
@@ -56,6 +57,24 @@ class JvmBytes {
   jbyteArray byte_array_;
   jbyte* bytes_;
 };
+
+// A helper class for allocating JVM byte arrays in the middle of KMP-compatible
+// native code. Passes back a pointer to the array elements and handles copying
+// back of the elements and cleanup when the object goes out of scope.
+class JvmByteArrayNativeAlloc {
+ public:
+  explicit JvmByteArrayNativeAlloc(JNIEnv* env);
+  ~JvmByteArrayNativeAlloc();
+
+  int8_t* Allocate(int size);
+  jbyteArray Release(int8_t* native_bytes);
+
+ private:
+  JNIEnv* env_;
+  absl::flat_hash_map<int8_t*, jbyteArray> byte_arrays_;
+};
+
+int8_t* JvmByteArrayNativeAllocCallback(void* allocator_pass_through, int size);
 
 // Attempts to parse a serialized proto from either a direct java.nio.ByteBuffer
 // or a jbyteArray, one of which must be non-null. If the proto doesn't parse,

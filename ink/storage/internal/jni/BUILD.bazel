@@ -26,7 +26,6 @@ filegroup(
 cc_library(
     name = "cinterop",
     deps = [
-        ":byte_vector_native",
         ":stroke_input_batch_serialization_native",
     ],
 )
@@ -37,43 +36,16 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":brush_family_serialization_jni",
-        ":byte_vector_jni",
         ":stroke_input_batch_serialization_jni",
     ],
 )
 
 cc_library(
-    name = "byte_vector_jni",
-    srcs = ["byte_vector_jni.cc"],
-    tags = ["keep_dep"],
+    name = "byte_array_native_helper",
+    srcs = ["byte_array_native_helper.cc"],
+    hdrs = ["byte_array_native_helper.h"],
     deps = [
-        ":byte_vector_native",
-        ":byte_vector_native_helper",
-        "//ink/jni/internal:jni_defines",
-        "@com_google_absl//absl/log:absl_check",
-    ] + select({
-        "@platforms//os:android": [],
-        "//conditions:default": [
-            "@rules_jni//jni",
-        ],
-    }),
-    alwayslink = 1,
-)
-
-cc_library(
-    name = "byte_vector_native",
-    srcs = ["byte_vector_native.cc"],
-    hdrs = ["byte_vector_native.h"],
-    deps = [
-        ":byte_vector_native_helper",
-    ],
-)
-
-cc_library(
-    name = "byte_vector_native_helper",
-    srcs = ["byte_vector_native_helper.cc"],
-    hdrs = ["byte_vector_native_helper.h"],
-    deps = [
+        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log:absl_check",
         "@protobuf//:protobuf_lite",
     ],
@@ -84,12 +56,10 @@ cc_library(
     srcs = ["stroke_input_batch_serialization_jni.cc"],
     tags = ["keep_dep"],
     deps = [
-        ":byte_vector_native_helper",
         ":stroke_input_batch_serialization_native",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_proto_util",
         "//ink/jni/internal:status_jni_helper",
-        "//ink/storage/proto:stroke_input_batch_cc_proto",
         "@com_google_absl//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
@@ -105,7 +75,7 @@ cc_library(
     srcs = ["stroke_input_batch_serialization_native.cc"],
     hdrs = ["stroke_input_batch_serialization_native.h"],
     deps = [
-        ":byte_vector_native_helper",
+        ":byte_array_native_helper",
         "//ink/storage:stroke_input_batch",
         "//ink/storage/proto:stroke_input_batch_cc_proto",
         "//ink/strokes/input:stroke_input_batch",

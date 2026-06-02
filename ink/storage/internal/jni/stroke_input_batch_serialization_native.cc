@@ -20,7 +20,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "ink/storage/internal/jni/byte_vector_native_helper.h"
+#include "ink/storage/internal/jni/byte_array_native_helper.h"
 #include "ink/storage/proto/stroke_input_batch.pb.h"
 #include "ink/storage/stroke_input_batch.h"
 #include "ink/strokes/input/stroke_input_batch.h"
@@ -29,7 +29,7 @@
 using ::ink::DecodeStrokeInputBatch;
 using ::ink::StrokeInputBatch;
 using ::ink::native::CastToStrokeInputBatch;
-using ::ink::native::NewNativeByteVectorFromProto;
+using ::ink::native::NewNativeByteArrayFromProto;
 using ::ink::native::NewNativeStrokeInputBatch;
 using ::ink::proto::CodedStrokeInputBatch;
 
@@ -40,14 +40,15 @@ int64_t StrokeInputBatchSerializationNative_createFromProto(
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str)) {
   CodedStrokeInputBatch coded_input;
-  ABSL_CHECK(byte_array != nullptr);
-  bool success = coded_input.ParseFromArray(byte_array, size);
-  if (!success) {
-    throw_from_status_callback(
-        jni_env_pass_through,
-        static_cast<int>(absl::StatusCode::kInvalidArgument),
-        "Failed to parse ink.proto.CodedStrokeInputBatch.");
-    return 0;
+  if (byte_array != nullptr) {
+    bool success = coded_input.ParseFromArray(byte_array, size);
+    if (!success) {
+      throw_from_status_callback(
+          jni_env_pass_through,
+          static_cast<int>(absl::StatusCode::kInvalidArgument),
+          "Failed to parse ink.proto.CodedStrokeInputBatch.");
+      return 0;
+    }
   }
   absl::StatusOr<StrokeInputBatch> input = DecodeStrokeInputBatch(coded_input);
   if (!input.ok()) {
@@ -59,11 +60,13 @@ int64_t StrokeInputBatchSerializationNative_createFromProto(
   return NewNativeStrokeInputBatch(*std::move(input));
 }
 
-int64_t StrokeInputBatchSerializationNative_encodeToByteVector(
-    int64_t native_pointer) {
+int8_t* StrokeInputBatchSerializationNative_encode(
+    void* alloc_native_array_pass_through, int64_t native_pointer,
+    int8_t* (*alloc_native_array_callback)(void* pass_through, int size)) {
   CodedStrokeInputBatch coded_input;
   EncodeStrokeInputBatch(CastToStrokeInputBatch(native_pointer), coded_input);
-  return NewNativeByteVectorFromProto(coded_input);
+  return NewNativeByteArrayFromProto(alloc_native_array_pass_through,
+                                     coded_input, alloc_native_array_callback);
 }
 
 }  // extern "C"

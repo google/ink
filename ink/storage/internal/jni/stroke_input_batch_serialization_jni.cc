@@ -18,8 +18,9 @@
 #include "ink/jni/internal/jni_proto_util.h"
 #include "ink/jni/internal/status_jni_helper.h"
 #include "ink/storage/internal/jni/stroke_input_batch_serialization_native.h"
-#include "ink/storage/proto/stroke_input_batch.pb.h"
 
+using ::ink::jni::JvmByteArrayNativeAlloc;
+using ::ink::jni::JvmByteArrayNativeAllocCallback;
 using ::ink::jni::JvmBytes;
 using ::ink::jni::ThrowExceptionFromStatusCallback;
 
@@ -37,10 +38,13 @@ JNI_METHOD(storage, StrokeInputBatchSerializationNative, jlong, createFromProto)
   return native_pointer;
 }
 
-JNI_METHOD(storage, StrokeInputBatchSerializationNative, jlong,
-           encodeToByteVector)
+JNI_METHOD(storage, StrokeInputBatchSerializationNative, jbyteArray, encode)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  return StrokeInputBatchSerializationNative_encodeToByteVector(native_pointer);
+  JvmByteArrayNativeAlloc byte_array_allocator(env);
+  return byte_array_allocator.Release(
+      StrokeInputBatchSerializationNative_encode(
+          &byte_array_allocator, native_pointer,
+          &JvmByteArrayNativeAllocCallback));
 }
 
 }  // extern "C"

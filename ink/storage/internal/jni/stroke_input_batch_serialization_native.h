@@ -21,13 +21,25 @@
 extern "C" {
 #endif
 
+// byte_array contains a serialized ink.proto.CodedStrokeInputBatch. If
+// the array is empty, byte_array will be nullptr.
 int64_t StrokeInputBatchSerializationNative_createFromProto(
     void* jni_env_pass_through, const int8_t* byte_array, int size,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str));
 
-int64_t StrokeInputBatchSerializationNative_encodeToByteVector(
-    int64_t native_pointer);
+// native_ptr is a raw pointer to an ink::StrokeInputBatch.
+//
+// alloc_native_array_callback is responsible for synchronously allocating an
+// array of the size needed to encode the proto and returning a pointer to the
+// first element in a context that is later read and cleaned up by the caller.
+// alloc_native_array_pass_through is the pass-through parameter for that
+// callback (e.g. in Kotlin-Native this will point to
+// StableRef<androidx.ink.storage.ByteArrayAlloc>, in JNI it will point
+// to ink::jni::JvmByteArrayNativeAlloc).
+int8_t* StrokeInputBatchSerializationNative_encode(
+    void* alloc_native_array_pass_through, int64_t native_pointer,
+    int8_t* (*alloc_native_array_callback)(void* pass_through, int size));
 
 #ifdef __cplusplus
 }

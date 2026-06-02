@@ -17,6 +17,7 @@
 #include <jni.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 
 #include "absl/base/nullability.h"
@@ -64,6 +65,38 @@ JvmBytes::JvmBytes(JNIEnv* env, absl_nullable jobject direct_byte_buffer,
     bytes_ = reinterpret_cast<jbyte*>(
         env_->GetDirectBufferAddress(direct_byte_buffer_));
   }
+}
+
+int8_t* JvmByteArrayNativeAlloc::Allocate(int size) {
+  jbyteArray byte_array = env_->NewByteArray(size);
+  ABSL_CHECK(byte_array != nullptr);
+  int8_t* native_bytes = env_->GetByteArrayElements(byte_array, nullptr);
+  ABSL_CHECK(native_bytes != nullptr);
+  byte_arrays_.emplace(native_bytes, byte_array);
+  return native_bytes;
+}
+
+jbyteArray JvmByteArrayNativeAlloc::Release(int8_t* native_bytes) {
+  auto it = byte_arrays_.find(native_bytes);
+  ABSL_CHECK(it != byte_arrays_.end())
+      << "Native bytes not allocated by this allocator.";
+  jbyteArray byte_array = it->second;
+  byte_arrays_.erase(it);
+  env_->ReleaseByteArrayElements(byte_array, native_bytes, 0);
+  return byte_array;
+}
+
+JvmByteArrayNativeAlloc::JvmByteArrayNativeAlloc(JNIEnv* env) : env_(env) {}
+
+JvmByteArrayNativeAlloc::~JvmByteArrayNativeAlloc() {
+  ABSL_CHECK_EQ(byte_arrays_.size(), 0)
+      << "JvmByteArrayNativeAlloc destroyed with un-released byte arrays.";
+}
+
+int8_t* JvmByteArrayNativeAllocCallback(void* allocator_pass_through,
+                                        int size) {
+  return reinterpret_cast<JvmByteArrayNativeAlloc*>(allocator_pass_through)
+      ->Allocate(size);
 }
 
 namespace {
