@@ -16,7 +16,6 @@
 
 #include <cstdint>
 #include <utility>
-#include <vector>
 
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
