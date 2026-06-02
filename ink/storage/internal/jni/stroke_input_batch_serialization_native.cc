@@ -37,7 +37,8 @@ extern "C" {
 
 int64_t StrokeInputBatchSerializationNative_createFromProto(
     void* jni_env_pass_through, const int8_t* byte_array, int size,
-    void (*throw_from_status_callback)(void*, int, const char*)) {
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str)) {
   CodedStrokeInputBatch coded_input;
   ABSL_CHECK(byte_array != nullptr);
   bool success = coded_input.ParseFromArray(byte_array, size);

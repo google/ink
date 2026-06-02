@@ -104,7 +104,8 @@ bool MutableStrokeInputBatchNative_appendSingle(
     void* jni_env_pass_through, int64_t native_pointer, int tool_type, float x,
     float y, int64_t elapsed_time_millis, float stroke_unit_length_cm,
     float pressure, float tilt, float orientation,
-    void (*throw_from_status_callback)(void*, int, const char*)) {
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str)) {
   StrokeInput input = {
       .tool_type = static_cast<StrokeInput::ToolType>(tool_type),
       .position = {x, y},
@@ -129,7 +130,8 @@ bool MutableStrokeInputBatchNative_appendSingle(
 bool MutableStrokeInputBatchNative_appendBatch(
     void* jni_env_pass_through, int64_t native_pointer,
     int64_t append_from_native_pointer,
-    void (*throw_from_status_callback)(void*, int, const char*)) {
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str)) {
   if (absl::Status status =
           CastToMutableStrokeInputBatch(native_pointer)
               .Append(CastToStrokeInputBatch(append_from_native_pointer));

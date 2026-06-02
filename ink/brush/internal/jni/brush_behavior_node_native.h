@@ -31,11 +31,13 @@ extern "C" {
 int64_t SourceNodeNative_create(
     void* jni_env_pass_through, int source, float source_value_start,
     float source_value_end, int source_out_of_range_behavior,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t ConstantNodeNative_create(
     void* jni_env_pass_through, float value,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t NoiseNodeNative_create(void* jni_env_pass_through, int seed,
                                int vary_over, float base_period,
@@ -45,39 +47,47 @@ int64_t NoiseNodeNative_create(void* jni_env_pass_through, int seed,
 int64_t ToolTypeFilterNodeNative_create(
     void* jni_env_pass_through, bool mouse_enabled, bool touch_enabled,
     bool stylus_enabled, bool unknown_enabled,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t DampingNodeNative_create(
     void* jni_env_pass_through, int damping_source, float damping_gap,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t ResponseNodeNative_create(
     void* jni_env_pass_through, int64_t easing_function_native_pointer,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t IntegralNodeNative_create(
     void* jni_env_pass_through, int integrate_over, float integral_value_start,
     float integral_value_end, int integral_out_of_range_behavior,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t BinaryOpNodeNative_create(
     void* jni_env_pass_through, int operation,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t InterpolationNodeNative_create(
     void* jni_env_pass_through, int interpolation,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t TargetNodeNative_create(
     void* jni_env_pass_through, int target, float target_modifier_start,
     float target_modifier_end,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t PolarTargetNodeNative_create(
     void* jni_env_pass_through, int polar_target, float angle_range_start,
     float angle_range_end, float magnitude_range_start,
     float magnitude_range_end,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 void NodeNative_free(int64_t native_ptr);
 

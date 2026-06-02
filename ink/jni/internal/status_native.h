@@ -33,36 +33,43 @@ int StatusNative_statusCodeUnimplemented();
 
 void StatusNative_throwExceptionFromOkStatusForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 void StatusNative_throwExceptionFromFailedPreconditionForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str),
     const char* message);
 
 void StatusNative_throwExceptionFromInvalidArgumentForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str),
     const char* message);
 
 void StatusNative_throwExceptionFromNotFoundForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str),
     const char* message);
 
 void StatusNative_throwExceptionFromOutOfRangeForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str),
     const char* message);
 
 void StatusNative_throwExceptionFromUnimplementedForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str),
     const char* message);
 
 void StatusNative_throwExceptionFromUnknownStatusCodeForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str),
     int status_code, const char* message);
 
 #ifdef __cplusplus

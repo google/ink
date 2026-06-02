@@ -25,7 +25,8 @@ int64_t BrushNative_create(
     void* jni_env_pass_through, int64_t family_native_pointer, float color_red,
     float color_green, float color_blue, float color_alpha, int color_space_id,
     float size, float epsilon,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 void BrushNative_free(int64_t native_pointer);
 

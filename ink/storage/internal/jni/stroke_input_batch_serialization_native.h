@@ -23,7 +23,8 @@ extern "C" {
 
 int64_t StrokeInputBatchSerializationNative_createFromProto(
     void* jni_env_pass_through, const int8_t* byte_array, int size,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t StrokeInputBatchSerializationNative_encodeToByteVector(
     int64_t native_pointer);

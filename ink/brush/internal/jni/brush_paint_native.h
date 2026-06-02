@@ -26,7 +26,8 @@ int64_t BrushPaintNative_create(
     void* jni_env_pass_through, const int64_t* texture_layer_native_pointers,
     int num_texture_layers, const int64_t* color_function_native_pointers,
     int num_color_functions, int self_overlap_int,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 void BrushPaintNative_free(int64_t native_ptr);
 
@@ -54,13 +55,15 @@ int64_t TilingTextureNative_create(
     void* jni_env_pass_through, const char* client_texture_id, float size_x,
     float size_y, float offset_x, float offset_y, float rotation_degrees,
     int size_unit, int origin, int wrap_x, int wrap_y, int blend_mode,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t StampingTextureNative_create(
     void* jni_env_pass_through, const char* client_texture_id,
     int animation_frames, int animation_rows, int animation_columns,
     int64_t animation_duration_millis, int blend_mode,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 void TextureLayerNative_free(int64_t native_ptr);
 
@@ -102,24 +105,29 @@ int TextureLayerNative_getBlendModeInt(int64_t native_ptr);
 
 int64_t ColorFunctionNative_createOpacityMultiplier(
     void* jni_env_pass_through, float multiplier,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t ColorFunctionNative_createHueOffset(
     void* jni_env_pass_through, float offsetDegrees,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t ColorFunctionNative_createSaturationMultiplier(
     void* jni_env_pass_through, float multiplier,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t ColorFunctionNative_createLuminosityOffset(
     void* jni_env_pass_through, float offset,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int64_t ColorFunctionNative_createReplaceColor(
     void* jni_env_pass_through, float color_red, float color_green,
     float color_blue, float color_alpha, int color_space_id,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 void ColorFunctionNative_free(int64_t native_ptr);
 

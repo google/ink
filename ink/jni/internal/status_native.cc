@@ -57,14 +57,16 @@ int StatusNative_statusCodeUnimplemented() {
 
 void StatusNative_throwExceptionFromOkStatusForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*)) {
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str)) {
   ThrowExceptionFromStatus(jni_env_pass_through, throw_from_status_callback,
                            absl::OkStatus());
 }
 
 void StatusNative_throwExceptionFromFailedPreconditionForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str),
     const char* message) {
   ThrowExceptionFromStatus(jni_env_pass_through, throw_from_status_callback,
                            absl::FailedPreconditionError(message));
@@ -72,7 +74,8 @@ void StatusNative_throwExceptionFromFailedPreconditionForTesting(
 
 void StatusNative_throwExceptionFromInvalidArgumentForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str),
     const char* message) {
   ThrowExceptionFromStatus(jni_env_pass_through, throw_from_status_callback,
                            absl::InvalidArgumentError(message));
@@ -80,7 +83,8 @@ void StatusNative_throwExceptionFromInvalidArgumentForTesting(
 
 void StatusNative_throwExceptionFromNotFoundForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str),
     const char* message) {
   ThrowExceptionFromStatus(jni_env_pass_through, throw_from_status_callback,
                            absl::NotFoundError(message));
@@ -88,7 +92,8 @@ void StatusNative_throwExceptionFromNotFoundForTesting(
 
 void StatusNative_throwExceptionFromOutOfRangeForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str),
     const char* message) {
   ThrowExceptionFromStatus(jni_env_pass_through, throw_from_status_callback,
                            absl::OutOfRangeError(message));
@@ -96,7 +101,8 @@ void StatusNative_throwExceptionFromOutOfRangeForTesting(
 
 void StatusNative_throwExceptionFromUnimplementedForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str),
     const char* message) {
   ThrowExceptionFromStatus(jni_env_pass_through, throw_from_status_callback,
                            absl::UnimplementedError(message));
@@ -104,7 +110,8 @@ void StatusNative_throwExceptionFromUnimplementedForTesting(
 
 void StatusNative_throwExceptionFromUnknownStatusCodeForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str),
     int status_code, const char* message) {
   ThrowExceptionFromStatus(
       jni_env_pass_through, throw_from_status_callback,

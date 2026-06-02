@@ -27,7 +27,8 @@ int64_t BrushTipNative_create(
     float rotation_degrees, float particle_gap_distance_scale,
     int64_t particle_gap_duration_millis,
     const int64_t* behavior_native_pointers, int num_behaviors,
-    void (*throw_from_status_callback)(void*, int, const char*));
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 void BrushTipNative_free(int64_t native_ptr);
 
