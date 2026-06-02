@@ -53,9 +53,6 @@ OnDecodeTextureCallback::OnDecodeTextureCallback(JNIEnv* env,
 const char* absl_nullable OnDecodeTextureCallback::OnDecodeTexture(
     const char* absl_nonnull encoded_id, const int8_t* absl_nonnull bitmap,
     int bitmap_size) {
-  if (env_->ExceptionCheck()) {
-    return nullptr;
-  }
   if (callback_ == nullptr) {
     return encoded_id;
   }
