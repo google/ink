@@ -54,7 +54,8 @@ void InProgressStrokeNative_clear(int64_t native_pointer);
 
 // Starts the stroke with a brush.
 void InProgressStrokeNative_start(int64_t native_pointer,
-                                  int64_t brush_native_pointer, int noise_seed);
+                                  int64_t brush_native_pointer, int noise_seed,
+                                  float base_animation_phase);
 
 bool InProgressStrokeNative_enqueueInputs(
     void* jni_env_pass_through, int64_t native_pointer,

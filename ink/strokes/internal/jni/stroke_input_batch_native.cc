@@ -96,6 +96,10 @@ int StrokeInputBatchNative_getNoiseSeed(int64_t native_pointer) {
   return CastToStrokeInputBatch(native_pointer).GetNoiseSeed();
 }
 
+float StrokeInputBatchNative_getBaseAnimationPhase(int64_t native_pointer) {
+  return CastToStrokeInputBatch(native_pointer).GetBaseAnimationPhase();
+}
+
 void MutableStrokeInputBatchNative_clear(int64_t native_pointer) {
   CastToMutableStrokeInputBatch(native_pointer).Clear();
 }
@@ -151,6 +155,11 @@ int64_t MutableStrokeInputBatchNative_newCopy(int64_t native_pointer) {
 void MutableStrokeInputBatchNative_setNoiseSeed(int64_t native_pointer,
                                                 int seed) {
   CastToMutableStrokeInputBatch(native_pointer).SetNoiseSeed(seed);
+}
+
+void MutableStrokeInputBatchNative_setBaseAnimationPhase(int64_t native_pointer,
+                                                         float phase) {
+  CastToMutableStrokeInputBatch(native_pointer).SetBaseAnimationPhase(phase);
 }
 
 }  // extern "C"

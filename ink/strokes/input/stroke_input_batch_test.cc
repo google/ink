@@ -106,6 +106,15 @@ TEST(StrokeInputBatchTest, Stringify) {
   EXPECT_EQ(absl::StrCat(batch),
             "StrokeInputBatch[StrokeInput[Unknown, (1, 2), 1s],"
             " StrokeInput[Unknown, (3, 4), 2s]]");
+  batch.SetBaseAnimationPhase(0.25f);
+  EXPECT_EQ(absl::StrCat(batch),
+            "StrokeInputBatch[StrokeInput[Unknown, (1, 2), 1s],"
+            " StrokeInput[Unknown, (3, 4), 2s], base_animation_phase=0.25]");
+  batch.SetNoiseSeed(12345);
+  EXPECT_EQ(absl::StrCat(batch),
+            "StrokeInputBatch[StrokeInput[Unknown, (1, 2), 1s],"
+            " StrokeInput[Unknown, (3, 4), 2s], noise_seed=12345,"
+            " base_animation_phase=0.25]");
 }
 
 TEST(StrokeInputBatchTest, DefaultConstructed) {
@@ -328,8 +337,8 @@ TEST(StrokeInputBatchTest, SetReplacingLastValueOfMany) {
 
 TEST(StrokeInputBatchTest, Clear) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
-  absl::StatusOr<StrokeInputBatch> batch =
-      StrokeInputBatch::Create(input_vector, /*noise_seed=*/12345);
+  absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create(
+      input_vector, /*noise_seed=*/12345, /*base_animation_phase=*/0.75f);
   ASSERT_THAT(batch, IsOk());
 
   ASSERT_FALSE(batch->IsEmpty());
@@ -339,6 +348,7 @@ TEST(StrokeInputBatchTest, Clear) {
   ASSERT_TRUE(batch->HasOrientation());
   ASSERT_EQ(batch->GetToolType(), StrokeInput::ToolType::kStylus);
   EXPECT_EQ(batch->GetNoiseSeed(), 12345u);
+  EXPECT_EQ(batch->GetBaseAnimationPhase(), 0.75f);
 
   batch->Clear();
   // Batch should now be empty and the tool type should be unknown.
@@ -349,6 +359,7 @@ TEST(StrokeInputBatchTest, Clear) {
   ASSERT_FALSE(batch->HasOrientation());
   EXPECT_EQ(batch->GetToolType(), StrokeInput::ToolType::kUnknown);
   EXPECT_EQ(batch->GetNoiseSeed(), 0u);
+  EXPECT_EQ(batch->GetBaseAnimationPhase(), 0.0f);
 }
 
 TEST(StrokeInputBatchTest, AppendAfterClear) {

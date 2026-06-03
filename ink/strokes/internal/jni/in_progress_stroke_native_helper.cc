@@ -33,8 +33,9 @@ int InProgressStrokeWrapper::VertexCount(int coat_index,
       .vertex_buffer_size;
 }
 
-void InProgressStrokeWrapper::Start(const Brush& brush, int noise_seed) {
-  in_progress_stroke_.Start(brush, noise_seed);
+void InProgressStrokeWrapper::Start(const Brush& brush, int noise_seed,
+                                    float base_animation_phase) {
+  in_progress_stroke_.Start(brush, noise_seed, base_animation_phase);
   UpdateCaches();
 }
 

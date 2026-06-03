@@ -14,7 +14,7 @@
 
 #include "ink/strokes/input/type_matchers.h"
 
-#include <cstddef>
+#include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -33,6 +33,7 @@ using ::testing::ExplainMatchResult;
 using ::testing::Field;
 using ::testing::FloatEq;
 using ::testing::FloatNear;
+using ::testing::Property;
 
 MATCHER_P(StrokeInputEqMatcher, expected,
           absl::StrCat(negation ? "isn't" : "is", " equal to ", expected)) {
@@ -76,7 +77,7 @@ MATCHER_P(StrokeInputBatchIsArrayMatcher, expected, "") {
     return false;
   }
 
-  for (size_t i = 0; i < arg.Size(); ++i) {
+  for (int i = 0; i < arg.Size(); ++i) {
     if (!ExplainMatchResult(StrokeInputEq(expected[i]), arg.Get(i),
                             result_listener)) {
       *result_listener << " array index of first inequality = " << i;
@@ -88,20 +89,20 @@ MATCHER_P(StrokeInputBatchIsArrayMatcher, expected, "") {
 }
 
 MATCHER_P(StrokeInputBatchEqMatcher, expected, "") {
-  if (!ExplainMatchResult(Eq(expected.Size()), arg.Size(), result_listener)) {
-    return false;
+  std::vector<StrokeInput> expected_inputs;
+  expected_inputs.reserve(expected.Size());
+  for (int i = 0; i < expected.Size(); ++i) {
+    expected_inputs.push_back(expected.Get(i));
   }
 
-  for (size_t i = 0; i < arg.Size(); ++i) {
-    if (!ExplainMatchResult(StrokeInputEq(expected.Get(i)), arg.Get(i),
-                            result_listener)) {
-      *result_listener << " array index of first inequality = " << i;
-      return false;
-    }
-  }
-
-  return ExplainMatchResult(Eq(expected.GetNoiseSeed()), arg.GetNoiseSeed(),
-                            result_listener);
+  return ExplainMatchResult(
+      AllOf(StrokeInputBatchIsArrayMatcher(expected_inputs),
+            Property("GetNoiseSeed", &StrokeInputBatch::GetNoiseSeed,
+                     Eq(expected.GetNoiseSeed())),
+            Property("GetBaseAnimationPhase",
+                     &StrokeInputBatch::GetBaseAnimationPhase,
+                     FloatEq(expected.GetBaseAnimationPhase()))),
+      arg, result_listener);
 }
 
 }  // namespace

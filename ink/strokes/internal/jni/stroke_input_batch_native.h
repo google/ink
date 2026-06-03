@@ -58,6 +58,8 @@ bool StrokeInputBatchNative_hasOrientation(int64_t native_pointer);
 
 int StrokeInputBatchNative_getNoiseSeed(int64_t native_pointer);
 
+float StrokeInputBatchNative_getBaseAnimationPhase(int64_t native_pointer);
+
 void MutableStrokeInputBatchNative_clear(int64_t native_pointer);
 
 bool MutableStrokeInputBatchNative_appendSingle(
@@ -77,6 +79,9 @@ int64_t MutableStrokeInputBatchNative_newCopy(int64_t native_pointer);
 
 void MutableStrokeInputBatchNative_setNoiseSeed(int64_t native_pointer,
                                                 int seed);
+
+void MutableStrokeInputBatchNative_setBaseAnimationPhase(int64_t native_pointer,
+                                                         float phase);
 
 #ifdef __cplusplus
 }  // extern "C"

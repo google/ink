@@ -64,10 +64,11 @@ void InProgressStrokeNative_clear(int64_t native_pointer) {
 
 // Starts the stroke with a brush.
 void InProgressStrokeNative_start(int64_t native_pointer,
-                                  int64_t brush_native_pointer,
-                                  int noise_seed) {
+                                  int64_t brush_native_pointer, int noise_seed,
+                                  float base_animation_phase) {
   CastToMutableInProgressStrokeWrapper(native_pointer)
-      .Start(CastToBrush(brush_native_pointer), noise_seed);
+      .Start(CastToBrush(brush_native_pointer), noise_seed,
+             base_animation_phase);
 }
 
 bool InProgressStrokeNative_enqueueInputs(
@@ -167,6 +168,8 @@ void InProgressStrokeNative_populateInputs(
     // The input here should have already been validated.
     ABSL_CHECK_OK(batch.Append(inputs.Get(i)));
   }
+  batch.SetNoiseSeed(inputs.GetNoiseSeed());
+  batch.SetBaseAnimationPhase(inputs.GetBaseAnimationPhase());
 }
 
 InProgressStrokeNative_Input InProgressStrokeNative_getInput(

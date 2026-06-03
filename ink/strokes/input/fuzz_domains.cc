@@ -23,6 +23,7 @@
 
 #include "fuzztest/fuzztest.h"
 #include "absl/algorithm/container.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/fuzz_domains.h"
@@ -84,6 +85,7 @@ fuzztest::Domain<StrokeInputBatch> StrokeInputBatchWithPositionsAndMinSize(
         return fuzztest::Map(
             [xyts](StrokeInput::ToolType tool_type,
                    PhysicalDistance stroke_unit_length, uint32_t noise_seed,
+                   float base_animation_phase,
                    const std::optional<std::vector<float>>& pressures,
                    const std::optional<std::vector<Angle>>& tilts,
                    const std::optional<std::vector<Angle>>& orientations) {
@@ -105,12 +107,16 @@ fuzztest::Domain<StrokeInputBatch> StrokeInputBatchWithPositionsAndMinSize(
                                        : StrokeInput::kNoOrientation,
                 });
               }
-              return StrokeInputBatch::Create(inputs, noise_seed).value();
+              absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create(
+                  inputs, noise_seed, base_animation_phase);
+              ABSL_CHECK_OK(batch);
+              return *std::move(batch);
             },
             ArbitraryToolType(),
             fuzztest::OneOf(fuzztest::Just(StrokeInput::kNoStrokeUnitLength),
                             ValidStrokeUnitLength()),
-            fuzztest::Arbitrary<uint32_t>(),
+            fuzztest::Arbitrary<uint32_t>(),  // noise_seed
+            fuzztest::InRange(0.f, 1.f),      // base_animation_phase
             fuzztest::OptionalOf(
                 fuzztest::VectorOf(ValidPressure()).WithSize(xyts.size())),
             fuzztest::OptionalOf(

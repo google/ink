@@ -255,6 +255,14 @@ TEST(InProgressStrokeTest, ClearAfterStart) {
   EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
+TEST(InProgressStrokeTest, SetNoiseSeedAndBaseAnimationPhase) {
+  InProgressStroke stroke;
+  stroke.Start(CreateRectangularTestBrush(), /*noise_seed=*/12345,
+               /*base_animation_phase=*/0.75f);
+  EXPECT_EQ(stroke.GetInputs().GetNoiseSeed(), 12345);
+  EXPECT_EQ(stroke.GetInputs().GetBaseAnimationPhase(), 0.75f);
+}
+
 TEST(InProgressStrokeTest, EnqueueInputsWithoutStart) {
   InProgressStroke stroke;
   EXPECT_THAT(

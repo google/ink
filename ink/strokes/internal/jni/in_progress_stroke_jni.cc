@@ -50,9 +50,9 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, clear)
 // Starts the stroke with a brush.
 JNI_METHOD(strokes, InProgressStrokeNative, void, start)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jlong brush_native_pointer,
- jint noise_seed) {
-  InProgressStrokeNative_start(native_pointer, brush_native_pointer,
-                               noise_seed);
+ jint noise_seed, jfloat base_animation_phase) {
+  InProgressStrokeNative_start(native_pointer, brush_native_pointer, noise_seed,
+                               base_animation_phase);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jboolean, enqueueInputs)

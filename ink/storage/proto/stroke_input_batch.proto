@@ -96,4 +96,6 @@ message CodedStrokeInputBatch {
   // The seed value that should be used for seeding any noise generators for
   // brush behaviors when a full stroke is regenerated with this input batch.
   optional fixed32 noise_seed = 9;
+
+  reserved 10;
 }

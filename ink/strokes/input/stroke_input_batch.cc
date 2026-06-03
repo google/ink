@@ -74,6 +74,7 @@ void StrokeInputBatch::Clear() {
   tool_type_ = StrokeInput::ToolType::kUnknown;
   stroke_unit_length_ = StrokeInput::kNoStrokeUnitLength;
   noise_seed_ = 0;
+  base_animation_phase_ = 0.0f;
   has_pressure_ = false;
   has_tilt_ = false;
   has_orientation_ = false;
@@ -321,7 +322,8 @@ void StrokeInputBatch::Reserve(int size, const StrokeInput& sample_input) {
 }
 
 absl::StatusOr<StrokeInputBatch> StrokeInputBatch::Create(
-    absl::Span<const StrokeInput> inputs, uint32_t noise_seed) {
+    absl::Span<const StrokeInput> inputs, uint32_t noise_seed,
+    float base_animation_phase) {
   StrokeInputBatch batch;
 
   if (!inputs.empty()) {
@@ -332,6 +334,7 @@ absl::StatusOr<StrokeInputBatch> StrokeInputBatch::Create(
   }
 
   batch.SetNoiseSeed(noise_seed);
+  batch.SetBaseAnimationPhase(base_animation_phase);
   return batch;
 }
 
@@ -434,8 +437,16 @@ void StrokeInputBatch::TransformPreservingDuration(
 }
 
 std::string StrokeInputBatch::ToFormattedString() const {
-  return absl::StrCat("StrokeInputBatch[", absl::StrJoin(begin(), end(), ", "),
-                      "]");
+  std::string str =
+      absl::StrCat("StrokeInputBatch[", absl::StrJoin(begin(), end(), ", "));
+  if (noise_seed_ != 0) {
+    absl::StrAppend(&str, ", noise_seed=", noise_seed_);
+  }
+  if (base_animation_phase_ != 0.0f) {
+    absl::StrAppend(&str, ", base_animation_phase=", base_animation_phase_);
+  }
+  str.push_back(']');
+  return str;
 }
 
 }  // namespace ink

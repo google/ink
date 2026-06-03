@@ -93,12 +93,18 @@ class InProgressStroke {
   // reused, making it slightly more efficient.
   void Clear();
 
-  // Clears and starts a new stroke with the given `brush`.
+  // Clears and starts a new stroke with the given `brush`. The `noise_seed` is
+  // used to help seed any noise generators for brush behaviors, so that
+  // different strokes will look different. The `base_animation_phase` should be
+  // in the range [0, 1), and determines the stroke's overall animation progress
+  // at some arbitrary zero clock state, so that different strokes can be
+  // animated correctly relative to each other.
   //
   // This includes clearing or resetting any existing inputs, mesh data, and
   // updated region. This method must be called at least once after construction
   // before starting to call `EnqueueInputs()` or `UpdateShape()`.
-  void Start(const Brush& brush, uint32_t noise_seed = 0);
+  void Start(const Brush& brush, uint32_t noise_seed = 0,
+             float base_animation_phase = 0.0f);
 
   // Enqueues the incremental `real_inputs` and sets the prediction to
   // `predicted_inputs`, overwriting any previous prediction. Only adds the

@@ -94,7 +94,7 @@ class InProgressStrokeWrapper {
   InProgressStroke& Stroke() { return in_progress_stroke_; }
 
   // Starts a stroke and clears the converted index buffers.
-  void Start(const Brush& brush, int noise_seed);
+  void Start(const Brush& brush, int noise_seed, float base_animation_phase);
 
   // Updates the shape of the shape of the stroke and updates the converted
   // index buffers.
