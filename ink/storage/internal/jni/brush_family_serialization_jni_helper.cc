@@ -77,6 +77,11 @@ const char* absl_nullable OnDecodeTextureCallback::OnDecodeTexture(
 
 JniTextureMap::JniTextureMap(JNIEnv* env, jobjectArray texture_map_keys,
                              jobjectArray texture_map_values) {
+  if (texture_map_keys == nullptr) {
+    ABSL_CHECK_EQ(texture_map_values, nullptr);
+    return;
+  }
+  ABSL_CHECK_NE(texture_map_values, nullptr);
   jsize key_length = env->GetArrayLength(texture_map_keys);
   jsize value_length = env->GetArrayLength(texture_map_values);
   ABSL_CHECK_EQ(key_length, value_length);
@@ -113,8 +118,8 @@ JniTextureMap::JniTextureMap(JNIEnv* env, jobjectArray texture_map_keys,
 }
 
 TextureBitmapProvider CreateTextureBitmapProvider(
-    JNIEnv* env, jobjectArray texture_map_keys,
-    jobjectArray texture_map_values) {
+    JNIEnv* env, absl_nullable jobjectArray texture_map_keys,
+    absl_nullable jobjectArray texture_map_values) {
   JniTextureMap texture_map(env, texture_map_keys, texture_map_values);
   return TextureBitmapProviderFromNativeArrays(
       texture_map.TextureIds(), texture_map.Bitmaps(),

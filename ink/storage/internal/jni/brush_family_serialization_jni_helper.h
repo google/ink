@@ -60,8 +60,8 @@ class OnDecodeTextureCallback {
 
 class JniTextureMap {
  public:
-  JniTextureMap(JNIEnv* env, jobjectArray texture_map_keys,
-                jobjectArray texture_map_values);
+  JniTextureMap(JNIEnv* env, absl_nullable jobjectArray texture_map_keys,
+                absl_nullable jobjectArray texture_map_values);
 
   const char* absl_nonnull* absl_nonnull TextureIds() {
     return texture_ids_ptrs_.data();
@@ -87,8 +87,8 @@ class JniTextureMap {
 };
 
 TextureBitmapProvider CreateTextureBitmapProvider(
-    JNIEnv* env, jobjectArray texture_map_keys,
-    jobjectArray texture_map_values);
+    JNIEnv* env, absl_nullable jobjectArray texture_map_keys,
+    absl_nullable jobjectArray texture_map_values);
 
 ClientTextureIdProviderAndBitmapReceiver OnDecodeTextureJniWrapper(
     OnDecodeTextureCallback& on_decode_texture_callback);

@@ -57,7 +57,8 @@ extern "C" {
 
 JNI_METHOD(storage, BrushFamilySerializationNative, jbyteArray, encode)
 (JNIEnv* env, jobject object, jlong brush_family_native_pointer,
- jobjectArray texture_map_keys, jobjectArray texture_map_values) {
+ absl_nullable jobjectArray texture_map_keys,
+ absl_nullable jobjectArray texture_map_values) {
   TextureBitmapProvider texture_bitmap_provider =
       CreateTextureBitmapProvider(env, texture_map_keys, texture_map_values);
 
@@ -93,7 +94,7 @@ JNI_METHOD(storage, BrushFamilySerializationNative, jbyteArray, encodeMultiple)
 
 JNI_METHOD(storage, BrushFamilySerializationNative, jlong, createFromProto)
 (JNIEnv* env, jobject object, jbyteArray brush_family_byte_array, jint length,
- absl_nullable jobject callback, jint max_version) {
+ absl_nullable jobject on_decode_texture, jint max_version) {
   ink::proto::BrushFamily brush_family_proto;
   constexpr int kOffset = 0;
   if (absl::Status status = ParseProtoFromByteArray(
@@ -103,7 +104,7 @@ JNI_METHOD(storage, BrushFamilySerializationNative, jlong, createFromProto)
     return 0;
   }
 
-  OnDecodeTextureCallback on_decode_texture_callback(env, callback);
+  OnDecodeTextureCallback on_decode_texture_callback(env, on_decode_texture);
   absl::StatusOr<BrushFamily> brush_family = DecodeBrushFamily(
       brush_family_proto, OnDecodeTextureJniWrapper(on_decode_texture_callback),
       IntToVersion(max_version));
@@ -116,7 +117,7 @@ JNI_METHOD(storage, BrushFamilySerializationNative, jlong, createFromProto)
 
 JNI_METHOD(storage, MultipleBrushFamiliesNative, jlong, createFromProto)
 (JNIEnv* env, jobject object, jbyteArray brush_family_byte_array, jint length,
- absl_nullable jobject callback, jint max_version) {
+ absl_nullable jobject on_decode_texture, jint max_version) {
   constexpr int kOffset = 0;
   ink::proto::BrushFamily brush_family_proto;
   if (absl::Status status = ParseProtoFromByteArray(
@@ -126,7 +127,7 @@ JNI_METHOD(storage, MultipleBrushFamiliesNative, jlong, createFromProto)
     return 0;
   }
 
-  OnDecodeTextureCallback on_decode_texture_callback(env, callback);
+  OnDecodeTextureCallback on_decode_texture_callback(env, on_decode_texture);
   absl::StatusOr<std::vector<BrushFamily>> brush_families =
       DecodeMultipleBrushFamilies(
           brush_family_proto,
