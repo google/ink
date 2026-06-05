@@ -20,13 +20,20 @@
 #include <functional>
 #include <limits>
 #include <queue>
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/types/span.h"
 #include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/internal/intersects_internal.h"
 #include "ink/geometry/point.h"
+#include "ink/geometry/rect.h"
+#include "ink/geometry/segment.h"
+#include "ink/geometry/vec.h"
 
 namespace ink::geometry_internal {
 
@@ -75,16 +82,13 @@ std::vector<BoundarySegment> GetSegments(
     if (outline.empty()) continue;
     Point u = outline.back();
     for (const Point& v : outline) {
-      if (IsLeftOrBelow(u, v))
-        segments.push_back({u, v, 1});
-      else
-        segments.push_back({v, u, -1});
+      segments.push_back(IsLeftOrBelow(u, v) ? BoundarySegment{u, v, 1}
+                                             : BoundarySegment{v, u, -1});
       u = v;
     }
   }
 
-  std::sort(segments.begin(), segments.end());
-
+  absl::c_sort(segments);
   return segments;
 }
 
@@ -131,7 +135,7 @@ absl::flat_hash_map<uint32_t, std::vector<Point>> FindIntersections(
   }
 
   for (auto& [i, cuts] : intersections) {
-    std::sort(cuts.begin(), cuts.end(), IsLeftOrBelow);
+    absl::c_sort(cuts, IsLeftOrBelow);
   }
 
   return intersections;
@@ -208,9 +212,8 @@ int GetWindingNumberAtY(
 }
 
 // Given a set of boundary segments that intersect only at their endpoints,
-// extracts the geometric boundary of the polygon (the region where the winding
-// number w > 0) as a set of x-monotone chains oriented counter-clockwise.
-std::vector<std::vector<Point>> ExtractChains(
+// extracts the geometric boundary of the polygon as a set of x-monotone chains.
+std::vector<MonotoneChain> ExtractChains(
     const std::vector<BoundarySegment>& segments) {
   if (segments.empty()) return {};
 
@@ -219,9 +222,6 @@ std::vector<std::vector<Point>> ExtractChains(
   // A priority queue of ends of the active_segments.
   std::priority_queue<float, std::vector<float>, std::greater<>> end_xs;
 
-  // For simplicity, we'll construct and store the
-  // negatively oriented (the decreasing chains) left-to-right and reverse
-  // them at the end.
   std::vector<std::vector<Point>> pos_chains, neg_chains;
 
   size_t s_idx = 0;
@@ -284,31 +284,44 @@ std::vector<std::vector<Point>> ExtractChains(
     // than at endpoints, so use the midpoint to the next sweep x for
     // simplicity).
     float mid_x = (current_x + next_x) * 0.5f;
-    std::sort(active_segments.begin(), active_segments.end(),
-              [&](const BoundarySegment* a, const BoundarySegment* b) {
-                float y_a = ComputeY(*a, mid_x);
-                float y_b = ComputeY(*b, mid_x);
-                return y_a < y_b;
-              });
+    absl::c_sort(active_segments,
+                 [&](const BoundarySegment* a, const BoundarySegment* b) {
+                   float y_a = ComputeY(*a, mid_x);
+                   float y_b = ComputeY(*b, mid_x);
+                   return y_a < y_b;
+                 });
 
     current_x = next_x;
   }
 
-  // Move pos chains directly to result, reverse neg chains and move to result.
-  std::vector<std::vector<Point>> result;
+  std::vector<MonotoneChain> result;
   result.reserve(pos_chains.size() + neg_chains.size());
-  for (auto& chain : pos_chains) result.push_back(std::move(chain));
-  for (auto& chain : neg_chains) {
-    std::reverse(chain.begin(), chain.end());
-    result.push_back(std::move(chain));
-  }
+  for (auto& chain : pos_chains) result.push_back({std::move(chain), 1});
+  for (auto& chain : neg_chains) result.push_back({std::move(chain), -1});
   return result;
 }
 
 }  // namespace
 
-std::vector<std::vector<Point>> ComputeMonotoneBoundaryChains(
-    const std::vector<std::vector<Point>>& loops) {
+MonotoneChain::MonotoneChain(std::vector<Point> vertices, int orientation)
+    : vertices_(std::move(vertices)),
+      orientation_(orientation),
+      bounds_(Envelope(vertices_).AsRect().value_or(Rect())) {
+  if (!absl::c_is_sorted(vertices_, IsLeftOrBelow))
+    absl::c_sort(vertices_, IsLeftOrBelow);
+}
+
+ShapeOutline::ShapeOutline(std::vector<MonotoneChain> input_chains)
+    : chains_(std::move(input_chains)) {
+  absl::c_sort(chains_, [](const MonotoneChain& a, const MonotoneChain& b) {
+    return std::tuple(a.Bounds().YMin(), a.Bounds().XMin(), a.Bounds().YMax(),
+                      a.Bounds().XMax(), a.Orientation()) <
+           std::tuple(b.Bounds().YMin(), b.Bounds().XMin(), b.Bounds().YMax(),
+                      b.Bounds().XMax(), b.Orientation());
+  });
+}
+
+ShapeOutline ComputeShapeOutline(const std::vector<std::vector<Point>>& loops) {
   // This function conceptually implements a sweep-line approach: we sweep the
   // plane from left-to-right, pausing at every endpoint and intersection point
   // to compute the winding numbers along the sweep-line, and construct the
@@ -321,13 +334,145 @@ std::vector<std::vector<Point>> ComputeMonotoneBoundaryChains(
   // lying on the boundary, and construct the monotone chains.
 
   std::vector<BoundarySegment> segments = GetSegments(loops);
-
   absl::flat_hash_map<uint32_t, std::vector<Point>> intersections =
       FindIntersections(segments);
-
   SubdivideSegments(segments, intersections);
+  return ShapeOutline(ExtractChains(segments));
+}
 
-  return ExtractChains(segments);
+bool Intersects(const ShapeOutline& shape, const Point& p) {
+  // This implements a ray-casting approach: we cast a ray from p in the
+  // negative y-direction, and count the number of intersections with the
+  // boundary of the polygon. The point intersects the polygon if the number of
+  // intersections is odd, or if the point is on the boundary.
+
+  int crossings = 0;
+
+  for (const MonotoneChain& chain : shape.Chains()) {
+    // Since the chains in the shape are sorted, if the point is below the
+    // lower bound of this chain, we can safely skip the rest.
+    if (p.y < chain.Bounds().YMin()) break;
+
+    if (p.x < chain.Bounds().XMin() || p.x > chain.Bounds().XMax()) continue;
+
+    if (p.y > chain.Bounds().YMax()) {
+      crossings += 1;
+      continue;
+    }
+
+    absl::Span<const Point> pts = chain.Vertices();
+
+    // The first point in the chain with pR.x >= p.x
+    auto it = std::lower_bound(pts.begin(), pts.end(), Point{p.x, 0},
+                               [](Point a, Point b) { return a.x < b.x; });
+
+    // In theory, since the bounding box check above guarantees that p.x is in
+    // the range [XMin, XMax], `it` should never be pts.end(), but check anyway
+    // to be safe.
+    if (it == pts.end()) continue;
+    Point pR = *it;
+
+    if (pR.x == p.x) {
+      if (p.y < pR.y) continue;
+      if (p.y == pR.y) return true;
+
+      // Special check for p lying on a vertical boundary: since pR is the first
+      // point with the same x-coordinate, and the monotone chains have vertical
+      // segments ordered bottom-to-top, the last point in the chain with the
+      // same x-coordinate is the top of the piece of vertical boundary.
+      while (it + 1 != pts.end() && (it + 1)->x == p.x) ++it;
+      if (p.y <= it->y) return true;
+
+      crossings += 1;
+      continue;
+    }
+
+    // In theory, by the bounding box check, if `it` is pts.begin(), then it
+    // must be true that it->x == p.x, which is handled above. But check just
+    // to be safe.
+    if (it == pts.begin()) continue;
+    Point pL = *(it - 1);
+
+    if (p.y < std::min(pL.y, pR.y)) continue;
+
+    if (p.y > std::max(pL.y, pR.y)) {
+      crossings += 1;
+      continue;
+    }
+
+    // We tried so hard, and got so far, but in the end we actually have to do
+    // some geometry.
+    double det = static_cast<double>(p.x - pL.x) * (pR.y - pL.y) -
+                 static_cast<double>(p.y - pL.y) * (pR.x - pL.x);
+    if (det == 0) return true;
+    if (det < 0) crossings += 1;
+  }
+
+  return (crossings % 2) != 0;
+}
+
+bool Intersects(const ShapeOutline& shape, const Rect& rect) {
+  // A rect and shape intersect if the boundary of the shape intersects the
+  // boundary of the rect, or the shape is contained in the rect, or the rect is
+  // contained shape.
+
+  // Check if the boundary of shape intersects the boundary of rect, or is
+  // contained in rect.
+  for (const MonotoneChain& chain : shape.Chains()) {
+    // Since the chains in the shape are sorted, if the point is below the
+    // lower bound of this chain, we can safely skip the rest.
+    if (rect.YMax() < chain.Bounds().YMin()) break;
+    if (!geometry_internal::IntersectsInternal(chain.Bounds(), rect)) continue;
+
+    absl::Span<const Point> pts = chain.Vertices();
+
+    // To determine if the chain intersects the rect, we find the portion of the
+    // chain with x-coordinates in the range [rect.XMin(), rect.XMax()]. For
+    // vertices in this range, we can check for intersection easily -- there is
+    // no intersection if and only if all vertices are either strictly below
+    // rect.YMin() or strictly above rect.YMax(). Then we also check the
+    // incoming and leaving segments (crossing XMin and XMax) with a standard
+    // segment-box intersection check.
+
+    // Look for the first point with x-coordinate greater than or equal to
+    // rect.XMin().
+    auto left_it =
+        std::lower_bound(pts.begin(), pts.end(), Point{rect.XMin(), 0},
+                         [](Point a, Point b) { return a.x < b.x; });
+
+    // Iterate through all points with x-coordinates in the range
+    // [rect.XMin(), rect.XMax()].
+    bool above = false, below = false;
+    auto it = left_it;
+    for (; it != pts.end(); ++it) {
+      if (it->x > rect.XMax()) break;
+      if (it->y > rect.YMax())
+        above = true;
+      else if (it->y < rect.YMin())
+        below = true;
+      else
+        return true;
+      if (above && below) return true;
+    }
+
+    // First point to the right of the rect.
+    auto right_it = it;
+
+    // Lastly, check the incoming and leaving segments.
+    if (left_it != pts.begin() &&
+        geometry_internal::IntersectsInternal(
+            rect, Segment{*(left_it - 1), *left_it})) {
+      return true;
+    }
+    if (right_it != pts.end() && right_it != left_it &&
+        geometry_internal::IntersectsInternal(
+            rect, Segment{*(right_it - 1), *right_it})) {
+      return true;
+    }
+  }
+
+  // If no intersections, check if rect is contained in shape.
+  return Intersects(shape, rect.Center());
 }
 
 }  // namespace ink::geometry_internal

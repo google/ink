@@ -398,18 +398,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "outline_processing",
-    srcs = ["outline_processing.cc"],
-    hdrs = ["outline_processing.h"],
-    deps = [
-        ":algorithms",
-        "//ink/geometry:point",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:inlined_vector",
-    ],
-)
-
 cc_test(
     name = "generic_tessellator_test",
     srcs = ["generic_tessellator_test.cc"],
@@ -422,12 +410,31 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "outline_processing",
+    srcs = ["outline_processing.cc"],
+    hdrs = ["outline_processing.h"],
+    deps = [
+        ":algorithms",
+        ":intersects_internal",
+        "//ink/geometry:point",
+        "//ink/geometry:rect",
+        "//ink/geometry:segment",
+        "//ink/geometry:vec",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
 cc_test(
     name = "outline_processing_test",
     srcs = ["outline_processing_test.cc"],
     deps = [
         ":outline_processing",
         "//ink/geometry:point",
+        "//ink/geometry:rect",
         "@com_google_googletest//:gtest_main",
     ],
 )

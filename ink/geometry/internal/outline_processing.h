@@ -17,12 +17,14 @@
 
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ink/geometry/point.h"
+#include "ink/geometry/rect.h"
 
 namespace ink::geometry_internal {
 
-// Given a polygon (or set of polygons) defined by a set of closed polygonal
-// chains, returns a monotone chain boundary representation of the polygon.
+// This file provides some utilities for geometry processing with monotone
+// chains.
 //
 // A polygonal chain (or polyline) is defined by a sequence of points as the set
 // of line segments connecting consecutive points. A closed chain is one that
@@ -33,15 +35,63 @@ namespace ink::geometry_internal {
 // A monotone (or more precisely, x-monotone) chain is a polygonal chain made up
 // of points with either (weakly) increasing or decreasing x-coordinate. A
 // monotone chain boundary representation of a polygon is a decomposition of the
-// polygon's boundary into a set of monotone chains. This function returns a
-// decomposition of minimal cardinality, which is unique (up to vertical
-// boundary segments).
-//
-// The returned chains are oriented according to the counter-clockwise
-// convention, so that the interior of the polygon locally lies to the left of
-// each boundary path. The order of the returned chains is arbitrary.
-std::vector<std::vector<Point>> ComputeMonotoneBoundaryChains(
-    const std::vector<std::vector<Point>>& loops);
+// polygon's oriented boundary into a minimal set of oriented monotone
+// chains, and is unique up to vertical boundary segments.
+
+class MonotoneChain {
+ public:
+  MonotoneChain(std::vector<Point> vertices, int orientation);
+
+  MonotoneChain(const MonotoneChain&) = default;
+  MonotoneChain(MonotoneChain&&) = default;
+  MonotoneChain& operator=(const MonotoneChain&) = default;
+  MonotoneChain& operator=(MonotoneChain&&) = default;
+
+  absl::Span<const Point> Vertices() const { return vertices_; }
+  int Orientation() const { return orientation_; }
+  const Rect& Bounds() const { return bounds_; }
+
+  bool operator==(const MonotoneChain& other) const {
+    return vertices_ == other.vertices_ && orientation_ == other.orientation_;
+  }
+
+ private:
+  // The vertices of the chain, ordered by x-coordinate and then by
+  // y-coordinate.
+  std::vector<Point> vertices_;
+
+  // Orientation (+1/-1) of the chain.
+  int orientation_;
+
+  Rect bounds_;
+};
+
+class ShapeOutline {
+ public:
+  explicit ShapeOutline(std::vector<MonotoneChain> input_chains);
+
+  ShapeOutline(const ShapeOutline&) = default;
+  ShapeOutline(ShapeOutline&&) = default;
+  ShapeOutline& operator=(const ShapeOutline&) = default;
+  ShapeOutline& operator=(ShapeOutline&&) = default;
+
+  absl::Span<const MonotoneChain> Chains() const { return chains_; }
+
+  bool operator==(const ShapeOutline& other) const = default;
+
+ private:
+  // The list of chains, ordered by their lower y-bounds.
+  std::vector<MonotoneChain> chains_;
+};
+
+// Computes the monotone boundary chains.
+ShapeOutline ComputeShapeOutline(const std::vector<std::vector<Point>>& loops);
+
+// Intersection of a shape with a point.
+bool Intersects(const ShapeOutline& shape, const Point& p);
+
+// Intersection of a shape with an axis-aligned rectangle.
+bool Intersects(const ShapeOutline& shape, const Rect& rect);
 
 }  // namespace ink::geometry_internal
 
