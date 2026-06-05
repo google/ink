@@ -92,6 +92,7 @@ cc_library(
     tags = ["keep_dep"],
     deps = [
         ":brush_family_serialization_jni_helper",
+        ":brush_family_serialization_native",
         ":brush_family_serialization_native_helper",
         "//ink/brush:brush_family",
         "//ink/brush/internal/jni:brush_native_helper",
@@ -111,6 +112,24 @@ cc_library(
         ],
     }),
     alwayslink = 1,
+)
+
+cc_library(
+    name = "brush_family_serialization_native",
+    srcs = ["brush_family_serialization_native.cc"],
+    hdrs = ["brush_family_serialization_native.h"],
+    deps = [
+        ":brush_family_serialization_native_helper",
+        ":byte_array_native_helper",
+        "//ink/brush:brush_family",
+        "//ink/brush/internal/jni:brush_native_helper",
+        "//ink/storage:brush",
+        "//ink/storage/proto:brush_cc_proto",
+        "//ink/storage/proto:brush_family_cc_proto",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+    ],
 )
 
 cc_library(

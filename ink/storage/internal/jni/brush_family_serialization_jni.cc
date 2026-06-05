@@ -14,44 +14,27 @@
 
 #include <jni.h>
 
-#include <functional>
-#include <memory>
-#include <utility>
-#include <vector>
+#include <cstdint>
 
 #include "absl/base/nullability.h"
-#include "absl/status/status.h"
-#include "absl/status/statusor.h"
-#include "ink/brush/brush_family.h"
-#include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/jni/internal/jni_defines.h"
 #include "ink/jni/internal/jni_proto_util.h"
 #include "ink/jni/internal/status_jni_helper.h"
 #include "ink/storage/brush.h"
 #include "ink/storage/internal/jni/brush_family_serialization_jni_helper.h"
-#include "ink/storage/internal/jni/brush_family_serialization_native_helper.h"
+#include "ink/storage/internal/jni/brush_family_serialization_native.h"
 #include "ink/storage/proto/brush.pb.h"
 #include "ink/storage/proto/brush_family.pb.h"
 
-using ::ink::BrushFamily;
 using ::ink::ClientTextureIdProviderAndBitmapReceiver;
-using ::ink::DecodeBrushFamily;
-using ::ink::DecodeMultipleBrushFamilies;
-using ::ink::EncodeBrushFamily;
-using ::ink::EncodeMultipleBrushFamilies;
 using ::ink::TextureBitmapProvider;
-using ::ink::jni::CreateTextureBitmapProvider;
+using ::ink::jni::JniTextureMap;
+using ::ink::jni::JvmByteArrayNativeAlloc;
+using ::ink::jni::JvmByteArrayNativeAllocCallback;
+using ::ink::jni::JvmBytes;
 using ::ink::jni::OnDecodeTextureCallback;
-using ::ink::jni::OnDecodeTextureJniWrapper;
-using ::ink::jni::ParseProtoFromByteArray;
-using ::ink::jni::SerializeProto;
-using ::ink::jni::ThrowExceptionFromStatus;
-using ::ink::native::CastToBrushFamily;
-using ::ink::native::CastToMutableMultipleBrushFamilies;
-using ::ink::native::DeleteMultipleBrushFamilies;
-using ::ink::native::IntToVersion;
-using ::ink::native::NewNativeBrushFamily;
-using ::ink::native::NewNativeMultipleBrushFamilies;
+using ::ink::jni::OnDecodeTextureNativeCallback;
+using ::ink::jni::ThrowExceptionFromStatusCallback;
 
 extern "C" {
 
@@ -59,109 +42,72 @@ JNI_METHOD(storage, BrushFamilySerializationNative, jbyteArray, encode)
 (JNIEnv* env, jobject object, jlong brush_family_native_pointer,
  absl_nullable jobjectArray texture_map_keys,
  absl_nullable jobjectArray texture_map_values) {
-  TextureBitmapProvider texture_bitmap_provider =
-      CreateTextureBitmapProvider(env, texture_map_keys, texture_map_values);
-
-  ink::proto::BrushFamily brush_family_proto;
-  EncodeBrushFamily(CastToBrushFamily(brush_family_native_pointer),
-                    brush_family_proto, texture_bitmap_provider);
-  return SerializeProto(env, brush_family_proto);
+  JvmByteArrayNativeAlloc byte_array_allocator(env);
+  JniTextureMap texture_map(env, texture_map_keys, texture_map_values);
+  return byte_array_allocator.Release(BrushFamilySerializationNative_encode(
+      &byte_array_allocator, brush_family_native_pointer,
+      texture_map.TextureIds(), texture_map.Bitmaps(),
+      texture_map.BitmapLengths(), texture_map.NumTextures(),
+      &JvmByteArrayNativeAllocCallback));
 }
 
 JNI_METHOD(storage, BrushFamilySerializationNative, jbyteArray, encodeMultiple)
 (JNIEnv* env, jobject object, jlongArray brush_family_native_pointers,
  jobjectArray texture_map_keys, jobjectArray texture_map_values) {
-  TextureBitmapProvider texture_bitmap_provider =
-      CreateTextureBitmapProvider(env, texture_map_keys, texture_map_values);
-
-  jsize pointers_length = env->GetArrayLength(brush_family_native_pointers);
+  JvmByteArrayNativeAlloc byte_array_allocator(env);
+  JniTextureMap texture_map(env, texture_map_keys, texture_map_values);
+  jsize pointers_size = env->GetArrayLength(brush_family_native_pointers);
   jlong* pointers =
       env->GetLongArrayElements(brush_family_native_pointers, nullptr);
-  // Pass by reference to avoid a copy of all the brush families.
-  std::vector<std::reference_wrapper<const BrushFamily>> families;
-  families.reserve(pointers_length);
-  for (jsize i = 0; i < pointers_length; ++i) {
-    families.push_back(CastToBrushFamily(pointers[i]));
-  }
+  static_assert(sizeof(jlong) == sizeof(int64_t));
+  jbyteArray result = byte_array_allocator.Release(
+      BrushFamilySerializationNative_encodeMultiple(
+          &byte_array_allocator, reinterpret_cast<int64_t*>(pointers),
+          pointers_size, texture_map.TextureIds(), texture_map.Bitmaps(),
+          texture_map.BitmapLengths(), texture_map.NumTextures(),
+          &JvmByteArrayNativeAllocCallback));
   env->ReleaseLongArrayElements(brush_family_native_pointers, pointers,
                                 JNI_ABORT);
-
-  ink::proto::BrushFamily brush_family_proto;
-  EncodeMultipleBrushFamilies(families, brush_family_proto,
-                              texture_bitmap_provider);
-  return SerializeProto(env, brush_family_proto);
+  return result;
 }
 
 JNI_METHOD(storage, BrushFamilySerializationNative, jlong, createFromProto)
 (JNIEnv* env, jobject object, jbyteArray brush_family_byte_array, jint length,
  absl_nullable jobject on_decode_texture, jint max_version) {
-  ink::proto::BrushFamily brush_family_proto;
-  constexpr int kOffset = 0;
-  if (absl::Status status = ParseProtoFromByteArray(
-          env, brush_family_byte_array, kOffset, length, brush_family_proto);
-      !status.ok()) {
-    ThrowExceptionFromStatus(env, status);
-    return 0;
-  }
-
-  OnDecodeTextureCallback on_decode_texture_callback(env, on_decode_texture);
-  absl::StatusOr<BrushFamily> brush_family = DecodeBrushFamily(
-      brush_family_proto, OnDecodeTextureJniWrapper(on_decode_texture_callback),
-      IntToVersion(max_version));
-  if (!brush_family.ok()) {
-    ThrowExceptionFromStatus(env, brush_family.status());
-    return 0;
-  }
-  return NewNativeBrushFamily(*std::move(brush_family));
+  JvmBytes brush_family_bytes =
+      JvmBytes::FromByteArray(env, brush_family_byte_array);
+  OnDecodeTextureCallback decode_texture_callback(env, on_decode_texture);
+  return BrushFamilySerializationNative_createFromProto(
+      env, &decode_texture_callback, brush_family_bytes.NativeBytes(), length,
+      max_version, &ThrowExceptionFromStatusCallback,
+      &OnDecodeTextureNativeCallback);
 }
 
 JNI_METHOD(storage, MultipleBrushFamiliesNative, jlong, createFromProto)
 (JNIEnv* env, jobject object, jbyteArray brush_family_byte_array, jint length,
  absl_nullable jobject on_decode_texture, jint max_version) {
-  constexpr int kOffset = 0;
-  ink::proto::BrushFamily brush_family_proto;
-  if (absl::Status status = ParseProtoFromByteArray(
-          env, brush_family_byte_array, kOffset, length, brush_family_proto);
-      !status.ok()) {
-    ThrowExceptionFromStatus(env, status);
-    return 0;
-  }
-
-  OnDecodeTextureCallback on_decode_texture_callback(env, on_decode_texture);
-  absl::StatusOr<std::vector<BrushFamily>> brush_families =
-      DecodeMultipleBrushFamilies(
-          brush_family_proto,
-          OnDecodeTextureJniWrapper(on_decode_texture_callback),
-          IntToVersion(max_version));
-  if (!brush_families.ok()) {
-    ThrowExceptionFromStatus(env, brush_families.status());
-    return 0;
-  }
-
-  std::vector<std::unique_ptr<BrushFamily>> result;
-  result.reserve(brush_families->size());
-  for (BrushFamily& brush_family : *brush_families) {
-    result.push_back(std::make_unique<BrushFamily>(std::move(brush_family)));
-  }
-  return NewNativeMultipleBrushFamilies(std::move(result));
+  JvmBytes brush_family_bytes =
+      JvmBytes::FromByteArray(env, brush_family_byte_array);
+  OnDecodeTextureCallback decode_texture_callback(env, on_decode_texture);
+  return MultipleBrushFamiliesNative_createFromProto(
+      env, &decode_texture_callback, brush_family_bytes.NativeBytes(), length,
+      max_version, &ThrowExceptionFromStatusCallback,
+      &OnDecodeTextureNativeCallback);
 }
 
 JNI_METHOD(storage, MultipleBrushFamiliesNative, jint, getBrushFamilyCount)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  return CastToMutableMultipleBrushFamilies(native_pointer).size();
+  return MultipleBrushFamiliesNative_getBrushFamilyCount(native_pointer);
 }
 
 JNI_METHOD(storage, MultipleBrushFamiliesNative, jlong, releaseBrushFamily)
 (JNIEnv* env, jobject object, jlong native_pointer, jint index) {
-  // This is already a heap-allocated BrushFamily, handed off so that the new
-  // Kotlin BrushFamily will start managing cleanup.
-  return reinterpret_cast<jlong>(
-      CastToMutableMultipleBrushFamilies(native_pointer)[index].release());
+  return MultipleBrushFamiliesNative_releaseBrushFamily(native_pointer, index);
 }
 
 JNI_METHOD(storage, MultipleBrushFamiliesNative, void, free)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  DeleteMultipleBrushFamilies(native_pointer);
+  MultipleBrushFamiliesNative_free(native_pointer);
 }
 
 }  // extern "C"
