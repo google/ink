@@ -294,6 +294,13 @@ struct BrushPaint {
     // PDF page object or annotation, where a stroke can be filled only with a
     // solid color or textures using `TilingTexture`. This is the default
     // behavior for renderers that use the stroke outline rather than its mesh.
+    //
+    // This is incompatible with `BrushBehavior`s which target opacity or color,
+    // and with `StampingTexture`. This is because `SelfOverlap::kDiscard`
+    // forces usage of the path renderer, and the aforementioned features
+    // require the mesh renderer. In the case where both are specified on the
+    // same `BrushPaint`, the effects of the `BrushBehavior` or
+    // `StampingTexture` will not be rendered.
     kDiscard,
   };
 

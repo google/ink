@@ -287,11 +287,16 @@ struct BrushBehavior {
     kPositionOffsetYInMultiplesOfBrushSize,
     // Moves the brush tip by the target modifier times the brush size in the
     // direction of the modeled stroke input's velocity (the opposite direction
-    // if the value is negative).
+    // if the value is negative). For example, if a stroke is moving from left
+    // to right, a positive modifier will shift the brush tip to the right,
+    // and a negative modifier will shift the brush tip to the left.
     kPositionOffsetForwardInMultiplesOfBrushSize,
     // Moves the brush tip by the target modifier times the brush size
     // perpendicular to the modeled stroke input's velocity, rotated 90 degrees
-    // in the direction from the positive x-axis to the positive y-axis.
+    // in the direction from the positive x-axis to the positive y-axis. For
+    // example, if positive-Y is up, and a stroke is moving from left to right,
+    // a positive modifier will shift the brush tip up, and a negative modifier
+    // will shift the brush tip down.
     kPositionOffsetLateralInMultiplesOfBrushSize,
     // Adds the target modifier to the initial texture animation progress value
     // of the current particle (which is relevant only for strokes with an
