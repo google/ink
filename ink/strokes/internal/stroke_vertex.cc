@@ -94,7 +94,7 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
   constexpr MeshAttributeCodingParams::ComponentCodingParams
       kHslCodingParams10bit = {.offset = -1, .scale = 2.f / 1022};
   // LINT.ThenChange(
-  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:hsl_packing)
+  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:hsl_shift_unpacking)
 
   // LINT.IfChange(label_packing)
   // Vertex labels are already represented with 1 byte's worth of integral
@@ -103,7 +103,7 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
   constexpr MeshAttributeCodingParams::ComponentCodingParams
       kLabelCodingParams = {.offset = -128, .scale = 1};
   // LINT.ThenChange(
-  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:label_packing)
+  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:label_unpacking)
 
   // LINT.IfChange(uv_packing)
   constexpr MeshAttributeCodingParams::ComponentCodingParams
@@ -113,7 +113,7 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
   constexpr MeshAttributeCodingParams::ComponentCodingParams
       kSurfaceVCodingParams20bit = {.scale = 1.f / 1048575};
   // LINT.ThenChange(
-  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:uv_packing)
+  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:surface_uv_unpacking)
 
   // Animation offsets are stored unpacked in the range [0, 1). It's tempting to
   // use 1/256 as the scale here, since a value of 1 does not need to be
@@ -123,7 +123,7 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
   constexpr MeshAttributeCodingParams::ComponentCodingParams
       kAnimationCodingParams8bit = {.scale = 1.f / 255};
   // LINT.ThenChange(
-  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:anim_packing)
+  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:anim_unpacking)
 
   switch (attribute.id) {
     case MeshFormat::AttributeId::kOpacityShift:
