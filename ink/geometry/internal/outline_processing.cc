@@ -301,6 +301,40 @@ std::vector<MonotoneChain> ExtractChains(
   return result;
 }
 
+// Returns a pair of lists (prev_chain, next_chain) containing the indices of
+// the predecessor and successor of each chain in an oriented walk along the
+// shape boundary.
+std::pair<absl::InlinedVector<uint32_t, 8>, absl::InlinedVector<uint32_t, 8>>
+GetAdjacentChains(absl::Span<const MonotoneChain> chains) {
+  auto start_pt = [](const MonotoneChain& c) {
+    return c.Orientation() == 1 ? c.Vertices().front() : c.Vertices().back();
+  };
+  auto end_pt = [](const MonotoneChain& c) {
+    return c.Orientation() == 1 ? c.Vertices().back() : c.Vertices().front();
+  };
+
+  absl::InlinedVector<uint32_t, 8> prev_chain(chains.size());
+  absl::InlinedVector<uint32_t, 8> next_chain(chains.size());
+
+  // Brute force search, since we expect that typically the number of chains is
+  // small.
+  for (size_t i = 0; i < chains.size(); ++i) {
+    Point end_i = end_pt(chains[i]);
+    Point start_i = start_pt(chains[i]);
+    for (size_t j = i + 1; j < chains.size(); ++j) {
+      if (start_pt(chains[j]) == end_i) {
+        next_chain[i] = j;
+        prev_chain[j] = i;
+      }
+      if (end_pt(chains[j]) == start_i) {
+        next_chain[j] = i;
+        prev_chain[i] = j;
+      }
+    }
+  }
+  return {prev_chain, next_chain};
+}
+
 }  // namespace
 
 MonotoneChain::MonotoneChain(std::vector<Point> vertices, int orientation)
@@ -473,6 +507,41 @@ bool Intersects(const ShapeOutline& shape, const Rect& rect) {
 
   // If no intersections, check if rect is contained in shape.
   return Intersects(shape, rect.Center());
+}
+
+std::vector<std::vector<Point>> ComputeBoundaryLoops(
+    const ShapeOutline& shape) {
+  // We stitch the monotone chains into closed loops by first computing each
+  // chain's "next" chain in the shape's oriented boundary. We can think of this
+  // as a directed graph on the set of chains. We traverse all of cycles
+  // in this graph, gluing together the chains as we go.
+  auto [_, next] = GetAdjacentChains(shape.Chains());
+
+  std::vector<std::vector<Point>> loops;
+  absl::Span<const MonotoneChain> chains = shape.Chains();
+
+  absl::InlinedVector<bool, 8> visited(chains.size(), false);
+  for (size_t m = 0; m < chains.size(); ++m) {
+    if (visited[m]) continue;
+
+    if (chains[m].Vertices().size() < 2) continue;
+
+    std::vector<Point> loop;
+    uint32_t curr = m;
+    do {
+      visited[curr] = true;
+      absl::Span<const Point> pts = chains[curr].Vertices();
+      if (chains[curr].Orientation() == 1)
+        loop.insert(loop.end(), pts.begin(), pts.end() - 1);
+      else
+        loop.insert(loop.end(), pts.rbegin(), pts.rend() - 1);
+      curr = next[curr];
+    } while (curr != m && !visited[curr]);
+
+    loops.push_back(std::move(loop));
+  }
+
+  return loops;
 }
 
 }  // namespace ink::geometry_internal

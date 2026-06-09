@@ -16,12 +16,16 @@
 
 #include <vector>
 
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ink/geometry/internal/test_matchers.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
 
 namespace ink::geometry_internal {
 namespace {
+
+using ::testing::UnorderedElementsAre;
 
 constexpr auto FromTwoPoints = Rect::FromTwoPoints;
 
@@ -316,6 +320,103 @@ TEST(IntersectionTests, RectAndPolygonWithHole) {
   EXPECT_TRUE(Intersects(outline, FromTwoPoints({6, 5}, {11, 10})));
   // Rect completely contains the outer polygon.
   EXPECT_TRUE(Intersects(outline, FromTwoPoints({-1, -1}, {15, 13})));
+}
+
+TEST(ComputeBoundaryLoopsTest, BasicTriangle) {
+  //         C
+  //        / \
+  //       /   \
+  //      A-----B
+  Point A{0, 0}, B{2, 0}, C{1, 1};
+
+  ShapeOutline outline({{{A, C, B}, -1}, {{A, B}, 1}});
+
+  std::vector<std::vector<Point>> loops = ComputeBoundaryLoops(outline);
+
+  EXPECT_THAT(loops, UnorderedElementsAre(
+                         IsCyclicPermutationOf(std::vector<Point>{A, B, C})));
+}
+
+TEST(ComputeBoundaryLoopsTest, SumTwoDiamonds) {
+  //         H     F
+  //        / \   / \
+  //       /   \ /   \
+  //      /     G     \
+  //     A             E
+  //      \     C     /
+  //       \   / \   /
+  //        \ /   \ /
+  //         B     D
+  Point A{-4, 0}, B{-1, -3}, C{0, -2}, D{1, -3}, E{4, 0}, F{1, 3}, G{0, 2},
+      H{-1, 3};
+
+  ShapeOutline outline({{{A, B, C, D, E}, 1}, {{A, H, G, F, E}, -1}});
+
+  std::vector<std::vector<Point>> loops = ComputeBoundaryLoops(outline);
+
+  EXPECT_THAT(loops, UnorderedElementsAre(IsCyclicPermutationOf(
+                         std::vector<Point>{A, B, C, D, E, F, G, H})));
+}
+
+TEST(ComputeBoundaryLoopsTest, PolygonWithHole) {
+  //         D-------------------C
+  //         |                   |
+  //         |      H-----I      |
+  //         |      |     |      |
+  //         |      |     |      |
+  //  F------E      G-----J      |
+  //  |                          |
+  //  |                          |
+  //  |                          |
+  //  A--------------------------B
+  Point A{0, 0}, B{14, 0}, C{14, 12}, D{4, 12}, E{4, 6}, F{0, 6};
+  Point G{7, 6}, H{7, 9}, I{10, 9}, J{10, 6};
+
+  ShapeOutline outline(
+      {{{A, B, C}, 1}, {{G, H, I}, 1}, {{A, F, E, D, C}, -1}, {{G, J, I}, -1}});
+
+  std::vector<std::vector<Point>> loops = ComputeBoundaryLoops(outline);
+
+  EXPECT_THAT(loops,
+              UnorderedElementsAre(
+                  IsCyclicPermutationOf(std::vector<Point>{A, B, C, D, E, F}),
+                  IsCyclicPermutationOf(std::vector<Point>{G, H, I, J})));
+}
+
+TEST(ComputeBoundaryLoopsTest, PolygonWithTwoHoles) {
+  //                  C
+  //.               /   \
+  //               /     \
+  //              /       \
+  //             /         \
+  //            /  G     K  \
+  //           /  / \   / \  \
+  //          D  F  H  J  L  B
+  //           \  \ /   \ /  /
+  //            \  E     I  /
+  //             \         /
+  //              \       /
+  //               \     /
+  //                \   /
+  //                  A
+  Point A{10, 0}, B{20, 10}, C{10, 20}, D{0, 10};
+  Point E{7, 8}, F{4, 10}, G{7, 12}, H{9, 10};
+  Point I{13, 8}, J{11, 10}, K{13, 12}, L{16, 10};
+
+  ShapeOutline outline({{{D, A, B}, 1},
+                        {{F, G, H}, 1},
+                        {{J, K, L}, 1},
+                        {{D, C, B}, -1},
+                        {{F, E, H}, -1},
+                        {{J, I, L}, -1}});
+
+  std::vector<std::vector<Point>> loops = ComputeBoundaryLoops(outline);
+
+  EXPECT_THAT(loops,
+              UnorderedElementsAre(
+                  IsCyclicPermutationOf(std::vector<Point>{A, B, C, D}),
+                  IsCyclicPermutationOf(std::vector<Point>{E, F, G, H}),
+                  IsCyclicPermutationOf(std::vector<Point>{I, J, K, L})));
 }
 
 }  // namespace

@@ -93,6 +93,10 @@ bool Intersects(const ShapeOutline& shape, const Point& p);
 // Intersection of a shape with an axis-aligned rectangle.
 bool Intersects(const ShapeOutline& shape, const Rect& rect);
 
+// Reconstructs the closed polygonal boundary loops of the given shape from its
+// monotone chains.
+std::vector<std::vector<Point>> ComputeBoundaryLoops(const ShapeOutline& shape);
+
 }  // namespace ink::geometry_internal
 
 #endif  // INK_GEOMETRY_INTERNAL_OUTLINE_PROCESSING_H_

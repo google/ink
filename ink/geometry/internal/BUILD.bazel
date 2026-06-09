@@ -433,6 +433,7 @@ cc_test(
     srcs = ["outline_processing_test.cc"],
     deps = [
         ":outline_processing",
+        ":test_matchers",
         "//ink/geometry:point",
         "//ink/geometry:rect",
         "@com_google_googletest//:gtest_main",
