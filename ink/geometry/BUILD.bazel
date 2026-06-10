@@ -31,7 +31,7 @@ cc_library(
         ":segment",
         ":triangle",
         ":vec",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -49,9 +49,9 @@ cc_test(
         ":triangle",
         ":type_matchers",
         ":vec",
-        "@com_google_absl//absl/strings",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -63,7 +63,7 @@ cc_library(
     deps = [
         "//ink/geometry/internal:modulo",
         "//ink/types:numbers",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -75,10 +75,10 @@ cc_test(
         ":fuzz_domains",
         ":type_matchers",
         "//ink/types:numbers",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/strings",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/strings",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -107,7 +107,7 @@ cc_test(
         ":rect",
         ":segment",
         ":triangle",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -125,9 +125,9 @@ cc_library(
         ":segment",
         ":triangle",
         ":vec",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
-        "@com_google_fuzztest//fuzztest",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
+        "@fuzztest//fuzztest",
     ],
 )
 
@@ -141,7 +141,7 @@ cc_library(
         ":rect",
         ":segment",
         ":triangle",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -157,8 +157,8 @@ cc_test(
         ":segment",
         ":triangle",
         ":type_matchers",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -194,7 +194,7 @@ cc_test(
         ":rect",
         ":segment",
         ":triangle",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -208,8 +208,8 @@ cc_library(
         ":rect",
         ":segment",
         ":vec",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/log:absl_log",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_log",
     ],
 )
 
@@ -224,7 +224,7 @@ cc_test(
         ":segment",
         ":type_matchers",
         ":vec",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -236,8 +236,8 @@ cc_library(
         ":point",
         ":segment",
         ":vec",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -252,9 +252,9 @@ cc_test(
         ":segment",
         ":type_matchers",
         ":vec",
-        "@com_google_absl//absl/strings",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -266,7 +266,7 @@ cc_library(
         ":point",
         ":vec",
         "//ink/geometry/internal:lerp",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -277,9 +277,9 @@ cc_test(
         ":fuzz_domains",
         ":segment",
         ":type_matchers",
-        "@com_google_absl//absl/strings",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -291,8 +291,8 @@ cc_library(
         ":point",
         ":segment",
         ":vec",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -305,9 +305,9 @@ cc_test(
         ":rect",
         ":segment",
         ":triangle",
-        "@com_google_absl//absl/strings",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -318,8 +318,8 @@ cc_library(
     deps = [
         ":angle",
         "//ink/types:numbers",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -345,7 +345,7 @@ cc_library(
         ":vec",
         "//:gtest_for_library_testonly",
         "//ink/types:small_array",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -364,11 +364,11 @@ cc_test(
         ":quad",
         ":triangle",
         ":type_matchers",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/types:span",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/types:span",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -381,10 +381,10 @@ cc_test(
         ":fuzz_domains",
         ":type_matchers",
         ":vec",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/strings",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/strings",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -393,7 +393,7 @@ cc_test(
     srcs = ["vec_benchmark.cc"],
     deps = [
         ":vec",
-        "@com_google_benchmark//:benchmark_main",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -403,7 +403,7 @@ cc_library(
     hdrs = ["point.h"],
     deps = [
         ":vec",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -414,9 +414,9 @@ cc_test(
         ":point",
         ":type_matchers",
         ":vec",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -427,13 +427,13 @@ cc_library(
     deps = [
         "//ink/geometry/internal:mesh_constants",
         "//ink/types:small_array",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/log:absl_log",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:absl_log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -443,14 +443,14 @@ cc_test(
     deps = [
         ":fuzz_domains",
         ":mesh_format",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -466,7 +466,7 @@ cc_library(
     hdrs = ["mesh_packing_types.h"],
     deps = [
         "//ink/types:small_array",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -475,8 +475,8 @@ cc_test(
     srcs = ["mesh_packing_types_test.cc"],
     deps = [
         ":mesh_packing_types",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -496,16 +496,16 @@ cc_library(
         "//ink/geometry/internal:mesh_packing",
         "//ink/types:small_array",
         "//ink/types/internal:float",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -526,13 +526,13 @@ cc_test(
         ":type_matchers",
         "//ink/geometry/internal:mesh_packing",
         "//ink/types:small_array",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -549,13 +549,13 @@ cc_library(
         "//ink/geometry/internal:mesh_packing",
         "//ink/types:small_array",
         "//ink/types/internal:float",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -571,13 +571,13 @@ cc_test(
         ":rect",
         ":type_matchers",
         "//ink/geometry/internal:mesh_packing",
-        "@com_google_absl//absl/hash",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/types:span",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/types:span",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -601,11 +601,11 @@ cc_library(
         "//:gtest_for_library_testonly",
         "//ink/storage:mesh",
         "//ink/storage/proto:mesh_cc_proto",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:string_view",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -622,11 +622,11 @@ cc_test(
         ":point",
         ":type_matchers",
         ":vec",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -651,17 +651,17 @@ cc_library(
         "//ink/geometry/internal:intersects_internal",
         "//ink/geometry/internal:mesh_packing",
         "//ink/geometry/internal:static_rtree",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/functional:function_ref",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/synchronization",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/functional:function_ref",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -684,15 +684,15 @@ cc_test(
         ":segment",
         ":triangle",
         ":type_matchers",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -703,7 +703,7 @@ cc_library(
         ":point",
         "//ink/geometry/internal:convex_hull_helper",
         "//ink/geometry/internal:point_tessellation_helper",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -713,7 +713,7 @@ cc_test(
     deps = [
         ":convex_hull",
         ":point",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -727,10 +727,10 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry/internal:generic_tessellator",
         "//ink/geometry/internal:point_tessellation_helper",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -743,12 +743,12 @@ cc_test(
         ":mutable_mesh",
         ":point",
         "//ink/types:small_array",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/strings:string_view",
-        "@com_google_benchmark//:benchmark",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
+        "@google_benchmark//:benchmark",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -761,10 +761,10 @@ cc_test(
         ":point",
         ":tessellator",
         ":type_matchers",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -780,7 +780,7 @@ cc_test(
         ":fuzz_domains",
         ":point",
         ":tessellator",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )

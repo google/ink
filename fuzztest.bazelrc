@@ -2,7 +2,7 @@
 #
 # To regenerate, run the following from your project's workspace:
 #
-#  bazel run @com_google_fuzztest//bazel:setup_configs > fuzztest.bazelrc
+#  bazel run @fuzztest//bazel:setup_configs > fuzztest.bazelrc
 #
 # And don't forget to add the following to your project's .bazelrc:
 #

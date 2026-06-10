@@ -68,8 +68,8 @@ cc_library(
         "//ink/brush:color_function",
         "//ink/brush:easing_function",
         "//ink/brush:version",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:statusor",
     ],
 )
 
@@ -86,9 +86,9 @@ cc_library(
         "//ink/jni/internal:jni_string_util",
         "//ink/jni/internal:status_jni_helper",
         "//ink/types:duration",
-        "@com_google_absl//absl/functional:overload",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/functional:overload",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -105,9 +105,9 @@ cc_library(
     deps = [
         ":brush_native_helper",
         "//ink/brush:brush_behavior",
-        "@com_google_absl//absl/functional:overload",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/functional:overload",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -122,8 +122,8 @@ cc_library(
         "//ink/geometry:angle",
         "//ink/geometry:vec",
         "//ink/types:duration",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -140,8 +140,8 @@ cc_library(
         "//ink/jni/internal:jni_string_util",
         "//ink/jni/internal:status_jni_helper",
         "//ink/types:duration",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -158,7 +158,7 @@ cc_library(
     deps = [
         ":brush_native_helper",
         "//ink/brush:brush_behavior",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -177,8 +177,8 @@ cc_library(
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:status_jni_helper",
         "//ink/types:duration",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -203,10 +203,10 @@ cc_library(
         "//ink/geometry:mesh_format",
         "//ink/geometry:vec",
         "//ink/geometry/internal/jni:mesh_format_native_helper",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -228,14 +228,14 @@ cc_library(
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_string_util",
         "//ink/jni/internal:status_jni_helper",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/functional:overload",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:string_view",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/functional:overload",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -255,10 +255,10 @@ cc_library(
         "//ink/brush:brush_paint",
         "//ink/geometry:mesh_format",
         "//ink/geometry/internal/jni:mesh_format_native_helper",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -269,7 +269,7 @@ cc_library(
     deps = [
         ":brush_coat_native",
         "//ink/jni/internal:jni_defines",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -318,11 +318,11 @@ cc_library(
         "//ink/brush:brush_coat",
         "//ink/brush:brush_family",
         "//ink/types:duration",
-        "@com_google_absl//absl/functional:overload",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/functional:overload",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -337,7 +337,7 @@ cc_library(
         "//ink/color",
         "//ink/color:color_space",
         "//ink/color/internal/jni:color_native_helper",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/status:statusor",
     ],
 )
 
@@ -350,7 +350,7 @@ cc_library(
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_string_util",
         "//ink/jni/internal:status_jni_helper",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -386,7 +386,7 @@ cc_library(
         ":easing_function_native",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:status_jni_helper",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -404,7 +404,7 @@ cc_library(
         ":brush_native_helper",
         "//ink/brush:easing_function",
         "//ink/geometry:point",
-        "@com_google_absl//absl/functional:overload",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/functional:overload",
+        "@abseil-cpp//absl/status",
     ],
 )

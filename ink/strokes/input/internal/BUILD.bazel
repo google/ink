@@ -26,8 +26,8 @@ cc_library(
     deps = [
         "//ink/strokes/input:stroke_input",
         "//ink/types:duration",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -40,8 +40,8 @@ cc_test(
         "//ink/strokes/input:stroke_input",
         "//ink/types:duration",
         "//ink/types:physical_distance",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@googletest//:gtest_main",
     ],
 )

@@ -61,8 +61,8 @@ cc_library(
         "//ink/jni/internal:jni_defines",
         "//ink/strokes:stroke",
         "//ink/strokes/input:stroke_input_batch",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -93,7 +93,7 @@ cc_library(
     hdrs = ["stroke_native_helper.h"],
     deps = [
         "//ink/strokes:stroke",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ],
 )
 
@@ -113,9 +113,9 @@ cc_library(
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -132,7 +132,7 @@ cc_library(
         "//ink/jni/internal:jni_buffer_util",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:status_jni_helper",
-        "@com_google_absl//absl/base:nullability",
+        "@abseil-cpp//absl/base:nullability",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -151,10 +151,10 @@ cc_library(
         "//ink/geometry:mutable_mesh",
         "//ink/strokes:in_progress_stroke",
         "//ink/types:duration",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/log:absl_log",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -163,7 +163,7 @@ cc_test(
     srcs = ["in_progress_stroke_native_helper_test.cc"],
     deps = [
         ":in_progress_stroke_native_helper",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -189,7 +189,7 @@ cc_library(
     hdrs = ["stroke_input_batch_native_helper.h"],
     deps = [
         "//ink/strokes/input:stroke_input_batch",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ],
 )
 
@@ -203,7 +203,7 @@ cc_library(
         "//ink/strokes/input:stroke_input",
         "//ink/types:duration",
         "//ink/types:physical_distance",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -219,7 +219,7 @@ cc_library(
         "//ink/jni/internal:status_jni_helper",
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -262,8 +262,8 @@ cc_library(
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:status_jni_helper",
         "//ink/strokes/input:stroke_input_batch",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/types:span",
     ],
 )

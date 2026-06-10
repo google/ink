@@ -155,9 +155,9 @@ cc_library(
         "//ink/geometry:quad",
         "//ink/geometry:rect",
         "//ink/geometry:triangle",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/types:span",
     ],
     alwayslink = 1,
 )
@@ -177,9 +177,9 @@ cc_library(
         "//ink/geometry:rect",
         "//ink/jni/internal:jni_buffer_util",
         "//ink/jni/internal:jni_defines",
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -201,8 +201,8 @@ cc_library(
         "//ink/geometry:mesh_packing_types",
         "//ink/geometry:point",
         "//ink/geometry:rect",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
     ],
     alwayslink = 1,
 )
@@ -212,7 +212,7 @@ cc_library(
     hdrs = ["mesh_native_helper.h"],
     deps = [
         "//ink/geometry:mesh",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -253,7 +253,7 @@ cc_library(
     hdrs = ["mesh_format_native_helper.h"],
     deps = [
         "//ink/geometry:mesh_format",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ],
 )
 
@@ -267,7 +267,7 @@ cc_library(
         "//ink/geometry:rect",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_jvm_interface",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -318,8 +318,8 @@ cc_library(
         "//ink/geometry:rect",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_jvm_interface",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -372,7 +372,7 @@ cc_library(
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_jvm_interface",
-        "@com_google_absl//absl/log",
+        "@abseil-cpp//absl/log",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -408,7 +408,7 @@ cc_library(
         "//ink/geometry:quad",
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_jvm_interface",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -428,7 +428,7 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_defines",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -464,7 +464,7 @@ cc_library(
         "//ink/geometry:vec",
         "//ink/jni/internal:jni_jvm_interface",
         "//ink/strokes/internal/jni:in_progress_stroke_native",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -504,6 +504,6 @@ cc_library(
     hdrs = ["partitioned_mesh_native_helper.h"],
     deps = [
         "//ink/geometry:partitioned_mesh",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ],
 )

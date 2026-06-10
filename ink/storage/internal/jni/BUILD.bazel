@@ -45,8 +45,8 @@ cc_library(
     srcs = ["byte_array_native_helper.cc"],
     hdrs = ["byte_array_native_helper.h"],
     deps = [
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log:absl_check",
         "@protobuf//:protobuf_lite",
     ],
 )
@@ -60,7 +60,7 @@ cc_library(
         "//ink/jni/internal:jni_defines",
         "//ink/jni/internal:jni_proto_util",
         "//ink/jni/internal:status_jni_helper",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -80,9 +80,9 @@ cc_library(
         "//ink/storage/proto:stroke_input_batch_cc_proto",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/strokes/internal/jni:stroke_input_batch_native_helper",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
     ],
 )
 
@@ -102,9 +102,9 @@ cc_library(
         "//ink/storage:brush",
         "//ink/storage/proto:brush_cc_proto",
         "//ink/storage/proto:brush_family_cc_proto",
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -126,9 +126,9 @@ cc_library(
         "//ink/storage:brush",
         "//ink/storage/proto:brush_cc_proto",
         "//ink/storage/proto:brush_family_cc_proto",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
     ],
 )
 
@@ -144,12 +144,12 @@ cc_library(
         "//ink/storage:brush",
         "//ink/storage/proto:brush_cc_proto",
         "//ink/storage/proto:brush_family_cc_proto",
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings:string_view",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:string_view",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -165,11 +165,11 @@ cc_library(
     deps = [
         "//ink/brush:brush_family",
         "//ink/storage:brush",
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings:string_view",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )

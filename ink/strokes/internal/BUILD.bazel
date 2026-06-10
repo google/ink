@@ -28,7 +28,7 @@ cc_library(
         ":brush_tip_state",
         "//ink/geometry:angle",
         "//ink/geometry:fuzz_domains",
-        "@com_google_fuzztest//fuzztest",
+        "@fuzztest//fuzztest",
     ],
 )
 
@@ -43,9 +43,9 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry:triangle",
         "//ink/types:small_array",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -58,9 +58,9 @@ cc_test(
         "//ink/geometry:triangle",
         "//ink/geometry:type_matchers",
         "//ink/types:small_array",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -81,7 +81,7 @@ cc_test(
         "//ink/geometry:envelope",
         "//ink/geometry:rect",
         "//ink/geometry:type_matchers",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -110,7 +110,7 @@ cc_test(
         "//ink/geometry:type_matchers",
         "//ink/types:duration",
         "//ink/types:type_matchers",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -126,9 +126,9 @@ cc_library(
         "//ink/strokes/internal/stroke_input_modeler:passthrough_input_modeler",
         "//ink/strokes/internal/stroke_input_modeler:sliding_window_input_modeler",
         "//ink/types:duration",
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -148,11 +148,11 @@ cc_test(
         "//ink/types:fuzz_domains",
         "//ink/types:physical_distance",
         "//ink/types:type_matchers",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@fuzztest//fuzztest",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -176,8 +176,8 @@ cc_test(
         ":type_matchers",
         "//ink/geometry:angle",
         "//ink/geometry:type_matchers",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_googletest//:gtest_main",
+        "@fuzztest//fuzztest",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -200,8 +200,8 @@ cc_library(
         "//ink/strokes/input:stroke_input",
         "//ink/types:duration",
         "//ink/types:physical_distance",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -225,8 +225,8 @@ cc_test(
         "//ink/types:duration",
         "//ink/types:physical_distance",
         "//ink/types:type_matchers",
-        "@com_google_absl//absl/types:span",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/types:span",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -245,11 +245,11 @@ cc_library(
         "//ink/geometry:angle",
         "//ink/geometry:point",
         "//ink/types:duration",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/log:absl_log",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_log",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -274,8 +274,8 @@ cc_test(
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_googletest//:gtest_main",
+        "@fuzztest//fuzztest",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -291,12 +291,12 @@ cc_test(
         "//ink/brush:stock_brushes_test_params",
         "//ink/color",
         "//ink/strokes/input:recorded_test_inputs",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/strings:string_view",
-        "@com_google_benchmark//:benchmark",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
+        "@google_benchmark//:benchmark",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -309,11 +309,11 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry:vec",
         "//ink/geometry/internal:lerp",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/functional:overload",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/log:absl_log",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/functional:overload",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_log",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -324,9 +324,9 @@ cc_test(
         ":easing_implementation",
         "//ink/brush:easing_function",
         "//ink/brush:fuzz_domains",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -336,7 +336,7 @@ cc_library(
     hdrs = ["noise_generator.h"],
     deps = [
         "//ink/geometry/internal:lerp",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ],
 )
 
@@ -345,8 +345,8 @@ cc_test(
     srcs = ["noise_generator_test.cc"],
     deps = [
         ":noise_generator",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -367,7 +367,7 @@ cc_library(
         "//ink/geometry:vec",
         "//ink/geometry/internal:algorithms",
         "//ink/geometry/internal:circle",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ],
 )
 
@@ -382,7 +382,7 @@ cc_test(
         "//ink/geometry:type_matchers",
         "//ink/geometry:vec",
         "//ink/geometry/internal:circle",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -403,9 +403,9 @@ cc_library(
         "//ink/geometry/internal:algorithms",
         "//ink/geometry/internal:circle",
         "//ink/types:small_array",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -421,10 +421,10 @@ cc_test(
         "//ink/geometry:type_matchers",
         "//ink/geometry/internal:circle",
         "//ink/geometry/internal:test_matchers",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@fuzztest//fuzztest",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -439,9 +439,9 @@ cc_library(
         "//ink/geometry:distance",
         "//ink/geometry:rect",
         "//ink/geometry/internal:circle",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -451,7 +451,7 @@ cc_test(
     deps = [
         ":brush_tip_extrusion",
         "//ink/geometry:angle",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -474,10 +474,10 @@ cc_library(
         "//ink/strokes/internal/brush_tip_extruder:geometry",
         "//ink/strokes/internal/brush_tip_extruder:mutable_mesh_view",
         "//ink/strokes/internal/brush_tip_extruder:side",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -497,9 +497,9 @@ cc_test(
         "//ink/geometry:type_matchers",
         "//ink/geometry/internal:algorithms",
         "//ink/types:small_array",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -517,9 +517,9 @@ cc_library(
         "//ink/geometry:vec",
         "//ink/geometry/internal:lerp",
         "//ink/types:small_array",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -536,10 +536,10 @@ cc_test(
         "//ink/geometry:vec",
         "//ink/geometry/internal:mesh_packing",
         "//ink/types:small_array",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -548,11 +548,11 @@ cc_library(
     srcs = ["stroke_outline.cc"],
     hdrs = ["stroke_outline.h"],
     deps = [
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/numeric:bits",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/numeric:bits",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -561,7 +561,7 @@ cc_test(
     srcs = ["stroke_outline_test.cc"],
     deps = [
         ":stroke_outline",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -582,8 +582,8 @@ cc_library(
         "//ink/geometry:envelope",
         "//ink/geometry:mutable_mesh",
         "//ink/types:duration",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -607,10 +607,10 @@ cc_test(
         "//ink/geometry/internal:algorithms",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -625,12 +625,12 @@ cc_test(
         "//ink/brush:stock_brushes_test_params",
         "//ink/color",
         "//ink/strokes/input:recorded_test_inputs",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_benchmark//:benchmark",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@google_benchmark//:benchmark",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -653,9 +653,9 @@ cc_library(
         "//ink/geometry:segment",
         "//ink/geometry:vec",
         "//ink/geometry/internal:circle",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -666,8 +666,8 @@ cc_test(
         ":rounded_polygon",
         "//ink/geometry:type_matchers",
         "//ink/geometry/internal:circle",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -680,7 +680,7 @@ cc_library(
         ":brush_tip_state",
         "//ink/geometry:distance",
         "//ink/geometry/internal:lerp",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ],
 )
 
@@ -693,7 +693,7 @@ cc_test(
         ":constrain_brush_tip_extrusion",
         ":type_matchers",
         "//ink/geometry:angle",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -712,8 +712,8 @@ cc_library(
         "//ink/geometry/internal:circle",
         "//ink/geometry/internal:test_matchers",
         "//ink/types:type_matchers",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -725,11 +725,11 @@ cc_test(
         ":stroke_input_modeler",
         "//ink/brush:brush_family",
         "//ink/strokes/input:recorded_test_inputs",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/strings:string_view",
-        "@com_google_benchmark//:benchmark",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
+        "@google_benchmark//:benchmark",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -745,8 +745,8 @@ cc_library(
         "//ink/geometry:mesh_format",
         "//ink/geometry:mutable_mesh",
         "//ink/geometry:partitioned_mesh",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
     ],
 )
 
@@ -760,8 +760,8 @@ cc_test(
         "//ink/geometry:mutable_mesh",
         "//ink/geometry:partitioned_mesh",
         "//ink/geometry:point",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest_main",
     ],
 )

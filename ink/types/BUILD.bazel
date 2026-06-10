@@ -24,8 +24,8 @@ cc_library(
     srcs = ["duration.cc"],
     hdrs = ["duration.h"],
     deps = [
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -36,11 +36,11 @@ cc_test(
         ":duration",
         ":fuzz_domains",
         ":type_matchers",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -52,7 +52,7 @@ cc_library(
     deps = [
         ":duration",
         ":physical_distance",
-        "@com_google_fuzztest//fuzztest",
+        "@fuzztest//fuzztest",
     ],
 )
 
@@ -65,7 +65,7 @@ cc_library(
         ":duration",
         ":physical_distance",
         "//:gtest_for_library_testonly",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -79,7 +79,7 @@ cc_library(
     srcs = ["physical_distance.cc"],
     hdrs = ["physical_distance.h"],
     deps = [
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -90,10 +90,10 @@ cc_test(
         ":fuzz_domains",
         ":physical_distance",
         ":type_matchers",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/strings",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/strings",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -101,10 +101,10 @@ cc_library(
     name = "small_array",
     hdrs = ["small_array.h"],
     deps = [
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -113,9 +113,9 @@ cc_test(
     srcs = ["small_array_test.cc"],
     deps = [
         ":small_array",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -129,6 +129,6 @@ cc_test(
     srcs = ["iterator_range_test.cc"],
     deps = [
         ":iterator_range",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )

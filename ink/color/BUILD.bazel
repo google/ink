@@ -28,9 +28,9 @@ cc_library(
     ],
     deps = [
         ":color_space",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/log:absl_log",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_log",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -43,11 +43,11 @@ cc_test(
         ":color_space",
         ":fuzz_domains",
         ":type_matchers",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -57,8 +57,8 @@ cc_test(
     deps = [
         ":color",
         ":type_matchers",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -67,8 +67,8 @@ cc_library(
     srcs = ["color_space.cc"],
     hdrs = ["color_space.h"],
     deps = [
-        "@com_google_absl//absl/log:absl_log",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/log:absl_log",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -80,9 +80,9 @@ cc_test(
         ":color_space",
         ":fuzz_domains",
         ":type_matchers",
-        "@com_google_absl//absl/strings",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/strings",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -94,7 +94,7 @@ cc_library(
     deps = [
         ":color",
         ":color_space",
-        "@com_google_fuzztest//fuzztest",
+        "@fuzztest//fuzztest",
     ],
 )
 
@@ -106,7 +106,7 @@ cc_library(
     deps = [
         ":color",
         "//:gtest_for_library_testonly",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )

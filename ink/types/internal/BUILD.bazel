@@ -23,8 +23,8 @@ cc_library(
     name = "copy_on_write",
     hdrs = ["copy_on_write.h"],
     deps = [
-        "@com_google_absl//absl/base:nullability",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log:absl_check",
     ],
 )
 
@@ -33,8 +33,8 @@ cc_test(
     srcs = ["copy_on_write_test.cc"],
     deps = [
         ":copy_on_write",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@googletest//:gtest_main",
     ],
 )
 

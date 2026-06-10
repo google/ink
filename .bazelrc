@@ -9,7 +9,7 @@ common --enable_bzlmod
 common --check_direct_dependencies=error
 
 # To create this file, please run:
-#  bazel run @com_google_fuzztest//bazel:setup_configs > fuzztest.bazelrc
+#  bazel run @fuzztest//bazel:setup_configs > fuzztest.bazelrc
 try-import %workspace%/fuzztest.bazelrc
 
 # Android builds.

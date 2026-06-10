@@ -40,7 +40,7 @@ cc_library(
         "//ink/strokes/input:stroke_input_batch",
         "//ink/strokes/internal:modeled_stroke_input",
         "//ink/types:duration",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -58,10 +58,10 @@ cc_test(
         "//ink/types:duration",
         "//ink/types:physical_distance",
         "//ink/types:type_matchers",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@fuzztest//fuzztest",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -80,9 +80,9 @@ cc_library(
         "//ink/strokes/input:stroke_input_batch",
         "//ink/strokes/internal:modeled_stroke_input",
         "//ink/types:duration",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -100,10 +100,10 @@ cc_test(
         "//ink/strokes/internal:modeled_stroke_input",
         "//ink/strokes/internal:stroke_input_modeler",
         "//ink/types:duration",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/types:span",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/types:span",
+        "@fuzztest//fuzztest",
+        "@googletest//:gtest_main",
     ],
 )

@@ -34,10 +34,10 @@ cc_library(
         "//ink/types:duration",
         "//ink/types:fuzz_domains",
         "//ink/types:physical_distance",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_fuzztest//fuzztest",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:statusor",
+        "@fuzztest//fuzztest",
     ],
 )
 
@@ -55,11 +55,11 @@ cc_library(
         "//ink/types:duration",
         "//ink/types:physical_distance",
         "//ink/types/internal:copy_on_write",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -72,7 +72,7 @@ cc_library(
         "//ink/geometry:point",
         "//ink/types:duration",
         "//ink/types:physical_distance",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -84,9 +84,9 @@ cc_test(
         "//ink/geometry:angle",
         "//ink/types:duration",
         "//ink/types:physical_distance",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -101,15 +101,15 @@ cc_test(
         "//ink/geometry:angle",
         "//ink/types:duration",
         "//ink/types:physical_distance",
-        "@com_google_absl//absl/hash",
-        "@com_google_absl//absl/hash:hash_testing",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -124,10 +124,10 @@ cc_test(
         "//ink/geometry:angle",
         "//ink/geometry:type_matchers",
         "//ink/types:duration",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -141,9 +141,9 @@ cc_test(
         "//ink/geometry:affine_transform",
         "//ink/geometry:angle",
         "//ink/types:duration",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -158,7 +158,7 @@ cc_library(
         "//:gtest_for_library_testonly",
         "//ink/geometry:type_matchers",
         "//ink/types:type_matchers",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -174,7 +174,7 @@ cc_library(
         "//ink/geometry:rect",
         "//ink/types:duration",
         "//ink/types:physical_distance",
-        "@com_google_absl//absl/log:absl_check",
+        "@abseil-cpp//absl/log:absl_check",
     ],
 )
 
@@ -189,7 +189,7 @@ cc_test(
         "//ink/geometry:rect",
         "//ink/geometry:type_matchers",
         "//ink/types:duration",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -209,11 +209,11 @@ cc_library(
         "//ink/geometry:rect",
         "//ink/storage:stroke_input_batch",
         "//ink/storage/proto:incremental_stroke_inputs_cc_proto",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:string_view",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -229,7 +229,7 @@ cc_test(
         "//ink/geometry:envelope",
         "//ink/geometry:rect",
         "//ink/geometry:type_matchers",
-        "@com_google_absl//absl/status:status_matchers",
-        "@com_google_googletest//:gtest_main",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@googletest//:gtest_main",
     ],
 )
