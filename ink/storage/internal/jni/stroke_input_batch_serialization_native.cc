@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <utility>
 
-#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ink/storage/internal/jni/byte_array_native_helper.h"
