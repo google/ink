@@ -94,6 +94,8 @@ void InProgressStrokeNative_populateInputs(
 InProgressStrokeNative_Input InProgressStrokeNative_getInput(
     int64_t native_pointer, int index);
 
+float InProgressStrokeNative_getBaseAnimationPhase(int64_t native_pointer);
+
 int InProgressStrokeNative_getBrushCoatCount(int64_t native_pointer);
 
 bool InProgressStrokeNative_hasMeshBounds(int64_t native_pointer,

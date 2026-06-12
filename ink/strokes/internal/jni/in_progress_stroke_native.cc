@@ -188,6 +188,13 @@ InProgressStrokeNative_Input InProgressStrokeNative_getInput(
           .orientation_radians = input.orientation.ValueInRadians()};
 }
 
+float InProgressStrokeNative_getBaseAnimationPhase(int64_t native_pointer) {
+  return CastToInProgressStrokeWrapper(native_pointer)
+      .Stroke()
+      .GetInputs()
+      .GetBaseAnimationPhase();
+}
+
 int InProgressStrokeNative_getBrushCoatCount(int64_t native_pointer) {
   return CastToInProgressStrokeWrapper(native_pointer)
       .Stroke()
