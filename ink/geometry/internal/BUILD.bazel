@@ -436,6 +436,7 @@ cc_test(
         ":test_matchers",
         "//ink/geometry:point",
         "//ink/geometry:rect",
+        "//ink/geometry:triangle",
         "@googletest//:gtest_main",
     ],
 )

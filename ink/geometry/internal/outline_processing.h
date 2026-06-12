@@ -97,6 +97,12 @@ bool Intersects(const ShapeOutline& shape, const Rect& rect);
 // monotone chains.
 std::vector<std::vector<Point>> ComputeBoundaryLoops(const ShapeOutline& shape);
 
+// Returns a triangulation of the given shape, as a pair `{vertices,
+// triangles}`, where `triangles` is a list of triples of indices into
+// `vertices`.
+std::pair<std::vector<Point>, std::vector<std::array<uint32_t, 3>>>
+ComputeTriangulation(const ShapeOutline& shape);
+
 }  // namespace ink::geometry_internal
 
 #endif  // INK_GEOMETRY_INTERNAL_OUTLINE_PROCESSING_H_

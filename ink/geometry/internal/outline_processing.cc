@@ -15,6 +15,7 @@
 #include "ink/geometry/internal/outline_processing.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -37,14 +38,17 @@
 
 namespace ink::geometry_internal {
 
-// TODO(b/509625875): Improve numerical robustness -- it's common
+// TODO(b/521448869): Improve numerical robustness -- it's common
 // in line-sweep algorithms to quantize points to a grid to avoid precision
 // instability.
-// TODO(b/509625875): Handle degenerate intersections, including overlapping
+// TODO(b/521449017): Handle degenerate intersections, including overlapping
 // segments, T-junctions, simultaneous intersections of more than two segments,
 // etc.
 
 namespace {
+// TODO(b/521448869): Use an adaptive tolerance based on the relevant scales
+// and epsilons.
+constexpr float kCollinearTolerance = 1e-6f;
 
 bool IsLeftOrBelow(const Point& a, const Point& b) {
   if (a.x != b.x) return a.x < b.x;
@@ -335,6 +339,42 @@ GetAdjacentChains(absl::Span<const MonotoneChain> chains) {
   return {prev_chain, next_chain};
 }
 
+// Returns true if no other vertex indexed by `indices` lies within the triangle
+// defined by indices `i`, `j`, `k`.
+bool IsEar(size_t i, size_t j, size_t k, absl::Span<const uint32_t> indices,
+           const std::vector<Point>& vertices) {
+  Point A = vertices[indices[j]];
+  Point B = vertices[indices[i]];
+  Point C = vertices[indices[k]];
+
+  Vec vAB = B - A;
+  Vec vBC = C - B;
+  Vec vCA = A - C;
+
+  if (Vec::Determinant(vAB, vBC) < kCollinearTolerance) return false;
+
+  for (size_t v = 0; v < indices.size(); ++v) {
+    if (v == j || v == i || v == k) continue;
+    Point P = vertices[indices[v]];
+    if (Vec::Determinant(vAB, P - A) >= 0 &&
+        Vec::Determinant(vBC, P - B) >= 0 &&
+        Vec::Determinant(vCA, P - C) >= 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+float Area(absl::Span<const Point> loop) {
+  float area = 0.0f;
+  Point prev = loop.back();
+  for (Point next : loop) {
+    area += Vec::Determinant(prev.Offset(), next.Offset());
+    prev = next;
+  }
+  return 0.5f * area;
+}
+
 }  // namespace
 
 MonotoneChain::MonotoneChain(std::vector<Point> vertices, int orientation)
@@ -542,6 +582,73 @@ std::vector<std::vector<Point>> ComputeBoundaryLoops(
   }
 
   return loops;
+}
+
+std::pair<std::vector<Point>, std::vector<std::array<uint32_t, 3>>>
+ComputeTriangulation(const ShapeOutline& shape) {
+  // This function implements an ear-clipping approach, which is performant
+  // for small and simple polygon that are the most common cases.
+  // TODO(b/521449017): Implement monotone triangulation for more efficiently
+  // triangulating larger or more complicated shapes.
+
+  std::vector<Point> vertices;
+  std::vector<std::array<uint32_t, 3>> triangles;
+
+  std::vector<std::vector<Point>> loops = ComputeBoundaryLoops(shape);
+  size_t total_triangles = 0;
+  for (const auto& loop : loops) {
+    if (loop.size() >= 3) {
+      total_triangles += loop.size() - 2;
+    }
+  }
+  triangles.reserve(total_triangles);
+
+  // TODO(b/521449017): Handle triangulating shapes with holes. For now,
+  // return empty if the shape has a hole.
+  if (std::any_of(loops.begin(), loops.end(),
+                  [](const auto& loop) { return Area(loop) < 0; })) {
+    return {vertices, triangles};
+  }
+
+  absl::InlinedVector<uint32_t, 16> indices;
+
+  size_t total_vertices = 0;
+  size_t max_loop_size = 0;
+  for (const auto& boundary : loops) {
+    total_vertices += boundary.size();
+    max_loop_size = std::max(boundary.size(), max_loop_size);
+  }
+  vertices.reserve(total_vertices);
+  indices.reserve(max_loop_size);
+
+  for (const auto& loop : loops) {
+    uint32_t start = static_cast<uint32_t>(vertices.size());
+    uint32_t count = static_cast<uint32_t>(loop.size());
+    vertices.insert(vertices.end(), loop.begin(), loop.end());
+
+    indices.resize(count);
+    for (uint32_t i = 0; i < count; ++i) indices[i] = start + i;
+
+    // Ear clipping loop.
+    for (size_t step = 0; step < count; ++step) {
+      if (indices.size() < 3) break;
+
+      size_t n = indices.size();
+      size_t prev = n - 1;
+      size_t next = 1;
+      for (size_t cur = 0; cur < n; ++cur) {
+        if (IsEar(cur, prev, next, indices, vertices)) {
+          triangles.push_back({indices[prev], indices[cur], indices[next]});
+          indices.erase(indices.begin() + cur);
+          break;
+        }
+        prev = cur;
+        next = (next + 1 == n) ? 0 : next + 1;
+      }
+    }
+  }
+
+  return {vertices, triangles};
 }
 
 }  // namespace ink::geometry_internal

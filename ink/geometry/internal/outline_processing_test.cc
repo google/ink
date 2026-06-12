@@ -14,6 +14,9 @@
 
 #include "ink/geometry/internal/outline_processing.h"
 
+#include <algorithm>
+#include <array>
+#include <cstdint>
 #include <vector>
 
 #include "gmock/gmock.h"
@@ -21,13 +24,39 @@
 #include "ink/geometry/internal/test_matchers.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
+#include "ink/geometry/triangle.h"
 
 namespace ink::geometry_internal {
 namespace {
 
+using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
 constexpr auto FromTwoPoints = Rect::FromTwoPoints;
+
+// Helper function for test: returns true if the point is contained in any of
+// the triangles.
+bool ContainsPoint(const std::vector<Point>& points,
+                   const std::vector<std::array<uint32_t, 3>>& triangles,
+                   Point p) {
+  return std::any_of(triangles.begin(), triangles.end(),
+                     [&points, p](const std::array<uint32_t, 3>& tri) {
+                       return Triangle{points[tri[0]], points[tri[1]],
+                                       points[tri[2]]}
+                           .Contains(p);
+                     });
+}
+
+// Helper function for test: returns true if all of the indices in the triangles
+// are valid indices into the points array.
+bool HasValidIndices(const std::vector<Point>& points,
+                     const std::vector<std::array<uint32_t, 3>>& triangles) {
+  return std::all_of(triangles.begin(), triangles.end(),
+                     [&points](const std::array<uint32_t, 3>& tri) {
+                       return tri[0] < points.size() &&
+                              tri[1] < points.size() && tri[2] < points.size();
+                     });
+}
 
 TEST(OutlineProcessingTest, BasicTriangle) {
   //         C
@@ -417,6 +446,119 @@ TEST(ComputeBoundaryLoopsTest, PolygonWithTwoHoles) {
                   IsCyclicPermutationOf(std::vector<Point>{A, B, C, D}),
                   IsCyclicPermutationOf(std::vector<Point>{E, F, G, H}),
                   IsCyclicPermutationOf(std::vector<Point>{I, J, K, L})));
+}
+
+TEST(ComputeTriangulationTest, BasicQuad) {
+  //    D-----------C
+  //    |           |
+  //    |           |
+  //    |           |
+  //    A-----------B
+  Point A{0, 0}, B{2, 0}, C{2, 2}, D{0, 2};
+  ShapeOutline outline({{{A, B, C}, 1}, {{A, D, C}, -1}});
+
+  auto [points, triangles] = ComputeTriangulation(outline);
+  EXPECT_THAT(points, UnorderedElementsAre(A, B, C, D));
+  EXPECT_THAT(triangles, SizeIs(2));
+  EXPECT_TRUE(HasValidIndices(points, triangles));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{1, 1}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{0.5f, 1.5f}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{3, 3}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{-1, 1}));
+}
+
+TEST(ComputeTriangulationTest, TriangleWithExtraCollinearVertex) {
+  //         C
+  //        / \
+  //       /   \
+  //      A--M--B
+  Point A{0, 0}, M{1, 0}, B{2, 0}, C{1, 2};
+  ShapeOutline outline({{{A, M, B}, 1}, {{A, C, B}, -1}});
+
+  auto [points, triangles] = ComputeTriangulation(outline);
+  EXPECT_THAT(points, UnorderedElementsAre(A, M, B, C));
+  EXPECT_THAT(triangles, SizeIs(2));
+  EXPECT_TRUE(HasValidIndices(points, triangles));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{0.5f, 0.5f}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{1.5f, 0.5f}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{1.0f, 1.0f}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{0.5f, -0.5f}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{0.5f, 1.5f}));
+}
+
+TEST(ComputeTriangulationTest, SumTwoDiamonds) {
+  //         H     F
+  //        / \   / \
+  //       /   \ /   \
+  //      /     G     \
+  //     A             E
+  //      \     C     /
+  //       \   / \   /
+  //        \ /   \ /
+  //         B     D
+  Point A{-4, 0}, B{-1, -3}, C{0, -2}, D{1, -3}, E{4, 0}, F{1, 3}, G{0, 2},
+      H{-1, 3};
+  ShapeOutline outline({{{A, B, C, D, E}, 1}, {{E, F, G, H, A}, -1}});
+
+  auto [points, triangles] = ComputeTriangulation(outline);
+  EXPECT_THAT(points, UnorderedElementsAre(A, B, C, D, E, F, G, H));
+  EXPECT_THAT(triangles, SizeIs(6));
+  EXPECT_TRUE(HasValidIndices(points, triangles));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{-2, 0}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{2, 0}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{0, 0}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{5, 5}));
+
+  // Inside concavities
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{0, -2.5f}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{0, 2.5f}));
+}
+
+TEST(ComputeTriangulationTest, DisjointTriangles) {
+  //         C           F
+  //        / \         / \
+  //       /   \       /   \
+  //      A-----B     D-----E
+  Point A{0, 0}, B{2, 0}, C{1, 2};
+  Point D{4, 0}, E{6, 0}, F{5, 2};
+  ShapeOutline outline(
+      {{{A, B}, 1}, {{D, E}, 1}, {{A, C, B}, -1}, {{D, F, E}, -1}});
+
+  auto [points, triangles] = ComputeTriangulation(outline);
+  EXPECT_THAT(points, UnorderedElementsAre(A, B, C, D, E, F));
+  EXPECT_THAT(triangles, SizeIs(2));
+  EXPECT_TRUE(HasValidIndices(points, triangles));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{1, 1}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{5, 1}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{3, 1}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{1, 3}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{5, 3}));
+}
+
+TEST(ComputeTriangulationTest, PolygonWithHole) {
+  // TODO(b/521449017): `ComputeTriangulation` does not yet handle triangulating
+  // polygons with holes, and instead returns an empty triangulation.
+  // This test checks that `ComputeTriangulation` does not crash or return a
+  // malformed triangulation in the case of a polygon with a hole.
+
+  //         D-------------------C
+  //         |                   |
+  //         |      H-----I      |
+  //         |      |     |      |
+  //         |      |     |      |
+  //  F------E      G-----J      |
+  //  |                          |
+  //  |                          |
+  //  |                          |
+  //  A--------------------------B
+  Point A{0, 0}, B{14, 0}, C{14, 12}, D{4, 12}, E{4, 6}, F{0, 6};
+  Point G{7, 6}, H{7, 9}, I{10, 9}, J{10, 6};
+  ShapeOutline outline(
+      {{{A, B, C}, 1}, {{G, H, I}, 1}, {{A, F, E, D, C}, -1}, {{G, J, I}, -1}});
+
+  auto [points, triangles] = ComputeTriangulation(outline);
+  EXPECT_TRUE(points.empty());
+  EXPECT_TRUE(triangles.empty());
 }
 
 }  // namespace
