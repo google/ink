@@ -22,6 +22,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -106,13 +107,9 @@ absl::Status ValidateBrushTipTopLevel(const BrushTip& tip) {
 }
 
 absl::Status ValidateBrushTip(const BrushTip& tip) {
-  if (absl::Status status = ValidateBrushTipTopLevel(tip); !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateBrushTipTopLevel(tip));
   for (const BrushBehavior& behavior : tip.behaviors) {
-    if (absl::Status status = ValidateBrushBehavior(behavior); !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(ValidateBrushBehavior(behavior));
   }
   return absl::OkStatus();
 }

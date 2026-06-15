@@ -22,6 +22,7 @@
 #include <variant>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -274,11 +275,8 @@ absl::Status ValidateNode(const BrushBehavior::SourceNode& node) {
         "value %d",
         static_cast<int>(node.source_out_of_range_behavior)));
   }
-  if (auto status = ValidateSourceAndOutOfRangeCombination(
-          node.source, node.source_out_of_range_behavior);
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateSourceAndOutOfRangeCombination(
+      node.source, node.source_out_of_range_behavior));
   if (!IsRangeValid(node.source_value_range)) {
     return absl::InvalidArgumentError(absl::StrFormat(
         "`SourceNode::source_value_range` must hold 2 finite and distinct "
@@ -444,15 +442,9 @@ absl::Status ValidateBrushBehaviorTopLevel(const BrushBehavior& behavior) {
 
 absl::Status ValidateBrushBehavior(const BrushBehavior& behavior) {
   for (size_t i = 0; i < behavior.nodes.size(); ++i) {
-    if (absl::Status status = ValidateBrushBehaviorNode(behavior.nodes[i]);
-        !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(ValidateBrushBehaviorNode(behavior.nodes[i]));
   }
-  if (absl::Status status = ValidateBrushBehaviorTopLevel(behavior);
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateBrushBehaviorTopLevel(behavior));
   return absl::OkStatus();
 }
 

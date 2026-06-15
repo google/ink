@@ -15,6 +15,7 @@
 #include "ink/storage/mesh_vertices.h"
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "ink/storage/numeric_run.h"
 #include "ink/storage/proto/mesh.pb.h"
@@ -52,22 +53,16 @@ absl::StatusOr<iterator_range<CodedMeshVertexIterator>> DecodeMeshVertices(
         "invalid mesh: mismatched numeric run lengths");
   }
 
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>>
-      x_stroke_space = DecodeFloatNumericRun(mesh.x_stroke_space());
-  if (!x_stroke_space.ok()) {
-    return x_stroke_space.status();
-  }
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>>
-      y_stroke_space = DecodeFloatNumericRun(mesh.y_stroke_space());
-  if (!y_stroke_space.ok()) {
-    return y_stroke_space.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(auto x_stroke_space,
+                        DecodeFloatNumericRun(mesh.x_stroke_space()));
+  ABSL_ASSIGN_OR_RETURN(auto y_stroke_space,
+                        DecodeFloatNumericRun(mesh.y_stroke_space()));
 
   // TODO: b/259411109 - Also decode the (optional) color/texture vertex data.
 
   return iterator_range<CodedMeshVertexIterator>{
-      CodedMeshVertexIterator(x_stroke_space->begin(), y_stroke_space->begin()),
-      CodedMeshVertexIterator(x_stroke_space->end(), y_stroke_space->end())};
+      CodedMeshVertexIterator(x_stroke_space.begin(), y_stroke_space.begin()),
+      CodedMeshVertexIterator(x_stroke_space.end(), y_stroke_space.end())};
 }
 
 }  // namespace ink

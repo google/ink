@@ -20,12 +20,12 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      USE_BAZEL_VERSION: 8.5.1
+      USE_BAZEL_VERSION: 8.7.0
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6.0.3
 
-    - uses: bazel-contrib/setup-bazel@0.18.0
+    - uses: bazel-contrib/setup-bazel@0.19.0
       if: github.repository == 'google/ink'
       with:
         bazelisk-cache: true

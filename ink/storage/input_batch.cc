@@ -15,6 +15,7 @@
 #include "ink/storage/input_batch.h"
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/angle.h"
 #include "ink/storage/numeric_run.h"
@@ -114,59 +115,38 @@ DecodeStrokeInputBatchProto(const CodedStrokeInputBatch& input) {
         "invalid StrokeInputBatch: mismatched numeric run lengths");
   }
 
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>>
-      x_stroke_space = DecodeFloatNumericRun(input.x_stroke_space());
-  if (!x_stroke_space.ok()) {
-    return x_stroke_space.status();
-  }
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>>
-      y_stroke_space = DecodeFloatNumericRun(input.y_stroke_space());
-  if (!y_stroke_space.ok()) {
-    return y_stroke_space.status();
-  }
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>>
-      elapsed_time_seconds =
-          DecodeFloatNumericRun(input.elapsed_time_seconds());
-  if (!elapsed_time_seconds.ok()) {
-    return elapsed_time_seconds.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(auto x_stroke_space,
+                        DecodeFloatNumericRun(input.x_stroke_space()));
+  ABSL_ASSIGN_OR_RETURN(auto y_stroke_space,
+                        DecodeFloatNumericRun(input.y_stroke_space()));
+  ABSL_ASSIGN_OR_RETURN(auto elapsed_time_seconds,
+                        DecodeFloatNumericRun(input.elapsed_time_seconds()));
 
   iterator_range<CodedNumericRunIterator<float>> pressure;
   if (input.has_pressure()) {
-    auto result = DecodeFloatNumericRun(input.pressure());
-    if (!result.ok()) {
-      return result.status();
-    }
-    pressure = *result;
+    ABSL_ASSIGN_OR_RETURN(pressure, DecodeFloatNumericRun(input.pressure()));
   }
 
   iterator_range<CodedNumericRunIterator<float>> tilt;
   if (input.has_tilt()) {
-    auto result = DecodeFloatNumericRun(input.tilt());
-    if (!result.ok()) {
-      return result.status();
-    }
-    tilt = *result;
+    ABSL_ASSIGN_OR_RETURN(tilt, DecodeFloatNumericRun(input.tilt()));
   }
 
   iterator_range<CodedNumericRunIterator<float>> orientation;
   if (input.has_orientation()) {
-    auto result = DecodeFloatNumericRun(input.orientation());
-    if (!result.ok()) {
-      return result.status();
-    }
-    orientation = *result;
+    ABSL_ASSIGN_OR_RETURN(orientation,
+                          DecodeFloatNumericRun(input.orientation()));
   }
 
   return iterator_range<CodedStrokeInputBatchIterator>{
       CodedStrokeInputBatchIterator(
-          tool_type, stroke_unit_length, x_stroke_space->begin(),
-          y_stroke_space->begin(), elapsed_time_seconds->begin(),
+          tool_type, stroke_unit_length, x_stroke_space.begin(),
+          y_stroke_space.begin(), elapsed_time_seconds.begin(),
           pressure.begin(), tilt.begin(), orientation.begin()),
-      CodedStrokeInputBatchIterator(
-          tool_type, stroke_unit_length, x_stroke_space->end(),
-          y_stroke_space->end(), elapsed_time_seconds->end(), pressure.end(),
-          tilt.end(), orientation.end())};
+      CodedStrokeInputBatchIterator(tool_type, stroke_unit_length,
+                                    x_stroke_space.end(), y_stroke_space.end(),
+                                    elapsed_time_seconds.end(), pressure.end(),
+                                    tilt.end(), orientation.end())};
 }
 
 }  // namespace ink

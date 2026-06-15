@@ -19,6 +19,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -190,9 +191,8 @@ absl::StatusOr<sk_sp<SkMeshSpecification>> CreateMeshSpecification(
         absl::string_view(result.error.data(), result.error.size())));
   }
 
-  auto status = ValidateUniforms(*result.specification,
-                                 skia_uniform_types_and_names.Values());
-  if (!status.ok()) return status;
+  ABSL_RETURN_IF_ERROR(ValidateUniforms(*result.specification,
+                                        skia_uniform_types_and_names.Values()));
 
   return result.specification;
 }

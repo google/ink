@@ -22,6 +22,7 @@
 
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -217,11 +218,10 @@ absl::StatusOr<Mesh> DecodePackedMesh(const MeshFormat& format,
     attribute_spans.push_back(attribute);
   }
 
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>>
-      triangle_range = DecodeIntNumericRun(coded_mesh.triangle_index());
-  if (!triangle_range.ok()) return triangle_range.status();
-  std::vector<uint32_t> triangle_indices(triangle_range->begin(),
-                                         triangle_range->end());
+  ABSL_ASSIGN_OR_RETURN(auto triangle_range,
+                        DecodeIntNumericRun(coded_mesh.triangle_index()));
+  std::vector<uint32_t> triangle_indices(triangle_range.begin(),
+                                         triangle_range.end());
 
   return ink::Mesh::CreateFromQuantizedData(format, attribute_spans,
                                             triangle_indices, coding_params);
@@ -265,10 +265,10 @@ absl::StatusOr<Mesh> DecodeMesh(const ink::proto::CodedMesh& coded_mesh) {
   if (coded_mesh.has_format()) {
     // TODO: b/295166196 - `IndexFormat`s will be removed soon; until then, just
     // assume a default `IndexFormat` here.
-    format =
+    ABSL_ASSIGN_OR_RETURN(
+        format,
         DecodeMeshFormat(coded_mesh.format(),
-                         MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
-    if (!format.ok()) return format.status();
+                         MeshFormat::IndexFormat::k32BitUnpacked16BitPacked));
 
     if (IsPackedMeshFormat(*format)) {
       return DecodePackedMesh(*format, coded_mesh);
@@ -298,33 +298,24 @@ absl::StatusOr<Mesh> DecodeMeshUsingFormat(
     if (attribute.id == MeshFormat::AttributeId::kPosition) {
       ABSL_DCHECK_EQ(MeshFormat::ComponentCount(attribute.type), 2);
 
-      absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>>
-          x_stroke_space = DecodeFloatNumericRun(coded_mesh.x_stroke_space());
-      if (!x_stroke_space.ok()) {
-        return x_stroke_space.status();
-      }
+      ABSL_ASSIGN_OR_RETURN(auto x_stroke_space,
+                            DecodeFloatNumericRun(coded_mesh.x_stroke_space()));
       component_vectors.push_back(
-          std::vector<float>(x_stroke_space->begin(), x_stroke_space->end()));
+          std::vector<float>(x_stroke_space.begin(), x_stroke_space.end()));
 
-      absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>>
-          y_stroke_space = DecodeFloatNumericRun(coded_mesh.y_stroke_space());
-      if (!y_stroke_space.ok()) {
-        return y_stroke_space.status();
-      }
+      ABSL_ASSIGN_OR_RETURN(auto y_stroke_space,
+                            DecodeFloatNumericRun(coded_mesh.y_stroke_space()));
       component_vectors.push_back(
-          std::vector<float>(y_stroke_space->begin(), y_stroke_space->end()));
+          std::vector<float>(y_stroke_space.begin(), y_stroke_space.end()));
     } else {
       int component_count = MeshFormat::ComponentCount(attribute.type);
       for (int i = 0; i < component_count; ++i) {
-        absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>>
-            component =
-                DecodeFloatNumericRun(coded_mesh.other_attribute_components(
-                    non_position_component_index));
-        if (!component.ok()) {
-          return component.status();
-        }
+        ABSL_ASSIGN_OR_RETURN(
+            auto component,
+            DecodeFloatNumericRun(coded_mesh.other_attribute_components(
+                non_position_component_index)));
         component_vectors.push_back(
-            std::vector<float>(component->begin(), component->end()));
+            std::vector<float>(component.begin(), component.end()));
         non_position_component_index += 1;
       }
     }
@@ -336,13 +327,10 @@ absl::StatusOr<Mesh> DecodeMeshUsingFormat(
     component_spans.push_back(component_vector);
   }
 
-  absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>>
-      triangle_range = DecodeIntNumericRun(coded_mesh.triangle_index());
-  if (!triangle_range.ok()) {
-    return triangle_range.status();
-  }
-  std::vector<uint32_t> triangle_indices(triangle_range->begin(),
-                                         triangle_range->end());
+  ABSL_ASSIGN_OR_RETURN(auto triangle_range,
+                        DecodeIntNumericRun(coded_mesh.triangle_index()));
+  std::vector<uint32_t> triangle_indices(triangle_range.begin(),
+                                         triangle_range.end());
 
   return ink::Mesh::Create(format, component_spans, triangle_indices);
 }

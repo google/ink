@@ -25,6 +25,7 @@
 #include "gtest/gtest.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -130,11 +131,11 @@ LoadRawIncrementalStrokeInputs(absl::string_view filename) {
   std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>> inputs;
 
   for (const auto& input : inputs_proto.inputs()) {
-    auto real = DecodeStrokeInputBatch(input.real());
-    if (!real.ok()) return real.status();
-    auto predicted = DecodeStrokeInputBatch(input.predicted());
-    if (!predicted.ok()) return predicted.status();
-    inputs.push_back({*real, *predicted});
+    ABSL_ASSIGN_OR_RETURN(StrokeInputBatch real,
+                          DecodeStrokeInputBatch(input.real()));
+    ABSL_ASSIGN_OR_RETURN(StrokeInputBatch predicted,
+                          DecodeStrokeInputBatch(input.predicted()));
+    inputs.push_back({real, predicted});
   }
 
   return inputs;
@@ -144,17 +145,15 @@ LoadRawIncrementalStrokeInputs(absl::string_view filename) {
 absl::StatusOr<std::vector<std::pair<StrokeInputBatch, StrokeInputBatch>>>
 LoadIncrementalStrokeInputs(absl::string_view filename,
                             std::optional<Rect> bounds) {
-  auto batches = LoadRawIncrementalStrokeInputs(filename);
-  if (!batches.ok()) return batches.status();
-  if (bounds.has_value()) BoundTestInputs(*bounds, *batches);
+  ABSL_ASSIGN_OR_RETURN(auto batches, LoadRawIncrementalStrokeInputs(filename));
+  if (bounds.has_value()) BoundTestInputs(*bounds, batches);
   return batches;
 }
 
 absl::StatusOr<StrokeInputBatch> LoadCompleteStrokeInputs(
     absl::string_view filename, std::optional<Rect> bounds) {
-  auto batches = LoadRawIncrementalStrokeInputs(filename);
-  if (!batches.ok()) return batches.status();
-  ink::StrokeInputBatch batch = GetRealCombinedInputs(*batches);
+  ABSL_ASSIGN_OR_RETURN(auto batches, LoadRawIncrementalStrokeInputs(filename));
+  ink::StrokeInputBatch batch = GetRealCombinedInputs(batches);
   if (bounds.has_value()) BoundTestInputs(*bounds, batch);
   return batch;
 }

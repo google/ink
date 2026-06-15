@@ -20,6 +20,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -89,9 +90,8 @@ absl::StatusOr<MeshDrawable> MeshDrawable::Create(
   if (!uniform_data.has_value()) {
     uniform_data.emplace(*specification);
   }
-  absl::Status status =
-      ValidatePartitions(specification, partitions, uniform_data->Get());
-  if (!status.ok()) return status;
+  ABSL_RETURN_IF_ERROR(
+      ValidatePartitions(specification, partitions, uniform_data->Get()));
 
   return MeshDrawable(std::move(specification), std::move(blender),
                       std::move(shader),

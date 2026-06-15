@@ -241,7 +241,7 @@ void SlidingWindowInputModeler::EraseUnstableModeledInputs(
 void SlidingWindowInputModeler::AppendRawInputsToQueue(
     InputModelerState& state, const StrokeInputBatch& raw_inputs) {
   absl::Status status = raw_input_queue_.Append(raw_inputs);
-  ABSL_DCHECK(status.ok());
+  ABSL_DCHECK_OK(status);
 }
 
 void SlidingWindowInputModeler::ModelUnstableInputPosition(

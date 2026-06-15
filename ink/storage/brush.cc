@@ -30,6 +30,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -745,13 +746,11 @@ absl::StatusOr<EasingFunction::StepPosition> DecodeStepPosition(
 
 absl::StatusOr<EasingFunction::Steps> DecodeEasingFunctionSteps(
     proto::StepsEasingFunction steps_proto) {
-  auto step_position = DecodeStepPosition(steps_proto.step_position());
-  if (!step_position.ok()) {
-    return step_position.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(auto step_position,
+                        DecodeStepPosition(steps_proto.step_position()));
   return EasingFunction::Steps{
       .step_count = steps_proto.step_count(),
-      .step_position = *step_position,
+      .step_position = step_position,
   };
 }
 
@@ -885,19 +884,17 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorSourceNode(
       node_proto.source_value_range_start(),
       node_proto.source_value_range_end()};
 
-  absl::StatusOr<BrushBehavior::Source> source =
-      DecodeBrushBehaviorSource(node_proto.source(), source_value_range);
-  if (!source.ok()) return source.status();
+  ABSL_ASSIGN_OR_RETURN(
+      BrushBehavior::Source source,
+      DecodeBrushBehaviorSource(node_proto.source(), source_value_range));
 
-  absl::StatusOr<BrushBehavior::OutOfRange> source_out_of_range_behavior =
-      DecodeBrushBehaviorOutOfRange(node_proto.source_out_of_range_behavior());
-  if (!source_out_of_range_behavior.ok()) {
-    return source_out_of_range_behavior.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(
+      BrushBehavior::OutOfRange source_out_of_range_behavior,
+      DecodeBrushBehaviorOutOfRange(node_proto.source_out_of_range_behavior()));
 
   return BrushBehavior::SourceNode{
-      .source = *source,
-      .source_out_of_range_behavior = *source_out_of_range_behavior,
+      .source = source,
+      .source_out_of_range_behavior = source_out_of_range_behavior,
       .source_value_range = source_value_range,
   };
 }
@@ -909,12 +906,12 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorConstantNode(
 
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNoiseNode(
     const proto::BrushBehavior::NoiseNode& node_proto) {
-  absl::StatusOr<BrushBehavior::ProgressDomain> vary_over =
-      DecodeBrushBehaviorProgressDomain(node_proto.vary_over());
-  if (!vary_over.ok()) return vary_over.status();
+  ABSL_ASSIGN_OR_RETURN(
+      BrushBehavior::ProgressDomain vary_over,
+      DecodeBrushBehaviorProgressDomain(node_proto.vary_over()));
   return BrushBehavior::NoiseNode{
       .seed = node_proto.seed(),
-      .vary_over = *vary_over,
+      .vary_over = vary_over,
       .base_period = node_proto.base_period(),
   };
 }
@@ -927,27 +924,26 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorResponseNode(
       return absl::InvalidArgumentError(
           "ink.proto.BrushBehavior.ResponseNode must specify a response_curve");
     case proto::BrushBehavior::ResponseNode::kPredefinedResponseCurve: {
-      absl::StatusOr<EasingFunction::Predefined> predefined =
-          DecodeEasingFunctionPredefined(
-              node_proto.predefined_response_curve());
-      if (!predefined.ok()) return predefined.status();
-      function.parameters = *predefined;
+      ABSL_ASSIGN_OR_RETURN(EasingFunction::Predefined predefined,
+                            DecodeEasingFunctionPredefined(
+                                node_proto.predefined_response_curve()));
+      function.parameters = predefined;
     } break;
     case proto::BrushBehavior::ResponseNode::kCubicBezierResponseCurve:
       function.parameters = DecodeEasingFunctionCubicBezier(
           node_proto.cubic_bezier_response_curve());
       break;
     case proto::BrushBehavior::ResponseNode::kLinearResponseCurve: {
-      absl::StatusOr<EasingFunction::Linear> linear =
-          DecodeEasingFunctionLinear(node_proto.linear_response_curve());
-      if (!linear.ok()) return linear.status();
-      function.parameters = *linear;
+      ABSL_ASSIGN_OR_RETURN(
+          EasingFunction::Linear linear,
+          DecodeEasingFunctionLinear(node_proto.linear_response_curve()));
+      function.parameters = linear;
     } break;
     case proto::BrushBehavior::ResponseNode::kStepsResponseCurve: {
-      absl::StatusOr<EasingFunction::Steps> steps =
-          DecodeEasingFunctionSteps(node_proto.steps_response_curve());
-      if (!steps.ok()) return steps.status();
-      function.parameters = *steps;
+      ABSL_ASSIGN_OR_RETURN(
+          EasingFunction::Steps steps,
+          DecodeEasingFunctionSteps(node_proto.steps_response_curve()));
+      function.parameters = steps;
     } break;
   }
   return BrushBehavior::ResponseNode{.response_curve = std::move(function)};
@@ -962,48 +958,45 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorToolTypeFilterNode(
 
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorDampingNode(
     const proto::BrushBehavior::DampingNode& node_proto) {
-  absl::StatusOr<BrushBehavior::ProgressDomain> damping_source =
-      DecodeBrushBehaviorProgressDomain(node_proto.damping_source());
-  if (!damping_source.ok()) return damping_source.status();
+  ABSL_ASSIGN_OR_RETURN(
+      BrushBehavior::ProgressDomain damping_source,
+      DecodeBrushBehaviorProgressDomain(node_proto.damping_source()));
 
   return BrushBehavior::DampingNode{
-      .damping_source = *damping_source,
+      .damping_source = damping_source,
       .damping_gap = node_proto.damping_gap(),
   };
 }
 
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorBinaryOpNode(
     proto::BrushBehavior::BinaryOpNode node_proto) {
-  absl::StatusOr<BrushBehavior::BinaryOp> binary_op =
-      DecodeBrushBehaviorBinaryOp(node_proto.operation());
-  if (!binary_op.ok()) return binary_op.status();
-  return BrushBehavior::BinaryOpNode{.operation = *binary_op};
+  ABSL_ASSIGN_OR_RETURN(BrushBehavior::BinaryOp binary_op,
+                        DecodeBrushBehaviorBinaryOp(node_proto.operation()));
+  return BrushBehavior::BinaryOpNode{.operation = binary_op};
 }
 
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorInterpolationNode(
     const proto::BrushBehavior::InterpolationNode& node_proto) {
-  absl::StatusOr<BrushBehavior::Interpolation> interpolation =
-      DecodeBrushBehaviorInterpolation(node_proto.interpolation());
-  if (!interpolation.ok()) return interpolation.status();
-  return BrushBehavior::InterpolationNode{.interpolation = *interpolation};
+  ABSL_ASSIGN_OR_RETURN(
+      BrushBehavior::Interpolation interpolation,
+      DecodeBrushBehaviorInterpolation(node_proto.interpolation()));
+  return BrushBehavior::InterpolationNode{.interpolation = interpolation};
 }
 
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorIntegralNode(
     const proto::BrushBehavior::IntegralNode& node_proto) {
-  absl::StatusOr<BrushBehavior::ProgressDomain> integrate_over =
-      DecodeBrushBehaviorProgressDomain(node_proto.integrate_over());
-  if (!integrate_over.ok()) return integrate_over.status();
+  ABSL_ASSIGN_OR_RETURN(
+      BrushBehavior::ProgressDomain integrate_over,
+      DecodeBrushBehaviorProgressDomain(node_proto.integrate_over()));
 
-  absl::StatusOr<BrushBehavior::OutOfRange> integral_out_of_range_behavior =
+  ABSL_ASSIGN_OR_RETURN(
+      BrushBehavior::OutOfRange integral_out_of_range_behavior,
       DecodeBrushBehaviorOutOfRange(
-          node_proto.integral_out_of_range_behavior());
-  if (!integral_out_of_range_behavior.ok()) {
-    return integral_out_of_range_behavior.status();
-  }
+          node_proto.integral_out_of_range_behavior()));
 
   return BrushBehavior::IntegralNode{
-      .integrate_over = *integrate_over,
-      .integral_out_of_range_behavior = *integral_out_of_range_behavior,
+      .integrate_over = integrate_over,
+      .integral_out_of_range_behavior = integral_out_of_range_behavior,
       .integral_value_range = {node_proto.integral_value_range_start(),
                                node_proto.integral_value_range_end()},
   };
@@ -1011,12 +1004,11 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorIntegralNode(
 
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorTargetNode(
     const proto::BrushBehavior::TargetNode& node_proto) {
-  absl::StatusOr<BrushBehavior::Target> target =
-      DecodeBrushBehaviorTarget(node_proto.target());
-  if (!target.ok()) return target.status();
+  ABSL_ASSIGN_OR_RETURN(BrushBehavior::Target target,
+                        DecodeBrushBehaviorTarget(node_proto.target()));
 
   return BrushBehavior::TargetNode{
-      .target = *target,
+      .target = target,
       .target_modifier_range = {node_proto.target_modifier_range_start(),
                                 node_proto.target_modifier_range_end()},
   };
@@ -1024,12 +1016,11 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorTargetNode(
 
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorPolarTargetNode(
     const proto::BrushBehavior::PolarTargetNode& node_proto) {
-  absl::StatusOr<BrushBehavior::PolarTarget> target =
-      DecodeBrushBehaviorPolarTarget(node_proto.target());
-  if (!target.ok()) return target.status();
+  ABSL_ASSIGN_OR_RETURN(BrushBehavior::PolarTarget target,
+                        DecodeBrushBehaviorPolarTarget(node_proto.target()));
 
   return BrushBehavior::PolarTargetNode{
-      .target = *target,
+      .target = target,
       .angle_range = {node_proto.angle_range_start(),
                       node_proto.angle_range_end()},
       .magnitude_range = {node_proto.magnitude_range_start(),
@@ -1227,76 +1218,51 @@ void EncodeBrushPaintTextureLayer(
 absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintTilingTexture(
     const proto::BrushPaint::TextureLayer& layer_proto,
     ClientTextureIdProvider get_client_texture_id) {
-  auto origin = DecodeBrushPaintTextureOrigin(layer_proto.origin());
-  if (!origin.ok()) {
-    return origin.status();
-  }
-  auto size_unit = DecodeBrushPaintSizeUnit(layer_proto.size_unit());
-  if (!size_unit.ok()) {
-    return size_unit.status();
-  }
-  auto wrap_x = DecodeBrushPaintWrap(layer_proto.wrap_x());
-  if (!wrap_x.ok()) {
-    return wrap_x.status();
-  }
-  auto wrap_y = DecodeBrushPaintWrap(layer_proto.wrap_y());
-  if (!wrap_y.ok()) {
-    return wrap_y.status();
-  }
-  auto blend_mode = DecodeBrushPaintBlendMode(layer_proto.blend_mode());
-  if (!blend_mode.ok()) {
-    return blend_mode.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(auto origin,
+                        DecodeBrushPaintTextureOrigin(layer_proto.origin()));
+  ABSL_ASSIGN_OR_RETURN(auto size_unit,
+                        DecodeBrushPaintSizeUnit(layer_proto.size_unit()));
+  ABSL_ASSIGN_OR_RETURN(auto wrap_x,
+                        DecodeBrushPaintWrap(layer_proto.wrap_x()));
+  ABSL_ASSIGN_OR_RETURN(auto wrap_y,
+                        DecodeBrushPaintWrap(layer_proto.wrap_y()));
+  ABSL_ASSIGN_OR_RETURN(auto blend_mode,
+                        DecodeBrushPaintBlendMode(layer_proto.blend_mode()));
 
-  absl::StatusOr<std::string> client_texture_id =
-      get_client_texture_id(layer_proto.client_texture_id());
-  if (!client_texture_id.ok()) {
-    return client_texture_id.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(std::string client_texture_id,
+                        get_client_texture_id(layer_proto.client_texture_id()));
 
   BrushPaint::TextureLayer texture_layer = {BrushPaint::TilingTexture{
-      .client_texture_id = *client_texture_id,
-      .origin = *origin,
-      .size_unit = *size_unit,
-      .wrap_x = *wrap_x,
-      .wrap_y = *wrap_y,
+      .client_texture_id = client_texture_id,
+      .origin = origin,
+      .size_unit = size_unit,
+      .wrap_x = wrap_x,
+      .wrap_y = wrap_y,
       .size = {layer_proto.size_x(), layer_proto.size_y()},
       .offset = {layer_proto.offset_x(), layer_proto.offset_y()},
       .rotation = Angle::Radians(layer_proto.rotation_in_radians()),
-      .blend_mode = *blend_mode,
+      .blend_mode = blend_mode,
   }};
-  if (absl::Status status =
-          brush_internal::ValidateBrushPaintTextureLayer(texture_layer);
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(
+      brush_internal::ValidateBrushPaintTextureLayer(texture_layer));
   return std::move(texture_layer);
 }
 
 absl::StatusOr<BrushPaint::TextureLayer> DecodeBrushPaintStampingTexture(
     const proto::BrushPaint::TextureLayer& layer_proto,
     ClientTextureIdProvider get_client_texture_id) {
-  absl::StatusOr<BrushPaint::BlendMode> blend_mode =
-      DecodeBrushPaintBlendMode(layer_proto.blend_mode());
-  if (!blend_mode.ok()) {
-    return blend_mode.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(BrushPaint::BlendMode blend_mode,
+                        DecodeBrushPaintBlendMode(layer_proto.blend_mode()));
 
-  absl::StatusOr<std::string> client_texture_id =
-      get_client_texture_id(layer_proto.client_texture_id());
-  if (!client_texture_id.ok()) {
-    return client_texture_id.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(std::string client_texture_id,
+                        get_client_texture_id(layer_proto.client_texture_id()));
 
   BrushPaint::TextureLayer texture_layer = {BrushPaint::StampingTexture{
-      .client_texture_id = *client_texture_id,
-      .blend_mode = *blend_mode,
+      .client_texture_id = client_texture_id,
+      .blend_mode = blend_mode,
   }};
-  if (absl::Status status =
-          brush_internal::ValidateBrushPaintTextureLayer(texture_layer);
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(
+      brush_internal::ValidateBrushPaintTextureLayer(texture_layer));
   return std::move(texture_layer);
 }
 
@@ -1441,16 +1407,10 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNodeUnvalidated(
 
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNode(
     const proto::BrushBehavior::Node& node_proto) {
-  absl::StatusOr<BrushBehavior::Node> node =
-      DecodeBrushBehaviorNodeUnvalidated(node_proto);
-  if (!node.ok()) {
-    return node.status();
-  }
-  if (absl::Status status = brush_internal::ValidateBrushBehaviorNode(*node);
-      !status.ok()) {
-    return status;
-  }
-  return *std::move(node);
+  ABSL_ASSIGN_OR_RETURN(BrushBehavior::Node node,
+                        DecodeBrushBehaviorNodeUnvalidated(node_proto));
+  ABSL_RETURN_IF_ERROR(brush_internal::ValidateBrushBehaviorNode(node));
+  return std::move(node);
 }
 
 void EncodeBrushPaint(const BrushPaint& paint,
@@ -1475,38 +1435,28 @@ absl::StatusOr<BrushPaint> DecodeBrushPaint(
   layers.reserve(paint_proto.texture_layers_size());
   for (const proto::BrushPaint::TextureLayer& layer_proto :
        paint_proto.texture_layers()) {
-    absl::StatusOr<BrushPaint::TextureLayer> layer =
-        DecodeBrushPaintTextureLayer(layer_proto, get_client_texture_id);
-    if (!layer.ok()) {
-      return layer.status();
-    }
-    layers.push_back(*std::move(layer));
+    ABSL_ASSIGN_OR_RETURN(
+        BrushPaint::TextureLayer layer,
+        DecodeBrushPaintTextureLayer(layer_proto, get_client_texture_id));
+    layers.push_back(std::move(layer));
   }
 
   std::vector<ColorFunction> color_functions;
   color_functions.reserve(paint_proto.color_functions_size());
   for (const proto::ColorFunction& color_function_proto :
        paint_proto.color_functions()) {
-    absl::StatusOr<ColorFunction> color_function =
-        DecodeColorFunction(color_function_proto);
-    if (!color_function.ok()) {
-      return color_function.status();
-    }
-    color_functions.push_back(*std::move(color_function));
+    ABSL_ASSIGN_OR_RETURN(ColorFunction color_function,
+                          DecodeColorFunction(color_function_proto));
+    color_functions.push_back(std::move(color_function));
   }
 
-  absl::StatusOr<BrushPaint::SelfOverlap> self_overlap =
-      DecodeBrushPaintSelfOverlap(paint_proto.self_overlap());
-  if (!self_overlap.ok()) {
-    return self_overlap.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(
+      BrushPaint::SelfOverlap self_overlap,
+      DecodeBrushPaintSelfOverlap(paint_proto.self_overlap()));
   BrushPaint paint{.texture_layers = std::move(layers),
                    .color_functions = std::move(color_functions),
-                   .self_overlap = *self_overlap};
-  if (absl::Status status = brush_internal::ValidateBrushPaintTopLevel(paint);
-      !status.ok()) {
-    return status;
-  }
+                   .self_overlap = self_overlap};
+  ABSL_RETURN_IF_ERROR(brush_internal::ValidateBrushPaintTopLevel(paint));
   return std::move(paint);
 }
 
@@ -1533,12 +1483,9 @@ absl::StatusOr<BrushTip> DecodeBrushTip(const proto::BrushTip& tip_proto) {
   std::vector<BrushBehavior> behaviors;
   behaviors.reserve(tip_proto.behaviors_size());
   for (const proto::BrushBehavior& behavior_proto : tip_proto.behaviors()) {
-    absl::StatusOr<BrushBehavior> behavior =
-        DecodeBrushBehavior(behavior_proto);
-    if (!behavior.ok()) {
-      return behavior.status();
-    }
-    behaviors.push_back(*std::move(behavior));
+    ABSL_ASSIGN_OR_RETURN(BrushBehavior behavior,
+                          DecodeBrushBehavior(behavior_proto));
+    behaviors.push_back(std::move(behavior));
   }
   BrushTip tip = {.behaviors = std::move(behaviors)};
   if (tip_proto.has_scale_x()) {
@@ -1566,10 +1513,7 @@ absl::StatusOr<BrushTip> DecodeBrushTip(const proto::BrushTip& tip_proto) {
     tip.particle_gap_duration =
         Duration32::Seconds(tip_proto.particle_gap_duration_seconds());
   }
-  if (absl::Status status = brush_internal::ValidateBrushTip(tip);
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(brush_internal::ValidateBrushTip(tip));
   return std::move(tip);
 }
 
@@ -1592,19 +1536,15 @@ absl::StatusOr<BrushBehavior> DecodeBrushBehavior(
   std::vector<BrushBehavior::Node> nodes;
   nodes.reserve(behavior_proto.nodes_size());
   for (const proto::BrushBehavior::Node& node_proto : behavior_proto.nodes()) {
-    absl::StatusOr<BrushBehavior::Node> node =
-        DecodeBrushBehaviorNode(node_proto);
-    if (!node.ok()) return node.status();
-    nodes.push_back(*std::move(node));
+    ABSL_ASSIGN_OR_RETURN(BrushBehavior::Node node,
+                          DecodeBrushBehaviorNode(node_proto));
+    nodes.push_back(std::move(node));
   }
   BrushBehavior behavior = {
       .nodes = std::move(nodes),
       .developer_comment = behavior_proto.developer_comment(),
   };
-  if (absl::Status status = brush_internal::ValidateBrushBehavior(behavior);
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(brush_internal::ValidateBrushBehavior(behavior));
   return std::move(behavior);
 }
 
@@ -1621,32 +1561,23 @@ void EncodeBrushCoat(const BrushCoat& coat, proto::BrushCoat& coat_proto_out) {
 absl::StatusOr<BrushCoat> DecodeBrushCoat(
     const proto::BrushCoat& coat_proto,
     ClientTextureIdProvider get_client_texture_id) {
-  absl::StatusOr<BrushTip> tip = DecodeBrushTip(coat_proto.tip());
-  if (!tip.ok()) {
-    return tip.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(BrushTip tip, DecodeBrushTip(coat_proto.tip()));
 
   absl::InlinedVector<BrushPaint, 1> paint_preferences;
   paint_preferences.reserve(coat_proto.paint_preferences_size());
   for (const proto::BrushPaint& paint_proto : coat_proto.paint_preferences()) {
-    absl::StatusOr<BrushPaint> paint =
-        DecodeBrushPaint(paint_proto, get_client_texture_id);
-    if (!paint.ok()) {
-      return paint.status();
-    }
-    paint_preferences.push_back(*std::move(paint));
+    ABSL_ASSIGN_OR_RETURN(BrushPaint paint,
+                          DecodeBrushPaint(paint_proto, get_client_texture_id));
+    paint_preferences.push_back(std::move(paint));
   }
 
   if (paint_preferences.empty()) {
     paint_preferences.push_back(BrushPaint{});
   }
 
-  auto coat = BrushCoat{.tip = *std::move(tip),
+  auto coat = BrushCoat{.tip = std::move(tip),
                         .paint_preferences = std::move(paint_preferences)};
-  if (absl::Status status = brush_internal::ValidateBrushCoat(coat);
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(brush_internal::ValidateBrushCoat(coat));
   return coat;
 }
 
@@ -1802,12 +1733,9 @@ absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
 
   coats.reserve(family_proto.coats_size());
   for (const proto::BrushCoat& coat_proto : family_proto.coats()) {
-    absl::StatusOr<BrushCoat> coat =
-        DecodeBrushCoat(coat_proto, get_client_texture_id);
-    if (!coat.ok()) {
-      return coat.status();
-    }
-    coats.push_back(*std::move(coat));
+    ABSL_ASSIGN_OR_RETURN(BrushCoat coat,
+                          DecodeBrushCoat(coat_proto, get_client_texture_id));
+    coats.push_back(std::move(coat));
   }
   return std::move(coats);
 }
@@ -1844,31 +1772,24 @@ absl::StatusOr<BrushFamily> DecodeSingleBrushFamily(
       return it->second;
     }
 
-    absl::StatusOr<std::string> new_id;
+    absl::StatusOr<std::string> new_id_or;
     if (auto bitmap_it = family_proto.texture_id_to_bitmap().find(old_id);
         bitmap_it != family_proto.texture_id_to_bitmap().end()) {
-      new_id = get_client_texture_id(old_id, bitmap_it->second);
+      new_id_or = get_client_texture_id(old_id, bitmap_it->second);
     } else {
-      new_id = get_client_texture_id(old_id, std::string());
+      new_id_or = get_client_texture_id(old_id, std::string());
     }
-    if (!new_id.ok()) {
-      return new_id.status();
-    }
-    old_to_new_id.insert({std::string(old_id), *new_id});
-    return *new_id;
+    ABSL_ASSIGN_OR_RETURN(std::string new_id, new_id_or);
+    old_to_new_id.insert({std::string(old_id), new_id});
+    return new_id;
   };
 
-  absl::StatusOr<std::vector<BrushCoat>> coats =
-      DecodeBrushFamilyCoats(family_proto, texture_callback);
-  if (!coats.ok()) {
-    return coats.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(std::vector<BrushCoat> coats,
+                        DecodeBrushFamilyCoats(family_proto, texture_callback));
 
-  absl::StatusOr<BrushFamily::InputModel> input_model =
-      DecodeBrushFamilyInputModel(family_proto.input_model());
-  if (!input_model.ok()) {
-    return input_model.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(
+      BrushFamily::InputModel input_model,
+      DecodeBrushFamilyInputModel(family_proto.input_model()));
 
   BrushFamily::Metadata metadata = {
       .client_brush_family_id = family_proto.client_brush_family_id(),
@@ -1876,8 +1797,7 @@ absl::StatusOr<BrushFamily> DecodeSingleBrushFamily(
   };
 
   // BrushFamily::Create() validates the BrushFamily.
-  return BrushFamily::Create(absl::MakeConstSpan(*coats), *input_model,
-                             metadata);
+  return BrushFamily::Create(absl::MakeConstSpan(coats), input_model, metadata);
 }
 
 absl::StatusOr<BrushFamily> DecodeBrushFamily(
@@ -1938,22 +1858,19 @@ absl::StatusOr<std::vector<BrushFamily>> DecodeMultipleBrushFamilies(
   brush_families.reserve(family_proto.newer_brush_families_size() + 1);
 
   // The top-level brush family.
-  absl::StatusOr<BrushFamily> family =
-      DecodeSingleBrushFamily(family_proto, get_client_texture_id, max_version);
-  if (!family.ok()) {
-    return family.status();
-  }
-  brush_families.push_back(*std::move(family));
+  ABSL_ASSIGN_OR_RETURN(BrushFamily family,
+                        DecodeSingleBrushFamily(
+                            family_proto, get_client_texture_id, max_version));
+  brush_families.push_back(std::move(family));
 
   // And the nested ones.
   for (const proto::BrushFamily& newer_family_proto :
        family_proto.newer_brush_families()) {
-    absl::StatusOr<BrushFamily> newer_family = DecodeSingleBrushFamily(
-        newer_family_proto, get_client_texture_id, max_version);
-    if (!newer_family.ok()) {
-      return newer_family.status();
-    }
-    brush_families.push_back(*std::move(newer_family));
+    ABSL_ASSIGN_OR_RETURN(
+        BrushFamily newer_family,
+        DecodeSingleBrushFamily(newer_family_proto, get_client_texture_id,
+                                max_version));
+    brush_families.push_back(std::move(newer_family));
   }
   return brush_families;
 }
@@ -1983,14 +1900,12 @@ absl::StatusOr<Brush> DecodeBrush(
     const proto::Brush& brush_proto,
     ClientTextureIdProviderAndBitmapReceiver get_client_texture_id,
     Version max_version) {
-  absl::StatusOr<BrushFamily> brush_family = DecodeBrushFamily(
-      brush_proto.brush_family(), get_client_texture_id, max_version);
-  if (!brush_family.ok()) {
-    return brush_family.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(BrushFamily brush_family,
+                        DecodeBrushFamily(brush_proto.brush_family(),
+                                          get_client_texture_id, max_version));
   // Brush::Create() validates the brush.
   return Brush::Create(
-      *std::move(brush_family), DecodeColor(brush_proto.color()),
+      std::move(brush_family), DecodeColor(brush_proto.color()),
       brush_proto.size_stroke_space(), brush_proto.epsilon_stroke_space());
 }
 

@@ -27,6 +27,7 @@ cc_library(
         "//ink/strokes/input:stroke_input",
         "//ink/types:duration",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )

@@ -23,6 +23,7 @@
 
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -161,18 +162,10 @@ absl::Status ValidateSingleInput(const StrokeInput& input) {
 
 absl::Status ValidateInputSequence(absl::Span<const StrokeInput> inputs) {
   if (inputs.empty()) return absl::OkStatus();
-  absl::Status status = ValidateSingleInput(inputs[0]);
-  if (!status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateSingleInput(inputs[0]));
   for (size_t i = 1; i < inputs.size(); ++i) {
-    if (status = ValidateSingleInput(inputs[i]); !status.ok()) {
-      return status;
-    }
-    if (status = ValidateConsecutiveInputs(inputs[i - 1], inputs[i]);
-        !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(ValidateSingleInput(inputs[i]));
+    ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(inputs[i - 1], inputs[i]));
   }
 
   return absl::OkStatus();
@@ -208,10 +201,7 @@ void AppendInputToFloatVector(const StrokeInput& input,
 absl::Status StrokeInputBatch::Set(int i, const StrokeInput& input) {
   ABSL_CHECK_GE(i, 0);
   ABSL_CHECK_LT(i, Size());
-  absl::Status status = ValidateSingleInput(input);
-  if (!status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateSingleInput(input));
 
   if (Size() == 1) {
     Clear();
@@ -223,14 +213,10 @@ absl::Status StrokeInputBatch::Set(int i, const StrokeInput& input) {
   }
 
   if (i > 0) {
-    if (status = ValidateConsecutiveInputs(Get(i - 1), input); !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(Get(i - 1), input));
   }
   if (i + 1 < Size()) {
-    if (status = ValidateConsecutiveInputs(input, Get(i + 1)); !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(input, Get(i + 1)));
   }
 
   auto data =
@@ -270,22 +256,14 @@ absl::Status StrokeInputBatch::PrepareForAppend(
     }
     SetInlineFormatMetadata(first_new_input);
   } else {
-    if (absl::Status status =
-            ValidateConsecutiveInputs(Last(), first_new_input);
-        !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(Last(), first_new_input));
   }
   return absl::OkStatus();
 }
 
 absl::Status StrokeInputBatch::Append(const StrokeInput& input) {
-  if (absl::Status status = ValidateSingleInput(input); !status.ok()) {
-    return status;
-  }
-  if (absl::Status status = PrepareForAppend(input); !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateSingleInput(input));
+  ABSL_RETURN_IF_ERROR(PrepareForAppend(input));
   AppendInputToFloatVector(input, data_.MutableValue());
   ++size_;
   return absl::OkStatus();
@@ -295,12 +273,8 @@ absl::Status StrokeInputBatch::Append(absl::Span<const StrokeInput> inputs) {
   if (inputs.empty()) {
     return absl::OkStatus();
   }
-  if (absl::Status status = ValidateInputSequence(inputs); !status.ok()) {
-    return status;
-  }
-  if (absl::Status status = PrepareForAppend(inputs.front()); !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateInputSequence(inputs));
+  ABSL_RETURN_IF_ERROR(PrepareForAppend(inputs.front()));
 
   // We don't call `vector::reserve` on purpose. Depending on the STL
   // implementation, it could degrade performance given the expectation that
@@ -328,9 +302,7 @@ absl::StatusOr<StrokeInputBatch> StrokeInputBatch::Create(
 
   if (!inputs.empty()) {
     batch.Reserve(inputs.size(), inputs.front());
-    if (absl::Status status = batch.Append(inputs); !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(batch.Append(inputs));
   }
 
   batch.SetNoiseSeed(noise_seed);
@@ -346,10 +318,7 @@ absl::Status StrokeInputBatch::Append(const StrokeInputBatch& inputs) {
     return absl::OkStatus();
   }
 
-  if (absl::Status status = ValidateConsecutiveInputs(Last(), inputs.First());
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(Last(), inputs.First()));
 
   // We don't call `vector::reserve` on purpose. Depending on the STL
   // implementation, it could degrade performance given the expectation that
@@ -373,11 +342,8 @@ absl::Status StrokeInputBatch::Append(const StrokeInputBatch& inputs,
   if (start_index == end_index) return absl::OkStatus();
 
   if (!IsEmpty()) {
-    if (absl::Status status =
-            ValidateConsecutiveInputs(Last(), inputs.Get(start_index));
-        !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(
+        ValidateConsecutiveInputs(Last(), inputs.Get(start_index)));
   } else {
     if (!data_.HasValue()) data_.Emplace();
     SetInlineFormatMetadata(inputs.Get(start_index));

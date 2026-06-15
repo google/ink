@@ -34,6 +34,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/substitute.h"
@@ -695,13 +696,10 @@ absl::StatusOr<absl::InlinedVector<Mesh, 1>> MutableMesh::AsMeshes(
     // There's nothing to partition, just return an empty list.
     return absl::InlinedVector<Mesh, 1>();
   }
-  if (absl::Status status = ValidateTriangles(); !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateTriangles());
 
-  absl::StatusOr<MeshFormat> new_format =
-      format_.WithoutAttributes(omit_attributes);
-  if (!new_format.ok()) return new_format.status();
+  ABSL_ASSIGN_OR_RETURN(MeshFormat new_format,
+                        format_.WithoutAttributes(omit_attributes));
 
   absl::flat_hash_set<MeshFormat::AttributeId> omit_set(omit_attributes.begin(),
                                                         omit_attributes.end());
@@ -740,18 +738,15 @@ absl::StatusOr<absl::InlinedVector<Mesh, 1>> MutableMesh::AsMeshes(
   // that vertices that are in multiple partitions line up.
   mesh_internal::AttributeBoundsArray total_bounds =
       ComputeTotalAttributeBounds(partition_attribute_bounds);
-  absl::StatusOr<mesh_internal::CodingParamsArray> packing_params_array =
-      mesh_internal::ComputeCodingParamsArray(*new_format, total_bounds,
-                                              packing_params);
-  if (!packing_params_array.ok()) {
-    return packing_params_array.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(mesh_internal::CodingParamsArray packing_params_array,
+                        mesh_internal::ComputeCodingParamsArray(
+                            new_format, total_bounds, packing_params));
 
   // TODO: b/283825926 - Try mitigating cases in which we cannot find a solution
   // for flipped triangles by retrying with a different scaling factor.
   absl::flat_hash_map<uint32_t, Point> corrected_vertex_positions =
       GetCorrectedPackedVertexPositions(
-          *this, (*packing_params_array)[new_format->PositionAttributeIndex()]);
+          *this, packing_params_array[new_format.PositionAttributeIndex()]);
 
   absl::InlinedVector<Mesh, 1> meshes;
   for (size_t partition_idx = 0; partition_idx < partitions.size();
@@ -760,7 +755,7 @@ absl::StatusOr<absl::InlinedVector<Mesh, 1>> MutableMesh::AsMeshes(
     std::vector<std::byte> partition_vertex_data =
         mesh_internal::CopyAndPackPartitionVertices(
             vertex_data_, partition.vertex_indices, format_, omit_set,
-            *packing_params_array, corrected_vertex_positions);
+            packing_params_array, corrected_vertex_positions);
 
     std::vector<std::byte> partition_index_data(3 * partition.triangles.size() *
                                                 Mesh::kBytesPerIndex);
@@ -771,7 +766,7 @@ absl::StatusOr<absl::InlinedVector<Mesh, 1>> MutableMesh::AsMeshes(
           partition_index_data);
     }
 
-    meshes.push_back(Mesh(*new_format, *packing_params_array,
+    meshes.push_back(Mesh(new_format, packing_params_array,
                           std::move(partition_attribute_bounds[partition_idx]),
                           std::move(partition_vertex_data),
                           std::move(partition_index_data)));

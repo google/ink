@@ -18,6 +18,7 @@
 
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "ink/geometry/internal/mesh_constants.h"
@@ -234,15 +235,12 @@ absl::StatusOr<MeshFormat> DecodeMeshFormat(
              mesh_internal::kMaxVertexAttributes>
       attributes(num_attributes);
   for (int i = 0; i < num_attributes; ++i) {
-    absl::StatusOr<MeshFormat::AttributeType> attr_type =
-        DecodeMeshAttributeType(format_proto.attribute_types(i));
-    if (!attr_type.ok()) return attr_type.status();
-
-    absl::StatusOr<MeshFormat::AttributeId> attr_id =
-        DecodeMeshAttributeId(format_proto.attribute_ids(i));
-    if (!attr_id.ok()) return attr_id.status();
-
-    attributes[i] = {*attr_type, *attr_id};
+    ABSL_ASSIGN_OR_RETURN(
+        MeshFormat::AttributeType attr_type,
+        DecodeMeshAttributeType(format_proto.attribute_types(i)));
+    ABSL_ASSIGN_OR_RETURN(MeshFormat::AttributeId attr_id,
+                          DecodeMeshAttributeId(format_proto.attribute_ids(i)));
+    attributes[i] = {attr_type, attr_id};
   }
   return MeshFormat::Create(attributes.Values(), index_format);
 }

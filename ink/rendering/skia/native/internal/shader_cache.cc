@@ -7,6 +7,7 @@
 #include "absl/functional/overload.h"
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -231,13 +232,12 @@ absl::StatusOr<sk_sp<SkShader>> ShaderCache::GetShaderForPaint(
   SkBlendMode blend_mode;
   sk_sp<SkShader> paint_shader = nullptr;
   for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
-    absl::StatusOr<sk_sp<SkShader>> layer_shader =
-        GetShaderForLayer(layer, brush_size, inputs);
-    if (!layer_shader.ok()) return layer_shader.status();
+    ABSL_ASSIGN_OR_RETURN(sk_sp<SkShader> layer_shader,
+                          GetShaderForLayer(layer, brush_size, inputs));
     if (paint_shader == nullptr) {
-      paint_shader = *std::move(layer_shader);
+      paint_shader = std::move(layer_shader);
     } else {
-      paint_shader = SkShaders::Blend(blend_mode, *std::move(layer_shader),
+      paint_shader = SkShaders::Blend(blend_mode, std::move(layer_shader),
                                       std::move(paint_shader));
     }
     blend_mode = ToSkBlendMode(GetBlendMode(layer));
@@ -250,9 +250,9 @@ absl::StatusOr<sk_sp<SkShader>> ShaderCache::GetShaderForLayer(
     const StrokeInputBatch& inputs) {
   sk_sp<SkShader>& cached_shader = layer_shaders_[layer];
   if (cached_shader == nullptr) {
-    absl::StatusOr<sk_sp<SkShader>> shader = CreateBaseShaderForLayer(layer);
-    if (!shader.ok()) return shader.status();
-    cached_shader = *std::move(shader);
+    ABSL_ASSIGN_OR_RETURN(sk_sp<SkShader> shader,
+                          CreateBaseShaderForLayer(layer));
+    cached_shader = std::move(shader);
   }
   return cached_shader->makeWithLocalMatrix(ToSkMatrix(
       ComputeSizeUnitToStrokeSpaceTransform(layer, brush_size, inputs)));
@@ -260,13 +260,12 @@ absl::StatusOr<sk_sp<SkShader>> ShaderCache::GetShaderForLayer(
 
 absl::StatusOr<sk_sp<SkShader>> ShaderCache::CreateBaseShaderForLayer(
     const BrushPaint::TextureLayer& layer) {
-  absl::StatusOr<sk_sp<SkImage>> image =
-      GetImageForTexture(GetClientTextureId(layer));
-  if (!image.ok()) return image.status();
-  SkISize size = (*image)->dimensions();
+  ABSL_ASSIGN_OR_RETURN(sk_sp<SkImage> image,
+                        GetImageForTexture(GetClientTextureId(layer)));
+  SkISize size = image->dimensions();
   SkMatrix matrix = ToSkMatrix(
       ComputeTexelToSizeUnitTransform(layer, size.width(), size.height()));
-  return SkShaders::Image(*std::move(image), ToSkTileMode(GetWrapX(layer)),
+  return SkShaders::Image(std::move(image), ToSkTileMode(GetWrapX(layer)),
                           ToSkTileMode(GetWrapY(layer)), SkSamplingOptions(),
                           &matrix);
 }
@@ -280,11 +279,10 @@ absl::StatusOr<sk_sp<SkImage>> ShaderCache::GetImageForTexture(
   }
   sk_sp<SkImage>& cached_image = texture_images_[texture_id];
   if (cached_image == nullptr) {
-    absl::StatusOr<sk_sp<SkImage>> image =
-        texture_provider_->GetTextureBitmap(texture_id);
-    if (!image.ok()) return image.status();
+    ABSL_ASSIGN_OR_RETURN(sk_sp<SkImage> image,
+                          texture_provider_->GetTextureBitmap(texture_id));
     // Since cached_image is a shared pointer, assigning it populates the cache.
-    cached_image = *std::move(image);
+    cached_image = std::move(image);
   }
   return cached_image;
 }

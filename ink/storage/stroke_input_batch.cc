@@ -20,6 +20,7 @@
 #include <optional>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/rect.h"
@@ -253,16 +254,12 @@ void EncodeStrokeInputBatch(const StrokeInputBatch& input_batch,
 
 absl::StatusOr<StrokeInputBatch> DecodeStrokeInputBatch(
     const CodedStrokeInputBatch& input_proto) {
-  absl::StatusOr<iterator_range<CodedStrokeInputBatchIterator>> range =
-      DecodeStrokeInputBatchProto(input_proto);
-  if (!range.ok()) {
-    return range.status();
-  }
+  ABSL_ASSIGN_OR_RETURN(auto range, DecodeStrokeInputBatchProto(input_proto));
   StrokeInputBatch batch;
-  if (!range->empty()) {
-    batch.Reserve(input_proto.x_stroke_space().deltas_size(), *range->begin());
+  if (!range.empty()) {
+    batch.Reserve(input_proto.x_stroke_space().deltas_size(), *range.begin());
   }
-  for (const StrokeInput& input : *range) {
+  for (const StrokeInput& input : range) {
     if (!batch.IsEmpty()) {
       StrokeInput previous = batch.Last();
       if (input.position == previous.position &&
@@ -270,9 +267,7 @@ absl::StatusOr<StrokeInputBatch> DecodeStrokeInputBatch(
         continue;
       }
     }
-    if (absl::Status status = batch.Append(input); !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(batch.Append(input));
   }
   batch.SetNoiseSeed(input_proto.noise_seed());
   return batch;

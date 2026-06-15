@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -77,15 +78,9 @@ absl::StatusOr<BrushFamily> BrushFamily::Create(
                      ". (This limit may be increased in the future.)"));
   }
   for (const BrushCoat& coat : coats) {
-    if (absl::Status status = brush_internal::ValidateBrushCoat(coat);
-        !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(brush_internal::ValidateBrushCoat(coat));
   }
-  if (absl::Status status = brush_internal::ValidateInputModel(input_model);
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(brush_internal::ValidateInputModel(input_model));
 
   int64_t full_duration_ms = 0;
   for (const BrushCoat& coat : coats) {

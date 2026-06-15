@@ -23,8 +23,8 @@ git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "g
 ## Toolchain setup
 #################################################################################
 
-bazel_dep(name = "platforms", version = "0.0.11")
-bazel_dep(name = "rules_cc", version = "0.2.2")
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "rules_cc", version = "0.2.18")
 bazel_dep(name = "toolchains_llvm", version = "1.5.0")
 
 # Configure and register the LLVM toolchain for host builds.
@@ -51,9 +51,9 @@ use_repo(android_ndk_repository_extension, "androidndk")
 
 bazel_dep(
     name = "abseil-cpp",
-    version = "20250512.0",
+    version = "20260526.0",
 )
-bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
 
 git_repository(
     name = "libtess2",
@@ -61,10 +61,10 @@ git_repository(
     remote = "https://github.com/memononen/libtess2.git",
 )
 
-bazel_dep(name = "protobuf", version = "31.1")
+bazel_dep(name = "protobuf", version = "33.5")
 bazel_dep(name = "rules_android", version = "0.6.0")
 bazel_dep(name = "rules_jni", version = "0.11.1")
-bazel_dep(name = "rules_proto", version = "7.0.2")
+bazel_dep(name = "rules_proto", version = "7.1.0")
 
 git_repository(
     name = "skia",
@@ -88,18 +88,26 @@ local_repository(
 #################################################################################
 bazel_dep(
     name = "googletest",
-    version = "1.17.0",
+    version = "1.17.0.bcr.2",
     dev_dependency = True,
 )
 bazel_dep(
     name = "google_benchmark",
-    version = "1.8.3",
+    version = "1.8.5",
     dev_dependency = True,
 )
 bazel_dep(
     name = "fuzztest",
-    version = "20250214.0",
+    version = "20260219.0",
     dev_dependency = True,
+)
+
+
+# TODO(b/522424202) Newer fuzztest is required for Abseil compatibility.
+git_override(
+    module_name = "fuzztest",
+    commit = "9aa29eee8cbf8efe25ba21e610d47bd98458e8b4",
+    remote = "https://github.com/google/fuzztest",
 )
 
 # Depend on a later version of Riegeli than the one in Fuzztest to avoid an
@@ -109,7 +117,7 @@ bazel_dep(
 # https://github.com/google/fuzztest/pull/1742).
 bazel_dep(
     name = "riegeli",
-    version = "0.0.0-20250706-c4d1f27",
+    version = "0.0.0-20250822-9f2744d",
     dev_dependency = True,
 )
 

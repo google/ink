@@ -18,6 +18,7 @@
 
 #include "absl/container/inlined_vector.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -34,6 +35,8 @@
 namespace ink::skia_common_internal {
 namespace {
 
+using ::ink::rendering::GetValidatedStrokeAttributeTypesAndOffsets;
+using ::ink::rendering::StrokeAttributeTypesAndOffsets;
 using ::ink::strokes_internal::StrokeVertex;
 
 // Uniform names for each `MeshSpecificationData::UniformId`.
@@ -234,10 +237,9 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
     const MeshFormat& mesh_format) {
   StrokeVertex::FormatAttributeIndices attribute_indices =
       StrokeVertex::FindAttributeIndices(mesh_format);
-  auto types_and_offsets =
-      ink::rendering::GetValidatedStrokeAttributeTypesAndOffsets(
-          mesh_format, attribute_indices);
-  if (!types_and_offsets.ok()) return types_and_offsets.status();
+  ABSL_ASSIGN_OR_RETURN(StrokeAttributeTypesAndOffsets types_and_offsets,
+                        GetValidatedStrokeAttributeTypesAndOffsets(
+                            mesh_format, attribute_indices));
 
   static_assert(kUniformBrushColorName == "uBrushColor");
   static_assert(kUniformPositionUnpackingTransformName ==
@@ -336,26 +338,26 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
   )";
 
   absl::InlinedVector<Attribute, 5> mesh_specification_attributes = {
-      {.type = types_and_offsets->position_and_opacity_shift.type,
-       .offset = types_and_offsets->position_and_opacity_shift.offset,
+      {.type = types_and_offsets.position_and_opacity_shift.type,
+       .offset = types_and_offsets.position_and_opacity_shift.offset,
        .name = "positionAndOpacityShift"},
-      {.type = types_and_offsets->side_derivative_and_label.type,
-       .offset = types_and_offsets->side_derivative_and_label.offset,
+      {.type = types_and_offsets.side_derivative_and_label.type,
+       .offset = types_and_offsets.side_derivative_and_label.offset,
        .name = "sideDerivativeAndLabel"},
-      {.type = types_and_offsets->forward_derivative_and_label.type,
-       .offset = types_and_offsets->forward_derivative_and_label.offset,
+      {.type = types_and_offsets.forward_derivative_and_label.type,
+       .offset = types_and_offsets.forward_derivative_and_label.offset,
        .name = "forwardDerivativeAndLabel"}};
 
-  if (types_and_offsets->hsl_shift.has_value()) {
+  if (types_and_offsets.hsl_shift.has_value()) {
     mesh_specification_attributes.push_back(
-        {.type = types_and_offsets->hsl_shift->type,
-         .offset = types_and_offsets->hsl_shift->offset,
+        {.type = types_and_offsets.hsl_shift->type,
+         .offset = types_and_offsets.hsl_shift->offset,
          .name = "hslShift"});
   }
-  if (types_and_offsets->surface_uv_and_animation_offset.has_value()) {
+  if (types_and_offsets.surface_uv_and_animation_offset.has_value()) {
     mesh_specification_attributes.push_back(
-        {.type = types_and_offsets->surface_uv_and_animation_offset->type,
-         .offset = types_and_offsets->surface_uv_and_animation_offset->offset,
+        {.type = types_and_offsets.surface_uv_and_animation_offset->type,
+         .offset = types_and_offsets.surface_uv_and_animation_offset->offset,
          .name = "surfaceUvAndAnimationOffset"});
   }
 
@@ -393,10 +395,10 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
             .id = UniformId::kNumTextureAnimationColumns}},
       .vertex_shader_source = absl::StrCat(
           kSkSLCommonShaderHelpers, kSkSLVertexShaderHelpers, kVertexMainStart,
-          types_and_offsets->hsl_shift.has_value()
+          types_and_offsets.hsl_shift.has_value()
               ? kVertexMainColorWithHslShift
               : kVertexMainColorWithoutHslShift,
-          types_and_offsets->surface_uv_and_animation_offset.has_value()
+          types_and_offsets.surface_uv_and_animation_offset.has_value()
               // TODO: b/330511293 - If there's a surface UV, but no animation
               // offset, use `kVertexMainTextureUvWithSurfaceUvOnly` here.
               ? kVertexMainTextureUvWithSurfaceUvAndAnimationOffset

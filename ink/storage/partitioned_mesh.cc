@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -49,12 +50,11 @@ void EncodeOutline(absl::Span<const VertexIndexPair> outline,
 
 absl::StatusOr<std::vector<VertexIndexPair>> DecodeOutline(
     const ink::proto::CodedNumericRun& outline_proto) {
-  auto range = DecodeIntNumericRun(outline_proto);
-  if (!range.ok()) return range.status();
+  ABSL_ASSIGN_OR_RETURN(auto range, DecodeIntNumericRun(outline_proto));
 
   std::vector<VertexIndexPair> outline;
   outline.reserve(outline_proto.deltas_size());
-  for (uint32_t packed : *range) {
+  for (uint32_t packed : range) {
     outline.push_back(VertexIndexPair{
         .mesh_index = static_cast<uint16_t>(packed >> 16),
         .vertex_index = static_cast<uint16_t>(packed & 0xffff),
@@ -73,19 +73,18 @@ absl::StatusOr<PartitionedMesh> DecodePartitionedMeshGroupless(
   std::vector<Mesh> meshes;
   meshes.reserve(shape_proto.meshes_size());
   for (const ink::proto::CodedMesh& coded_mesh : shape_proto.meshes()) {
-    absl::StatusOr<Mesh> mesh = DecodeMeshUsingFormat(*format, coded_mesh);
-    if (!mesh.ok()) return mesh.status();
-    meshes.push_back(*std::move(mesh));
+    ABSL_ASSIGN_OR_RETURN(Mesh mesh,
+                          DecodeMeshUsingFormat(*format, coded_mesh));
+    meshes.push_back(std::move(mesh));
   }
 
   std::vector<std::vector<VertexIndexPair>> outline_vectors;
   outline_vectors.reserve(shape_proto.outlines_size());
   for (const ink::proto::CodedNumericRun& outline_proto :
        shape_proto.outlines()) {
-    absl::StatusOr<std::vector<VertexIndexPair>> outline =
-        DecodeOutline(outline_proto);
-    if (!outline.ok()) return outline.status();
-    outline_vectors.push_back(*std::move(outline));
+    ABSL_ASSIGN_OR_RETURN(std::vector<VertexIndexPair> outline,
+                          DecodeOutline(outline_proto));
+    outline_vectors.push_back(std::move(outline));
   }
 
   std::vector<absl::Span<const VertexIndexPair>> outline_spans;
@@ -201,10 +200,10 @@ absl::StatusOr<PartitionedMesh> DecodePartitionedMesh(
   outline_spans.reserve(num_outlines);
 
   for (int group_index = 0; group_index < num_groups; ++group_index) {
-    absl::StatusOr<MeshFormat> format =
+    ABSL_ASSIGN_OR_RETURN(
+        MeshFormat format,
         DecodeMeshFormat(shape_proto.group_formats(group_index),
-                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
-    if (!format.ok()) return format.status();
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked));
 
     const int next_group_index = group_index + 1;
     const bool is_last_group = next_group_index == num_groups;
@@ -215,10 +214,10 @@ absl::StatusOr<PartitionedMesh> DecodePartitionedMesh(
                       : shape_proto.group_first_mesh_indices(next_group_index);
     for (uint32_t mesh_index = mesh_index_start; mesh_index < mesh_index_end;
          ++mesh_index) {
-      absl::StatusOr<Mesh> mesh =
-          DecodeMeshUsingFormat(*format, shape_proto.meshes(mesh_index));
-      if (!mesh.ok()) return mesh.status();
-      meshes.push_back(*std::move(mesh));
+      ABSL_ASSIGN_OR_RETURN(
+          Mesh mesh,
+          DecodeMeshUsingFormat(format, shape_proto.meshes(mesh_index)));
+      meshes.push_back(std::move(mesh));
     }
 
     const uint32_t outline_index_start = outlines.size();
@@ -228,10 +227,9 @@ absl::StatusOr<PartitionedMesh> DecodePartitionedMesh(
             : shape_proto.group_first_outline_indices(next_group_index);
     for (uint32_t outline_index = outline_index_start;
          outline_index < outline_index_end; ++outline_index) {
-      absl::StatusOr<std::vector<VertexIndexPair>> outline =
-          DecodeOutline(shape_proto.outlines(outline_index));
-      if (!outline.ok()) return outline.status();
-      outlines.push_back(*std::move(outline));
+      ABSL_ASSIGN_OR_RETURN(std::vector<VertexIndexPair> outline,
+                            DecodeOutline(shape_proto.outlines(outline_index)));
+      outlines.push_back(std::move(outline));
       outline_spans.push_back(absl::MakeConstSpan(outlines.back()));
     }
 

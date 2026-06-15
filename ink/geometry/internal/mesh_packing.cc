@@ -31,6 +31,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/substitute.h"
 #include "absl/types/span.h"
@@ -900,11 +901,9 @@ absl::StatusOr<CodingParamsArray> ComputeCodingParamsArray(
         !MeshFormat::IsUnpackedType(type)) {
       coding_params_array[attr_idx] = *custom_coding_params_array[attr_idx];
     } else {
-      auto result = mesh_internal::ComputeCodingParams(type, bounds[attr_idx]);
-      if (!result.ok()) {
-        return result.status();
-      }
-      coding_params_array[attr_idx] = *result;
+      ABSL_ASSIGN_OR_RETURN(
+          coding_params_array[attr_idx],
+          mesh_internal::ComputeCodingParams(type, bounds[attr_idx]));
     }
   }
 

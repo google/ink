@@ -9,6 +9,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/geometry/mutable_mesh.h"
@@ -41,11 +42,7 @@ void InProgressStrokeWrapper::Start(const Brush& brush, int noise_seed,
 
 absl::Status InProgressStrokeWrapper::UpdateShape(
     Duration32 current_elapsed_time) {
-  if (absl::Status status =
-          in_progress_stroke_.UpdateShape(current_elapsed_time);
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(in_progress_stroke_.UpdateShape(current_elapsed_time));
   UpdateCaches();
   return absl::OkStatus();
 }

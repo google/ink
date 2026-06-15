@@ -19,6 +19,7 @@
 
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "ink/geometry/mesh_format.h"
@@ -69,12 +70,11 @@ absl::StatusOr<sk_sp<SkMeshSpecification>> MeshSpecificationCache::GetForStroke(
   sk_sp<SkMeshSpecification>& cached_specification =
       stroke_specifications_[format];
   if (cached_specification == nullptr) {
-    absl::StatusOr<MeshSpecificationData> specification_data =
-        MeshSpecificationData::CreateForStroke(format);
-    if (!specification_data.ok()) return specification_data.status();
+    ABSL_ASSIGN_OR_RETURN(MeshSpecificationData specification_data,
+                          MeshSpecificationData::CreateForStroke(format));
 
     absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
-        CreateMeshSpecification(*specification_data);
+        CreateMeshSpecification(specification_data);
     // TODO: b/284117747 - At least for now, if creating the
     // `MeshSpecificationData` succeeded, then creating the
     // `SkMeshSpecification` should always succeed. This may change, depending

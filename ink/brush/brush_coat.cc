@@ -19,6 +19,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -31,17 +32,13 @@ namespace ink {
 namespace brush_internal {
 
 absl::Status ValidateBrushCoat(const BrushCoat& coat) {
-  if (absl::Status status = ValidateBrushTip(coat.tip); !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateBrushTip(coat.tip));
   if (coat.paint_preferences.empty()) {
     return absl::InvalidArgumentError(
         "BrushCoat::paint_preferences must not be empty");
   }
   for (const BrushPaint& paint : coat.paint_preferences) {
-    if (absl::Status status = ValidateBrushPaint(paint); !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(ValidateBrushPaint(paint));
   }
   return absl::OkStatus();
 }

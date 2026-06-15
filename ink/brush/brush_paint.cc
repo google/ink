@@ -23,6 +23,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/functional/overload.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -269,10 +270,7 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
   const BrushPaint::TextureLayer* previous = nullptr;
   for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
     if (previous) {
-      if (absl::Status status = ValidateAdjacentTextureLayers(*previous, layer);
-          !status.ok()) {
-        return status;
-      }
+      ABSL_RETURN_IF_ERROR(ValidateAdjacentTextureLayers(*previous, layer));
     }
     previous = &layer;
   }
@@ -296,20 +294,12 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint) {
 
 absl::Status ValidateBrushPaint(const BrushPaint& paint) {
   for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
-    if (absl::Status status = ValidateBrushPaintTextureLayer(layer);
-        !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(ValidateBrushPaintTextureLayer(layer));
   }
   for (const ColorFunction& color_function : paint.color_functions) {
-    if (absl::Status status = ValidateColorFunction(color_function);
-        !status.ok()) {
-      return status;
-    }
+    ABSL_RETURN_IF_ERROR(ValidateColorFunction(color_function));
   }
-  if (absl::Status status = ValidateBrushPaintTopLevel(paint); !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateBrushPaintTopLevel(paint));
   return absl::OkStatus();
 }
 

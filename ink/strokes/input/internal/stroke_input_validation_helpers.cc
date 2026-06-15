@@ -15,6 +15,7 @@
 #include "ink/strokes/input/internal/stroke_input_validation_helpers.h"
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/substitute.h"
 #include "ink/strokes/input/stroke_input.h"
 #include "ink/types/duration.h"
@@ -76,9 +77,7 @@ absl::Status ValidateConsistentAttributes(const StrokeInput& first,
 
 absl::Status ValidateConsecutiveInputs(const StrokeInput& first,
                                        const StrokeInput& second) {
-  if (absl::Status status = ValidateAdvancingXYT(first, second); !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateAdvancingXYT(first, second));
 
   return ValidateConsistentAttributes(first, second);
 }

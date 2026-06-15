@@ -30,6 +30,7 @@
 #include "absl/functional/overload.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
@@ -133,15 +134,15 @@ absl::StatusOr<MeshDrawable> CreateAndInitializeMeshDrawable(
     skia_native_internal::ShaderCache& shader_cache,
     MeshUniformData&& uniform_data, sk_sp<SkMeshSpecification> specification,
     absl::InlinedVector<MeshDrawable::Partition, 1>&& partitions) {
-  absl::StatusOr<sk_sp<SkShader>> shader =
-      shader_cache.GetShaderForPaint(brush_paint, brush.GetSize(), inputs);
-  if (!shader.ok()) return shader.status();
-  absl::StatusOr<MeshDrawable> mesh_drawable = MeshDrawable::Create(
-      specification, shader_cache.GetBlenderForPaint(brush_paint),
-      *std::move(shader), brush_paint.color_functions, partitions,
-      std::move(uniform_data));
-  if (!mesh_drawable.ok()) return mesh_drawable.status();
-  mesh_drawable->SetBrushColor(brush.GetColor());
+  ABSL_ASSIGN_OR_RETURN(
+      sk_sp<SkShader> shader,
+      shader_cache.GetShaderForPaint(brush_paint, brush.GetSize(), inputs));
+  ABSL_ASSIGN_OR_RETURN(
+      MeshDrawable mesh_drawable,
+      MeshDrawable::Create(
+          specification, shader_cache.GetBlenderForPaint(brush_paint), shader,
+          brush_paint.color_functions, partitions, std::move(uniform_data)));
+  mesh_drawable.SetBrushColor(brush.GetColor());
   // Currently, validation enforces that these values are all the same for all
   // texture layers in a given paint. If there are no texture layers, use the
   // default "tiling" behavior. When there is no animation, the default of 1 for
@@ -152,16 +153,16 @@ absl::StatusOr<MeshDrawable> CreateAndInitializeMeshDrawable(
                                                : brush_paint.texture_layers[0];
   // TODO: b/375203215 - Get rid of this uniform once we are able to mix
   // different texture mapping modes in a single `BrushPaint`.
-  mesh_drawable->SetTextureMappingMode(texture_layer.index());
+  mesh_drawable.SetTextureMappingMode(texture_layer.index());
   if (const auto* stamping =
           std::get_if<BrushPaint::StampingTexture>(&texture_layer)) {
-    mesh_drawable->SetNumTextureAnimationFrames(stamping->animation_frames);
-    mesh_drawable->SetNumTextureAnimationRows(stamping->animation_rows);
-    mesh_drawable->SetNumTextureAnimationColumns(stamping->animation_columns);
+    mesh_drawable.SetNumTextureAnimationFrames(stamping->animation_frames);
+    mesh_drawable.SetNumTextureAnimationRows(stamping->animation_rows);
+    mesh_drawable.SetNumTextureAnimationColumns(stamping->animation_columns);
   }
   // Actual updates of this need to be done on draw.
-  mesh_drawable->SetTextureAnimationProgress(0.0f);
-  return *std::move(mesh_drawable);
+  mesh_drawable.SetTextureAnimationProgress(0.0f);
+  return std::move(mesh_drawable);
 }
 
 }  // namespace
@@ -184,10 +185,10 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
   drawables.reserve(num_coats);
   for (uint32_t coat_index = 0; coat_index < num_coats; ++coat_index) {
     if (stroke.GetMeshBounds(coat_index).IsEmpty()) continue;
-    absl::StatusOr<Drawable::Implementation> drawable =
-        CreateDrawableImpl(context, stroke, coat_index, *brush);
-    if (!drawable.ok()) return drawable.status();
-    drawables.push_back(*std::move(drawable));
+    ABSL_ASSIGN_OR_RETURN(
+        Drawable::Implementation drawable,
+        CreateDrawableImpl(context, stroke, coat_index, *brush));
+    drawables.push_back(std::move(drawable));
   }
   return Drawable(object_to_canvas, std::move(drawables));
 }
@@ -217,9 +218,8 @@ SkiaRenderer::CreateDrawableImpl(GrDirectContext* const absl_nullable context,
 absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
     GrDirectContext* const absl_nonnull context, const InProgressStroke& stroke,
     uint32_t coat_index, const BrushPaint& brush_paint, const Brush& brush) {
-  absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
-      specification_cache_.GetFor(stroke);
-  if (!specification.ok()) return specification.status();
+  ABSL_ASSIGN_OR_RETURN(sk_sp<SkMeshSpecification> specification,
+                        specification_cache_.GetFor(stroke));
 
   const MutableMesh& mesh = stroke.GetMesh(coat_index);
   if (mesh.VertexCount() >= std::numeric_limits<uint16_t>::max()) {
@@ -230,10 +230,10 @@ absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
   absl::Span<const std::byte> vertex_data = mesh.RawVertexData();
   FillTemporaryIndices(mesh, temporary_indices_);
 
-  MeshUniformData uniform_data(**specification);
+  MeshUniformData uniform_data(*specification);
   return CreateAndInitializeMeshDrawable(
       stroke.GetInputs(), brush, brush_paint, shader_cache_,
-      std::move(uniform_data), *std::move(specification),
+      std::move(uniform_data), std::move(specification),
       {{
           .vertex_buffer = SkMeshes::MakeVertexBuffer(
               context, vertex_data.data(), vertex_data.size()),
@@ -275,10 +275,10 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     absl::Span<const Mesh> meshes = stroke_shape.RenderGroupMeshes(coat_index);
     if (meshes.empty()) continue;
 
-    absl::StatusOr<Drawable::Implementation> drawable =
-        CreateDrawableImpl(context, stroke, coat_index, brush);
-    if (!drawable.ok()) return drawable.status();
-    drawables.push_back(*std::move(drawable));
+    ABSL_ASSIGN_OR_RETURN(
+        Drawable::Implementation drawable,
+        CreateDrawableImpl(context, stroke, coat_index, brush));
+    drawables.push_back(std::move(drawable));
   }
 
   return Drawable(object_to_canvas, std::move(drawables));
@@ -325,9 +325,9 @@ absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
 
   // TODO: b/284117747 - Pass `brush.GetCoats()[coat_index].paint` to the
   // `specification_cache_`.
-  absl::StatusOr<sk_sp<SkMeshSpecification>> specification =
-      specification_cache_.GetForStroke(stroke_shape, coat_index);
-  if (!specification.ok()) return specification.status();
+  ABSL_ASSIGN_OR_RETURN(
+      sk_sp<SkMeshSpecification> specification,
+      specification_cache_.GetForStroke(stroke_shape, coat_index));
 
   absl::InlinedVector<MeshDrawable::Partition, 1> partitions;
   partitions.reserve(meshes.size());
@@ -351,14 +351,12 @@ absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
     return first_mesh.VertexAttributeUnpackingParams(attribute_index);
   };
 
-  MeshUniformData uniform_data(**specification,
-                               first_mesh.Format().Attributes(),
+  MeshUniformData uniform_data(*specification, first_mesh.Format().Attributes(),
                                get_attribute_unpacking_transform);
 
   return CreateAndInitializeMeshDrawable(
       stroke.GetInputs(), stroke.GetBrush(), brush_paint, shader_cache_,
-      std::move(uniform_data), *std::move(specification),
-      std::move(partitions));
+      std::move(uniform_data), std::move(specification), std::move(partitions));
 }
 
 absl::Status SkiaRenderer::Draw(GrDirectContext* absl_nullable context,
@@ -367,10 +365,9 @@ absl::Status SkiaRenderer::Draw(GrDirectContext* absl_nullable context,
                                 SkCanvas& canvas) {
   // TODO: b/286547863 - Implement `RenderCache` to save and update the created
   // drawable inside the stroke.
-
-  auto drawable = CreateDrawable(context, stroke, object_to_canvas);
-  if (!drawable.ok()) return drawable.status();
-  drawable->Draw(canvas);
+  ABSL_ASSIGN_OR_RETURN(Drawable drawable,
+                        CreateDrawable(context, stroke, object_to_canvas));
+  drawable.Draw(canvas);
   return absl::OkStatus();
 }
 
@@ -380,10 +377,9 @@ absl::Status SkiaRenderer::Draw(GrDirectContext* absl_nullable context,
                                 SkCanvas& canvas) {
   // TODO: b/286547863 - Implement `RenderCache` to save and update the created
   // drawable inside the stroke.
-
-  auto drawable = CreateDrawable(context, stroke, object_to_canvas);
-  if (!drawable.ok()) return drawable.status();
-  drawable->Draw(canvas);
+  ABSL_ASSIGN_OR_RETURN(Drawable drawable,
+                        CreateDrawable(context, stroke, object_to_canvas));
+  drawable.Draw(canvas);
   return absl::OkStatus();
 }
 

@@ -27,6 +27,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/substitute.h"
 #include "absl/types/span.h"
@@ -250,9 +251,8 @@ absl::StatusOr<Mesh> Mesh::CreateFromQuantizedData(
     absl::Span<const absl::Span<const uint32_t>> vertex_attributes,
     absl::Span<const uint32_t> triangle_indices,
     absl::Span<const MeshAttributeCodingParams> coding_params) {
-  absl::Status validate_parameters = ValidateCreateMeshParameters(
-      format, vertex_attributes, triangle_indices, kBytesPerIndex);
-  if (!validate_parameters.ok()) return validate_parameters;
+  ABSL_RETURN_IF_ERROR(ValidateCreateMeshParameters(
+      format, vertex_attributes, triangle_indices, kBytesPerIndex));
 
   size_t num_attrs = format.Attributes().size();
   if (coding_params.size() != num_attrs) {
@@ -281,20 +281,16 @@ absl::StatusOr<Mesh> Mesh::Create(
     absl::Span<const absl::Span<const float>> vertex_attributes,
     absl::Span<const uint32_t> triangle_indices,
     absl::Span<const std::optional<MeshAttributeCodingParams>> packing_params) {
-  absl::Status validate_parameters = ValidateCreateMeshParameters(
-      format, vertex_attributes, triangle_indices, kBytesPerIndex);
-  if (!validate_parameters.ok()) return validate_parameters;
+  ABSL_RETURN_IF_ERROR(ValidateCreateMeshParameters(
+      format, vertex_attributes, triangle_indices, kBytesPerIndex));
 
   std::optional<mesh_internal::AttributeBoundsArray> attribute_bounds =
       ComputeAttributeBounds(format, vertex_attributes);
   mesh_internal::CodingParamsArray coding_params_array;
   if (attribute_bounds.has_value()) {
-    auto result = mesh_internal::ComputeCodingParamsArray(
-        format, *attribute_bounds, packing_params);
-    if (!result.ok()) {
-      return result.status();
-    }
-    coding_params_array = *result;
+    ABSL_ASSIGN_OR_RETURN(coding_params_array,
+                          mesh_internal::ComputeCodingParamsArray(
+                              format, *attribute_bounds, packing_params));
   } else {
     coding_params_array = MakeCodingParamsArrayForEmptyMesh(format);
   }

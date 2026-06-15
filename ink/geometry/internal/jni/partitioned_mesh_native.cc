@@ -63,10 +63,10 @@ int64_t PartitionedMeshNative_createFromTriangleForTesting(
                    {{triangle_p0_x, triangle_p1_x, triangle_p2_x},
                     {triangle_p0_y, triangle_p1_y, triangle_p2_y}},
                    {0, 1, 2});
-  ABSL_CHECK(mesh.ok());
+  ABSL_CHECK_OK(mesh);
   absl::StatusOr<PartitionedMesh> partitioned_mesh =
       PartitionedMesh::FromMeshes({*mesh}, {{{0, 0}, {0, 1}, {0, 2}}});
-  ABSL_CHECK(partitioned_mesh.ok());
+  ABSL_CHECK_OK(partitioned_mesh);
   return NewNativePartitionedMesh(*partitioned_mesh);
 }
 

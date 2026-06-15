@@ -18,6 +18,7 @@
 #include <string>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"
@@ -66,42 +67,22 @@ Brush::Brush(const BrushFamily& family, const Color& color, float size,
 absl::StatusOr<Brush> Brush::Create(const BrushFamily& family,
                                     const Color& color, float size,
                                     float epsilon) {
-  absl::Status status = ValidateBrushSize(size);
-  if (!status.ok()) {
-    return status;
-  }
-  if (status = ValidateBrushEpsilon(epsilon); !status.ok()) {
-    return status;
-  }
-  if (status = ValidateBrushSizeRelativeToEpsilon(size, epsilon);
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateBrushSize(size));
+  ABSL_RETURN_IF_ERROR(ValidateBrushEpsilon(epsilon));
+  ABSL_RETURN_IF_ERROR(ValidateBrushSizeRelativeToEpsilon(size, epsilon));
   return Brush(family, color, size, epsilon);
 }
 
 absl::Status Brush::SetSize(float size) {
-  absl::Status status = ValidateBrushSize(size);
-  if (!status.ok()) {
-    return status;
-  }
-  if (status = ValidateBrushSizeRelativeToEpsilon(size, epsilon_);
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateBrushSize(size));
+  ABSL_RETURN_IF_ERROR(ValidateBrushSizeRelativeToEpsilon(size, epsilon_));
   size_ = size;
   return absl::OkStatus();
 }
 
 absl::Status Brush::SetEpsilon(float epsilon) {
-  absl::Status status = ValidateBrushEpsilon(epsilon);
-  if (!status.ok()) {
-    return status;
-  }
-  if (status = ValidateBrushSizeRelativeToEpsilon(size_, epsilon);
-      !status.ok()) {
-    return status;
-  }
+  ABSL_RETURN_IF_ERROR(ValidateBrushEpsilon(epsilon));
+  ABSL_RETURN_IF_ERROR(ValidateBrushSizeRelativeToEpsilon(size_, epsilon));
   epsilon_ = epsilon;
   return absl::OkStatus();
 }
