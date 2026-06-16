@@ -252,7 +252,9 @@ cc_library(
     hdrs = ["test_matchers.h"],
     deps = [
         ":circle",
+        ":outline_processing",
         "//:gtest_for_library_testonly",
+        "//ink/geometry:point",
         "//ink/geometry:type_matchers",
         "@abseil-cpp//absl/strings",
     ],

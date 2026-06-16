@@ -103,6 +103,10 @@ std::vector<std::vector<Point>> ComputeBoundaryLoops(const ShapeOutline& shape);
 std::pair<std::vector<Point>, std::vector<std::array<uint32_t, 3>>>
 ComputeTriangulation(const ShapeOutline& shape);
 
+// Computes the boolean difference (shape_a - shape_b) of two shapes.
+ShapeOutline ComputeSubtraction(const ShapeOutline& shape_a,
+                                const ShapeOutline& shape_b);
+
 }  // namespace ink::geometry_internal
 
 #endif  // INK_GEOMETRY_INTERNAL_OUTLINE_PROCESSING_H_

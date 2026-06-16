@@ -20,6 +20,7 @@
 
 #include "gmock/gmock.h"
 #include "ink/geometry/internal/circle.h"
+#include "ink/geometry/internal/outline_processing.h"
 
 namespace ink::geometry_internal {
 
@@ -35,6 +36,9 @@ MATCHER_P(IsCyclicPermutationOf, expected, "") {
   return std::search(doubled.begin(), doubled.end(), arg.begin(), arg.end()) !=
          doubled.end();
 }
+
+::testing::Matcher<ShapeOutline> ShapeOutlineNear(const ShapeOutline& expected,
+                                                  float tolerance);
 
 }  // namespace ink::geometry_internal
 

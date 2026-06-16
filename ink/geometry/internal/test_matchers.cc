@@ -14,9 +14,14 @@
 
 #include "ink/geometry/internal/test_matchers.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include "gmock/gmock.h"
 #include "absl/strings/str_cat.h"
 #include "ink/geometry/internal/circle.h"
+#include "ink/geometry/internal/outline_processing.h"
+#include "ink/geometry/point.h"
 #include "ink/geometry/type_matchers.h"
 
 namespace ink::geometry_internal {
@@ -52,6 +57,21 @@ MATCHER_P2(CircleNearMatcher, expected, tolerance,
       arg, result_listener);
 }
 
+MATCHER_P2(ShapeOutlineNearMatcher, expected, tolerance, "") {
+  float tol = tolerance;
+  return std::equal(
+      arg.Chains().begin(), arg.Chains().end(), expected.Chains().begin(),
+      expected.Chains().end(), [tol](const auto& a, const auto& b) {
+        return a.Orientation() == b.Orientation() &&
+               std::equal(a.Vertices().begin(), a.Vertices().end(),
+                          b.Vertices().begin(), b.Vertices().end(),
+                          [tol](Point p1, Point p2) {
+                            return std::abs(p1.x - p2.x) <= tol &&
+                                   std::abs(p1.y - p2.y) <= tol;
+                          });
+      });
+}
+
 }  // namespace
 
 Matcher<Circle> CircleEq(const Circle& expected) {
@@ -60,6 +80,11 @@ Matcher<Circle> CircleEq(const Circle& expected) {
 
 Matcher<Circle> CircleNear(const Circle& expected, float tolerance) {
   return CircleNearMatcher(expected, tolerance);
+}
+
+Matcher<ShapeOutline> ShapeOutlineNear(const ShapeOutline& expected,
+                                       float tolerance) {
+  return ShapeOutlineNearMatcher(expected, tolerance);
 }
 
 }  // namespace ink::geometry_internal

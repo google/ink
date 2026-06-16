@@ -561,5 +561,146 @@ TEST(ComputeTriangulationTest, PolygonWithHole) {
   EXPECT_TRUE(triangles.empty());
 }
 
+TEST(ComputeSubtractionTests, SubtractDisjointTriangles) {
+  //         C           F
+  //        / \         / \
+  //       /   \       /   \
+  //      A-----B     D-----E
+  Point A{0, 0}, B{2, 0}, C{1, 2};
+  Point D{4, 0}, E{6, 0}, F{5, 2};
+
+  ShapeOutline shape_a({{{A, B}, 1}, {{A, C, B}, -1}});
+  ShapeOutline shape_b({{{D, E}, 1}, {{D, F, E}, -1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_a, shape_b);
+
+  EXPECT_EQ(result, shape_a);
+}
+
+TEST(ComputeSubtractionTests, SubtractTwoDiamonds) {
+  //         D     F
+  //        / \   / \
+  //       /   \ /   \
+  //      /    / \    \
+  //     A    E   C    G
+  //      \    \ /    /
+  //       \   / \   /
+  //        \ /   \ /
+  //         B     H
+  Point A{-4, 0}, B{-1, -3}, C{2, 0}, D{-1, 3};
+  Point E{-2, 0}, F{1, 3}, G{4, 0}, H{1, -3};
+
+  Point X1{0, -2};  // Intersection of BC and EH
+  Point X2{0, 2};   // Intersection of CD and EF
+
+  ShapeOutline shape_a({{{A, B, C}, 1}, {{A, D, C}, -1}});
+  ShapeOutline shape_b({{{E, H, G}, 1}, {{E, F, G}, -1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_a, shape_b);
+
+  EXPECT_THAT(
+      result,
+      ShapeOutlineNear(
+          ShapeOutline(
+              {{{A, B, X1}, 1}, {{A, D, X2}, -1}, {{E, X2}, 1}, {{E, X1}, -1}}),
+          1e-6f));
+}
+
+TEST(ComputeSubtractionTests, SubtractRectFromRect) {
+  //    D-----------C
+  //    |           |
+  //    |       H--------G
+  //    |       |   |    |
+  //    |       E--------F
+  //    |           |
+  //    A-----------B
+  Point A{0, 0}, B{6, 0}, C{6, 6}, D{0, 6};
+  Point E{2, 2}, F{8, 2}, G{8, 4}, H{2, 4};
+
+  Point X1{6, 2};  // Intersection of BC and EF
+  Point X2{6, 4};  // Intersection of BC and HG
+
+  ShapeOutline shape_a({{{A, B, C}, 1}, {{A, D, C}, -1}});
+  ShapeOutline shape_b({{{E, F, G}, 1}, {{E, H, G}, -1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_a, shape_b);
+
+  EXPECT_THAT(result, ShapeOutlineNear(ShapeOutline({{{A, B, X1}, 1},
+                                                     {{E, H, X2, C}, 1},
+                                                     {{A, D, C}, -1},
+                                                     {{E, X1}, -1}}),
+                                       1e-6f));
+}
+
+TEST(ComputeSubtractionTests, FullyDeletedShape) {
+  //    H-----------G
+  //    |   D---C   |
+  //    |   |   |   |
+  //    |   A---B   |
+  //    E-----------F
+  Point A{2, 2}, B{4, 2}, C{4, 4}, D{2, 4};
+  Point E{0, 0}, F{6, 0}, G{6, 6}, H{0, 6};
+
+  ShapeOutline shape_a({{{A, B, C}, 1}, {{A, D, C}, -1}});
+  ShapeOutline shape_b({{{E, F, G}, 1}, {{E, H, G}, -1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_a, shape_b);
+
+  EXPECT_EQ(result, ShapeOutline({}));
+}
+
+TEST(ComputeSubtractionTests, SubtractFullyContainedHole) {
+  //    D-----------C
+  //    |   H---G   |
+  //    |   |   |   |
+  //    |   E---F   |
+  //    A-----------B
+  Point A{0, 0}, B{6, 0}, C{6, 6}, D{0, 6};
+  Point E{2, 2}, F{4, 2}, G{4, 4}, H{2, 4};
+
+  ShapeOutline shape_a({{{A, B, C}, 1}, {{A, D, C}, -1}});
+  ShapeOutline shape_b({{{E, F, G}, 1}, {{E, H, G}, -1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_a, shape_b);
+
+  EXPECT_EQ(
+      result,
+      ShapeOutline(
+          {{{A, B, C}, 1}, {{A, D, C}, -1}, {{E, F, G}, -1}, {{E, H, G}, 1}}));
+}
+
+TEST(ComputeSubtractionTests, SubtractShapeWithHole) {
+  //    D---------------C
+  //    |               |
+  //    |       H-------+-------G
+  //    |       |   L---+---K   |
+  //    |       |   |   |   |   |
+  //    |       |   I---+---J   |
+  //    |       E-------+-------F
+  //    |               |
+  //    A---------------B
+  Point A{0, 0}, B{8, 0}, C{8, 8}, D{0, 8};
+  Point E{6, 2}, F{10, 2}, G{10, 6}, H{6, 6};
+  Point I{7, 3}, J{9, 3}, K{9, 5}, L{7, 5};
+
+  Point X1{8, 2};  // Intersection of BC and EF
+  Point X2{8, 6};  // Intersection of BC and HG
+  Point X3{8, 3};  // Intersection of BC and IJ
+  Point X4{8, 5};  // Intersection of BC and KL
+
+  ShapeOutline shape_a({{{A, B, C}, 1}, {{A, D, C}, -1}});
+  ShapeOutline shape_b(
+      {{{E, F, G}, 1}, {{E, H, G}, -1}, {{I, L, K}, 1}, {{I, J, K}, -1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_a, shape_b);
+
+  EXPECT_THAT(result, ShapeOutlineNear(ShapeOutline({{{A, D, C}, -1},
+                                                     {{A, B, X1}, 1},
+                                                     {{E, X1}, -1},
+                                                     {{E, H, X2, C}, 1},
+                                                     {{I, L, X4}, -1},
+                                                     {{I, X3, X4}, 1}}),
+                                       1e-6f));
+}
 }  // namespace
 }  // namespace ink::geometry_internal
