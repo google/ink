@@ -26,6 +26,7 @@ filegroup(
 cc_library(
     name = "cinterop",
     deps = [
+        ":brush_family_serialization_native",
         ":stroke_input_batch_serialization_native",
     ],
 )
