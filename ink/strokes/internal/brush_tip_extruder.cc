@@ -549,7 +549,11 @@ void BrushTipExtruder::ExtrudeBreakPoint() {
   } else if (new_vertex_count < 3) {
     // We added fewer than three vertices, so there's not enough since the
     // last extrusion break to actually draw anything. Discard it.
-    geometry_.ClearSinceLastExtrusionBreak();
+    auto it = std::find_if(extrusions_.rbegin(), extrusions_.rend(),
+                           [](const BrushTipExtrusion& extrusion) {
+                             return extrusion.IsBreakPoint();
+                           });
+    ClearSinceLastExtrusionBreak(it.base(), false);
     return;
   }
 

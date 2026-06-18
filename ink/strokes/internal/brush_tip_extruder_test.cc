@@ -591,6 +591,74 @@ TEST_F(BrushTipExtruderTest,
   }
 }
 
+TEST_F(BrushTipExtruderTest, DiscardDegenerateExtrusionAtStartOfStroke) {
+  BrushTipExtruder extruder;
+  extruder.StartStroke(/* brush_epsilon = */ 0.1,
+                       /* is_particle_brush = */ true, mesh_);
+  StrokeShapeUpdate update = extruder.ExtendStroke(
+      {
+          {.position = {0, 0}, .width = 0.5, .height = 0},
+          {.position = {0, 0}, .width = 0, .height = 0},
+      },
+      {});
+
+  EXPECT_TRUE(update.region.IsEmpty());
+  EXPECT_THAT(update.first_index_offset, Eq(std::nullopt));
+  EXPECT_THAT(update.first_vertex_offset, Eq(std::nullopt));
+  EXPECT_EQ(mesh_.VertexCount(), 0);
+  EXPECT_EQ(mesh_.TriangleCount(), 0);
+}
+
+TEST_F(BrushTipExtruderTest, DiscardDegenerateExtrusionBetweenValidExtrusions) {
+  BrushTipExtruder extruder;
+  extruder.StartStroke(/* brush_epsilon = */ 0.1,
+                       /* is_particle_brush = */ true, mesh_);
+  // Particle A
+  extruder.ExtendStroke(
+      {
+          {.position = {0, 0}, .width = 0.5, .height = 0.5},
+          {.position = {0, 0}, .width = 0, .height = 0},
+      },
+      {});
+  uint32_t vertex_count_a = mesh_.VertexCount();
+  uint32_t triangle_count_a = mesh_.TriangleCount();
+
+  // Particle B (degenerate zero-height particle)
+  extruder.ExtendStroke(
+      {
+          {.position = {1, 0}, .width = 0.5, .height = 0},
+          {.position = {1, 0}, .width = 0, .height = 0},
+      },
+      {});
+
+  // Vertex and triangle counts should remain unchanged because Particle B is
+  // discarded.
+  EXPECT_EQ(mesh_.VertexCount(), vertex_count_a);
+  EXPECT_EQ(mesh_.TriangleCount(), triangle_count_a);
+
+  // Particle C
+  extruder.ExtendStroke(
+      {
+          {.position = {2, 0}, .width = 0.5, .height = 0.5},
+          {.position = {2, 0}, .width = 0, .height = 0},
+      },
+      {});
+
+  // Vertex and triangle counts should be exactly double Particle A's counts,
+  // since Particle C is the same as Particle A, and the degenerate Particle B
+  // is discarded.
+  EXPECT_EQ(mesh_.VertexCount(), 2 * vertex_count_a);
+  EXPECT_EQ(mesh_.TriangleCount(), 2 * triangle_count_a);
+
+  // Verify that Particle C is a clean standalone stamp centered at x = 2.0.
+  // Without the fix, Particle C's mesh starts at Particle B's position (1.0)
+  // and bridges to (2.0), so there are vertices near x = 1.0.
+  for (uint32_t i = vertex_count_a; i < mesh_.VertexCount(); ++i) {
+    SCOPED_TRACE(absl::StrCat("Vertex ", i));
+    EXPECT_GE(mesh_.VertexPosition(i).x, 1.5f);
+  }
+}
+
 TEST_F(BrushTipExtruderTest, AddBreakPointsToNonEmptyStroke) {
   BrushTipExtruder extruder;
   extruder.StartStroke(/* brush_epsilon = */ 0.06,
