@@ -22,12 +22,23 @@
 namespace ink::strokes_internal {
 
 // Given two meshes and transforms to a common coordinate space, returns a
-// mesh representing the boolean subtraction of `mesh_b` from `mesh_a`, obtained
-// by removing all triangles of `mesh_a` that intersects `mesh_b`.
+// mesh representing the boolean subtraction of `mesh_b` from `mesh_a`.
 //
 // The coordinate transformations are expected to be non-degenerate, and an
 // error will be returned if not. The returned PartitionMesh is in the same
 // coordinate space as `mesh_a`.
+//
+// The returned PartitionedMesh has the same number of coats (render groups) as
+// `mesh_a`, with each coat in the returned partition mesh consisting of the
+// subtraction of the coat in `mesh_a` minus (the union of) all the coats in
+// `mesh_b`.
+//
+// The returned mesh in each coat is a refinement of its input, meaning
+// that each triangle in the returned mesh is contained by a triangle in the
+// input mesh. The attributes of vertices in the returned mesh are obtained
+// by linearly interpolating the attributes of the input mesh, except for
+// anti-aliasing attributes (kSideLabel, kSideDerivative, kForwardLabel,
+// kForwardDerivative), which are set to zero.
 absl::StatusOr<PartitionedMesh> Subtract(const PartitionedMesh& mesh_a,
                                          const AffineTransform& transform_a,
                                          const PartitionedMesh& mesh_b,
