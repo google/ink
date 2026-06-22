@@ -65,6 +65,12 @@ StrokeInputBatch::ConstIterator StrokeInputBatch::ConstIterator::operator++(
 }
 
 void StrokeInputBatch::Clear() {
+  ClearInputs();
+  noise_seed_ = 0;
+  base_animation_phase_ = 0.0f;
+}
+
+void StrokeInputBatch::ClearInputs() {
   if (data_.IsShared()) {
     data_.Reset();
   } else if (data_.HasValue()) {
@@ -74,8 +80,6 @@ void StrokeInputBatch::Clear() {
   size_ = 0;
   tool_type_ = StrokeInput::ToolType::kUnknown;
   stroke_unit_length_ = StrokeInput::kNoStrokeUnitLength;
-  noise_seed_ = 0;
-  base_animation_phase_ = 0.0f;
   has_pressure_ = false;
   has_tilt_ = false;
   has_orientation_ = false;
@@ -206,7 +210,7 @@ absl::Status StrokeInputBatch::Set(int i, const StrokeInput& input) {
   ABSL_RETURN_IF_ERROR(ValidateSingleInput(input));
 
   if (Size() == 1) {
-    Clear();
+    ClearInputs();
     if (!data_.HasValue()) data_.Emplace();
     SetInlineFormatMetadata(input);
     AppendInputToFloatVector(input, data_.MutableValue());
@@ -324,7 +328,11 @@ absl::Status StrokeInputBatch::Append(const StrokeInputBatch& inputs) {
   if (inputs.IsEmpty()) return absl::OkStatus();
 
   if (IsEmpty()) {
+    uint32_t old_noise_seed = noise_seed_;
+    float old_animation_phase = base_animation_phase_;
     *this = inputs;
+    noise_seed_ = old_noise_seed;
+    base_animation_phase_ = old_animation_phase;
     return absl::OkStatus();
   }
 
@@ -379,7 +387,7 @@ void StrokeInputBatch::Erase(int start, int count) {
   count = std::min(count, Size() - start);
   if (count == 0) return;
   if (start == 0 && count == Size()) {
-    Clear();
+    ClearInputs();
     return;
   }
 
