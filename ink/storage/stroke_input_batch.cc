@@ -19,7 +19,6 @@
 #include <limits>
 #include <optional>
 
-#include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/angle.h"
