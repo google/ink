@@ -758,6 +758,42 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "stroke_segmentation",
+    srcs = ["stroke_segmentation.cc"],
+    hdrs = ["stroke_segmentation.h"],
+    deps = [
+        ":stroke_vertex",
+        "//ink/geometry:affine_transform",
+        "//ink/geometry:mesh",
+        "//ink/geometry:mesh_format",
+        "//ink/geometry:mutable_mesh",
+        "//ink/geometry:partitioned_mesh",
+        "//ink/geometry:point",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "stroke_segmentation_test",
+    srcs = ["stroke_segmentation_test.cc"],
+    deps = [
+        ":stroke_segmentation",
+        "//ink/geometry:affine_transform",
+        "//ink/geometry:mesh_format",
+        "//ink/geometry:mutable_mesh",
+        "//ink/geometry:partitioned_mesh",
+        "//ink/geometry:point",
+        "//ink/geometry:type_matchers",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest_main",
+    ],
+)
+
 cc_test(
     name = "stroke_subtraction_test",
     srcs = ["stroke_subtraction_test.cc"],
