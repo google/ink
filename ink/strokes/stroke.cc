@@ -34,6 +34,7 @@
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
+#include "ink/strokes/internal/stroke_segmentation.h"
 #include "ink/strokes/internal/stroke_shape_builder.h"
 #include "ink/strokes/internal/stroke_subtraction.h"
 #include "ink/strokes/internal/stroke_vertex.h"
@@ -208,22 +209,28 @@ void Stroke::RegenerateShape() {
   ABSL_DCHECK_EQ(shape_.RenderGroupCount(), brush_.CoatCount());
 }
 
-std::vector<Stroke> Stroke::PartialErase(
-    const PartitionedMesh& eraser_shape,
-    const AffineTransform& eraser_transform,
-    const AffineTransform& stroke_transform) const {
+Stroke Stroke::Subtract(const PartitionedMesh& mask_shape,
+                        const AffineTransform& mask_transform,
+                        const AffineTransform& stroke_transform) const {
   absl::StatusOr<PartitionedMesh> remaining_mesh = strokes_internal::Subtract(
-      shape_, stroke_transform, eraser_shape, eraser_transform);
-  if (!remaining_mesh.ok()) return {*this};
+      shape_, stroke_transform, mask_shape, mask_transform);
+  if (!remaining_mesh.ok()) return *this;
 
-  // If the entire stroke is erased, return an empty list.
-  if (absl::c_none_of(remaining_mesh->Meshes(), [](const Mesh& mesh) {
-        return mesh.TriangleCount() > 0;
-      })) {
-    return {};
+  return Stroke(brush_, inputs_, *remaining_mesh);
+}
+
+std::vector<Stroke> Stroke::Split(const AffineTransform& stroke_transform,
+                                  float tolerance) const {
+  absl::StatusOr<std::vector<PartitionedMesh>> partitioned_meshes =
+      strokes_internal::SegmentSpatially(shape_, stroke_transform, tolerance);
+  if (!partitioned_meshes.ok()) return {*this};
+
+  std::vector<Stroke> results;
+  results.reserve(partitioned_meshes->size());
+  for (PartitionedMesh& mesh : *partitioned_meshes) {
+    results.emplace_back(brush_, inputs_, std::move(mesh));
   }
-
-  return {Stroke(brush_, inputs_, *remaining_mesh)};
+  return results;
 }
 
 }  // namespace ink

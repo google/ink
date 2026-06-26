@@ -15,9 +15,12 @@
 #include <jni.h>
 
 #include "ink/jni/internal/jni_defines.h"
+#include "ink/jni/internal/status_jni_helper.h"
 #include "ink/strokes/internal/jni/stroke_native.h"
 
 extern "C" {
+
+using ::ink::jni::ThrowExceptionFromStatusCallback;
 
 JNI_METHOD(strokes, StrokeNative, jlong, createWithBrushAndInputs)
 (JNIEnv* env, jobject object, jlong brush_native_pointer,
@@ -60,15 +63,24 @@ JNI_METHOD(strokes, StrokeNative, void, free)
   StrokeNative_free(native_pointer_to_stroke);
 }
 
-JNI_METHOD(strokes, MultipleStrokesNative, jlong, createWithPartialErase)
-(JNIEnv* env, jobject object, jlong target_stroke_ptr, jlong eraser_shape_ptr,
- jfloat eraser_a, jfloat eraser_b, jfloat eraser_c, jfloat eraser_d,
- jfloat eraser_e, jfloat eraser_f, jfloat stroke_a, jfloat stroke_b,
- jfloat stroke_c, jfloat stroke_d, jfloat stroke_e, jfloat stroke_f) {
-  return MultipleStrokesNative_createWithPartialErase(
-      target_stroke_ptr, eraser_shape_ptr, eraser_a, eraser_b, eraser_c,
-      eraser_d, eraser_e, eraser_f, stroke_a, stroke_b, stroke_c, stroke_d,
-      stroke_e, stroke_f);
+JNI_METHOD(strokes, StrokeNative, jlong, createWithSubtract)
+(JNIEnv* env, jobject object, jlong target_stroke_ptr, jlong mask_shape_ptr,
+ jfloat mask_a, jfloat mask_b, jfloat mask_c, jfloat mask_d, jfloat mask_e,
+ jfloat mask_f, jfloat stroke_a, jfloat stroke_b, jfloat stroke_c,
+ jfloat stroke_d, jfloat stroke_e, jfloat stroke_f) {
+  return StrokeNative_createWithSubtract(
+      target_stroke_ptr, mask_shape_ptr, mask_a, mask_b, mask_c, mask_d, mask_e,
+      mask_f, stroke_a, stroke_b, stroke_c, stroke_d, stroke_e, stroke_f);
+}
+
+JNI_METHOD(strokes, MultipleStrokesNative, jlong, createWithSplit)
+(JNIEnv* env, jobject object, jlong target_stroke_ptr, jfloat transform_a,
+ jfloat transform_b, jfloat transform_c, jfloat transform_d, jfloat transform_e,
+ jfloat transform_f, jfloat tolerance) {
+  return MultipleStrokesNative_createWithSplit(
+      env, target_stroke_ptr, transform_a, transform_b, transform_c,
+      transform_d, transform_e, transform_f, tolerance,
+      &ThrowExceptionFromStatusCallback);
 }
 
 JNI_METHOD(strokes, MultipleStrokesNative, jint, getStrokeCount)

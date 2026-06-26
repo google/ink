@@ -63,6 +63,7 @@ cc_library(
         "//ink/strokes/input:stroke_input_batch",
         "@abseil-cpp//absl/log:absl_check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
@@ -79,6 +80,7 @@ cc_library(
         ":stroke_input_jni_helper",
         ":stroke_native",
         "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:status_jni_helper",
     ] + select({
         "@platforms//os:android": [],
         "//conditions:default": [
