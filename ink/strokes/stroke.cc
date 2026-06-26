@@ -212,8 +212,9 @@ std::vector<Stroke> Stroke::PartialErase(
     const PartitionedMesh& eraser_shape,
     const AffineTransform& eraser_transform,
     const AffineTransform& stroke_transform) const {
-  absl::StatusOr<PartitionedMesh> remaining_mesh = strokes_internal::Subtract(
-      shape_, stroke_transform, eraser_shape, eraser_transform);
+  absl::StatusOr<PartitionedMesh> remaining_mesh =
+      strokes_internal::Subtract(shape_, stroke_transform, eraser_shape,
+                                 eraser_transform, brush_.GetEpsilon());
   if (!remaining_mesh.ok()) return {*this};
 
   // If the entire stroke is erased, return an empty list.
