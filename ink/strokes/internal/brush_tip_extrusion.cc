@@ -36,28 +36,24 @@ using ::ink::geometry_internal::Circle;
 // circles outside the `RoundedPolygon`.
 static RoundedPolygon ConstructJoinedShape(
     const BrushTipShape& first, const BrushTipShape& second,
-    const BrushTipShape::TangentCircleIndices& indices, float offset) {
+    const BrushTipShape::TangentCircleIndices& indices) {
   ABSL_DCHECK(!first.Contains(second));
   ABSL_DCHECK(!second.Contains(first));
-  ABSL_CHECK_GE(offset, 0);
 
   // Each `BrushTipShape` has at most four circles, so we need at most eight
   // for the `RoundedPolygon`.
   absl::InlinedVector<Circle, 8> circles;
 
-  auto add_circles = [&circles, offset](const BrushTipShape& shape,
-                                        int first_index, int last_index) {
-    auto add_one_circle_with_offset = [&circles, offset](const Circle& circle) {
-      circles.push_back({circle.Center(), circle.Radius() + offset});
-    };
+  auto add_circles = [&circles](const BrushTipShape& shape, int first_index,
+                                int last_index) {
     if (first_index == last_index) {
-      add_one_circle_with_offset(shape.PerimeterCircles()[first_index]);
+      circles.push_back(shape.PerimeterCircles()[first_index]);
     } else {
       for (int index = first_index; index != last_index;
            index = shape.GetNextPerimeterIndexCcw(index)) {
-        add_one_circle_with_offset(shape.PerimeterCircles()[index]);
+        circles.push_back(shape.PerimeterCircles()[index]);
       }
-      add_one_circle_with_offset(shape.PerimeterCircles()[last_index]);
+      circles.push_back(shape.PerimeterCircles()[last_index]);
     }
   };
 
@@ -101,8 +97,8 @@ BrushTipExtrusion::TangentQuality EvaluateTangentQualityInternal(
   }
 
   // In order to avoid false-negatives from `RoundedPolygon::ContainsCircle` due
-  // to floating-point precision issues, we enlarge the joined shape by a small
-  // amount.
+  // to floating-point precision issues, we test containment using a small
+  // tolerance.
   Rect first_bounds = first.Bounds();
   Rect second_bounds = second.Bounds();
   float max_absolute_coordinate = std::max(
@@ -110,25 +106,26 @@ BrushTipExtrusion::TangentQuality EvaluateTangentQualityInternal(
        std::abs(first_bounds.YMin()), std::abs(first_bounds.YMax()),
        std::abs(second_bounds.XMin()), std::abs(second_bounds.XMax()),
        std::abs(second_bounds.YMin()), std::abs(second_bounds.YMax())});
-  float offset = 1e-6 * max_absolute_coordinate;
+  float tolerance = 1e-6 * max_absolute_coordinate;
 
-  // Construct the joined shape, with the offset.
-  RoundedPolygon joined_shape =
-      ConstructJoinedShape(first, second, indices, offset);
+  // Construct the joined shape.
+  RoundedPolygon joined_shape = ConstructJoinedShape(first, second, indices);
 
   // Finally, check whether the unused circles are contained inside the joined
   // shape.
   for (int index = first.GetNextPerimeterIndexCcw(indices.right.first);
        index != indices.left.first;
        index = first.GetNextPerimeterIndexCcw(index)) {
-    if (!joined_shape.ContainsCircle(first.PerimeterCircles()[index]))
+    if (!joined_shape.ContainsCircle(first.PerimeterCircles()[index],
+                                     tolerance))
       return BrushTipExtrusion::TangentQuality::
           kBadTangentsJoinedShapeDoesNotCoverInputShapes;
   }
   for (int index = second.GetNextPerimeterIndexCcw(indices.left.second);
        index != indices.right.second;
        index = second.GetNextPerimeterIndexCcw(index)) {
-    if (!joined_shape.ContainsCircle(second.PerimeterCircles()[index]))
+    if (!joined_shape.ContainsCircle(second.PerimeterCircles()[index],
+                                     tolerance))
       return BrushTipExtrusion::TangentQuality::
           kBadTangentsJoinedShapeDoesNotCoverInputShapes;
   }

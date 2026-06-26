@@ -450,7 +450,9 @@ cc_test(
     srcs = ["brush_tip_extrusion_test.cc"],
     deps = [
         ":brush_tip_extrusion",
+        ":brush_tip_state",
         "//ink/geometry:angle",
+        "//ink/geometry/internal:circle",
         "@googletest//:gtest_main",
     ],
 )

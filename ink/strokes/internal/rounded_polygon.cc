@@ -128,14 +128,16 @@ std::optional<float> SignedDistanceToSegment(const Segment& segment,
 
 }  // namespace
 
-bool RoundedPolygon::ContainsCircle(const Circle& circle) const {
-  // `circle` is contained in the `RoundedPolygon` iff its radius plus the
-  // signed distance from its center to the boundary is less than or equal to
-  // zero.
+bool RoundedPolygon::ContainsCircle(const Circle& circle,
+                                    float tolerance) const {
+  // `circle` is contained in the `RoundedPolygon` iff the distance from
+  // its center to the boundary is greater than or equal to its radius, minus
+  // the tolerance.
   for (size_t i = 0; i < arcs_.size(); ++i) {
-    if (SignedDistanceToArc(arcs_[i], circle.Center()) > -circle.Radius() ||
+    if (SignedDistanceToArc(arcs_[i], circle.Center()) >
+            -circle.Radius() + tolerance ||
         SignedDistanceToSegment(GetSegment(i), circle.Center()) >
-            -circle.Radius())
+            -circle.Radius() + tolerance)
       return false;
   }
   return true;

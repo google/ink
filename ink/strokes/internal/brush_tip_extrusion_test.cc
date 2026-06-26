@@ -2,6 +2,8 @@
 
 #include "gtest/gtest.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/internal/circle.h"
+#include "ink/strokes/internal/brush_tip_state.h"
 
 namespace ink::strokes_internal {
 namespace {
@@ -154,6 +156,49 @@ TEST(BrushTipExtrusionTest,
       // of the corners of the second shape lies ~1e-7 units outside the joined
       // shape due to floating-point precision loss.
       BrushTipExtrusion::TangentQuality::kGoodTangents);
+}
+
+TEST(BrushTipExtrusionTest,
+     EvaluateTangentQualityPaddedContainmentCheckNoCrash) {
+  // This tests a numerical precision issue that causes a crash in
+  // EvaluateTangentQuality, (see e.g. b/523190724). The root of the issue is
+  // that in finite precision, uniformly expanding circles does not preserve
+  // their containment relationship. In other words, while it's true in exact
+  // arithmetic that if two circles don't contain each other then the uniformly
+  // expanded circles also don't contain each other, this isn't necessarily true
+  // in finite precision arithmetic.
+
+  geometry_internal::Circle c1({21099998.0f, 0.0f}, 30000002.0f);
+  geometry_internal::Circle c2({51100000.0f, 0.0f}, 1.0f);
+
+  float pad = 1.0e-6f * 51100002.0f;
+  // Inflate c1 and c2 by `pad`
+  geometry_internal::Circle padded_c1(c1.Center(), c1.Radius() + pad);
+  geometry_internal::Circle padded_c2(c2.Center(), c2.Radius() + pad);
+
+  EXPECT_FALSE(c1.Contains(c2));
+  EXPECT_TRUE(padded_c1.Contains(padded_c2));
+
+  // This previously caused EvaluateTangentQuality to crash, due to a check in
+  // the RoundedPolygon constructor.
+  BrushTipState t1 = {
+      .position = {21099998.0f, 0.0f},
+      .width = 60000004.0f,
+      .height = 60000004.0f,
+      .corner_rounding = 1.0f,
+  };
+  BrushTipState t2 = {
+      .position = {51100001.0f, 0.0f},
+      .width = 4.0f,
+      .height = 2.0f,
+      .corner_rounding = 1.0f,
+      .rotation = kQuarterTurn / 2.0f,
+  };
+
+  // EvaluateTangentQuality should no longer crash on these tips.
+  EXPECT_EQ(BrushTipExtrusion::EvaluateTangentQuality(
+                {t1, kEpsilon}, {t2, kEpsilon}, kTravelThreshold),
+            BrushTipExtrusion::TangentQuality::kGoodTangents);
 }
 
 }  // namespace

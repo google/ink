@@ -59,10 +59,12 @@ class RoundedPolygon {
   // one (including the last and first).
   explicit RoundedPolygon(absl::Span<const geometry_internal::Circle> circles);
 
-  // Returns true if `circle` is contained within the `RoundedPolygon`. Note
-  // that `circle` is considered to be contained even if it touches the
-  // boundary.
-  bool ContainsCircle(const geometry_internal::Circle& circle) const;
+  // Returns true if `circle` is contained within the `RoundedPolygon`
+  // (including touching the boundary), up to a non-negative `tolerance` that
+  // conceptually inflates the boundary to account for floating-point precision
+  // jitter.
+  bool ContainsCircle(const geometry_internal::Circle& circle,
+                      float tolerance = 0.0f) const;
 
   // Returns the `Arc` components of the boundary. The index of the arc
   // corresponds to the index of the `Circle` passed in to the constructor.
