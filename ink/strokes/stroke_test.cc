@@ -612,12 +612,10 @@ TEST(StrokeTest, PartialEraseWithEmptyEraserShapeReturnsStroke) {
   PartitionedMesh empty_eraser_shape;
   AffineTransform identity = AffineTransform::Identity();
 
-  std::vector<Stroke> result =
-      stroke.PartialErase(empty_eraser_shape, identity, identity);
+  Stroke result = stroke.PartialErase(empty_eraser_shape, identity, identity);
 
-  ASSERT_THAT(result, SizeIs(1));
-  EXPECT_THAT(result[0].GetBrush(), BrushEq(stroke.GetBrush()));
-  EXPECT_THAT(result[0].GetInputs(), StrokeInputBatchEq(stroke.GetInputs()));
+  EXPECT_THAT(result.GetBrush(), BrushEq(stroke.GetBrush()));
+  EXPECT_THAT(result.GetInputs(), StrokeInputBatchEq(stroke.GetInputs()));
 }
 
 TEST(StrokeTest, PartialEraseWithDegenerateTransformReturnsStroke) {
@@ -626,13 +624,11 @@ TEST(StrokeTest, PartialEraseWithDegenerateTransformReturnsStroke) {
   AffineTransform identity = AffineTransform::Identity();
   AffineTransform degenerate = AffineTransform::Scale(1, 0);
 
-  std::vector<Stroke> result =
-      stroke.PartialErase(eraser_shape, identity, degenerate);
+  Stroke result = stroke.PartialErase(eraser_shape, identity, degenerate);
 
-  ASSERT_THAT(result, SizeIs(1));
-  EXPECT_THAT(result[0].GetBrush(), BrushEq(stroke.GetBrush()));
-  EXPECT_THAT(result[0].GetInputs(), StrokeInputBatchEq(stroke.GetInputs()));
-  EXPECT_THAT(result[0].GetShape(), PartitionedMeshDeepEq(stroke.GetShape()));
+  EXPECT_THAT(result.GetBrush(), BrushEq(stroke.GetBrush()));
+  EXPECT_THAT(result.GetInputs(), StrokeInputBatchEq(stroke.GetInputs()));
+  EXPECT_THAT(result.GetShape(), PartitionedMeshDeepEq(stroke.GetShape()));
 }
 
 TEST(StrokeTest, ParticleBrushWithOneDimensionZero) {
@@ -657,6 +653,20 @@ TEST(StrokeTest, ParticleBrushWithOneDimensionZero) {
   // If we did divide by zero, RegenerateShape would produce a PartitionedMesh
   // with no meshes.
   EXPECT_THAT(stroke.GetShape().Meshes(), SizeIs(1));
+}
+
+TEST(StrokeTest, SegmentSpatiallyReturnsCorrectSegments) {
+  Stroke stroke(CreateBrush(), CreateFilledInputs());
+  ASSERT_FALSE(stroke.GetShape().Meshes().empty());
+
+  absl::StatusOr<std::vector<Stroke>> segments =
+      stroke.SegmentSpatially(AffineTransform::Identity(), /*tolerance=*/1.0f);
+  ASSERT_THAT(segments, IsOk());
+  EXPECT_THAT(*segments, Not(IsEmpty()));
+  for (const auto& segment : *segments) {
+    EXPECT_THAT(segment.GetBrush(), BrushEq(stroke.GetBrush()));
+    EXPECT_THAT(segment.GetInputs(), StrokeInputBatchEq(stroke.GetInputs()));
+  }
 }
 
 }  // namespace

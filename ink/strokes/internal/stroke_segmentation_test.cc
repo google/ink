@@ -32,7 +32,17 @@ namespace {
 
 using ::absl_testing::IsOk;
 using ::testing::ElementsAre;
+using ::testing::IsEmpty;
 using ::testing::SizeIs;
+
+TEST(StrokeSegmentationTest, SegmentSpatiallyEmptyMesh) {
+  PartitionedMesh empty_mesh;
+  absl::StatusOr<std::vector<PartitionedMesh>> components =
+      SegmentSpatially(empty_mesh, AffineTransform::Identity(),
+                       /*tolerance=*/1.0f);
+  ASSERT_THAT(components, IsOk());
+  EXPECT_THAT(*components, IsEmpty());
+}
 
 TEST(StrokeSegmentationTest, SegmentSpatially) {
   //  C                     F

@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/log/absl_check.h"
+#include "absl/status/statusor.h"
 #include "ink/brush/internal/jni/brush_native_helper.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/internal/jni/partitioned_mesh_native_helper.h"
@@ -89,7 +90,7 @@ void StrokeNative_free(int64_t native_pointer) {
   DeleteNativeStroke(native_pointer);
 }
 
-int64_t MultipleStrokesNative_createWithPartialErase(
+int64_t StrokeNative_createWithPartialErase(
     int64_t target_stroke_ptr, int64_t eraser_shape_ptr, float eraser_a,
     float eraser_b, float eraser_c, float eraser_d, float eraser_e,
     float eraser_f, float stroke_a, float stroke_b, float stroke_c,
@@ -99,15 +100,35 @@ int64_t MultipleStrokesNative_createWithPartialErase(
   AffineTransform stroke_transform(stroke_a, stroke_b, stroke_c, stroke_d,
                                    stroke_e, stroke_f);
 
-  std::vector<Stroke> fragments =
+  return NewNativeStroke(
       CastToStroke(target_stroke_ptr)
           .PartialErase(CastToPartitionedMesh(eraser_shape_ptr),
-                        eraser_transform, stroke_transform);
+                        eraser_transform, stroke_transform));
+}
+
+int64_t MultipleStrokesNative_createWithSegmentSpatially(
+    void* jni_env_pass_through, int64_t target_stroke_ptr, float transform_a,
+    float transform_b, float transform_c, float transform_d, float transform_e,
+    float transform_f, float tolerance,
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str)) {
+  AffineTransform transform(transform_a, transform_b, transform_c, transform_d,
+                            transform_e, transform_f);
+
+  absl::StatusOr<std::vector<Stroke>> fragments =
+      CastToStroke(target_stroke_ptr).SegmentSpatially(transform, tolerance);
+
+  if (!fragments.ok()) {
+    throw_from_status_callback(jni_env_pass_through,
+                               static_cast<int>(fragments.status().code()),
+                               fragments.status().ToString().c_str());
+    return 0;
+  }
 
   MultipleStrokes result;
-  result.reserve(fragments.size());
-  for (size_t i = 0; i < fragments.size(); ++i) {
-    result.push_back(std::make_unique<Stroke>(std::move(fragments[i])));
+  result.reserve(fragments->size());
+  for (size_t i = 0; i < fragments->size(); ++i) {
+    result.push_back(std::make_unique<Stroke>(std::move((*fragments)[i])));
   }
   return NewNativeMultipleStrokes(std::move(result));
 }
