@@ -15,6 +15,8 @@
 #ifndef INK_STROKES_STROKE_H_
 #define INK_STROKES_STROKE_H_
 
+#include <vector>
+
 #include "absl/status/status.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_family.h"
@@ -115,15 +117,23 @@ class Stroke {
   //
   // The coordinate transformations are expected to be non-degenerate; otherwise
   // the stroke is returned as is.
+  Stroke PartialErase(const PartitionedMesh& eraser_shape,
+                      const AffineTransform& eraser_transform,
+                      const AffineTransform& stroke_transform) const;
+
+  // Segments the stroke spatially based on connected components of the mesh.
   //
-  // Each resulting fragment retains the original brush and inputs, but has a
-  // newly computed shape representing the portion remaining after erasure. The
+  // Connection is based on the geometry of the mesh embedded in R^2. Two
+  // points in `shape` are connected if their transformed positions are within
+  // `tolerance` distance of each other.
+  //
+  // The returned vector contains a `Stroke` for each connected component,
+  // constructed with the original brush and inputs, but with a new shape
+  // representing the portion of the stroke belonging to that component. The
   // order of the fragments in the returned vector is arbitrary and carries no
   // guarantee.
-  std::vector<Stroke> PartialErase(
-      const PartitionedMesh& eraser_shape,
-      const AffineTransform& eraser_transform,
-      const AffineTransform& stroke_transform) const;
+  absl::StatusOr<std::vector<Stroke>> SegmentSpatially(
+      const AffineTransform& transform, float tolerance) const;
 
  private:
   // Regenerates the PartitionedMesh.
