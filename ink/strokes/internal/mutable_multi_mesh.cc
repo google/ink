@@ -296,7 +296,7 @@ uint16_t MutableMultiMesh::CopyVertexIntoPartition(uint32_t vertex_index,
   partitions_[partition_index].vertex_indices.push_back(vertex_index);
   mesh.AppendVertex(other_mesh.VertexPosition(other_mesh_vertex_index));
   std::memcpy(
-      mesh.MutRawVertexData().data() + mesh_vertex_index * mesh.VertexStride(),
+      mesh.MutableRawVertexData().data() + mesh_vertex_index * mesh.VertexStride(),
       other_mesh.RawVertexData().data() +
           other_mesh_vertex_index * other_mesh.VertexStride(),
       mesh.VertexStride());
