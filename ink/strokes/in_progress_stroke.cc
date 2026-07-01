@@ -225,14 +225,16 @@ absl::Status InProgressStroke::ValidateNewInputsAttributes(
     const StrokeInput& first_new_input =
         real_inputs.IsEmpty() ? predicted_inputs.First() : real_inputs.First();
     ABSL_RETURN_IF_ERROR(
-        ValidateConsistentAttributes(last_old_real_input, first_new_input));
+        ValidateConsistentAttributes(last_old_real_input, first_new_input))
+        << "Failed to validate new inputs against previous real inputs.";
   }
 
   // If there are both new real and predicted inputs, check that the first
   // predicted input is valid against the last real input.
   if (!real_inputs.IsEmpty() && !predicted_inputs.IsEmpty()) {
-    ABSL_RETURN_IF_ERROR(ValidateConsistentAttributes(
-        real_inputs.Last(), predicted_inputs.First()));
+    ABSL_RETURN_IF_ERROR(ValidateConsistentAttributes(real_inputs.Last(),
+                                                      predicted_inputs.First()))
+        << "Failed to validate predicted inputs against real inputs.";
   }
 
   return absl::OkStatus();
