@@ -301,6 +301,9 @@ class MutableMesh {
   // Returns the raw data of the mesh's vertices.
   absl::Span<const std::byte> RawVertexData() const { return vertex_data_; }
 
+  // Returns the mutable raw data of the mesh's vertices.
+  absl::Span<std::byte> MutableRawVertexData() { return absl::MakeSpan(vertex_data_); }
+
   // Returns the number of bytes used to represent a vertex in this mesh. This
   // is equivalent to:
   //   mesh.Format().UnpackedVertexStride();
