@@ -171,8 +171,9 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
   ASSERT_THAT(mesh_b_pm, IsOk());
 
   // Subtract
-  absl::StatusOr<PartitionedMesh> result = Subtract(
-      *mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm, mesh_b_transform);
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               mesh_b_transform, 0.1f);
   ASSERT_THAT(result, IsOk());
 
   // The result should have 2 triangles and 4 vertices.
@@ -297,7 +298,7 @@ TEST(StrokeSubtractionTest, AttributeInterpolation) {
   // Subtract
   absl::StatusOr<PartitionedMesh> result =
       Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
-               AffineTransform::Identity());
+               AffineTransform::Identity(), 0.1f);
   ASSERT_THAT(result, IsOk());
 
   EXPECT_EQ(NumTriangles(*result), 2);
@@ -372,7 +373,7 @@ TEST(StrokeSubtractionTest, MultipleCoats) {
 
   absl::StatusOr<PartitionedMesh> result =
       Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
-               AffineTransform::Identity());
+               AffineTransform::Identity(), 0.1f);
   ASSERT_THAT(result, IsOk());
 
   // Result should have 2 coat.
@@ -430,11 +431,65 @@ TEST(StrokeSubtractionTest, FullDeleted) {
 
   absl::StatusOr<PartitionedMesh> result =
       Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
-               AffineTransform::Identity());
+               AffineTransform::Identity(), 0.1f);
   ASSERT_THAT(result, IsOk());
 
   EXPECT_EQ(NumTriangles(*result), 0);
   EXPECT_EQ(NumVertices(*result), 0);
+}
+
+TEST(StrokeSubtractionTest, EpsilonDeduplication) {
+  //                    C
+  //                  / |
+  //                 /  |
+  //                /   |
+  //               /    |
+  //              /     |
+  //             /      |
+  //    H-------/----E  |
+  //    |      /     |  |
+  //    |     A------|--B
+  //    |            |
+  //    G------------F
+
+  Point A{0, 0}, B{10, 0}, C{10, 10};
+  Point E{3, 2}, F{3, -5}, G{-5, -5}, H{-5, 2};
+
+  // Points close to E
+  Point E1{3.01f, 2.0f}, E2{3.0f, 2.01f};
+
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition}},
+      IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  MutableMesh mesh_a(*format);
+  for (const Point& p : {A, B, C}) mesh_a.AppendVertex(p);
+  mesh_a.AppendTriangleIndices({0, 1, 2});
+
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a);
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  MutableMesh mesh_b(MeshFormat{});
+  for (const Point& p : {E, E1, F, G, H, E2}) mesh_b.AppendVertex(p);
+  mesh_b.AppendTriangleIndices({0, 2, 3});  // E, F, G
+  mesh_b.AppendTriangleIndices({5, 3, 4});  // E', G, H
+
+  // Outline is E, E1, F, G, H, E2.
+  constexpr uint32_t mesh_b_outline[] = {0, 1, 2, 3, 4, 5};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.01f);
+  ASSERT_THAT(result, IsOk());
+
+  // The result should have 5 vertices, not 7, since E1 and E2 should have been
+  // deduplicated.
+  EXPECT_EQ(NumVertices(*result), 5);
 }
 
 }  // namespace

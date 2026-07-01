@@ -61,6 +61,8 @@ using EdgeVertexMap =
 // and epsilons.
 constexpr float kVertexDedupeTol = 1e-9;
 
+float DistanceSquared(Point a, Point b) { return (a - b).MagnitudeSquared(); }
+
 bool IsLeftOrBelow(Point a, Point b) {
   if (a.x != b.x) return a.x < b.x;
   return a.y < b.y;
@@ -322,18 +324,42 @@ MutableMesh SubtractMeshes(absl::Span<const Mesh> meshes,
   return mutable_mesh;
 }
 
+// Returns a `ShapeOutline` representing the silhouette of `mesh` when
+// transformed by `transform`, with consecutive points closer than `epsilon`
+// distance filtered out.
 ShapeOutline GetShapeB(const PartitionedMesh& mesh,
-                       const AffineTransform& transform) {
+                       const AffineTransform& transform, float epsilon) {
   std::vector<std::vector<Point>> loops;
+  float epsilon_squared = epsilon * epsilon;
   for (uint32_t group = 0; group < mesh.RenderGroupCount(); ++group) {
     for (uint32_t outline = 0; outline < mesh.OutlineCount(group); ++outline) {
-      uint32_t n = mesh.OutlineVertexCount(group, outline);
-      std::vector<Point> loop(n);
-      for (uint32_t i = 0; i < n; ++i) {
-        // Ink stroke outlines are CW oriented, so reverse the points.
-        loop[i] =
-            transform.Apply(mesh.OutlinePosition(group, outline, n - 1 - i));
+      uint32_t num_vertices = mesh.OutlineVertexCount(group, outline);
+      if (num_vertices == 0) continue;
+      std::vector<Point> loop;
+      loop.reserve(num_vertices);
+
+      // Iterate backwards, to reverse the loop, because Ink outlines are
+      // clockwise oriented.
+      loop.push_back(transform.Apply(
+          mesh.OutlinePosition(group, outline, num_vertices - 1)));
+      for (int i = static_cast<int>(num_vertices) - 2; i >= 0; --i) {
+        Point p = transform.Apply(mesh.OutlinePosition(group, outline, i));
+        if (DistanceSquared(p, loop.back()) >= epsilon_squared) {
+          loop.push_back(p);
+        }
       }
+
+      // Remove points at the end of the loop that are within `epsilon` of the
+      // start, with a while loop to handle the case that multiple points at the
+      // end are spaced `epsilon` apart but yet still within `epsilon` of the
+      // start.
+      while (loop.size() > 2 &&
+             DistanceSquared(loop.back(), loop.front()) < epsilon_squared) {
+        loop.pop_back();
+      }
+
+      if (loop.size() < 3) continue;
+
       loops.push_back(std::move(loop));
     }
   }
@@ -344,7 +370,8 @@ ShapeOutline GetShapeB(const PartitionedMesh& mesh,
 absl::StatusOr<PartitionedMesh> Subtract(const PartitionedMesh& mesh_a,
                                          const AffineTransform& transform_a,
                                          const PartitionedMesh& mesh_b,
-                                         const AffineTransform& transform_b) {
+                                         const AffineTransform& transform_b,
+                                         float epsilon) {
   // The approach in this function is to first compute a silhouette of `mesh_b`.
   // Then, for each coat of `mesh_a`, we compute a new mutable mesh representing
   // for the coat minus the silhouette of b. Finally, we assemble the resulting
@@ -361,7 +388,7 @@ absl::StatusOr<PartitionedMesh> Subtract(const PartitionedMesh& mesh_a,
   // future, the outline `shape_b` is cached in `mesh_b`, we should consider
   // working in a different coordinate system.
   AffineTransform b_to_a = *inv_transform_a * transform_b;
-  ShapeOutline shape_b = GetShapeB(mesh_b, b_to_a);
+  ShapeOutline shape_b = GetShapeB(mesh_b, b_to_a, epsilon);
 
   std::vector<PartitionedMesh::MutableMeshGroup> groups;
   groups.reserve(mesh_a.RenderGroupCount());
