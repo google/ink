@@ -219,9 +219,9 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
       result_mesh.FloatVertexAttribute(*index_X1, 2).Values(),
       ElementsAre(FloatEq(0.5f), FloatEq(0.5f), FloatEq(0.0f), FloatEq(1.0f)));
   EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X1, 3).Values(),
-              ElementsAre(FloatEq(0.0f), FloatEq(0.0f)));
+              ElementsAre(FloatEq(1.0f), FloatEq(1.0f)));
   EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X1, 4).Values(),
-              ElementsAre(FloatEq(0.0f), FloatEq(0.0f)));
+              ElementsAre(FloatEq(1.0f), FloatEq(1.0f)));
 
   std::optional<uint32_t> index_X2 = FindVertexIndex(result_mesh, X2);
   ASSERT_TRUE(index_X2.has_value());
@@ -231,9 +231,9 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
       result_mesh.FloatVertexAttribute(*index_X2, 2).Values(),
       ElementsAre(FloatEq(0.0f), FloatEq(0.5f), FloatEq(0.5f), FloatEq(1.0f)));
   EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X2, 3).Values(),
-              ElementsAre(FloatEq(0.0f), FloatEq(0.0f)));
+              ElementsAre(FloatEq(1.0f), FloatEq(1.0f)));
   EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X2, 4).Values(),
-              ElementsAre(FloatEq(0.0f), FloatEq(0.0f)));
+              ElementsAre(FloatEq(1.0f), FloatEq(1.0f)));
 }
 
 TEST(StrokeSubtractionTest, AttributeInterpolation) {
