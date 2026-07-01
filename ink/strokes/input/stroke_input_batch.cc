@@ -165,7 +165,9 @@ absl::Status ValidateInputSequence(absl::Span<const StrokeInput> inputs) {
   ABSL_RETURN_IF_ERROR(ValidateSingleInput(inputs[0]));
   for (size_t i = 1; i < inputs.size(); ++i) {
     ABSL_RETURN_IF_ERROR(ValidateSingleInput(inputs[i]));
-    ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(inputs[i - 1], inputs[i]));
+    ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(inputs[i - 1], inputs[i]))
+        << "Failed to validate input at index " << i
+        << " against previous input.";
   }
 
   return absl::OkStatus();
@@ -213,10 +215,15 @@ absl::Status StrokeInputBatch::Set(int i, const StrokeInput& input) {
   }
 
   if (i > 0) {
-    ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(Get(i - 1), input));
+    ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(Get(i - 1), input))
+        << "Failed to validate input being set at index " << i
+        << " against previous input.";
+    ;
   }
   if (i + 1 < Size()) {
-    ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(input, Get(i + 1)));
+    ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(input, Get(i + 1)))
+        << "Failed to validate input being set at index " << i
+        << " against following input.";
   }
 
   auto data =
@@ -263,7 +270,8 @@ absl::Status StrokeInputBatch::PrepareForAppend(
 
 absl::Status StrokeInputBatch::Append(const StrokeInput& input) {
   ABSL_RETURN_IF_ERROR(ValidateSingleInput(input));
-  ABSL_RETURN_IF_ERROR(PrepareForAppend(input));
+  ABSL_RETURN_IF_ERROR(PrepareForAppend(input))
+      << "Failed to validate new single input against previous values.";
   AppendInputToFloatVector(input, data_.MutableValue());
   ++size_;
   return absl::OkStatus();
@@ -273,8 +281,10 @@ absl::Status StrokeInputBatch::Append(absl::Span<const StrokeInput> inputs) {
   if (inputs.empty()) {
     return absl::OkStatus();
   }
-  ABSL_RETURN_IF_ERROR(ValidateInputSequence(inputs));
-  ABSL_RETURN_IF_ERROR(PrepareForAppend(inputs.front()));
+  ABSL_RETURN_IF_ERROR(ValidateInputSequence(inputs))
+      << "Failed to validate new input span.";
+  ABSL_RETURN_IF_ERROR(PrepareForAppend(inputs.front()))
+      << "Failed to validate new input span against previous values.";
 
   // We don't call `vector::reserve` on purpose. Depending on the STL
   // implementation, it could degrade performance given the expectation that
@@ -318,7 +328,8 @@ absl::Status StrokeInputBatch::Append(const StrokeInputBatch& inputs) {
     return absl::OkStatus();
   }
 
-  ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(Last(), inputs.First()));
+  ABSL_RETURN_IF_ERROR(ValidateConsecutiveInputs(Last(), inputs.First()))
+      << "Failed to validate new input batch against previous input.";
 
   // We don't call `vector::reserve` on purpose. Depending on the STL
   // implementation, it could degrade performance given the expectation that
@@ -343,7 +354,9 @@ absl::Status StrokeInputBatch::Append(const StrokeInputBatch& inputs,
 
   if (!IsEmpty()) {
     ABSL_RETURN_IF_ERROR(
-        ValidateConsecutiveInputs(Last(), inputs.Get(start_index)));
+        ValidateConsecutiveInputs(Last(), inputs.Get(start_index)))
+        << "Failed to validate new input batch subsequence against previous "
+           "input.";
   } else {
     if (!data_.HasValue()) data_.Emplace();
     SetInlineFormatMetadata(inputs.Get(start_index));
