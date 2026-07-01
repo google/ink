@@ -31,8 +31,17 @@ namespace ink::strokes_internal {
 namespace {
 
 using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
 using ::testing::ElementsAre;
+using ::testing::IsEmpty;
 using ::testing::SizeIs;
+
+TEST(StrokeSegmentationTest, SegmentSpatiallyEmptyMesh) {
+  PartitionedMesh empty_mesh;
+  EXPECT_THAT(SegmentSpatially(empty_mesh, AffineTransform::Identity(),
+                               /*tolerance=*/1.0f),
+              IsOkAndHolds(IsEmpty()));
+}
 
 TEST(StrokeSegmentationTest, SegmentSpatially) {
   //  C                     F

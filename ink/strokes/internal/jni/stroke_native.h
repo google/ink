@@ -44,14 +44,19 @@ int64_t StrokeNative_newShallowCopyOfShape(int64_t native_pointer_to_stroke);
 
 void StrokeNative_free(int64_t native_pointer_to_stroke);
 
-// Returns a pointer to hold the result of a partial erase before hand-off
-// of the individual strokes. Uses `unique_ptr` for the handoff to minimize
-// copying.
-int64_t MultipleStrokesNative_createWithPartialErase(
-    int64_t target_stroke_ptr, int64_t eraser_shape_ptr, float eraser_a,
-    float eraser_b, float eraser_c, float eraser_d, float eraser_e,
-    float eraser_f, float stroke_a, float stroke_b, float stroke_c,
-    float stroke_d, float stroke_e, float stroke_f);
+// Returns a pointer to hold the result of a geometric subtraction.
+int64_t StrokeNative_createWithSubtract(
+    int64_t target_stroke_ptr, int64_t mask_shape_ptr, float mask_a,
+    float mask_b, float mask_c, float mask_d, float mask_e, float mask_f,
+    float stroke_a, float stroke_b, float stroke_c, float stroke_d,
+    float stroke_e, float stroke_f);
+
+int64_t MultipleStrokesNative_createWithSplit(
+    void* jni_env_pass_through, int64_t target_stroke_ptr, float transform_a,
+    float transform_b, float transform_c, float transform_d, float transform_e,
+    float transform_f, float tolerance,
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str));
 
 int32_t MultipleStrokesNative_getStrokeCount(int64_t native_pointer);
 

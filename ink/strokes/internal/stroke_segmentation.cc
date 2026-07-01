@@ -272,6 +272,7 @@ absl::StatusOr<std::vector<PartitionedMesh>> SegmentSpatially(
   // own component, then merge vertices that share a triangle, then merge
   // vertices that are within `tolerance` of each other.
   std::vector<Point> vertices = GetAllVertices(shape, transform);
+  if (vertices.empty()) return std::vector<PartitionedMesh>{};
   ConnectedComponents components(vertices.size());
   ConnectByTriangles(shape, components);
   ConnectBySpatialProximity(vertices, tolerance, components);

@@ -15,6 +15,8 @@
 #ifndef INK_STROKES_STROKE_H_
 #define INK_STROKES_STROKE_H_
 
+#include <vector>
+
 #include "absl/status/status.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_family.h"
@@ -109,21 +111,28 @@ class Stroke {
   // shape if `inputs` is empty.
   void SetInputs(const StrokeInputBatch& inputs);
 
-  // Erases the `eraser_shape` from this stroke geometry using the given
-  // `eraser_transform` and `stroke_transform` that map the eraser and stroke
+  // Subtracts the `mask_shape` from this stroke geometry using the given
+  // `mask_transform` and `stroke_transform` that map the mask and stroke
   // to common coordinates.
   //
   // The coordinate transformations are expected to be non-degenerate; otherwise
   // the stroke is returned as is.
+  Stroke Subtract(const PartitionedMesh& mask_shape,
+                  const AffineTransform& mask_transform,
+                  const AffineTransform& stroke_transform) const;
+
+  // Splits this stroke into a set of spatially disconnected `Stroke`s.
   //
-  // Each resulting fragment retains the original brush and inputs, but has a
-  // newly computed shape representing the portion remaining after erasure. The
-  // order of the fragments in the returned vector is arbitrary and carries no
-  // guarantee.
-  std::vector<Stroke> PartialErase(
-      const PartitionedMesh& eraser_shape,
-      const AffineTransform& eraser_transform,
-      const AffineTransform& stroke_transform) const;
+  // Two regions of the stroke are considered disconnected if they are further
+  // than `tolerance` distance apart, after applying `stroke_transform`.
+  //
+  // Each resulting stroke has a new shape representing its portion, but retains
+  // the original inputs and brush.
+  //
+  // The order of the fragments in the returned vector is arbitrary and carries
+  // no guarantee.
+  std::vector<Stroke> Split(const AffineTransform& stroke_transform,
+                            float tolerance) const;
 
  private:
   // Regenerates the PartitionedMesh.
