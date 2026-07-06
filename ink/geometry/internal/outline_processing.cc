@@ -789,6 +789,10 @@ ComputeTriangulation(const ShapeOutline& shape) {
   std::vector<std::array<uint32_t, 3>> triangles;
 
   std::vector<std::vector<Point>> loops = ComputeBoundaryLoops(shape);
+  // TODO(b/521449017): Handle triangulating shapes with holes. For now, ignore
+  // inner holes.
+  std::erase_if(loops, [](const auto& loop) { return Area(loop) < 0; });
+
   size_t total_triangles = 0;
   for (const auto& loop : loops) {
     if (loop.size() >= 3) {
@@ -796,13 +800,6 @@ ComputeTriangulation(const ShapeOutline& shape) {
     }
   }
   triangles.reserve(total_triangles);
-
-  // TODO(b/521449017): Handle triangulating shapes with holes. For now,
-  // return empty if the shape has a hole.
-  if (std::any_of(loops.begin(), loops.end(),
-                  [](const auto& loop) { return Area(loop) < 0; })) {
-    return {vertices, triangles};
-  }
 
   absl::InlinedVector<uint32_t, 16> indices;
 

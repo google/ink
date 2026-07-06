@@ -537,10 +537,7 @@ TEST(ComputeTriangulationTest, DisjointTriangles) {
 
 TEST(ComputeTriangulationTest, PolygonWithHole) {
   // TODO(b/521449017): `ComputeTriangulation` does not yet handle triangulating
-  // polygons with holes, and instead returns an empty triangulation.
-  // This test checks that `ComputeTriangulation` does not crash or return a
-  // malformed triangulation in the case of a polygon with a hole.
-
+  // polygons with holes, and instead triangulates the outer polygon only.
   //         D-------------------C
   //         |                   |
   //         |      H-----I      |
@@ -557,8 +554,14 @@ TEST(ComputeTriangulationTest, PolygonWithHole) {
       {{{A, B, C}, 1}, {{G, H, I}, 1}, {{A, F, E, D, C}, -1}, {{G, J, I}, -1}});
 
   auto [points, triangles] = ComputeTriangulation(outline);
-  EXPECT_TRUE(points.empty());
-  EXPECT_TRUE(triangles.empty());
+  EXPECT_THAT(points, UnorderedElementsAre(A, B, C, D, E, F));
+  EXPECT_THAT(triangles, SizeIs(4));
+  EXPECT_TRUE(HasValidIndices(points, triangles));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{1, 1}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{5, 1}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{8, 1}));
+  // Point in the hole GHIJ
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{8, 8}));
 }
 
 TEST(ComputeSubtractionTests, SubtractDisjointTriangles) {

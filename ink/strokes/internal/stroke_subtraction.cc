@@ -191,6 +191,8 @@ uint32_t GetOrAddEdgeVertex(MutableMesh& mutable_mesh, Point p, int i,
 
   auto& edge_points = edge_vertex_map[{v1, v2}];
   for (const auto& [existing_t, existing_index] : edge_points) {
+    // TODO(b/521448869): Vertex matching should be done in mesh coordinates
+    // with `epsilon`, rather than barycentric coordinates.
     if (std::abs(t - existing_t) < kVertexDedupeTol) return existing_index;
   }
   uint32_t new_index = mutable_mesh.VertexCount();
@@ -279,8 +281,11 @@ void AddSubtractedTriangle(MutableMesh& mutable_mesh,
   if (mapped_indices.empty()) return;
 
   for (const auto& t : tris) {
-    mutable_mesh.AppendTriangleIndices(
-        {mapped_indices[t[0]], mapped_indices[t[1]], mapped_indices[t[2]]});
+    uint32_t i0 = mapped_indices[t[0]];
+    uint32_t i1 = mapped_indices[t[1]];
+    uint32_t i2 = mapped_indices[t[2]];
+    if (i0 == i1 || i1 == i2 || i2 == i0) continue;
+    mutable_mesh.AppendTriangleIndices({i0, i1, i2});
   }
 }
 
