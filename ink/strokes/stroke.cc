@@ -212,8 +212,9 @@ void Stroke::RegenerateShape() {
 Stroke Stroke::Subtract(const PartitionedMesh& mask_shape,
                         const AffineTransform& mask_transform,
                         const AffineTransform& stroke_transform) const {
-  absl::StatusOr<PartitionedMesh> remaining_mesh = strokes_internal::Subtract(
-      shape_, stroke_transform, mask_shape, mask_transform);
+  absl::StatusOr<PartitionedMesh> remaining_mesh =
+      strokes_internal::Subtract(shape_, stroke_transform, mask_shape,
+                                 mask_transform, brush_.GetEpsilon());
   if (!remaining_mesh.ok()) return *this;
 
   return Stroke(brush_, inputs_, *remaining_mesh);

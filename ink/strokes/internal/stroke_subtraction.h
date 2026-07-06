@@ -28,6 +28,11 @@ namespace ink::strokes_internal {
 // error will be returned if not. The returned PartitionMesh is in the same
 // coordinate space as `mesh_a`.
 //
+// The `epsilon` parameter specifies the spatial resolution (in `mesh_a`'s
+// coordinate space) of the computation. It sets the scale of smallest geometric
+// features, with points closer than `epsilon` considered to be coincident.
+// See also the description in ink/brush/brush.h.
+//
 // The returned PartitionedMesh has the same number of coats (render groups) as
 // `mesh_a`, with each coat in the returned partition mesh consisting of the
 // subtraction of the coat in `mesh_a` minus (the union of) all the coats in
@@ -42,7 +47,8 @@ namespace ink::strokes_internal {
 absl::StatusOr<PartitionedMesh> Subtract(const PartitionedMesh& mesh_a,
                                          const AffineTransform& transform_a,
                                          const PartitionedMesh& mesh_b,
-                                         const AffineTransform& transform_b);
+                                         const AffineTransform& transform_b,
+                                         float epsilon);
 
 }  // namespace ink::strokes_internal
 
