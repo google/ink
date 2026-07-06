@@ -24,6 +24,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
@@ -144,7 +145,17 @@ void AddVertex(MutableMesh& mutable_mesh, Point position,
                const std::array<double, 3>& weights) {
   uint32_t new_index = mutable_mesh.VertexCount();
   mutable_mesh.AppendVertex(position);
+  const MeshFormat& format = mutable_mesh.Format();
+  ABSL_DCHECK_EQ(triangle_attrs.size(), format.Attributes().size());
   for (uint32_t attr = 0; attr < triangle_attrs.size(); ++attr) {
+    MeshFormat::AttributeId id = format.Attributes()[attr].id;
+    // Set derivatives to 1.0 to avoid divisions-by-zero in the shader.
+    if (id == MeshFormat::AttributeId::kSideDerivative ||
+        id == MeshFormat::AttributeId::kForwardDerivative) {
+      mutable_mesh.SetFloatVertexAttribute(new_index, attr, {1.0f, 1.0f});
+      continue;
+    }
+
     const auto& vals = triangle_attrs[attr];
     if (vals[0].Size() == 0) continue;
     uint8_t count = vals[0].Size();
