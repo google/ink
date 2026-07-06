@@ -89,20 +89,32 @@ void StrokeNative_free(int64_t native_pointer) {
   DeleteNativeStroke(native_pointer);
 }
 
-int64_t MultipleStrokesNative_createWithPartialErase(
-    int64_t target_stroke_ptr, int64_t eraser_shape_ptr, float eraser_a,
-    float eraser_b, float eraser_c, float eraser_d, float eraser_e,
-    float eraser_f, float stroke_a, float stroke_b, float stroke_c,
-    float stroke_d, float stroke_e, float stroke_f) {
-  AffineTransform eraser_transform(eraser_a, eraser_b, eraser_c, eraser_d,
-                                   eraser_e, eraser_f);
+int64_t StrokeNative_createWithSubtract(
+    int64_t target_stroke_ptr, int64_t mask_shape_ptr, float mask_a,
+    float mask_b, float mask_c, float mask_d, float mask_e, float mask_f,
+    float stroke_a, float stroke_b, float stroke_c, float stroke_d,
+    float stroke_e, float stroke_f) {
+  AffineTransform mask_transform(mask_a, mask_b, mask_c, mask_d, mask_e,
+                                 mask_f);
   AffineTransform stroke_transform(stroke_a, stroke_b, stroke_c, stroke_d,
                                    stroke_e, stroke_f);
 
+  return NewNativeStroke(CastToStroke(target_stroke_ptr)
+                             .Subtract(CastToPartitionedMesh(mask_shape_ptr),
+                                       mask_transform, stroke_transform));
+}
+
+int64_t MultipleStrokesNative_createWithSplit(
+    void* jni_env_pass_through, int64_t target_stroke_ptr, float transform_a,
+    float transform_b, float transform_c, float transform_d, float transform_e,
+    float transform_f, float tolerance,
+    void (*throw_from_status_callback)(void* jni_env, int status_code,
+                                       const char* status_str)) {
+  AffineTransform transform(transform_a, transform_b, transform_c, transform_d,
+                            transform_e, transform_f);
+
   std::vector<Stroke> fragments =
-      CastToStroke(target_stroke_ptr)
-          .PartialErase(CastToPartitionedMesh(eraser_shape_ptr),
-                        eraser_transform, stroke_transform);
+      CastToStroke(target_stroke_ptr).Split(transform, tolerance);
 
   MultipleStrokes result;
   result.reserve(fragments.size());
