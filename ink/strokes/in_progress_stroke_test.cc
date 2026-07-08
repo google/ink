@@ -263,6 +263,23 @@ TEST(InProgressStrokeTest, SetNoiseSeedAndBaseAnimationPhase) {
   EXPECT_EQ(stroke.GetInputs().GetBaseAnimationPhase(), 0.75f);
 }
 
+TEST(InProgressStrokeTest, NoiseSeedAndBaseAnimationPhaseAfterUpdateShape) {
+  InProgressStroke stroke;
+  stroke.Start(CreateRectangularTestBrush(), /*noise_seed=*/12345,
+               /*base_animation_phase=*/0.75f);
+
+  absl::StatusOr<StrokeInputBatch> real_inputs = StrokeInputBatch::Create({
+      {.position = {1, 2}, .elapsed_time = Duration32::Seconds(0.0)},
+      {.position = {3, 2}, .elapsed_time = Duration32::Seconds(0.1)},
+  });
+  ASSERT_THAT(real_inputs, IsOk());
+  EXPECT_THAT(stroke.EnqueueInputs(*real_inputs, {}), IsOk());
+  EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(0.15)), IsOk());
+
+  EXPECT_EQ(stroke.GetInputs().GetNoiseSeed(), 12345);
+  EXPECT_EQ(stroke.GetInputs().GetBaseAnimationPhase(), 0.75f);
+}
+
 TEST(InProgressStrokeTest, EnqueueInputsWithoutStart) {
   InProgressStroke stroke;
   EXPECT_THAT(

@@ -88,6 +88,11 @@ class StrokeInputBatch {
   ConstIterator begin() const;
   ConstIterator end() const;
 
+  // Erases all inputs from the batch, and resets both the noise seed and base
+  // animation phase to their default values of zero.
+  //
+  // This is functionally equivalent to `*this = StrokeInputBatch()`, except
+  // that it will reuse existing allocations when possible.
   void Clear();
 
   int Size() const;
@@ -116,7 +121,8 @@ class StrokeInputBatch {
   //
   // In the special case that this will overwrite the only held `StrokeInput`,
   // it is valid for the format of `input` to be different from the currently
-  // held value.
+  // held value. Regardless, in all cases, the noise seed and base animation
+  // phase will not be modified.
   //
   // Returns an error and does not modify the batch if validation fails.
   absl::Status Set(int i, const StrokeInput& input);
@@ -142,9 +148,9 @@ class StrokeInputBatch {
   // Returns an error and does not modify the batch if validation fails.
   absl::Status Append(const StrokeInput& input);
 
-  // Validates and appends a sequence of `inputs`. This batch's per-stroke seed
-  // value is left unchanged, even when appending another batch with a different
-  // seed value.
+  // Validates and appends a sequence of `inputs`. This batch's noise seed and
+  // base animation phase are left unchanged, even when appending another batch
+  // with a different noise seed and/or base animation phase.
   //
   // Returns an error and does not modify the batch if validation fails.
   absl::Status Append(absl::Span<const StrokeInput> inputs);
@@ -160,6 +166,10 @@ class StrokeInputBatch {
   // If `start` + `count` is greater than `Size()`, then all elements from
   // `start` until the end of the input batch are erased. CHECK-fails if `start`
   // is not less than or equal to `Size()`.
+  //
+  // This will not change the noise seed or base animation phase associated with
+  // this input batch, even if all inputs are erased.  If you wish to reset
+  // those values as well, consider using `Clear()`.
   void Erase(int start, int count = std::numeric_limits<int>::max());
 
   // Returns the current input tool type or `StrokeInput::ToolType::kUnknown`
@@ -271,6 +281,12 @@ class StrokeInputBatch {
   // Transforms the input points in place, applying the `AffineTransform` while
   // keeping the stroke total elapsed time the same.
   void TransformPreservingDuration(const AffineTransform& transform);
+
+  // Erases all inputs from the batch, and clears the inline member variables
+  // that store the "format" of the inputs (i.e. tool type and whether pressure,
+  // tilt, and orientation are present), but does *not* reset either the noise
+  // seed nor the base animation phase.
+  void ClearInputs();
 
   // Updates the inline member variables that store the "format" of the inputs
   // (i.e. tool type and whether pressure, tilt, and orientation are present).
