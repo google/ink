@@ -54,13 +54,7 @@ using TriangleAttributes =
     absl::InlinedVector<std::array<SmallArray<float, 4>, 3>, 4>;
 using EdgeVertexMap =
     absl::flat_hash_map<std::pair<uint32_t, uint32_t>,
-                        absl::InlinedVector<std::pair<float, uint32_t>, 2>>;
-
-// The fractional distance between two vertices on an edge to be considered
-// identical.
-// TODO(b/521448869): Use an adaptive tolerance based on the relevant scales
-// and epsilons.
-constexpr float kVertexDedupeTol = 1e-9;
+                        absl::InlinedVector<std::pair<Point, uint32_t>, 2>>;
 
 float DistanceSquared(Point a, Point b) { return (a - b).MagnitudeSquared(); }
 
@@ -125,6 +119,15 @@ std::array<double, 3> ComputeBarycentricCoordinates(
   return {u, v, w};
 }
 
+// A helper function to compute the altitudes of a triangle, given the triangle
+// and its determinant (twice the area).
+std::array<double, 3> ComputeHeights(const Triangle& tri, double det) {
+  Vec v0 = tri.p2 - tri.p1;
+  Vec v1 = tri.p0 - tri.p2;
+  Vec v2 = tri.p1 - tri.p0;
+  return {det / v0.Magnitude(), det / v1.Magnitude(), det / v2.Magnitude()};
+}
+
 // Copies the vertex (and its attributes) from `mesh` with index `vertex_index`
 // and appends it to `mutable_mesh`.
 void CopyVertex(const Mesh& mesh, uint32_t vertex_index,
@@ -177,39 +180,36 @@ uint32_t GetOrAddEdgeVertex(MutableMesh& mutable_mesh, Point p, int i,
                             const std::array<uint32_t, 3>& indices,
                             const std::array<double, 3>& weights,
                             const TriangleAttributes& triangle_attrs,
-                            EdgeVertexMap& edge_vertex_map) {
+                            float epsilon, EdgeVertexMap& edge_vertex_map) {
   int j = (i == 2) ? 0 : i + 1;
   int k = (i == 0) ? 2 : i - 1;
   uint32_t v1 = indices[j];
   uint32_t v2 = indices[k];
 
-  float t = weights[k];
-  if (v1 > v2) {
-    std::swap(v1, v2);
-    t = weights[j];
-  }
+  if (v1 > v2) std::swap(v1, v2);
 
   auto& edge_points = edge_vertex_map[{v1, v2}];
-  for (const auto& [existing_t, existing_index] : edge_points) {
-    // TODO(b/521448869): Vertex matching should be done in mesh coordinates
-    // with `epsilon`, rather than barycentric coordinates.
-    if (std::abs(t - existing_t) < kVertexDedupeTol) return existing_index;
+  for (const auto& [existing_p, existing_index] : edge_points) {
+    if (DistanceSquared(p, existing_p) <= epsilon * epsilon)
+      return existing_index;
   }
   uint32_t new_index = mutable_mesh.VertexCount();
   AddVertex(mutable_mesh, p, triangle_attrs, weights);
-  edge_points.push_back({t, new_index});
+  edge_points.push_back({p, new_index});
   return new_index;
 }
 
 // Finds an existing vertex or adds one at the given point in the mutable mesh.
 uint32_t GetOrAddVertex(MutableMesh& mutable_mesh, Point p,
                         const std::array<uint32_t, 3>& indices,
-                        const std::array<double, 3>& weights,
-                        const TriangleAttributes& triangle_attrs,
+                        const std::array<double, 9>& transform,
+                        const std::array<double, 3>& heights,
+                        const TriangleAttributes& triangle_attrs, float epsilon,
                         EdgeVertexMap& edge_vertex_map) {
-  std::array<bool, 3> near_zero = {weights[0] < kVertexDedupeTol,
-                                   weights[1] < kVertexDedupeTol,
-                                   weights[2] < kVertexDedupeTol};
+  std::array<double, 3> weights = ComputeBarycentricCoordinates(p, transform);
+  std::array<bool, 3> near_zero = {weights[0] * heights[0] < epsilon,
+                                   weights[1] * heights[1] < epsilon,
+                                   weights[2] * heights[2] < epsilon};
 
   if (near_zero[1] && near_zero[2]) return indices[0];
   if (near_zero[2] && near_zero[0]) return indices[1];
@@ -218,7 +218,7 @@ uint32_t GetOrAddVertex(MutableMesh& mutable_mesh, Point p,
   for (int i = 0; i < 3; ++i) {
     if (near_zero[i]) {
       return GetOrAddEdgeVertex(mutable_mesh, p, i, indices, weights,
-                                triangle_attrs, edge_vertex_map);
+                                triangle_attrs, epsilon, edge_vertex_map);
     }
   }
 
@@ -234,9 +234,10 @@ uint32_t GetOrAddVertex(MutableMesh& mutable_mesh, Point p,
 std::vector<uint32_t> AddVertices(MutableMesh& mutable_mesh,
                                   const std::array<uint32_t, 3>& indices,
                                   const Triangle& tri,
-                                  const std::vector<Point>& pts,
+                                  const std::vector<Point>& pts, float epsilon,
                                   EdgeVertexMap& edge_vertex_map) {
   std::array<double, 9> transform = ComputeBarycentricTransform(tri);
+  std::array<double, 3> heights = ComputeHeights(tri, transform[8]);
 
   const MeshFormat& format = mutable_mesh.Format();
   TriangleAttributes triangle_attrs(format.Attributes().size());
@@ -259,9 +260,9 @@ std::vector<uint32_t> AddVertices(MutableMesh& mutable_mesh,
   pt_indices.reserve(pts.size());
 
   for (Point p : pts) {
-    std::array<double, 3> weights = ComputeBarycentricCoordinates(p, transform);
-    pt_indices.push_back(GetOrAddVertex(mutable_mesh, p, indices, weights,
-                                        triangle_attrs, edge_vertex_map));
+    pt_indices.push_back(GetOrAddVertex(mutable_mesh, p, indices, transform,
+                                        heights, triangle_attrs, epsilon,
+                                        edge_vertex_map));
   }
 
   return pt_indices;
@@ -273,11 +274,11 @@ void AddSubtractedTriangle(MutableMesh& mutable_mesh,
                            const std::array<uint32_t, 3>& indices,
                            const Triangle& tri, const std::vector<Point>& pts,
                            const std::vector<std::array<uint32_t, 3>>& tris,
-                           EdgeVertexMap& edge_vertex_map) {
+                           float epsilon, EdgeVertexMap& edge_vertex_map) {
   if (pts.empty() || tris.empty()) return;
 
   std::vector<uint32_t> mapped_indices =
-      AddVertices(mutable_mesh, indices, tri, pts, edge_vertex_map);
+      AddVertices(mutable_mesh, indices, tri, pts, epsilon, edge_vertex_map);
   if (mapped_indices.empty()) return;
 
   for (const auto& t : tris) {
@@ -293,7 +294,7 @@ void AddSubtractedTriangle(MutableMesh& mutable_mesh,
 // `shape_b` from `meshes`.
 MutableMesh SubtractMeshes(absl::Span<const Mesh> meshes,
                            const MeshFormat& format,
-                           const ShapeOutline& shape_b) {
+                           const ShapeOutline& shape_b, float epsilon) {
   // To compute the subtraction `meshes` - `shape_b`, we process each
   // triangle in `meshes` individually. For each triangle, we first handle the
   // geometry by computing a triangulation of the shape of `triangle` -
@@ -330,7 +331,7 @@ MutableMesh SubtractMeshes(absl::Span<const Mesh> meshes,
       if (Intersects(shape_b, Envelope(tri).AsRect().value())) {
         auto [subtracted_pts, subtracted_tris] = SubtractTriangle(tri, shape_b);
         AddSubtractedTriangle(mutable_mesh, indices, tri, subtracted_pts,
-                              subtracted_tris, edge_vertex_map);
+                              subtracted_tris, epsilon, edge_vertex_map);
       } else {
         mutable_mesh.AppendTriangleIndices(indices);
       }
@@ -418,7 +419,8 @@ absl::StatusOr<PartitionedMesh> Subtract(const PartitionedMesh& mesh_a,
     // Each coat is handled independently.
     const MeshFormat& format = mesh_a.RenderGroupFormat(group);
     absl::Span<const Mesh> meshes = mesh_a.RenderGroupMeshes(group);
-    group_mutable_meshes.push_back(SubtractMeshes(meshes, format, shape_b));
+    group_mutable_meshes.push_back(
+        SubtractMeshes(meshes, format, shape_b, epsilon));
     MutableMesh& mutable_mesh = group_mutable_meshes.back();
 
     packing_arrays.push_back(StrokeVertex::MakeCustomPackingArray(format));
