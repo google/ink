@@ -179,6 +179,14 @@ struct BrushPaint {
   //   fuzz_domains.cc:blend_mode,
   // )
 
+  // Specifies what should happen when a texture animation repeats.
+  enum class AnimationRepeatMode {
+    // Return to the start of the animation for the next repetition.
+    kRestart,
+    // Reverse animation direction for the next repetition.
+    kReverse,
+  };
+
   // A texture that will repeat according to a 2D affine transformation of
   // vertex positions. Each copy of the texture will have the same size and
   // shape, modulo reflections.
@@ -247,6 +255,12 @@ struct BrushPaint {
     // Note that this duration is ignored if `animation_frames` is 1 (its
     // default value), because that indicates that animation is disabled.
     absl::Duration animation_duration = absl::Seconds(1);
+
+    // Specifies what should happen when a texture animation repeats.
+    //
+    // Note that this setting is ignored if `animation_frames` is 1 (its default
+    // value), because that indicates that animation is disabled.
+    AnimationRepeatMode animation_repeat_mode = AnimationRepeatMode::kRestart;
 
     // The rule by which the texture layers up to and including this one are
     // combined with the subsequent layer.  See `TilingTexture::blend_mode` for
@@ -354,6 +368,8 @@ std::string ToFormattedString(BrushPaint::TextureOrigin texture_origin);
 std::string ToFormattedString(BrushPaint::TextureSizeUnit texture_size_unit);
 std::string ToFormattedString(BrushPaint::TextureWrap texture_wrap);
 std::string ToFormattedString(BrushPaint::BlendMode blend_mode);
+std::string ToFormattedString(
+    BrushPaint::AnimationRepeatMode animation_repeat_mode);
 std::string ToFormattedString(const BrushPaint::TilingTexture& layer);
 std::string ToFormattedString(const BrushPaint::StampingTexture& layer);
 std::string ToFormattedString(const BrushPaint::TextureLayer& layer);
@@ -380,6 +396,12 @@ void AbslStringify(Sink& sink, BrushPaint::TextureWrap texture_wrap) {
 template <typename Sink>
 void AbslStringify(Sink& sink, BrushPaint::BlendMode blend_mode) {
   sink.Append(brush_internal::ToFormattedString(blend_mode));
+}
+
+template <typename Sink>
+void AbslStringify(Sink& sink,
+                   BrushPaint::AnimationRepeatMode animation_repeat_mode) {
+  sink.Append(brush_internal::ToFormattedString(animation_repeat_mode));
 }
 
 template <typename Sink>

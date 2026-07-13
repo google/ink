@@ -61,7 +61,8 @@ int64_t TilingTextureNative_create(
 int64_t StampingTextureNative_create(
     void* jni_env_pass_through, const char* client_texture_id,
     int animation_frames, int animation_rows, int animation_columns,
-    int64_t animation_duration_millis, int blend_mode,
+    int64_t animation_duration_millis, int animation_repeat_mode,
+    int blend_mode,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str));
 
@@ -88,6 +89,8 @@ int StampingTextureNative_getAnimationRows(int64_t native_ptr);
 int StampingTextureNative_getAnimationColumns(int64_t native_ptr);
 
 int64_t StampingTextureNative_getAnimationDurationMillis(int64_t native_ptr);
+
+int StampingTextureNative_getAnimationRepeatModeInt(int64_t native_ptr);
 
 int TilingTextureNative_getSizeUnitInt(int64_t native_ptr);
 

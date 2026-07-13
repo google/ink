@@ -195,7 +195,8 @@ TEST(BrushFamilyTest, StringifyWithNoId) {
       "particle_gap_duration=2s}, "
       "paint_preferences={BrushPaint{texture_layers={StampingTexture{"
       "client_texture_id=test-paint, animation_frames=1, animation_rows=1, "
-      "animation_columns=1, animation_duration=1s, blend_mode=kDstIn}}, "
+      "animation_columns=1, animation_duration=1s, "
+      "animation_repeat_mode=kRestart, blend_mode=kDstIn}}, "
       "self_overlap=kAny}}}], input_model=PassthroughModel)");
 }
 
@@ -211,7 +212,8 @@ TEST(BrushFamilyTest, StringifyWithId) {
       "tip=BrushTip{scale=<3, 3>, corner_rounding=0}, "
       "paint_preferences={BrushPaint{texture_layers={StampingTexture{client_"
       "texture_id=test-paint, animation_frames=1, animation_rows=1, "
-      "animation_columns=1, animation_duration=1s, blend_mode=kDstIn}}, "
+      "animation_columns=1, animation_duration=1s, "
+      "animation_repeat_mode=kRestart, blend_mode=kDstIn}}, "
       "self_overlap=kAny}}}], input_model=PassthroughModel, "
       "client_brush_family_id='big-square')");
 }

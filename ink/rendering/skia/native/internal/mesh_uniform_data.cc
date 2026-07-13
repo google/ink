@@ -59,6 +59,8 @@ SkMeshSpecification::Uniform::Type ExpectedSkiaUniformType(
       return SkMeshSpecification::Uniform::Type::kInt;
     case MeshSpecificationData::UniformId::kNumTextureAnimationColumns:
       return SkMeshSpecification::Uniform::Type::kInt;
+    case MeshSpecificationData::UniformId::kAnimationRepeatMode:
+      return SkMeshSpecification::Uniform::Type::kInt;
   }
   ABSL_LOG(FATAL) << "Got `uniform_id` with non-enumerator value: "
                   << static_cast<int>(uniform_id);
@@ -111,8 +113,9 @@ MeshUniformData::MeshUniformData(const SkMeshSpecification& spec)
       num_texture_animation_rows_offset_(FindUniformOffset(
           spec, MeshSpecificationData::UniformId::kNumTextureAnimationRows)),
       num_texture_animation_columns_offset_(FindUniformOffset(
-          spec,
-          MeshSpecificationData::UniformId::kNumTextureAnimationColumns)) {}
+          spec, MeshSpecificationData::UniformId::kNumTextureAnimationColumns)),
+      animation_repeat_mode_offset_(FindUniformOffset(
+          spec, MeshSpecificationData::UniformId::kAnimationRepeatMode)) {}
 
 namespace {
 
@@ -148,6 +151,7 @@ bool IsUnpackingTransform(MeshSpecificationData::UniformId uniform_id) {
     case MeshSpecificationData::UniformId::kNumTextureAnimationFrames:
     case MeshSpecificationData::UniformId::kNumTextureAnimationRows:
     case MeshSpecificationData::UniformId::kNumTextureAnimationColumns:
+    case MeshSpecificationData::UniformId::kAnimationRepeatMode:
       return false;
     case MeshSpecificationData::UniformId::kPositionUnpackingTransform:
     case MeshSpecificationData::UniformId::kSideDerivativeUnpackingTransform:
@@ -217,6 +221,11 @@ void MeshUniformData::SetNumTextureAnimationRows(int num_rows) {
 void MeshUniformData::SetNumTextureAnimationColumns(int num_columns) {
   SetUniformIfPresent(WritableData(), num_texture_animation_columns_offset_,
                       num_columns);
+}
+
+void MeshUniformData::SetAnimationRepeatMode(int animation_repeat_mode) {
+  SetUniformIfPresent(WritableData(), animation_repeat_mode_offset_,
+                      animation_repeat_mode);
 }
 
 void MeshUniformData::SetObjectToCanvasLinearComponent(
