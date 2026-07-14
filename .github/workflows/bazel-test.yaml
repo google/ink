@@ -26,7 +26,6 @@ jobs:
     - uses: actions/checkout@v6.0.3
 
     - uses: bazel-contrib/setup-bazel@0.19.0
-      if: github.repository == 'google/ink'
       with:
         bazelisk-cache: true
         disk-cache: true
@@ -38,12 +37,15 @@ jobs:
         # deleting the expired key, creating a new key in JSON format, and updating the secret in
         # https://github.com/google/ink/settings/secrets/actions. (Follow the corresponding
         # instructions for google/ink-stroke-modeler at the same time.)
-        google-credentials: ${{ secrets.GOOGLE_CREDENTIALS }}
+        google-credentials: ${{ (github.event_name != 'pull_request' ||
+          github.event.pull_request.head.repo.full_name == 'google/ink') &&
+          secrets.GOOGLE_CREDENTIALS || '' }}
 
     - name: Test
       run: >
         bazel test
-        ${{ github.repository == 'google/ink' &&
+        ${{ (github.event_name != 'pull_request' ||
+             github.event.pull_request.head.repo.full_name == 'google/ink') &&
         '--google_default_credentials --remote_cache=https://storage.googleapis.com/ink-open-source-ci/'
-        || ''}}
+        || '' }}
         --test_output=errors --keep_going //ink/...
