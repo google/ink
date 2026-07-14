@@ -158,6 +158,7 @@ Version CalculateMinimumRequiredVersion(
     case EasingFunction::Predefined::kStepEnd:
       return Version::k0Jetpack1_0_0();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(
@@ -178,6 +179,7 @@ Version CalculateMinimumRequiredVersion(
     case EasingFunction::StepPosition::kJumpBoth:
       return Version::k0Jetpack1_0_0();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(const EasingFunction::Steps& steps) {

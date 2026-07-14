@@ -432,7 +432,7 @@ TEST(BrushTest, EncodeBrushWithoutTextureMap) {
       proto::BrushPaint::TextureLayer::BLEND_MODE_SRC_IN);
   paint_proto->set_self_overlap(proto::BrushPaint::SELF_OVERLAP_DISCARD);
 
-  EXPECT_THAT(brush_proto_out, EqualsProto(brush_proto));
+  EXPECT_THAT(brush_proto_out, EquivToProto(brush_proto));
   EXPECT_EQ(callback_count, 1);
 }
 
@@ -647,9 +647,13 @@ TEST(BrushTest, EncodeBrushPaintWithInvalidTextureOrigin) {
       .size = {10, 15}});
   proto::BrushPaint paint_proto;
   EncodeBrushPaint(paint, paint_proto);
-  ASSERT_EQ(paint_proto.texture_layers(0).size_x(), 10);
-  ASSERT_EQ(paint_proto.texture_layers(0).size_y(), 15);
-  EXPECT_EQ(paint_proto.texture_layers(0).origin(),
+  ASSERT_THAT(paint_proto.texture_layers(), SizeIs(1));
+  EXPECT_TRUE(paint_proto.texture_layers(0).has_tiling_texture());
+  proto::BrushPaint::TilingTexture texture_proto =
+      paint_proto.texture_layers(0).tiling_texture();
+  EXPECT_EQ(texture_proto.size_x(), 10);
+  EXPECT_EQ(texture_proto.size_y(), 15);
+  EXPECT_EQ(texture_proto.origin(),
             proto::BrushPaint::TextureLayer::ORIGIN_UNSPECIFIED);
 }
 

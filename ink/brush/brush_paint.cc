@@ -313,6 +313,7 @@ Version CalculateMinimumRequiredVersion(
     case BrushPaint::TextureOrigin::kLastStrokeInput:
       return Version::k0Jetpack1_0_0();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(
@@ -322,6 +323,7 @@ Version CalculateMinimumRequiredVersion(
     case BrushPaint::TextureSizeUnit::kStrokeCoordinates:
       return Version::k0Jetpack1_0_0();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(BrushPaint::TextureWrap texture_wrap) {
@@ -331,6 +333,7 @@ Version CalculateMinimumRequiredVersion(BrushPaint::TextureWrap texture_wrap) {
     case BrushPaint::TextureWrap::kClamp:
       return Version::k0Jetpack1_0_0();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(BrushPaint::BlendMode blend_mode) {
@@ -349,6 +352,7 @@ Version CalculateMinimumRequiredVersion(BrushPaint::BlendMode blend_mode) {
     case BrushPaint::BlendMode::kXor:
       return Version::k0Jetpack1_0_0();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(BrushPaint::SelfOverlap self_overlap) {
@@ -358,6 +362,7 @@ Version CalculateMinimumRequiredVersion(BrushPaint::SelfOverlap self_overlap) {
     case BrushPaint::SelfOverlap::kAccumulate:
       return Version::k0Jetpack1_0_0();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(
@@ -377,7 +382,10 @@ Version CalculateMinimumRequiredVersion(
       layer.animation_duration != absl::Milliseconds(1000)) {
     return Version::kDevelopment();
   }
-  // LINT.ThenChange(../storage/proto/brush_family.proto:animation_defaults)
+  // LINT.ThenChange(
+  //  ../storage/proto/brush_family.proto:animation_defaults,
+  //  ../storage/proto/brush_family.proto:animation_defaults_legacy
+  // )
   return CalculateMinimumRequiredVersion(layer.blend_mode);
 }
 

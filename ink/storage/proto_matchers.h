@@ -22,18 +22,16 @@ namespace ink {
 
 // Simple proto matchers using MessageDifferencer.
 //
-// The default message comparison mode is EQUALS:
-// https://protobuf.dev/reference/cpp/api-docs/google.protobuf.util.message_differencer/#MessageDifferencer.MessageFieldComparison.details
-//
-// This requires fields to be set in both messages to be considered equal.
-// Default values are not considered.  If needed, add additional matchers for
-// EQUIVALENT, which will consider default values as set.
+// The `EqualsProto` matchers require fields to be set in both messages to be
+// considered equal; default values are not considered.  The `EquivToProto`
+// matcher will consider default values as set.
 //
 // Replace with official proto matchers when they are open source:
 // github.com/google/googletest/issues/1761.
 testing::Matcher<google::protobuf::Message> EqualsProto(const google::protobuf::Message& expected);
 testing::Matcher<google::protobuf::Message> EqualsProtoTreatingNaNsAsEqual(
     const google::protobuf::Message& expected);
+testing::Matcher<google::protobuf::Message> EquivToProto(const google::protobuf::Message& expected);
 
 }  // namespace ink
 

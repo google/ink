@@ -30,7 +30,7 @@ using ::google::protobuf::util::DefaultFieldComparator;
 using ::google::protobuf::util::MessageDifferencer;
 using ::testing::Matcher;
 
-MATCHER_P2(ProtoMatcher, expected, nans_are_equal, "") {
+MATCHER_P3(ProtoMatcher, expected, nans_are_equal, allow_equivalent, "") {
   MessageDifferencer proto_differ;
   std::string proto_diff;
   proto_differ.ReportDifferencesToString(&proto_diff);
@@ -38,6 +38,9 @@ MATCHER_P2(ProtoMatcher, expected, nans_are_equal, "") {
   if (nans_are_equal) {
     field_comparator.set_treat_nan_as_equal(true);
     proto_differ.set_field_comparator(&field_comparator);
+  }
+  if (allow_equivalent) {
+    proto_differ.set_message_field_comparison(MessageDifferencer::EQUIVALENT);
   }
   bool result = proto_differ.Compare(arg, *expected);
   *result_listener << "protos differ: " << proto_diff;
@@ -47,11 +50,15 @@ MATCHER_P2(ProtoMatcher, expected, nans_are_equal, "") {
 }  // namespace
 
 Matcher<Message> EqualsProto(const Message& expected) {
-  return ProtoMatcher(&expected, false);
+  return ProtoMatcher(&expected, false, false);
 }
 
 Matcher<Message> EqualsProtoTreatingNaNsAsEqual(const Message& expected) {
-  return ProtoMatcher(&expected, true);
+  return ProtoMatcher(&expected, true, false);
+}
+
+Matcher<Message> EquivToProto(const Message& expected) {
+  return ProtoMatcher(&expected, false, true);
 }
 
 }  // namespace ink

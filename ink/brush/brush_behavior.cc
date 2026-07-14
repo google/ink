@@ -501,6 +501,7 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::Source source) {
     case BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds:
       return Version::kDevelopment();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(BrushBehavior::Target target) {
@@ -524,6 +525,7 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::Target target) {
     case BrushBehavior::Target::kTextureAnimationProgressOffset:
       return Version::kDevelopment();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(BrushBehavior::PolarTarget target) {
@@ -534,6 +536,7 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::PolarTarget target) {
         kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize:
       return Version::k0Jetpack1_0_0();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(
@@ -544,6 +547,7 @@ Version CalculateMinimumRequiredVersion(
     case BrushBehavior::OutOfRange::kRepeat:
       return Version::k0Jetpack1_0_0();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(
@@ -563,6 +567,7 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::BinaryOp operation) {
     case BrushBehavior::BinaryOp::kXorElse:
       return Version::k1Jetpack1_1_0Alpha01();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(
@@ -573,6 +578,7 @@ Version CalculateMinimumRequiredVersion(
     case BrushBehavior::ProgressDomain::kTimeInSeconds:
       return Version::k0Jetpack1_0_0();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(
@@ -582,6 +588,7 @@ Version CalculateMinimumRequiredVersion(
     case BrushBehavior::Interpolation::kInverseLerp:
       return Version::k0Jetpack1_0_0();
   }
+  return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(BrushBehavior::SourceNode node) {
