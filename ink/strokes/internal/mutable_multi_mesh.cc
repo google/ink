@@ -1,8 +1,11 @@
 #include "ink/strokes/internal/mutable_multi_mesh.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <iterator>
 #include <limits>
 #include <vector>
 
@@ -247,17 +250,18 @@ void MutableMultiMesh::AddNewPartition() {
 
 TriangleIndexPair MutableMultiMesh::GetPartitionTriangle(
     uint32_t triangle_index) const {
-  // TODO: b/295166196 - Consider using a binary search here.
-  for (int partition_index = partitions_.size() - 1; partition_index >= 0;
-       --partition_index) {
-    uint32_t previous_triangle_count =
-        partitions_[partition_index].previous_triangle_count;
-    if (triangle_index >= previous_triangle_count) {
-      return TriangleIndexPair{
-          static_cast<uint16_t>(partition_index),
-          static_cast<uint16_t>(triangle_index - previous_triangle_count),
-      };
-    }
+  auto it =
+      std::upper_bound(partitions_.begin(), partitions_.end(), triangle_index,
+                       [](uint32_t val, const Partition& p) {
+                         return val < p.previous_triangle_count;
+                       });
+  if (it != partitions_.begin()) {
+    --it;
+    uint32_t partition_index = std::distance(partitions_.begin(), it);
+    return TriangleIndexPair{
+        static_cast<uint16_t>(partition_index),
+        static_cast<uint16_t>(triangle_index - it->previous_triangle_count),
+    };
   }
   ABSL_CHECK(false) << "triangle_index out of bounds";
 }
@@ -291,13 +295,11 @@ uint16_t MutableMultiMesh::CopyVertexIntoPartition(uint32_t vertex_index,
       VertexIndexPair{partition_index, mesh_vertex_index});
   partitions_[partition_index].vertex_indices.push_back(vertex_index);
   mesh.AppendVertex(other_mesh.VertexPosition(other_mesh_vertex_index));
-  // TODO: b/306149329 - Investigate memcpy-ing the vertex data instead of
-  // repeatedly calling `SetFloatVertexAttribute()`.
-  for (size_t i = 0; i < format_.Attributes().size(); ++i) {
-    mesh.SetFloatVertexAttribute(
-        mesh_vertex_index, i,
-        other_mesh.FloatVertexAttribute(other_mesh_vertex_index, i));
-  }
+  std::memcpy(mesh.MutableRawVertexData().data() +
+                  mesh_vertex_index * mesh.VertexStride(),
+              other_mesh.RawVertexData().data() +
+                  other_mesh_vertex_index * other_mesh.VertexStride(),
+              mesh.VertexStride());
   return mesh_vertex_index;
 }
 
