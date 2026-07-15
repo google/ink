@@ -162,7 +162,7 @@ absl::StatusOr<MeshDrawable> CreateAndInitializeMeshDrawable(
   }
   // Actual updates of this need to be done on draw.
   mesh_drawable.SetTextureAnimationProgress(0.0f);
-  return std::move(mesh_drawable);
+  return mesh_drawable;
 }
 
 }  // namespace

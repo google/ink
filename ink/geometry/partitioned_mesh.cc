@@ -284,7 +284,7 @@ PartitionedMesh::Data::FromMeshGroups(absl::Span<const MeshGroup> groups) {
     }
   }
 
-  return std::move(data);
+  return data;
 }
 
 Envelope PartitionedMesh::Bounds() const {

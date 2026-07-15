@@ -683,7 +683,7 @@ absl::flat_hash_map<uint32_t, Point> GetCorrectedPackedVertexPositions(
         tri_idx, indices, quantized_triangle, nudge_vectors, *best_nudge, data);
   }
 
-  return std::move(data.corrected_vertices);
+  return std::move(data).corrected_vertices;
 }
 
 }  // namespace

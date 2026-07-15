@@ -60,7 +60,7 @@ absl::StatusOr<std::vector<VertexIndexPair>> DecodeOutline(
         .vertex_index = static_cast<uint16_t>(packed & 0xffff),
     });
   }
-  return std::move(outline);
+  return outline;
 }
 
 // Decodes a CodedModeledShape proto using the deprecated schema (that is,
