@@ -373,6 +373,7 @@ cc_test(
         "//ink/geometry:rect",
         "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark_main",
+        "@googletest//:gtest",
     ],
 )
 

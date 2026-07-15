@@ -15,8 +15,8 @@
 #include <random>
 #include <vector>
 
-#include "absl/types/span.h"
 #include "benchmark/benchmark.h"
+#include "absl/types/span.h"
 #include "ink/geometry/internal/static_rtree.h"
 #include "ink/geometry/rect.h"
 
