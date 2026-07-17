@@ -31,6 +31,7 @@ using ::ink::BrushCoat;
 using ::ink::BrushPaint;
 using ::ink::MeshFormat;
 using ::ink::brush_internal::AddAttributeIdsRequiredByCoat;
+using ::ink::brush_internal::CalculateMinimumRequiredVersion;
 using ::ink::native::CastToBrushCoat;
 using ::ink::native::CastToBrushPaint;
 using ::ink::native::CastToBrushTip;
@@ -90,6 +91,11 @@ int64_t BrushCoatNative_newCopyOfBrushPaintPreference(int64_t native_pointer,
                                                       int index) {
   return NewNativeBrushPaint(
       CastToBrushCoat(native_pointer).paint_preferences[index]);
+}
+
+int BrushCoatNative_calculateMinimumRequiredVersion(int64_t native_pointer) {
+  return CalculateMinimumRequiredVersion(CastToBrushCoat(native_pointer))
+      .value();
 }
 
 }  // extern "C"

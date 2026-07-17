@@ -28,6 +28,7 @@
 #include "absl/strings/str_join.h"
 #include "ink/brush/easing_function.h"
 #include "ink/brush/version.h"
+#include "ink/strokes/input/stroke_input.h"
 
 namespace ink {
 
@@ -448,8 +449,6 @@ absl::Status ValidateBrushBehavior(const BrushBehavior& behavior) {
   return absl::OkStatus();
 }
 
-namespace {
-
 Version CalculateMinimumRequiredVersion(BrushBehavior::Source source) {
   switch (source) {
     case BrushBehavior::Source::kNormalizedPressure:
@@ -550,11 +549,6 @@ Version CalculateMinimumRequiredVersion(
   return Version::kDevelopment();
 }
 
-Version CalculateMinimumRequiredVersion(
-    BrushBehavior::EnabledToolTypes enabled) {
-  return Version::k0Jetpack1_0_0();
-}
-
 Version CalculateMinimumRequiredVersion(BrushBehavior::BinaryOp operation) {
   switch (operation) {
     case BrushBehavior::BinaryOp::kProduct:
@@ -591,6 +585,10 @@ Version CalculateMinimumRequiredVersion(
   return Version::kDevelopment();
 }
 
+namespace {
+
+using ::ink::brush_internal::CalculateMinimumRequiredVersion;
+
 Version CalculateMinimumRequiredVersion(BrushBehavior::SourceNode node) {
   return std::max(
       CalculateMinimumRequiredVersion(node.source_out_of_range_behavior),
@@ -606,6 +604,24 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::NoiseNode node) {
 }
 
 Version CalculateMinimumRequiredVersion(
+    BrushBehavior::EnabledToolTypes enabled) {
+  return std::max({
+      enabled.unknown
+          ? CalculateMinimumRequiredVersion(StrokeInput::ToolType::kUnknown)
+          : Version::k0Jetpack1_0_0(),
+      enabled.mouse
+          ? CalculateMinimumRequiredVersion(StrokeInput::ToolType::kMouse)
+          : Version::k0Jetpack1_0_0(),
+      enabled.touch
+          ? CalculateMinimumRequiredVersion(StrokeInput::ToolType::kTouch)
+          : Version::k0Jetpack1_0_0(),
+      enabled.stylus
+          ? CalculateMinimumRequiredVersion(StrokeInput::ToolType::kStylus)
+          : Version::k0Jetpack1_0_0(),
+  });
+}
+
+Version CalculateMinimumRequiredVersion(
     BrushBehavior::ToolTypeFilterNode node) {
   return CalculateMinimumRequiredVersion(node.enabled_tool_types);
 }
@@ -615,7 +631,7 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::DampingNode node) {
 }
 
 Version CalculateMinimumRequiredVersion(BrushBehavior::ResponseNode node) {
-  return brush_internal::CalculateMinimumRequiredVersion(node.response_curve);
+  return CalculateMinimumRequiredVersion(node.response_curve);
 }
 
 Version CalculateMinimumRequiredVersion(BrushBehavior::IntegralNode node) {
@@ -641,13 +657,13 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::PolarTargetNode node) {
   return CalculateMinimumRequiredVersion(node.target);
 }
 
+}  // namespace
+
 Version CalculateMinimumRequiredVersion(const BrushBehavior::Node& node) {
   return std::visit(
       [](const auto& node) { return CalculateMinimumRequiredVersion(node); },
       node);
 }
-
-}  // namespace
 
 Version CalculateMinimumRequiredVersion(const BrushBehavior& behavior) {
   Version max_version = Version::k0Jetpack1_0_0();

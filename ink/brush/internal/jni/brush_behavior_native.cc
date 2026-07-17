@@ -27,6 +27,7 @@
 
 namespace {
 using ::ink::BrushBehavior;
+using ::ink::brush_internal::CalculateMinimumRequiredVersion;
 using ::ink::brush_internal::ValidateBrushBehaviorTopLevel;
 using ::ink::native::CastToBrushBehavior;
 using ::ink::native::CastToBrushBehaviorNode;
@@ -105,6 +106,11 @@ const char* BrushBehaviorNative_getDeveloperComment(int64_t native_ptr) {
 int64_t BrushBehaviorNative_newCopyOfNode(int64_t native_ptr, int index) {
   return NewNativeBrushBehaviorNode(
       CastToBrushBehavior(native_ptr).nodes[index]);
+}
+
+int BrushBehaviorNative_calculateMinimumRequiredVersion(int64_t native_ptr) {
+  return CalculateMinimumRequiredVersion(CastToBrushBehavior(native_ptr))
+      .value();
 }
 
 }  // extern "C"

@@ -192,6 +192,8 @@ absl::Status ValidateEasingFunction(const EasingFunction& easing_function);
 // Calculates the minimum version of the Ink library that is required to use
 // this easing function.
 Version CalculateMinimumRequiredVersion(const EasingFunction& easing_function);
+Version CalculateMinimumRequiredVersion(
+    EasingFunction::StepPosition step_position);
 
 std::string ToFormattedString(const EasingFunction& easing_function);
 std::string ToFormattedString(EasingFunction::Predefined predefined);

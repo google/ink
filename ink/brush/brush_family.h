@@ -224,6 +224,8 @@ namespace brush_internal {
 
 absl::Status ValidateInputModel(const BrushFamily::InputModel& model);
 
+Version CalculateMinimumRequiredVersion(const BrushFamily::InputModel& model);
+
 std::string ToFormattedString(const BrushFamily::InputModel& model);
 
 }  // namespace brush_internal

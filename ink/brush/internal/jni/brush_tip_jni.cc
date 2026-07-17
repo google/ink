@@ -107,4 +107,9 @@ JNI_METHOD(brush, BrushTipNative, jlong, newCopyOfBrushBehavior)
   return BrushTipNative_newCopyOfBrushBehavior(native_pointer, index);
 }
 
+JNI_METHOD(brush, BrushTipNative, jint, calculateMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return BrushTipNative_calculateMinimumRequiredVersion(native_pointer);
+}
+
 }  // extern "C"

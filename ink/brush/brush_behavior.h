@@ -759,6 +759,16 @@ absl::Status ValidateBrushBehaviorNode(const BrushBehavior::Node& node);
 
 // Calculates the minimum version of the Ink library that is required to use
 // this brush behavior.
+Version CalculateMinimumRequiredVersion(BrushBehavior::Source source);
+Version CalculateMinimumRequiredVersion(BrushBehavior::Target target);
+Version CalculateMinimumRequiredVersion(BrushBehavior::PolarTarget target);
+Version CalculateMinimumRequiredVersion(BrushBehavior::OutOfRange out_of_range);
+Version CalculateMinimumRequiredVersion(BrushBehavior::BinaryOp operation);
+Version CalculateMinimumRequiredVersion(
+    BrushBehavior::ProgressDomain progress_domain);
+Version CalculateMinimumRequiredVersion(
+    BrushBehavior::Interpolation interpolation);
+Version CalculateMinimumRequiredVersion(const BrushBehavior::Node& node);
 Version CalculateMinimumRequiredVersion(const BrushBehavior& behavior);
 
 std::string ToFormattedString(BrushBehavior::Source source);

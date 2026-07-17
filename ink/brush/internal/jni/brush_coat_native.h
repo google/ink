@@ -38,6 +38,8 @@ int BrushCoatNative_getBrushPaintPreferencesCount(int64_t native_pointer);
 int64_t BrushCoatNative_newCopyOfBrushPaintPreference(int64_t native_pointer,
                                                       int index);
 
+int BrushCoatNative_calculateMinimumRequiredVersion(int64_t native_pointer);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

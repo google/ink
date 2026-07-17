@@ -88,6 +88,10 @@ float EasingFunctionNative_getLinearPointY(int64_t native_ptr, int index);
 int EasingFunctionNative_getStepsCount(int64_t native_ptr);
 int EasingFunctionNative_getStepsPositionInt(int64_t native_ptr);
 
+int EasingFunctionNative_calculateMinimumRequiredVersion(int64_t native_ptr);
+int EasingFunctionNative_getStepPositionMinimumRequiredVersion(
+    int step_position_int);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

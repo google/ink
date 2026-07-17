@@ -152,6 +152,15 @@ int64_t ColorFunctionNative_computeTransformedColorLong(
                                                            float, float,
                                                            float));
 
+int BrushPaintNative_calculateMinimumRequiredVersion(int64_t native_ptr);
+int BrushPaintNative_getBlendModeMinimumRequiredVersion(int blend_mode_int);
+int BrushPaintNative_getTextureWrapMinimumRequiredVersion(int wrap_int);
+int BrushPaintNative_getTextureOriginMinimumRequiredVersion(int origin_int);
+int BrushPaintNative_getTextureSizeUnitMinimumRequiredVersion(
+    int size_unit_int);
+int TextureLayerNative_calculateMinimumRequiredVersion(int64_t native_ptr);
+int ColorFunctionNative_calculateMinimumRequiredVersion(int64_t native_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

@@ -301,4 +301,42 @@ JNI_METHOD(brush, ColorFunctionNative, jlong, computeTransformedColorLong)
       color_space, &ComposeColorLongFromComponentsCallback);
 }
 
+JNI_METHOD(brush, BrushPaintNative, jint, calculateMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return BrushPaintNative_calculateMinimumRequiredVersion(native_pointer);
+}
+
+JNI_METHOD(brush, BrushPaintNative, jint, getBlendModeMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint blend_mode_int) {
+  return BrushPaintNative_getBlendModeMinimumRequiredVersion(blend_mode_int);
+}
+
+JNI_METHOD(brush, BrushPaintNative, jint, getTextureWrapMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint wrap_int) {
+  return BrushPaintNative_getTextureWrapMinimumRequiredVersion(wrap_int);
+}
+
+JNI_METHOD(brush, BrushPaintNative, jint,
+           getTextureOriginMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint origin_int) {
+  return BrushPaintNative_getTextureOriginMinimumRequiredVersion(origin_int);
+}
+
+JNI_METHOD(brush, BrushPaintNative, jint,
+           getTextureSizeUnitMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint size_unit_int) {
+  return BrushPaintNative_getTextureSizeUnitMinimumRequiredVersion(
+      size_unit_int);
+}
+
+JNI_METHOD(brush, TextureLayerNative, jint, calculateMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return TextureLayerNative_calculateMinimumRequiredVersion(native_pointer);
+}
+
+JNI_METHOD(brush, ColorFunctionNative, jint, calculateMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return ColorFunctionNative_calculateMinimumRequiredVersion(native_pointer);
+}
+
 }  // extern "C"
