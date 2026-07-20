@@ -32,6 +32,7 @@ using ::ink::BrushBehavior;
 using ::ink::BrushTip;
 using ::ink::Duration32;
 using ::ink::Vec;
+using ::ink::brush_internal::CalculateMinimumRequiredVersion;
 using ::ink::brush_internal::ValidateBrushTip;
 using ::ink::native::CastToBrushBehavior;
 using ::ink::native::CastToBrushTip;
@@ -115,6 +116,10 @@ int BrushTipNative_getBehaviorCount(int64_t native_ptr) {
 
 int64_t BrushTipNative_newCopyOfBrushBehavior(int64_t native_ptr, int index) {
   return NewNativeBrushBehavior(CastToBrushTip(native_ptr).behaviors[index]);
+}
+
+int BrushTipNative_calculateMinimumRequiredVersion(int64_t native_ptr) {
+  return CalculateMinimumRequiredVersion(CastToBrushTip(native_ptr)).value();
 }
 
 }  // extern "C"

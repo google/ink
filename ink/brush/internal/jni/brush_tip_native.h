@@ -52,6 +52,8 @@ int BrushTipNative_getBehaviorCount(int64_t native_ptr);
 
 int64_t BrushTipNative_newCopyOfBrushBehavior(int64_t native_ptr, int index);
 
+int BrushTipNative_calculateMinimumRequiredVersion(int64_t native_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
