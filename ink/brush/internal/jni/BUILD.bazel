@@ -30,6 +30,7 @@ cc_library(
         ":brush_paint_jni",
         ":brush_tip_jni",
         ":easing_function_jni",
+        ":input_tool_type_jni",
         ":stock_brushes_jni",
     ],
 )
@@ -50,6 +51,7 @@ cc_library(
         ":brush_paint_native",
         ":brush_tip_native",
         ":easing_function_native",
+        ":input_tool_type_native",
         ":stock_brushes_native",
     ],
 )
@@ -407,4 +409,30 @@ cc_library(
         "@abseil-cpp//absl/functional:overload",
         "@abseil-cpp//absl/status",
     ],
+)
+
+cc_library(
+    name = "input_tool_type_native",
+    srcs = ["input_tool_type_native.cc"],
+    hdrs = ["input_tool_type_native.h"],
+    deps = [
+        "//ink/brush:version",
+        "//ink/strokes/input:stroke_input",
+    ],
+)
+
+cc_library(
+    name = "input_tool_type_jni",
+    srcs = ["input_tool_type_jni.cc"],
+    tags = ["keep_dep"],
+    deps = [
+        ":input_tool_type_native",
+        "//ink/jni/internal:jni_defines",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+    alwayslink = 1,
 )

@@ -17,6 +17,7 @@
 #include <string>
 
 #include "absl/strings/str_cat.h"
+#include "ink/brush/version.h"
 
 namespace ink {
 namespace stroke_input_internal {
@@ -59,4 +60,16 @@ std::string ToFormattedString(const StrokeInput& input) {
 }
 
 }  // namespace stroke_input_internal
+
+Version CalculateMinimumRequiredVersion(StrokeInput::ToolType tool_type) {
+  switch (tool_type) {
+    case StrokeInput::ToolType::kMouse:
+    case StrokeInput::ToolType::kTouch:
+    case StrokeInput::ToolType::kStylus:
+    case StrokeInput::ToolType::kUnknown:
+      return Version::k0Jetpack1_0_0();
+  }
+  return Version::kDevelopment();
+}
+
 }  // namespace ink

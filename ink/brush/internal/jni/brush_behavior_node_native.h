@@ -142,6 +142,17 @@ float PolarTargetNodeNative_getAngleRangeEnd(int64_t native_ptr);
 float PolarTargetNodeNative_getMagnitudeRangeStart(int64_t native_ptr);
 float PolarTargetNodeNative_getMagnitudeRangeEnd(int64_t native_ptr);
 
+// Calculate minimum required version:
+int NodeNative_calculateMinimumRequiredVersion(int64_t native_ptr);
+int SourceNodeNative_getSourceMinimumRequiredVersion(int source_int);
+int TargetNodeNative_getTargetMinimumRequiredVersion(int target_int);
+int PolarTargetNodeNative_getPolarTargetMinimumRequiredVersion(int target_int);
+int BinaryOpNodeNative_getOperationMinimumRequiredVersion(int operation_int);
+int OutOfRangeNative_calculateMinimumRequiredVersion(int out_of_range_int);
+int ProgressDomainNative_calculateMinimumRequiredVersion(int domain_int);
+int InterpolationNodeNative_getInterpolationMinimumRequiredVersion(
+    int interpolation_int);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

@@ -279,6 +279,7 @@ cc_library(
     deps = [
         ":easing_function",
         ":version",
+        "//ink/strokes/input:stroke_input",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
