@@ -31,6 +31,7 @@ cc_library(
         ":brush_tip_jni",
         ":easing_function_jni",
         ":input_tool_type_jni",
+        ":self_overlap_jni",
         ":stock_brushes_jni",
     ],
 )
@@ -52,6 +53,7 @@ cc_library(
         ":brush_tip_native",
         ":easing_function_native",
         ":input_tool_type_native",
+        ":self_overlap_native",
         ":stock_brushes_native",
     ],
 )
@@ -427,6 +429,32 @@ cc_library(
     tags = ["keep_dep"],
     deps = [
         ":input_tool_type_native",
+        "//ink/jni/internal:jni_defines",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "self_overlap_native",
+    srcs = ["self_overlap_native.cc"],
+    hdrs = ["self_overlap_native.h"],
+    deps = [
+        "//ink/brush:brush_paint",
+        "//ink/brush:version",
+    ],
+)
+
+cc_library(
+    name = "self_overlap_jni",
+    srcs = ["self_overlap_jni.cc"],
+    tags = ["keep_dep"],
+    deps = [
+        ":self_overlap_native",
         "//ink/jni/internal:jni_defines",
     ] + select({
         "@platforms//os:android": [],

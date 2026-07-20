@@ -334,6 +334,14 @@ absl::Status ValidateBrushPaintTextureLayer(
 // Calculates the minimum version of the Ink library that is required to use
 // this brush paint.
 Version CalculateMinimumRequiredVersion(const BrushPaint& paint);
+Version CalculateMinimumRequiredVersion(
+    BrushPaint::TextureOrigin texture_origin);
+Version CalculateMinimumRequiredVersion(
+    BrushPaint::TextureSizeUnit texture_size_unit);
+Version CalculateMinimumRequiredVersion(BrushPaint::TextureWrap texture_wrap);
+Version CalculateMinimumRequiredVersion(BrushPaint::BlendMode blend_mode);
+Version CalculateMinimumRequiredVersion(BrushPaint::SelfOverlap self_overlap);
+Version CalculateMinimumRequiredVersion(const BrushPaint::TextureLayer& layer);
 
 // Adds the mesh attribute IDs that are required to properly render a mesh
 // with this brush paint to the given `attribute_ids` set. Note that other
