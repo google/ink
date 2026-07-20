@@ -170,6 +170,19 @@ Version CalculateMinimumRequiredVersion(const EasingFunction::Linear& linear) {
   return Version::k0Jetpack1_0_0();
 }
 
+Version CalculateMinimumRequiredVersion(const EasingFunction::Steps& steps) {
+  return brush_internal::CalculateMinimumRequiredVersion(steps.step_position);
+}
+
+Version CalculateMinimumRequiredVersion(
+    const EasingFunction::Parameters& parameters) {
+  return std::visit(
+      [](auto&& params) { return CalculateMinimumRequiredVersion(params); },
+      parameters);
+}
+
+}  // namespace
+
 Version CalculateMinimumRequiredVersion(
     EasingFunction::StepPosition step_position) {
   switch (step_position) {
@@ -181,18 +194,6 @@ Version CalculateMinimumRequiredVersion(
   }
   return Version::kDevelopment();
 }
-
-Version CalculateMinimumRequiredVersion(const EasingFunction::Steps& steps) {
-  return CalculateMinimumRequiredVersion(steps.step_position);
-}
-
-Version CalculateMinimumRequiredVersion(
-    const EasingFunction::Parameters& parameters) {
-  return std::visit(
-      [](auto&& params) { return CalculateMinimumRequiredVersion(params); },
-      parameters);
-}
-}  // namespace
 
 Version CalculateMinimumRequiredVersion(const EasingFunction& easing_function) {
   return CalculateMinimumRequiredVersion(easing_function.parameters);

@@ -29,6 +29,7 @@ namespace {
 
 using ink::EasingFunction;
 using ink::Point;
+using ink::brush_internal::CalculateMinimumRequiredVersion;
 using ink::native::CastToEasingFunction;
 using ink::native::DeleteNativeEasingFunction;
 using ink::native::NewNativeEasingFunction;
@@ -183,6 +184,18 @@ int EasingFunctionNative_getStepsPositionInt(int64_t native_ptr) {
   return static_cast<int>(std::get<EasingFunction::Steps>(
                               CastToEasingFunction(native_ptr).parameters)
                               .step_position);
+}
+
+int EasingFunctionNative_calculateMinimumRequiredVersion(int64_t native_ptr) {
+  return CalculateMinimumRequiredVersion(CastToEasingFunction(native_ptr))
+      .value();
+}
+
+int EasingFunctionNative_getStepPositionMinimumRequiredVersion(
+    int step_position_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<EasingFunction::StepPosition>(step_position_int))
+      .value();
 }
 
 }  // extern "C"

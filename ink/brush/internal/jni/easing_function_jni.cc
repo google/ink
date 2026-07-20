@@ -119,4 +119,17 @@ JNI_METHOD(brush_behavior, EasingFunctionNative, jint, getStepsPositionInt)
   return EasingFunctionNative_getStepsPositionInt(native_pointer);
 }
 
+JNI_METHOD(brush_behavior, EasingFunctionNative, jint,
+           calculateMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return EasingFunctionNative_calculateMinimumRequiredVersion(native_pointer);
+}
+
+JNI_METHOD(brush_behavior, EasingFunctionNative, jint,
+           getStepPositionMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint step_position_int) {
+  return EasingFunctionNative_getStepPositionMinimumRequiredVersion(
+      step_position_int);
+}
+
 }  // extern "C"
