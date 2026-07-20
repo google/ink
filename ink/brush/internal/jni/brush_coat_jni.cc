@@ -72,4 +72,9 @@ JNI_METHOD(brush, BrushCoatNative, jlong, newCopyOfBrushPaintPreference)
   return BrushCoatNative_newCopyOfBrushPaintPreference(native_pointer, index);
 }
 
+JNI_METHOD(brush, BrushCoatNative, jint, calculateMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return BrushCoatNative_calculateMinimumRequiredVersion(native_pointer);
+}
+
 }  // extern "C"
