@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <utility>
@@ -33,6 +34,7 @@
 #include "ink/geometry/internal/outline_processing.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
+#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
@@ -312,53 +314,125 @@ std::vector<uint32_t> AddVertices(MutableMesh& mutable_mesh,
   return pt_indices;
 }
 
-// Adds a triangulation (defined by `pts` and `tris`) resulting from the
-// subtraction of a triangle `tri` from `mutable_mesh`.
-void AddSubtractedTriangle(MutableMesh& mutable_mesh,
-                           const std::array<uint32_t, 3>& indices,
-                           const Triangle& tri, const std::vector<Point>& pts,
-                           const std::vector<std::array<uint32_t, 3>>& tris,
-                           float epsilon, EdgeVertexMap& edge_vertex_map) {
+// A helper function to add the oriented boundary of `triangle` (consisting of
+// its three edges) to the `boundary` adjacency list. See also the comment in
+// `SubtractMeshes`.
+void UpdateBoundary(const std::array<uint32_t, 3>& triangle,
+                    std::vector<absl::InlinedVector<uint32_t, 4>>& boundary) {
+  uint32_t u = triangle[2];
+  for (uint32_t v : triangle) {
+    // If [v,u] = -[u,v] already exists in the boundary, remove it. Otherwise
+    // add [u,v].
+    auto it = std::find(boundary[v].begin(), boundary[v].end(), u);
+    if (it != boundary[v].end()) {
+      boundary[v].erase(it);
+    } else {
+      boundary[u].push_back(v);
+    }
+    u = v;
+  }
+}
+
+// Adds the `subtracted_triangulation` (the fragments of `tri` that remain after
+// subtraction) to the `mutable_mesh`. Uses `edge_vertex_map` to de-duplicate
+// any vertices newly created along `tri`'s edges. Finally, updates `boundary`
+// with the edges of the new fragments.
+void AddSubtractedTriangle(
+    const std::array<uint32_t, 3>& indices, const Triangle& tri,
+    const std::pair<std::vector<Point>, std::vector<std::array<uint32_t, 3>>>&
+        subtracted_triangulation,
+    float epsilon, EdgeVertexMap& edge_vertex_map, MutableMesh& mutable_mesh,
+    std::vector<absl::InlinedVector<uint32_t, 4>>& boundary) {
+  const auto& [pts, tris] = subtracted_triangulation;
+
   if (pts.empty() || tris.empty()) return;
 
   std::vector<uint32_t> mapped_indices =
       AddVertices(mutable_mesh, indices, tri, pts, epsilon, edge_vertex_map);
-  if (mapped_indices.empty()) return;
+  // Resize the boundary adjacency map to accommodate newly added vertices.
+  boundary.resize(mutable_mesh.VertexCount());
 
   for (const auto& t : tris) {
-    uint32_t i0 = mapped_indices[t[0]];
-    uint32_t i1 = mapped_indices[t[1]];
-    uint32_t i2 = mapped_indices[t[2]];
-    if (i0 == i1 || i1 == i2 || i2 == i0) continue;
-    mutable_mesh.AppendTriangleIndices({i0, i1, i2});
+    std::array<uint32_t, 3> idxs = {mapped_indices[t[0]], mapped_indices[t[1]],
+                                    mapped_indices[t[2]]};
+    if (idxs[0] == idxs[1] || idxs[1] == idxs[2] || idxs[2] == idxs[0])
+      continue;
+    mutable_mesh.AppendTriangleIndices(idxs);
+    UpdateBoundary(idxs, boundary);
   }
 }
 
+// Traces the connected components of the given `boundary` adjacency list to
+// extract the closed loops as discrete clockwise oriented outlines.
+// Note that this consumes the contents of the adjacency list in the process.
+std::vector<std::vector<uint32_t>> ExtractOutlines(
+    std::vector<absl::InlinedVector<uint32_t, 4>> boundary) {
+  std::vector<std::vector<uint32_t>> new_outlines;
+  for (uint32_t start = 0; start < boundary.size(); ++start) {
+    while (!boundary[start].empty()) {
+      std::vector<uint32_t> loop;
+      uint32_t curr = start;
+      do {
+        loop.push_back(curr);
+        if (boundary[curr].empty()) break;
+        uint32_t next = boundary[curr].back();
+        boundary[curr].pop_back();
+        curr = next;
+      } while (curr != start);
+
+      if (loop.size() > 2) {
+        std::reverse(loop.begin(), loop.end());
+        new_outlines.push_back(std::move(loop));
+      }
+    }
+  }
+  return new_outlines;
+}
+
 // Returns a mutable mesh with the given format representing the subtraction of
-// `shape_b` from `meshes`.
-MutableMesh SubtractMeshes(absl::Span<const Mesh> meshes,
-                           const MeshFormat& format,
-                           const ShapeOutline& shape_b, float epsilon) {
+// `shape_b` from `meshes` along with its updated outlines.
+std::pair<MutableMesh, std::vector<std::vector<uint32_t>>> SubtractMeshes(
+    absl::Span<const Mesh> meshes, const MeshFormat& format,
+    const ShapeOutline& shape_b, float epsilon) {
   // To compute the subtraction `meshes` - `shape_b`, we process each
   // triangle in `meshes` individually. For each triangle, we first handle the
   // geometry by computing a triangulation of the shape of `triangle` -
   // `shape_b`. Next, we add all the vertices from the triangulation to the
   // `mutable_mesh` result (making sure to re-use existing vertices to properly
   // glue the triangulations together along shared vertices and edges) and
-  // setting attributes by interpolating from the original triangle vertices.
+  // set their attributes by interpolating from the original triangle vertices.
   // Finally, we add all the triangles from the triangulation, using the mapped
   // indices of the corresponding vertices in the resulting `mutable_mesh`.
 
   MutableMesh mutable_mesh(format);
+  // Copy over all of the vertices. Vertices not belonging to any triangle
+  // will be removed by PartitionedMesh::FromMutableMeshGroups.
   for (const Mesh& mesh : meshes) {
-    uint32_t vertex_offset = mutable_mesh.VertexCount();
-
-    // Copy over all of the vertices. Vertices not belonging to any triangle
-    // will be removed by PartitionedMesh::FromMutableMeshGroups.
     for (uint32_t vert_idx = 0; vert_idx < mesh.VertexCount(); ++vert_idx) {
       CopyVertex(mesh, vert_idx, mutable_mesh, format);
     }
+  }
 
+  // As we process the subtraction, we also compute the outline of the result,
+  // by fist incrementally computing its simplicial boundary (the set of
+  // directed boundary edges of triangles that aren't "cancelled" out by an
+  // adjacent triangle), and then finally tracing the boundary edges to extract
+  // the outline.
+  //
+  // TODO(b/523326691): Consider initializing `boundary` with the existing mesh
+  // outlines to avoid recomputing the outline for untouched parts of the mesh.
+  //
+  // We store the simplicial boundary in a vertex adjacency list `boundary`,
+  // representing directed edges of the mesh. As we add triangle boundaries, we
+  // make sure to remove cancelled edges (i.e. if (v, u) is already present in
+  // the adjacency list, adding (u, v) removes it). The capacity of 4 is chosen
+  // as 4 is the typical degree of a vertex in a triangle strip.
+  std::vector<absl::InlinedVector<uint32_t, 4>> boundary(
+      mutable_mesh.VertexCount());
+
+  // Process the triangles.
+  uint32_t vertex_offset = 0;
+  for (const Mesh& mesh : meshes) {
     // A map to help weld triangles back together (i.e. de-duplicate vertices).
     // It maps each edge in `mesh` (specified by the ordered pair of
     // corresponding vertex indices in `mutable_mesh`) to the list of new
@@ -373,16 +447,18 @@ MutableMesh SubtractMeshes(absl::Span<const Mesh> meshes,
       Triangle tri = mesh.GetTriangle(tri_idx);
 
       if (Intersects(shape_b, Envelope(tri).AsRect().value())) {
-        auto [subtracted_pts, subtracted_tris] = SubtractTriangle(tri, shape_b);
-        AddSubtractedTriangle(mutable_mesh, indices, tri, subtracted_pts,
-                              subtracted_tris, epsilon, edge_vertex_map);
+        AddSubtractedTriangle(indices, tri, SubtractTriangle(tri, shape_b),
+                              epsilon, edge_vertex_map, mutable_mesh, boundary);
       } else {
+        UpdateBoundary(indices, boundary);
         mutable_mesh.AppendTriangleIndices(indices);
       }
     }
+
+    vertex_offset += mesh.VertexCount();
   }
 
-  return mutable_mesh;
+  return {std::move(mutable_mesh), ExtractOutlines(std::move(boundary))};
 }
 
 // Returns a `ShapeOutline` representing the silhouette of `mesh` when
@@ -451,30 +527,33 @@ absl::StatusOr<PartitionedMesh> Subtract(const PartitionedMesh& mesh_a,
   AffineTransform b_to_a = *inv_transform_a * transform_b;
   ShapeOutline shape_b = GetShapeB(mesh_b, b_to_a, epsilon);
 
-  std::vector<PartitionedMesh::MutableMeshGroup> groups;
-  groups.reserve(mesh_a.RenderGroupCount());
+  uint32_t num_groups = mesh_a.RenderGroupCount();
 
-  std::vector<MutableMesh> group_mutable_meshes;
-  group_mutable_meshes.reserve(mesh_a.RenderGroupCount());
-  std::vector<StrokeVertex::CustomPackingArray> packing_arrays;
-  packing_arrays.reserve(mesh_a.RenderGroupCount());
+  std::vector<PartitionedMesh::MutableMeshGroup> groups(num_groups);
+  std::vector<MutableMesh> group_mutable_meshes(num_groups);
+  std::vector<std::vector<std::vector<uint32_t>>> groups_outlines(num_groups);
+  std::vector<std::vector<absl::Span<const uint32_t>>> groups_outline_spans(
+      num_groups);
+  std::vector<StrokeVertex::CustomPackingArray> packing_arrays(num_groups);
 
-  for (uint32_t group = 0; group < mesh_a.RenderGroupCount(); ++group) {
+  for (uint32_t group = 0; group < num_groups; ++group) {
     // Each coat is handled independently.
     const MeshFormat& format = mesh_a.RenderGroupFormat(group);
-    absl::Span<const Mesh> meshes = mesh_a.RenderGroupMeshes(group);
-    group_mutable_meshes.push_back(
-        SubtractMeshes(meshes, format, shape_b, epsilon));
-    MutableMesh& mutable_mesh = group_mutable_meshes.back();
+    auto [mesh, outlines] = SubtractMeshes(mesh_a.RenderGroupMeshes(group),
+                                           format, shape_b, epsilon);
+    group_mutable_meshes[group] = std::move(mesh);
+    groups_outlines[group] = std::move(outlines);
+    for (const auto& outline : groups_outlines[group]) {
+      groups_outline_spans[group].push_back(outline);
+    }
 
-    packing_arrays.push_back(StrokeVertex::MakeCustomPackingArray(format));
+    packing_arrays[group] = StrokeVertex::MakeCustomPackingArray(format);
 
-    // TODO(b/509625875): Compute the mesh outline.
-    groups.push_back(PartitionedMesh::MutableMeshGroup{
-        .mesh = &mutable_mesh,
-        .outlines = {},
-        .packing_params = packing_arrays.back().Values(),
-    });
+    groups[group] = PartitionedMesh::MutableMeshGroup{
+        .mesh = &group_mutable_meshes[group],
+        .outlines = groups_outline_spans[group],
+        .packing_params = packing_arrays[group].Values(),
+    };
   }
 
   return PartitionedMesh::FromMutableMeshGroups(groups);

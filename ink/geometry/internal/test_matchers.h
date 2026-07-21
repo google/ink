@@ -37,6 +37,19 @@ MATCHER_P(IsCyclicPermutationOf, expected, "") {
          doubled.end();
 }
 
+MATCHER_P2(IsCyclicPermutationOf, expected, tolerance, "") {
+  if (arg.size() != expected.size()) return false;
+  auto doubled = std::vector(expected.begin(), expected.end());
+  doubled.insert(doubled.end(), expected.begin(), expected.end());
+  float tol = tolerance;
+  return std::search(doubled.begin(), doubled.end(), arg.begin(), arg.end(),
+                     [tol](const auto& a, const auto& b) {
+                       return testing::Value(a.x,
+                                             testing::FloatNear(b.x, tol)) &&
+                              testing::Value(a.y, testing::FloatNear(b.y, tol));
+                     }) != doubled.end();
+}
+
 ::testing::Matcher<ShapeOutline> ShapeOutlineNear(const ShapeOutline& expected,
                                                   float tolerance);
 

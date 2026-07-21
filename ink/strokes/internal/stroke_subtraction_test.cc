@@ -26,6 +26,7 @@
 #include "absl/status/statusor.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/internal/test_matchers.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
@@ -37,6 +38,7 @@ namespace ink::strokes_internal {
 namespace {
 
 using ::absl_testing::IsOk;
+using ::ink::geometry_internal::IsCyclicPermutationOf;
 using ::testing::ElementsAre;
 using ::testing::FloatEq;
 using ::testing::FloatNear;
@@ -44,6 +46,19 @@ using ::testing::FloatNear;
 using AttributeId = MeshFormat::AttributeId;
 using AttributeType = MeshFormat::AttributeType;
 using IndexFormat = MeshFormat::IndexFormat;
+
+std::vector<Point> GetOutlinePoints(const PartitionedMesh& partitioned_mesh,
+                                    uint32_t group_index,
+                                    uint32_t outline_index) {
+  uint32_t count =
+      partitioned_mesh.OutlineVertexCount(group_index, outline_index);
+  std::vector<Point> outline_points(count);
+  for (uint32_t i = 0; i < count; ++i) {
+    outline_points[i] =
+        partitioned_mesh.OutlinePosition(group_index, outline_index, i);
+  }
+  return outline_points;
+}
 
 constexpr float kFloatTolerance = 1e-6f;
 
@@ -157,8 +172,9 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
   mesh_a.SetFloatVertexAttribute(1, 4, {2.0f, 2.0f});
   mesh_a.SetFloatVertexAttribute(2, 4, {2.0f, 2.0f});
 
+  std::vector<uint32_t> mesh_a_outline = {0, 2, 1};
   absl::StatusOr<PartitionedMesh> mesh_a_pm =
-      PartitionedMesh::FromMutableMesh(mesh_a);
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
   ASSERT_THAT(mesh_a_pm, IsOk());
 
   // Set up mesh_b
@@ -169,7 +185,7 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
   mesh_b.AppendTriangleIndices({0, 1, 2});
   AffineTransform mesh_b_transform = AffineTransform::Translate({5.0f, -5.0f});
 
-  constexpr uint32_t mesh_b_outline[] = {0, 2, 1};
+  std::vector<uint32_t> mesh_b_outline = {0, 2, 1};
   absl::StatusOr<PartitionedMesh> mesh_b_pm =
       PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
   ASSERT_THAT(mesh_b_pm, IsOk());
@@ -183,6 +199,12 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
   // The result should have 2 triangles and 4 vertices.
   EXPECT_EQ(NumTriangles(*result), 2);
   EXPECT_EQ(NumVertices(*result), 4);
+
+  // Check the outline of the result.
+  ASSERT_EQ(result->OutlineCount(0), 1);
+  std::vector<Point> outline_points = GetOutlinePoints(*result, 0, 0);
+  EXPECT_THAT(outline_points,
+              IsCyclicPermutationOf(std::vector<Point>{A, C, X2, X1}));
 
   const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
 
@@ -431,10 +453,15 @@ TEST(StrokeSubtractionTest, MultipleCoats) {
   mesh_a_coat_1.AppendTriangleIndices({0, 1, 2});
   mesh_a_coat_1.AppendTriangleIndices({0, 2, 3});
 
+  std::vector<uint32_t> mesh_a_coat_0_outline = {0, 3, 2, 1};
+  std::vector<uint32_t> mesh_a_coat_1_outline = {0, 3, 2, 1};
+
   absl::StatusOr<PartitionedMesh> mesh_a_pm =
       PartitionedMesh::FromMutableMeshGroups({
-          PartitionedMesh::MutableMeshGroup{.mesh = &mesh_a_coat_0},
-          PartitionedMesh::MutableMeshGroup{.mesh = &mesh_a_coat_1},
+          PartitionedMesh::MutableMeshGroup{
+              .mesh = &mesh_a_coat_0, .outlines = {{mesh_a_coat_0_outline}}},
+          PartitionedMesh::MutableMeshGroup{
+              .mesh = &mesh_a_coat_1, .outlines = {{mesh_a_coat_1_outline}}},
       });
   ASSERT_THAT(mesh_a_pm, IsOk());
 
@@ -444,7 +471,7 @@ TEST(StrokeSubtractionTest, MultipleCoats) {
   mesh_b.AppendTriangleIndices({0, 1, 2});
   mesh_b.AppendTriangleIndices({0, 2, 3});
 
-  constexpr uint32_t mesh_b_outline[] = {0, 1, 2, 3};
+  std::vector<uint32_t> mesh_b_outline = {0, 3, 2, 1};
   absl::StatusOr<PartitionedMesh> mesh_b_pm =
       PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
   ASSERT_THAT(mesh_b_pm, IsOk());
@@ -457,15 +484,31 @@ TEST(StrokeSubtractionTest, MultipleCoats) {
   // Result should have 2 coat.
   EXPECT_EQ(result->RenderGroupCount(), 2);
 
-  // Each coat should have 2 triangles and 4 vertices after subtraction
-  // of the right half.
+  // Coat 0 starts of with triangles ABC and ACD. After the subtraction, ACD
+  // becomes a quad, and is re-triangulated into two triangles.
   EXPECT_EQ(result->RenderGroupMeshes(0).size(), 1);
-  EXPECT_EQ(result->RenderGroupMeshes(0)[0].TriangleCount(), 2);
-  EXPECT_EQ(result->RenderGroupMeshes(0)[0].VertexCount(), 4);
+  EXPECT_EQ(result->RenderGroupMeshes(0)[0].TriangleCount(), 3);
+  EXPECT_EQ(result->RenderGroupMeshes(0)[0].VertexCount(), 5);
 
   EXPECT_EQ(result->RenderGroupMeshes(1).size(), 1);
-  EXPECT_EQ(result->RenderGroupMeshes(1)[0].TriangleCount(), 2);
-  EXPECT_EQ(result->RenderGroupMeshes(1)[0].VertexCount(), 4);
+  EXPECT_EQ(result->RenderGroupMeshes(1)[0].TriangleCount(), 3);
+  EXPECT_EQ(result->RenderGroupMeshes(1)[0].VertexCount(), 5);
+
+  Point X0{5, 0};   // Intersection of AB and mesh_b
+  Point X1{5, 10};  // Intersection of CD and mesh_b
+  Point X2{5, 5};   // Intersection of diagonal AC and mesh_b
+  ASSERT_EQ(result->OutlineCount(0), 1);
+  std::vector<Point> outline_points_0 = GetOutlinePoints(*result, 0, 0);
+  EXPECT_THAT(outline_points_0,
+              IsCyclicPermutationOf(std::vector<Point>{A, D, X1, X2, X0}));
+
+  Point X3{5, 2};  // Intersection of IJ and mesh_b
+  Point X4{5, 8};  // Intersection of KL and mesh_b
+  Point X5{5, 5};  // Intersection of diagonal IK and mesh_b
+  ASSERT_EQ(result->OutlineCount(1), 1);
+  std::vector<Point> outline_points_1 = GetOutlinePoints(*result, 1, 0);
+  EXPECT_THAT(outline_points_1,
+              IsCyclicPermutationOf(std::vector<Point>{I, L, X4, X5, X3}));
 }
 
 TEST(StrokeSubtractionTest, FullDeleted) {
@@ -492,8 +535,9 @@ TEST(StrokeSubtractionTest, FullDeleted) {
   mesh_a.AppendTriangleIndices({0, 1, 2});
   mesh_a.AppendTriangleIndices({0, 2, 3});
 
+  std::vector<uint32_t> mesh_a_outline = {0, 3, 2, 1};
   absl::StatusOr<PartitionedMesh> mesh_a_pm =
-      PartitionedMesh::FromMutableMesh(mesh_a);
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
   ASSERT_THAT(mesh_a_pm, IsOk());
 
   // mesh_b completely encloses mesh_a
@@ -502,7 +546,7 @@ TEST(StrokeSubtractionTest, FullDeleted) {
   mesh_b.AppendTriangleIndices({0, 1, 2});
   mesh_b.AppendTriangleIndices({0, 2, 3});
 
-  constexpr uint32_t mesh_b_outline[] = {0, 3, 2, 1};
+  std::vector<uint32_t> mesh_b_outline = {0, 3, 2, 1};
   absl::StatusOr<PartitionedMesh> mesh_b_pm =
       PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
   ASSERT_THAT(mesh_b_pm, IsOk());
@@ -514,6 +558,7 @@ TEST(StrokeSubtractionTest, FullDeleted) {
 
   EXPECT_EQ(NumTriangles(*result), 0);
   EXPECT_EQ(NumVertices(*result), 0);
+  EXPECT_EQ(result->OutlineCount(0), 0);
 }
 
 TEST(StrokeSubtractionTest, EpsilonDeduplication) {
@@ -522,6 +567,7 @@ TEST(StrokeSubtractionTest, EpsilonDeduplication) {
   // subtraction result.
   //
   //                      C
+  //                     / |
   //                    /  |
   //                   /   |
   //                  /    |
@@ -530,15 +576,15 @@ TEST(StrokeSubtractionTest, EpsilonDeduplication) {
   //               /       |
   //              /        |
   //             /         |
-  //    I-------/--D E     |
-  //    |      /     F     |
+  //    G-------/--F E     |
+  //    |      /     D     |
   //    |     A------|-----B
   //    |            |
-  //    H------------G
+  //    H------------I
 
   Point A{0, 0}, B{10, 0}, C{10, 10};
-  Point E{3, 2}, G{3, -5}, H{-5, -5}, I{-5, 2};
-  Point D{2.999f, 2.0f}, F{3.0f, 1.999f};  // Points close to E
+  Point E{3, 2}, I{3, -5}, H{-5, -5}, G{-5, 2};
+  Point F{2.999f, 2.0f}, D{3.0f, 1.999f};  // Points close to E
   const float epsilon = .01f;
 
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
@@ -550,8 +596,9 @@ TEST(StrokeSubtractionTest, EpsilonDeduplication) {
   for (const Point& p : {A, B, C}) mesh_a.AppendVertex(p);
   mesh_a.AppendTriangleIndices({0, 1, 2});
 
+  std::vector<uint32_t> mesh_a_outline = {0, 2, 1};
   absl::StatusOr<PartitionedMesh> mesh_a_pm =
-      PartitionedMesh::FromMutableMesh(mesh_a);
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
   ASSERT_THAT(mesh_a_pm, IsOk());
 
   MutableMesh mesh_b(MeshFormat{});
@@ -559,7 +606,7 @@ TEST(StrokeSubtractionTest, EpsilonDeduplication) {
   mesh_b.AppendTriangleIndices({4, 3, 2});  // H, G, F
   mesh_b.AppendTriangleIndices({4, 0, 5});  // H, D, I
 
-  constexpr uint32_t mesh_b_outline[] = {0, 1, 2, 3, 4, 5};
+  std::vector<uint32_t> mesh_b_outline = {5, 4, 3, 2, 1, 0};
   absl::StatusOr<PartitionedMesh> mesh_b_pm =
       PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
   ASSERT_THAT(mesh_b_pm, IsOk());
@@ -569,9 +616,18 @@ TEST(StrokeSubtractionTest, EpsilonDeduplication) {
                AffineTransform::Identity(), epsilon);
   ASSERT_THAT(result, IsOk());
 
-  // The result should have 5 vertices, not 7, since E1 and E2 should have been
+  // The result should have 5 vertices, not 7, since D and F should have been
   // deduplicated.
   EXPECT_EQ(NumVertices(*result), 5);
+
+  Point X0{3, 0};  // Intersection of AB and mesh_b
+  Point X1{2, 2};  // Intersection of diagonal AC and mesh_b
+  ASSERT_EQ(result->OutlineCount(0), 1);
+  std::vector<Point> outline_points = GetOutlinePoints(*result, 0, 0);
+
+  EXPECT_THAT(
+      outline_points,
+      IsCyclicPermutationOf(std::vector<Point>{B, X0, E, X1, C}, epsilon));
 }
 
 }  // namespace
