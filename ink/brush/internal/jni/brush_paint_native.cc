@@ -451,6 +451,14 @@ int BrushPaintNative_getTextureSizeUnitMinimumRequiredVersion(
       .value();
 }
 
+int BrushPaintNative_getAnimationRepeatModeMinimumRequiredVersion(
+    int animation_repeat_mode_int) {
+  return CalculateMinimumRequiredVersion(
+             static_cast<BrushPaint::AnimationRepeatMode>(
+                 animation_repeat_mode_int))
+      .value();
+}
+
 int TextureLayerNative_calculateMinimumRequiredVersion(int64_t native_ptr) {
   return CalculateMinimumRequiredVersion(CastToTextureLayer(native_ptr))
       .value();

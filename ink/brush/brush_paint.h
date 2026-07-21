@@ -354,6 +354,8 @@ Version CalculateMinimumRequiredVersion(
     BrushPaint::TextureSizeUnit texture_size_unit);
 Version CalculateMinimumRequiredVersion(BrushPaint::TextureWrap texture_wrap);
 Version CalculateMinimumRequiredVersion(BrushPaint::BlendMode blend_mode);
+Version CalculateMinimumRequiredVersion(
+    BrushPaint::AnimationRepeatMode animation_repeat_mode);
 Version CalculateMinimumRequiredVersion(BrushPaint::SelfOverlap self_overlap);
 Version CalculateMinimumRequiredVersion(const BrushPaint::TextureLayer& layer);
 

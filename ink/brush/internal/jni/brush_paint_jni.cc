@@ -334,6 +334,13 @@ JNI_METHOD(brush, BrushPaintNative, jint,
       size_unit_int);
 }
 
+JNI_METHOD(brush, BrushPaintNative, jint,
+           getAnimationRepeatModeMinimumRequiredVersion)
+(JNIEnv* env, jobject thiz, jint animation_repeat_mode_int) {
+  return BrushPaintNative_getAnimationRepeatModeMinimumRequiredVersion(
+      animation_repeat_mode_int);
+}
+
 JNI_METHOD(brush, TextureLayerNative, jint, calculateMinimumRequiredVersion)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return TextureLayerNative_calculateMinimumRequiredVersion(native_pointer);
