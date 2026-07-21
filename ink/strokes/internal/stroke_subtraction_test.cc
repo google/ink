@@ -31,6 +31,7 @@
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/triangle.h"
+#include "ink/types/small_array.h"
 
 namespace ink::strokes_internal {
 namespace {
@@ -38,10 +39,13 @@ namespace {
 using ::absl_testing::IsOk;
 using ::testing::ElementsAre;
 using ::testing::FloatEq;
+using ::testing::FloatNear;
 
 using AttributeId = MeshFormat::AttributeId;
 using AttributeType = MeshFormat::AttributeType;
 using IndexFormat = MeshFormat::IndexFormat;
+
+constexpr float kFloatTolerance = 1e-6f;
 
 uint32_t NumVertices(const PartitionedMesh& partitioned_mesh) {
   uint32_t count = 0;
@@ -320,6 +324,80 @@ TEST(StrokeSubtractionTest, AttributeInterpolation) {
 
     EXPECT_THAT((*subtracted_attr)[0], FloatEq((*original_attr)[0]));
   }
+}
+
+TEST(StrokeSubtractionTest, HslColorShiftInterpolation) {
+  //
+  // A-----------B
+  //  \  mesh_a /
+  //   \       /
+  //    \  D  /
+  //     \/ \/
+  //     /\ /\
+  //    /  C  \
+  //   /       \
+  //  / mesh_b  \
+  // E-----------F
+
+  Point A{0, 10}, B{10, 10}, C{5, 2};
+  Point D{5, 8}, E{0, 0}, F{10, 0};
+
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
+       {AttributeType::kFloat3Unpacked, AttributeId::kColorShiftHsl}},
+      IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  MutableMesh mesh_a(*format);
+  mesh_a.AppendVertex(A);
+  mesh_a.AppendVertex(B);
+  mesh_a.AppendVertex(C);
+
+  mesh_a.SetFloatVertexAttribute(0, 1, {0.9f, 0.5f, 0.4f});
+  mesh_a.SetFloatVertexAttribute(1, 1, {0.8f, 0.5f, 0.8f});
+  mesh_a.SetFloatVertexAttribute(2, 1, {0.1f, 0.4f, 0.2f});
+
+  mesh_a.AppendTriangleIndices({0, 2, 1});
+
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a);
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  MutableMesh mesh_b(MeshFormat{});
+  mesh_b.AppendVertex(E);
+  mesh_b.AppendVertex(D);
+  mesh_b.AppendVertex(F);
+  mesh_b.AppendTriangleIndices({0, 2, 1});
+
+  constexpr uint32_t mesh_b_outline[] = {0, 1, 2};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
+
+  std::optional<uint32_t> index_d = FindVertexIndex(result_mesh, D);
+  ASSERT_TRUE(index_d.has_value());
+  ink::SmallArray<float, 4> hsl = result_mesh.FloatVertexAttribute(*index_d, 1);
+
+  // Note that D = 3/8 A + 3/8 B + 2/8 C.
+  // Recall also that the HSL values are:
+  //  A: (0.9f, 0.5f, 0.4f)
+  //  B: (0.8f, 0.5f, 0.8f)
+  //  C: (0.1f, 0.4f, 0.2f)
+  EXPECT_THAT(hsl.Values(),
+              ElementsAre(
+                  // Hue and saturation are linearly interpolated after mapping
+                  // from polar coordinates to cartesian coordinates.
+                  FloatNear(-0.099683f, kFloatTolerance),
+                  FloatNear(0.125730f, kFloatTolerance),
+                  // Lightness interpolates linearly.
+                  FloatNear(0.5f, kFloatTolerance)));
 }
 
 TEST(StrokeSubtractionTest, MultipleCoats) {

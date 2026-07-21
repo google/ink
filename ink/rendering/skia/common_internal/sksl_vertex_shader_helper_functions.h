@@ -109,7 +109,8 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
     // LINT.ThenChange(
     //     ../../../brush/color_function.cc:yiq_transform,
-    //     ../../../rendering/webgpu/StrokeShader.wgsl:apply_hsl_and_opacity_shift)
+    //     ../../../rendering/webgpu/StrokeShader.wgsl:apply_hsl_and_opacity_shift,
+    //     ../../../strokes/internal/stroke_subtraction.cc:hsl_shift_linear_space)
 
     // Decodes the values of the side and forward margins given the side and
     // forward `labels`.
