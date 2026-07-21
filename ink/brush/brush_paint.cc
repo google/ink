@@ -95,6 +95,16 @@ bool IsValidBrushPaintBlendMode(BrushPaint::BlendMode blend_mode) {
   return false;
 }
 
+bool IsValidBrushPaintAnimationRepeatMode(
+    BrushPaint::AnimationRepeatMode animation_repeat_mode) {
+  switch (animation_repeat_mode) {
+    case BrushPaint::AnimationRepeatMode::kRestart:
+    case BrushPaint::AnimationRepeatMode::kReverse:
+      return true;
+  }
+  return false;
+}
+
 bool IsValidBrushPaintSelfOverlap(BrushPaint::SelfOverlap self_overlap) {
   switch (self_overlap) {
     case BrushPaint::SelfOverlap::kAny:
@@ -191,6 +201,12 @@ absl::Status ValidateTextureLayer(const BrushPaint::StampingTexture& layer) {
         "a whole number of milliseconds in the interval [0, 2^24]. Got ",
         layer.animation_duration));
   }
+  if (!IsValidBrushPaintAnimationRepeatMode(layer.animation_repeat_mode)) {
+    return absl::InvalidArgumentError(absl::StrFormat(
+        "`BrushPaint::StampingTexture::animation_repeat_mode` holds "
+        "non-enumerator value %d",
+        static_cast<int>(layer.animation_repeat_mode)));
+  }
   if (!IsValidBrushPaintBlendMode(layer.blend_mode)) {
     return absl::InvalidArgumentError(
         absl::StrFormat("`BrushPaint::StampingTexture::blend_mode` holds "
@@ -252,6 +268,15 @@ absl::Status ValidateAdjacentTextureLayers(
                                "all texture layers. Got `",
                                stamping1.animation_duration, "` and `",
                                stamping2.animation_duration, "`"));
+            }
+            if (stamping2.animation_repeat_mode !=
+                stamping1.animation_repeat_mode) {
+              return absl::InvalidArgumentError(
+                  absl::StrCat("`BrushPaint::StampingTexture::animation_"
+                               "repeat_mode` must be the same for "
+                               "all texture layers. Got `",
+                               stamping1.animation_repeat_mode, "` and `",
+                               stamping2.animation_repeat_mode, "`"));
             }
             return absl::OkStatus();
           }),
@@ -353,6 +378,17 @@ Version CalculateMinimumRequiredVersion(BrushPaint::BlendMode blend_mode) {
   return Version::kDevelopment();
 }
 
+Version CalculateMinimumRequiredVersion(
+    BrushPaint::AnimationRepeatMode animation_repeat_mode) {
+  switch (animation_repeat_mode) {
+    case BrushPaint::AnimationRepeatMode::kRestart:
+      return Version::k0Jetpack1_0_0();
+    case BrushPaint::AnimationRepeatMode::kReverse:
+      return Version::kDevelopment();
+  }
+  return Version::kDevelopment();
+}
+
 Version CalculateMinimumRequiredVersion(BrushPaint::SelfOverlap self_overlap) {
   switch (self_overlap) {
     case BrushPaint::SelfOverlap::kAny:
@@ -388,7 +424,8 @@ Version CalculateMinimumRequiredVersion(
   //  ../storage/proto/brush_family.proto:animation_defaults,
   //  ../storage/proto/brush_family.proto:animation_defaults_legacy
   // )
-  return CalculateMinimumRequiredVersion(layer.blend_mode);
+  return std::max(CalculateMinimumRequiredVersion(layer.animation_repeat_mode),
+                  CalculateMinimumRequiredVersion(layer.blend_mode));
 }
 
 }  // namespace
@@ -495,6 +532,18 @@ std::string ToFormattedString(BrushPaint::BlendMode blend_mode) {
   return absl::StrCat("BlendMode(", static_cast<int>(blend_mode), ")");
 }
 
+std::string ToFormattedString(
+    BrushPaint::AnimationRepeatMode animation_repeat_mode) {
+  switch (animation_repeat_mode) {
+    case BrushPaint::AnimationRepeatMode::kRestart:
+      return "kRestart";
+    case BrushPaint::AnimationRepeatMode::kReverse:
+      return "kReverse";
+  }
+  return absl::StrCat("AnimationRepeatMode(",
+                      static_cast<int>(animation_repeat_mode), ")");
+}
+
 std::string ToFormattedString(const BrushPaint::TilingTexture& layer) {
   return absl::StrCat(
       "TilingTexture{", "client_texture_id=", layer.client_texture_id,
@@ -513,6 +562,7 @@ std::string ToFormattedString(const BrushPaint::StampingTexture& layer) {
       ", animation_rows=", layer.animation_rows,
       ", animation_columns=", layer.animation_columns,
       ", animation_duration=", layer.animation_duration,
+      ", animation_repeat_mode=", layer.animation_repeat_mode,
       ", blend_mode=", ToFormattedString(layer.blend_mode), "}");
 }
 

@@ -193,7 +193,8 @@ int64_t TilingTextureNative_create(
 int64_t StampingTextureNative_create(
     void* jni_env_pass_through, const char* client_texture_id,
     int animation_frames, int animation_rows, int animation_columns,
-    int64_t animation_duration_millis, int blend_mode,
+    int64_t animation_duration_millis, int animation_repeat_mode,
+    int blend_mode,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str)) {
   BrushPaint::TextureLayer texture_layer = {BrushPaint::StampingTexture{
@@ -202,6 +203,8 @@ int64_t StampingTextureNative_create(
       .animation_rows = animation_rows,
       .animation_columns = animation_columns,
       .animation_duration = absl::Milliseconds(animation_duration_millis),
+      .animation_repeat_mode =
+          static_cast<BrushPaint::AnimationRepeatMode>(animation_repeat_mode),
       .blend_mode = static_cast<BrushPaint::BlendMode>(blend_mode),
   }};
   if (absl::Status status = ValidateBrushPaintTextureLayer(texture_layer);
@@ -272,6 +275,12 @@ int64_t StampingTextureNative_getAnimationDurationMillis(int64_t native_ptr) {
   return absl::ToInt64Milliseconds(
       std::get<BrushPaint::StampingTexture>(CastToTextureLayer(native_ptr))
           .animation_duration);
+}
+
+int StampingTextureNative_getAnimationRepeatModeInt(int64_t native_ptr) {
+  return static_cast<int>(
+      std::get<BrushPaint::StampingTexture>(CastToTextureLayer(native_ptr))
+          .animation_repeat_mode);
 }
 
 int TilingTextureNative_getSizeUnitInt(int64_t native_ptr) {

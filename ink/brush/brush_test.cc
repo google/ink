@@ -164,7 +164,8 @@ TEST(BrushTest, Stringify) {
       "corner_rounding=0}, "
       "paint_preferences={BrushPaint{texture_layers={StampingTexture{client_"
       "texture_id=test-texture, animation_frames=1, animation_rows=1, "
-      "animation_columns=1, animation_duration=1s, blend_mode=kDstOut}}, "
+      "animation_columns=1, animation_duration=1s, "
+      "animation_repeat_mode=kRestart, blend_mode=kDstOut}}, "
       "self_overlap=kAny}}}], input_model=PassthroughModel, "
       "client_brush_family_id='big-square'))");
 }

@@ -227,6 +227,15 @@ TEST(BrushPaintTest, StringifyBlendMode) {
             "BlendMode(99)");
 }
 
+TEST(BrushPaintTest, StringifyAnimationRepeatMode) {
+  EXPECT_EQ(absl::StrCat(BrushPaint::AnimationRepeatMode::kRestart),
+            "kRestart");
+  EXPECT_EQ(absl::StrCat(BrushPaint::AnimationRepeatMode::kReverse),
+            "kReverse");
+  EXPECT_EQ(absl::StrCat(static_cast<BrushPaint::AnimationRepeatMode>(99)),
+            "AnimationRepeatMode(99)");
+}
+
 TEST(BrushPaintTest, StringifyTilingTexture) {
   EXPECT_EQ(absl::StrCat(BrushPaint::TilingTexture{}),
             "TilingTexture{client_texture_id=, origin=kStrokeSpaceOrigin, "
@@ -272,32 +281,39 @@ TEST(BrushPaintTest, StringifyStampingTexture) {
   EXPECT_EQ(absl::StrCat(BrushPaint::StampingTexture{}),
             "StampingTexture{client_texture_id=, animation_frames=1, "
             "animation_rows=1, animation_columns=1, animation_duration=1s, "
-            "blend_mode=kModulate}");
+            "animation_repeat_mode=kRestart, blend_mode=kModulate}");
   EXPECT_EQ(absl::StrCat(BrushPaint::StampingTexture{
                 .client_texture_id = std::string(kTestTextureId)}),
             "StampingTexture{client_texture_id=test-texture, "
             "animation_frames=1, animation_rows=1, animation_columns=1, "
-            "animation_duration=1s, blend_mode=kModulate}");
-  EXPECT_EQ(absl::StrCat(BrushPaint::StampingTexture{
-                .client_texture_id = std::string(kTestTextureId),
-                .animation_frames = 2,
-                .animation_rows = 3,
-                .animation_columns = 4,
-                .animation_duration = absl::Seconds(5),
-                .blend_mode = BrushPaint::BlendMode::kDstIn}),
-            "StampingTexture{client_texture_id=test-texture, "
-            "animation_frames=2, animation_rows=3, animation_columns=4, "
-            "animation_duration=5s, blend_mode=kDstIn}");
-  EXPECT_EQ(absl::StrCat(BrushPaint::StampingTexture{
-                .client_texture_id = std::string(kTestTextureId),
-                .animation_frames = 2,
-                .animation_rows = 3,
-                .animation_columns = 4,
-                .animation_duration = absl::Seconds(5),
-                .blend_mode = BrushPaint::BlendMode::kSrcAtop}),
-            "StampingTexture{client_texture_id=test-texture, "
-            "animation_frames=2, animation_rows=3, animation_columns=4, "
-            "animation_duration=5s, blend_mode=kSrcAtop}");
+            "animation_duration=1s, animation_repeat_mode=kRestart, "
+            "blend_mode=kModulate}");
+  EXPECT_EQ(
+      absl::StrCat(BrushPaint::StampingTexture{
+          .client_texture_id = std::string(kTestTextureId),
+          .animation_frames = 2,
+          .animation_rows = 3,
+          .animation_columns = 4,
+          .animation_duration = absl::Seconds(5),
+          .animation_repeat_mode = BrushPaint::AnimationRepeatMode::kReverse,
+          .blend_mode = BrushPaint::BlendMode::kDstIn}),
+      "StampingTexture{client_texture_id=test-texture, "
+      "animation_frames=2, animation_rows=3, animation_columns=4, "
+      "animation_duration=5s, animation_repeat_mode=kReverse, "
+      "blend_mode=kDstIn}");
+  EXPECT_EQ(
+      absl::StrCat(BrushPaint::StampingTexture{
+          .client_texture_id = std::string(kTestTextureId),
+          .animation_frames = 2,
+          .animation_rows = 3,
+          .animation_columns = 4,
+          .animation_duration = absl::Seconds(5),
+          .animation_repeat_mode = BrushPaint::AnimationRepeatMode::kReverse,
+          .blend_mode = BrushPaint::BlendMode::kSrcAtop}),
+      "StampingTexture{client_texture_id=test-texture, "
+      "animation_frames=2, animation_rows=3, animation_columns=4, "
+      "animation_duration=5s, animation_repeat_mode=kReverse, "
+      "blend_mode=kSrcAtop}");
 }
 
 TEST(BrushPaintTest, StringifyBrushPaint) {
@@ -315,7 +331,8 @@ TEST(BrushPaintTest, StringifyBrushPaint) {
                          .client_texture_id = std::string(kTestTextureId)}}}),
       "BrushPaint{texture_layers={StampingTexture{client_texture_id=test-"
       "texture, animation_frames=1, animation_rows=1, animation_columns=1, "
-      "animation_duration=1s, blend_mode=kModulate}}, self_overlap=kAny}");
+      "animation_duration=1s, animation_repeat_mode=kRestart, "
+      "blend_mode=kModulate}}, self_overlap=kAny}");
   EXPECT_EQ(
       absl::StrCat(BrushPaint{
           .texture_layers =
@@ -516,6 +533,18 @@ TEST(BrushPaintTest, InvalidTextureLayerAnimationDuration) {
                          "milliseconds in the interval [0, 2^24]")));
 }
 
+TEST(BrushPaintTest, InvalidTextureLayerAnimationRepeatMode) {
+  EXPECT_THAT(
+      brush_internal::ValidateBrushPaintTextureLayer(
+          BrushPaint::StampingTexture{
+              .client_texture_id = std::string(kTestTextureId),
+              .animation_repeat_mode =
+                  static_cast<BrushPaint::AnimationRepeatMode>(99)}),
+      StatusIs(
+          absl::StatusCode::kInvalidArgument,
+          HasSubstr("animation_repeat_mode` holds non-enumerator value 99")));
+}
+
 TEST(BrushPaintTest, InvalidColorFunction) {
   EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
                   .color_functions = {{ColorFunction::OpacityMultiplier{-1}}}}),
@@ -583,6 +612,20 @@ TEST(BrushPaintTest, MismatchedAnimationDuration) {
                        .animation_duration = absl::Seconds(8)}}}),
               StatusIs(absl::StatusCode::kInvalidArgument,
                        HasSubstr("animation_duration` must be the same")));
+}
+
+TEST(BrushPaintTest, MismatchedAnimationRepeatMode) {
+  EXPECT_THAT(brush_internal::ValidateBrushPaint(BrushPaint{
+                  {BrushPaint::StampingTexture{
+                       .client_texture_id = std::string(kTestTextureId),
+                       .animation_repeat_mode =
+                           BrushPaint::AnimationRepeatMode::kRestart},
+                   BrushPaint::StampingTexture{
+                       .client_texture_id = std::string(kTestTextureId),
+                       .animation_repeat_mode =
+                           BrushPaint::AnimationRepeatMode::kReverse}}}),
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       HasSubstr("animation_repeat_mode` must be the same")));
 }
 
 TEST(BrushPaintTest, TooManyTextureLayers) {

@@ -583,6 +583,16 @@ Domain<BrushFamily::InputModel> ValidBrushFamilyInputModel() {
 
 namespace {
 
+// LINT.IfChange(animation_repeat_mode)
+Domain<BrushPaint::AnimationRepeatMode>
+ArbitraryBrushPaintAnimationRepeatMode() {
+  return ElementOf({
+      BrushPaint::AnimationRepeatMode::kRestart,
+      BrushPaint::AnimationRepeatMode::kReverse,
+  });
+}
+// LINT.ThenChange(brush_paint.h:animation_repeat_mode)
+
 // LINT.IfChange(texture_size_unit)
 Domain<BrushPaint::TextureSizeUnit> ArbitraryBrushPaintTextureSizeUnit() {
   return ElementOf({
@@ -657,33 +667,40 @@ Domain<std::vector<BrushPaint::TextureLayer>> ValidBrushPaintTilingTextures() {
 Domain<BrushPaint::StampingTexture>
 ValidBrushPaintStampingTextureWithAnimationParameters(
     int animation_frames, int animation_rows, int animation_columns,
-    absl::Duration animation_duration, DomainVariant variant) {
+    absl::Duration animation_duration,
+    BrushPaint::AnimationRepeatMode animation_repeat_mode,
+    DomainVariant variant) {
   auto animation_frames_domain = Just(animation_frames);
   auto animation_rows_domain = Just(animation_rows);
   auto animation_columns_domain = Just(animation_columns);
   auto animation_duration_domain = Just(animation_duration);
+  auto animation_repeat_mode_domain = Just(animation_repeat_mode);
   if (variant == DomainVariant::kValidAndSerializable) {
     animation_frames_domain = Just(1);
     animation_rows_domain = Just(1);
     animation_columns_domain = Just(1);
     animation_duration_domain = Just(absl::Seconds(1));
+    animation_repeat_mode_domain =
+        Just(BrushPaint::AnimationRepeatMode::kRestart);
   }
   return StructOf<BrushPaint::StampingTexture>(
       Arbitrary<std::string>(), animation_frames_domain, animation_rows_domain,
       animation_columns_domain, animation_duration_domain,
-      ArbitraryBrushPaintBlendMode());
+      animation_repeat_mode_domain, ArbitraryBrushPaintBlendMode());
 }
 
 Domain<std::vector<BrushPaint::TextureLayer>> ValidBrushPaintStampingTextures(
     DomainVariant variant) {
   return FlatMap(
       [=](std::tuple<int, int, int> animation_frames_rows_columns,
-          absl::Duration animation_duration) {
+          absl::Duration animation_duration,
+          BrushPaint::AnimationRepeatMode repeat_mode) {
         auto [frames, rows, columns] = animation_frames_rows_columns;
         return VectorOf(
                    BrushPaintTextureLayerOf(
                        ValidBrushPaintStampingTextureWithAnimationParameters(
-                           frames, rows, columns, animation_duration, variant)))
+                           frames, rows, columns, animation_duration,
+                           repeat_mode, variant)))
             .WithMaxSize(BrushPaint::MaxTextureLayers());
       },
       FlatMap(
@@ -697,7 +714,8 @@ Domain<std::vector<BrushPaint::TextureLayer>> ValidBrushPaintStampingTextures(
       // `BrushFamily` with too large an LCM.
       OneOf(Just(absl::ZeroDuration()),
             Map([](int power) { return absl::Milliseconds(1 << power); },
-                InRange(0, 24))));
+                InRange(0, 24))),
+      ArbitraryBrushPaintAnimationRepeatMode());
 }
 
 Domain<std::vector<BrushPaint::TextureLayer>> ValidBrushPaintTextureLayers(

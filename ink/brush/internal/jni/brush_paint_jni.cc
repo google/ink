@@ -127,13 +127,13 @@ JNI_METHOD(brush, TilingTextureNative, jlong, create)
 JNI_METHOD(brush, StampingTextureNative, jlong, create)
 (JNIEnv* env, jobject thiz, jstring client_texture_id, jint animation_frames,
  jint animation_rows, jint animation_columns, jlong animation_duration_millis,
- jint blend_mode) {
+ jint animation_repeat_mode, jint blend_mode) {
   std::string client_texture_id_str =
       JStringToStdString(env, client_texture_id);
   return StampingTextureNative_create(
       env, client_texture_id_str.c_str(), animation_frames, animation_rows,
-      animation_columns, animation_duration_millis, blend_mode,
-      &ThrowExceptionFromStatusCallback);
+      animation_columns, animation_duration_millis, animation_repeat_mode,
+      blend_mode, &ThrowExceptionFromStatusCallback);
 }
 
 JNI_METHOD(brush, TextureLayerNative, void, free)
@@ -196,6 +196,11 @@ JNI_METHOD(brush, StampingTextureNative, jint, getAnimationColumns)
 JNI_METHOD(brush, StampingTextureNative, jlong, getAnimationDurationMillis)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return StampingTextureNative_getAnimationDurationMillis(native_pointer);
+}
+
+JNI_METHOD(brush, StampingTextureNative, jint, getAnimationRepeatModeInt)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return StampingTextureNative_getAnimationRepeatModeInt(native_pointer);
 }
 
 JNI_METHOD(brush, TilingTextureNative, jint, getSizeUnitInt)
