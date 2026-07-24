@@ -21,7 +21,10 @@ load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_descriptor_set")
 
 package(
-    default_visibility = ["//visibility:public"],
+    default_visibility = [
+        "//java/com/google/android/gms/cast/proto/sharecast:__pkg__",
+        "//visibility:public",
+    ],
 )
 
 proto_library(
