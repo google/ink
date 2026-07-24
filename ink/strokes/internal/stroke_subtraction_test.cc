@@ -18,19 +18,24 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "fuzztest/fuzztest.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/affine_transform.h"
+#include "ink/geometry/fuzz_domains.h"
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/internal/test_matchers.h"
 #include "ink/geometry/mesh_format.h"
+#include "ink/geometry/mesh_test_helpers.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
+#include "ink/geometry/rect.h"
 #include "ink/geometry/triangle.h"
 #include "ink/types/small_array.h"
 
@@ -629,6 +634,19 @@ TEST(StrokeSubtractionTest, EpsilonDeduplication) {
       outline_points,
       IsCyclicPermutationOf(std::vector<Point>{B, X0, E, X1, C}, epsilon));
 }
+
+void StrokeSubtractionDoesNotCrash(
+    std::pair<Triangle, Triangle> outer_and_inner) {
+  const auto& [outer, inner] = outer_and_inner;
+  PartitionedMesh mesh_a = MakeTrianglePartitionedMesh(outer, 3);
+  PartitionedMesh mesh_b = MakeTrianglePartitionedMesh(inner, 3);
+  auto result = Subtract(mesh_a, AffineTransform::Identity(), mesh_b,
+                         AffineTransform::Identity(), 1e-4f);
+  EXPECT_THAT(result, IsOk());
+}
+FUZZ_TEST(StrokeSubtractionTest, StrokeSubtractionDoesNotCrash)
+    .WithDomains(NestedTriangles(Rect::FromCenterAndDimensions({0, 0}, 1e18f,
+                                                               1e18f)));
 
 }  // namespace
 }  // namespace ink::strokes_internal

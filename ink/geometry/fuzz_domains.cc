@@ -85,6 +85,11 @@ fuzztest::Domain<MeshFormat::AttributeId> NonPositionAttributeId() {
       ArbitraryAttributeId());
 }
 
+Triangle MakeCcwTriangle(Point p0, Point p1, Point p2) {
+  Triangle t{p0, p1, p2};
+  if (t.SignedArea() < 0) return Triangle{p0, p2, p1};
+  return t;
+}
 }  // namespace
 
 fuzztest::Domain<Angle> FiniteAngle() {
@@ -200,6 +205,18 @@ fuzztest::Domain<Point> PointInRect(Rect rect) {
                                    fuzztest::InRange(rect.YMin(), rect.YMax()));
 }
 
+fuzztest::Domain<Point> PointInTriangle(Triangle tri) {
+  return fuzztest::Map(
+      [tri](float x, float y) {
+        // Equal-area map from the unit square to the triangle
+        // {(u,v) | 0 <= u,v, u+v <= 1}.
+        float u = 1.0f - std::sqrt(1.0f - x);
+        float v = y * (1.0f - u);
+        return tri.p0 + u * (tri.p1 - tri.p0) + v * (tri.p2 - tri.p0);
+      },
+      fuzztest::InRange(0.0f, 1.0f), fuzztest::InRange(0.0f, 1.0f));
+}
+
 fuzztest::Domain<Rect> NotNanRect() {
   return fuzztest::Map(
       [](Point p1, Point p2) { return Rect::FromTwoPoints(p1, p2); },
@@ -223,6 +240,11 @@ fuzztest::Domain<Segment> SegmentInRect(Rect rect) {
 fuzztest::Domain<Triangle> TriangleInRect(Rect rect) {
   return fuzztest::StructOf<Triangle>(PointInRect(rect), PointInRect(rect),
                                       PointInRect(rect));
+}
+
+fuzztest::Domain<Triangle> TriangleInTriangle(Triangle tri) {
+  return fuzztest::Map(MakeCcwTriangle, PointInTriangle(tri),
+                       PointInTriangle(tri), PointInTriangle(tri));
 }
 
 fuzztest::Domain<Vec> ArbitraryVec() {
@@ -317,4 +339,25 @@ fuzztest::Domain<MutableMesh> ValidPackableNonEmptyPositionOnlyMutableMesh(
       std::move(positions_and_tris_domain));
 }
 
+fuzztest::Domain<std::pair<Triangle, Triangle>> NestedTriangles(Rect rect) {
+  fuzztest::Domain<Triangle> outer_triangle_domain = fuzztest::Filter(
+      [](Triangle t) { return t.SignedArea() > 0; },
+      fuzztest::Map(
+          [](Triangle t) { return MakeCcwTriangle(t.p0, t.p1, t.p2); },
+          TriangleInRect(rect)));
+
+  return fuzztest::Filter(
+      [](const std::pair<Triangle, Triangle>& outer_and_inner) {
+        return outer_and_inner.second.SignedArea() > 0;
+      },
+      fuzztest::FlatMap(
+          [](Triangle outer) {
+            return fuzztest::Map(
+                [outer](Triangle inner) {
+                  return std::make_pair(outer, inner);
+                },
+                TriangleInTriangle(outer));
+          },
+          outer_triangle_domain));
+}
 }  // namespace ink

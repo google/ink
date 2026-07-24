@@ -35,6 +35,7 @@
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
+#include "ink/geometry/triangle.h"
 #include "ink/geometry/vec.h"
 #include "ink/storage/mesh.h"
 #include "ink/storage/proto/mesh.pb.h"
@@ -159,6 +160,48 @@ absl::StatusOr<Mesh> LoadMesh(absl::string_view filename) {
   }
 
   return DecodeMesh(mesh_proto);
+}
+
+MutableMesh MakeTriangleMutableMesh(const Triangle& triangle,
+                                    uint32_t n_subdivisions,
+                                    const MeshFormat& format) {
+  ABSL_CHECK_GT(n_subdivisions, 0);
+  MutableMesh mesh(format);
+
+  Vec e_u = (triangle.p0 - triangle.p2) / n_subdivisions;
+  Vec e_v = (triangle.p1 - triangle.p0) / n_subdivisions;
+
+  for (uint32_t i = 0; i <= n_subdivisions; ++i) {
+    for (uint32_t j = 0; j <= i; ++j) {
+      mesh.AppendVertex(triangle.p2 + static_cast<float>(i) * e_u +
+                        static_cast<float>(j) * e_v);
+    }
+  }
+
+  for (uint32_t i = 0; i < n_subdivisions; ++i) {
+    for (uint32_t j = 0; j <= i; ++j) {
+      uint32_t top_left = i * (i + 1) / 2 + j;
+      uint32_t top_right = i * (i + 1) / 2 + j + 1;
+      uint32_t bottom_left = i * (i + 1) / 2 + i + 1 + j;
+      uint32_t bottom_right = i * (i + 1) / 2 + i + 2 + j;
+
+      mesh.AppendTriangleIndices({top_left, bottom_left, bottom_right});
+      if (j < i) {
+        mesh.AppendTriangleIndices({top_left, bottom_right, top_right});
+      }
+    }
+  }
+
+  return mesh;
+}
+
+PartitionedMesh MakeTrianglePartitionedMesh(const Triangle& triangle,
+                                            uint32_t n_subdivisions,
+                                            const MeshFormat& format) {
+  absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
+      MakeTriangleMutableMesh(triangle, n_subdivisions, format));
+  ABSL_CHECK_OK(shape);
+  return *std::move(shape);
 }
 
 }  // namespace ink

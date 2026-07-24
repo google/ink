@@ -28,7 +28,9 @@
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mutable_mesh.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
+#include "ink/geometry/triangle.h"
 #include "ink/geometry/type_matchers.h"
 #include "ink/geometry/vec.h"
 
@@ -394,6 +396,43 @@ TEST(MeshTestHelpersTest, MakeStarMutableMeshWithTransform) {
   EXPECT_THAT(m.TriangleIndices(0), ElementsAre(0, 1, 2));
   EXPECT_THAT(m.TriangleIndices(1), ElementsAre(2, 3, 4));
   EXPECT_THAT(m.TriangleIndices(2), ElementsAre(4, 5, 6));
+}
+
+TEST(MeshTestHelpersTest, MakeTriangleMutableMesh) {
+  Triangle triangle{{0, 0}, {4, 0}, {2, 4}};
+  MutableMesh m = MakeTriangleMutableMesh(triangle, 2);
+
+  //               0
+  //              / \
+  //             / 0 \
+  //            1-----2
+  //           / \ 2 / \
+  //          / 1 \ / 3 \
+  //         3-----4-----5
+
+  ASSERT_EQ(m.VertexCount(), 6);
+  ASSERT_EQ(m.TriangleCount(), 4);
+
+  EXPECT_THAT(m.VertexPosition(0), PointEq({2, 4}));
+  EXPECT_THAT(m.VertexPosition(1), PointEq({1, 2}));
+  EXPECT_THAT(m.VertexPosition(2), PointEq({3, 2}));
+  EXPECT_THAT(m.VertexPosition(3), PointEq({0, 0}));
+  EXPECT_THAT(m.VertexPosition(4), PointEq({2, 0}));
+  EXPECT_THAT(m.VertexPosition(5), PointEq({4, 0}));
+
+  EXPECT_THAT(m.TriangleIndices(0), ElementsAre(0, 1, 2));
+  EXPECT_THAT(m.TriangleIndices(1), ElementsAre(1, 3, 4));
+  EXPECT_THAT(m.TriangleIndices(2), ElementsAre(1, 4, 2));
+  EXPECT_THAT(m.TriangleIndices(3), ElementsAre(2, 4, 5));
+}
+
+TEST(MeshTestHelpersTest, MakeTrianglePartitionedMesh) {
+  Triangle triangle{{0, 0}, {2, 0}, {0, 2}};
+  PartitionedMesh pm = MakeTrianglePartitionedMesh(triangle, 2);
+  EXPECT_EQ(pm.RenderGroupCount(), 1);
+  auto meshes = pm.Meshes();
+  ASSERT_EQ(meshes.size(), 1);
+  EXPECT_EQ(meshes[0].VertexCount(), 6);
 }
 
 TEST(MeshTestHelpersTest, LoadedMeshesHaveTriangles) {

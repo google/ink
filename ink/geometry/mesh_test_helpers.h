@@ -23,6 +23,7 @@
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
+#include "ink/geometry/triangle.h"
 
 namespace ink {
 
@@ -111,6 +112,30 @@ MutableMesh MakeStarMutableMesh(uint32_t n_triangles,
 PartitionedMesh MakeStarPartitionedMesh(
     uint32_t n_triangles, const MeshFormat& format = MeshFormat(),
     const AffineTransform& vertex_transform = {});
+
+// Constructs a subdivided triangle mesh with the geometry of the given
+// `triangle`, `n_subdivisions` subdivisions along each edge, and vertex
+// attributes specified in `format`. This does not set any attributes other than
+// position.
+//
+// For `n_subdivisions` = 2, this looks like:
+//               0
+//              / \
+//             / 0 \
+//            1-----2
+//           / \ 2 / \
+//          / 1 \ / 3 \
+//         3-----4-----5
+
+MutableMesh MakeTriangleMutableMesh(const Triangle& triangle,
+                                    uint32_t n_subdivisions,
+                                    const MeshFormat& format = MeshFormat());
+
+// Same as `MakeTriangleMutableMesh` above, except that instead of
+// returning a `MutableMesh`, it returns a `PartitionedMesh` built from it.
+PartitionedMesh MakeTrianglePartitionedMesh(
+    const Triangle& triangle, uint32_t n_subdivisions,
+    const MeshFormat& format = MeshFormat());
 
 constexpr std::array<absl::string_view, 2> kTestMeshFiles = {
     "spring_shape_mesh.binarypb", "straight_line_mesh.binarypb"};

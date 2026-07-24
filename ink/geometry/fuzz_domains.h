@@ -53,6 +53,8 @@ fuzztest::Domain<Point> NotNanPoint();
 fuzztest::Domain<Point> FinitePoint();
 // The domain of all points contained by the given rect.
 fuzztest::Domain<Point> PointInRect(Rect rect);
+// The domain of all points in the given triangle.
+fuzztest::Domain<Point> PointInTriangle(Triangle tri);
 
 // The domain of all rects with non-NaN (but possibly infinite) bounds.
 fuzztest::Domain<Rect> NotNanRect();
@@ -66,11 +68,17 @@ fuzztest::Domain<Segment> SegmentInRect(Rect rect);
 
 // The domain of all triangles whose corners are contained by the given rect.
 fuzztest::Domain<Triangle> TriangleInRect(Rect rect);
+// The domain of all (ccw-oriented) triangles contained in the given triangle.
+fuzztest::Domain<Triangle> TriangleInTriangle(Triangle tri);
 
 // The domain of all vectors, including ones with infinite/NaN components.
 fuzztest::Domain<Vec> ArbitraryVec();
 // The domain of all vectors with non-NaN (but possibly infinite) components.
 fuzztest::Domain<Vec> NotNanVec();
+
+// The domain of nested pairs (the second fully contained in the first) of
+// non-degenerate, ccw-oriented triangles contained in the given rect.
+fuzztest::Domain<std::pair<Triangle, Triangle>> NestedTriangles(Rect rect);
 
 // The domain of non-empty `MutableMesh`es with only a position attribute of
 // `position_attribute_type`, index of `index_format`, and for which
