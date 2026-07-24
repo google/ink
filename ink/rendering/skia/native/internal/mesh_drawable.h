@@ -101,6 +101,10 @@ class MeshDrawable {
   // Sets the value of the texture animation column count uniform if present.
   void SetNumTextureAnimationColumns(int num_columns);
 
+  // Sets the animation repeat mode if present.
+  void SetAnimationRepeatMode(
+      BrushPaint::AnimationRepeatMode animation_repeat_mode);
+
   // Sets the value of the object-to-canvas uniform if present.
   void SetObjectToCanvas(const AffineTransform& transform);
 
@@ -152,6 +156,11 @@ inline void MeshDrawable::SetNumTextureAnimationRows(int num_rows) {
 
 inline void MeshDrawable::SetNumTextureAnimationColumns(int num_columns) {
   uniform_data_.SetNumTextureAnimationColumns(num_columns);
+}
+
+inline void MeshDrawable::SetAnimationRepeatMode(
+    BrushPaint::AnimationRepeatMode animation_repeat_mode) {
+  uniform_data_.SetAnimationRepeatMode(static_cast<int>(animation_repeat_mode));
 }
 
 inline void MeshDrawable::SetObjectToCanvas(const AffineTransform& transform) {

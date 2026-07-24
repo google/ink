@@ -41,7 +41,7 @@ struct BrushTipState {
   float pinch;
   // An offset to the initial texture animation progress value
   // of the current particle (which is relevant only for strokes with an
-  // animated texture) in the range [0, 1).
+  // animated texture) in the range [0, 2).
   float texture_animation_progress_offset = 0.f;
   // The hue angle offset, measured in full turns in the range [0, 1), to
   // add to the brush color at this tip position.

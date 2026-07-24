@@ -159,6 +159,7 @@ absl::StatusOr<MeshDrawable> CreateAndInitializeMeshDrawable(
     mesh_drawable.SetNumTextureAnimationFrames(stamping->animation_frames);
     mesh_drawable.SetNumTextureAnimationRows(stamping->animation_rows);
     mesh_drawable.SetNumTextureAnimationColumns(stamping->animation_columns);
+    mesh_drawable.SetAnimationRepeatMode(stamping->animation_repeat_mode);
   }
   // Actual updates of this need to be done on draw.
   mesh_drawable.SetTextureAnimationProgress(0.0f);
