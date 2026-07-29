@@ -15,6 +15,7 @@
 #ifndef INK_GEOMETRY_MESH_H_
 #define INK_GEOMETRY_MESH_H_
 
+#include <any>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -224,6 +225,31 @@ class Mesh {
     return data_->vertex_data;
   }
 
+  // Stashes client-specific rendering data on the mesh. This can be used to
+  // cache buffers that wrap the raw mesh data, for example.
+  void SetCachedRenderingData(std::any data) const {
+    data_->cached_rendering_data = std::move(data);
+  }
+
+  // Whether the mesh has cached rendering data of the given type.
+  template <typename T>
+  bool HasCachedRenderingData() const {
+    return data_->cached_rendering_data.has_value() &&
+           std::any_cast<T>(&data_->cached_rendering_data) != nullptr;
+  }
+
+  // Returns the cached rendering data on the mesh. Must only be called if
+  // `HasCachedRenderingData<T>()` is true (that is, if the most recent call to
+  // `SetCachedRenderingData` was with a value of type T). Note that if client
+  // code might access this from multiple threads, it will need to ensure
+  // exclusive access between the call to `HasCachedRenderingData` and this.
+  template <typename T>
+  const T& GetCachedRenderingData() const {
+    T* ptr = std::any_cast<T>(&data_->cached_rendering_data);
+    ABSL_CHECK_NE(ptr, nullptr);
+    return *ptr;
+  }
+
   // Returns the number of bytes used to represent a vertex in this mesh. This
   // is equivalent to:
   //   mesh.Format().PackedVertexStride();
@@ -246,6 +272,7 @@ class Mesh {
     std::vector<std::byte> index_data;
     uint32_t vertex_count = 0;
     uint32_t triangle_count = 0;
+    mutable std::any cached_rendering_data;
   };
 
   // `MutableMesh::AsMeshes` requires access to the private ctor, to avoid

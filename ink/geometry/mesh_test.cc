@@ -1034,5 +1034,17 @@ TEST(MeshTest, EqualityAndHashing) {
       absl::VerifyTypeImplementsAbslHashCorrectly({*m1, m2, *m3, *m4, Mesh()}));
 }
 
+TEST(MeshTest, SetCachedRenderingData) {
+  Mesh mesh;
+  EXPECT_FALSE(mesh.HasCachedRenderingData<int>());
+  mesh.SetCachedRenderingData(1);
+  EXPECT_TRUE(mesh.HasCachedRenderingData<int>());
+  EXPECT_FALSE(mesh.HasCachedRenderingData<float>());
+  EXPECT_EQ(mesh.GetCachedRenderingData<int>(), 1);
+  mesh.SetCachedRenderingData(0.5f);
+  EXPECT_FALSE(mesh.HasCachedRenderingData<int>());
+  EXPECT_TRUE(mesh.HasCachedRenderingData<float>());
+}
+
 }  // namespace
 }  // namespace ink
