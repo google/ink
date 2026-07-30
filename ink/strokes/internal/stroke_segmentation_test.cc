@@ -65,10 +65,6 @@ TEST(StrokeSegmentationTest, SegmentSpatially) {
 
   // With small tolerance.
   {
-    absl::StatusOr<std::vector<PartitionedMesh>> components =
-        SegmentSpatially(*pm, AffineTransform::Identity(), /*tolerance=*/1.0f);
-    ASSERT_THAT(components, IsOk());
-
     MutableMesh expected_mesh1(MeshFormat{});
     for (const Point& p : {A, B, C}) expected_mesh1.AppendVertex(p);
     expected_mesh1.AppendTriangleIndices({0, 1, 2});
@@ -83,17 +79,17 @@ TEST(StrokeSegmentationTest, SegmentSpatially) {
         PartitionedMesh::FromMutableMesh(expected_mesh2);
     ASSERT_THAT(expected_pm2, IsOk());
 
-    EXPECT_THAT(*components, ElementsAre(PartitionedMeshDeepEq(*expected_pm1),
-                                         PartitionedMeshDeepEq(*expected_pm2)));
+    EXPECT_THAT(
+        SegmentSpatially(*pm, AffineTransform::Identity(), /*tolerance=*/1.0f),
+        IsOkAndHolds(ElementsAre(PartitionedMeshDeepEq(*expected_pm1),
+                                 PartitionedMeshDeepEq(*expected_pm2))));
   }
 
   // Large tolerance
   {
-    absl::StatusOr<std::vector<PartitionedMesh>> components =
-        SegmentSpatially(*pm, AffineTransform::Identity(), /*tolerance=*/25.0f);
-    ASSERT_THAT(components, IsOk());
-
-    EXPECT_THAT(*components, ElementsAre(PartitionedMeshDeepEq(*pm)));
+    EXPECT_THAT(
+        SegmentSpatially(*pm, AffineTransform::Identity(), /*tolerance=*/25.0f),
+        IsOkAndHolds(ElementsAre(PartitionedMeshDeepEq(*pm))));
   }
 }
 
@@ -116,29 +112,22 @@ TEST(StrokeSegmentationTest, SegmentSpatiallyWithTransform) {
   ASSERT_THAT(pm, IsOk());
 
   {
-    absl::StatusOr<std::vector<PartitionedMesh>> components =
-        SegmentSpatially(*pm, AffineTransform::Scale(.05f), /*tolerance=*/1.0f);
-    ASSERT_THAT(components, IsOk());
-    EXPECT_THAT(*components, SizeIs(1));
+    EXPECT_THAT(
+        SegmentSpatially(*pm, AffineTransform::Scale(.05f), /*tolerance=*/1.0f),
+        IsOkAndHolds(SizeIs(1)));
   }
 
   {
-    absl::StatusOr<std::vector<PartitionedMesh>> components =
-        SegmentSpatially(*pm, AffineTransform::Scale(0.1f, 10.0f),
-                         /*tolerance=*/1.0f);
-    ASSERT_THAT(components, IsOk());
-    EXPECT_THAT(*components, SizeIs(1));
-    EXPECT_THAT(*components, ElementsAre(PartitionedMeshDeepEq(*pm)));
+    EXPECT_THAT(SegmentSpatially(*pm, AffineTransform::Scale(0.1f, 10.0f),
+                                 /*tolerance=*/1.0f),
+                IsOkAndHolds(ElementsAre(PartitionedMeshDeepEq(*pm))));
   }
 
   {
-    absl::StatusOr<std::vector<PartitionedMesh>> components =
-        SegmentSpatially(*pm, AffineTransform::Scale(10.0f, 1.0f),
-                         /*tolerance=*/25.0f);
-    ASSERT_THAT(components, IsOk());
-
     // The tolerance is large but the scale is also large.
-    EXPECT_THAT(*components, SizeIs(2));
+    EXPECT_THAT(SegmentSpatially(*pm, AffineTransform::Scale(10.0f, 1.0f),
+                                 /*tolerance=*/25.0f),
+                IsOkAndHolds(SizeIs(2)));
   }
 }
 
@@ -171,12 +160,6 @@ TEST(StrokeSegmentationTest, SegmentSpatiallyMultipleCoats) {
       PartitionedMesh::FromMutableMeshGroups(groups);
   ASSERT_THAT(pm, IsOk());
 
-  absl::StatusOr<std::vector<PartitionedMesh>> components =
-      SegmentSpatially(*pm, AffineTransform::Identity(), /*tolerance=*/1.0f);
-  ASSERT_THAT(components, IsOk());
-
-  EXPECT_THAT(*components, SizeIs(2));
-
   MutableMesh empty_mesh(MeshFormat{});
 
   std::vector<PartitionedMesh::MutableMeshGroup> expected_groups0 = {
@@ -195,8 +178,10 @@ TEST(StrokeSegmentationTest, SegmentSpatiallyMultipleCoats) {
       PartitionedMesh::FromMutableMeshGroups(expected_groups1);
   ASSERT_THAT(expected_pm1, IsOk());
 
-  EXPECT_THAT(*components, ElementsAre(PartitionedMeshDeepEq(*expected_pm0),
-                                       PartitionedMeshDeepEq(*expected_pm1)));
+  EXPECT_THAT(
+      SegmentSpatially(*pm, AffineTransform::Identity(), /*tolerance=*/1.0f),
+      IsOkAndHolds(ElementsAre(PartitionedMeshDeepEq(*expected_pm0),
+                               PartitionedMeshDeepEq(*expected_pm1))));
 }
 
 TEST(StrokeSegmentationTest, SegmentSpatiallyMultipleCoats2) {
@@ -241,13 +226,10 @@ TEST(StrokeSegmentationTest, SegmentSpatiallyMultipleCoats2) {
       PartitionedMesh::FromMutableMeshGroups(groups);
   ASSERT_THAT(pm, IsOk());
 
-  absl::StatusOr<std::vector<PartitionedMesh>> components =
-      SegmentSpatially(*pm, AffineTransform::Identity(), tolerance);
-  ASSERT_THAT(components, IsOk());
-
   // Although the two triangles of coat 0 are far apart, coat 1 ties them
   // together.
-  EXPECT_THAT(*components, ElementsAre(PartitionedMeshDeepEq(*pm)));
+  EXPECT_THAT(SegmentSpatially(*pm, AffineTransform::Identity(), tolerance),
+              IsOkAndHolds(ElementsAre(PartitionedMeshDeepEq(*pm))));
 }
 
 TEST(StrokeSegmentationTest, SegmentSpatiallyWithAttributes) {
@@ -282,10 +264,6 @@ TEST(StrokeSegmentationTest, SegmentSpatiallyWithAttributes) {
   absl::StatusOr<PartitionedMesh> pm = PartitionedMesh::FromMutableMesh(mesh);
   ASSERT_THAT(pm, IsOk());
 
-  absl::StatusOr<std::vector<PartitionedMesh>> components =
-      SegmentSpatially(*pm, AffineTransform::Identity(), /*tolerance=*/1.0f);
-  ASSERT_THAT(components, IsOk());
-
   MutableMesh expected_mesh1(*format);
   for (const Point& p : {A, B, C}) expected_mesh1.AppendVertex(p);
   expected_mesh1.SetFloatVertexAttribute(0, 1, {0.1f});
@@ -306,8 +284,10 @@ TEST(StrokeSegmentationTest, SegmentSpatiallyWithAttributes) {
       PartitionedMesh::FromMutableMesh(expected_mesh2);
   ASSERT_THAT(expected_pm2, IsOk());
 
-  EXPECT_THAT(*components, ElementsAre(PartitionedMeshDeepEq(*expected_pm1),
-                                       PartitionedMeshDeepEq(*expected_pm2)));
+  EXPECT_THAT(
+      SegmentSpatially(*pm, AffineTransform::Identity(), /*tolerance=*/1.0f),
+      IsOkAndHolds(ElementsAre(PartitionedMeshDeepEq(*expected_pm1),
+                               PartitionedMeshDeepEq(*expected_pm2))));
 }
 
 }  // namespace
