@@ -66,8 +66,7 @@ bool MeshNative_isEmpty(int64_t native_ptr) {
 }
 
 MeshNative_Box MeshNative_getBounds(int64_t native_ptr) {
-  const std::optional<Rect>& bounds_rect =
-      CastToMesh(native_ptr).Bounds().AsRect();
+  std::optional<Rect> bounds_rect = CastToMesh(native_ptr).Bounds().AsRect();
   ABSL_CHECK(bounds_rect.has_value());
   return {bounds_rect->XMin(), bounds_rect->YMin(), bounds_rect->XMax(),
           bounds_rect->YMax()};
