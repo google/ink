@@ -115,7 +115,7 @@ absl::Status ValidateBrushTip(const BrushTip& tip) {
 }
 
 Version CalculateMinimumRequiredVersion(const BrushTip& tip) {
-  Version max_version = Version::k0Jetpack1_0_0();
+  Version max_version = Version::k0();
   for (const auto& behavior : tip.behaviors) {
     max_version =
         std::max(max_version, CalculateMinimumRequiredVersion(behavior));

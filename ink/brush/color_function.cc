@@ -169,7 +169,7 @@ namespace {
 
 Version CalculateMinimumRequiredVersion(
     const ColorFunction::OpacityMultiplier& opacity) {
-  return Version::k0Jetpack1_0_0();
+  return Version::k0();
 }
 
 Version CalculateMinimumRequiredVersion(const ColorFunction::HueOffset& hue) {
@@ -188,7 +188,7 @@ Version CalculateMinimumRequiredVersion(
 
 Version CalculateMinimumRequiredVersion(
     const ColorFunction::ReplaceColor& replace) {
-  return Version::k0Jetpack1_0_0();
+  return Version::k0();
 }
 
 Version CalculateMinimumRequiredVersion(

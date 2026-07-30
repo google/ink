@@ -67,7 +67,7 @@ Version CalculateMinimumRequiredVersion(StrokeInput::ToolType tool_type) {
     case StrokeInput::ToolType::kTouch:
     case StrokeInput::ToolType::kStylus:
     case StrokeInput::ToolType::kUnknown:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
   }
   return Version::kDevelopment();
 }

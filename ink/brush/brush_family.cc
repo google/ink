@@ -194,7 +194,7 @@ absl::Status ValidateInputModel(const BrushFamily::InputModel& model) {
 }
 
 Version CalculateMinimumRequiredVersion(const BrushFamily::InputModel& model) {
-  return Version::k0Jetpack1_0_0();
+  return Version::k0();
 }
 
 std::string ToFormattedString(const BrushFamily::InputModel& model) {

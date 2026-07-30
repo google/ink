@@ -334,7 +334,7 @@ Version CalculateMinimumRequiredVersion(
     case BrushPaint::TextureOrigin::kStrokeSpaceOrigin:
     case BrushPaint::TextureOrigin::kFirstStrokeInput:
     case BrushPaint::TextureOrigin::kLastStrokeInput:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
   }
   return Version::kDevelopment();
 }
@@ -344,7 +344,7 @@ Version CalculateMinimumRequiredVersion(
   switch (texture_size_unit) {
     case BrushPaint::TextureSizeUnit::kBrushSize:
     case BrushPaint::TextureSizeUnit::kStrokeCoordinates:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
   }
   return Version::kDevelopment();
 }
@@ -354,7 +354,7 @@ Version CalculateMinimumRequiredVersion(BrushPaint::TextureWrap texture_wrap) {
     case BrushPaint::TextureWrap::kRepeat:
     case BrushPaint::TextureWrap::kMirror:
     case BrushPaint::TextureWrap::kClamp:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
   }
   return Version::kDevelopment();
 }
@@ -373,7 +373,7 @@ Version CalculateMinimumRequiredVersion(BrushPaint::BlendMode blend_mode) {
     case BrushPaint::BlendMode::kSrcOut:
     case BrushPaint::BlendMode::kDstAtop:
     case BrushPaint::BlendMode::kXor:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
   }
   return Version::kDevelopment();
 }
@@ -382,7 +382,7 @@ Version CalculateMinimumRequiredVersion(
     BrushPaint::AnimationRepeatMode animation_repeat_mode) {
   switch (animation_repeat_mode) {
     case BrushPaint::AnimationRepeatMode::kRestart:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
     case BrushPaint::AnimationRepeatMode::kReverse:
       return Version::kDevelopment();
   }
@@ -394,7 +394,7 @@ Version CalculateMinimumRequiredVersion(BrushPaint::SelfOverlap self_overlap) {
     case BrushPaint::SelfOverlap::kAny:
     case BrushPaint::SelfOverlap::kDiscard:
     case BrushPaint::SelfOverlap::kAccumulate:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
   }
   return Version::kDevelopment();
 }
