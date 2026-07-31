@@ -25,9 +25,9 @@ namespace ink::native {
 Version IntToVersion(int version) {
   switch (version) {
     case 0:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
     case 1:
-      return Version::k1Jetpack1_1_0Alpha01();
+      return Version::k1();
     case std::numeric_limits<int32_t>::max():
       return Version::kDevelopment();
     default:

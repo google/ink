@@ -19,15 +19,19 @@ class Version {
 
   std::string ToFormattedString() const { return absl::StrCat(value_); }
 
-  // Brush version is incremented when new features are ready to be released.
-  // This is a versioning process independent of the Jetpack version. A Jetpack
-  // version may have multiple brush version increments, or none at all
-  // (containing only previously released brush versions).
+  // A Version represents a version of the Ink library's custom brush
+  // serialization format. This is independent of the Jetpack version. A Jetpack
+  // release may have multiple brush version increments, or none at all
+  // (containing only previously released brush versions). Version is used to
+  // determine compatibility of serialized brushes which may be shared across
+  // apps using different releases of this library.
 
-  // Included with Jetpack 1.1.0-alpha01.
-  static constexpr Version k1Jetpack1_1_0Alpha01() { return Version(1); }
-  // Included with Jetpack 1.0.0.
-  static constexpr Version k0Jetpack1_0_0() { return Version(0); }
+  // Included with
+  // [Jetpack 1.1.0-alpha01](https://developer.android.com/jetpack/androidx/releases/ink#1.1.0-alpha01).
+  static constexpr Version k1() { return Version(1); }
+  // Included with
+  // [Jetpack 1.0.0](https://developer.android.com/jetpack/androidx/releases/ink#1.0.0).
+  static constexpr Version k0() { return Version(0); }
 
   // Features associated with kDevelopment will always be rejected by the
   // deserializer due to kDevelopment > kMaxSupported. The only exception is
@@ -42,7 +46,7 @@ class Version {
   // customization format. Features still under development should be associated
   // with kDevelopment until they are ready to be released, after which they
   // are expected to be supported long-term.
-  static constexpr Version kMaxSupported() { return k1Jetpack1_1_0Alpha01(); }
+  static constexpr Version kMaxSupported() { return k1(); }
 
  private:
   explicit constexpr Version(int32_t value) : value_(value) {

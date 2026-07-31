@@ -494,9 +494,9 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::Source source) {
     case BrushBehavior::Source::
         kAccelerationLateralInCentimetersPerSecondSquared:
     case BrushBehavior::Source::kDistanceRemainingAsFractionOfStrokeLength:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
     case BrushBehavior::Source::kTimeSinceStrokeEndInSeconds:
-      return Version::k1Jetpack1_1_0Alpha01();
+      return Version::k1();
     case BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds:
       return Version::kDevelopment();
   }
@@ -520,7 +520,7 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::Target target) {
     case BrushBehavior::Target::kSaturationMultiplier:
     case BrushBehavior::Target::kLuminosityOffset:
     case BrushBehavior::Target::kOpacityMultiplier:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
     case BrushBehavior::Target::kTextureAnimationProgressOffset:
       return Version::kDevelopment();
   }
@@ -533,7 +533,7 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::PolarTarget target) {
         kPositionOffsetAbsoluteInRadiansAndMultiplesOfBrushSize:
     case BrushBehavior::PolarTarget::
         kPositionOffsetRelativeInRadiansAndMultiplesOfBrushSize:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
   }
   return Version::kDevelopment();
 }
@@ -544,7 +544,7 @@ Version CalculateMinimumRequiredVersion(
     case BrushBehavior::OutOfRange::kClamp:
     case BrushBehavior::OutOfRange::kMirror:
     case BrushBehavior::OutOfRange::kRepeat:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
   }
   return Version::kDevelopment();
 }
@@ -553,13 +553,13 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::BinaryOp operation) {
   switch (operation) {
     case BrushBehavior::BinaryOp::kProduct:
     case BrushBehavior::BinaryOp::kSum:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
     case BrushBehavior::BinaryOp::kMin:
     case BrushBehavior::BinaryOp::kMax:
     case BrushBehavior::BinaryOp::kAndThen:
     case BrushBehavior::BinaryOp::kOrElse:
     case BrushBehavior::BinaryOp::kXorElse:
-      return Version::k1Jetpack1_1_0Alpha01();
+      return Version::k1();
   }
   return Version::kDevelopment();
 }
@@ -570,7 +570,7 @@ Version CalculateMinimumRequiredVersion(
     case BrushBehavior::ProgressDomain::kDistanceInCentimeters:
     case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize:
     case BrushBehavior::ProgressDomain::kTimeInSeconds:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
   }
   return Version::kDevelopment();
 }
@@ -580,7 +580,7 @@ Version CalculateMinimumRequiredVersion(
   switch (interpolation) {
     case BrushBehavior::Interpolation::kLerp:
     case BrushBehavior::Interpolation::kInverseLerp:
-      return Version::k0Jetpack1_0_0();
+      return Version::k0();
   }
   return Version::kDevelopment();
 }
@@ -596,7 +596,7 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::SourceNode node) {
 }
 
 Version CalculateMinimumRequiredVersion(BrushBehavior::ConstantNode node) {
-  return Version::k0Jetpack1_0_0();
+  return Version::k0();
 }
 
 Version CalculateMinimumRequiredVersion(BrushBehavior::NoiseNode node) {
@@ -608,16 +608,16 @@ Version CalculateMinimumRequiredVersion(
   return std::max({
       enabled.unknown
           ? CalculateMinimumRequiredVersion(StrokeInput::ToolType::kUnknown)
-          : Version::k0Jetpack1_0_0(),
+          : Version::k0(),
       enabled.mouse
           ? CalculateMinimumRequiredVersion(StrokeInput::ToolType::kMouse)
-          : Version::k0Jetpack1_0_0(),
+          : Version::k0(),
       enabled.touch
           ? CalculateMinimumRequiredVersion(StrokeInput::ToolType::kTouch)
-          : Version::k0Jetpack1_0_0(),
+          : Version::k0(),
       enabled.stylus
           ? CalculateMinimumRequiredVersion(StrokeInput::ToolType::kStylus)
-          : Version::k0Jetpack1_0_0(),
+          : Version::k0(),
   });
 }
 
@@ -636,8 +636,7 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::ResponseNode node) {
 
 Version CalculateMinimumRequiredVersion(BrushBehavior::IntegralNode node) {
   return std::max(
-      {Version::k1Jetpack1_1_0Alpha01(),
-       CalculateMinimumRequiredVersion(node.integrate_over),
+      {Version::k1(), CalculateMinimumRequiredVersion(node.integrate_over),
        CalculateMinimumRequiredVersion(node.integral_out_of_range_behavior)});
 }
 
@@ -666,7 +665,7 @@ Version CalculateMinimumRequiredVersion(const BrushBehavior::Node& node) {
 }
 
 Version CalculateMinimumRequiredVersion(const BrushBehavior& behavior) {
-  Version max_version = Version::k0Jetpack1_0_0();
+  Version max_version = Version::k0();
   for (const auto& node : behavior.nodes) {
     max_version = std::max(max_version, CalculateMinimumRequiredVersion(node));
   }

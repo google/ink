@@ -1014,7 +1014,7 @@ void CalculateMinimumRequiredVersionMatchesProtoOptions(
   int32_t min_version_calculated = family_proto.min_version();
   EXPECT_THAT(min_version_calculated, Le(Version::kDevelopment().value()));
 
-  int32_t min_version_from_options = Version::k0Jetpack1_0_0().value();
+  int32_t min_version_from_options = Version::k0().value();
   GetMaxProtoVersion(family_proto, min_version_from_options);
   // Using reflection, examine the minimum required version of each
   // field/message/enum in the proto, and find the maximum.
@@ -1154,10 +1154,8 @@ TEST(BrushTest, DecodeBrushFamilyIsOkWithFallbacks) {
                                     newer_brush_families { min_version: 2 }
                                   )pb",
                                   &family_proto));
-  EXPECT_THAT(DecodeBrushFamily(family_proto, Version::k0Jetpack1_0_0()),
-              IsOk());
-  EXPECT_THAT(DecodeBrushFamily(family_proto, Version::k1Jetpack1_1_0Alpha01()),
-              IsOk());
+  EXPECT_THAT(DecodeBrushFamily(family_proto, Version::k0()), IsOk());
+  EXPECT_THAT(DecodeBrushFamily(family_proto, Version::k1()), IsOk());
   EXPECT_THAT(DecodeBrushFamily(family_proto, Version::kDevelopment()), IsOk());
 }
 
@@ -1185,12 +1183,11 @@ TEST(BrushTest,
                                   )pb",
                                   &family_proto));
   EXPECT_THAT(
-      DecodeMultipleBrushFamilies(family_proto, Version::k0Jetpack1_0_0()),
+      DecodeMultipleBrushFamilies(family_proto, Version::k0()),
       StatusIs(absl::StatusCode::kInvalidArgument,
-               absl::StrCat(
-                   "Version must be less than or equal to ",
-                   Version::k0Jetpack1_0_0().ToFormattedString(), ", but was ",
-                   Version::k1Jetpack1_1_0Alpha01().ToFormattedString())));
+               absl::StrCat("Version must be less than or equal to ",
+                            Version::k0().ToFormattedString(), ", but was ",
+                            Version::k1().ToFormattedString())));
 }
 
 TEST(BrushTest, DecodeBrushFamilyReturnsMaxCompatibleVersion) {
@@ -1222,12 +1219,11 @@ TEST(BrushTest, DecodeBrushFamilyFailsWithNoCompatibleVersion) {
                                   )pb",
                                   &family_proto));
   EXPECT_THAT(
-      DecodeBrushFamily(family_proto, Version::k0Jetpack1_0_0()),
+      DecodeBrushFamily(family_proto, Version::k0()),
       StatusIs(absl::StatusCode::kInvalidArgument,
-               absl::StrCat(
-                   "Version must be less than or equal to ",
-                   Version::k0Jetpack1_0_0().ToFormattedString(), ", but was ",
-                   Version::k1Jetpack1_1_0Alpha01().ToFormattedString())));
+               absl::StrCat("Version must be less than or equal to ",
+                            Version::k0().ToFormattedString(), ", but was ",
+                            Version::k1().ToFormattedString())));
 }
 
 TEST(BrushTest, DecodeBrushFamilyIsOkWithLowestVersionBeingMaxVersion) {
@@ -1239,7 +1235,7 @@ TEST(BrushTest, DecodeBrushFamilyIsOkWithLowestVersionBeingMaxVersion) {
       )pb",
       &family_proto));
   absl::StatusOr<BrushFamily> family =
-      DecodeBrushFamily(family_proto, Version::k0Jetpack1_0_0());
+      DecodeBrushFamily(family_proto, Version::k0());
   EXPECT_THAT(family, IsOkAndHolds(Property(&BrushFamily::HasFallbacks, true)));
 }
 
@@ -1254,9 +1250,9 @@ TEST(BrushTest, DecodeBrushFamilyPreservesOpaqueFallbacks) {
       )pb",
       &family_proto));
 
-  // Decode with k1Jetpack1_1_0Alpha01 (should pick "v1")
+  // Decode with k1 (should pick "v1")
   absl::StatusOr<BrushFamily> family =
-      DecodeBrushFamily(family_proto, Version::k1Jetpack1_1_0Alpha01());
+      DecodeBrushFamily(family_proto, Version::k1());
   ASSERT_THAT(family,
               IsOkAndHolds(AllOf(
                   Property(&BrushFamily::GetMetadata,
@@ -1291,9 +1287,9 @@ TEST(BrushTest, DecodeBrushFamilyPreservesUnreadableFallbacks) {
           /*field_number=*/9999, "Some unknown value");
   ASSERT_EQ(family_proto.newer_brush_families(0).unknown_fields().field_count(),
             1);
-  // Decode with k0Jetpack1_0_0 (should pick "v0")
+  // Decode with k0 (should pick "v0")
   absl::StatusOr<BrushFamily> family =
-      DecodeBrushFamily(family_proto, Version::k0Jetpack1_0_0());
+      DecodeBrushFamily(family_proto, Version::k0());
   ASSERT_THAT(family,
               IsOkAndHolds(AllOf(
                   Property(&BrushFamily::GetMetadata,
@@ -1376,22 +1372,20 @@ TEST(BrushTest, EncodeMultipleBrushFamiliesEncodesLowestVersionAtTopLevel) {
       BrushPaint());
   ASSERT_THAT(family2, IsOk());
   EncodeMultipleBrushFamilies({family0, *family1, *family2}, family_proto);
-  EXPECT_THAT(family_proto.min_version(),
-              Eq(Version::k0Jetpack1_0_0().value()));
+  EXPECT_THAT(family_proto.min_version(), Eq(Version::k0().value()));
   EXPECT_THAT(family_proto.newer_brush_families(), SizeIs(2));
   EXPECT_THAT(family_proto.newer_brush_families(0).min_version(),
-              Eq(Version::k1Jetpack1_1_0Alpha01().value()));
+              Eq(Version::k1().value()));
   EXPECT_THAT(family_proto.newer_brush_families(1).min_version(),
               Eq(Version::kDevelopment().value()));
   // Reverse the order of the input -- top level should still be lowest version.
   // Order of newer_brush_families should be the same, as we sort them.
   proto::BrushFamily family_proto2;
   EncodeMultipleBrushFamilies({*family2, *family1, family0}, family_proto2);
-  EXPECT_THAT(family_proto2.min_version(),
-              Eq(Version::k0Jetpack1_0_0().value()));
+  EXPECT_THAT(family_proto2.min_version(), Eq(Version::k0().value()));
   EXPECT_THAT(family_proto2.newer_brush_families(), SizeIs(2));
   EXPECT_THAT(family_proto2.newer_brush_families(0).min_version(),
-              Eq(Version::k1Jetpack1_1_0Alpha01().value()));
+              Eq(Version::k1().value()));
   EXPECT_THAT(family_proto2.newer_brush_families(1).min_version(),
               Eq(Version::kDevelopment().value()));
   // Same exact proto output.
@@ -1619,16 +1613,16 @@ TEST(BrushTest, EncodeMultipleDecodeSingleBrushFamilyRoundTrip) {
   proto::BrushFamily family_proto_out;
   EncodeBrushFamily(*family2_out, family_proto_out);
   EXPECT_THAT(family_proto_out, EqualsProto(family_proto));
-  // Decode with k1Jetpack1_1_0Alpha01 (should pick family1)
+  // Decode with k1 (should pick family1)
   absl::StatusOr<BrushFamily> family1_out =
-      DecodeBrushFamily(family_proto, Version::k1Jetpack1_1_0Alpha01());
+      DecodeBrushFamily(family_proto, Version::k1());
   ASSERT_THAT(family1_out, IsOkAndHolds(BrushFamilyEq(*family1)));
   // Re-encode and verify result is identical to original proto
   EncodeBrushFamily(*family1_out, family_proto_out);
   EXPECT_THAT(family_proto_out, EqualsProto(family_proto));
-  // Decode with k0Jetpack1_0_0 (should pick family0)
+  // Decode with k0 (should pick family0)
   absl::StatusOr<BrushFamily> family0_out =
-      DecodeBrushFamily(family_proto, Version::k0Jetpack1_0_0());
+      DecodeBrushFamily(family_proto, Version::k0());
   ASSERT_THAT(family0_out, IsOkAndHolds(BrushFamilyEq(family0)));
   // Re-encode and verify result is identical to original proto
   EncodeBrushFamily(*family0_out, family_proto_out);
