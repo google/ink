@@ -1,0 +1,19 @@
+package(
+    default_applicable_licenses = ["//ink:license"],
+    default_visibility = ["//ink:__subpackages__"],
+)
+
+genrule(
+    name = "stroke_shader_metal",
+    srcs = ["StrokeShader.wgsl"],
+    outs = [
+        "StrokeShader_vs.metal",
+        "StrokeShader_fs.metal",
+    ],
+    cmd = (
+        "$(location //third_party/dawn:tint) $< --format msl --ep vertexMain -o $(location StrokeShader_vs.metal) && " +
+        "$(location //third_party/dawn:tint) $< --format msl --ep fragmentMain -o $(location StrokeShader_fs.metal)"
+    ),
+    tools = ["//third_party/dawn:tint"],
+    visibility = ["//ink/ios/rendering/metal:__pkg__"],
+)
