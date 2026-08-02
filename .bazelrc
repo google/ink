@@ -1,5 +1,6 @@
 # Set up to use C++20.
 build --cxxopt=-std=c++20
+build --lockfile_mode=error
 
 # Enable Bzlmod for all Bazel commands.
 common --enable_bzlmod
