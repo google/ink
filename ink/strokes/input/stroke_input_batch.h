@@ -60,7 +60,7 @@ namespace ink {
 //      triplets, and the elapsed time values must be non-decreasing.
 //   3) Pressure, tilt, and orientation should either be set to corresponding
 //      sentinel values indicating their absence, or be in the ranges of [0, 1],
-//      [0, π/2], and [0, 2π) respectively.
+//      [0, π/2], and [0, 2π] respectively.
 //   4) `StrokeInput::tool_type` must be one of the enumerator values.
 //
 class StrokeInputBatch {

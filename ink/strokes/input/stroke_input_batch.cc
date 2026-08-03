@@ -157,7 +157,7 @@ absl::Status ValidateSingleInput(const StrokeInput& input) {
        !(input.orientation >= Angle() && input.orientation <= kFullTurn))) {
     return absl::InvalidArgumentError(
         absl::Substitute("`StrokeInput::orientation` must be -1 or in the "
-                         "range [0, 2 * pi). Got: $0",
+                         "range [0, 2 * pi]. Got: $0",
                          input.orientation));
   }
 
