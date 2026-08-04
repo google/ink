@@ -87,6 +87,7 @@ class MeshUniformData {
   void SetNumTextureAnimationFrames(int num_frames);
   void SetNumTextureAnimationRows(int num_rows);
   void SetNumTextureAnimationColumns(int num_columns);
+  void SetAnimationRepeatMode(int animation_repeat_mode);
 
   // Returns the data for `SkMesh` creation. This function returns `nullptr` if
   // this uniform data was either default-constructed, or constructed from a
@@ -115,6 +116,7 @@ class MeshUniformData {
   int16_t num_texture_animation_frames_offset_ = -1;
   int16_t num_texture_animation_rows_offset_ = -1;
   int16_t num_texture_animation_columns_offset_ = -1;
+  int16_t animation_repeat_mode_offset_ = -1;
 };
 
 }  // namespace ink::skia_native_internal

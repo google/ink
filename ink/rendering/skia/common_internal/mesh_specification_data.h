@@ -47,7 +47,7 @@ struct MeshSpecificationData {
   // Skia doesn't seem to place any clear limit on the number of uniforms, so
   // this value is just the size we choose to use for our array. Currently it is
   // set to the actual number of uniforms we happen to use right now.
-  static constexpr int kMaxUniforms = 10;
+  static constexpr int kMaxUniforms = 11;
 
   // Subsets of shader variable types for attributes, varyings, and uniforms
   // that are used by Ink and available across platforms.
@@ -82,7 +82,9 @@ struct MeshSpecificationData {
     // TODO: b/375203215 - Get rid of this uniform once we are able to mix
     // different texture mapping modes in a single `BrushPaint`.
     kTextureMapping = 5,
-    // The current progress, a float in [0, 1], of the texture animation.
+    // The current progress, a float in [0, 2], of the texture animation. (It
+    // ranges [0, 2] instead of [0, 1] in order to account for
+    // `kAnimationRepeatMode` being set to "reverse" mode.)
     //
     // We must pass both animation progress and number of frames to the shader,
     // rather than computing a frame index from these on the CPU and passing
@@ -92,10 +94,13 @@ struct MeshSpecificationData {
     // stroke-wide progress and the per-particle offset, the latter of which is
     // only available in the vertex shader.
     kTextureAnimationProgress = 6,
-    // The number of frames in the texture animation.
+    // The number of frames in the texture animation, as an int (1 or greater).
     kNumTextureAnimationFrames = 7,
     kNumTextureAnimationRows = 8,
     kNumTextureAnimationColumns = 9,
+    // Specifies what should happen when a texture animation repeats.  This is
+    // an int, and must either be 0 for "restart" mode or 1 for "reverse" mode.
+    kAnimationRepeatMode = 10,
   };
 
   struct Attribute {

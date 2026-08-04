@@ -260,19 +260,48 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
     // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
 
+    // Calculates an integer frame index for a texture animation using "reverse"
+    // mode for repetitions. In this mode, the animation uses the frames in
+    // order from first to last, then jumps back to the first frame and repeats
+    // this cycle.
+    R"(
+    float calculateAnimationRestartModeFrameIndex(
+        const float progress,
+        const int numFrames) {
+      return floor(fract(progress) * float(numFrames));
+    })"
+
+    // Calculates an integer frame index for a texture animation using "reverse"
+    // mode for repetitions. In this mode, the animation uses the frames in
+    // order from first to last, before reversing direction and using the frames
+    // from last to first (without using the first or last frame twice in a row
+    // when reversing direction).
+    R"(
+    float calculateAnimationReverseModeFrameIndex(
+        const float progress,
+        const int numFrames) {
+      float zigzag = abs(2.0 * fract(0.5 * (progress + 1.0)) - 1.0);
+      return floor(zigzag * float(numFrames - 1) + 0.5);
+    })"
+
     // Calculates the texture UV coordinates that should be used for a
     // particular vertex of a stamping-textured mesh.
     //   * `surfaceUv` is the unpacked surface UV mesh attribute at this vertex,
     //     where U measures lateral position across the stroke or particle, and
     //     V measures forward position along the stroke or particle.
     //   * `particleAnimationOffset` is the unpacked per-particle animation
-    //     progress offset at this vertex, from [0, 1).
+    //     progress offset at this vertex, from [0, 2).
     //   * `textureAnimationProgress` is the animation progress value for the
-    //     entire mesh, from [0, 1].
-    //   * `numTextureAnimationFrames` is the number of animation frames in the
-    //     texture, and must be at least 1. If greater than 1, then the texture
-    //     is assumed to be an atlas that is divided vertically (along its V
-    //     dimension) into this many equal-sized frames.
+    //     entire mesh, from [0, 2].
+    //   * `numTextureAnimationFrames` is the number of distinct frames in the
+    //     animation. The texture is assumed to be divided into a grid, with one
+    //     frame in each grid cell, in row-major order. It is permissible for
+    //     `numTextureAnimationFrames` to be less than the number of grid cells,
+    //     in which case some grid cells will be unused.
+    //   * `numTextureAnimationRows` is the number of rows in the grid.
+    //   * `numTextureAnimationColumns` is the number of columns in the grid.
+    //   * `animationRepeatMode` should 0 for "restart" mode and 1 for "reverse"
+    //     mode.
     R"(
     float2 calculateStampingTextureUv(
         const float2 surfaceUv,
@@ -280,16 +309,18 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
         const float textureAnimationProgress,
         const int numTextureAnimationFrames,
         const int numTextureAnimationRows,
-        const int numTextureAnimationColumns) {
-      // Progress overshooting 1 is handled by wrapping around to 0. Effectively
-      // progress is mod 1.
-      float progress =
-          fract(textureAnimationProgress + particleAnimationOffset);
+        const int numTextureAnimationColumns,
+        const int animationRepeatMode) {
+      float rawProgress = textureAnimationProgress + particleAnimationOffset;
+      float restartModeIndex = calculateAnimationRestartModeFrameIndex(
+          rawProgress, numTextureAnimationFrames);
+      float reverseModeIndex = calculateAnimationReverseModeFrameIndex(
+          rawProgress, numTextureAnimationFrames);
+      float frameIndex = mix(restartModeIndex, reverseModeIndex,
+                             float(animationRepeatMode));
 
-      float numFrames = float(numTextureAnimationFrames);
       float numRows = float(numTextureAnimationRows);
       float numColumns = float(numTextureAnimationColumns);
-      float frameIndex = floor(progress * numFrames);
       float frameRowFractional = frameIndex / numColumns;
       float frameRow = floor(frameRowFractional);
       float frameColumn = floor(fract(frameRowFractional) * numColumns);
@@ -473,15 +504,15 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     float unpackAnimationOffset(const float unpackedValue) {
       return unpackedValue;
     })"
-    // A [0, 1) animation offset can be packed into one byte, where 0.0 maps to
-    // 0 and 1.0 (or rather, values just below 1.0) maps to 255. This [0, 255]
+    // A [0, 2) animation offset can be packed into one byte, where 0.0 maps to
+    // 0 and 2.0 (or rather, values just below 2.0) maps to 255. This [0, 255]
     // byte is exposed to the shader as a [0, 1] half float. So to unpack, we
-    // simply cast the [0, 1] half float to a full float get a [0, 1] animation
-    // offset. (An animation offset of exactly 1 will be harmlessly wrapped back
-    // to 0.)
+    // simply cast the [0, 1] half float to a full float and multiply by 2 to
+    // get a [0, 2] animation offset. (An animation offset of exactly 2 will be
+    // harmlessly wrapped back to 0.)
     R"(
     float unpackAnimationOffset(const half packedValue0To1) {
-      return float(packedValue0To1);
+      return 2 * float(packedValue0To1);
     })"
     // LINT.ThenChange(
     //     ../../../strokes/internal/stroke_vertex.cc:anim_packing)
