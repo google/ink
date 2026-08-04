@@ -15,11 +15,13 @@
 #ifndef INK_GEOMETRY_INTERNAL_OUTLINE_PROCESSING_H_
 #define INK_GEOMETRY_INTERNAL_OUTLINE_PROCESSING_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "absl/types/span.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
+#include "ink/geometry/vec.h"
 
 namespace ink::geometry_internal {
 
@@ -51,6 +53,19 @@ class MonotoneChain {
   int Orientation() const { return orientation_; }
   const Rect& Bounds() const { return bounds_; }
 
+  // Returns the first (with respect to the chain's orientation) vertex of the
+  // chain.
+  Point StartPoint() const;
+
+  // Returns the last vertex of the chain.
+  Point EndPoint() const;
+
+  // Returns the point adjacent to the start point (the second vertex).
+  Point StartNeighbor() const;
+
+  // Returns the point adjacent to the end point (the second-to-last vertex).
+  Point EndNeighbor() const;
+
   bool operator==(const MonotoneChain& other) const {
     return vertices_ == other.vertices_ && orientation_ == other.orientation_;
   }
@@ -77,11 +92,28 @@ class ShapeOutline {
 
   absl::Span<const MonotoneChain> Chains() const { return chains_; }
 
+  // Index of the predecessor chain to the given chain in an oriented boundary
+  // walk.
+  uint32_t PrevIndex(uint32_t chain_idx) const {
+    return prev_index_[chain_idx];
+  }
+
+  // Index of the successor chain to the given chain in an oriented boundary
+  // walk.
+  uint32_t NextIndex(uint32_t chain_idx) const {
+    return next_index_[chain_idx];
+  }
+
   bool operator==(const ShapeOutline& other) const = default;
 
  private:
   // The list of chains, ordered by their lower y-bounds.
   std::vector<MonotoneChain> chains_;
+
+  // The indices of the predecessor and successor of each chain in an oriented
+  // walk along the boundary.
+  std::vector<uint32_t> prev_index_;
+  std::vector<uint32_t> next_index_;
 };
 
 // Computes the monotone boundary chains.

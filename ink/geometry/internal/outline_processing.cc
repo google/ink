@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <numeric>
 #include <queue>
 #include <tuple>
 #include <utility>
@@ -28,6 +29,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/log/absl_check.h"
 #include "absl/types/span.h"
 #include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/internal/intersects_internal.h"
@@ -53,6 +55,36 @@ constexpr float kCollinearTolerance = 1e-6f;
 bool IsLeftOrBelow(const Point& a, const Point& b) {
   if (a.x != b.x) return a.x < b.x;
   return a.y < b.y;
+}
+
+// Computes the 2D cross product (determinant) of the vectors ab and ac.
+double Determinant(const Point& a, const Point& b, const Point& c) {
+  double ux = static_cast<double>(b.x) - a.x;
+  double uy = static_cast<double>(b.y) - a.y;
+  double vx = static_cast<double>(c.x) - a.x;
+  double vy = static_cast<double>(c.y) - a.y;
+  return ux * vy - uy * vx;
+}
+
+int Sign(double x) {
+  if (x > 0.0) return 1;
+  if (x < 0.0) return -1;
+  return 0;
+}
+
+// Returns true if (`a`, `b`, `c`) are in clockwise order around the point `p`.
+// This function assumes none of the points are collinear.
+bool ClockwiseOrdered(const Point& p, const Point& a, const Point& b,
+                      const Point& c) {
+  // The points a and p split the plane into two half-planes, of points to the
+  // left/right of the line ap. If b and c lie in opposite half-planes, then
+  // whichever lie to the right of ap is first (with respect to the clockwise
+  // ordering). Otherwise, (a,b,c) is clockwise ordered iff b-p and c-p are
+  // clockwise ordered.
+  int b_side = Sign(Determinant(p, a, b));
+  int c_side = Sign(Determinant(p, a, c));
+  if (b_side != c_side) return b_side < c_side;
+  return Sign(Determinant(p, b, c)) < 0;
 }
 
 // Represents a boundary segment during sweep-line processing.
@@ -308,35 +340,62 @@ std::vector<MonotoneChain> ExtractChains(
 // Returns a pair of lists (prev_chain, next_chain) containing the indices of
 // the predecessor and successor of each chain in an oriented walk along the
 // shape boundary.
-std::pair<absl::InlinedVector<uint32_t, 8>, absl::InlinedVector<uint32_t, 8>>
-GetAdjacentChains(absl::Span<const MonotoneChain> chains) {
-  auto start_pt = [](const MonotoneChain& c) {
-    return c.Orientation() == 1 ? c.Vertices().front() : c.Vertices().back();
-  };
-  auto end_pt = [](const MonotoneChain& c) {
-    return c.Orientation() == 1 ? c.Vertices().back() : c.Vertices().front();
-  };
+std::pair<std::vector<uint32_t>, std::vector<uint32_t>> GetAdjacentChains(
+    absl::Span<const MonotoneChain> chains) {
+  std::vector<uint32_t> prev_index(chains.size());
+  std::vector<uint32_t> next_index(chains.size());
 
-  absl::InlinedVector<uint32_t, 8> prev_chain(chains.size());
-  absl::InlinedVector<uint32_t, 8> next_chain(chains.size());
+  // Initialize the arrays with prev_index[i] == i and next_index[i] == i,
+  // to indicate that a chain hasn't yet been visited.
+  std::iota(prev_index.begin(), prev_index.end(), 0);
+  std::iota(next_index.begin(), next_index.end(), 0);
 
   // Brute force search, since we expect that typically the number of chains is
-  // small.
+  // small (note that for the typical Ink use-case, this function is handling
+  // the result of subtracting from a single triangle, so the number of chains
+  // is typically less than 10).
+  // TODO(b/523326691): Check whether this approach is indeed optimal for the
+  // typical case.
   for (size_t i = 0; i < chains.size(); ++i) {
-    Point end_i = end_pt(chains[i]);
-    Point start_i = start_pt(chains[i]);
-    for (size_t j = i + 1; j < chains.size(); ++j) {
-      if (start_pt(chains[j]) == end_i) {
-        next_chain[i] = j;
-        prev_chain[j] = i;
+    Point end_i = chains[i].EndPoint();
+
+    for (size_t j = 0; j < chains.size(); ++j) {
+      if (i == j) continue;
+
+      // The next/previous chains of a given chain are unique. To avoid
+      // unnecessary processing, skip chains that have already been claimed.
+      if (prev_index[j] != j) continue;
+
+      // The next chain always starts exactly where this chain ends.
+      if (chains[j].StartPoint() != end_i) continue;
+
+      // If we haven't set any chain as the next chain, take the first one we
+      // find which starts where this chain ends.
+      if (next_index[i] == i) {
+        next_index[i] = j;
+        continue;
       }
-      if (end_pt(chains[j]) == start_i) {
-        next_chain[j] = i;
-        prev_chain[i] = j;
+
+      // Typically, there is a single chain that starts where chain[i] ends.
+      // However, at a pinch point, there can be multiple, and we need to be a
+      // little careful. Locally, the shape looks like several angular sectors
+      // that touch at a shared apex, with alternating incoming and outgoing
+      // chains around the pinch point. For any incoming chain, the next chain
+      // in the boundary walk is the first outgoing chain encountered in a
+      // clockwise sweep around the vertex.
+      //
+      // For an example, look at point B in test case
+      // `AdjacentChains.PinchPoint`.
+      if (ClockwiseOrdered(end_i, chains[i].EndNeighbor(),
+                           chains[j].StartNeighbor(),
+                           chains[next_index[i]].StartNeighbor())) {
+        next_index[i] = j;
       }
     }
+
+    if (next_index[i] != i) prev_index[next_index[i]] = i;
   }
-  return {prev_chain, next_chain};
+  return {prev_index, next_index};
 }
 
 // Returns true if no other vertex indexed by `indices` lies within the triangle
@@ -440,7 +499,7 @@ FindBoundaryIntersections(const ShapeOutline& shape_a,
           auto [b_ymin, b_ymax] = std::minmax(verts_b[j].y, verts_b[j + 1].y);
           if (a_ymax < b_ymin || a_ymin > b_ymax) continue;
 
-          if (auto ratios = geometry_internal::SegmentIntersectionRatio(
+          if (auto ratios = SegmentIntersectionRatio(
                   {verts_a[i], verts_a[i + 1]}, {verts_b[j], verts_b[j + 1]})) {
             // TODO(b/521449017): Handle degenerate intersections
             int sign = (chain_a.Orientation() * chain_b.Orientation() *
@@ -579,6 +638,26 @@ MonotoneChain::MonotoneChain(std::vector<Point> vertices, int orientation)
     absl::c_sort(vertices_, IsLeftOrBelow);
 }
 
+Point MonotoneChain::StartPoint() const {
+  ABSL_DCHECK(!vertices_.empty());
+  return orientation_ == 1 ? vertices_.front() : vertices_.back();
+}
+
+Point MonotoneChain::EndPoint() const {
+  ABSL_DCHECK(!vertices_.empty());
+  return orientation_ == 1 ? vertices_.back() : vertices_.front();
+}
+
+Point MonotoneChain::StartNeighbor() const {
+  ABSL_DCHECK_GE(vertices_.size(), 2);
+  return orientation_ == 1 ? vertices_[1] : vertices_.rbegin()[1];
+}
+
+Point MonotoneChain::EndNeighbor() const {
+  ABSL_DCHECK_GE(vertices_.size(), 2);
+  return orientation_ == 1 ? vertices_.rbegin()[1] : vertices_[1];
+}
+
 ShapeOutline::ShapeOutline(std::vector<MonotoneChain> input_chains)
     : chains_(std::move(input_chains)) {
   absl::c_sort(chains_, [](const MonotoneChain& a, const MonotoneChain& b) {
@@ -587,6 +666,7 @@ ShapeOutline::ShapeOutline(std::vector<MonotoneChain> input_chains)
            std::tuple(b.Bounds().YMin(), b.Bounds().XMin(), b.Bounds().YMax(),
                       b.Bounds().XMax(), b.Orientation());
   });
+  std::tie(prev_index_, next_index_) = GetAdjacentChains(chains_);
 }
 
 ShapeOutline ComputeShapeOutline(const std::vector<std::vector<Point>>& loops) {
@@ -690,7 +770,7 @@ bool Intersects(const ShapeOutline& shape, const Rect& rect) {
     // Since the chains in the shape are sorted, if the point is below the
     // lower bound of this chain, we can safely skip the rest.
     if (rect.YMax() < chain.Bounds().YMin()) break;
-    if (!geometry_internal::IntersectsInternal(chain.Bounds(), rect)) continue;
+    if (!IntersectsInternal(chain.Bounds(), rect)) continue;
 
     absl::Span<const Point> pts = chain.Vertices();
 
@@ -728,13 +808,11 @@ bool Intersects(const ShapeOutline& shape, const Rect& rect) {
 
     // Lastly, check the incoming and leaving segments.
     if (left_it != pts.begin() &&
-        geometry_internal::IntersectsInternal(
-            rect, Segment{*(left_it - 1), *left_it})) {
+        IntersectsInternal(rect, Segment{*(left_it - 1), *left_it})) {
       return true;
     }
     if (right_it != pts.end() && right_it != left_it &&
-        geometry_internal::IntersectsInternal(
-            rect, Segment{*(right_it - 1), *right_it})) {
+        IntersectsInternal(rect, Segment{*(right_it - 1), *right_it})) {
       return true;
     }
   }
@@ -745,11 +823,9 @@ bool Intersects(const ShapeOutline& shape, const Rect& rect) {
 
 std::vector<std::vector<Point>> ComputeBoundaryLoops(
     const ShapeOutline& shape) {
-  // We stitch the monotone chains into closed loops by first computing each
-  // chain's "next" chain in the shape's oriented boundary. We can think of this
-  // as a directed graph on the set of chains. We traverse all of cycles
-  // in this graph, gluing together the chains as we go.
-  auto [_, next] = GetAdjacentChains(shape.Chains());
+  // We stitch the monotone chains into closed loops by following each chain's
+  // "next" chain in the shape's oriented boundary until the loop is closed,
+  // and then move on to the next closed loop.
 
   std::vector<std::vector<Point>> loops;
   absl::Span<const MonotoneChain> chains = shape.Chains();
@@ -769,7 +845,7 @@ std::vector<std::vector<Point>> ComputeBoundaryLoops(
         loop.insert(loop.end(), pts.begin(), pts.end() - 1);
       else
         loop.insert(loop.end(), pts.rbegin(), pts.rend() - 1);
-      curr = next[curr];
+      curr = shape.NextIndex(curr);
     } while (curr != m && !visited[curr]);
 
     loops.push_back(std::move(loop));
@@ -851,7 +927,7 @@ ShapeOutline ComputeSubtraction(const ShapeOutline& shape_a,
   // intersection points between the boundaries of the two shapes. We then
   // subdivide the boundary chains of both shapes, and extract the fragments
   // that lie on the boundary of (shape_a - shape_b). Finally, we stitch the
-  // fragments back to gether to form the chains of the final result.
+  // fragments back together to form the chains of the final result.
 
   auto [intx_a, intx_b] = FindBoundaryIntersections(shape_a, shape_b);
   std::vector<MonotoneChain> raw_chains =

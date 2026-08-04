@@ -204,6 +204,68 @@ TEST(OutlineProcessingTest, DisjointPolygons) {
                 {{{A, C, B}, -1}, {{A, B}, 1}, {{D, F, E}, -1}, {{D, E}, 1}}));
 }
 
+TEST(AdjacentChains, DisjointPolygons) {
+  //         C           F
+  //        / \         / \
+  //       /   \       /   \
+  //      A-----B     D-----E
+  Point A{0, 0}, B{2, 0}, C{1, 2};
+  Point D{4, 0}, E{6, 0}, F{5, 2};
+
+  ShapeOutline shape(
+      {{{A, B}, 1}, {{A, C, B}, -1}, {{D, E}, 1}, {{D, F, E}, -1}});
+
+  constexpr uint32_t kAB = 0, kACB = 1, kDE = 2, kDFE = 3;
+
+  EXPECT_EQ(shape.NextIndex(kAB), kACB);
+  EXPECT_EQ(shape.PrevIndex(kAB), kACB);
+
+  EXPECT_EQ(shape.NextIndex(kACB), kAB);
+  EXPECT_EQ(shape.PrevIndex(kACB), kAB);
+
+  EXPECT_EQ(shape.NextIndex(kDE), kDFE);
+  EXPECT_EQ(shape.PrevIndex(kDE), kDFE);
+
+  EXPECT_EQ(shape.NextIndex(kDFE), kDE);
+  EXPECT_EQ(shape.PrevIndex(kDFE), kDE);
+}
+
+TEST(AdjacentChains, PinchPoints) {
+  // G-------------------F
+  // |                   |
+  // |      C-----D      |
+  // |       \   /       |
+  // |        \ /        |
+  // A---------B---------E
+  Point A{-5, -2}, B{0, -2}, C{-2, 0}, D{2, 0}, E{5, -2}, F{5, 2}, G{-5, 2};
+  ShapeOutline shape({{{A, B}, 1},
+                      {{A, G, F}, -1},
+                      {{C, B}, -1},
+                      {{B, D}, -1},
+                      {{B, E, F}, 1},
+                      {{C, D}, 1}});
+
+  constexpr uint32_t kAB = 0, kAGF = 1, kCB = 2, kBD = 3, kBEF = 4, kCD = 5;
+
+  EXPECT_EQ(shape.NextIndex(kAB), kCB);
+  EXPECT_EQ(shape.PrevIndex(kCB), kAB);
+
+  EXPECT_EQ(shape.NextIndex(kCB), kCD);
+  EXPECT_EQ(shape.PrevIndex(kCD), kCB);
+
+  EXPECT_EQ(shape.NextIndex(kCD), kBD);
+  EXPECT_EQ(shape.PrevIndex(kBD), kCD);
+
+  EXPECT_EQ(shape.NextIndex(kBD), kBEF);
+  EXPECT_EQ(shape.PrevIndex(kBEF), kBD);
+
+  EXPECT_EQ(shape.NextIndex(kBEF), kAGF);
+  EXPECT_EQ(shape.PrevIndex(kAGF), kBEF);
+
+  EXPECT_EQ(shape.NextIndex(kAGF), kAB);
+  EXPECT_EQ(shape.PrevIndex(kAB), kAGF);
+}
+
 TEST(IntersectionTests, PointAndTriangle) {
   //         C
   //        / \
@@ -414,13 +476,13 @@ TEST(ComputeBoundaryLoopsTest, PolygonWithHole) {
 
 TEST(ComputeBoundaryLoopsTest, PolygonWithTwoHoles) {
   //                  C
-  //.               /   \
+  //                /   \
   //               /     \
   //              /       \
   //             /         \
   //            /  G     K  \
   //           /  / \   / \  \
-  //          D  F  H  J  L  B
+  //          D  F   H J   L  B
   //           \  \ /   \ /  /
   //            \  E     I  /
   //             \         /
@@ -446,6 +508,26 @@ TEST(ComputeBoundaryLoopsTest, PolygonWithTwoHoles) {
                   IsCyclicPermutationOf(std::vector<Point>{A, B, C, D}),
                   IsCyclicPermutationOf(std::vector<Point>{E, F, G, H}),
                   IsCyclicPermutationOf(std::vector<Point>{I, J, K, L})));
+}
+
+TEST(ComputeBoundaryLoopsTest, PinchPoints) {
+  // H-------------------G
+  // |                   |
+  // |      C-----D      |
+  // |       \   /       |
+  // |        \ /        |
+  // A---------B---------F
+  Point A{-5, -2}, B{0, -2}, C{-2, 0}, D{2, 0}, F{5, -2}, G{5, 2}, H{-5, 2};
+  ShapeOutline shape({{{A, B}, 1},
+                      {{A, H, G}, -1},
+                      {{C, B}, -1},
+                      {{B, D}, -1},
+                      {{B, F, G}, 1},
+                      {{C, D}, 1}});
+
+  std::vector<std::vector<Point>> loops = ComputeBoundaryLoops(shape);
+  EXPECT_THAT(loops, UnorderedElementsAre(IsCyclicPermutationOf(
+                         std::vector<Point>{A, B, C, D, B, F, G, H})));
 }
 
 TEST(ComputeTriangulationTest, BasicQuad) {
