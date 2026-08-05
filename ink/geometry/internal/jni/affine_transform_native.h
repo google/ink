@@ -35,9 +35,9 @@ typedef struct {
 } AffineTransformNative_Parallelogram;
 
 AffineTransformNative_Parallelogram AffineTransformNative_apply(
-    float a, float b, float c, float d, float e, float f, float quad_center_x,
-    float quad_center_y, float quad_width, float quad_height,
-    float quad_rotation_degrees, float quad_shear_factor);
+    float m00, float m10, float m20, float m01, float m11, float m21,
+    float quad_center_x, float quad_center_y, float quad_width,
+    float quad_height, float quad_rotation_degrees, float quad_shear_factor);
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -30,15 +30,15 @@ namespace ink {
 
 // An affine transformation in the plane. The transformation can be
 // thought of as a 3x3 matrix:
-//   ⎡a  b  c⎤
-//   ⎢d  e  f⎥
-//   ⎣0  0  1⎦
+//   ⎡m00  m10  m20⎤
+//   ⎢m01  m11  m22⎥
+//   ⎣0    0    1  ⎦
 // Applying the transformation can be thought of as a matrix
 // multiplication, with the to-be-transformed point represented as a
 // column vector with an extra 1:
-//   ⎡a  b  c⎤   ⎡x⎤   ⎡a*x + b*y + c⎤
-//   ⎢d  e  f⎥ * ⎢y⎥ = ⎢d*x + e*y + f⎥
-//   ⎣0  0  1⎦   ⎣1⎦   ⎣      1      ⎦
+//   ⎡m00  m10  m20⎤   ⎡x⎤   ⎡m00*x + m10*y + m20⎤
+//   ⎢m01  m11  m21⎥ * ⎢y⎥ = ⎢m01*x + m11*y + m21⎥
+//   ⎣0    0      1⎦   ⎣1⎦   ⎣      1            ⎦
 // Transformations are composed via multiplication. Multiplication is
 // not commutative (i.e. A*B != B*A), and the left-hand transformation
 // is composed "after" the right hand transformation. E.g., if you have:
@@ -56,13 +56,14 @@ class AffineTransform {
   // This is provided for completeness; however, you may find it easier
   // to create transformations by composing the transformations created
   // via the static factory methods.
-  AffineTransform(float a, float b, float c, float d, float e, float f) {
-    a_ = a;
-    b_ = b;
-    c_ = c;
-    d_ = d;
-    e_ = e;
-    f_ = f;
+  AffineTransform(float m00, float m10, float m20, float m01, float m11,
+                  float m21) {
+    m00_ = m00;
+    m10_ = m10;
+    m20_ = m20;
+    m01_ = m01;
+    m11_ = m11;
+    m21_ = m21;
   }
 
   // AffineTransforms are copyable and movable.
@@ -160,14 +161,14 @@ class AffineTransform {
   //   T * T⁻¹ == T⁻¹ * T == AffineTransform::Identity()
   //
   // For a transformation of the form:
-  //       ⎡a  b  c⎤
-  //   T = ⎢d  e  f⎥
-  //       ⎣0  0  1⎦
+  //       ⎡m00  m10  m20⎤
+  //   T = ⎢m01  m11  m21⎥
+  //       ⎣0    0    1  ⎦
   // its inverse will be:
-  //   ⎡ e / |T|     -b / |T|     (b*f - c*e) / |T|⎤
-  //   ⎢-d / |T|      a / |T|     (c*d - a*f) / |T|⎥
-  //   ⎣   0            0                 1        ⎦
-  // where |T| = a*e - b*d is the determinant of the matrix.
+  //   ⎡ m11 / |T|     -m10 / |T|     (m10*f - m20*m11) / |T|⎤
+  //   ⎢-m01 / |T|      m00 / |T|     (m20*m01 - m00*f) / |T|⎥
+  //   ⎣ 0              0             1                      ⎦
+  // where |T| = m00*m11 - m10*m01 is the determinant of the matrix.
   std::optional<AffineTransform> Inverse() const;
 
   // Returns a copy of the given object with the transformation applied.
@@ -203,15 +204,15 @@ class AffineTransform {
   static std::optional<AffineTransform> Find(const Quad& from, const Quad& to);
 
   // Accessors for the transformation coefficients in the form:
-  //   ⎡a  b  c⎤
-  //   ⎢d  e  f⎥
-  //   ⎣0  0  1⎦
-  float A() const { return a_; }
-  float B() const { return b_; }
-  float C() const { return c_; }
-  float D() const { return d_; }
-  float E() const { return e_; }
-  float F() const { return f_; }
+  //   ⎡m00  m10  m20⎥
+  //   ⎢m10  m11  m12⎥
+  //   ⎣0    0    1  ⎦
+  float M00() const { return m00_; }
+  float M10() const { return m10_; }
+  float M20() const { return m20_; }
+  float M01() const { return m01_; }
+  float M11() const { return m11_; }
+  float M21() const { return m21_; }
 
   template <typename Sink>
   friend void AbslStringify(Sink& sink, AffineTransform transform) {
@@ -222,12 +223,12 @@ class AffineTransform {
   // Implementation helper for AbslStringify.
   std::string ToFormattedString() const;
 
-  float a_ = 1;
-  float b_ = 0;
-  float c_ = 0;
-  float d_ = 0;
-  float e_ = 1;
-  float f_ = 0;
+  float m00_ = 1;
+  float m10_ = 0;
+  float m20_ = 0;
+  float m01_ = 0;
+  float m11_ = 1;
+  float m21_ = 0;
 };
 
 AffineTransform operator*(const AffineTransform& lhs,
@@ -240,15 +241,19 @@ AffineTransform operator*(const AffineTransform& lhs,
 inline std::optional<AffineTransform> AffineTransform::Inverse() const {
   // We calculate the determinant in two parts here in order to avoid a
   // fused-multiply-add, because loss of precision on certain Mac arm64 CPUs can
-  // result in a non-zero determinant even when `a_` == `b_` and `d_` == `e_`.
-  float determinant_lhs = a_ * e_;
-  float determinant_rhs = b_ * d_;
+  // result in a non-zero determinant even when `m00_` == `m10_` and `m01_` ==
+  // `m11_`.
+  float determinant_lhs = m00_ * m11_;
+  float determinant_rhs = m10_ * m01_;
   if (determinant_lhs == determinant_rhs) return std::nullopt;
 
   float determinant = determinant_lhs - determinant_rhs;
-  return AffineTransform{
-      e_ / determinant,  -b_ / determinant, (b_ * f_ - c_ * e_) / determinant,
-      -d_ / determinant, a_ / determinant,  (c_ * d_ - a_ * f_) / determinant};
+  return AffineTransform{m11_ / determinant,
+                         -m10_ / determinant,
+                         (m10_ * m21_ - m20_ * m11_) / determinant,
+                         -m01_ / determinant,
+                         m00_ / determinant,
+                         (m20_ * m01_ - m00_ * m21_) / determinant};
 }
 
 }  // namespace ink

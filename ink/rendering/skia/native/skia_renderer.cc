@@ -388,10 +388,10 @@ namespace {
 
 SkM44 ToSkiaM44(const AffineTransform& t) {
   // The constructor parameters are documented to be in row-major order.
-  return SkM44(t.A(), t.B(), 0, t.C(),  //
-               t.D(), t.E(), 0, t.F(),  //
-               0, 0, 1, 0,              //
-               0, 0, 0, 1);             //
+  return SkM44(t.M00(), t.M10(), 0, t.M20(),  //
+               t.M01(), t.M11(), 0, t.M21(),  //
+               0, 0, 1, 0,                    //
+               0, 0, 0, 1);                   //
 }
 
 }  // namespace

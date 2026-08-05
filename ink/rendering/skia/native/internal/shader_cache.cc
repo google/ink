@@ -94,9 +94,10 @@ sk_sp<SkColorSpace> CreateColorSpace(ColorSpace color_space,
 }
 
 SkMatrix ToSkMatrix(const AffineTransform& transform) {
-  return SkMatrix::MakeAll(transform.A(), transform.B(), transform.C(),  //
-                           transform.D(), transform.E(), transform.F(),  //
-                           0, 0, 1);
+  return SkMatrix::MakeAll(
+      transform.M00(), transform.M10(), transform.M20(),  //
+      transform.M01(), transform.M11(), transform.M21(),  //
+      0, 0, 1);
 }
 
 // Computes the transform for a `TextureLayer` from texel space to size-unit

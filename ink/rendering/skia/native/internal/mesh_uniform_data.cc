@@ -231,8 +231,8 @@ void MeshUniformData::SetAnimationRepeatMode(int animation_repeat_mode) {
 void MeshUniformData::SetObjectToCanvasLinearComponent(
     const AffineTransform& transform) {
   SetUniformIfPresent(WritableData(), object_to_canvas_linear_component_offset_,
-                      std::array<float, 4>{transform.A(), transform.D(),
-                                           transform.B(), transform.E()});
+                      std::array<float, 4>{transform.M00(), transform.M01(),
+                                           transform.M10(), transform.M11()});
 }
 
 std::byte* MeshUniformData::WritableData() {

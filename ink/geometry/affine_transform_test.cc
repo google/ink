@@ -49,23 +49,23 @@ TEST(AffineTransformTest, Stringify) {
 
 TEST(AffineTransformTest, DefaultConstructorCreatesIdentityMatrix) {
   AffineTransform default_affine_transform;
-  EXPECT_FLOAT_EQ(default_affine_transform.A(), 1);
-  EXPECT_FLOAT_EQ(default_affine_transform.B(), 0);
-  EXPECT_FLOAT_EQ(default_affine_transform.C(), 0);
-  EXPECT_FLOAT_EQ(default_affine_transform.D(), 0);
-  EXPECT_FLOAT_EQ(default_affine_transform.E(), 1);
-  EXPECT_FLOAT_EQ(default_affine_transform.F(), 0);
+  EXPECT_FLOAT_EQ(default_affine_transform.M00(), 1);
+  EXPECT_FLOAT_EQ(default_affine_transform.M10(), 0);
+  EXPECT_FLOAT_EQ(default_affine_transform.M20(), 0);
+  EXPECT_FLOAT_EQ(default_affine_transform.M01(), 0);
+  EXPECT_FLOAT_EQ(default_affine_transform.M11(), 1);
+  EXPECT_FLOAT_EQ(default_affine_transform.M21(), 0);
 }
 
 TEST(AffineTransformTest, Getters) {
   AffineTransform test_affine_transform(1.0f, 12.4f, 0.0f, -4.3f, 9999,
                                         0.0002f);
-  EXPECT_FLOAT_EQ(test_affine_transform.A(), 1.0f);
-  EXPECT_FLOAT_EQ(test_affine_transform.B(), 12.4f);
-  EXPECT_FLOAT_EQ(test_affine_transform.C(), 0.0f);
-  EXPECT_FLOAT_EQ(test_affine_transform.D(), -4.3f);
-  EXPECT_FLOAT_EQ(test_affine_transform.E(), 9999);
-  EXPECT_FLOAT_EQ(test_affine_transform.F(), 0.0002f);
+  EXPECT_FLOAT_EQ(test_affine_transform.M00(), 1.0f);
+  EXPECT_FLOAT_EQ(test_affine_transform.M10(), 12.4f);
+  EXPECT_FLOAT_EQ(test_affine_transform.M20(), 0.0f);
+  EXPECT_FLOAT_EQ(test_affine_transform.M01(), -4.3f);
+  EXPECT_FLOAT_EQ(test_affine_transform.M11(), 9999);
+  EXPECT_FLOAT_EQ(test_affine_transform.M21(), 0.0002f);
 }
 
 TEST(AffineTransformTest, AffineTransformEq) {

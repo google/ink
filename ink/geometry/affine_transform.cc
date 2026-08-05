@@ -52,7 +52,8 @@ AffineTransform AffineTransform::RotateAboutPoint(Angle angle, Point center) {
 }
 
 Point AffineTransform::Apply(Point p) const {
-  return Point{A() * p.x + B() * p.y + C(), D() * p.x + E() * p.y + F()};
+  return Point{M00() * p.x + M10() * p.y + M20(),
+               M01() * p.x + M11() * p.y + M21()};
 }
 
 Segment AffineTransform::Apply(const Segment& s) const {
@@ -66,7 +67,7 @@ Triangle AffineTransform::Apply(const Triangle& t) const {
 namespace {
 
 Vec ApplyAffineTransformToVec(const AffineTransform& t, Vec v) {
-  return Vec{t.A() * v.x + t.B() * v.y, t.D() * v.x + t.E() * v.y};
+  return Vec{t.M00() * v.x + t.M10() * v.y, t.M01() * v.x + t.M11() * v.y};
 }
 
 }  // namespace
@@ -176,17 +177,18 @@ std::optional<AffineTransform> AffineTransform::Find(const Quad& from,
 
 AffineTransform operator*(const AffineTransform& lhs,
                           const AffineTransform& rhs) {
-  return AffineTransform(lhs.A() * rhs.A() + lhs.B() * rhs.D(),
-                         lhs.A() * rhs.B() + lhs.B() * rhs.E(),
-                         lhs.A() * rhs.C() + lhs.B() * rhs.F() + lhs.C(),
-                         lhs.D() * rhs.A() + lhs.E() * rhs.D(),
-                         lhs.D() * rhs.B() + lhs.E() * rhs.E(),
-                         lhs.D() * rhs.C() + lhs.E() * rhs.F() + lhs.F());
+  return AffineTransform(
+      lhs.M00() * rhs.M00() + lhs.M10() * rhs.M01(),
+      lhs.M00() * rhs.M10() + lhs.M10() * rhs.M11(),
+      lhs.M00() * rhs.M20() + lhs.M10() * rhs.M21() + lhs.M20(),
+      lhs.M01() * rhs.M00() + lhs.M11() * rhs.M01(),
+      lhs.M01() * rhs.M10() + lhs.M11() * rhs.M11(),
+      lhs.M01() * rhs.M20() + lhs.M11() * rhs.M21() + lhs.M21());
 }
 
 std::string AffineTransform::ToFormattedString() const {
-  return absl::StrCat("AffineTransform(", a_, ", ", b_, ", ", c_, ", ", d_,
-                      ", ", e_, ", ", f_, ")");
+  return absl::StrCat("AffineTransform(", m00_, ", ", m10_, ", ", m20_, ", ",
+                      m01_, ", ", m11_, ", ", m21_, ")");
 }
 
 }  // namespace ink

@@ -25,11 +25,11 @@ using ::ink::Quad;
 extern "C" {
 
 AffineTransformNative_Parallelogram AffineTransformNative_apply(
-    float a, float b, float c, float d, float e, float f, float quad_center_x,
-    float quad_center_y, float quad_width, float quad_height,
-    float quad_rotation_degrees, float quad_shear_factor) {
+    float m00, float m10, float m20, float m01, float m11, float m21,
+    float quad_center_x, float quad_center_y, float quad_width,
+    float quad_height, float quad_rotation_degrees, float quad_shear_factor) {
   Quad transformed =
-      AffineTransform(a, b, c, d, e, f)
+      AffineTransform(m00, m10, m20, m01, m11, m21)
           .Apply(Quad::FromCenterDimensionsRotationAndSkew(
               {.x = quad_center_x, .y = quad_center_y}, quad_width, quad_height,
               Angle::Degrees(quad_rotation_degrees), quad_shear_factor));

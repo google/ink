@@ -61,12 +61,12 @@ MATCHER_P(AffineTransformEqMatcher, expected,
                        " AffineTransform (expected: ", PrintToString(expected),
                        ")")) {
   return ExplainMatchResult(
-      AllOf(Property("a", &AffineTransform::A, FloatEq(expected.A())),
-            Property("b", &AffineTransform::B, FloatEq(expected.B())),
-            Property("c", &AffineTransform::C, FloatEq(expected.C())),
-            Property("d", &AffineTransform::D, FloatEq(expected.D())),
-            Property("e", &AffineTransform::E, FloatEq(expected.E())),
-            Property("f", &AffineTransform::F, FloatEq(expected.F()))),
+      AllOf(Property("m00", &AffineTransform::M00, FloatEq(expected.M00())),
+            Property("m10", &AffineTransform::M10, FloatEq(expected.M10())),
+            Property("m20", &AffineTransform::M20, FloatEq(expected.M20())),
+            Property("m01", &AffineTransform::M01, FloatEq(expected.M01())),
+            Property("m11", &AffineTransform::M11, FloatEq(expected.M11())),
+            Property("m21", &AffineTransform::M21, FloatEq(expected.M21()))),
       arg, result_listener);
 }
 
@@ -75,19 +75,20 @@ MATCHER_P2(AffineTransformNearMatcher, expected, tolerance,
                                  : "approximately equals",
                         " AffineTransform (expected: ", PrintToString(expected),
                         ", tolerance: ", PrintToString(tolerance), ")")) {
-  return ExplainMatchResult(AllOf(Property("a", &AffineTransform::A,
-                                           FloatNear(expected.A(), tolerance)),
-                                  Property("b", &AffineTransform::B,
-                                           FloatNear(expected.B(), tolerance)),
-                                  Property("c", &AffineTransform::C,
-                                           FloatNear(expected.C(), tolerance)),
-                                  Property("d", &AffineTransform::D,
-                                           FloatNear(expected.D(), tolerance)),
-                                  Property("e", &AffineTransform::E,
-                                           FloatNear(expected.E(), tolerance)),
-                                  Property("f", &AffineTransform::F,
-                                           FloatNear(expected.F(), tolerance))),
-                            arg, result_listener);
+  return ExplainMatchResult(
+      AllOf(Property("m00", &AffineTransform::M00,
+                     FloatNear(expected.M00(), tolerance)),
+            Property("m10", &AffineTransform::M10,
+                     FloatNear(expected.M10(), tolerance)),
+            Property("m20", &AffineTransform::M20,
+                     FloatNear(expected.M20(), tolerance)),
+            Property("m01", &AffineTransform::M01,
+                     FloatNear(expected.M01(), tolerance)),
+            Property("m11", &AffineTransform::M11,
+                     FloatNear(expected.M11(), tolerance)),
+            Property("m21", &AffineTransform::M21,
+                     FloatNear(expected.M21(), tolerance))),
+      arg, result_listener);
 }
 
 MATCHER_P(AngleEqMatcher, expected,
