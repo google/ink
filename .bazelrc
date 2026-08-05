@@ -1,9 +1,17 @@
 # Set up to use C++20.
 build --cxxopt=-std=c++20
-build --lockfile_mode=error
 
 # Enable Bzlmod for all Bazel commands.
 common --enable_bzlmod
+
+# Enforce that lockfile is up-to-date.
+common --lockfile_mode=error
+
+# Limit which Tint modules are built for Shader generation.
+# Currently that just reads WGSL and outputs MSL.
+common --@dawn//src/tint:tint_build_hlsl_writer=false
+common --@dawn//src/tint:tint_build_hlsl_writer=false
+common --@dawn//src/tint:tint_build_spv_reader=false
 
 # Check that directly declared dependency maches resolved version from
 # transitive dependencies.

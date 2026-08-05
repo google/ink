@@ -58,6 +58,19 @@ bazel_dep(
 )
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
 
+# Dawn is not yet published to BCR and its MODULE.bazel isn't quite usable by transitive consumers,
+# fixing that required some patching.
+bazel_dep(name = "dawn", version = "v20260731.171941")
+git_override(
+    module_name = "dawn",
+    commit = "cd2d5a667d1140af6e89f4c4c24f6545e1d5d2d7",  # v20260731.171941
+    patch_strip = 1,
+    patches = [
+        "patches/dawn/0001-Fix-MODULE.bazel-so-Dawn-can-be-used-as-a-dependency.patch",
+    ],
+    remote = "https://dawn.googlesource.com/dawn.git",
+)
+
 git_repository(
     name = "libtess2",
     commit = "446bae6dfb4c3efb43cb2764379574dcb4f0ee6c",  # Head as of 2025-04-25
