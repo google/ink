@@ -58,7 +58,7 @@ bool HasValidIndices(const std::vector<Point>& points,
                      });
 }
 
-TEST(OutlineProcessingTest, BasicTriangle) {
+TEST(ComputeOutlineTest, BasicTriangle) {
   //         C
   //        / \
   //       /   \
@@ -67,12 +67,12 @@ TEST(OutlineProcessingTest, BasicTriangle) {
 
   std::vector<std::vector<Point>> loops = {{A, B, C}};
 
-  ShapeOutline outline = ComputeShapeOutline(loops);
+  ShapeOutline outline(loops);
 
   EXPECT_EQ(outline, ShapeOutline({{{A, C, B}, -1}, {{A, B}, 1}}));
 }
 
-TEST(OutlineProcessingTest, SelfIntersection) {
+TEST(ComputeOutlineTest, SelfIntersection) {
   //       F      C
   //      /  \   /  \
   //     /    \ /    \
@@ -85,12 +85,12 @@ TEST(OutlineProcessingTest, SelfIntersection) {
 
   std::vector<std::vector<Point>> loops = {{A, B, C, D, E, F}};
 
-  ShapeOutline outline = ComputeShapeOutline(loops);
+  ShapeOutline outline(loops);
 
   EXPECT_EQ(outline, ShapeOutline({{{A, F, X1, C, B}, -1}, {{A, B}, 1}}));
 }
 
-TEST(OutlineProcessingTest, VerticalSegments) {
+TEST(ComputeOutlineTest, VerticalSegments) {
   // There is some ambiguity in how to handle vertical portions of the boundary
   // in the monotone chains. The approach we take is conceptually to perturb
   // vertical segments to tilt slightly to the upward-right.
@@ -105,12 +105,12 @@ TEST(OutlineProcessingTest, VerticalSegments) {
 
   std::vector<std::vector<Point>> loops = {{A, B, C, D}};
 
-  ShapeOutline outline = ComputeShapeOutline(loops);
+  ShapeOutline outline(loops);
 
   EXPECT_EQ(outline, ShapeOutline({{{A, D, C}, -1}, {{A, B, C}, 1}}));
 }
 
-TEST(OutlineProcessingTest, SumTwoDiamonds) {
+TEST(ComputeOutlineTest, SumTwoDiamonds) {
   //         D     H
   //        / \   / \
   //       /   \ /   \
@@ -125,7 +125,7 @@ TEST(OutlineProcessingTest, SumTwoDiamonds) {
 
   std::vector<std::vector<Point>> loops = {{A, B, C, D}, {E, F, G, H}};
 
-  ShapeOutline outline = ComputeShapeOutline(loops);
+  ShapeOutline outline(loops);
 
   Point X1{0, -2};  // Intersection of EF and BC
   Point X2{0, 2};   // Intersection of EH and CD
@@ -134,7 +134,7 @@ TEST(OutlineProcessingTest, SumTwoDiamonds) {
             ShapeOutline({{{A, B, X1, F, G}, 1}, {{A, D, X2, H, G}, -1}}));
 }
 
-TEST(OutlineProcessingTest, SubtractTwoDiamonds) {
+TEST(ComputeOutlineTest, SubtractTwoDiamonds) {
   //         D     F
   //        / \   / \
   //       /   \ /   \
@@ -150,7 +150,7 @@ TEST(OutlineProcessingTest, SubtractTwoDiamonds) {
 
   std::vector<std::vector<Point>> loops = {{A, B, C, D}, {E, F, G, H}};
 
-  ShapeOutline outline = ComputeShapeOutline(loops);
+  ShapeOutline outline(loops);
 
   Point X1{0, -2};
   Point X2{0, 2};
@@ -161,7 +161,7 @@ TEST(OutlineProcessingTest, SubtractTwoDiamonds) {
           {{{A, B, X1}, 1}, {{E, X1}, -1}, {{A, D, X2}, -1}, {{E, X2}, 1}}));
 }
 
-TEST(OutlineProcessingTest, PolygonWithHole) {
+TEST(ComputeOutlineTest, PolygonWithHole) {
   //         D-------------------C
   //         |                   |
   //         |      G-----H      |
@@ -179,7 +179,7 @@ TEST(OutlineProcessingTest, PolygonWithHole) {
 
   std::vector<std::vector<Point>> loops = {{J, A, B, C, D, E, F, G, H, I}};
 
-  ShapeOutline outline = ComputeShapeOutline(loops);
+  ShapeOutline outline(loops);
 
   EXPECT_EQ(outline, ShapeOutline({{{A, J, X1, D, C}, -1},
                                    {{A, B, C}, 1},
@@ -187,7 +187,7 @@ TEST(OutlineProcessingTest, PolygonWithHole) {
                                    {{X2, G, H}, 1}}));
 }
 
-TEST(OutlineProcessingTest, DisjointPolygons) {
+TEST(ComputeOutlineTest, DisjointPolygons) {
   //         C           F
   //        / \         / \
   //       /   \       /   \
@@ -197,11 +197,40 @@ TEST(OutlineProcessingTest, DisjointPolygons) {
 
   std::vector<std::vector<Point>> loops = {{A, B, C}, {D, E, F}};
 
-  ShapeOutline outline = ComputeShapeOutline(loops);
+  ShapeOutline outline(loops);
 
   EXPECT_EQ(outline,
             ShapeOutline(
                 {{{A, C, B}, -1}, {{A, B}, 1}, {{D, F, E}, -1}, {{D, E}, 1}}));
+}
+
+TEST(ComputeOutlineTest, Triangle) {
+  //         C
+  //        / \
+  //       /   \
+  //      A-----B
+  Point A{0, 0}, B{2, 0}, C{1, 1};
+
+  ShapeOutline expected({{{A, C, B}, -1}, {{A, B}, 1}});
+  EXPECT_EQ(ShapeOutline(Triangle{A, B, C}), expected);
+  EXPECT_EQ(ShapeOutline(Triangle{B, C, A}), expected);
+  EXPECT_EQ(ShapeOutline(Triangle{C, A, B}), expected);
+}
+
+TEST(ComputeOutlineTest, TriangleVerticalBase) {
+  //    B
+  //    |\
+  //    | \
+  //    |  C
+  //    | /
+  //    |/
+  //    A
+  Point A{0, 0}, B{0, 2}, C{1, 1};
+
+  ShapeOutline expected({{{A, B, C}, -1}, {{A, C}, 1}});
+  EXPECT_EQ(ShapeOutline(Triangle{A, C, B}), expected);
+  EXPECT_EQ(ShapeOutline(Triangle{C, B, A}), expected);
+  EXPECT_EQ(ShapeOutline(Triangle{B, A, C}), expected);
 }
 
 TEST(AdjacentChains, DisjointPolygons) {
@@ -333,7 +362,7 @@ TEST(IntersectionTests, RectAndTriangle) {
   //     A-------B
   Point A{0, 0}, B{6, 0}, C{3, 4};
   std::vector<std::vector<Point>> loops = {{A, B, C}};
-  ShapeOutline outline = ComputeShapeOutline(loops);
+  ShapeOutline outline(loops);
 
   // Completely inside the triangle.
   EXPECT_TRUE(Intersects(outline, FromTwoPoints({2, 1}, {4, 2})));
@@ -731,7 +760,7 @@ TEST(ComputeSubtractionTests, FullyDeletedShape) {
 
   ShapeOutline result = ComputeSubtraction(shape_a, shape_b);
 
-  EXPECT_EQ(result, ShapeOutline({}));
+  EXPECT_EQ(result, ShapeOutline());
 }
 
 TEST(ComputeSubtractionTests, SubtractFullyContainedHole) {

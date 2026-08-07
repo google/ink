@@ -36,6 +36,7 @@
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
 #include "ink/geometry/segment.h"
+#include "ink/geometry/triangle.h"
 #include "ink/geometry/vec.h"
 
 namespace ink::geometry_internal {
@@ -628,6 +629,44 @@ std::vector<MonotoneChain> SubdivideIntersectionChains(
   return raw_chains;
 }
 
+std::vector<MonotoneChain> ComputeChains(
+    const std::vector<std::vector<Point>>& loops) {
+  // This function conceptually implements a sweep-line approach: we sweep the
+  // plane from left-to-right, pausing at every endpoint and intersection point
+  // to compute the winding numbers along the sweep-line, and construct the
+  // boundary of the polygon.
+  //
+  // For simplicity, we do this in two passes, instead of doing everything in
+  // one. In a first pass, we compute all self-intersections, and subdivide
+  // boundary segments to so that all intersections occur at endpoints. In
+  // the second pass, we compute the winding numbers, identify the segments
+  // lying on the boundary, and construct the monotone chains.
+
+  std::vector<BoundarySegment> segments = GetSegments(loops);
+  absl::flat_hash_map<uint32_t, std::vector<Point>> intersections =
+      FindIntersections(segments);
+  SubdivideSegments(segments, intersections);
+  return ExtractChains(segments);
+}
+
+std::vector<MonotoneChain> ComputeChains(const Triangle& triangle) {
+  Point a = triangle.p0, b = triangle.p1, c = triangle.p2;
+  // Cycle the vertices of the triangle so that the first is the left-most.
+  if (IsLeftOrBelow(b, a) && IsLeftOrBelow(b, c)) {
+    a = triangle.p1;
+    b = triangle.p2;
+    c = triangle.p0;
+  } else if (IsLeftOrBelow(c, a)) {
+    a = triangle.p2;
+    b = triangle.p0;
+    c = triangle.p1;
+  }
+
+  if (IsLeftOrBelow(b, c)) return {{{a, b, c}, 1}, {{a, c}, -1}};
+
+  return {{{a, b}, 1}, {{a, c, b}, -1}};
+}
+
 }  // namespace
 
 MonotoneChain::MonotoneChain(std::vector<Point> vertices, int orientation)
@@ -669,24 +708,11 @@ ShapeOutline::ShapeOutline(std::vector<MonotoneChain> input_chains)
   std::tie(prev_index_, next_index_) = GetAdjacentChains(chains_);
 }
 
-ShapeOutline ComputeShapeOutline(const std::vector<std::vector<Point>>& loops) {
-  // This function conceptually implements a sweep-line approach: we sweep the
-  // plane from left-to-right, pausing at every endpoint and intersection point
-  // to compute the winding numbers along the sweep-line, and construct the
-  // boundary of the polygon.
-  //
-  // For simplicity, we do this in two passes, instead of doing everything in
-  // one. In a first pass, we compute all self-intersections, and subdivide
-  // boundary segments to so that all intersections occur at endpoints. In
-  // the second pass, we compute the winding numbers, identify the segments
-  // lying on the boundary, and construct the monotone chains.
+ShapeOutline::ShapeOutline(const std::vector<std::vector<Point>>& loops)
+    : ShapeOutline(ComputeChains(loops)) {}
 
-  std::vector<BoundarySegment> segments = GetSegments(loops);
-  absl::flat_hash_map<uint32_t, std::vector<Point>> intersections =
-      FindIntersections(segments);
-  SubdivideSegments(segments, intersections);
-  return ShapeOutline(ExtractChains(segments));
-}
+ShapeOutline::ShapeOutline(const Triangle& triangle)
+    : ShapeOutline(ComputeChains(triangle)) {}
 
 bool Intersects(const ShapeOutline& shape, const Point& p) {
   // This implements a ray-casting approach: we cast a ray from p in the
@@ -920,7 +946,7 @@ ComputeTriangulation(const ShapeOutline& shape) {
 
 ShapeOutline ComputeSubtraction(const ShapeOutline& shape_a,
                                 const ShapeOutline& shape_b) {
-  if (shape_a.Chains().empty()) return ShapeOutline({});
+  if (shape_a.Chains().empty()) return ShapeOutline();
   if (shape_b.Chains().empty()) return shape_a;
 
   // To compute the subtraction of shape_b from shape_a, we first compute all

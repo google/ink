@@ -424,6 +424,7 @@ cc_library(
         "//ink/geometry:point",
         "//ink/geometry:rect",
         "//ink/geometry:segment",
+        "//ink/geometry:triangle",
         "//ink/geometry:vec",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",

@@ -33,7 +33,6 @@
 #include "ink/geometry/internal/outline_processing.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
-#include "ink/geometry/mesh_index_types.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
@@ -46,7 +45,6 @@
 namespace ink::strokes_internal {
 namespace {
 
-using ::ink::geometry_internal::ComputeShapeOutline;
 using ::ink::geometry_internal::ComputeSubtraction;
 using ::ink::geometry_internal::ComputeTriangulation;
 using ::ink::geometry_internal::Intersects;
@@ -61,36 +59,11 @@ using EdgeVertexMap =
 
 float DistanceSquared(Point a, Point b) { return (a - b).MagnitudeSquared(); }
 
-bool IsLeftOrBelow(Point a, Point b) {
-  if (a.x != b.x) return a.x < b.x;
-  return a.y < b.y;
-}
-
-// Returns a monotonic representation of the given triangle.
-ShapeOutline GetTriangleShape(const Triangle& tri) {
-  Point a = tri.p0, b = tri.p1, c = tri.p2;
-  if (IsLeftOrBelow(a, b) && IsLeftOrBelow(a, c)) {
-    if (IsLeftOrBelow(b, c)) {
-      return ShapeOutline({{{a, b, c}, 1}, {{a, c}, -1}});
-    }
-    return ShapeOutline({{{a, b}, 1}, {{a, c, b}, -1}});
-  }
-  if (IsLeftOrBelow(b, a) && IsLeftOrBelow(b, c)) {
-    if (IsLeftOrBelow(c, a)) {
-      return ShapeOutline({{{b, c, a}, 1}, {{b, a}, -1}});
-    }
-    return ShapeOutline({{{b, c}, 1}, {{b, a, c}, -1}});
-  }
-  if (IsLeftOrBelow(a, b)) return ShapeOutline({{{c, a, b}, 1}, {{c, b}, -1}});
-  return ShapeOutline({{{c, a}, 1}, {{c, b, a}, -1}});
-}
-
 // Computes the geometric boolean difference `tri` - `shape_b` as a
 // triangulated polygon.
 std::pair<std::vector<Point>, std::vector<std::array<uint32_t, 3>>>
 SubtractTriangle(const Triangle& tri, const ShapeOutline& shape_b) {
-  ShapeOutline shape_a = GetTriangleShape(tri);
-  ShapeOutline remaining = ComputeSubtraction(shape_a, shape_b);
+  ShapeOutline remaining = ComputeSubtraction(ShapeOutline(tri), shape_b);
   return ComputeTriangulation(remaining);
 }
 
@@ -499,7 +472,7 @@ ShapeOutline GetShapeB(const PartitionedMesh& mesh,
       loops.push_back(std::move(loop));
     }
   }
-  return ComputeShapeOutline(loops);
+  return ShapeOutline(loops);
 }
 }  // namespace
 

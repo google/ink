@@ -21,7 +21,7 @@
 #include "absl/types/span.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
-#include "ink/geometry/vec.h"
+#include "ink/geometry/triangle.h"
 
 namespace ink::geometry_internal {
 
@@ -83,7 +83,17 @@ class MonotoneChain {
 
 class ShapeOutline {
  public:
+  ShapeOutline() = default;
+
   explicit ShapeOutline(std::vector<MonotoneChain> input_chains);
+
+  // Computes the `ShapeOutline` (monotone boundary chain representation) for
+  // the polygon defined by the given closed boundary `loops`.
+  explicit ShapeOutline(const std::vector<std::vector<Point>>& loops);
+
+  // Computes the `ShapeOutline` for the given (counter-clockwise oriented)
+  // triangle.
+  explicit ShapeOutline(const Triangle& triangle);
 
   ShapeOutline(const ShapeOutline&) = default;
   ShapeOutline(ShapeOutline&&) = default;
@@ -115,9 +125,6 @@ class ShapeOutline {
   std::vector<uint32_t> prev_index_;
   std::vector<uint32_t> next_index_;
 };
-
-// Computes the monotone boundary chains.
-ShapeOutline ComputeShapeOutline(const std::vector<std::vector<Point>>& loops);
 
 // Intersection of a shape with a point.
 bool Intersects(const ShapeOutline& shape, const Point& p);
