@@ -23,9 +23,11 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/geometry/mesh.h"
 #import "ink/rendering/metal/INKTextureBitmapStore.h"
+#include "ink/rendering/metal/ink_metal_shaders_embedded.h"
 
 __attribute__((objc_subclassing_restricted))
 @interface INKMeshBuffers : NSObject
@@ -142,19 +144,11 @@ absl::StatusOr<std::unique_ptr<void, std::function<void(void*)>>> CreateINKMetal
     return absl::InvalidArgumentError("Device cannot be nil");
   }
 
-  Class internal_class = NSClassFromString(@"INKMetalRendererState");
-  if (!internal_class) {
-    return absl::InternalError("Failed to find INKMetalRendererState class");
-  }
-
-  NSBundle* bundle = [NSBundle bundleForClass:internal_class];
-  NSURL* library_url = [bundle URLForResource:@"INKMetalShaders" withExtension:@"metallib"];
-  if (!library_url) {
-    return absl::InternalError("Failed to find Metal shader library");
-  }
-
+  dispatch_data_t shader_data = dispatch_data_create(kInkMetalShaders, std::size(kInkMetalShaders),
+                                                     /*queue=*/nullptr,
+                                                     /*destructor=*/nullptr);
   NSError* error = nil;
-  id<MTLLibrary> shader_library = [device newLibraryWithURL:library_url error:&error];
+  id<MTLLibrary> shader_library = [device newLibraryWithData:shader_data error:&error];
   if (!shader_library) {
     return absl::InternalError(absl::StrCat("Failed to create Metal shader library",
                                             error ? ": " : "",

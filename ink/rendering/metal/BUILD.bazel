@@ -14,7 +14,7 @@
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_apple//apple:resources.bzl", "apple_metal_library")
-load("@rules_cc//cc:defs.bzl", "cc_library", "objc_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "objc_library")
 
 package(
     default_visibility = ["//ink:__subpackages__"],
@@ -52,6 +52,27 @@ apple_metal_library(
     visibility = ["//visibility:private"],
 )
 
+cc_binary(
+    name = "input_to_bytes",
+    srcs = ["input_to_bytes.cc"],
+)
+
+genrule(
+    name = "ink_metal_shaders_bytes",
+    srcs = [":INKMetalShaders"],
+    outs = ["ink_metal_shaders.bytes"],
+    cmd = "$(location :input_to_bytes) < $(SRCS) > $@",
+    target_compatible_with = [":ink_metal_platforms"],
+    tools = [":input_to_bytes"],
+)
+
+cc_library(
+    name = "ink_metal_shaders_embedded",
+    hdrs = ["ink_metal_shaders_embedded.h"],
+    target_compatible_with = [":ink_metal_platforms"],
+    textual_hdrs = [":ink_metal_shaders.bytes"],
+)
+
 objc_library(
     name = "texture_bitmap_store",
     hdrs = ["INKTextureBitmapStore.h"],
@@ -68,7 +89,6 @@ objc_library(
     name = "metal_renderer_objc_helper",
     srcs = ["metal_renderer_objc_helper.mm"],
     hdrs = ["metal_renderer_objc_helper.h"],
-    data = [":INKMetalShaders"],
     sdk_frameworks = [
         "CoreFoundation",
         "Foundation",
@@ -78,12 +98,14 @@ objc_library(
     target_compatible_with = [":ink_metal_platforms"],
     visibility = ["//visibility:private"],
     deps = [
+        ":ink_metal_shaders_embedded",
         ":texture_bitmap_store",
         "//ink/brush:brush_paint",
         "//ink/geometry:mesh",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
