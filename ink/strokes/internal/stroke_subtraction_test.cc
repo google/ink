@@ -289,11 +289,14 @@ TEST(StrokeSubtractionTest, AttributeInterpolation) {
   //           |                   |
   //           E-------------------F
   Point A{0, 0}, B{10, 0}, C{10, 10}, D{0, 10};
+  Point X1{5, 0}, X2{5, 10};
 
   // Set up mesh_a
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
-       {AttributeType::kFloat1Unpacked, AttributeId::kCustom0}},
+       {AttributeType::kFloat1Unpacked, AttributeId::kCustom0},
+       {AttributeType::kFloat1Unpacked, AttributeId::kSideLabel},
+       {AttributeType::kFloat1Unpacked, AttributeId::kForwardLabel}},
       IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -304,9 +307,14 @@ TEST(StrokeSubtractionTest, AttributeInterpolation) {
 
     // Non-linear values for the vertex attribute
     mesh_a.SetFloatVertexAttribute(i, 1, {verts[i].y * verts[i].y});
+
+    // We populate the side and forward labels to non-zero values to verify they
+    // are NOT interpolated.
+    mesh_a.SetFloatVertexAttribute(i, 2, {5.0f});
+    mesh_a.SetFloatVertexAttribute(i, 3, {5.0f});
   }
-  mesh_a.AppendTriangleIndices({0, 1, 2});
-  mesh_a.AppendTriangleIndices({0, 2, 3});
+  mesh_a.AppendTriangleIndices({2, 0, 1});
+  mesh_a.AppendTriangleIndices({2, 3, 0});
 
   absl::StatusOr<PartitionedMesh> mesh_a_pm =
       PartitionedMesh::FromMutableMesh(mesh_a);
@@ -321,7 +329,7 @@ TEST(StrokeSubtractionTest, AttributeInterpolation) {
   mesh_b.AppendTriangleIndices({0, 1, 2});
   mesh_b.AppendTriangleIndices({0, 2, 3});
 
-  constexpr uint32_t mesh_b_outline[] = {0, 1, 2, 3};
+  constexpr uint32_t mesh_b_outline[] = {0, 3, 2, 1};
   absl::StatusOr<PartitionedMesh> mesh_b_pm =
       PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
   ASSERT_THAT(mesh_b_pm, IsOk());
@@ -332,8 +340,26 @@ TEST(StrokeSubtractionTest, AttributeInterpolation) {
                AffineTransform::Identity(), 0.1f);
   ASSERT_THAT(result, IsOk());
 
-  EXPECT_EQ(NumTriangles(*result), 2);
-  EXPECT_EQ(NumVertices(*result), 4);
+  EXPECT_EQ(NumTriangles(*result), 3);
+  EXPECT_EQ(NumVertices(*result), 5);
+
+  const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
+
+  // Verify that the anti-aliasing label attributes (kSideLabel, kForwardLabel)
+  // are NOT interpolated at new/split vertices (remaining at default 0.0f).
+  std::optional<uint32_t> index_X1 = FindVertexIndex(result_mesh, X1);
+  ASSERT_TRUE(index_X1.has_value());
+  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X1, 2).Values(),
+              ElementsAre(FloatEq(0.0f)));
+  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X1, 3).Values(),
+              ElementsAre(FloatEq(0.0f)));
+
+  std::optional<uint32_t> index_X2 = FindVertexIndex(result_mesh, X2);
+  ASSERT_TRUE(index_X2.has_value());
+  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X2, 2).Values(),
+              ElementsAre(FloatEq(0.0f)));
+  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X2, 3).Values(),
+              ElementsAre(FloatEq(0.0f)));
 
   // Check for equality of interpolated attribute value at a few points
   // within the subtracted mesh.

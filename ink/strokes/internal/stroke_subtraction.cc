@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <utility>
@@ -59,12 +60,21 @@ using EdgeVertexMap =
 
 float DistanceSquared(Point a, Point b) { return (a - b).MagnitudeSquared(); }
 
+// A representation of a triangulation, consisting of a list of `vertices` and
+// `triangles` represented by triplets of indices of vertices.
+struct Triangulation {
+  std::vector<Point> vertices;
+  std::vector<std::array<uint32_t, 3>> triangles;
+};
+
 // Computes the geometric boolean difference `tri` - `shape_b` as a
 // triangulated polygon.
-std::pair<std::vector<Point>, std::vector<std::array<uint32_t, 3>>>
-SubtractTriangle(const Triangle& tri, const ShapeOutline& shape_b) {
+Triangulation SubtractTriangle(const Triangle& tri,
+                               const ShapeOutline& shape_b) {
   ShapeOutline remaining = ComputeSubtraction(ShapeOutline(tri), shape_b);
-  return ComputeTriangulation(remaining);
+  auto [vertices, triangles] = ComputeTriangulation(remaining);
+  return Triangulation{.vertices = std::move(vertices),
+                       .triangles = std::move(triangles)};
 }
 
 // Returns the homogenous transform from world space to the barycentric coords
@@ -133,6 +143,54 @@ SmallArray<float, 4> LinearSpaceToHslShift(SmallArray<float, 4> val) {
 }
 // LINT.ThenChange(../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hsl_and_opacity_shift)
 
+// Helper function to extract and linearize triangle vertex attributes.
+TriangleAttributes GetTriangleAttributes(
+    const MutableMesh& mesh, const std::array<uint32_t, 3>& indices) {
+  absl::InlinedVector<std::array<SmallArray<float, 4>, 3>, 4> attributes(
+      mesh.Format().Attributes().size());
+  for (uint32_t i = 0; i < attributes.size(); ++i) {
+    MeshFormat::AttributeId id = mesh.Format().Attributes()[i].id;
+
+    // Since the position is already stored elsewhere, and derivate attributes
+    // are presently hardcoded, skip loading these.
+    // NOMUTANTS
+    if (id == MeshFormat::AttributeId::kPosition ||
+        id == MeshFormat::AttributeId::kSideDerivative ||
+        id == MeshFormat::AttributeId::kForwardDerivative) {
+      continue;
+    }
+
+    // As anti-aliasing is not yet supported, these attributes should not be
+    // loaded and interpolated.
+    if (id == MeshFormat::AttributeId::kSideLabel ||
+        id == MeshFormat::AttributeId::kForwardLabel) {
+      continue;
+    }
+    if (id == MeshFormat::AttributeId::kColorShiftHsl) {
+      attributes[i] = {
+          HslShiftToLinearSpace(mesh.FloatVertexAttribute(indices[0], i)),
+          HslShiftToLinearSpace(mesh.FloatVertexAttribute(indices[1], i)),
+          HslShiftToLinearSpace(mesh.FloatVertexAttribute(indices[2], i))};
+    } else {
+      attributes[i] = {mesh.FloatVertexAttribute(indices[0], i),
+                       mesh.FloatVertexAttribute(indices[1], i),
+                       mesh.FloatVertexAttribute(indices[2], i)};
+    }
+  }
+  return attributes;
+}
+
+// Properties of an input mesh triangle, including the `indices` of the points
+// in the mesh, the `transform` from the mesh's coordinate space to the
+// triangle's barycentric coordinates, the geometric `heights` (altitudes) of
+// the triangle, and mesh vertex attributes `attributes` of its vertices.
+struct TriangleData {
+  std::array<uint32_t, 3> indices;
+  std::array<double, 9> transform;
+  std::array<double, 3> heights;
+  TriangleAttributes attributes;
+};
+
 // Copies the vertex (and its attributes) from `mesh` with index `vertex_index`
 // and appends it to `mutable_mesh`.
 void CopyVertex(const Mesh& mesh, uint32_t vertex_index,
@@ -149,15 +207,15 @@ void CopyVertex(const Mesh& mesh, uint32_t vertex_index,
 }
 
 // Adds a vertex at `position` to `mutable_mesh`, interpolating the given
-// `triangle_attrs` using the given barycentric `weights`.
+// `triangle` attributes using the given barycentric `weights`.
 void AddVertex(MutableMesh& mutable_mesh, Point position,
-               const TriangleAttributes& triangle_attrs,
+               const TriangleData& triangle,
                const std::array<double, 3>& weights) {
   uint32_t new_index = mutable_mesh.VertexCount();
   mutable_mesh.AppendVertex(position);
   const MeshFormat& format = mutable_mesh.Format();
-  ABSL_DCHECK_EQ(triangle_attrs.size(), format.Attributes().size());
-  for (uint32_t attr = 0; attr < triangle_attrs.size(); ++attr) {
+  ABSL_DCHECK_EQ(triangle.attributes.size(), format.Attributes().size());
+  for (uint32_t attr = 0; attr < triangle.attributes.size(); ++attr) {
     MeshFormat::AttributeId id = format.Attributes()[attr].id;
     // Set derivatives to 1.0 to avoid divisions-by-zero in the shader.
     if (id == MeshFormat::AttributeId::kSideDerivative ||
@@ -166,7 +224,7 @@ void AddVertex(MutableMesh& mutable_mesh, Point position,
       continue;
     }
 
-    const auto& vals = triangle_attrs[attr];
+    const std::array<SmallArray<float, 4>, 3>& vals = triangle.attributes[attr];
     if (vals[0].Size() == 0) continue;
     uint8_t count = vals[0].Size();
     SmallArray<float, 4> interp_val(count);
@@ -184,16 +242,17 @@ void AddVertex(MutableMesh& mutable_mesh, Point position,
   }
 }
 
-// Finds an existing vertex or adds one, for a point along a triangle edge.
+// Finds an existing vertex or adds one for a point `p` lying along the edge
+// of `triangle` opposite to the vertex `i` in the original mesh, and returns
+// its index.
 uint32_t GetOrAddEdgeVertex(MutableMesh& mutable_mesh, Point p, int i,
-                            const std::array<uint32_t, 3>& indices,
-                            const std::array<double, 3>& weights,
-                            const TriangleAttributes& triangle_attrs,
-                            float epsilon, EdgeVertexMap& edge_vertex_map) {
+                            const TriangleData& triangle,
+                            const std::array<double, 3>& weights, float epsilon,
+                            EdgeVertexMap& edge_vertex_map) {
   int j = (i == 2) ? 0 : i + 1;
   int k = (i == 0) ? 2 : i - 1;
-  uint32_t v1 = indices[j];
-  uint32_t v2 = indices[k];
+  uint32_t v1 = triangle.indices[j];
+  uint32_t v2 = triangle.indices[k];
 
   if (v1 > v2) std::swap(v1, v2);
 
@@ -203,87 +262,35 @@ uint32_t GetOrAddEdgeVertex(MutableMesh& mutable_mesh, Point p, int i,
       return existing_index;
   }
   uint32_t new_index = mutable_mesh.VertexCount();
-  AddVertex(mutable_mesh, p, triangle_attrs, weights);
+  AddVertex(mutable_mesh, p, triangle, weights);
   edge_points.push_back({p, new_index});
   return new_index;
 }
 
 // Finds an existing vertex or adds one at the given point in the mutable mesh.
 uint32_t GetOrAddVertex(MutableMesh& mutable_mesh, Point p,
-                        const std::array<uint32_t, 3>& indices,
-                        const std::array<double, 9>& transform,
-                        const std::array<double, 3>& heights,
-                        const TriangleAttributes& triangle_attrs, float epsilon,
+                        const TriangleData& triangle, float epsilon,
                         EdgeVertexMap& edge_vertex_map) {
-  std::array<double, 3> weights = ComputeBarycentricCoordinates(p, transform);
-  std::array<bool, 3> near_zero = {weights[0] * heights[0] < epsilon,
-                                   weights[1] * heights[1] < epsilon,
-                                   weights[2] * heights[2] < epsilon};
+  std::array<double, 3> weights =
+      ComputeBarycentricCoordinates(p, triangle.transform);
+  std::array<bool, 3> near_zero = {weights[0] * triangle.heights[0] < epsilon,
+                                   weights[1] * triangle.heights[1] < epsilon,
+                                   weights[2] * triangle.heights[2] < epsilon};
 
-  if (near_zero[1] && near_zero[2]) return indices[0];
-  if (near_zero[2] && near_zero[0]) return indices[1];
-  if (near_zero[0] && near_zero[1]) return indices[2];
+  if (near_zero[1] && near_zero[2]) return triangle.indices[0];
+  if (near_zero[2] && near_zero[0]) return triangle.indices[1];
+  if (near_zero[0] && near_zero[1]) return triangle.indices[2];
 
   for (int i = 0; i < 3; ++i) {
     if (near_zero[i]) {
-      return GetOrAddEdgeVertex(mutable_mesh, p, i, indices, weights,
-                                triangle_attrs, epsilon, edge_vertex_map);
+      return GetOrAddEdgeVertex(mutable_mesh, p, i, triangle, weights, epsilon,
+                                edge_vertex_map);
     }
   }
 
   uint32_t new_index = mutable_mesh.VertexCount();
-  AddVertex(mutable_mesh, p, triangle_attrs, weights);
+  AddVertex(mutable_mesh, p, triangle, weights);
   return new_index;
-}
-
-// Adds the `pts` from the partially erased triangle `tri` to `mutable_mesh` and
-// returns their resulting indices. These vertices may existing vertices in the
-// mutable_mesh, either from vertices in the original mesh or from intersection
-// vertices on the boundaries of triangle edges.
-std::vector<uint32_t> AddVertices(MutableMesh& mutable_mesh,
-                                  const std::array<uint32_t, 3>& indices,
-                                  const Triangle& tri,
-                                  const std::vector<Point>& pts, float epsilon,
-                                  EdgeVertexMap& edge_vertex_map) {
-  std::array<double, 9> transform = ComputeBarycentricTransform(tri);
-  std::array<double, 3> heights = ComputeHeights(tri, transform[8]);
-
-  const MeshFormat& format = mutable_mesh.Format();
-  TriangleAttributes triangle_attrs(format.Attributes().size());
-  for (uint32_t attr = 0; attr < format.Attributes().size(); ++attr) {
-    MeshFormat::AttributeId id = format.Attributes()[attr].id;
-    if (id == MeshFormat::AttributeId::kPosition ||
-        id == MeshFormat::AttributeId::kSideLabel ||
-        id == MeshFormat::AttributeId::kSideDerivative ||
-        id == MeshFormat::AttributeId::kForwardLabel ||
-        id == MeshFormat::AttributeId::kForwardDerivative) {
-      continue;
-    }
-
-    if (id == MeshFormat::AttributeId::kColorShiftHsl) {
-      for (int i = 0; i < 3; ++i) {
-        triangle_attrs[attr][i] = HslShiftToLinearSpace(
-            mutable_mesh.FloatVertexAttribute(indices[i], attr));
-      }
-      continue;
-    }
-
-    triangle_attrs[attr] = {
-        mutable_mesh.FloatVertexAttribute(indices[0], attr),
-        mutable_mesh.FloatVertexAttribute(indices[1], attr),
-        mutable_mesh.FloatVertexAttribute(indices[2], attr)};
-  }
-
-  std::vector<uint32_t> pt_indices;
-  pt_indices.reserve(pts.size());
-
-  for (Point p : pts) {
-    pt_indices.push_back(GetOrAddVertex(mutable_mesh, p, indices, transform,
-                                        heights, triangle_attrs, epsilon,
-                                        edge_vertex_map));
-  }
-
-  return pt_indices;
 }
 
 // A helper function to add the oriented boundary of `triangle` (consisting of
@@ -305,26 +312,26 @@ void UpdateBoundary(const std::array<uint32_t, 3>& triangle,
   }
 }
 
-// Adds the `subtracted_triangulation` (the fragments of `tri` that remain after
-// subtraction) to the `mutable_mesh`. Uses `edge_vertex_map` to de-duplicate
-// any vertices newly created along `tri`'s edges. Finally, updates `boundary`
-// with the edges of the new fragments.
-void AddSubtractedTriangle(
-    const std::array<uint32_t, 3>& indices, const Triangle& tri,
-    const std::pair<std::vector<Point>, std::vector<std::array<uint32_t, 3>>>&
-        subtracted_triangulation,
-    float epsilon, EdgeVertexMap& edge_vertex_map, MutableMesh& mutable_mesh,
+// Adds the remaining `fragments` of `triangle` after subtraction to the
+// difference. Updates `mutable_mesh` with the new vertices and triangles (using
+// `epsilon` for vertex snapping), registers newly created edge vertices in
+// `edge_vertex_map`, and updates `boundary` with the new fragment edges.
+void AddTriangleFragments(
+    const TriangleData& triangle, const Triangulation& fragments, float epsilon,
+    EdgeVertexMap& edge_vertex_map, MutableMesh& mutable_mesh,
     std::vector<absl::InlinedVector<uint32_t, 4>>& boundary) {
-  const auto& [pts, tris] = subtracted_triangulation;
+  // Add all the vertices to `mutable_mesh` and get their indices.
+  std::vector<uint32_t> mapped_indices(fragments.vertices.size());
+  for (size_t i = 0; i < fragments.vertices.size(); ++i) {
+    mapped_indices[i] = GetOrAddVertex(mutable_mesh, fragments.vertices[i],
+                                       triangle, epsilon, edge_vertex_map);
+  }
 
-  if (pts.empty() || tris.empty()) return;
-
-  std::vector<uint32_t> mapped_indices =
-      AddVertices(mutable_mesh, indices, tri, pts, epsilon, edge_vertex_map);
   // Resize the boundary adjacency map to accommodate newly added vertices.
   boundary.resize(mutable_mesh.VertexCount());
 
-  for (const auto& t : tris) {
+  // Add all the triangles.
+  for (const std::array<uint32_t, 3>& t : fragments.triangles) {
     std::array<uint32_t, 3> idxs = {mapped_indices[t[0]], mapped_indices[t[1]],
                                     mapped_indices[t[2]]};
     if (idxs[0] == idxs[1] || idxs[1] == idxs[2] || idxs[2] == idxs[0])
@@ -419,8 +426,17 @@ std::pair<MutableMesh, std::vector<std::vector<uint32_t>>> SubtractMeshes(
       Triangle tri = mesh.GetTriangle(tri_idx);
 
       if (Intersects(shape_b, Envelope(tri).AsRect().value())) {
-        AddSubtractedTriangle(indices, tri, SubtractTriangle(tri, shape_b),
-                              epsilon, edge_vertex_map, mutable_mesh, boundary);
+        Triangulation fragments = SubtractTriangle(tri, shape_b);
+        if (fragments.triangles.empty()) continue;
+
+        std::array<double, 9> transform = ComputeBarycentricTransform(tri);
+        const TriangleData triangle = {
+            .indices = indices,
+            .transform = transform,
+            .heights = ComputeHeights(tri, transform[8]),
+            .attributes = GetTriangleAttributes(mutable_mesh, indices)};
+        AddTriangleFragments(triangle, fragments, epsilon, edge_vertex_map,
+                             mutable_mesh, boundary);
       } else {
         UpdateBoundary(indices, boundary);
         mutable_mesh.AppendTriangleIndices(indices);
