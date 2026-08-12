@@ -287,9 +287,9 @@ TEST(BrushBehaviorTest, StringifyToolTypeFilterNode) {
 TEST(BrushBehaviorTest, StringifyDampingNode) {
   EXPECT_EQ(absl::StrCat(BrushBehavior::DampingNode{
                 .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-                .damping_gap = 0.25f,
+                .strength = 0.25f,
             }),
-            "DampingNode{damping_source=kTimeInSeconds, damping_gap=0.25}");
+            "DampingNode{damping_source=kTimeInSeconds, strength=0.25}");
 }
 
 TEST(BrushBehaviorTest, StringifyResponseNode) {
@@ -497,22 +497,22 @@ TEST(BrushBehaviorTest, ToolTypeFilterNodeEqualAndNotEqual) {
 TEST(BrushBehaviorTest, DampingNodeEqualAndNotEqual) {
   BrushBehavior::DampingNode node = {
       .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-      .damping_gap = 0.5,
+      .strength = 0.5,
   };
   EXPECT_EQ((BrushBehavior::DampingNode{
                 .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-                .damping_gap = 0.5,
+                .strength = 0.5,
             }),
             node);
   EXPECT_NE((BrushBehavior::DampingNode{
                 .damping_source = static_cast<BrushBehavior::ProgressDomain>(
                     123),  // different
-                .damping_gap = 0.5,
+                .strength = 0.5,
             }),
             node);
   EXPECT_NE((BrushBehavior::DampingNode{
                 .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-                .damping_gap = 0.75,  // different
+                .strength = 0.75,  // different
             }),
             node);
 }
@@ -812,14 +812,14 @@ TEST(BrushBehaviorTest, ValidateDampingNode) {
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
           .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-          .damping_gap = 0.25,
+          .strength = 0.25,
       }),
       IsOk());
 
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
           .damping_source = static_cast<BrushBehavior::ProgressDomain>(123),
-          .damping_gap = 0.25,
+          .strength = 0.25,
       }),
       StatusIs(absl::StatusCode::kInvalidArgument,
                HasSubstr("non-enumerator value 123")));
@@ -827,18 +827,18 @@ TEST(BrushBehaviorTest, ValidateDampingNode) {
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
           .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-          .damping_gap = -1,
+          .strength = -1,
       }),
       StatusIs(absl::StatusCode::kInvalidArgument,
-               HasSubstr("damping_gap` must be finite and non-negative")));
+               HasSubstr("strength` must be finite and non-negative")));
 
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
           .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-          .damping_gap = kInfinity,
+          .strength = kInfinity,
       }),
       StatusIs(absl::StatusCode::kInvalidArgument,
-               HasSubstr("damping_gap` must be finite and non-negative")));
+               HasSubstr("strength` must be finite and non-negative")));
 }
 
 TEST(BrushBehaviorTest, ValidateResponseNode) {
@@ -1037,7 +1037,7 @@ TEST(BrushBehaviorTest, ValidateBrushBehavior) {
           BrushBehavior::ToolTypeFilterNode{{.stylus = true}},
           BrushBehavior::DampingNode{
               .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-              .damping_gap = 0.25,
+              .strength = 0.25,
           },
           BrushBehavior::ConstantNode{0.75},
           BrushBehavior::BinaryOpNode{BrushBehavior::BinaryOp::kProduct},
@@ -1088,7 +1088,7 @@ TEST(BrushBehaviorTest, ValidateBrushBehaviorTopLevel) {
           BrushBehavior::ToolTypeFilterNode{{.stylus = true}},
           BrushBehavior::DampingNode{
               .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-              .damping_gap = 0.25,
+              .strength = 0.25,
           },
           BrushBehavior::ConstantNode{0.75},
           BrushBehavior::BinaryOpNode{BrushBehavior::BinaryOp::kProduct},

@@ -105,7 +105,7 @@ int64_t ToolTypeFilterNodeNative_create(
 }
 
 int64_t DampingNodeNative_create(
-    void* jni_env_pass_through, int damping_source, float damping_gap,
+    void* jni_env_pass_through, int damping_source, float strength,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str)) {
   return ValidateAndHoistNode(
@@ -113,7 +113,7 @@ int64_t DampingNodeNative_create(
       BrushBehavior::DampingNode{
           .damping_source =
               static_cast<BrushBehavior::ProgressDomain>(damping_source),
-          .damping_gap = damping_gap,
+          .strength = strength,
       },
       throw_from_status_callback);
 }
@@ -294,10 +294,10 @@ int DampingNodeNative_getDampingSourceInt(int64_t native_ptr) {
           .damping_source);
 }
 
-float DampingNodeNative_getDampingGap(int64_t native_ptr) {
+float DampingNodeNative_getStrength(int64_t native_ptr) {
   return std::get<BrushBehavior::DampingNode>(
              CastToBrushBehaviorNode(native_ptr))
-      .damping_gap;
+      .strength;
 }
 
 // ResponseNode accessors:

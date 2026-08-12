@@ -729,14 +729,14 @@ TEST(BrushTest, EncodeBrushBehaviorBinaryOpNodeWithInvalidOperation) {
 TEST(BrushTest, EncodeBrushBehaviorDampingNodeWithInvalidProgressDomain) {
   BrushBehavior::DampingNode node{
       .damping_source = static_cast<BrushBehavior::ProgressDomain>(123),
-      .damping_gap = 1.0f,
+      .strength = 1.0f,
   };
   proto::BrushBehavior::Node node_proto;
   EncodeBrushBehaviorNode(node, node_proto);
   EXPECT_TRUE(node_proto.has_damping_node());
   EXPECT_EQ(node_proto.damping_node().damping_source(),
             proto::BrushBehavior::PROGRESS_DOMAIN_UNSPECIFIED);
-  EXPECT_EQ(node_proto.damping_node().damping_gap(), 1.0f);
+  EXPECT_EQ(node_proto.damping_node().strength(), 1.0f);
 }
 
 TEST(BrushTest, EncodeBrushBehaviorWithEmptyDeveloperComment) {

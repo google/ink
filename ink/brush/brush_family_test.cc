@@ -79,7 +79,7 @@ BrushTip CreatePressureTestTip() {
           },
           BrushBehavior::DampingNode{
               .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-              .damping_gap = 0.1,
+              .strength = 0.1,
           },
           BrushBehavior::TargetNode{
               .target = BrushBehavior::Target::kWidthMultiplier,
@@ -682,7 +682,7 @@ TEST(BrushFamilyTest, CreateWithInvalidBehaviorStepsResponseCurve) {
               StatusIs(kInvalidArgument, HasSubstr("Steps")));
 }
 
-TEST(BrushFamilyTest, CreateWithInvalidBehaviorDampingGap) {
+TEST(BrushFamilyTest, CreateWithInvalidBehaviorDampingStrength) {
   BrushTip brush_tip = BrushTip{
       .behaviors = {BrushBehavior{{
           BrushBehavior::SourceNode{
@@ -701,13 +701,13 @@ TEST(BrushFamilyTest, CreateWithInvalidBehaviorDampingGap) {
   BrushBehavior::DampingNode* damping_node =
       &std::get<BrushBehavior::DampingNode>(brush_tip.behaviors[0].nodes[1]);
 
-  damping_node->damping_gap = -0.1;
+  damping_node->strength = -0.1;
   EXPECT_THAT(BrushFamily::Create(brush_tip, BrushPaint{}),
-              StatusIs(kInvalidArgument, HasSubstr("damping_gap")));
+              StatusIs(kInvalidArgument, HasSubstr("strength")));
 
-  damping_node->damping_gap = kInfinity;
+  damping_node->strength = kInfinity;
   EXPECT_THAT(BrushFamily::Create(brush_tip, BrushPaint{}),
-              StatusIs(kInvalidArgument, HasSubstr("damping_gap")));
+              StatusIs(kInvalidArgument, HasSubstr("strength")));
 }
 
 TEST(BrushFamilyTest, CreateWithInvalidEnabledToolTypes) {

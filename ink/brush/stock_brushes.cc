@@ -119,7 +119,7 @@ BrushFamily PressurePen(const PressurePenVersion& version) {
                     },
                     DampingNode{
                         .damping_source = ProgressDomain::kTimeInSeconds,
-                        .damping_gap = .025f,
+                        .strength = .025f,
                     },
                     TargetNode{
                         .target = Target::kSizeMultiplier,
@@ -137,7 +137,7 @@ BrushFamily PressurePen(const PressurePenVersion& version) {
                     },
                     DampingNode{
                         .damping_source = ProgressDomain::kTimeInSeconds,
-                        .damping_gap = .025f,
+                        .strength = .025f,
                     },
                     TargetNode{
                         .target = Target::kSizeMultiplier,
@@ -155,7 +155,7 @@ BrushFamily PressurePen(const PressurePenVersion& version) {
                     },
                     DampingNode{
                         .damping_source = ProgressDomain::kTimeInSeconds,
-                        .damping_gap = .03f,
+                        .strength = .03f,
                     },
                     ToolTypeFilterNode{
                         .enabled_tool_types = {.stylus = true},
@@ -205,7 +205,7 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& self_overlap,
                     },
                     DampingNode{
                         .damping_source = ProgressDomain::kTimeInSeconds,
-                        .damping_gap = 0.015f,
+                        .strength = 0.015f,
                     },
                     TargetNode{
                         .target = Target::kOpacityMultiplier,
@@ -223,7 +223,7 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& self_overlap,
                     },
                     DampingNode{
                         .damping_source = ProgressDomain::kTimeInSeconds,
-                        .damping_gap = 0.015f,
+                        .strength = 0.015f,
                     },
                     TargetNode{
                         .target = Target::kOpacityMultiplier,
@@ -380,7 +380,7 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                     },
                     DampingNode{
                         .damping_source = ProgressDomain::kTimeInSeconds,
-                        .damping_gap = 0.01f,
+                        .strength = 0.01f,
                     },
                     TargetNode{
                         .target = Target::kOpacityMultiplier,
@@ -398,7 +398,7 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                     },
                     DampingNode{
                         .damping_source = ProgressDomain::kTimeInSeconds,
-                        .damping_gap = 0.01f,
+                        .strength = 0.01f,
                     },
                     TargetNode{
                         .target = Target::kOpacityMultiplier,
@@ -416,7 +416,7 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                     },
                     DampingNode{
                         .damping_source = ProgressDomain::kTimeInSeconds,
-                        .damping_gap = 0.01f,
+                        .strength = 0.01f,
                     },
                     TargetNode{
                         .target = Target::kSizeMultiplier,

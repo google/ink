@@ -568,16 +568,16 @@ struct BrushBehavior {
   //     then the output value will be null regardless of the input.
   // To be valid:
   //   - `damping_source` must be a valid `ProgressDomain` enumerator.
-  //   - `damping_gap` must be finite and non-negative.
+  //   - `strength` must be finite and non-negative.
   struct DampingNode {
     ProgressDomain damping_source;
-    float damping_gap;
+    float strength;  // measured in `damping_source` units
 
     friend bool operator==(const DampingNode&, const DampingNode&) = default;
 
     template <typename H>
     friend H AbslHashValue(H h, const DampingNode& dn) {
-      return H::combine(std::move(h), dn.damping_source, dn.damping_gap);
+      return H::combine(std::move(h), dn.damping_source, dn.strength);
     }
   };
 

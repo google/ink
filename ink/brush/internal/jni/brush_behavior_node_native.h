@@ -51,7 +51,7 @@ int64_t ToolTypeFilterNodeNative_create(
                                        const char* status_str));
 
 int64_t DampingNodeNative_create(
-    void* jni_env_pass_through, int damping_source, float damping_gap,
+    void* jni_env_pass_through, int damping_source, float strength,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str));
 
@@ -113,7 +113,7 @@ bool ToolTypeFilterNodeNative_getUnknownEnabled(int64_t native_ptr);
 
 // DampingNode accessors:
 int DampingNodeNative_getDampingSourceInt(int64_t native_ptr);
-float DampingNodeNative_getDampingGap(int64_t native_ptr);
+float DampingNodeNative_getStrength(int64_t native_ptr);
 
 // ResponseNode accessors:
 int64_t ResponseNodeNative_getResponseCurvePointer(int64_t native_ptr);

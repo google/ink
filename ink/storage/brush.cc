@@ -820,7 +820,7 @@ void EncodeBrushBehaviorNode(const BrushBehavior::DampingNode& node,
       node_proto_out.mutable_damping_node();
   damping_node_proto->set_damping_source(
       EncodeBrushBehaviorProgressDomain(node.damping_source));
-  damping_node_proto->set_damping_gap(node.damping_gap);
+  damping_node_proto->set_strength(node.strength);
 }
 
 void EncodeBrushBehaviorNode(const BrushBehavior::ResponseNode& node,
@@ -968,7 +968,7 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorDampingNode(
 
   return BrushBehavior::DampingNode{
       .damping_source = damping_source,
-      .damping_gap = node_proto.damping_gap(),
+      .strength = node_proto.strength(),
   };
 }
 

@@ -260,19 +260,19 @@ float ApplyOutOfRangeBehavior(BrushBehavior::OutOfRange behavior, float x) {
 }
 
 float DampOffsetTransition(float target_offset, float previous_offset,
-                           float delta, float response_gap) {
+                           float delta, float strength) {
   // Damp the transition via exponential decay. This models a critically damped
   // oscillator and allows us to perform the transition with only local
   // knowledge of the offsets. I.e. we do not need to know the original offset
-  // when damping first started. We use the `response_gap` as the decay constant
-  // `tau` (https://en.wikipedia.org/wiki/Exponential_decay). This means that
-  // after a distance/time of `response_gap` has passed, the transition will be
-  // (1 - e^-1), which is about 63% complete (which turns out to feel more
-  // intuitive in practice for humans tuning the `response_gap` than it would if
-  // we were to apply a multiplier such that the `response_gap` is when the
-  // transition is, say, 99% complete).
+  // when damping first started. We use `strength` as the decay constant `tau`
+  // (https://en.wikipedia.org/wiki/Exponential_decay). This means that after a
+  // distance/time of `strength` has passed, the transition will be (1 - e^-1),
+  // which is about 63% complete (which turns out to feel more intuitive in
+  // practice for humans tuning the `strength` than it would if we were to apply
+  // a multiplier such that the `strength` is when the transition is, say, 99%
+  // complete).
   if (delta <= 0) return previous_offset;
-  return Lerp(target_offset, previous_offset, std::exp(-delta / response_gap));
+  return Lerp(target_offset, previous_offset, std::exp(-delta / strength));
 }
 
 inline float DampOffsetTransition(float target_offset, float previous_offset,
@@ -393,11 +393,11 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
     // Input is null, so use previous damped value unchanged.
     new_damped_value = old_damped_value;
   } else if (IsNullBehaviorNodeValue(old_damped_value) ||
-             node.damping_gap == 0.0f) {
+             node.strength == 0.0f) {
     // Input is non-null.  If previous damped value is null, then this is the
     // first non-null input, so snap the damped value to the input.  Or, if the
-    // damping_gap is zero, then there's no damping to be done, so also snap the
-    // damped value to the input.
+    // damping strength is zero, then there's no damping to be done, so also
+    // snap the damped value to the input.
     new_damped_value = input;
   } else {
     // Input and previous damped value are both non-null, so move the damped
@@ -408,7 +408,7 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
     switch (node.damping_source) {
       case BrushBehavior::ProgressDomain::kDistanceInCentimeters: {
         PhysicalDistance damping_distance =
-            PhysicalDistance::Centimeters(node.damping_gap);
+            PhysicalDistance::Centimeters(node.strength);
         PhysicalDistance traveled_distance_delta =
             *context.input_modeler_state.stroke_unit_length *
             (context.current_input.traveled_distance -
@@ -417,7 +417,7 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
             input, old_damped_value, traveled_distance_delta, damping_distance);
       } break;
       case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize: {
-        float damping_distance = context.brush_size * node.damping_gap;
+        float damping_distance = context.brush_size * node.strength;
         float traveled_distance_delta =
             context.current_input.traveled_distance -
             context.previous_input_metrics->traveled_distance;
@@ -425,7 +425,7 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
             input, old_damped_value, traveled_distance_delta, damping_distance);
       } break;
       case BrushBehavior::ProgressDomain::kTimeInSeconds: {
-        Duration32 damping_time = Duration32::Seconds(node.damping_gap);
+        Duration32 damping_time = Duration32::Seconds(node.strength);
         Duration32 elapsed_time_delta =
             context.current_input.elapsed_time -
             context.previous_input_metrics->elapsed_time;

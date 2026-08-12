@@ -324,11 +324,11 @@ absl::Status ValidateNode(const BrushBehavior::DampingNode& node) {
         "`DampingNode::damping_source` holds non-enumerator value %d",
         static_cast<int>(node.damping_source)));
   }
-  if (!std::isfinite(node.damping_gap) || node.damping_gap < 0) {
+  if (!std::isfinite(node.strength) || node.strength < 0) {
     return absl::InvalidArgumentError(
-        absl::StrCat("`DampingNode::damping_gap` must be finite and "
+        absl::StrCat("`DampingNode::strength` must be finite and "
                      "non-negative. Got ",
-                     node.damping_gap));
+                     node.strength));
   }
   return absl::OkStatus();
 }
@@ -921,7 +921,7 @@ std::string ToFormattedString(const BrushBehavior::ToolTypeFilterNode& node) {
 
 std::string ToFormattedString(const BrushBehavior::DampingNode& node) {
   return absl::StrCat("DampingNode{damping_source=", node.damping_source,
-                      ", damping_gap=", node.damping_gap, "}");
+                      ", strength=", node.strength, "}");
 }
 
 std::string ToFormattedString(const BrushBehavior::ResponseNode& node) {

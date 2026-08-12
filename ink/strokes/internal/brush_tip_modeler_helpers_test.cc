@@ -1017,7 +1017,7 @@ TEST_F(ProcessBehaviorNodeTest, DampingNodeDistanceInCentimeters) {
   DampingNodeImplementation damping_impl = {
       .damping_index = 0,
       .damping_source = BrushBehavior::ProgressDomain::kDistanceInCentimeters,
-      .damping_gap = 5.0f,
+      .strength = 5.0f,
   };
 
   // The damped value remains null as long as the input remains null.
@@ -1066,7 +1066,7 @@ TEST_F(ProcessBehaviorNodeTest,
   DampingNodeImplementation damping_impl = {
       .damping_index = 0,
       .damping_source = BrushBehavior::ProgressDomain::kDistanceInCentimeters,
-      .damping_gap = 5.0f,
+      .strength = 5.0f,
   };
 
   // Since there's no mapping set between stroke units and physical units, the
@@ -1086,7 +1086,7 @@ TEST_F(ProcessBehaviorNodeTest, DampingNodeDistanceInMultiplesOfBrushSize) {
       .damping_index = 0,
       .damping_source =
           BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize,
-      .damping_gap = 5.0f,
+      .strength = 5.0f,
   };
 
   // The damped value remains null as long as the input remains null.
@@ -1135,7 +1135,7 @@ TEST_F(ProcessBehaviorNodeTest, DampingNodeTimeInSeconds) {
   DampingNodeImplementation damping_impl = {
       .damping_index = 0,
       .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
-      .damping_gap = 0.5f,
+      .strength = 0.5f,
   };
 
   // The damped value remains null as long as the input remains null.
