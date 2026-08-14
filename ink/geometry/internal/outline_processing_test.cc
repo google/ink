@@ -32,6 +32,7 @@ namespace {
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
+constexpr float kFloatTolerance = 1e-6f;
 constexpr auto FromTwoPoints = Rect::FromTwoPoints;
 
 // Helper function for test: returns true if the point is contained in any of
@@ -743,7 +744,7 @@ TEST(ComputeSubtractionTests, SubtractRectFromRect) {
                                                      {{E, H, X2, C}, 1},
                                                      {{A, D, C}, -1},
                                                      {{E, X1}, -1}}),
-                                       1e-6f));
+                                       kFloatTolerance));
 }
 
 TEST(ComputeSubtractionTests, FullyDeletedShape) {
@@ -814,7 +815,190 @@ TEST(ComputeSubtractionTests, SubtractShapeWithHole) {
                                                      {{E, H, X2, C}, 1},
                                                      {{I, L, X4}, -1},
                                                      {{I, X3, X4}, 1}}),
-                                       1e-6f));
+                                       kFloatTolerance));
+}
+
+TEST(ComputeSubtractionTests, VertexEdgeTransverse1) {
+  //                            G
+  //                         / /
+  //                     /    /
+  //                 /       /
+  //    D---------E----C    /
+  //    |          \   |   /
+  //    |           \  |  /
+  //    |            \ | /
+  //    |              F
+  //    |              |
+  //    A--------------B
+  Point A{0, 0}, B{4, 0}, C{4, 4}, D{0, 4};
+  Point E{2, 4}, F{4, 1}, G{6, 6};
+
+  ShapeOutline shape_abcd({{{A, B, C}, 1}, {{A, D, C}, -1}});
+  ShapeOutline shape_efg({{{E, F, G}, 1}, {{E, G}, -1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_abcd, shape_efg);
+  EXPECT_THAT(result, ShapeOutlineNear(
+                          ShapeOutline({{{A, B, F}, 1}, {{A, D, E, F}, -1}}),
+                          kFloatTolerance));
+}
+
+TEST(ComputeSubtractionTests, VertexEdgeTransverse2) {
+  // EFG - ABCD
+  //                            G
+  //                         / /
+  //                     /    /
+  //                 /       /
+  //    D---------E----C    /
+  //    |          \   |   /
+  //    |           \  |  /
+  //    |            \ | /
+  //    |              F
+  //    |              |
+  //    A--------------B
+  Point A{0, 0}, B{4, 0}, C{4, 4}, D{0, 4};
+  Point E{2, 4}, F{4, 1}, G{6, 6};
+
+  ShapeOutline shape_efg({{{E, F, G}, 1}, {{E, G}, -1}});
+  ShapeOutline shape_abcd({{{A, B, C}, 1}, {{A, D, C}, -1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_efg, shape_abcd);
+  EXPECT_THAT(
+      result,
+      ShapeOutlineNear(
+          ShapeOutline({{{F, C}, -1}, {{F, G}, 1}, {{E, C}, 1}, {{E, G}, -1}}),
+          kFloatTolerance));
+}
+
+TEST(ComputeSubtractionTests, VertexEdgeTransverse3) {
+  //       F---E
+  //        \ /
+  //    C----D----B
+  //     \       /
+  //      \     /
+  //       \   /
+  //        \ /
+  //         A
+  Point A{2, 0}, B{4, 4}, C{0, 4}, D{2, 4}, E{1, 5}, F{2, 4};
+
+  ShapeOutline shape_abc({{{C, A, B}, 1}, {{C, B}, -1}});
+  ShapeOutline shape_def({{{F, D, E}, 1}, {{F, E}, -1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_abc, shape_def);
+
+  // It's important for us that edge CB is subdivided at D. If the triangle ABC
+  // was part of a mesh and adjacent to another triangle along edge CB, then
+  // preserving the vertex D would be necessary to properly glue the modified
+  // triangles back together without leaving a topological gap.
+  EXPECT_THAT(result,
+              ShapeOutlineNear(ShapeOutline({{{C, A, B}, 1}, {{C, D, B}, -1}}),
+                               kFloatTolerance));
+}
+
+TEST(ComputeSubtractionTests, VertexEdgeNonTransverse1) {
+  //    D---------C
+  //    |         |
+  //    E---------G
+  //    | \     / |
+  //    |  \   /  |
+  //    |   \ /   |
+  //    A----F----B
+  Point A{0, 0}, B{4, 0}, C{4, 4}, D{0, 4};
+  Point E{0, 2}, F{2, 0}, G{4, 2};
+
+  ShapeOutline shape_abcd({{{A, B, C}, 1}, {{A, D, C}, -1}});
+  ShapeOutline shape_efg({{{E, F, G}, 1}, {{E, G}, -1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_abcd, shape_efg);
+
+  EXPECT_THAT(result, ShapeOutlineNear(ShapeOutline({{{A, F}, 1},
+                                                     {{A, E, F}, -1},
+                                                     {{F, G}, -1},
+                                                     {{F, B, G}, 1},
+                                                     {{E, D, C}, -1},
+                                                     {{E, G, C}, 1}}),
+                                       kFloatTolerance));
+}
+
+TEST(ComputeSubtractionTests, VertexEdgeNonTransverse2) {
+  //    H---C---G
+  //    |  / \  |
+  //    | /   \ |
+  //    D       B
+  //    | \   / |
+  //    |  \ /  |
+  //    E---A---F
+  Point E{0, 0}, F{4, 0}, G{4, 4}, H{0, 4};
+  Point A{2, 0}, B{4, 2}, C{2, 4}, D{0, 2};
+
+  ShapeOutline shape_abcd({{{D, A, B}, 1}, {{D, C, B}, -1}});
+  ShapeOutline shape_efgh({{{E, F, G}, 1}, {{E, H, G}, -1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_abcd, shape_efgh);
+  EXPECT_THAT(result.Chains(), testing::IsEmpty());
+}
+
+TEST(ComputeSubtractionTests, VertexVertexTransverse) {
+  //          D
+  //         / \
+  //        /   \
+  //       /     \
+  //      A   E---C
+  //       \  |  /|
+  //        \ | / |
+  //         \|/  |
+  //          B---F
+
+  Point A{-4, 0}, B{0, -4}, C{4, 0}, D{0, 4};
+  Point E{0, 0}, F{4, -4};
+
+  ShapeOutline shape_abcd({{{A, D, C}, -1}, {{A, B, C}, 1}});
+  ShapeOutline shape_bfce({{{B, E, C}, -1}, {{B, F, C}, 1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_abcd, shape_bfce);
+
+  EXPECT_THAT(result, ShapeOutlineNear(
+                          ShapeOutline({{{A, B, E, C}, 1}, {{A, D, C}, -1}}),
+                          kFloatTolerance));
+}
+
+TEST(ComputeSubtractionTests, VertexVertexNontransverse2) {
+  //    A-------------F
+  //    |      G      |
+  //    |      |\     |
+  //    |      | \    |
+  //    |      |  D---E
+  //    |      | /|
+  //    |      |/ |
+  //    |      H  |
+  //    B---------C
+  Point A{0, 4}, B{0, 0}, C{4, 0}, D{4, 2}, E{5, 2}, F{5, 4};
+  Point G{2, 3}, H{2, 1};
+
+  ShapeOutline shape_abcdef({{{B, A, F}, -1}, {{B, C, D, E, F}, 1}});
+  ShapeOutline shape_ghd({{{H, G, D}, -1}, {{H, D}, 1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_abcdef, shape_ghd);
+
+  EXPECT_THAT(result, ShapeOutlineNear(ShapeOutline({{{B, C, D}, 1},
+                                                     {{B, A, F}, -1},
+                                                     {{H, D}, -1},
+                                                     {{H, G, D, E, F}, 1}}),
+                                       kFloatTolerance));
+}
+
+TEST(ComputeSubtractionTests, VertexVertexNontransverse3) {
+  //           C     E
+  //          / \   / \
+  //         /   \ /   \
+  //        A-----B-----D
+  Point A{0, 0}, B{2, 0}, C{1, 2}, D{4, 0}, E{3, 2};
+
+  ShapeOutline shape_abc({{{A, C, B}, -1}, {{A, B}, 1}});
+  ShapeOutline shape_bde({{{B, E, D}, -1}, {{B, D}, 1}});
+
+  ShapeOutline result = ComputeSubtraction(shape_abc, shape_bde);
+
+  EXPECT_THAT(result, ShapeOutlineNear(shape_abc, kFloatTolerance));
 }
 }  // namespace
 }  // namespace ink::geometry_internal

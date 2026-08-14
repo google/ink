@@ -18,6 +18,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <limits>
 #include <numeric>
@@ -49,9 +50,41 @@ namespace ink::geometry_internal {
 // etc.
 
 namespace {
-// TODO(b/521448869): Use an adaptive tolerance based on the relevant scales
-// and epsilons.
-constexpr float kCollinearTolerance = 1e-6f;
+
+// Relative error margin for 32-bit floating point operations.
+constexpr float kFloatTolerance = 1e-6f;
+
+// Represents a boundary segment during sweep-line processing.
+struct BoundarySegment {
+  // The endpoints, ordered so that start.x <= end.x.
+  Point start, end;
+
+  // Orientation (+1/-1) of the segment with respect to the order of the
+  // endpoints.
+  int orientation;
+
+  // Defines a (weak) sweep-line ordering: left-to-right and vertical segments
+  // before non-vertical segments.
+  bool operator<(const BoundarySegment& other) const {
+    if (start.x != other.start.x) return start.x < other.start.x;
+    return end.x < other.end.x;
+  }
+};
+
+// A helper struct to represent an intersection event on a chain.
+struct ChainIntersection {
+  // Intersection point
+  Point pos;
+
+  // The index of the vertex in the chain at or immediately preceding the
+  // intersection.
+  uint32_t vertex;
+
+  // The sign of the intersection: +1 if the other chain crosses from
+  // left-to-right (from the perspective of this chain), and -1 if
+  // right-to-left, and 0 for a non-crossing intersection.
+  int sign;
+};
 
 bool IsLeftOrBelow(const Point& a, const Point& b) {
   if (a.x != b.x) return a.x < b.x;
@@ -73,13 +106,22 @@ int Sign(double x) {
   return 0;
 }
 
+// Given a value `t` and an interval [`a`,`b`], clamps `t` to the interval
+// and snaps it to an endpoint if the clamped value is within 'err` of
+// the endpoint.
+double Snap(double a, double b, double t, double err) {
+  if (t - a <= err) return a;
+  if (b - t <= err) return b;
+  return t;
+}
+
 // Returns true if (`a`, `b`, `c`) are in clockwise order around the point `p`.
 // This function assumes none of the points are collinear.
 bool ClockwiseOrdered(const Point& p, const Point& a, const Point& b,
                       const Point& c) {
   // The points a and p split the plane into two half-planes, of points to the
   // left/right of the line ap. If b and c lie in opposite half-planes, then
-  // whichever lie to the right of ap is first (with respect to the clockwise
+  // whichever lies to the right of ap is first (with respect to the clockwise
   // ordering). Otherwise, (a,b,c) is clockwise ordered iff b-p and c-p are
   // clockwise ordered.
   int b_side = Sign(Determinant(p, a, b));
@@ -88,22 +130,38 @@ bool ClockwiseOrdered(const Point& p, const Point& a, const Point& b,
   return Sign(Determinant(p, b, c)) < 0;
 }
 
-// Represents a boundary segment during sweep-line processing.
-struct BoundarySegment {
-  // The endpoints, ordered so that start.x <= end.x.
-  Point start, end;
+// Helper function that computes the intersection sign of chains
+// (...`u1`,`u2`,`u3`...) and (...`v1`,`v2`...), which intersect at the vertex
+// `u2` and the edge `v1``v2`. This assumes no segments are collinear.
+int VertexEdgeIntersectionSign(const Point& u1, const Point& u2,
+                               const Point& u3, const Point& v1,
+                               const Point& v2) {
+  // If u1 and u3 are on the same side of v1v2, then the intersection is
+  // non-transverse and has sign 0. Otherwise, the sign is +1 if u1 is to the
+  // left and u3 to the right, and -1 for vice versa.
+  int u1_side = Sign(Determinant(v1, v2, u1));
+  int u3_side = Sign(Determinant(v1, v2, u3));
+  return u1_side == -u3_side ? u1_side : 0;
+}
 
-  // Orientation (+1/-1) of the segment with respect to the order of the
-  // endpoints.
-  int orientation;
-
-  // Defines a (weak) sweep-line ordering: left-to-right and vertical segments
-  // before non-vertical segments.
-  bool operator<(const BoundarySegment& other) const {
-    if (start.x != other.start.x) return start.x < other.start.x;
-    return end.x < other.end.x;
-  }
-};
+// Helper function that computes the intersection sign of chains
+// (...`u1`,`u2`,`u3`...) and (...`v1`,`v2`,`v3`...), which intersect at the
+// shared vertex `u2` = `v2`. This assumes no segments are collinear.
+int VertexVertexIntersectionSign(const Point& u1, const Point& u2,
+                                 const Point& u3, const Point& v1,
+                                 const Point& v3) {
+  // The points u1, u2, u3 define a sector in the plane, consisting of points
+  // "left" of both u1u2 and u2u3. If v1 lies within the sector and v3 doesn't,
+  // then the intersection is positive (the points (v1, v2, v3) cross
+  // (u1, u2, u3) from the left to right), and vice versa -1. If v1 and v3
+  // are both contained in the sector or both not contained, then the
+  // intersection is non-transverse and therefore the sign is zero.
+  if (ClockwiseOrdered(u2, u1, v1, u3) && ClockwiseOrdered(u2, u3, v3, u1))
+    return -1;
+  if (ClockwiseOrdered(u2, u1, v3, u3) && ClockwiseOrdered(u2, u3, v1, u1))
+    return 1;
+  return 0;
+}
 
 // Returns a flattened list of all segments from the given loops, sorted
 // from left-to-right based on the start-coordinate.
@@ -129,7 +187,7 @@ std::vector<BoundarySegment> GetSegments(
   return segments;
 }
 
-// Given a sorted list of boundary segment, returns a map from segment index to
+// Given a sorted list of boundary segments, returns a map from segment index to
 // a list of intersection points on that segment.
 absl::flat_hash_map<uint32_t, std::vector<Point>> FindIntersections(
     const std::vector<BoundarySegment>& segments) {
@@ -198,7 +256,7 @@ void SubdivideSegments(
     segments.push_back({cuts.back(), orig.end, orig.orientation});
   }
 
-  // Since segments was sorted, and we expect typically only a small number of
+  // Since segments were sorted, and we expect typically only a small number of
   // intersections, sort the new segments and merge.
   std::sort(segments.begin() + orig_size, segments.end());
   std::inplace_merge(segments.begin(), segments.begin() + orig_size,
@@ -338,6 +396,27 @@ std::vector<MonotoneChain> ExtractChains(
   return result;
 }
 
+// Returns the vertices preceding and following the given vertex in the oriented
+// boundary of `shape`.
+std::pair<Point, Point> GetNeighbors(const ShapeOutline& shape,
+                                     uint32_t chain_idx, uint32_t vertex_idx) {
+  absl::Span<const MonotoneChain> chains = shape.Chains();
+  absl::Span<const Point> vertices = chains[chain_idx].Vertices();
+  int step = chains[chain_idx].Orientation();
+
+  // If the vertex is in the middle of the chain, the neighboring vertices can
+  // be found in the same chain. Otherwise, we need to find the next/previous
+  // chain along the boundary to find the neighbor.
+  Point u = (vertex_idx - step < vertices.size())
+                ? vertices[vertex_idx - step]
+                : chains[shape.PrevIndex(chain_idx)].EndNeighbor();
+  Point w = (vertex_idx + step < vertices.size())
+                ? vertices[vertex_idx + step]
+                : chains[shape.NextIndex(chain_idx)].StartNeighbor();
+
+  return {u, w};
+}
+
 // Returns a pair of lists (prev_chain, next_chain) containing the indices of
 // the predecessor and successor of each chain in an oriented walk along the
 // shape boundary.
@@ -407,20 +486,14 @@ bool IsEar(size_t i, size_t j, size_t k, absl::Span<const uint32_t> indices,
   Point B = vertices[indices[i]];
   Point C = vertices[indices[k]];
 
-  Vec vAB = B - A;
-  Vec vBC = C - B;
-  Vec vCA = A - C;
-
-  if (Vec::Determinant(vAB, vBC) < kCollinearTolerance) return false;
+  if (Sign(Determinant(A, B, C)) <= 0) return false;
 
   for (size_t v = 0; v < indices.size(); ++v) {
     if (v == j || v == i || v == k) continue;
     Point P = vertices[indices[v]];
-    if (Vec::Determinant(vAB, P - A) >= 0 &&
-        Vec::Determinant(vBC, P - B) >= 0 &&
-        Vec::Determinant(vCA, P - C) >= 0) {
+    if (Sign(Determinant(A, B, P)) >= 0 && Sign(Determinant(B, C, P)) >= 0 &&
+        Sign(Determinant(C, A, P)) >= 0)
       return false;
-    }
   }
   return true;
 }
@@ -435,27 +508,117 @@ float Area(absl::Span<const Point> loop) {
   return 0.5f * area;
 }
 
-// Represents an intersection on a chain.
-struct ChainIntersection {
-  // Intersection point
-  Point pos;
+// Given a sorted list of points `verts`, returns the index of the last element
+// in `verts` that is less than `p`. Ordering is defined by `IsLeftOrBelow`.
+uint32_t GetStartIndex(absl::Span<const Point> verts, Point p) {
+  uint32_t i = std::lower_bound(verts.begin(), verts.end(), p, IsLeftOrBelow) -
+               verts.begin();
+  return i > 0 ? i - 1 : 0;
+}
 
-  // Segment containing the intersection.
-  uint32_t seg;
+// Finds any intersections between the `i`th segment of the first chain and
+// the `j`th segment of the second chain, appending them to `intersections_a`
+// and `intersections_b`.
+void FindSegmentIntersections(
+    const ShapeOutline& shape_a, uint32_t a_idx, uint32_t i,
+    const ShapeOutline& shape_b, uint32_t b_idx, uint32_t j,
+    absl::InlinedVector<ChainIntersection, 2>& intersections_a,
+    absl::InlinedVector<ChainIntersection, 2>& intersections_b) {
+  const MonotoneChain& chain_a = shape_a.Chains()[a_idx];
+  const MonotoneChain& chain_b = shape_b.Chains()[b_idx];
+  absl::Span<const Point> verts_a = chain_a.Vertices();
+  absl::Span<const Point> verts_b = chain_b.Vertices();
 
-  // Topological orientation of the intersection: +1 if the other chain
-  // goes left-to-right across the intersection (from the perspective of this
-  // chain), and -1 if right-to-left.
-  int orientation;
-};
+  // The intersection point between the two segments is obtained by
+  // finding the parametric values t and s such that:
+  //  Lerp(verts_a[i], verts_a[i + 1], t) ==
+  //  Lerp(verts_b[j], verts_b[j + 1], s)
+  //
+  // The general solution is
+  //  t = (w x v) / (u x v)
+  //  s = (w x u) / (u x v)
+  // where
+  //  u = verts_a[i + 1] - verts_a[i]
+  //  v = verts_b[j + 1] - verts_b[j]
+  //  w = verts_b[j] - verts_a[i]
+
+  // The denominator determinant, u x v
+  const double u_x_v = Determinant(verts_a[i], verts_a[i + 1], verts_b[j + 1]) -
+                       Determinant(verts_a[i], verts_a[i + 1], verts_b[j]);
+
+  // TODO(b/521449017): Handle collinear intersections.
+  if (u_x_v == 0.0) return;
+
+  // Normalize the denominator to be positive, for simplicity.
+  const int uv_sign = Sign(u_x_v);
+  const double abs_u_x_v = std::abs(u_x_v);
+
+  // The numerators, w x v and w x u.
+  const double w_x_v =
+      uv_sign * Determinant(verts_a[i], verts_b[j], verts_b[j + 1]);
+  const double w_x_u =
+      uv_sign * Determinant(verts_a[i], verts_b[j], verts_a[i + 1]);
+
+  // To ensure that we capture intersections at the endpoint, expand the
+  // segments by a bit to account for floating point precision. Note that
+  // this can result in duplicates (with an intersection from each adjacent
+  // segment) or false-positives. The duplicates are explicitly handled in a
+  // post processing step; false-positives will have zero intersection sign,
+  // and will cause little harm.
+  const double err = kFloatTolerance * abs_u_x_v;
+  if (w_x_v < -err || w_x_v > abs_u_x_v + err) return;
+  if (w_x_u < -err || w_x_u > abs_u_x_v + err) return;
+
+  // Intersections close to endpoints are snapped exactly to the endpoint, so
+  // that t and s are in [0,1], with values of 0 and 1 corresponding to
+  // endpoints.
+  const float t = Snap(0.0f, abs_u_x_v, w_x_v, err) / abs_u_x_v;
+  const float s = Snap(0.0f, abs_u_x_v, w_x_u, err) / abs_u_x_v;
+
+  // We explicitly branch on the different intersection configurations
+  // of edge-edge, vertex-edge, or vertex-vertex intersection.
+  if (t > 0.0f && t < 1.0f && s > 0.0f && s < 1.0f) {
+    // The generic case: the segments cross each other in their interiors.
+    Point p = verts_a[i] + t * (verts_a[i + 1] - verts_a[i]);
+    int sign = -chain_a.Orientation() * chain_b.Orientation() * uv_sign;
+    intersections_a.push_back({p, i, sign});
+    intersections_b.push_back({p, j, -sign});
+  } else if (0.0 < s && s < 1.0) {
+    // A vertex on chain_a lies on the current segment of chain_b.
+    uint32_t vert_i = (t == 1.0) ? i + 1 : i;
+    Point p = verts_a[vert_i];
+    auto [u_in, u_out] = GetNeighbors(shape_a, a_idx, vert_i);
+    int sign =
+        -chain_b.Orientation() *
+        VertexEdgeIntersectionSign(u_in, p, u_out, verts_b[j], verts_b[j + 1]);
+    intersections_a.push_back({p, vert_i, sign});
+    intersections_b.push_back({p, j, -sign});
+  } else if (0.0 < t && t < 1.0) {
+    // A vertex on chain_b lies on the current segment of chain_a.
+    uint32_t vert_j = (s == 1.0) ? j + 1 : j;
+    Point p = verts_b[vert_j];
+    auto [v_in, v_out] = GetNeighbors(shape_b, b_idx, vert_j);
+    int sign =
+        chain_a.Orientation() *
+        VertexEdgeIntersectionSign(v_in, p, v_out, verts_a[i], verts_a[i + 1]);
+    intersections_a.push_back({p, i, sign});
+    intersections_b.push_back({p, vert_j, -sign});
+  } else {
+    // A vertex on chain_a overlaps a vertex on chain_b.
+    uint32_t vert_i = (t == 1.0) ? i + 1 : i;
+    uint32_t vert_j = (s == 1.0) ? j + 1 : j;
+    Point p = verts_b[vert_j];
+    auto [u_in, u_out] = GetNeighbors(shape_a, a_idx, vert_i);
+    auto [v_in, v_out] = GetNeighbors(shape_b, b_idx, vert_j);
+    int sign = -VertexVertexIntersectionSign(u_in, p, u_out, v_in, v_out);
+    intersections_a.push_back({p, vert_i, sign});
+    intersections_b.push_back({p, vert_j, -sign});
+  }
+}
 
 // Finds all boundary intersections between the shapes. The result is returned
 // as a pair of vectors, one for each shape, where each vector contains the
-// intersections on each chain in the shape.
-//
-// This function is intended for when `shape_a` is very small compared to
-// `shape_b` (for example, when `shape_a` is a single triangle of an ink
-// stroke, and `shape_b` is an entire eraser stroke).
+// intersections on each chain in order.
 std::pair<absl::InlinedVector<absl::InlinedVector<ChainIntersection, 2>, 8>,
           absl::InlinedVector<absl::InlinedVector<ChainIntersection, 2>, 8>>
 FindBoundaryIntersections(const ShapeOutline& shape_a,
@@ -470,115 +633,174 @@ FindBoundaryIntersections(const ShapeOutline& shape_a,
 
   for (uint32_t a_idx = 0; a_idx < chains_a.size(); ++a_idx) {
     const MonotoneChain& chain_a = chains_a[a_idx];
+    absl::Span<const Point> verts_a = chain_a.Vertices();
     for (uint32_t b_idx = 0; b_idx < chains_b.size(); ++b_idx) {
       const MonotoneChain& chain_b = chains_b[b_idx];
 
       if (!IntersectsInternal(chain_a.Bounds(), chain_b.Bounds())) continue;
 
-      absl::Span<const Point> verts_a = chain_a.Vertices();
       absl::Span<const Point> verts_b = chain_b.Vertices();
 
-      // Rather than using a sweep-line approach, we instead scan through
-      // verts_a and binary search in verts_b (in O(|verts_a| Log |verts_b|)
-      // time) rather than a simultaneous scan (in O(|verts_a| + |verts_b|)
-      // time).
+      // We sweep across the plane to find intersections between the two
+      // chains. At each step, we test the current segment of chain_a against
+      // the current segment of chain_b, and then advance to the next segment
+      // of either chain_a or chain_b depending on which segment ends first.
 
-      // As we scan through the chain_a, `j0` is the index of the last vertex in
-      // chain_b with x-coordinate less than the current a_segment.
-      uint32_t j0 = 0;
+      // Find the initial i and j using binary search.
+      uint32_t i = GetStartIndex(verts_a, verts_b[0]);
+      uint32_t j = GetStartIndex(verts_b, verts_a[0]);
 
-      for (uint32_t i = 0; i + 1 < verts_a.size(); ++i) {
+      while (i < verts_a.size() - 1 && j < verts_b.size() - 1) {
         auto [a_ymin, a_ymax] = std::minmax(verts_a[i].y, verts_a[i + 1].y);
+        auto [b_ymin, b_ymax] = std::minmax(verts_b[j].y, verts_b[j + 1].y);
 
-        j0 = std::lower_bound(verts_b.begin() + j0, verts_b.end(), verts_a[i],
-                              [](Point a, Point b) { return a.x < b.x; }) -
-             verts_b.begin();
-        if (j0 > 0) j0 -= 1;
+        // Bounding box check.
+        if (!(a_ymax < b_ymin || a_ymin > b_ymax)) {
+          FindSegmentIntersections(shape_a, a_idx, i, shape_b, b_idx, j,
+                                   intersections_a[a_idx],
+                                   intersections_b[b_idx]);
+        }
 
-        for (uint32_t j = j0; j + 1 < verts_b.size(); ++j) {
-          if (verts_b[j].x > verts_a[i + 1].x) break;
-          auto [b_ymin, b_ymax] = std::minmax(verts_b[j].y, verts_b[j + 1].y);
-          if (a_ymax < b_ymin || a_ymin > b_ymax) continue;
-
-          if (auto ratios = SegmentIntersectionRatio(
-                  {verts_a[i], verts_a[i + 1]}, {verts_b[j], verts_b[j + 1]})) {
-            // TODO(b/521449017): Handle degenerate intersections
-            int sign = (chain_a.Orientation() * chain_b.Orientation() *
-                        Vec::Determinant(verts_b[j + 1] - verts_b[j],
-                                         verts_a[i + 1] - verts_a[i])) > 0.f
-                           ? 1
-                           : -1;
-            Point cut = Segment{verts_a[i], verts_a[i + 1]}.Lerp(ratios->first);
-            intersections_a[a_idx].push_back({cut, i, sign});
-            intersections_b[b_idx].push_back({cut, j, -sign});
-          }
+        if (IsLeftOrBelow(verts_a[i + 1], verts_b[j + 1])) {
+          i += 1;
+        } else {
+          j += 1;
         }
       }
     }
   }
 
+  // Remove duplicate intersections from the chains.
+  auto dedup = [](absl::InlinedVector<ChainIntersection, 2>& intersections) {
+    absl::c_sort(intersections,
+                 [](const ChainIntersection& c1, const ChainIntersection& c2) {
+                   return IsLeftOrBelow(c1.pos, c2.pos);
+                 });
+    auto last = std::unique(
+        intersections.begin(), intersections.end(),
+        [](const ChainIntersection& c1, const ChainIntersection& c2) {
+          return c1.pos == c2.pos;
+        });
+    intersections.erase(last, intersections.end());
+  };
+
+  for (auto& chain_ints : intersections_a) dedup(chain_ints);
+  for (auto& chain_ints : intersections_b) dedup(chain_ints);
+
   return {intersections_a, intersections_b};
 }
 
 // Helper function to slice the given chain at the given intersection points and
-// extracts the subchains that lie on the boundary of the shape_a - shape_b.
+// extract the subchains that lie on the boundary of the shape_a - shape_b.
 // `is_subtracted` indicates whether `chain` belongs to shape_a and
 // `other_shape` is shape_b, or vice-versa.
 void SliceChain(const MonotoneChain& chain,
                 absl::InlinedVector<ChainIntersection, 2>& intersections,
                 bool is_subtracted, const ShapeOutline& other_shape,
                 std::vector<MonotoneChain>& raw_chains) {
-  int orientation = is_subtracted ? -chain.Orientation() : chain.Orientation();
+  // The crossings of the chain with `other_shape` split up the chain into
+  // pieces, which are alternately inside or outside other_shape. If the chain
+  // belongs to shape_a, we keep the pieces that are outside the subtracted
+  // shape_b, and if the chain belongs to shape_b, we keep the pieces that are
+  // inside shape_a. To get the pieces, we traverse the chain while keeping
+  // track of whether the current piece is kept or not by flipping its value at
+  // every crossing.
 
-  if (intersections.empty()) {
-    // If there are no intersections, then either the entire chain is on the
-    // the boundary of shape_a - shape_b or none of it is. If other_shape is
-    // shape_b, then chain belongs to boundary if it is not contained in
-    // shape_b. If other_shape is shape_a, then chain belongs to the boundary if
-    // it is contained in other_shape.
-    if (Intersects(other_shape, chain.Vertices().front()) == is_subtracted)
-      raw_chains.push_back(MonotoneChain(
-          std::vector<Point>(chain.Vertices().begin(), chain.Vertices().end()),
-          orientation));
-    return;
-  }
-
-  absl::c_sort(intersections,
-               [](const ChainIntersection& c1, const ChainIntersection& c2) {
-                 return IsLeftOrBelow(c1.pos, c2.pos);
-               });
   absl::Span<const Point> verts = chain.Vertices();
 
-  // The intersections split up the chain into pieces, which are alternatively
-  // outside or inside other_shape. We keep track of whether the current piece
-  // lies on the boundary of the difference with `is_boundary`, which
-  // is initialized based on whether the first intersection is entering or
-  // leaving the other shape.
-  bool is_boundary = orientation == intersections[0].orientation;
+  // The orientation of resulting pieces. The subtracted chains will have
+  // opposite orientation.
+  int orientation = is_subtracted ? -chain.Orientation() : chain.Orientation();
+
+  // The first crossing determines whether the chain is initially inside or
+  // outside `other_shape`.
+  auto first_crossing = absl::c_find_if(
+      intersections, [](const ChainIntersection& c) { return c.sign != 0; });
+
+  bool is_kept;
+  if (first_crossing != intersections.end()) {
+    is_kept = orientation == first_crossing->sign;
+  } else {
+    // If there are no crossings, then the chain is either contained entirely
+    // in `other_shape` or entirely outside. Without any crossings, we have to
+    // resort to full containment test for a suitable point of the chain.
+
+    // If there are no intersections at all, then we can test any point on the
+    // chain.
+    if (intersections.empty()) {
+      if (Intersects(other_shape, verts.front()) == is_subtracted) {
+        raw_chains.push_back(MonotoneChain(
+            std::vector<Point>(verts.begin(), verts.end()), orientation));
+      }
+      return;
+    }
+
+    // If there are (non-crossing) intersections, then testing them tells us
+    // nothing since they are on the boundary of `other_shape`, so we have to
+    // make sure to find a non-intersecting point.
+    // If the first vertex is not an intersection point, we can just test it.
+    // Otherwise, we test the midpoint between the first vertex and either the
+    // first intersection on (or the endpoint of) the first segment.
+    Point test_point = verts[0];
+    if (intersections[0].pos == verts[0]) {
+      Point next_point =
+          (intersections.size() > 1 && intersections[1].vertex == 0)
+              ? intersections[1].pos
+              : verts[1];
+      test_point = verts[0] + 0.5f * (next_point - verts[0]);
+    }
+    is_kept = Intersects(other_shape, test_point) == is_subtracted;
+  }
 
   // Add a sentinel representing the end of the chain to avoid a separate
   // terminal check after the loop.
-  intersections.push_back(
-      {verts.back(), static_cast<uint32_t>(verts.size() - 2), 0});
+  if (intersections.back().pos != verts.back()) {
+    intersections.push_back(
+        {verts.back(), static_cast<uint32_t>(verts.size() - 2), 0});
+  }
 
-  size_t curr_seg = 0;
+  // If an intersection occurs at the very start of the chain, it does not
+  // produce a chain piece, so we immediately remove it.
+  if (intersections[0].pos == verts.front()) {
+    if (intersections[0].sign != 0) is_kept = !is_kept;
+    intersections.erase(intersections.begin());
+  }
+
+  size_t curr_vert_idx = 0;
   Point start_pos = verts.front();
 
+  // Traverse through the intersections on the chain.
   for (const ChainIntersection& cut : intersections) {
-    if (is_boundary) {
+    // At every intersection, emit the piece terminating at the intersection,
+    // if it should be kept.
+    if (is_kept) {
       std::vector<Point> piece;
-      piece.reserve(cut.seg - curr_seg + 2);
-      piece.push_back(start_pos);
-      piece.insert(piece.end(), verts.begin() + curr_seg + 1,
-                   verts.begin() + cut.seg + 1);
-      piece.push_back(cut.pos);
+      piece.reserve(cut.vertex - curr_vert_idx + 2);
+
+      // Push in the previous intersection point, but only if it's not at a
+      // chain vertex, to avoid duplicating it.
+      if (start_pos != verts[curr_vert_idx + 1]) piece.push_back(start_pos);
+
+      // Copy the vertices of the chain in between the previous and current
+      // intersections.
+      piece.insert(piece.end(), verts.begin() + curr_vert_idx + 1,
+                   verts.begin() + cut.vertex + 1);
+
+      // Push in the current intersection point.
+      if (cut.pos != piece.back()) piece.push_back(cut.pos);
+
       raw_chains.push_back({std::move(piece), orientation});
     }
-    is_boundary = !is_boundary;
-    curr_seg = cut.seg;
+
+    // Switch the state: if the intersection is transverse then the chain
+    // switches being inside or outside other_shape.
+    if (cut.sign != 0) is_kept = !is_kept;
+
+    curr_vert_idx = cut.vertex;
     start_pos = cut.pos;
   }
 }
+
 // Stitches a collection of sub-chains into maximal monotone chains by merging
 // adjacent chains that share endpoints and have the same orientation.
 std::vector<MonotoneChain> StitchIntersectionChains(
@@ -776,10 +998,9 @@ bool Intersects(const ShapeOutline& shape, const Point& p) {
 
     // We tried so hard, and got so far, but in the end we actually have to do
     // some geometry.
-    double det = static_cast<double>(p.x - pL.x) * (pR.y - pL.y) -
-                 static_cast<double>(p.y - pL.y) * (pR.x - pL.x);
-    if (det == 0) return true;
-    if (det < 0) crossings += 1;
+    int det_sign = Sign(Determinant(pL, p, pR));
+    if (det_sign == 0) return true;
+    if (det_sign < 0) crossings += 1;
   }
 
   return (crossings % 2) != 0;
