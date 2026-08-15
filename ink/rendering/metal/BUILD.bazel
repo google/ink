@@ -12,21 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_apple//apple:resources.bzl", "apple_metal_library")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "objc_library")
 
 package(
     default_visibility = ["//ink:__subpackages__"],
-)
-
-selects.config_setting_group(
-    name = "ink_metal_platforms",
-    match_any = [
-        "@platforms//os:macos",
-        "@platforms//os:ios",
-    ],
-    visibility = ["//visibility:public"],
 )
 
 filegroup(
@@ -36,7 +26,7 @@ filegroup(
 
 cc_library(
     name = "cinterop",
-    target_compatible_with = [":ink_metal_platforms"],
+    target_compatible_with = ["@platforms//os:ios"],
     deps = [
         ":metal_renderer_native",
     ],
@@ -48,7 +38,10 @@ apple_metal_library(
         "//ink/rendering/webgpu:StrokeShader_fragment.metal",
         "//ink/rendering/webgpu:StrokeShader_vertex.metal",
     ],
-    target_compatible_with = [":ink_metal_platforms"],
+    # MSL 2.3 is supported as of iOS 14.0. Choosing that version because it is the minimum version
+    # supported by the latest version of Compose Multiplatform (1.11.1)
+    copts = ["-std=ios-metal2.3"],
+    target_compatible_with = ["@platforms//os:ios"],
     visibility = ["//visibility:private"],
 )
 
@@ -62,14 +55,14 @@ genrule(
     srcs = [":INKMetalShaders"],
     outs = ["ink_metal_shaders.bytes"],
     cmd = "$(location :input_to_bytes) < $(SRCS) > $@",
-    target_compatible_with = [":ink_metal_platforms"],
+    target_compatible_with = ["@platforms//os:ios"],
     tools = [":input_to_bytes"],
 )
 
 cc_library(
     name = "ink_metal_shaders_embedded",
     hdrs = ["ink_metal_shaders_embedded.h"],
-    target_compatible_with = [":ink_metal_platforms"],
+    target_compatible_with = ["@platforms//os:ios"],
     textual_hdrs = [":ink_metal_shaders.bytes"],
 )
 
@@ -81,7 +74,7 @@ objc_library(
         "CoreGraphics",
         "Foundation",
     ],
-    target_compatible_with = [":ink_metal_platforms"],
+    target_compatible_with = ["@platforms//os:ios"],
     visibility = ["//visibility:public"],
 )
 
@@ -95,7 +88,7 @@ objc_library(
         "Metal",
         "MetalKit",
     ],
-    target_compatible_with = [":ink_metal_platforms"],
+    target_compatible_with = ["@platforms//os:ios"],
     visibility = ["//visibility:private"],
     deps = [
         ":ink_metal_shaders_embedded",
@@ -113,7 +106,7 @@ cc_library(
     name = "metal_renderer",
     srcs = ["metal_renderer.cc"],
     hdrs = ["metal_renderer.h"],
-    target_compatible_with = [":ink_metal_platforms"],
+    target_compatible_with = ["@platforms//os:ios"],
     deps = [
         ":metal_renderer_objc_helper",
         "//ink/brush",
@@ -150,7 +143,7 @@ cc_library(
     name = "metal_renderer_native",
     srcs = ["metal_renderer_native.cc"],
     hdrs = ["metal_renderer_native.h"],
-    target_compatible_with = [":ink_metal_platforms"],
+    target_compatible_with = ["@platforms//os:ios"],
     deps = [
         ":metal_renderer",
         "//ink/strokes:in_progress_stroke",
