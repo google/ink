@@ -126,6 +126,51 @@ std::optional<std::vector<float>> AttributeValue(const PartitionedMesh& pm,
   return std::nullopt;
 }
 
+TEST(StrokeSubtractionTest, Disjoint) {
+  // C                                F
+  // | \                              | \
+  // |  \                             |  \
+  // |   \                            |   \
+  // |    \                           |    \
+  // |     \                          |     \
+  // |      \                         |      \
+  // |       \                        |       \
+  // |        \                       |        \
+  // | mesh_a  \                      | mesh_b  \
+  // A----------B                     D----------E
+  Point A{0, 0}, B{10, 0}, C{0, 10};
+  Point D{100, 0}, E{110, 0}, F{100, 10};
+
+  MutableMesh mesh_a(MeshFormat{});
+  mesh_a.AppendVertex(A);
+  mesh_a.AppendVertex(B);
+  mesh_a.AppendVertex(C);
+  mesh_a.AppendTriangleIndices({0, 1, 2});
+  std::vector<uint32_t> mesh_a_outline = {0, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  MutableMesh mesh_b(MeshFormat{});
+  mesh_b.AppendVertex(D);
+  mesh_b.AppendVertex(E);
+  mesh_b.AppendVertex(F);
+  mesh_b.AppendTriangleIndices({0, 1, 2});
+
+  std::vector<uint32_t> mesh_b_outline = {0, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  EXPECT_EQ(NumTriangles(*result), 1);
+  EXPECT_EQ(NumVertices(*result), 3);
+}
+
 TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
   //  C       F
   // | \      | \
