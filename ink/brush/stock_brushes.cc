@@ -118,7 +118,7 @@ BrushFamily PressurePen(const PressurePenVersion& version) {
                         .source_value_range = {0.45f, 0.65f},
                     },
                     DampingNode{
-                        .damping_source = ProgressDomain::kTimeInSeconds,
+                        .damp_over = ProgressDomain::kTimeInSeconds,
                         .strength = .025f,
                     },
                     TargetNode{
@@ -136,7 +136,7 @@ BrushFamily PressurePen(const PressurePenVersion& version) {
                         .source_value_range = {-80.0f, -230.0f},
                     },
                     DampingNode{
-                        .damping_source = ProgressDomain::kTimeInSeconds,
+                        .damp_over = ProgressDomain::kTimeInSeconds,
                         .strength = .025f,
                     },
                     TargetNode{
@@ -154,7 +154,7 @@ BrushFamily PressurePen(const PressurePenVersion& version) {
                         .source_value_range = {0.8f, 1.0f},
                     },
                     DampingNode{
-                        .damping_source = ProgressDomain::kTimeInSeconds,
+                        .damp_over = ProgressDomain::kTimeInSeconds,
                         .strength = .03f,
                     },
                     ToolTypeFilterNode{
@@ -204,7 +204,7 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& self_overlap,
                         .source_value_range = {0.0f, 3.0f},
                     },
                     DampingNode{
-                        .damping_source = ProgressDomain::kTimeInSeconds,
+                        .damp_over = ProgressDomain::kTimeInSeconds,
                         .strength = 0.015f,
                     },
                     TargetNode{
@@ -222,7 +222,7 @@ BrushFamily Highlighter(const BrushPaint::SelfOverlap& self_overlap,
                         .source_value_range = {0.0f, 3.0f},
                     },
                     DampingNode{
-                        .damping_source = ProgressDomain::kTimeInSeconds,
+                        .damp_over = ProgressDomain::kTimeInSeconds,
                         .strength = 0.015f,
                     },
                     TargetNode{
@@ -379,7 +379,7 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                         .source_value_range = {0.0f, 2.0f},
                     },
                     DampingNode{
-                        .damping_source = ProgressDomain::kTimeInSeconds,
+                        .damp_over = ProgressDomain::kTimeInSeconds,
                         .strength = 0.01f,
                     },
                     TargetNode{
@@ -397,7 +397,7 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                         .source_value_range = {0.4f, 2.4f},
                     },
                     DampingNode{
-                        .damping_source = ProgressDomain::kTimeInSeconds,
+                        .damp_over = ProgressDomain::kTimeInSeconds,
                         .strength = 0.01f,
                     },
                     TargetNode{
@@ -415,7 +415,7 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                         .source_value_range = {0.3f, 0.0f},
                     },
                     DampingNode{
-                        .damping_source = ProgressDomain::kTimeInSeconds,
+                        .damp_over = ProgressDomain::kTimeInSeconds,
                         .strength = 0.01f,
                     },
                     TargetNode{

@@ -241,8 +241,8 @@ Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
 Matcher<BrushBehavior::Node> BrushBehaviorNodeEqMatcher(
     const BrushBehavior::DampingNode& expected) {
   return VariantWith<BrushBehavior::DampingNode>(
-      AllOf(Field("damping_source", &BrushBehavior::DampingNode::damping_source,
-                  Eq(expected.damping_source)),
+      AllOf(Field("damp_over", &BrushBehavior::DampingNode::damp_over,
+                  Eq(expected.damp_over)),
             Field("strength", &BrushBehavior::DampingNode::strength,
                   FloatEq(expected.strength))));
 }

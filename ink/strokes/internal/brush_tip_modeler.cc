@@ -341,7 +341,7 @@ void BrushTipModeler::AppendBehaviorNode(
     const BrushBehavior::DampingNode& node) {
   behavior_nodes_.push_back(DampingNodeImplementation{
       .damping_index = current_damped_values_.size(),
-      .damping_source = node.damping_source,
+      .damp_over = node.damp_over,
       .strength = node.strength,
   });
   current_damped_values_.push_back(kNullBehaviorNodeValue);

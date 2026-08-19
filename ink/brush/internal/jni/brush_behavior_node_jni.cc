@@ -55,8 +55,8 @@ JNI_METHOD(brush_behavior, ToolTypeFilterNodeNative, jlong, create)
 }
 
 JNI_METHOD(brush_behavior, DampingNodeNative, jlong, create)
-(JNIEnv* env, jobject thiz, jint damping_source, jfloat strength) {
-  return DampingNodeNative_create(env, damping_source, strength,
+(JNIEnv* env, jobject thiz, jint damp_over, jfloat strength) {
+  return DampingNodeNative_create(env, damp_over, strength,
                                   &ThrowExceptionFromStatusCallback);
 }
 
@@ -180,9 +180,9 @@ JNI_METHOD(brush_behavior, ToolTypeFilterNodeNative, jboolean,
 
 // DampingNode accessors:
 
-JNI_METHOD(brush_behavior, DampingNodeNative, jint, getDampingSourceInt)
+JNI_METHOD(brush_behavior, DampingNodeNative, jint, getDampOverInt)
 (JNIEnv* env, jobject thiz, jlong node_native_pointer) {
-  return DampingNodeNative_getDampingSourceInt(node_native_pointer);
+  return DampingNodeNative_getDampOverInt(node_native_pointer);
 }
 
 JNI_METHOD(brush_behavior, DampingNodeNative, jfloat, getStrength)

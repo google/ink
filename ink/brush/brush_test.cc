@@ -66,8 +66,7 @@ BrushFamily CreateTestFamily() {
                   .response_curve = {EasingFunction::Predefined::kEaseInOut},
               },
               BrushBehavior::DampingNode{
-                  .damping_source =
-                      BrushBehavior::ProgressDomain::kTimeInSeconds,
+                  .damp_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
                   .strength = 0.25,
               },
               BrushBehavior::TargetNode{

@@ -1016,7 +1016,7 @@ TEST_F(ProcessBehaviorNodeTest, DampingNodeDistanceInCentimeters) {
   context_.previous_input_metrics = InputMetrics{.traveled_distance = 0};
   DampingNodeImplementation damping_impl = {
       .damping_index = 0,
-      .damping_source = BrushBehavior::ProgressDomain::kDistanceInCentimeters,
+      .damp_over = BrushBehavior::ProgressDomain::kDistanceInCentimeters,
       .strength = 5.0f,
   };
 
@@ -1065,7 +1065,7 @@ TEST_F(ProcessBehaviorNodeTest,
   context_.previous_input_metrics = InputMetrics{.traveled_distance = 0};
   DampingNodeImplementation damping_impl = {
       .damping_index = 0,
-      .damping_source = BrushBehavior::ProgressDomain::kDistanceInCentimeters,
+      .damp_over = BrushBehavior::ProgressDomain::kDistanceInCentimeters,
       .strength = 5.0f,
   };
 
@@ -1084,7 +1084,7 @@ TEST_F(ProcessBehaviorNodeTest, DampingNodeDistanceInMultiplesOfBrushSize) {
   context_.previous_input_metrics = InputMetrics{.traveled_distance = 0};
   DampingNodeImplementation damping_impl = {
       .damping_index = 0,
-      .damping_source =
+      .damp_over =
           BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize,
       .strength = 5.0f,
   };
@@ -1134,7 +1134,7 @@ TEST_F(ProcessBehaviorNodeTest, DampingNodeTimeInSeconds) {
   };
   DampingNodeImplementation damping_impl = {
       .damping_index = 0,
-      .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
+      .damp_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
       .strength = 0.5f,
   };
 

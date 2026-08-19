@@ -218,8 +218,8 @@ bool IsValidBehaviorBinaryOp(BrushBehavior::BinaryOp operation) {
 }
 
 bool IsValidBehaviorProgressDomain(
-    BrushBehavior::ProgressDomain damping_source) {
-  switch (damping_source) {
+    BrushBehavior::ProgressDomain progress_domain) {
+  switch (progress_domain) {
     case BrushBehavior::ProgressDomain::kDistanceInCentimeters:
     case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize:
     case BrushBehavior::ProgressDomain::kTimeInSeconds:
@@ -319,10 +319,10 @@ absl::Status ValidateNode(const BrushBehavior::ToolTypeFilterNode& node) {
 }
 
 absl::Status ValidateNode(const BrushBehavior::DampingNode& node) {
-  if (!IsValidBehaviorProgressDomain(node.damping_source)) {
+  if (!IsValidBehaviorProgressDomain(node.damp_over)) {
     return absl::InvalidArgumentError(absl::StrFormat(
-        "`DampingNode::damping_source` holds non-enumerator value %d",
-        static_cast<int>(node.damping_source)));
+        "`DampingNode::damp_over` holds non-enumerator value %d",
+        static_cast<int>(node.damp_over)));
   }
   if (!std::isfinite(node.strength) || node.strength < 0) {
     return absl::InvalidArgumentError(
@@ -627,7 +627,7 @@ Version CalculateMinimumRequiredVersion(
 }
 
 Version CalculateMinimumRequiredVersion(BrushBehavior::DampingNode node) {
-  return CalculateMinimumRequiredVersion(node.damping_source);
+  return CalculateMinimumRequiredVersion(node.damp_over);
 }
 
 Version CalculateMinimumRequiredVersion(BrushBehavior::ResponseNode node) {
@@ -920,7 +920,7 @@ std::string ToFormattedString(const BrushBehavior::ToolTypeFilterNode& node) {
 }
 
 std::string ToFormattedString(const BrushBehavior::DampingNode& node) {
-  return absl::StrCat("DampingNode{damping_source=", node.damping_source,
+  return absl::StrCat("DampingNode{damp_over=", node.damp_over,
                       ", strength=", node.strength, "}");
 }
 

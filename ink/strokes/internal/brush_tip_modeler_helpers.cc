@@ -380,8 +380,7 @@ void ProcessBehaviorNodeImpl(const BrushBehavior::ToolTypeFilterNode& node,
 void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
                              const BehaviorNodeContext& context) {
   ABSL_DCHECK(!context.stack.empty());
-  if (node.damping_source ==
-          BrushBehavior::ProgressDomain::kDistanceInCentimeters &&
+  if (node.damp_over == BrushBehavior::ProgressDomain::kDistanceInCentimeters &&
       !context.input_modeler_state.stroke_unit_length.has_value()) {
     context.stack.back() = kNullBehaviorNodeValue;
     return;
@@ -405,7 +404,7 @@ void ProcessBehaviorNodeImpl(const DampingNodeImplementation& node,
     // non-null previous damped value implies that there was at least one
     // previous input, and thus `context.previous_input_metrics` is present.
     ABSL_DCHECK(context.previous_input_metrics.has_value());
-    switch (node.damping_source) {
+    switch (node.damp_over) {
       case BrushBehavior::ProgressDomain::kDistanceInCentimeters: {
         PhysicalDistance damping_distance =
             PhysicalDistance::Centimeters(node.strength);

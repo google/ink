@@ -562,22 +562,22 @@ struct BrushBehavior {
   // Output: The damped input value. If the input value becomes null, this node
   //     continues to emit its previous output value. If the input value starts
   //     out null, the output value is null until the first non-null input. If
-  //     `damping_source` is `kDistanceInCentimeters` and the stroke input data
-  //     does not indicate the relationship between stroke units and physical
-  //     units (e.g. as may be the case for programmatically-generated inputs),
-  //     then the output value will be null regardless of the input.
+  //     `damp_over` is `kDistanceInCentimeters` and the stroke input data does
+  //     not indicate the relationship between stroke units and physical units
+  //     (e.g. as may be the case for programmatically-generated inputs), then
+  //     the output value will be null regardless of the input.
   // To be valid:
-  //   - `damping_source` must be a valid `ProgressDomain` enumerator.
+  //   - `damp_over` must be a valid `ProgressDomain` enumerator.
   //   - `strength` must be finite and non-negative.
   struct DampingNode {
-    ProgressDomain damping_source;
-    float strength;  // measured in `damping_source` units
+    ProgressDomain damp_over;
+    float strength;  // measured in `damp_over` units
 
     friend bool operator==(const DampingNode&, const DampingNode&) = default;
 
     template <typename H>
     friend H AbslHashValue(H h, const DampingNode& dn) {
-      return H::combine(std::move(h), dn.damping_source, dn.strength);
+      return H::combine(std::move(h), dn.damp_over, dn.strength);
     }
   };
 

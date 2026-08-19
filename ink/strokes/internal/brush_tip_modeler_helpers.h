@@ -62,7 +62,7 @@ struct DampingNodeImplementation {
   size_t damping_index;
   // The below fields are copies of the same fields from the
   // `BrushBehavior::DampingNode` that this struct helps implement.
-  BrushBehavior::ProgressDomain damping_source;
+  BrushBehavior::ProgressDomain damp_over;
   float strength;
 };
 

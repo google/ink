@@ -108,8 +108,8 @@ absl::StatusOr<BrushBehavior::BinaryOp> DecodeBrushBehaviorBinaryOp(
 }
 
 proto::BrushBehavior::ProgressDomain EncodeBrushBehaviorProgressDomain(
-    BrushBehavior::ProgressDomain damping_source) {
-  switch (damping_source) {
+    BrushBehavior::ProgressDomain progress_domain) {
+  switch (progress_domain) {
     case BrushBehavior::ProgressDomain::kDistanceInCentimeters:
       return proto::BrushBehavior::PROGRESS_DOMAIN_DISTANCE_IN_CENTIMETERS;
     case BrushBehavior::ProgressDomain::kDistanceInMultiplesOfBrushSize:
@@ -122,8 +122,8 @@ proto::BrushBehavior::ProgressDomain EncodeBrushBehaviorProgressDomain(
 }
 
 absl::StatusOr<BrushBehavior::ProgressDomain> DecodeBrushBehaviorProgressDomain(
-    proto::BrushBehavior::ProgressDomain damping_source_proto) {
-  switch (damping_source_proto) {
+    proto::BrushBehavior::ProgressDomain progress_domain_proto) {
+  switch (progress_domain_proto) {
     case proto::BrushBehavior::PROGRESS_DOMAIN_TIME_IN_SECONDS:
       return BrushBehavior::ProgressDomain::kTimeInSeconds;
     case proto::BrushBehavior::PROGRESS_DOMAIN_DISTANCE_IN_CENTIMETERS:
@@ -134,7 +134,7 @@ absl::StatusOr<BrushBehavior::ProgressDomain> DecodeBrushBehaviorProgressDomain(
     default:
       return absl::InvalidArgumentError(
           absl::StrCat("invalid ink.proto.BrushBehavior.ProgressDomain value: ",
-                       damping_source_proto));
+                       progress_domain_proto));
   }
 }
 
@@ -818,8 +818,8 @@ void EncodeBrushBehaviorNode(const BrushBehavior::DampingNode& node,
                              proto::BrushBehavior::Node& node_proto_out) {
   proto::BrushBehavior::DampingNode* damping_node_proto =
       node_proto_out.mutable_damping_node();
-  damping_node_proto->set_damping_source(
-      EncodeBrushBehaviorProgressDomain(node.damping_source));
+  damping_node_proto->set_damp_over(
+      EncodeBrushBehaviorProgressDomain(node.damp_over));
   damping_node_proto->set_strength(node.strength);
 }
 
@@ -963,11 +963,11 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorToolTypeFilterNode(
 absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorDampingNode(
     const proto::BrushBehavior::DampingNode& node_proto) {
   ABSL_ASSIGN_OR_RETURN(
-      BrushBehavior::ProgressDomain damping_source,
-      DecodeBrushBehaviorProgressDomain(node_proto.damping_source()));
+      BrushBehavior::ProgressDomain damp_over,
+      DecodeBrushBehaviorProgressDomain(node_proto.damp_over()));
 
   return BrushBehavior::DampingNode{
-      .damping_source = damping_source,
+      .damp_over = damp_over,
       .strength = node_proto.strength(),
   };
 }

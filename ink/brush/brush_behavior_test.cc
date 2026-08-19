@@ -286,10 +286,10 @@ TEST(BrushBehaviorTest, StringifyToolTypeFilterNode) {
 
 TEST(BrushBehaviorTest, StringifyDampingNode) {
   EXPECT_EQ(absl::StrCat(BrushBehavior::DampingNode{
-                .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
+                .damp_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
                 .strength = 0.25f,
             }),
-            "DampingNode{damping_source=kTimeInSeconds, strength=0.25}");
+            "DampingNode{damp_over=kTimeInSeconds, strength=0.25}");
 }
 
 TEST(BrushBehaviorTest, StringifyResponseNode) {
@@ -496,22 +496,22 @@ TEST(BrushBehaviorTest, ToolTypeFilterNodeEqualAndNotEqual) {
 
 TEST(BrushBehaviorTest, DampingNodeEqualAndNotEqual) {
   BrushBehavior::DampingNode node = {
-      .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
+      .damp_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
       .strength = 0.5,
   };
   EXPECT_EQ((BrushBehavior::DampingNode{
-                .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
+                .damp_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
                 .strength = 0.5,
             }),
             node);
   EXPECT_NE((BrushBehavior::DampingNode{
-                .damping_source = static_cast<BrushBehavior::ProgressDomain>(
+                .damp_over = static_cast<BrushBehavior::ProgressDomain>(
                     123),  // different
                 .strength = 0.5,
             }),
             node);
   EXPECT_NE((BrushBehavior::DampingNode{
-                .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
+                .damp_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
                 .strength = 0.75,  // different
             }),
             node);
@@ -811,14 +811,14 @@ TEST(BrushBehaviorTest, ValidateToolTypeFilterNode) {
 TEST(BrushBehaviorTest, ValidateDampingNode) {
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
-          .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
+          .damp_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .strength = 0.25,
       }),
       IsOk());
 
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
-          .damping_source = static_cast<BrushBehavior::ProgressDomain>(123),
+          .damp_over = static_cast<BrushBehavior::ProgressDomain>(123),
           .strength = 0.25,
       }),
       StatusIs(absl::StatusCode::kInvalidArgument,
@@ -826,7 +826,7 @@ TEST(BrushBehaviorTest, ValidateDampingNode) {
 
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
-          .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
+          .damp_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .strength = -1,
       }),
       StatusIs(absl::StatusCode::kInvalidArgument,
@@ -834,7 +834,7 @@ TEST(BrushBehaviorTest, ValidateDampingNode) {
 
   EXPECT_THAT(
       brush_internal::ValidateBrushBehaviorNode(BrushBehavior::DampingNode{
-          .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
+          .damp_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
           .strength = kInfinity,
       }),
       StatusIs(absl::StatusCode::kInvalidArgument,
@@ -1036,7 +1036,7 @@ TEST(BrushBehaviorTest, ValidateBrushBehavior) {
           },
           BrushBehavior::ToolTypeFilterNode{{.stylus = true}},
           BrushBehavior::DampingNode{
-              .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
+              .damp_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
               .strength = 0.25,
           },
           BrushBehavior::ConstantNode{0.75},
@@ -1087,7 +1087,7 @@ TEST(BrushBehaviorTest, ValidateBrushBehaviorTopLevel) {
           },
           BrushBehavior::ToolTypeFilterNode{{.stylus = true}},
           BrushBehavior::DampingNode{
-              .damping_source = BrushBehavior::ProgressDomain::kTimeInSeconds,
+              .damp_over = BrushBehavior::ProgressDomain::kTimeInSeconds,
               .strength = 0.25,
           },
           BrushBehavior::ConstantNode{0.75},

@@ -51,7 +51,7 @@ int64_t ToolTypeFilterNodeNative_create(
                                        const char* status_str));
 
 int64_t DampingNodeNative_create(
-    void* jni_env_pass_through, int damping_source, float strength,
+    void* jni_env_pass_through, int damp_over, float strength,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str));
 
@@ -112,7 +112,7 @@ bool ToolTypeFilterNodeNative_getStylusEnabled(int64_t native_ptr);
 bool ToolTypeFilterNodeNative_getUnknownEnabled(int64_t native_ptr);
 
 // DampingNode accessors:
-int DampingNodeNative_getDampingSourceInt(int64_t native_ptr);
+int DampingNodeNative_getDampOverInt(int64_t native_ptr);
 float DampingNodeNative_getStrength(int64_t native_ptr);
 
 // ResponseNode accessors:
