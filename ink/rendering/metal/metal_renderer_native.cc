@@ -19,11 +19,12 @@
 #include <simd/vector_make.h>
 
 #include <cstdint>
+#include <memory>
 #include <optional>
-#include <utility>
 
 #include "absl/status/statusor.h"
 #include "ink/rendering/metal/metal_renderer.h"
+#include "ink/rendering/metal/metal_renderer_objc_helper.h"
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/internal/jni/in_progress_stroke_native_helper.h"
 #include "ink/strokes/internal/jni/stroke_native_helper.h"
@@ -61,18 +62,34 @@ extern "C" {
 int64_t MetalRendererNative_create(
     void* device, uint64_t color_pixel_format, uint64_t stencil_pixel_format,
     int sample_count,
+    void* (*texture_for_id_callback)(int64_t metal_renderer_native_ptr,
+                                     const char* texture_id),
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str)) {
+  std::shared_ptr<void> texture_bitmap_store;
+  if (texture_for_id_callback != nullptr) {
+    texture_bitmap_store =
+        ink::rendering::metal_objc::CreateKotlinTextureStoreWrapper(
+            texture_for_id_callback);
+  }
+
   absl::StatusOr<MetalRenderer> metal_renderer = MetalRenderer::Create(
       device, color_pixel_format, stencil_pixel_format,
-      sample_count >= 0 ? std::make_optional(sample_count) : std::nullopt);
+      sample_count >= 0 ? std::make_optional(sample_count) : std::nullopt,
+      texture_bitmap_store.get());
+
   if (!metal_renderer.ok()) {
     throw_from_status_callback(/*jni_env=*/nullptr,
                                static_cast<int>(metal_renderer.status().code()),
                                metal_renderer.status().ToString().c_str());
     return 0;
   }
-  return NewNativeMetalRenderer(*metal_renderer);
+  int64_t native_ptr = NewNativeMetalRenderer(*metal_renderer);
+  if (texture_bitmap_store != nullptr) {
+    ink::rendering::metal_objc::SetKotlinMetalRendererNativePtr(
+        texture_bitmap_store.get(), native_ptr);
+  }
+  return native_ptr;
 }
 
 void MetalRendererNative_drawInProgressStroke(

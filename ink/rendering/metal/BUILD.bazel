@@ -146,6 +146,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:ios"],
     deps = [
         ":metal_renderer",
+        ":metal_renderer_objc_helper",
         "//ink/strokes:in_progress_stroke",
         "//ink/strokes:stroke",
         "//ink/strokes/internal/jni:in_progress_stroke_native_helper",

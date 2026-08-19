@@ -56,6 +56,44 @@ __attribute__((objc_subclassing_restricted))
 
 @end
 
+__attribute__((objc_subclassing_restricted))
+@interface KotlinTextureStoreWrapper : NSObject<INKTextureBitmapStore>
+@property(nonatomic) int64_t kotlinMetalRendererNativePtr;
+@property(nonatomic, readonly) void* (*callback)(int64_t, const char*);
+
+// Initializes the wrapper with a callback function that will be used to retrieve textures from
+// the Kotlin side.
+//
+// This must be followed by setting `kotlinMetalRendererNativePtr` to the native pointer of the
+// Kotlin Metal renderer.
+//
+// @param callback The callback function to be used to retrieve textures.
+// @return The initialized wrapper.
+- (instancetype)initWithCallback:(void* (*)(int64_t, const char*))callback
+    NS_DESIGNATED_INITIALIZER;
+
+- (instancetype)init NS_UNAVAILABLE;
+
+@end
+
+@implementation KotlinTextureStoreWrapper
+
+- (instancetype)initWithCallback:(void* (*)(int64_t, const char*))callback {
+  self = [super init];
+  if (self) {
+    _callback = callback;
+  }
+  return self;
+}
+
+- (CGImageRef)textureForID:(NSString*)textureID {
+  if (self.callback == nullptr || self.kotlinMetalRendererNativePtr == 0) return nullptr;
+  const char* c_texture_id = [textureID UTF8String];
+  return (CGImageRef)(*self.callback)(self.kotlinMetalRendererNativePtr, c_texture_id);
+}
+
+@end
+
 // Objective-C class holding Metal rendering pipeline state objects by value.
 __attribute__((objc_subclassing_restricted))
 @interface INKMetalRendererState : NSObject
@@ -372,6 +410,20 @@ absl::StatusOr<std::unique_ptr<void, std::function<void(void*)>>> CreateINKMetal
       (__bridge id<MTLDevice>)device_ptr, static_cast<MTLPixelFormat>(color_pixel_format_val),
       static_cast<MTLPixelFormat>(stencil_pixel_format_val), sample_count,
       (__bridge id<INKTextureBitmapStore>)texture_bitmap_store_ptr);
+}
+
+std::shared_ptr<void> CreateKotlinTextureStoreWrapper(
+    void* (*texture_for_id_callback)(int64_t metal_renderer_native_ptr, const char* texture_id)) {
+  KotlinTextureStoreWrapper* wrapper =
+      [[KotlinTextureStoreWrapper alloc] initWithCallback:texture_for_id_callback];
+  return std::shared_ptr<void>((__bridge_retained void*)wrapper, &CFRelease);
+}
+
+void SetKotlinMetalRendererNativePtr(void* texture_store_wrapper_ptr,
+                                     int64_t metal_renderer_native_ptr) {
+  KotlinTextureStoreWrapper* wrapper =
+      (__bridge KotlinTextureStoreWrapper*)texture_store_wrapper_ptr;
+  wrapper.kotlinMetalRendererNativePtr = metal_renderer_native_ptr;
 }
 
 absl_nullable std::shared_ptr<void> CreateINKMeshBuffers(void* renderer_state_ptr,

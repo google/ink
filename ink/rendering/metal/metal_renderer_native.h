@@ -29,10 +29,14 @@ extern "C" {
 // `color_pixel_format` and `stencil_pixel_format` are the `MTLPixelFormat` of
 // the color and stencil textures to render to. `sample_count` is the number of
 // samples per pixel for MSAA. If -1, shader-based antialiasing will be used
-// instead.
+// instead. `texture_for_id_callback` is a callback used to retrieve textures
+// for given texture ID strings, and returns a nullable raw pointer to a
+// `CGImage`.
 int64_t MetalRendererNative_create(
     void* device, uint64_t color_pixel_format, uint64_t stencil_pixel_format,
     int sample_count,
+    void* (*texture_for_id_callback)(int64_t metal_renderer_native_ptr,
+                                     const char* texture_id),
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str));
 

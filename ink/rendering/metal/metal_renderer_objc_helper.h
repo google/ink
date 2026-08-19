@@ -48,6 +48,20 @@ CreateINKMetalRendererState(
     uint64_t stencil_pixel_format_val, std::optional<int> sample_count,
     void* absl_nullable texture_bitmap_store_ptr = nullptr);
 
+// Creates a wrapper implementing `INKTextureBitmapStore` that delegates to a
+// Kotlin callback.
+// Returns an opaque pointer to the wrapper, which should be passed to
+// `CreateINKMetalRendererState`.
+// The caller is responsible for releasing the wrapper (e.g. via CFRelease)
+// after passing it to `CreateINKMetalRendererState` (which will retain it).
+std::shared_ptr<void> CreateKotlinTextureStoreWrapper(
+    void* (*texture_for_id_callback)(int64_t metal_renderer_native_ptr,
+                                     const char* texture_id));
+
+// Sets the native pointer of the `MetalRenderer` on the wrapper.
+void SetKotlinMetalRendererNativePtr(void* texture_store_wrapper_ptr,
+                                     int64_t metal_renderer_native_ptr);
+
 // The functions below take opaque pointers to ObjC objects:
 // - `renderer_state_ptr` is an opaque pointer to `INKMetalRendererState`.
 // - `texture_ptr` is an opaque pointer to `id<MTLTexture>`.
