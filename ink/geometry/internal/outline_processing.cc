@@ -22,6 +22,7 @@
 #include <functional>
 #include <limits>
 #include <numeric>
+#include <optional>
 #include <queue>
 #include <tuple>
 #include <utility>
@@ -32,7 +33,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
-#include "ink/geometry/internal/algorithms.h"
+#include "ink/geometry/envelope.h"
 #include "ink/geometry/internal/intersects_internal.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
@@ -69,6 +70,20 @@ struct BoundarySegment {
     if (start.x != other.start.x) return start.x < other.start.x;
     return end.x < other.end.x;
   }
+};
+
+// Helper struct representing a (transverse) intersection between two segments.
+struct SegmentIntersection {
+  // Intersection parameter along the first segment.
+  float t;
+
+  // Intersection parameter along the second segment.
+  float s;
+
+  // The sign of the intersection: +1 if the second segment crosses from
+  // left-to-right (from the perspective of the first segment), and -1 if
+  // right-to-left.
+  int sign;
 };
 
 // A helper struct to represent an intersection event on a chain.
@@ -163,6 +178,57 @@ int VertexVertexIntersectionSign(const Point& u1, const Point& u2,
   return 0;
 }
 
+inline std::optional<SegmentIntersection> ComputeIntersection(
+    const Point& a_start, const Point& a_end, const Point& b_start,
+    const Point& b_end) {
+  // The intersection point between the two segments is obtained by
+  // finding the parametric values t and s such that:
+  //  Lerp(a_start, a_end, t) ==
+  //  Lerp(b_start, b_end, s)
+  //
+  // The general solution is
+  //  t = (w x v) / (u x v)
+  //  s = (w x u) / (u x v)
+  // where
+  //  u = a_end - a_start
+  //  v = b_end - b_start
+  //  w = b_start - a_start
+
+  // The denominator, u x v
+  const double u_x_v =
+      Determinant(a_start, a_end, b_end) - Determinant(a_start, a_end, b_start);
+
+  // TODO(b/521449017): Handle collinear intersections.
+  if (u_x_v == 0.0) return std::nullopt;
+
+  // Normalize the denominator to be positive. This allows us to perform
+  // sign-agnostic range checks for t and s in [0, 1] using absolute bounds.
+  const int sign = Sign(u_x_v);
+  const double abs_u_x_v = std::abs(u_x_v);
+
+  // The numerators.
+  const double w_x_v = sign * Determinant(a_start, b_start, b_end);
+  const double w_x_u = sign * Determinant(a_start, b_start, a_end);
+
+  // To ensure that we capture intersections at the endpoint, expand the
+  // segments by a bit to account for floating point precision. Note that
+  // this can result in duplicates (with an intersection from each adjacent
+  // segment) or false-positives. The duplicates are explicitly handled in a
+  // post processing step; false-positives will have zero intersection sign,
+  // and will cause little harm.
+  const double err = kFloatTolerance * abs_u_x_v;
+  if (w_x_v < -err || w_x_v > abs_u_x_v + err) return std::nullopt;
+  if (w_x_u < -err || w_x_u > abs_u_x_v + err) return std::nullopt;
+
+  // Intersections close to endpoints are snapped exactly to the endpoint, so
+  // that t and s are in [0,1], with values of 0 and 1 corresponding to
+  // endpoints.
+  const float t = Snap(0.0f, abs_u_x_v, w_x_v, err) / abs_u_x_v;
+  const float s = Snap(0.0f, abs_u_x_v, w_x_u, err) / abs_u_x_v;
+
+  return SegmentIntersection{t, s, sign};
+}
+
 // Returns a flattened list of all segments from the given loops, sorted
 // from left-to-right based on the start-coordinate.
 std::vector<BoundarySegment> GetSegments(
@@ -189,9 +255,9 @@ std::vector<BoundarySegment> GetSegments(
 
 // Given a sorted list of boundary segments, returns a map from segment index to
 // a list of intersection points on that segment.
-absl::flat_hash_map<uint32_t, std::vector<Point>> FindIntersections(
+absl::flat_hash_map<uint32_t, absl::InlinedVector<Point, 2>> FindIntersections(
     const std::vector<BoundarySegment>& segments) {
-  absl::flat_hash_map<uint32_t, std::vector<Point>> intersections;
+  absl::flat_hash_map<uint32_t, absl::InlinedVector<Point, 2>> intersections;
   absl::InlinedVector<uint32_t, 8> active;
 
   // Sweep the plane from left-to-right.
@@ -212,16 +278,35 @@ absl::flat_hash_map<uint32_t, std::vector<Point>> FindIntersections(
           std::minmax(segments[j].start.y, segments[j].end.y);
       if (i_ymax < j_ymin || i_ymin > j_ymax) continue;
 
-      if (auto ratios =
-              SegmentIntersectionRatio({segments[i].start, segments[i].end},
-                                       {segments[j].start, segments[j].end})) {
-        if (ratios->first > 0.0f && ratios->first < 1.0f &&
-            ratios->second > 0.0f && ratios->second < 1.0f) {
-          Point p = segments[i].start +
-                    ratios->first * (segments[i].end - segments[i].start);
-          intersections[i].push_back(p);
-          intersections[j].push_back(p);
-        }
+      if (segments[i].start == segments[j].start ||
+          segments[i].end == segments[j].end) {
+        continue;
+      }
+
+      std::optional<SegmentIntersection> intersection =
+          ComputeIntersection(segments[i].start, segments[i].end,
+                              segments[j].start, segments[j].end);
+
+      if (!intersection.has_value()) continue;
+
+      auto [t, s, unused_sign] = *intersection;
+
+      // We explicitly branch on the different intersection configurations
+      // of edge-edge, vertex-edge, or vertex-vertex intersection, pushing
+      // strictly to the arrays only when the segment's interior is pierced.
+      if (t > 0.0f && t < 1.0f && s > 0.0f && s < 1.0f) {
+        // The generic case: the segments cross each other in their interiors.
+        Point p = segments[i].start + t * (segments[i].end - segments[i].start);
+        intersections[i].push_back(p);
+        intersections[j].push_back(p);
+      } else if (s > 0.0f && s < 1.0f) {
+        // A vertex on segment i lies on the current segment of j.
+        Point p = (t == 1.0f) ? segments[i].end : segments[i].start;
+        intersections[j].push_back(p);
+      } else if (t > 0.0f && t < 1.0f) {
+        // A vertex on segment j lies on the current segment of i.
+        Point p = (s == 1.0f) ? segments[j].end : segments[j].start;
+        intersections[i].push_back(p);
       }
     }
 
@@ -231,6 +316,7 @@ absl::flat_hash_map<uint32_t, std::vector<Point>> FindIntersections(
 
   for (auto& [i, cuts] : intersections) {
     absl::c_sort(cuts, IsLeftOrBelow);
+    cuts.erase(std::unique(cuts.begin(), cuts.end()), cuts.end());
   }
 
   return intersections;
@@ -241,7 +327,8 @@ absl::flat_hash_map<uint32_t, std::vector<Point>> FindIntersections(
 // intersection points.
 void SubdivideSegments(
     std::vector<BoundarySegment>& segments,
-    const absl::flat_hash_map<uint32_t, std::vector<Point>>& intersections) {
+    const absl::flat_hash_map<uint32_t, absl::InlinedVector<Point, 2>>&
+        intersections) {
   size_t orig_size = segments.size();
   size_t intersection_count = 0;
   for (const auto& [i, cuts] : intersections) intersection_count += cuts.size();
@@ -516,106 +603,6 @@ uint32_t GetStartIndex(absl::Span<const Point> verts, Point p) {
   return i > 0 ? i - 1 : 0;
 }
 
-// Finds any intersections between the `i`th segment of the first chain and
-// the `j`th segment of the second chain, appending them to `intersections_a`
-// and `intersections_b`.
-void FindSegmentIntersections(
-    const ShapeOutline& shape_a, uint32_t a_idx, uint32_t i,
-    const ShapeOutline& shape_b, uint32_t b_idx, uint32_t j,
-    absl::InlinedVector<ChainIntersection, 2>& intersections_a,
-    absl::InlinedVector<ChainIntersection, 2>& intersections_b) {
-  const MonotoneChain& chain_a = shape_a.Chains()[a_idx];
-  const MonotoneChain& chain_b = shape_b.Chains()[b_idx];
-  absl::Span<const Point> verts_a = chain_a.Vertices();
-  absl::Span<const Point> verts_b = chain_b.Vertices();
-
-  // The intersection point between the two segments is obtained by
-  // finding the parametric values t and s such that:
-  //  Lerp(verts_a[i], verts_a[i + 1], t) ==
-  //  Lerp(verts_b[j], verts_b[j + 1], s)
-  //
-  // The general solution is
-  //  t = (w x v) / (u x v)
-  //  s = (w x u) / (u x v)
-  // where
-  //  u = verts_a[i + 1] - verts_a[i]
-  //  v = verts_b[j + 1] - verts_b[j]
-  //  w = verts_b[j] - verts_a[i]
-
-  // The denominator determinant, u x v
-  const double u_x_v = Determinant(verts_a[i], verts_a[i + 1], verts_b[j + 1]) -
-                       Determinant(verts_a[i], verts_a[i + 1], verts_b[j]);
-
-  // TODO(b/521449017): Handle collinear intersections.
-  if (u_x_v == 0.0) return;
-
-  // Normalize the denominator to be positive, for simplicity.
-  const int uv_sign = Sign(u_x_v);
-  const double abs_u_x_v = std::abs(u_x_v);
-
-  // The numerators, w x v and w x u.
-  const double w_x_v =
-      uv_sign * Determinant(verts_a[i], verts_b[j], verts_b[j + 1]);
-  const double w_x_u =
-      uv_sign * Determinant(verts_a[i], verts_b[j], verts_a[i + 1]);
-
-  // To ensure that we capture intersections at the endpoint, expand the
-  // segments by a bit to account for floating point precision. Note that
-  // this can result in duplicates (with an intersection from each adjacent
-  // segment) or false-positives. The duplicates are explicitly handled in a
-  // post processing step; false-positives will have zero intersection sign,
-  // and will cause little harm.
-  const double err = kFloatTolerance * abs_u_x_v;
-  if (w_x_v < -err || w_x_v > abs_u_x_v + err) return;
-  if (w_x_u < -err || w_x_u > abs_u_x_v + err) return;
-
-  // Intersections close to endpoints are snapped exactly to the endpoint, so
-  // that t and s are in [0,1], with values of 0 and 1 corresponding to
-  // endpoints.
-  const float t = Snap(0.0f, abs_u_x_v, w_x_v, err) / abs_u_x_v;
-  const float s = Snap(0.0f, abs_u_x_v, w_x_u, err) / abs_u_x_v;
-
-  // We explicitly branch on the different intersection configurations
-  // of edge-edge, vertex-edge, or vertex-vertex intersection.
-  if (t > 0.0f && t < 1.0f && s > 0.0f && s < 1.0f) {
-    // The generic case: the segments cross each other in their interiors.
-    Point p = verts_a[i] + t * (verts_a[i + 1] - verts_a[i]);
-    int sign = -chain_a.Orientation() * chain_b.Orientation() * uv_sign;
-    intersections_a.push_back({p, i, sign});
-    intersections_b.push_back({p, j, -sign});
-  } else if (0.0 < s && s < 1.0) {
-    // A vertex on chain_a lies on the current segment of chain_b.
-    uint32_t vert_i = (t == 1.0) ? i + 1 : i;
-    Point p = verts_a[vert_i];
-    auto [u_in, u_out] = GetNeighbors(shape_a, a_idx, vert_i);
-    int sign =
-        -chain_b.Orientation() *
-        VertexEdgeIntersectionSign(u_in, p, u_out, verts_b[j], verts_b[j + 1]);
-    intersections_a.push_back({p, vert_i, sign});
-    intersections_b.push_back({p, j, -sign});
-  } else if (0.0 < t && t < 1.0) {
-    // A vertex on chain_b lies on the current segment of chain_a.
-    uint32_t vert_j = (s == 1.0) ? j + 1 : j;
-    Point p = verts_b[vert_j];
-    auto [v_in, v_out] = GetNeighbors(shape_b, b_idx, vert_j);
-    int sign =
-        chain_a.Orientation() *
-        VertexEdgeIntersectionSign(v_in, p, v_out, verts_a[i], verts_a[i + 1]);
-    intersections_a.push_back({p, i, sign});
-    intersections_b.push_back({p, vert_j, -sign});
-  } else {
-    // A vertex on chain_a overlaps a vertex on chain_b.
-    uint32_t vert_i = (t == 1.0) ? i + 1 : i;
-    uint32_t vert_j = (s == 1.0) ? j + 1 : j;
-    Point p = verts_b[vert_j];
-    auto [u_in, u_out] = GetNeighbors(shape_a, a_idx, vert_i);
-    auto [v_in, v_out] = GetNeighbors(shape_b, b_idx, vert_j);
-    int sign = -VertexVertexIntersectionSign(u_in, p, u_out, v_in, v_out);
-    intersections_a.push_back({p, vert_i, sign});
-    intersections_b.push_back({p, vert_j, -sign});
-  }
-}
-
 // Finds all boundary intersections between the shapes. The result is returned
 // as a pair of vectors, one for each shape, where each vector contains the
 // intersections on each chain in order.
@@ -656,9 +643,57 @@ FindBoundaryIntersections(const ShapeOutline& shape_a,
 
         // Bounding box check.
         if (!(a_ymax < b_ymin || a_ymin > b_ymax)) {
-          FindSegmentIntersections(shape_a, a_idx, i, shape_b, b_idx, j,
-                                   intersections_a[a_idx],
-                                   intersections_b[b_idx]);
+          std::optional<SegmentIntersection> params = ComputeIntersection(
+              verts_a[i], verts_a[i + 1], verts_b[j], verts_b[j + 1]);
+
+          if (params.has_value()) {
+            float t = params->t;
+            float s = params->s;
+            int uv_sign = params->sign;
+
+            // We explicitly branch on the different intersection configurations
+            // of edge-edge, vertex-edge, or vertex-vertex intersection.
+            if (t > 0.0f && t < 1.0f && s > 0.0f && s < 1.0f) {
+              // The generic case: the segments cross each other in their
+              // interiors.
+              Point p = verts_a[i] + t * (verts_a[i + 1] - verts_a[i]);
+              int sign =
+                  -chain_a.Orientation() * chain_b.Orientation() * uv_sign;
+              intersections_a[a_idx].push_back({p, i, sign});
+              intersections_b[b_idx].push_back({p, j, -sign});
+            } else if (s > 0.0 && s < 1.0) {
+              // A vertex on chain_a lies on the current segment of chain_b.
+              uint32_t vert_i = (t == 1.0) ? i + 1 : i;
+              Point p = verts_a[vert_i];
+              auto [u_in, u_out] = GetNeighbors(shape_a, a_idx, vert_i);
+              int sign = -chain_b.Orientation() *
+                         VertexEdgeIntersectionSign(u_in, p, u_out, verts_b[j],
+                                                    verts_b[j + 1]);
+              intersections_a[a_idx].push_back({p, vert_i, sign});
+              intersections_b[b_idx].push_back({p, j, -sign});
+            } else if (t > 0.0 && t < 1.0) {
+              // A vertex on chain_b lies on the current segment of chain_a.
+              uint32_t vert_j = (s == 1.0) ? j + 1 : j;
+              Point p = verts_b[vert_j];
+              auto [v_in, v_out] = GetNeighbors(shape_b, b_idx, vert_j);
+              int sign = chain_a.Orientation() *
+                         VertexEdgeIntersectionSign(v_in, p, v_out, verts_a[i],
+                                                    verts_a[i + 1]);
+              intersections_a[a_idx].push_back({p, i, sign});
+              intersections_b[b_idx].push_back({p, vert_j, -sign});
+            } else {
+              // A vertex on chain_a overlaps a vertex on chain_b.
+              uint32_t vert_i = (t == 1.0) ? i + 1 : i;
+              uint32_t vert_j = (s == 1.0) ? j + 1 : j;
+              Point p = verts_b[vert_j];
+              auto [u_in, u_out] = GetNeighbors(shape_a, a_idx, vert_i);
+              auto [v_in, v_out] = GetNeighbors(shape_b, b_idx, vert_j);
+              int sign =
+                  -VertexVertexIntersectionSign(u_in, p, u_out, v_in, v_out);
+              intersections_a[a_idx].push_back({p, vert_i, sign});
+              intersections_b[b_idx].push_back({p, vert_j, -sign});
+            }
+          }
         }
 
         if (IsLeftOrBelow(verts_a[i + 1], verts_b[j + 1])) {
@@ -865,7 +900,7 @@ std::vector<MonotoneChain> ComputeChains(
   // lying on the boundary, and construct the monotone chains.
 
   std::vector<BoundarySegment> segments = GetSegments(loops);
-  absl::flat_hash_map<uint32_t, std::vector<Point>> intersections =
+  absl::flat_hash_map<uint32_t, absl::InlinedVector<Point, 2>> intersections =
       FindIntersections(segments);
   SubdivideSegments(segments, intersections);
   return ExtractChains(segments);

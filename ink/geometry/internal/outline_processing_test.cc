@@ -91,6 +91,56 @@ TEST(ComputeOutlineTest, SelfIntersection) {
   EXPECT_EQ(outline, ShapeOutline({{{A, F, X1, C, B}, -1}, {{A, B}, 1}}));
 }
 
+TEST(ComputeOutlineTest, SelfIntersection2) {
+  //       E           C
+  //      / \         / \
+  //     /   \       /   \
+  //    /     \     /     \
+  //   /       \   /       \
+  //  /         \ /         \
+  // A-----------D-----------B
+  Point A{0, 0}, B{4, 0}, C{3, 2}, D{2, 0}, E{1, 3};
+
+  std::vector<std::vector<Point>> loops = {{A, B, C, D, E}};
+  ShapeOutline outline(loops);
+
+  EXPECT_EQ(outline, ShapeOutline({{{A, D, B}, 1}, {{A, E, D, C, B}, -1}}));
+}
+
+TEST(ComputeOutlineTest, SelfIntersection3) {
+  //    E           C
+  //    |\         / \
+  //    | \       /   \
+  //    |  \     /     \
+  //    |   \   /       \
+  //    |    \ /         \
+  //    A-----D-----------B
+  Point A{1.1, 0}, B{4, 0}, C{3, 2}, D{2, 0}, E{1, 3};
+
+  std::vector<std::vector<Point>> loops = {{A, B, C, D, E}};
+  ShapeOutline outline(loops);
+
+  EXPECT_EQ(outline, ShapeOutline({{{E, A, D, B}, 1}, {{E, D, C, B}, -1}}));
+}
+
+TEST(ComputeOutlineTest, SelfIntersection4) {
+  //    I-------H
+  //   /    C    \
+  //  /    / \    \
+  // A----D---B    G
+  //       \      /
+  //        \    /
+  //         E--F
+
+  Point A{0, 0}, B{4, 0}, C{3, 2}, D{2, 0}, E{3, -3}, F{5, -3}, G{6, 0},
+      H{5, 3}, I{1, 3};
+
+  std::vector<std::vector<Point>> loops = {{A, B, C, D, E, F, G, H, I}};
+  ShapeOutline outline(loops);
+
+  EXPECT_EQ(outline, ShapeOutline({{{A, D, E, F, G}, 1}, {{A, I, H, G}, -1}}));
+}
+
 TEST(ComputeOutlineTest, VerticalSegments) {
   // There is some ambiguity in how to handle vertical portions of the boundary
   // in the monotone chains. The approach we take is conceptually to perturb

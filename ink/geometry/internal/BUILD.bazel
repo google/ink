@@ -419,8 +419,8 @@ cc_library(
     srcs = ["outline_processing.cc"],
     hdrs = ["outline_processing.h"],
     deps = [
-        ":algorithms",
         ":intersects_internal",
+        "//ink/geometry:envelope",
         "//ink/geometry:point",
         "//ink/geometry:rect",
         "//ink/geometry:segment",
