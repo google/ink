@@ -31,7 +31,7 @@ enum class AttributeType {
   kFloat3 = 2,
   kUByte4 = 4,
 };
-// LINT.ThenChange(../../..//third_party/java/androidx/ink/rendering/main/android/canvas/internal/CanvasMeshRenderer.kt:shader_variable_types)
+// LINT.ThenChange(../../..//third_party/java/androidx/ink/rendering/main/android/canvas/internal/CanvasMeshRenderer.android.kt:shader_variable_types)
 
 // Vertex attribute type and offset.
 struct TypeAndByteOffset {
