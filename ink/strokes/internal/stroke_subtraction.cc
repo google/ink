@@ -19,10 +19,12 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
@@ -54,6 +56,8 @@ using ::ink::numbers::kPi;
 
 using TriangleAttributes =
     absl::InlinedVector<std::array<SmallArray<float, 4>, 3>, 4>;
+
+constexpr float kInfinity = std::numeric_limits<float>::infinity();
 
 float DistanceSquared(Point a, Point b) { return (a - b).MagnitudeSquared(); }
 
@@ -136,17 +140,12 @@ TriangleAttributes GetTriangleAttributes(
   for (uint32_t i = 0; i < attributes.size(); ++i) {
     MeshFormat::AttributeId id = mesh.Format().Attributes()[i].id;
 
-    // Since the position is already stored elsewhere, and derivate attributes
-    // are presently hardcoded, skip loading these.
-    // NOMUTANTS
-    if (id == MeshFormat::AttributeId::kPosition ||
-        id == MeshFormat::AttributeId::kSideDerivative ||
-        id == MeshFormat::AttributeId::kForwardDerivative) {
+    // Since the position is already stored elsewhere, skip loading it.
+    if (id == MeshFormat::AttributeId::kPosition) {
       continue;
     }
 
-    // As anti-aliasing is not yet supported, these attributes should not be
-    // loaded and interpolated.
+    // These attributes should not be interpolated.
     if (id == MeshFormat::AttributeId::kSideLabel ||
         id == MeshFormat::AttributeId::kForwardLabel) {
       continue;
@@ -163,6 +162,64 @@ TriangleAttributes GetTriangleAttributes(
     }
   }
   return attributes;
+}
+
+// LINT.IfChange(boundary_label_encoding)
+
+// A flattened list of all vertex boundary labels. See stroke_vertex.h.
+enum BoundaryLabel : int {
+  kUndefined = -1,
+  kInterior = 0,
+  kLeft = 1,
+  kRight = 2,
+  kFront = 3,
+  kLeftFront = 4,
+  kRightFront = 5,
+  kBack = 6,
+  kLeftBack = 7,
+  kRightBack = 8,
+};
+
+// Converts encoded float values to a BoundaryLabel enum value.
+BoundaryLabel DecodeBoundaryLabel(float side, float fwd) {
+  int side_idx = (side > 0.0f) ? 2 : (side < 0.0f ? 1 : 0);
+  int fwd_idx = (fwd > 0.0f) ? 2 : (fwd < 0.0f ? 1 : 0);
+  return static_cast<BoundaryLabel>(3 * fwd_idx + side_idx);
+}
+
+// Converts a BoundaryLabel enum value to its encoded float values.
+std::pair<float, float> EncodeBoundaryLabel(BoundaryLabel label) {
+  // Encoded float values for interior (0.0), left/front (-127.0), and
+  // right/back (127.0) boundary labels.
+  constexpr float kLabelValues[] = {0.0f, -127.0f, 127.0f};
+  return {kLabelValues[label % 3], kLabelValues[label / 3]};
+}
+
+// Returns an edge label (kInterior, kLeft, kRight, kFront, kBack) given the
+// labels of its endpoint vertices.
+BoundaryLabel GetEdgeLabel(BoundaryLabel u, BoundaryLabel v) {
+  if (u == kUndefined || v == kUndefined) return kUndefined;
+  int u_side = u % 3, v_side = v % 3;
+  int u_fwd = u / 3, v_fwd = v / 3;
+  bool same_side = (u_side != 0 && u_side == v_side);
+  bool same_fwd = (u_fwd != 0 && u_fwd == v_fwd);
+  if (same_side && same_fwd) return kUndefined;
+  if (same_side) return static_cast<BoundaryLabel>(u_side);
+  if (same_fwd) return static_cast<BoundaryLabel>(3 * u_fwd);
+  return kInterior;
+}
+// LINT.ThenChange(
+//     //depot/google3/third_party/ink/strokes/internal/stroke_vertex.h:margin_encoding,
+//     //depot/google3/third_party/ink/rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:calculate_antialiasing_and_position_outset,
+//     //depot/google3/third_party/ink/rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
+
+// Returns true if `format` has the attributes required for anti-aliasing.
+bool HasBoundaryLabels(const MeshFormat& format) {
+  StrokeVertex::FormatAttributeIndices attr_indices =
+      StrokeVertex::FindAttributeIndices(format);
+  return attr_indices.side_label != -1 && attr_indices.forward_label != -1 &&
+         attr_indices.side_derivative != -1 &&
+         attr_indices.forward_derivative != -1;
 }
 
 // Properties of an input mesh triangle, including the `indices` of the points
@@ -182,7 +239,9 @@ struct TriangleData {
 // vertices back together along shared edges.
 class MeshBuilder {
  public:
-  explicit MeshBuilder(const MeshFormat& format) : mutable_mesh_(format) {}
+  explicit MeshBuilder(const MeshFormat& format)
+      : mutable_mesh_(format),
+        attr_indices_(StrokeVertex::FindAttributeIndices(format)) {}
 
   // Copies the vertex and its attributes from the given `mesh` at
   // `vertex_index` and appends it to this mesh, and returns
@@ -225,6 +284,34 @@ class MeshBuilder {
     return AddVertex(p, triangle, weights);
   }
 
+  Point GetPosition(uint32_t vertex_index) const {
+    return mutable_mesh_.VertexPosition(vertex_index);
+  }
+
+  void SetLabel(uint32_t vertex_index, BoundaryLabel label) {
+    auto [side, forward] = EncodeBoundaryLabel(label);
+    mutable_mesh_.SetFloatVertexAttribute(vertex_index,
+                                          attr_indices_.side_label, {side});
+    mutable_mesh_.SetFloatVertexAttribute(
+        vertex_index, attr_indices_.forward_label, {forward});
+  }
+
+  BoundaryLabel GetLabel(uint32_t vertex_index) const {
+    float side = mutable_mesh_.FloatVertexAttribute(
+        vertex_index, attr_indices_.side_label)[0];
+    float fwd = mutable_mesh_.FloatVertexAttribute(
+        vertex_index, attr_indices_.forward_label)[0];
+    return DecodeBoundaryLabel(side, fwd);
+  }
+
+  Vec GetSideDerivative(uint32_t vertex_index) const {
+    auto sd = mutable_mesh_.FloatVertexAttribute(vertex_index,
+                                                 attr_indices_.side_derivative);
+    return {sd[0], sd[1]};
+  }
+
+  const MutableMesh& GetMesh() const { return mutable_mesh_; }
+
   // Extracts the underlying MutableMesh by moving it, consuming the
   // MeshBuilder.
   MutableMesh ExtractMesh() && { return std::move(mutable_mesh_); }
@@ -246,12 +333,6 @@ class MeshBuilder {
     ABSL_DCHECK_EQ(triangle.attributes.size(), format.Attributes().size());
     for (uint32_t attr = 0; attr < triangle.attributes.size(); ++attr) {
       MeshFormat::AttributeId id = format.Attributes()[attr].id;
-      // Set derivatives to 1.0 to avoid divisions-by-zero in the shader.
-      if (id == MeshFormat::AttributeId::kSideDerivative ||
-          id == MeshFormat::AttributeId::kForwardDerivative) {
-        mutable_mesh_.SetFloatVertexAttribute(new_index, attr, {1.0f, 1.0f});
-        continue;
-      }
 
       const std::array<SmallArray<float, 4>, 3>& vals =
           triangle.attributes[attr];
@@ -294,6 +375,7 @@ class MeshBuilder {
   }
 
   MutableMesh mutable_mesh_;
+  StrokeVertex::FormatAttributeIndices attr_indices_;
 
   // A map to help weld triangles back together along split edges. It maps
   // ordered pairs of vertex indices (representing edges in the initial meshes)
@@ -368,6 +450,149 @@ std::vector<std::vector<uint32_t>> ComputeOutlines(const MutableMesh& mesh) {
   }
   return outlines;
 }
+
+// LINT.IfChange(compute_labels)
+
+// The alignment cost measures how well the edge label `label` aligns with
+// `edge`.
+float AlignmentCost(BoundaryLabel label, Vec edge) {
+  if (label == kLeft) return edge.x;
+  if (label == kRight) return -edge.x;
+  if (label == kFront) return -edge.y;
+  if (label == kBack) return edge.y;
+  if (label == kInterior) return 0.0f;
+  return kInfinity;
+}
+
+// A helper function to assign boundary labels for the vertices (strictly)
+// between indices `i` and `j % n` in `outline`, writing the computed
+// labels into `labels`.
+void ComputeLabels(absl::Span<const uint32_t> outline, size_t i, size_t j,
+                   std::vector<BoundaryLabel>& labels,
+                   const MeshBuilder& mesh_builder) {
+  // Our approach for labeling is to try to assign vertex labels so that the
+  // induced edge labels (left, right, front, back) are aligned with their
+  // geometric orientation (relative to the original mesh frame, defined by its
+  // side derivatives).
+  //
+  // In practice, this is complicated by the fact that not all edge labels can
+  // be lifted to vertex labels, and it's not always clear how to relax the
+  // alignment goal to find a feasible edge labeling. Instead, we formulate
+  // labeling as an optimization problem: we assign an "alignment cost" to each
+  // edge, and choose vertex labels that minimize the total cost across all
+  // boundary edges.
+  //
+  // In terms of the vertex labels (l1, l2, l3, ...), the total cost function
+  // has the form
+  //    S = cost(l1,l2) + cost(l2,l3) + ...
+  // and can be minimized by standard dynamic programming.
+
+  // Accumulated minimum cost to reach each of the 9 candidate BoundaryLabel
+  // states at the current step.
+  std::array<float, 9> cost;
+  // Backpointer table for DP backtracking: bptr[step][curr] stores the index of
+  // the preceding label (prev) that yielded the minimum cost for state `curr`.
+  std::vector<std::array<int, 9>> bptr(j - i + 1);
+
+  // Initialize the costs.
+  cost.fill(kInfinity);
+  cost[labels[i]] = 0.0f;
+
+  const size_t n = outline.size();
+
+  Point u = mesh_builder.GetPosition(outline[i]);
+  Vec u_sd = mesh_builder.GetSideDerivative(outline[i]);
+
+  for (size_t k = i + 1; k <= j; ++k) {
+    size_t v_idx = outline[k % n];
+    Point v = mesh_builder.GetPosition(v_idx);
+    Vec v_sd = mesh_builder.GetSideDerivative(v_idx);
+
+    Vec edge = u - v;
+    Vec sd = ((u_sd + v_sd) * 0.5f).AsUnitVec();
+    // Compute the edge in local coordinates of the mesh, using the side
+    // derivative sd to define the frame.
+    Vec edge_local = {edge.y * sd.x - edge.x * sd.y,
+                      -(edge.x * sd.x + edge.y * sd.y)};
+
+    // Compute the transition costs to the next step.
+    std::array<float, 9> next_cost;
+    next_cost.fill(kInfinity);
+
+    // Iterate over all labels for (u,v)
+    for (int u_label = 0; u_label < 9; ++u_label) {
+      for (int v_label = 0; v_label < 9; ++v_label) {
+        BoundaryLabel edge_label =
+            GetEdgeLabel(static_cast<BoundaryLabel>(v_label),
+                         static_cast<BoundaryLabel>(u_label));
+
+        // Ignore bad labels (e.g., when the vertex labels give the edge two
+        // labels).
+        if (edge_label == kUndefined) continue;
+
+        float path_cost = cost[v_label] + AlignmentCost(edge_label, edge_local);
+        if (path_cost < next_cost[u_label]) {
+          next_cost[u_label] = path_cost;
+          bptr[k - i][u_label] = v_label;
+        }
+      }
+    }
+    cost = next_cost;
+    u = v;
+    u_sd = v_sd;
+  }
+
+  // Backtrack and update the computed labels in `labels`.
+  int curr_label = labels[j % n];
+  for (size_t k = j; k > i + 1; --k) {
+    curr_label = bptr[k - i][curr_label];
+    labels[(k - 1) % n] = static_cast<BoundaryLabel>(curr_label);
+  }
+}
+
+// Computes anti-aliasing labels for boundary vertices.
+void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
+                         MeshBuilder& mesh_builder) {
+  // The boundary of the result mesh typically consists of alternating
+  // segments of the original mesh boundary and subtracted shape boundary.
+  // During the subtraction computation, the labels of the original mesh
+  // vertices are copied (see CopyVertex), while those of the subtracted shape
+  // are set to kInterior (see GetTriangleAttributes).
+  //
+  // To avoid recomputing the labels for the untouched portions of the mesh, we
+  // instead traverse the outline to identify maximal segments of unlabeled
+  // vertices and compute new labels for each.
+
+  for (absl::Span<const uint32_t> outline : outlines) {
+    // Read all the vertex labels from the mesh.
+    const size_t n = outline.size();
+    std::vector<BoundaryLabel> labels;
+    labels.reserve(n);
+    for (uint32_t vertex_index : outline) {
+      labels.push_back(mesh_builder.GetLabel(vertex_index));
+    }
+
+    // Iterate through to find maximal unlabeled segments.
+    for (size_t i = 0; i < n; ++i) {
+      if (labels[i] != kInterior && labels[(i + 1) % n] == kInterior) {
+        size_t j = i;
+        while (labels[(j + 1) % n] == kInterior) ++j;
+
+        ComputeLabels(outline, i, j + 1, labels, mesh_builder);
+
+        for (size_t k = i + 1; k <= j; ++k) {
+          mesh_builder.SetLabel(outline[k % n], labels[k % n]);
+        }
+      }
+    }
+
+    // TODO(b/521449017): handle case when entire boundary is erased.
+  }
+}
+// LINT.ThenChange(
+//     //depot/google3/third_party/ink/strokes/internal/stroke_vertex.h:margin_encoding,
+//     //depot/google3/third_party/ink/rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:calculate_antialiasing_and_position_outset,
+//     //depot/google3/third_party/ink/rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
 
 struct SubtractedMesh {
   MutableMesh mesh;
@@ -459,11 +684,13 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
     vertex_offset += mesh.VertexCount();
   }
 
-  MutableMesh result_mesh = std::move(sub_mesh).ExtractMesh();
-  std::vector<std::vector<uint32_t>> outlines = ComputeOutlines(result_mesh);
+  std::vector<std::vector<uint32_t>> outlines =
+      ComputeOutlines(sub_mesh.GetMesh());
+
+  if (HasBoundaryLabels(format)) ComputeAndSetLabels(outlines, sub_mesh);
 
   return SubtractedMesh{
-      .mesh = std::move(result_mesh),
+      .mesh = std::move(sub_mesh).ExtractMesh(),
       .outlines = std::move(outlines),
   };
 }

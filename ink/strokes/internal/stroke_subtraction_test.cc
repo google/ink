@@ -67,6 +67,12 @@ std::vector<Point> GetOutlinePoints(const PartitionedMesh& partitioned_mesh,
 
 constexpr float kFloatTolerance = 1e-6f;
 
+constexpr float kInteriorLabel = 0.0f;
+constexpr float kLeftLabel = -127.0f;
+constexpr float kRightLabel = 127.0f;
+constexpr float kFrontLabel = -127.0f;
+constexpr float kBackLabel = 127.0f;
+
 uint32_t NumVertices(const PartitionedMesh& partitioned_mesh) {
   uint32_t count = 0;
   for (uint32_t g = 0; g < partitioned_mesh.RenderGroupCount(); ++g) {
@@ -194,9 +200,7 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
        {AttributeType::kFloat1Unpacked, AttributeId::kCustom0},
-       {AttributeType::kFloat4Unpacked, AttributeId::kCustom1},
-       {AttributeType::kFloat2Unpacked, AttributeId::kSideDerivative},
-       {AttributeType::kFloat2Unpacked, AttributeId::kForwardDerivative}},
+       {AttributeType::kFloat4Unpacked, AttributeId::kCustom1}},
       IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -213,14 +217,6 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
   mesh_a.SetFloatVertexAttribute(0, 2, {1.0f, 0.0f, 0.0f, 1.0f});
   mesh_a.SetFloatVertexAttribute(1, 2, {0.0f, 1.0f, 0.0f, 1.0f});
   mesh_a.SetFloatVertexAttribute(2, 2, {0.0f, 0.0f, 1.0f, 1.0f});
-
-  mesh_a.SetFloatVertexAttribute(0, 3, {1.0f, 1.0f});
-  mesh_a.SetFloatVertexAttribute(1, 3, {1.0f, 1.0f});
-  mesh_a.SetFloatVertexAttribute(2, 3, {1.0f, 1.0f});
-
-  mesh_a.SetFloatVertexAttribute(0, 4, {2.0f, 2.0f});
-  mesh_a.SetFloatVertexAttribute(1, 4, {2.0f, 2.0f});
-  mesh_a.SetFloatVertexAttribute(2, 4, {2.0f, 2.0f});
 
   std::vector<uint32_t> mesh_a_outline = {0, 2, 1};
   absl::StatusOr<PartitionedMesh> mesh_a_pm =
@@ -268,10 +264,6 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
   EXPECT_THAT(
       result_mesh.FloatVertexAttribute(*index_A, 2).Values(),
       ElementsAre(FloatEq(1.0f), FloatEq(0.0f), FloatEq(0.0f), FloatEq(1.0f)));
-  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_A, 3).Values(),
-              ElementsAre(FloatEq(1.0f), FloatEq(1.0f)));
-  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_A, 4).Values(),
-              ElementsAre(FloatEq(2.0f), FloatEq(2.0f)));
 
   std::optional<uint32_t> index_C = FindVertexIndex(result_mesh, C);
   ASSERT_TRUE(index_C.has_value());
@@ -280,14 +272,9 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
   EXPECT_THAT(
       result_mesh.FloatVertexAttribute(*index_C, 2).Values(),
       ElementsAre(FloatEq(0.0f), FloatEq(0.0f), FloatEq(1.0f), FloatEq(1.0f)));
-  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_C, 3).Values(),
-              ElementsAre(FloatEq(1.0f), FloatEq(1.0f)));
-  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_C, 4).Values(),
-              ElementsAre(FloatEq(2.0f), FloatEq(2.0f)));
 
-  // X1 and X2 are newly formed intersection points. The two custom attributes
-  // should be interpolated, while the SideDerivative and ForwardDerivative
-  // attributes should just be set to zero.
+  // X1 and X2 are newly formed intersection points. The custom attributes
+  // should be linearly interpolated.
   std::optional<uint32_t> index_X1 = FindVertexIndex(result_mesh, X1);
   ASSERT_TRUE(index_X1.has_value());
   EXPECT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*index_X1, 1).Values()[0],
@@ -295,10 +282,6 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
   EXPECT_THAT(
       result_mesh.FloatVertexAttribute(*index_X1, 2).Values(),
       ElementsAre(FloatEq(0.5f), FloatEq(0.5f), FloatEq(0.0f), FloatEq(1.0f)));
-  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X1, 3).Values(),
-              ElementsAre(FloatEq(1.0f), FloatEq(1.0f)));
-  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X1, 4).Values(),
-              ElementsAre(FloatEq(1.0f), FloatEq(1.0f)));
 
   std::optional<uint32_t> index_X2 = FindVertexIndex(result_mesh, X2);
   ASSERT_TRUE(index_X2.has_value());
@@ -307,10 +290,267 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
   EXPECT_THAT(
       result_mesh.FloatVertexAttribute(*index_X2, 2).Values(),
       ElementsAre(FloatEq(0.0f), FloatEq(0.5f), FloatEq(0.5f), FloatEq(1.0f)));
-  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X2, 3).Values(),
-              ElementsAre(FloatEq(1.0f), FloatEq(1.0f)));
-  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X2, 4).Values(),
-              ElementsAre(FloatEq(1.0f), FloatEq(1.0f)));
+}
+
+TEST(StrokeSubtractionTest, ComputeLabels1) {
+  // Note that there is no single canonically "correct" labeling for boundary
+  // vertices. This test verifies that the heuristic alignment cost optimization
+  // approach implemented by StrokeSubtraction behaves as intended.
+
+  //           H-------------------G
+  //           |      mesh_b       |
+  // D---------+---------C         |        forward
+  // |         |       / |         |           ^
+  // |         |     /   |         |           |
+  // | mesh_a  |   /     |         |           +---> right
+  // |         | /       |         |
+  // |         |         |         |
+  // |       / |         |         |
+  // |     /   |         |         |
+  // |   /     |         |         |
+  // | /       |         |         |
+  // A---------+---------B         |
+  //           |                   |
+  //           E-------------------F
+  Point A{0, 0}, B{10, 0}, C{10, 10}, D{0, 10};
+  Point E{5, -5}, F{15, -5}, G{15, 15}, H{5, 15};
+  Point X1{5, 0};   // intersection of AB and EH
+  Point X2{5, 5};   // intersection of AC and EH
+  Point X3{5, 10};  // intersection of CD and EH
+
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
+       {AttributeType::kFloat2Unpacked, AttributeId::kSideDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kSideLabel},
+       {AttributeType::kFloat2Unpacked, AttributeId::kForwardDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kForwardLabel}},
+      IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  // Set up mesh_a
+  MutableMesh mesh_a(*format);
+  for (const Point& p : {A, B, C, D}) mesh_a.AppendVertex(p);
+  mesh_a.AppendTriangleIndices({0, 1, 2});
+  mesh_a.AppendTriangleIndices({0, 2, 3});
+
+  // Set labels
+
+  // A is left back
+  mesh_a.SetFloatVertexAttribute(0, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(0, 4, {kBackLabel});
+  // B is right back
+  mesh_a.SetFloatVertexAttribute(1, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(1, 4, {kBackLabel});
+  // C is right front
+  mesh_a.SetFloatVertexAttribute(2, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(2, 4, {kFrontLabel});
+  // D is left front
+  mesh_a.SetFloatVertexAttribute(3, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(3, 4, {kFrontLabel});
+
+  // Set the side and forward derivatives.
+  for (uint32_t i = 0; i < 4; ++i) {
+    mesh_a.SetFloatVertexAttribute(i, 1, {10.0f, 0.0f});
+    mesh_a.SetFloatVertexAttribute(i, 3, {0.0f, 10.0f});
+  }
+
+  std::vector<uint32_t> mesh_a_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  // Set up mesh_b
+
+  MutableMesh mesh_b(MeshFormat{});
+  for (const Point& p : {E, F, G, H}) mesh_b.AppendVertex(p);
+  mesh_b.AppendTriangleIndices({0, 1, 2});
+  mesh_b.AppendTriangleIndices({0, 2, 3});
+
+  std::vector<uint32_t> mesh_b_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  // Subtract
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  EXPECT_EQ(NumTriangles(*result), 3);
+  EXPECT_EQ(NumVertices(*result), 5);
+
+  ASSERT_EQ(result->OutlineCount(0), 1);
+  std::vector<Point> outline_points = GetOutlinePoints(*result, 0, 0);
+  EXPECT_THAT(outline_points,
+              IsCyclicPermutationOf(std::vector<Point>{A, D, X3, X2, X1}));
+
+  const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
+
+  auto check_labels = [&](Point point, float expected_side,
+                          float expected_fwd) {
+    std::optional<uint32_t> idx = FindVertexIndex(result_mesh, point);
+    ASSERT_TRUE(idx.has_value());
+    EXPECT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 2)[0],
+                    expected_side);
+    EXPECT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
+  };
+
+  check_labels(A, kLeftLabel, kBackLabel);
+  check_labels(D, kLeftLabel, kFrontLabel);
+  check_labels(X3, kRightLabel, kFrontLabel);
+  check_labels(X2, kRightLabel, kInteriorLabel);
+  check_labels(X1, kRightLabel, kBackLabel);
+}
+
+TEST(StrokeSubtractionTest, ComputeLabels2) {
+  // Note that there is no single canonically "correct" labeling for boundary
+  // vertices. This test verifies that the heuristic alignment cost optimization
+  // approach implemented by StrokeSubtraction behaves as intended.
+
+  // D-----------------------------C
+  // |         mesh_a            / |
+  // |                         /   |
+  // |                       /     |
+  // |                     /       |
+  // |                   /         |
+  // |                 /           |
+  // |               /             |
+  // |             /               |          +--> forward
+  // |           /                 |          |
+  // |         /                   |          V
+  // |       /    J--------I       |          right
+  // |     /       \       |       |
+  // |   /           K     H---G   |
+  // | /            /          |   |
+  // A-------------/-----------|---B
+  //              /  mesh_b    |
+  //             E-------------F
+
+  Point A{0, 0}, B{10, 0}, C{10, 15}, D{0, 15};
+  Point E{5, -2}, F{9, -2}, G{9, 2}, H{8, 2}, I{8, 3}, J{5, 3}, K{7, 2};
+
+  Point X1{6, 0};  // intersection of AB and EK
+  Point X2{9, 0};  // intersection of AB and FG
+
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
+       {AttributeType::kFloat2Unpacked, AttributeId::kSideDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kSideLabel},
+       {AttributeType::kFloat2Unpacked, AttributeId::kForwardDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kForwardLabel}},
+      IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  // Set up mesh_a
+  MutableMesh mesh_a(*format);
+  for (const Point& p : {A, B, C, D}) mesh_a.AppendVertex(p);
+  mesh_a.AppendTriangleIndices({0, 1, 2});
+  mesh_a.AppendTriangleIndices({0, 2, 3});
+
+  // Set labels
+
+  // A is right back
+  mesh_a.SetFloatVertexAttribute(0, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(0, 4, {kBackLabel});
+  // B is right front
+  mesh_a.SetFloatVertexAttribute(1, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(1, 4, {kFrontLabel});
+  // C is left front
+  mesh_a.SetFloatVertexAttribute(2, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(2, 4, {kFrontLabel});
+  // D is left back
+  mesh_a.SetFloatVertexAttribute(3, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(3, 4, {kBackLabel});
+
+  // Set the side and forward derivatives.
+  for (uint32_t i = 0; i < 4; ++i) {
+    mesh_a.SetFloatVertexAttribute(i, 1, {0.0f, -15.0f});
+    mesh_a.SetFloatVertexAttribute(i, 3, {10.0f, 0.0f});
+  }
+
+  std::vector<uint32_t> mesh_a_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  // Set up mesh_b
+  MutableMesh mesh_b(MeshFormat{});
+  for (const Point& p : {E, F, G, H, I, J, K}) mesh_b.AppendVertex(p);
+  mesh_b.AppendTriangleIndices({0, 1, 2});
+  mesh_b.AppendTriangleIndices({0, 2, 3});
+  mesh_b.AppendTriangleIndices({0, 3, 4});
+  mesh_b.AppendTriangleIndices({0, 4, 6});
+  mesh_b.AppendTriangleIndices({6, 4, 5});
+
+  std::vector<uint32_t> mesh_b_outline = {6, 5, 4, 3, 2, 1, 0};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  // Subtract
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  EXPECT_EQ(NumTriangles(*result), 9);
+  EXPECT_EQ(NumVertices(*result), 11);
+
+  ASSERT_EQ(result->OutlineCount(0), 1);
+  std::vector<Point> outline_points = GetOutlinePoints(*result, 0, 0);
+  EXPECT_THAT(outline_points, IsCyclicPermutationOf(std::vector<Point>{
+                                  A, D, C, B, X2, G, H, I, J, K, X1}));
+
+  const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
+
+  auto check_labels = [&](Point point, float expected_side,
+                          float expected_fwd) {
+    std::optional<uint32_t> idx = FindVertexIndex(result_mesh, point);
+    ASSERT_TRUE(idx.has_value());
+    EXPECT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 2)[0],
+                    expected_side);
+    EXPECT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
+  };
+
+  // Labeling the vertices is a bit of a puzzle. It may be useful to first note
+  // the orientation of the edges (with respect to the orientation of mesh_a):
+  // (A,X1) faces right, (X1,K) faces exactly front-right, (K,J) faces mostly
+  // left and slightly front, (J,I) right, (I,H) back, (H,G) right, (G,X2) back,
+  // and (X2,B) right.
+  //
+  //              J--------I                  +--> forward
+  //               \       |                  |
+  //                 K     H---G              V
+  //                /          |             right
+  // A-------------X1          X2---B
+  //
+  // We can roughly reason through as follows:
+
+  check_labels(A, kRightLabel, kBackLabel);
+  // edge (A,X1) should definitely be kRight, since (A,B) was kRight.
+  check_labels(X1, kRightLabel, kFrontLabel);
+  // edge (X1,K) could reasonably be kRight or kFront, but choosing kRight
+  // would demand (K,J) also be kRight (assuming that (J,I) is kRight).
+  // So kFront is chosen.
+  check_labels(K, kInteriorLabel, kFrontLabel);
+  // (K,J) is geometrically oriented left, but can not be labeled as such
+  // (assuming  again that we'll choose (J,I) to be kRight). Given this,
+  // kFront is the next best choice.
+  check_labels(J, kRightLabel, kFrontLabel);
+  // (J,I) seems pretty clearly kRight.
+  check_labels(I, kRightLabel, kBackLabel);
+  // (I,H) seems kBack, but could also be kRight. Choosing kRight here would
+  // allow (H,G) to be labeled kRight, but then also force (G,X2) to be kRight,
+  // effectively mislabeling two edges. So indeed, kBack.
+  check_labels(H, kInteriorLabel, kBackLabel);
+  // (H,G) would like to be kRight, but that's incompatible with (G,X2) being
+  // set to kBack. Choosing (H,G) to be kBack is prioritized here because (G,X2)
+  // is larger.
+  check_labels(G, kInteriorLabel, kBackLabel);
+  check_labels(X2, kRightLabel, kBackLabel);
+  // (X2,B) should be kRight, since (A,B) was kRight
+  check_labels(B, kRightLabel, kFrontLabel);
 }
 
 TEST(StrokeSubtractionTest, AttributeInterpolation) {
@@ -334,14 +574,11 @@ TEST(StrokeSubtractionTest, AttributeInterpolation) {
   //           |                   |
   //           E-------------------F
   Point A{0, 0}, B{10, 0}, C{10, 10}, D{0, 10};
-  Point X1{5, 0}, X2{5, 10};
 
   // Set up mesh_a
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
-       {AttributeType::kFloat1Unpacked, AttributeId::kCustom0},
-       {AttributeType::kFloat1Unpacked, AttributeId::kSideLabel},
-       {AttributeType::kFloat1Unpacked, AttributeId::kForwardLabel}},
+       {AttributeType::kFloat1Unpacked, AttributeId::kCustom0}},
       IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -352,11 +589,6 @@ TEST(StrokeSubtractionTest, AttributeInterpolation) {
 
     // Non-linear values for the vertex attribute
     mesh_a.SetFloatVertexAttribute(i, 1, {verts[i].y * verts[i].y});
-
-    // We populate the side and forward labels to non-zero values to verify they
-    // are NOT interpolated.
-    mesh_a.SetFloatVertexAttribute(i, 2, {5.0f});
-    mesh_a.SetFloatVertexAttribute(i, 3, {5.0f});
   }
   mesh_a.AppendTriangleIndices({2, 0, 1});
   mesh_a.AppendTriangleIndices({2, 3, 0});
@@ -387,25 +619,6 @@ TEST(StrokeSubtractionTest, AttributeInterpolation) {
 
   EXPECT_EQ(NumTriangles(*result), 3);
   EXPECT_EQ(NumVertices(*result), 5);
-
-  const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
-
-  // Verify that the anti-aliasing label attributes (kSideLabel, kForwardLabel)
-  // are NOT interpolated at new/split vertices (remaining at default 0.0f).
-  std::optional<uint32_t> index_X1 = FindVertexIndex(result_mesh, X1);
-  ASSERT_TRUE(index_X1.has_value());
-  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X1, 2).Values(),
-              ElementsAre(FloatEq(0.0f)));
-  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X1, 3).Values(),
-              ElementsAre(FloatEq(0.0f)));
-
-  std::optional<uint32_t> index_X2 = FindVertexIndex(result_mesh, X2);
-  ASSERT_TRUE(index_X2.has_value());
-  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X2, 2).Values(),
-              ElementsAre(FloatEq(0.0f)));
-  EXPECT_THAT(result_mesh.FloatVertexAttribute(*index_X2, 3).Values(),
-              ElementsAre(FloatEq(0.0f)));
-
   // Check for equality of interpolated attribute value at a few points
   // within the subtracted mesh.
   std::vector<Point> test_points = {
