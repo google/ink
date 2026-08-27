@@ -172,9 +172,8 @@ TEST(BrushBehaviorTest, StringifyTarget) {
       absl::StrCat(
           BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize),
       "kPositionOffsetLateralInMultiplesOfBrushSize");
-  EXPECT_EQ(
-      absl::StrCat(BrushBehavior::Target::kTextureAnimationProgressOffset),
-      "kTextureAnimationProgressOffset");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kPaintAnimationProgressOffset),
+            "kPaintAnimationProgressOffset");
   EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kHueOffsetInRadians),
             "kHueOffsetInRadians");
   EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kSaturationMultiplier),

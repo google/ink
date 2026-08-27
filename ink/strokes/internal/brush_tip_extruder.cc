@@ -453,12 +453,12 @@ void ExtrudeGeometry(const ExtrusionPoints& points,
   for (Point point : points.left) {
     geometry.AppendLeftVertex(point, opacity_shift, hsl_shift,
                               compute_surface_uv(point),
-                              tip_state.texture_animation_progress_offset);
+                              tip_state.paint_animation_progress_offset);
   }
   for (Point point : points.right) {
     geometry.AppendRightVertex(point, opacity_shift, hsl_shift,
                                compute_surface_uv(point),
-                               tip_state.texture_animation_progress_offset);
+                               tip_state.paint_animation_progress_offset);
   }
   geometry.ProcessNewVertices(simplification_threshold, tip_state);
 }

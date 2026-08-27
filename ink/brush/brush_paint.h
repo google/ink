@@ -248,7 +248,7 @@ struct BrushPaint {
     // `animation_frames` frames in the texture (in which case each frame will
     // be displayed for `animation_duration / animation_frames` on average), or
     // zero to disable looping animations (in which case the animation frame is
-    // controlled solely by any `kTextureAnimationProgressOffset` behavior
+    // controlled solely by any `kPaintAnimationProgressOffset` behavior
     // targets). If nonzero, this duration must be a whole number of
     // milliseconds, and no greater than 2^24 ms (about 4.66 hours).
     //

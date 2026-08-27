@@ -675,8 +675,8 @@ struct BrushTipStateModifiers {
   float corner_rounding_offset = 0;
   Angle rotation_offset;  // always in range [-π, π] radians
   float pinch_offset = 0;
-  float texture_animation_progress_offset = 0;  // always in range [0, 2)
-  Angle hue_offset;  // always in range [0, 2π) radians
+  float paint_animation_progress_offset = 0;  // always in range [0, 2)
+  Angle hue_offset;                           // always in range [0, 2π) radians
   float saturation_multiplier = 1;
   float luminosity_offset = 0;
   float opacity_multiplier = 1;
@@ -748,9 +748,9 @@ void ApplyModifierToTarget(float modifier, BrushBehavior::Target target,
                                            modifier * brush_size);
       }
       break;
-    case BrushBehavior::Target::kTextureAnimationProgressOffset:
-      tip_state_modifiers.texture_animation_progress_offset = FloatModulo(
-          tip_state_modifiers.texture_animation_progress_offset + modifier, 2);
+    case BrushBehavior::Target::kPaintAnimationProgressOffset:
+      tip_state_modifiers.paint_animation_progress_offset = FloatModulo(
+          tip_state_modifiers.paint_animation_progress_offset + modifier, 2);
       break;
     case BrushBehavior::Target::kHueOffsetInRadians:
       tip_state_modifiers.hue_offset =
@@ -798,10 +798,10 @@ void ApplyModifiersToTipState(const BrushTipStateModifiers& modifiers,
     tip_state.corner_rounding = std::clamp(
         tip_state.corner_rounding + modifiers.corner_rounding_offset, 0.f, 1.f);
   }
-  if (modifiers.texture_animation_progress_offset != 0) {
-    tip_state.texture_animation_progress_offset =
-        FloatModulo(tip_state.texture_animation_progress_offset +
-                        modifiers.texture_animation_progress_offset,
+  if (modifiers.paint_animation_progress_offset != 0) {
+    tip_state.paint_animation_progress_offset =
+        FloatModulo(tip_state.paint_animation_progress_offset +
+                        modifiers.paint_animation_progress_offset,
                     2);
   }
   if (modifiers.hue_offset != Angle()) {

@@ -218,7 +218,7 @@ TEST(StrokeVertexTest, CanPackValidAnimationOffsets) {
       {{MeshFormat::AttributeType::kFloat2Unpacked,
         MeshFormat::AttributeId::kPosition},
        {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
-        MeshFormat::AttributeId::kAnimationOffset}},
+        MeshFormat::AttributeId::kPaintAnimationOffset}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(mesh_format, IsOk());
   StrokeVertex::CustomPackingArray packing_array =
@@ -327,16 +327,17 @@ TEST(StrokeVertexTest, MemoryLayoutMatchesUnpackedFullMeshFormat) {
   EXPECT_EQ(attribute.unpacked_width,
             sizeof(decltype(StrokeVertex::NonPositionAttributes::surface_uv)));
 
-  // Texture animation offset:
-  ASSERT_LT(StrokeVertex::kFullFormatAttributeIndices.animation_offset,
+  // Paint animation offset:
+  ASSERT_LT(StrokeVertex::kFullFormatAttributeIndices.paint_animation_offset,
             format.Attributes().size());
   attribute = format.Attributes()[StrokeVertex::kFullFormatAttributeIndices
-                                      .animation_offset];
-  EXPECT_EQ(attribute.unpacked_offset,
-            offsetof(StrokeVertex, non_position_attributes.animation_offset));
+                                      .paint_animation_offset];
   EXPECT_EQ(
-      attribute.unpacked_width,
-      sizeof(decltype(StrokeVertex::NonPositionAttributes::animation_offset)));
+      attribute.unpacked_offset,
+      offsetof(StrokeVertex, non_position_attributes.paint_animation_offset));
+  EXPECT_EQ(attribute.unpacked_width,
+            sizeof(decltype(StrokeVertex::NonPositionAttributes::
+                                paint_animation_offset)));
 }
 
 TEST(StrokeVertexTest, FindAttributeIndicesResultMatchesFullFormatIndices) {
@@ -359,8 +360,8 @@ TEST(StrokeVertexTest, FindAttributeIndicesResultMatchesFullFormatIndices) {
             StrokeVertex::kFullFormatAttributeIndices.forward_label);
   EXPECT_EQ(indices.surface_uv,
             StrokeVertex::kFullFormatAttributeIndices.surface_uv);
-  EXPECT_EQ(indices.animation_offset,
-            StrokeVertex::kFullFormatAttributeIndices.animation_offset);
+  EXPECT_EQ(indices.paint_animation_offset,
+            StrokeVertex::kFullFormatAttributeIndices.paint_animation_offset);
 }
 
 TEST(StrokeVertexTest, FindAttributeIndicesReturnsMinusOneForNotFound) {
@@ -384,7 +385,7 @@ TEST(StrokeVertexTest, FindAttributeIndicesReturnsMinusOneForNotFound) {
   EXPECT_EQ(indices.forward_derivative, -1);
   EXPECT_EQ(indices.forward_label, -1);
   EXPECT_EQ(indices.surface_uv, -1);
-  EXPECT_EQ(indices.animation_offset, -1);
+  EXPECT_EQ(indices.paint_animation_offset, -1);
 }
 
 TEST(StrokeVertexTest, EqualityOfNonPositionAttributes) {
@@ -396,7 +397,7 @@ TEST(StrokeVertexTest, EqualityOfNonPositionAttributes) {
       .forward_derivative = {3, 4},
       .forward_label = StrokeVertex::kExteriorFrontLabel,
       .surface_uv = {0.75, 0.125},
-      .animation_offset = 0.25,
+      .paint_animation_offset = 0.25,
   };
   StrokeVertex::NonPositionAttributes b = a;
 
@@ -434,7 +435,7 @@ TEST(StrokeVertexTest, EqualityOfNonPositionAttributes) {
   EXPECT_FALSE(a == b);  // NOLINT
 
   a = b;
-  b.animation_offset = 0.5;
+  b.paint_animation_offset = 0.5;
   EXPECT_FALSE(a == b);  // NOLINT
 }
 
@@ -448,7 +449,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
       .forward_derivative = {3, 4},
       .forward_label = StrokeVertex::kExteriorFrontLabel,
       .surface_uv = {0.6, 0.7},
-      .animation_offset = 0.25,
+      .paint_animation_offset = 0.25,
   };
   StrokeVertex::NonPositionAttributes b = {
       .opacity_shift = -0.3,
@@ -458,7 +459,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
       .forward_derivative = {8, 1},
       .forward_label = StrokeVertex::kExteriorBackLabel,
       .surface_uv = {0.7, 0.8},
-      .animation_offset = 0.25,
+      .paint_animation_offset = 0.25,
   };
 
   ASSERT_NE(a.side_label, StrokeVertex::kInteriorLabel);
@@ -474,7 +475,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, a.forward_label);
   EXPECT_THAT(result.surface_uv, PointEq({0.59, 0.69}));
-  EXPECT_FLOAT_EQ(result.animation_offset, 0.25);
+  EXPECT_FLOAT_EQ(result.paint_animation_offset, 0.25);
 
   result = Lerp(a, b, 0);
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.1);
@@ -484,7 +485,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, a.forward_label);
   EXPECT_THAT(result.surface_uv, PointEq({0.6, 0.7}));
-  EXPECT_FLOAT_EQ(result.animation_offset, 0.25);
+  EXPECT_FLOAT_EQ(result.paint_animation_offset, 0.25);
 
   result = Lerp(a, b, 0.25);
   EXPECT_FLOAT_EQ(result.opacity_shift, 0);
@@ -495,7 +496,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, StrokeVertex::kInteriorLabel);
   EXPECT_THAT(result.surface_uv, PointEq({0.625, 0.725}));
-  EXPECT_FLOAT_EQ(result.animation_offset, 0.25);
+  EXPECT_FLOAT_EQ(result.paint_animation_offset, 0.25);
 
   result = Lerp(a, b, 1);
   EXPECT_FLOAT_EQ(result.opacity_shift, -0.3);
@@ -505,7 +506,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, b.forward_label);
   EXPECT_THAT(result.surface_uv, PointEq({0.7, 0.8}));
-  EXPECT_FLOAT_EQ(result.animation_offset, 0.25);
+  EXPECT_FLOAT_EQ(result.paint_animation_offset, 0.25);
 
   result = Lerp(a, b, 1.2);
   EXPECT_FLOAT_EQ(result.opacity_shift, -0.38);
@@ -515,7 +516,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, b.forward_label);
   EXPECT_THAT(result.surface_uv, PointEq({0.72, 0.82}));
-  EXPECT_FLOAT_EQ(result.animation_offset, 0.25);
+  EXPECT_FLOAT_EQ(result.paint_animation_offset, 0.25);
 }
 
 TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
@@ -533,7 +534,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
       .forward_derivative = {3, 4},
       .forward_label = a_forward_label,
       .surface_uv = {0, 1},
-      .animation_offset = 0.5,
+      .paint_animation_offset = 0.5,
   };
   StrokeVertex::NonPositionAttributes b = {
       .opacity_shift = 0,
@@ -543,7 +544,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
       .forward_derivative = {8, 1},
       .forward_label = bc_forward_label,
       .surface_uv = {0.5, 0.5},
-      .animation_offset = 0.5,
+      .paint_animation_offset = 0.5,
   };
   StrokeVertex::NonPositionAttributes c = {
       .opacity_shift = 1,
@@ -553,7 +554,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
       .forward_derivative = {8, -2},
       .forward_label = bc_forward_label,
       .surface_uv = {1, 0},
-      .animation_offset = 0.5,
+      .paint_animation_offset = 0.5,
   };
 
   ASSERT_NE(a.side_label, StrokeVertex::kInteriorLabel);
@@ -572,7 +573,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, StrokeVertex::kInteriorLabel);
   EXPECT_THAT(result.surface_uv, PointEq({0.375, 0.625}));
-  EXPECT_FLOAT_EQ(result.animation_offset, 0.5);
+  EXPECT_FLOAT_EQ(result.paint_animation_offset, 0.5);
 
   result = BarycentricLerp(a, b, c, {0.25, 0, 0.75});
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.5);
@@ -583,7 +584,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, StrokeVertex::kInteriorLabel);
   EXPECT_THAT(result.surface_uv, PointEq({0.75, 0.25}));
-  EXPECT_FLOAT_EQ(result.animation_offset, 0.5);
+  EXPECT_FLOAT_EQ(result.paint_animation_offset, 0.5);
 
   result = BarycentricLerp(a, b, c, {0, 0.25, 0.75});
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.75);
@@ -594,7 +595,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
   EXPECT_EQ(result.forward_label, b.forward_label);
   EXPECT_EQ(result.forward_label, c.forward_label);
   EXPECT_THAT(result.surface_uv, PointEq({0.875, 0.125}));
-  EXPECT_FLOAT_EQ(result.animation_offset, 0.5);
+  EXPECT_FLOAT_EQ(result.paint_animation_offset, 0.5);
 
   result = BarycentricLerp(a, b, c, {0.25, 0.25, 0.5});
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.25);
@@ -604,7 +605,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.forward_label, StrokeVertex::kInteriorLabel);
   EXPECT_THAT(result.surface_uv, PointEq({0.625, 0.375}));
-  EXPECT_FLOAT_EQ(result.animation_offset, 0.5);
+  EXPECT_FLOAT_EQ(result.paint_animation_offset, 0.5);
 }
 
 TEST(StrokeVertexTest, GetFromMesh) {
@@ -622,7 +623,7 @@ TEST(StrokeVertexTest, GetFromMesh) {
               .forward_derivative = {6, 7},
               .forward_label = StrokeVertex::kExteriorBackLabel,
               .surface_uv = {0.8, 0.9},
-              .animation_offset = 0.25,
+              .paint_animation_offset = 0.25,
           },
   };
 
@@ -655,8 +656,8 @@ TEST(StrokeVertexTest, GetFromMesh) {
       {expected.non_position_attributes.surface_uv.x,
        expected.non_position_attributes.surface_uv.y});
   mesh.SetFloatVertexAttribute(
-      index, StrokeVertex::kFullFormatAttributeIndices.animation_offset,
-      {expected.non_position_attributes.animation_offset});
+      index, StrokeVertex::kFullFormatAttributeIndices.paint_animation_offset,
+      {expected.non_position_attributes.paint_animation_offset});
 
   StrokeVertex actual = StrokeVertex::GetFromMesh(mesh, index);
   EXPECT_THAT(actual.position, PointEq(expected.position));
@@ -733,18 +734,18 @@ TEST(StrokeVertexTest, GetSurfaceUvFromMesh) {
               PointEq(expected_surface_uv));
 }
 
-TEST(StrokeVertexTest, GetAnimationOffsetFromMesh) {
+TEST(StrokeVertexTest, GetPaintAnimationOffsetFromMesh) {
   MutableMesh mesh(StrokeVertex::FullMeshFormat());
   mesh.Resize(5, 3);
 
   uint32_t index = 1;
-  float expected_animation_offset = 0.25;
+  float expected_paint_animation_offset = 0.25;
   mesh.SetFloatVertexAttribute(
-      index, StrokeVertex::kFullFormatAttributeIndices.animation_offset,
-      {expected_animation_offset});
+      index, StrokeVertex::kFullFormatAttributeIndices.paint_animation_offset,
+      {expected_paint_animation_offset});
 
-  EXPECT_FLOAT_EQ(StrokeVertex::GetAnimationOffsetFromMesh(mesh, index),
-                  expected_animation_offset);
+  EXPECT_FLOAT_EQ(StrokeVertex::GetPaintAnimationOffsetFromMesh(mesh, index),
+                  expected_paint_animation_offset);
 }
 
 TEST(StrokeVertexTest, AppendToMesh) {
@@ -762,7 +763,7 @@ TEST(StrokeVertexTest, AppendToMesh) {
               .forward_derivative = {6, 7},
               .forward_label = {.encoded_value = 8},
               .surface_uv = {0.9, 0.1},
-              .animation_offset = 0.25,
+              .paint_animation_offset = 0.25,
           },
   };
 
@@ -817,10 +818,10 @@ TEST(StrokeVertexTest, AppendToMesh) {
               PointEq(expected.non_position_attributes.surface_uv));
 
   attribute = mesh.FloatVertexAttribute(
-      index, StrokeVertex::kFullFormatAttributeIndices.animation_offset);
+      index, StrokeVertex::kFullFormatAttributeIndices.paint_animation_offset);
   ASSERT_EQ(attribute.Size(), 1);
   EXPECT_FLOAT_EQ(attribute[0],
-                  expected.non_position_attributes.animation_offset);
+                  expected.non_position_attributes.paint_animation_offset);
 }
 
 TEST(StrokeVertexTest, SetInMesh) {
@@ -838,7 +839,7 @@ TEST(StrokeVertexTest, SetInMesh) {
               .forward_derivative = {6, 7},
               .forward_label = StrokeVertex::kExteriorBackLabel,
               .surface_uv = {0.8, 0.9},
-              .animation_offset = 0.25,
+              .paint_animation_offset = 0.25,
           },
   };
 
@@ -891,10 +892,10 @@ TEST(StrokeVertexTest, SetInMesh) {
               PointEq(expected.non_position_attributes.surface_uv));
 
   attribute = mesh.FloatVertexAttribute(
-      index, StrokeVertex::kFullFormatAttributeIndices.animation_offset);
+      index, StrokeVertex::kFullFormatAttributeIndices.paint_animation_offset);
   ASSERT_EQ(attribute.Size(), 1);
   EXPECT_FLOAT_EQ(attribute[0],
-                  expected.non_position_attributes.animation_offset);
+                  expected.non_position_attributes.paint_animation_offset);
 }
 
 TEST(StrokeVertexTest, OutOfBoundsColorShiftValuesAreClamped) {

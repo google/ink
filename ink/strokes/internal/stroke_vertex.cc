@@ -115,10 +115,10 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
   // LINT.ThenChange(
   //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:surface_uv_unpacking)
 
-  // Animation offsets are stored unpacked in the range [0, 2). It's tempting to
-  // use 2/256 as the scale here, since a value of 2 does not need to be
-  // representable, but due to rounding this would make values just less than 2
-  // also unrepresentable (see b/432526862), so we use 2/255 instead.
+  // Brush paint animation offsets are stored unpacked in the range [0, 2). It's
+  // tempting to use 2/256 as the scale here, since a value of 2 does not need
+  // to be representable, but due to rounding this would make values just less
+  // than 2 also unrepresentable (see b/432526862), so we use 2/255 instead.
   // LINT.IfChange(anim_packing)
   constexpr MeshAttributeCodingParams::ComponentCodingParams
       kAnimationCodingParams8bit = {.scale = 2.f / 255.f};
@@ -161,7 +161,7 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
                            kSurfaceVCodingParams12bit}};
       }
       break;
-    case MeshFormat::AttributeId::kAnimationOffset:
+    case MeshFormat::AttributeId::kPaintAnimationOffset:
       if (attribute.type ==
           MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte) {
         return MeshAttributeCodingParams{
@@ -234,14 +234,15 @@ MeshFormat MakeValidatedFullFormat() {
           // TODO: b/330511293 - Once we support winding textures on extruded
           // (non-particle) `BrushCoat`s, we'll need to use a different format
           // for those meshes, using `kFloat2PackedInFourUnsignedBytes_X12_Y20`
-          // for `kSurfaceUv`, and omitting the `kAnimationOffset` attribute.
+          // for `kSurfaceUv`, and omitting the `kPaintAnimationOffset`
+          // attribute.
           {
               MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
               MeshFormat::AttributeId::kSurfaceUv,
           },
           {
               MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
-              MeshFormat::AttributeId::kAnimationOffset,
+              MeshFormat::AttributeId::kPaintAnimationOffset,
           },
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
@@ -289,8 +290,8 @@ StrokeVertex::FormatAttributeIndices StrokeVertex::FindAttributeIndices(
       case MeshFormat::AttributeId::kSurfaceUv:
         indices.surface_uv = index;
         break;
-      case MeshFormat::AttributeId::kAnimationOffset:
-        indices.animation_offset = index;
+      case MeshFormat::AttributeId::kPaintAnimationOffset:
+        indices.paint_animation_offset = index;
         break;
       default:
         break;
@@ -334,9 +335,10 @@ Point StrokeVertex::GetSurfaceUvFromMesh(const MutableMesh& mesh,
   return GetFromMesh(mesh, index).non_position_attributes.surface_uv;
 }
 
-float StrokeVertex::GetAnimationOffsetFromMesh(const MutableMesh& mesh,
-                                               uint32_t index) {
-  return GetFromMesh(mesh, index).non_position_attributes.animation_offset;
+float StrokeVertex::GetPaintAnimationOffsetFromMesh(const MutableMesh& mesh,
+                                                    uint32_t index) {
+  return GetFromMesh(mesh, index)
+      .non_position_attributes.paint_animation_offset;
 }
 
 namespace {
@@ -373,8 +375,8 @@ void SetNonPositionAttributes(
       index, StrokeVertex::kFullFormatAttributeIndices.surface_uv,
       {attributes.surface_uv.x, attributes.surface_uv.y});
   mesh.SetFloatVertexAttribute(
-      index, StrokeVertex::kFullFormatAttributeIndices.animation_offset,
-      {attributes.animation_offset});
+      index, StrokeVertex::kFullFormatAttributeIndices.paint_animation_offset,
+      {attributes.paint_animation_offset});
 }
 
 }  // namespace
@@ -469,9 +471,9 @@ StrokeVertex::NonPositionAttributes Lerp(
     const StrokeVertex::NonPositionAttributes& a,
     const StrokeVertex::NonPositionAttributes& b, float t) {
   // In practice, we should only ever be lerping between vertices that already
-  // have the same animation offset, because the animation offset should not
-  // vary within a single particle or extrusion.
-  ABSL_DCHECK_EQ(a.animation_offset, b.animation_offset);
+  // have the same paint animation offset, because the paint animation offset
+  // should not vary within a single particle or extrusion.
+  ABSL_DCHECK_EQ(a.paint_animation_offset, b.paint_animation_offset);
 
   return {
       .opacity_shift = Lerp(a.opacity_shift, b.opacity_shift, t),
@@ -481,7 +483,7 @@ StrokeVertex::NonPositionAttributes Lerp(
       .side_label = LerpLabel(a.side_label, b.side_label, t),
       .forward_label = LerpLabel(a.forward_label, b.forward_label, t),
       .surface_uv = Lerp(a.surface_uv, b.surface_uv, t),
-      .animation_offset = a.animation_offset,
+      .paint_animation_offset = a.paint_animation_offset,
   };
 }
 
@@ -491,10 +493,10 @@ StrokeVertex::NonPositionAttributes BarycentricLerp(
     const StrokeVertex::NonPositionAttributes& c,
     const std::array<float, 3>& t) {
   // In practice, we should only ever be lerping between vertices that already
-  // have the same animation offset, because the animation offset should not
-  // vary within a single particle or extrusion.
-  ABSL_DCHECK_EQ(a.animation_offset, b.animation_offset);
-  ABSL_DCHECK_EQ(a.animation_offset, c.animation_offset);
+  // have the same paint animation offset, because the paint animation offset
+  // should not vary within a single particle or extrusion.
+  ABSL_DCHECK_EQ(a.paint_animation_offset, b.paint_animation_offset);
+  ABSL_DCHECK_EQ(a.paint_animation_offset, c.paint_animation_offset);
 
   return {
       .opacity_shift =
@@ -509,7 +511,7 @@ StrokeVertex::NonPositionAttributes BarycentricLerp(
                                             c.forward_label, t),
       .surface_uv =
           BarycentricLerp(a.surface_uv, b.surface_uv, c.surface_uv, t),
-      .animation_offset = a.animation_offset,
+      .paint_animation_offset = a.paint_animation_offset,
   };
 }
 

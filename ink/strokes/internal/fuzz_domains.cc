@@ -30,7 +30,7 @@ fuzztest::Domain<BrushTipState> ValidBrushTipState() {
       /*rotation=*/AngleInRange(-kHalfTurn, kHalfTurn),
       /*slant=*/AngleInRange(-kQuarterTurn, kQuarterTurn),
       /*pinch=*/fuzztest::InRange<float>(0, 1),
-      /*texture_animation_progress_offset=*/fuzztest::InRange<float>(0, 1),
+      /*paint_animation_progress_offset=*/fuzztest::InRange<float>(0, 1),
       /*hue_offset_in_full_turns=*/fuzztest::InRange<float>(0, 1),
       /*saturation_multiplier=*/fuzztest::InRange<float>(0, 2),
       /*luminosity_shift=*/fuzztest::InRange<float>(-1, 1),

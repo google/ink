@@ -756,7 +756,8 @@ void Geometry::AppendVertexToSide(Side& side, const ExtrudedVertex& vertex) {
 
 void Geometry::AppendLeftVertex(Point position, float opacity_shift,
                                 const std::array<float, 3>& hsl_shift,
-                                Point surface_uv, float animation_offset) {
+                                Point surface_uv,
+                                float paint_animation_offset) {
   AppendVertexToSide(left_side_,
                      {.position = position,
                       .new_non_position_attributes = {
@@ -764,13 +765,14 @@ void Geometry::AppendLeftVertex(Point position, float opacity_shift,
                           .hsl_shift = hsl_shift,
                           .side_label = StrokeVertex::kExteriorLeftLabel,
                           .surface_uv = surface_uv,
-                          .animation_offset = animation_offset,
+                          .paint_animation_offset = paint_animation_offset,
                       }});
 }
 
 void Geometry::AppendRightVertex(Point position, float opacity_shift,
                                  const std::array<float, 3>& hsl_shift,
-                                 Point surface_uv, float animation_offset) {
+                                 Point surface_uv,
+                                 float paint_animation_offset) {
   AppendVertexToSide(right_side_,
                      {.position = position,
                       .new_non_position_attributes = {
@@ -778,7 +780,7 @@ void Geometry::AppendRightVertex(Point position, float opacity_shift,
                           .hsl_shift = hsl_shift,
                           .side_label = StrokeVertex::kExteriorRightLabel,
                           .surface_uv = surface_uv,
-                          .animation_offset = animation_offset,
+                          .paint_animation_offset = paint_animation_offset,
                       }});
 }
 

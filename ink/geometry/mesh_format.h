@@ -167,7 +167,7 @@ class MeshFormat {
     kForwardDerivative,
     kForwardLabel,
     kSurfaceUv,
-    kAnimationOffset,
+    kPaintAnimationOffset,
     kCustom0,
     kCustom1,
     kCustom2,

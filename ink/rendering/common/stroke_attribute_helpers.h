@@ -44,7 +44,7 @@ struct StrokeAttributeTypesAndOffsets {
   std::optional<TypeAndByteOffset> hsl_shift;
   TypeAndByteOffset side_derivative_and_label;
   TypeAndByteOffset forward_derivative_and_label;
-  std::optional<TypeAndByteOffset> surface_uv_and_animation_offset;
+  std::optional<TypeAndByteOffset> surface_uv_and_paint_animation_offset;
 };
 
 // Validates that the given `mesh_format` is supported and returns the shader

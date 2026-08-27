@@ -239,14 +239,14 @@ Domain<BrushBehavior::Target> ArbitraryBrushBehaviorTarget(
       BrushBehavior::Target::kPositionOffsetYInMultiplesOfBrushSize,
       BrushBehavior::Target::kPositionOffsetForwardInMultiplesOfBrushSize,
       BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize,
-      BrushBehavior::Target::kTextureAnimationProgressOffset,
+      BrushBehavior::Target::kPaintAnimationProgressOffset,
       BrushBehavior::Target::kHueOffsetInRadians,
       BrushBehavior::Target::kSaturationMultiplier,
       BrushBehavior::Target::kLuminosityOffset,
       BrushBehavior::Target::kOpacityMultiplier,
   };
   if (variant == DomainVariant::kValidAndSerializable) {
-    std::erase(targets, BrushBehavior::Target::kTextureAnimationProgressOffset);
+    std::erase(targets, BrushBehavior::Target::kPaintAnimationProgressOffset);
   }
   return ElementOf(targets);
 }

@@ -260,10 +260,10 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
     // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
 
-    // Calculates an integer frame index for a texture animation using "reverse"
-    // mode for repetitions. In this mode, the animation uses the frames in
-    // order from first to last, then jumps back to the first frame and repeats
-    // this cycle.
+    // Calculates an integer frame index for a brush paint animation using
+    // "restart" mode for repetitions. In this mode, the animation uses the
+    // frames in order from first to last, then jumps back to the first frame
+    // and repeats this cycle.
     R"(
     float calculateAnimationRestartModeFrameIndex(
         const float progress,
@@ -271,11 +271,11 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
       return floor(fract(progress) * float(numFrames));
     })"
 
-    // Calculates an integer frame index for a texture animation using "reverse"
-    // mode for repetitions. In this mode, the animation uses the frames in
-    // order from first to last, before reversing direction and using the frames
-    // from last to first (without using the first or last frame twice in a row
-    // when reversing direction).
+    // Calculates an integer frame index for a brush paint animation using
+    // "reverse" mode for repetitions. In this mode, the animation uses the
+    // frames in order from first to last, before reversing direction and using
+    // the frames from last to first (without using the first or last frame
+    // twice in a row when reversing direction).
     R"(
     float calculateAnimationReverseModeFrameIndex(
         const float progress,
@@ -497,21 +497,21 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     //     ../../../strokes/internal/stroke_vertex.cc:uv_packing,
     //     ../../../rendering/webgpu/StrokeShader.wgsl:surface_uv_unpacking)
 
-    // Unpacks an animation offset value into a `float` from one of the
+    // Unpacks a paint animation offset value into a `float` from one of the
     // supported "packed" types.
     // LINT.IfChange(anim_unpacking)
     R"(
-    float unpackAnimationOffset(const float unpackedValue) {
+    float unpackPaintAnimationOffset(const float unpackedValue) {
       return unpackedValue;
     })"
-    // A [0, 2) animation offset can be packed into one byte, where 0.0 maps to
-    // 0 and 2.0 (or rather, values just below 2.0) maps to 255. This [0, 255]
-    // byte is exposed to the shader as a [0, 1] half float. So to unpack, we
-    // simply cast the [0, 1] half float to a full float and multiply by 2 to
-    // get a [0, 2] animation offset. (An animation offset of exactly 2 will be
-    // harmlessly wrapped back to 0.)
+    // A [0, 2) paint animation offset can be packed into one byte, where 0.0
+    // maps to 0 and 2.0 (or rather, values just below 2.0) maps to 255. This
+    // [0, 255] byte is exposed to the shader as a [0, 1] half float. So to
+    // unpack, we simply cast the [0, 1] half float to a full float and multiply
+    // by 2 to get a [0, 2] paint animation offset. (A paint animation offset of
+    // exactly 2 will be harmlessly wrapped back to 0.)
     R"(
-    float unpackAnimationOffset(const half packedValue0To1) {
+    float unpackPaintAnimationOffset(const half packedValue0To1) {
       return 2 * float(packedValue0To1);
     })"
     // LINT.ThenChange(

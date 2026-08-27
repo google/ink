@@ -181,12 +181,12 @@ struct BrushBehavior {
     kDistanceRemainingInMultiplesOfBrushSize,
     // Time elapsed since the modeled stroke input. This continues to increase
     // even after all stroke inputs have completed, and can be used to drive
-    // wet-layer stroke animations. This source is only compatible with a
+    // wet-layer brush tip animations. This source is only compatible with a
     // `source_out_of_range_behavior` of `kClamp`, to ensure that the animation
     // will eventually end.
     kTimeSinceInputInSeconds,
     // Time elapsed since the final input of the stroke, or zero if the final
-    // input hasn't arrived yet. This can be used to drive wet-layer stroke
+    // input hasn't arrived yet. This can be used to drive wet-layer brush tip
     // animations that should occur after the final input. This source is only
     // compatible with a `source_out_of_range_behavior` of `kClamp`, to ensure
     // that the animation will eventually end.
@@ -298,13 +298,13 @@ struct BrushBehavior {
     // a positive modifier will shift the brush tip up, and a negative modifier
     // will shift the brush tip down.
     kPositionOffsetLateralInMultiplesOfBrushSize,
-    // Adds the target modifier to the initial texture animation progress value
-    // of the current particle (which is relevant only for strokes with an
-    // animated texture). The final progress offset is not clamped, but is
+    // Adds the target modifier to the initial brush paint animation progress
+    // value of the current particle (which is relevant only for strokes with an
+    // animated `BrushPaint`). The final progress offset is not clamped, but is
     // effectively normalized (mod 2, to account for potential use of
     // `AnimationRepeatMode::kReverse`). If multiple behaviors have this target,
     // they stack additively.
-    kTextureAnimationProgressOffset,
+    kPaintAnimationProgressOffset,
 
     // The following are targets for tip color adjustments, including opacity.
     // Renderers can apply them to the brush color when a stroke is drawn to

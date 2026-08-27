@@ -417,7 +417,7 @@ proto::BrushBehavior::Target EncodeBrushBehaviorTarget(
     case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
       return proto::BrushBehavior::
           TARGET_POSITION_OFFSET_LATERAL_IN_MULTIPLES_OF_BRUSH_SIZE;
-    case BrushBehavior::Target::kTextureAnimationProgressOffset:
+    case BrushBehavior::Target::kPaintAnimationProgressOffset:
       return proto::BrushBehavior::TARGET_UNSPECIFIED;
     case BrushBehavior::Target::kHueOffsetInRadians:
       return proto::BrushBehavior::TARGET_HUE_OFFSET_IN_RADIANS;

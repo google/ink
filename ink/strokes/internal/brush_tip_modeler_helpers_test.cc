@@ -1711,16 +1711,16 @@ TEST(CreateTipStateTest, WithBehaviorTargetingCornerRounding) {
   EXPECT_FLOAT_EQ(state.corner_rounding, /**clamped to 0*/ 0);
 }
 
-TEST(CreateTipStateTest, WithBehaviorTargetingTextureAnimationProgress) {
+TEST(CreateTipStateTest, WithBehaviorTargetingPaintAnimationProgress) {
   BrushTip brush_tip = MakeBaseBrushTip();
   float brush_size = 2.5f;
-  float texture_animation_progress_offset = -3.25;
+  float paint_animation_progress_offset = -3.25;
   BrushTipState state =
       CreateTipState({0, 0}, Vec(), brush_tip, brush_size,
-                     {BrushBehavior::Target::kTextureAnimationProgressOffset},
-                     {texture_animation_progress_offset});
-  // The final progress offset should be computed mod 1.
-  EXPECT_FLOAT_EQ(state.texture_animation_progress_offset, 0.75);
+                     {BrushBehavior::Target::kPaintAnimationProgressOffset},
+                     {paint_animation_progress_offset});
+  // The final progress offset should be computed mod 2.
+  EXPECT_FLOAT_EQ(state.paint_animation_progress_offset, 0.75);
 }
 
 TEST(CreateTipStateTest, WithBehaviorTargetingHue) {
@@ -1911,16 +1911,16 @@ TEST(CreateTipStateTest, RotationOffsetOverflow) {
   EXPECT_THAT(tip_state, IsValidBrushTipState());
 }
 
-TEST(CreateTipStateTest, TextureAnimationProgressOffsetOverflow) {
+TEST(CreateTipStateTest, PaintAnimationProgressOffsetOverflow) {
   BrushTip brush_tip = MakeBaseBrushTip();
   float brush_size = 1.f;
   BrushTipState tip_state =
       CreateTipState({0, 0}, Vec(), brush_tip, brush_size,
-                     {BrushBehavior::Target::kTextureAnimationProgressOffset,
-                      BrushBehavior::Target::kTextureAnimationProgressOffset},
+                     {BrushBehavior::Target::kPaintAnimationProgressOffset,
+                      BrushBehavior::Target::kPaintAnimationProgressOffset},
                      {kFloatMax, kFloatMax});
   EXPECT_THAT(tip_state, IsValidBrushTipState());
-  EXPECT_EQ(tip_state.texture_animation_progress_offset, 0.f);
+  EXPECT_EQ(tip_state.paint_animation_progress_offset, 0.f);
 }
 
 TEST(CreateTipStateTest, HueOffsetOverflow) {

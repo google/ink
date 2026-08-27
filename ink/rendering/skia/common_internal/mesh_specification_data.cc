@@ -153,8 +153,8 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
 
         if (uTextureMapping == 1) {
           varyings.textureCoords = calculateStampingTextureUv(
-              unpackSurfaceUv(attributes.surfaceUvAndAnimationOffset.xy),
-              unpackAnimationOffset(attributes.surfaceUvAndAnimationOffset.z),
+              unpackSurfaceUv(attributes.surfaceUvAndPaintAnimationOffset.xy),
+              unpackPaintAnimationOffset(attributes.surfaceUvAndPaintAnimationOffset.z),
               uTextureAnimationProgress,
               uNumTextureAnimationFrames,
               uNumTextureAnimationRows,
@@ -206,9 +206,9 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
       .name = "forwardDerivativeAndLabel"};
 
   rendering_attributes[4] = {
-      .type = types_and_offsets.surface_uv_and_animation_offset->type,
-      .offset = types_and_offsets.surface_uv_and_animation_offset->offset,
-      .name = "surfaceUvAndAnimationOffset"};
+      .type = types_and_offsets.surface_uv_and_paint_animation_offset->type,
+      .offset = types_and_offsets.surface_uv_and_paint_animation_offset->offset,
+      .name = "surfaceUvAndPaintAnimationOffset"};
 
   return MeshSpecificationData{
       .attributes = rendering_attributes,
@@ -311,17 +311,18 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
 
   // There are three cases for computing texture coordinates in the shader.
   //
-  // Case 1: 12-bit surface U and V and 8-bit animation offset. This is used for
-  // particle-based meshes to support (potentially-animated) "stamping" textured
-  // particles.
+  // Case 1: 12-bit surface U and V and 8-bit paint animation offset. This is
+  // used for particle-based meshes to support (potentially-animated) "stamping"
+  // textured particles.
   static_assert(
       BrushPaint::TextureLayer{BrushPaint::StampingTexture{}}.index() == 1);
   constexpr absl::string_view
-      kVertexMainTextureUvWithSurfaceUvAndAnimationOffset = R"(
+      kVertexMainTextureUvWithSurfaceUvAndPaintAnimationOffset = R"(
         if (uTextureMapping == 1) {
           varyings.textureCoords = calculateStampingTextureUv(
-              unpackSurfaceUv(attributes.surfaceUvAndAnimationOffset.xyz),
-              unpackAnimationOffset(attributes.surfaceUvAndAnimationOffset.w),
+              unpackSurfaceUv(attributes.surfaceUvAndPaintAnimationOffset.xyz),
+              unpackPaintAnimationOffset(
+                  attributes.surfaceUvAndPaintAnimationOffset.w),
               uTextureAnimationProgress,
               uNumTextureAnimationFrames,
               uNumTextureAnimationRows,
@@ -331,14 +332,14 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
           varyings.textureCoords = varyings.position;
         }
   )";
-  // Case 2: 12-bit surface U, 20-bit surface V, and no animation offset. This
-  // is used for extruded (non-particle-based) meshes to support winding
-  // textured extruded strokes.
+  // Case 2: 12-bit surface U, 20-bit surface V, and no paint animation
+  // offset. This is used for extruded (non-particle-based) meshes to support
+  // winding textured extruded strokes.
   //
   // TODO: b/330511293 - Support this case.
   //
-  // Case 3: No surface UV or animation offset attribute is available at all;
-  // stamping/winding textures are not supported for this mesh.
+  // Case 3: No surface UV or paint animation offset attribute is available at
+  // all; stamping/winding textures are not supported for this mesh.
   constexpr absl::string_view kVertexMainTextureUvWithoutSurfaceUv = R"(
         varyings.textureCoords = varyings.position;
   )";
@@ -365,11 +366,12 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
          .offset = types_and_offsets.hsl_shift->offset,
          .name = "hslShift"});
   }
-  if (types_and_offsets.surface_uv_and_animation_offset.has_value()) {
+  if (types_and_offsets.surface_uv_and_paint_animation_offset.has_value()) {
     mesh_specification_attributes.push_back(
-        {.type = types_and_offsets.surface_uv_and_animation_offset->type,
-         .offset = types_and_offsets.surface_uv_and_animation_offset->offset,
-         .name = "surfaceUvAndAnimationOffset"});
+        {.type = types_and_offsets.surface_uv_and_paint_animation_offset->type,
+         .offset =
+             types_and_offsets.surface_uv_and_paint_animation_offset->offset,
+         .name = "surfaceUvAndPaintAnimationOffset"});
   }
 
   return MeshSpecificationData{
@@ -410,10 +412,11 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
           types_and_offsets.hsl_shift.has_value()
               ? kVertexMainColorWithHslShift
               : kVertexMainColorWithoutHslShift,
-          types_and_offsets.surface_uv_and_animation_offset.has_value()
-              // TODO: b/330511293 - If there's a surface UV, but no animation
-              // offset, use `kVertexMainTextureUvWithSurfaceUvOnly` here.
-              ? kVertexMainTextureUvWithSurfaceUvAndAnimationOffset
+          types_and_offsets.surface_uv_and_paint_animation_offset.has_value()
+              // TODO: b/330511293 - If there's a surface UV, but no paint
+              // animation offset, use `kVertexMainTextureUvWithSurfaceUvOnly`
+              // here.
+              ? kVertexMainTextureUvWithSurfaceUvAndPaintAnimationOffset
               : kVertexMainTextureUvWithoutSurfaceUv,
           kVertexMainEnd),
       .fragment_shader_source = absl::StrCat(

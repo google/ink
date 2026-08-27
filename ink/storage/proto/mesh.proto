@@ -133,7 +133,7 @@ message MeshFormat {
     ATTR_ID_FORWARD_LABEL = 7;
     ATTR_ID_OPACITY_SHIFT = 8;
     ATTR_ID_SURFACE_UV = 9;
-    ATTR_ID_ANIMATION_OFFSET = 10;
+    ATTR_ID_PAINT_ANIMATION_OFFSET = 10;
     reserved 11 to 63;  // Reserved for future standard attribute IDs.
 
     // Values 64-127 are reserved for custom attribute IDs.  (Note that keeping

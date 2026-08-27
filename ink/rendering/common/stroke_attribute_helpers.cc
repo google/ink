@@ -79,22 +79,23 @@ std::optional<AttributeType> FindTypeForDerivativeAndLabel(
 
 // Returns the supported `AttributeType` for the surface UV attribute based on
 // its `MeshFormat::AttributeType`.
-std::optional<AttributeType> FindTypeForSurfaceUvAndAnimationOffset(
+std::optional<AttributeType> FindTypeForSurfaceUvAndPaintAnimationOffset(
     MeshFormat::AttributeType surface_uv_type,
-    std::optional<MeshFormat::AttributeType> animation_offset_type) {
+    std::optional<MeshFormat::AttributeType> paint_animation_offset_type) {
   if (surface_uv_type == MeshFormat::AttributeType::kFloat2Unpacked &&
-      animation_offset_type == MeshFormat::AttributeType::kFloat1Unpacked) {
+      paint_animation_offset_type ==
+          MeshFormat::AttributeType::kFloat1Unpacked) {
     return AttributeType::kFloat3;
   }
   if (surface_uv_type ==
           MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12 &&
-      animation_offset_type ==
+      paint_animation_offset_type ==
           MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte) {
     return AttributeType::kUByte4;
   }
   if (surface_uv_type ==
           MeshFormat::AttributeType::kFloat2PackedInFourUnsignedBytes_X12_Y20 &&
-      animation_offset_type == std::nullopt) {
+      paint_animation_offset_type == std::nullopt) {
     return AttributeType::kUByte4;
   }
   return std::nullopt;
@@ -211,32 +212,32 @@ GetValidatedStrokeAttributeTypesAndOffsets(
       .offset = attributes[attribute_indices.forward_derivative].packed_offset};
 
   // --------------------------------------------------------------------------
-  // Surface UV + animation offset
+  // Surface UV + paint animation offset
   if (attribute_indices.surface_uv != -1) {
-    std::optional<MeshFormat::AttributeType> animation_offset_type;
-    if (attribute_indices.animation_offset != -1) {
+    std::optional<MeshFormat::AttributeType> paint_animation_offset_type;
+    if (attribute_indices.paint_animation_offset != -1) {
       if (attribute_indices.surface_uv + 1 !=
-          attribute_indices.animation_offset) {
+          attribute_indices.paint_animation_offset) {
         return absl::InvalidArgumentError(absl::StrCat(
-            "The `kAnimationOffset` attribute must be immediately after the "
-            "`kSurfaceUv` attribute. Got `mesh_format`: ",
+            "The `kPaintAnimationOffset` attribute must be immediately after "
+            "the `kSurfaceUv` attribute. Got `mesh_format`: ",
             mesh_format));
       }
-      animation_offset_type =
-          attributes[attribute_indices.animation_offset].type;
+      paint_animation_offset_type =
+          attributes[attribute_indices.paint_animation_offset].type;
     }
-    std::optional<AttributeType> surface_uv_and_animation_offset_type =
-        FindTypeForSurfaceUvAndAnimationOffset(
+    std::optional<AttributeType> surface_uv_and_paint_animation_offset_type =
+        FindTypeForSurfaceUvAndPaintAnimationOffset(
             attributes[attribute_indices.surface_uv].type,
-            animation_offset_type);
-    if (!surface_uv_and_animation_offset_type.has_value()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("Unsupported type combination for `kSurfaceUv` and "
-                       "`kAnimationOffset` attributes. Got `mesh_format`: ",
-                       mesh_format));
+            paint_animation_offset_type);
+    if (!surface_uv_and_paint_animation_offset_type.has_value()) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Unsupported type combination for `kSurfaceUv` and "
+          "`kPaintAnimationOffset` attributes. Got `mesh_format`: ",
+          mesh_format));
     }
-    result.surface_uv_and_animation_offset = {
-        .type = *surface_uv_and_animation_offset_type,
+    result.surface_uv_and_paint_animation_offset = {
+        .type = *surface_uv_and_paint_animation_offset_type,
         .offset = attributes[attribute_indices.surface_uv].packed_offset};
   }
 
@@ -270,7 +271,7 @@ StrokeAttributeTypesAndOffsets GetInProgressStrokeAttributeTypesAndOffsets(
       .offset = format_attributes[attribute_indices.forward_derivative]
                     .unpacked_offset};
 
-  result.surface_uv_and_animation_offset = {
+  result.surface_uv_and_paint_animation_offset = {
       .type = AttributeType::kFloat3,
       .offset =
           format_attributes[attribute_indices.surface_uv].unpacked_offset};

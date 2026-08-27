@@ -238,9 +238,10 @@ void MetalRenderer::DrawWithStencilAlreadySet(
       offsets.hsl_shift.has_value() ? offsets.hsl_shift->offset : -1;
   int32_t side_offset = offsets.side_derivative_and_label.offset;
   int32_t forward_offset = offsets.forward_derivative_and_label.offset;
-  int32_t surface_offset = offsets.surface_uv_and_animation_offset.has_value()
-                               ? offsets.surface_uv_and_animation_offset->offset
-                               : -1;
+  int32_t surface_offset =
+      offsets.surface_uv_and_paint_animation_offset.has_value()
+          ? offsets.surface_uv_and_paint_animation_offset->offset
+          : -1;
 
   if (request_shader_aa && (forward_offset < 0 || side_offset < 0)) {
     ABSL_LOG(WARNING)
@@ -266,7 +267,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
       .side_derivative_and_label_offset = request_shader_aa ? side_offset : -1,
       .forward_derivative_and_label_offset =
           request_shader_aa ? forward_offset : -1,
-      .surface_uv_and_animation_offset_offset = surface_offset,
+      .surface_uv_and_paint_animation_offset_offset = surface_offset,
       .brush_size = brush->GetSize(),
       .first_input_pos = first_input_pos,
       .last_input_pos = last_input_pos,
@@ -376,9 +377,10 @@ void MetalRenderer::DrawWithStencilAlreadySet(
       offsets.hsl_shift.has_value() ? offsets.hsl_shift->offset : -1;
   int32_t side_offset = offsets.side_derivative_and_label.offset;
   int32_t forward_offset = offsets.forward_derivative_and_label.offset;
-  int32_t surface_offset = offsets.surface_uv_and_animation_offset.has_value()
-                               ? offsets.surface_uv_and_animation_offset->offset
-                               : -1;
+  int32_t surface_offset =
+      offsets.surface_uv_and_paint_animation_offset.has_value()
+          ? offsets.surface_uv_and_paint_animation_offset->offset
+          : -1;
 
   if (request_shader_aa && (forward_offset < 0 || side_offset < 0)) {
     ABSL_LOG(WARNING)
@@ -429,7 +431,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
             request_shader_aa ? side_offset : -1,
         .forward_derivative_and_label_offset =
             request_shader_aa ? forward_offset : -1,
-        .surface_uv_and_animation_offset_offset = surface_offset,
+        .surface_uv_and_paint_animation_offset_offset = surface_offset,
         .brush_size = stroke.GetBrush().GetSize(),
         .first_input_pos = first_input_pos,
         .last_input_pos = last_input_pos,

@@ -143,7 +143,7 @@ class MetalRenderer {
     //
     // This attribute is optional, and a value of -1 indicates that the
     // attribute is not present.
-    int32_t surface_uv_and_animation_offset_offset = -1;  // 4 bytes
+    int32_t surface_uv_and_paint_animation_offset_offset = -1;  // 4 bytes
 
     // The size of the brush in stroke coordinate space units.
     float brush_size = 0.0f;  // 4 bytes

@@ -93,7 +93,7 @@ float InitialTargetModifierValue(BrushBehavior::Target target) {
     case BrushBehavior::Target::kPositionOffsetYInMultiplesOfBrushSize:
     case BrushBehavior::Target::kPositionOffsetForwardInMultiplesOfBrushSize:
     case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
-    case BrushBehavior::Target::kTextureAnimationProgressOffset:
+    case BrushBehavior::Target::kPaintAnimationProgressOffset:
     case BrushBehavior::Target::kHueOffsetInRadians:
     case BrushBehavior::Target::kLuminosityOffset:
       return 0.f;

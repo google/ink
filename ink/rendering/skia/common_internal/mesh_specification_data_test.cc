@@ -295,7 +295,7 @@ TEST(MeshSpecificationDataTest, CreateFromUnpackedStrokeFormat) {
           {MeshFormat::AttributeType::kFloat2Unpacked,
            MeshFormat::AttributeId::kSurfaceUv},
           {MeshFormat::AttributeType::kFloat1Unpacked,
-           MeshFormat::AttributeId::kAnimationOffset},
+           MeshFormat::AttributeId::kPaintAnimationOffset},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
@@ -315,12 +315,13 @@ TEST(MeshSpecificationDataTest, CreateFromUnpackedStrokeFormat) {
           ShaderAttributeIs(MeshSpecificationData::AttributeType::kFloat3,
                             "hslShift"),
           ShaderAttributeIs(MeshSpecificationData::AttributeType::kFloat3,
-                            "surfaceUvAndAnimationOffset")));
+                            "surfaceUvAndPaintAnimationOffset")));
 }
 
-TEST(MeshSpecificationDataTest, CreateFromStrokeFormatWithNoAnimationOffset) {
+TEST(MeshSpecificationDataTest,
+     CreateFromStrokeFormatWithNoPaintAnimationOffset) {
   // Create a format that uses X12_Y20 for surface UV and has no mesh attribute
-  // for animation offset (i.e. a format for a winding-textured, extruded
+  // for paint animation offset (i.e. a format for a winding-textured, extruded
   // (non-particle) stroke).
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {
@@ -357,11 +358,11 @@ TEST(MeshSpecificationDataTest, CreateFromStrokeFormatWithNoAnimationOffset) {
           ShaderAttributeIs(MeshSpecificationData::AttributeType::kUByte4,
                             "forwardDerivativeAndLabel"),
           // Note that the shader attribute will still be called
-          // "surfaceUvAndAnimationOffset", even though all four bytes are used
-          // for the surface UV, and zero bytes are used for the animation
+          // "surfaceUvAndPaintAnimationOffset", even though all four bytes are
+          // used for the surface UV, and zero bytes are used for the animation
           // offset.
           ShaderAttributeIs(MeshSpecificationData::AttributeType::kUByte4,
-                            "surfaceUvAndAnimationOffset")));
+                            "surfaceUvAndPaintAnimationOffset")));
 }
 
 TEST(MeshSpecificationDataTest,

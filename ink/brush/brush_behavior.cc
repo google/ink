@@ -167,7 +167,7 @@ bool IsValidBehaviorTarget(BrushBehavior::Target target) {
     case BrushBehavior::Target::kPositionOffsetYInMultiplesOfBrushSize:
     case BrushBehavior::Target::kPositionOffsetForwardInMultiplesOfBrushSize:
     case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
-    case BrushBehavior::Target::kTextureAnimationProgressOffset:
+    case BrushBehavior::Target::kPaintAnimationProgressOffset:
     case BrushBehavior::Target::kHueOffsetInRadians:
     case BrushBehavior::Target::kSaturationMultiplier:
     case BrushBehavior::Target::kLuminosityOffset:
@@ -521,7 +521,7 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::Target target) {
     case BrushBehavior::Target::kLuminosityOffset:
     case BrushBehavior::Target::kOpacityMultiplier:
       return Version::k0();
-    case BrushBehavior::Target::kTextureAnimationProgressOffset:
+    case BrushBehavior::Target::kPaintAnimationProgressOffset:
       return Version::kDevelopment();
   }
   return Version::kDevelopment();
@@ -784,8 +784,8 @@ std::string ToFormattedString(BrushBehavior::Target target) {
       return "kPositionOffsetForwardInMultiplesOfBrushSize";
     case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
       return "kPositionOffsetLateralInMultiplesOfBrushSize";
-    case BrushBehavior::Target::kTextureAnimationProgressOffset:
-      return "kTextureAnimationProgressOffset";
+    case BrushBehavior::Target::kPaintAnimationProgressOffset:
+      return "kPaintAnimationProgressOffset";
     case BrushBehavior::Target::kHueOffsetInRadians:
       return "kHueOffsetInRadians";
     case BrushBehavior::Target::kSaturationMultiplier:
