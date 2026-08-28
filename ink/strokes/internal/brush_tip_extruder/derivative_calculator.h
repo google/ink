@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
+#include "ink/geometry/triangle.h"
 #include "ink/geometry/vec.h"
 #include "ink/strokes/internal/brush_tip_extruder/mutable_mesh_view.h"
 #include "ink/strokes/internal/stroke_vertex.h"
@@ -81,6 +82,12 @@ class DerivativeCalculator {
   void UpdateMesh(absl::Span<const uint32_t> left_indices_to_update,
                   absl::Span<const uint32_t> right_indices_to_update,
                   MutableMeshView& mesh);
+
+  // Computes the anti-aliasing margin upper bounds for the 3 vertices of
+  // `triangle`, given the `outset_signs` and `derivatives` of each vertex.
+  static std::array<float, 3> ComputeTriangleMarginUpperBounds(
+      const Triangle& triangle, const std::array<float, 3>& outset_signs,
+      const std::array<Vec, 3>& derivatives);
 
  private:
   // Prepares the tracked average derivatives and minimum margins for
