@@ -740,10 +740,10 @@ TEST(BrushFamilyTest, DefaultConstruction) {
   EXPECT_THAT(family.GetInputModel(),
               BrushFamilyInputModelEq(BrushFamily::DefaultInputModel()));
   EXPECT_THAT(family.GetMetadata().client_brush_family_id, IsEmpty());
-  EXPECT_EQ(family.GetTextureAnimationLoopDuration(), absl::ZeroDuration());
+  EXPECT_EQ(family.GetPaintAnimationLoopDuration(), absl::ZeroDuration());
 }
 
-TEST(BrushFamilyTest, AnimatedTextureLoopDuration) {
+TEST(BrushFamilyTest, AnimatedBrushPaintLoopDuration) {
   auto make_animated_coat = [](absl::Duration animation_duration) {
     return BrushCoat{CreatePressureTestTip(),
                      {BrushPaint{{BrushPaint::StampingTexture{
@@ -770,11 +770,10 @@ TEST(BrushFamilyTest, AnimatedTextureLoopDuration) {
                            make_animated_coat(absl::Milliseconds(600)),
                            make_animated_coat(absl::Milliseconds(1500))});
   ASSERT_THAT(family, IsOk());
-  EXPECT_EQ(family->GetTextureAnimationLoopDuration(),
-            absl::Milliseconds(3000));
+  EXPECT_EQ(family->GetPaintAnimationLoopDuration(), absl::Milliseconds(3000));
 }
 
-TEST(BrushFamilyTest, NonAnimatedTexturesDoNotCountTowardLoopDuration) {
+TEST(BrushFamilyTest, NonAnimatedBrushPaintsDoNotCountTowardLoopDuration) {
   absl::StatusOr<BrushFamily> family = BrushFamily::Create({
       BrushCoat{CreatePressureTestTip(),
                 // Tiling textures aren't animated.
@@ -811,8 +810,8 @@ TEST(BrushFamilyTest, NonAnimatedTexturesDoNotCountTowardLoopDuration) {
                 }}}}},
   });
   ASSERT_THAT(family, IsOk());
-  // The non-animated textures don't count, so the LCM is 13 milliseconds.
-  EXPECT_EQ(family->GetTextureAnimationLoopDuration(), absl::Milliseconds(13));
+  // The non-animated `BrushPaint`s don't count, so the LCM is 13 milliseconds.
+  EXPECT_EQ(family->GetPaintAnimationLoopDuration(), absl::Milliseconds(13));
 }
 
 TEST(BrushFamilyTest, CopyAndMove) {

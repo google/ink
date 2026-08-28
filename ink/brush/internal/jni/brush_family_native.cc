@@ -121,11 +121,11 @@ const char* BrushFamilyNative_getDeveloperComment(int64_t native_pointer) {
   return brush_family.GetMetadata().developer_comment.c_str();
 }
 
-int64_t BrushFamilyNative_getTextureAnimationLoopDurationMillis(
+int64_t BrushFamilyNative_getPaintAnimationLoopDurationMillis(
     int64_t native_pointer) {
   const BrushFamily& brush_family = CastToBrushFamily(native_pointer);
   return absl::ToInt64Milliseconds(
-      brush_family.GetTextureAnimationLoopDuration());
+      brush_family.GetPaintAnimationLoopDuration());
 }
 
 int64_t BrushFamilyNative_getBrushCoatCount(int64_t native_pointer) {

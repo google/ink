@@ -69,11 +69,9 @@ JNI_METHOD(brush, BrushFamilyNative, jstring, getDeveloperComment)
       BrushFamilyNative_getDeveloperComment(native_pointer));
 }
 
-JNI_METHOD(brush, BrushFamilyNative, jlong,
-           getTextureAnimationLoopDurationMillis)
+JNI_METHOD(brush, BrushFamilyNative, jlong, getPaintAnimationLoopDurationMillis)
 (JNIEnv* env, jobject object, jlong native_pointer) {
-  return BrushFamilyNative_getTextureAnimationLoopDurationMillis(
-      native_pointer);
+  return BrushFamilyNative_getPaintAnimationLoopDurationMillis(native_pointer);
 }
 
 JNI_METHOD(brush, BrushFamilyNative, jlong, getBrushCoatCount)

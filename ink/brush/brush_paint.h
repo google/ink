@@ -179,7 +179,7 @@ struct BrushPaint {
   //   fuzz_domains.cc:blend_mode,
   // )
 
-  // Specifies what should happen when a texture animation repeats.
+  // Specifies what should happen when a brush paint animation repeats.
   enum class AnimationRepeatMode {
     // Return to the start of the animation for the next repetition.
     kRestart,
@@ -256,7 +256,7 @@ struct BrushPaint {
     // default value), because that indicates that animation is disabled.
     absl::Duration animation_duration = absl::Seconds(1);
 
-    // Specifies what should happen when a texture animation repeats.
+    // Specifies what should happen when this texture layer's animation repeats.
     //
     // Note that this setting is ignored if `animation_frames` is 1 (its default
     // value), because that indicates that animation is disabled.

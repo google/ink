@@ -53,11 +53,11 @@ uint32_t BrushFamily::MaxBrushCoats() {
 BrushFamily::BrushFamily(absl::Span<const BrushCoat> coats,
                          const InputModel& input_model,
                          const Metadata& metadata,
-                         absl::Duration texture_animation_loop_duration)
+                         absl::Duration paint_animation_loop_duration)
     : coats_(coats.begin(), coats.end()),
       input_model_(input_model),
       metadata_(metadata),
-      texture_animation_loop_duration_(texture_animation_loop_duration) {}
+      paint_animation_loop_duration_(paint_animation_loop_duration) {}
 
 absl::StatusOr<BrushFamily> BrushFamily::Create(const BrushTip& tip,
                                                 const BrushPaint& paint,
