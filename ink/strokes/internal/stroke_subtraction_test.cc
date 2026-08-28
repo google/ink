@@ -37,6 +37,7 @@
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
 #include "ink/geometry/triangle.h"
+#include "ink/geometry/vec.h"
 #include "ink/types/small_array.h"
 
 namespace ink::strokes_internal {
@@ -554,6 +555,244 @@ TEST(StrokeSubtractionTest, ComputeLabels2) {
   check_labels(X2, kRightLabel, kFrontLabel);
   // (X2,B) should be kRight, since (A,B) was kRight
   check_labels(B, kRightLabel, kBackLabel);
+}
+
+TEST(StrokeSubtractionTest, ComputeSideDerivatives) {
+  // The derivatives depend on the assigned boundary labels and the resulting
+  // triangulation, both of which are not uniquely determined for a subtracted
+  // mesh. This test verifies the derivative calculation assuming the boundary
+  // labels from `ComputeLabels1` and checks only the derivatives that are
+  // independent of the triangulation.
+  //
+  //           H-------------------G
+  //           |      mesh_b       |
+  // D---------+---------C         |     stroke travel direction
+  // |         |       / |         |           ^
+  // |         |     /   |         |           |
+  // | mesh_a  |   /     |         |           +---> right
+  // |         | /       |         |
+  // |         |         |         |
+  // |       / |         |         |
+  // |     /   |         |         |
+  // |   /     |         |         |
+  // | /       |         |         |
+  // A---------+---------B         |
+  //           |                   |
+  //           E-------------------F
+
+  Point A{0, 0}, B{10, 0}, C{10, 10}, D{0, 10};
+  Point E{5, -5}, F{15, -5}, G{15, 15}, H{5, 15};
+  Point X1{5, 0};   // intersection of AB and EH
+  Point X2{5, 5};   // intersection of AC and EH
+  Point X3{5, 10};  // intersection of CD and EH
+
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
+       {AttributeType::kFloat2Unpacked, AttributeId::kSideDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kSideLabel},
+       {AttributeType::kFloat2Unpacked, AttributeId::kForwardDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kForwardLabel}},
+      IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  // Set up mesh_a
+  MutableMesh mesh_a(*format);
+  for (const Point& p : {A, B, C, D}) mesh_a.AppendVertex(p);
+  mesh_a.AppendTriangleIndices({0, 1, 2});
+  mesh_a.AppendTriangleIndices({0, 2, 3});
+
+  // Set the labels: traveling along the stroke from start to end,
+  // AB is front, AD is left, BC is right, CD is back.
+  mesh_a.SetFloatVertexAttribute(0, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(0, 4, {kFrontLabel});
+  mesh_a.SetFloatVertexAttribute(1, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(1, 4, {kFrontLabel});
+  mesh_a.SetFloatVertexAttribute(2, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(2, 4, {kBackLabel});
+  mesh_a.SetFloatVertexAttribute(3, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(3, 4, {kBackLabel});
+
+  // Set the initial side and forward derivatives (width = 10, length = 10).
+  for (uint32_t i = 0; i < 4; ++i) {
+    mesh_a.SetFloatVertexAttribute(i, 1, {10.0f, 0.0f});
+    mesh_a.SetFloatVertexAttribute(i, 3, {0.0f, 10.0f});
+  }
+
+  std::vector<uint32_t> mesh_a_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  // Set up mesh_b
+  MutableMesh mesh_b(MeshFormat{});
+  for (const Point& p : {E, F, G, H}) mesh_b.AppendVertex(p);
+  mesh_b.AppendTriangleIndices({0, 1, 2});
+  mesh_b.AppendTriangleIndices({0, 2, 3});
+
+  std::vector<uint32_t> mesh_b_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  // Subtract
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  EXPECT_EQ(NumTriangles(*result), 3);
+  EXPECT_EQ(NumVertices(*result), 5);
+
+  const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
+
+  auto check_labels = [&](Point point, float expected_side,
+                          float expected_fwd) {
+    std::optional<uint32_t> idx = FindVertexIndex(result_mesh, point);
+    ASSERT_TRUE(idx.has_value());
+    ASSERT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 2)[0],
+                    expected_side);
+    ASSERT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
+  };
+
+  check_labels(A, kLeftLabel, kFrontLabel);
+  check_labels(D, kLeftLabel, kBackLabel);
+  check_labels(X3, kRightLabel, kBackLabel);
+  check_labels(X2, kRightLabel, kInteriorLabel);
+  check_labels(X1, kRightLabel, kFrontLabel);
+
+  auto check_side_derivative = [&](Point point, Vec expected_side) {
+    std::optional<uint32_t> idx = FindVertexIndex(result_mesh, point);
+    ASSERT_TRUE(idx.has_value());
+    auto side = result_mesh.FloatVertexAttribute(*idx, 1);
+    EXPECT_NEAR(side[0], expected_side.x, 1e-3);
+    EXPECT_NEAR(side[1], expected_side.y, 1e-3);
+  };
+
+  // The remaining stroke has width = 5 so the recomputed side derivative across
+  // all 5 vertices is exactly {5, 0}.
+  check_side_derivative(A, {5.0f, 0.0f});
+  check_side_derivative(D, {5.0f, 0.0f});
+  check_side_derivative(X1, {5.0f, 0.0f});
+  check_side_derivative(X2, {5.0f, 0.0f});
+  check_side_derivative(X3, {5.0f, 0.0f});
+}
+
+TEST(StrokeSubtractionTest, ComputeForwardDerivatives) {
+  // The derivatives depend on the assigned boundary labels and the resulting
+  // triangulation, both of which are not uniquely determined for a subtracted
+  // mesh. This test verifies the derivative calculation assuming the boundary
+  // labels and checks only the derivatives that are independent of the
+  // triangulation.
+  //
+  //     H-----------------------------G
+  //     |          mesh_b             |
+  //     |                             |
+  //     |    D-------------------C    |       stroke travel direction
+  //     |    |                 / |    |               ^
+  //     |    |               /   |    |               |
+  //     |    |             /     |    |               +---> right
+  //     E----+-----------/-------+----F
+  //          |         /         |
+  //          |       /           |
+  //          |     /             |
+  //          |   /               |
+  //          | /      mesh_a     |
+  //          A-------------------B
+
+  Point A{0, 0}, B{10, 0}, C{10, 10}, D{0, 10};
+  Point E{-5, 5}, F{15, 5}, G{15, 15}, H{-5, 15};
+  Point X1{10, 5};  // intersection of BC and EF
+  Point X2{5, 5};   // intersection of AC and EF
+  Point X3{0, 5};   // intersection of AD and EF
+
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
+       {AttributeType::kFloat2Unpacked, AttributeId::kSideDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kSideLabel},
+       {AttributeType::kFloat2Unpacked, AttributeId::kForwardDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kForwardLabel}},
+      IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  // Set up mesh_a
+  MutableMesh mesh_a(*format);
+  for (const Point& p : {A, B, C, D}) mesh_a.AppendVertex(p);
+  mesh_a.AppendTriangleIndices({0, 1, 2});
+  mesh_a.AppendTriangleIndices({0, 2, 3});
+
+  // Set the labels: traveling along the stroke from start to end,
+  // AB is front, AD is left, BC is right, CD is back.
+  mesh_a.SetFloatVertexAttribute(0, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(0, 4, {kFrontLabel});
+  mesh_a.SetFloatVertexAttribute(1, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(1, 4, {kFrontLabel});
+  mesh_a.SetFloatVertexAttribute(2, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(2, 4, {kBackLabel});
+  mesh_a.SetFloatVertexAttribute(3, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(3, 4, {kBackLabel});
+
+  for (uint32_t i = 0; i < 4; ++i) {
+    mesh_a.SetFloatVertexAttribute(i, 1, {10.0f, 0.0f});
+    mesh_a.SetFloatVertexAttribute(i, 3, {0.0f, 10.0f});
+  }
+
+  std::vector<uint32_t> mesh_a_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  // Set up mesh_b
+  MutableMesh mesh_b(MeshFormat{});
+  for (const Point& p : {E, F, G, H}) mesh_b.AppendVertex(p);
+  mesh_b.AppendTriangleIndices({0, 1, 2});
+  mesh_b.AppendTriangleIndices({0, 2, 3});
+
+  std::vector<uint32_t> mesh_b_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  // Subtract
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  EXPECT_EQ(NumTriangles(*result), 3);
+  EXPECT_EQ(NumVertices(*result), 5);
+
+  const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
+
+  auto check_labels = [&](Point point, float expected_side,
+                          float expected_fwd) {
+    std::optional<uint32_t> idx = FindVertexIndex(result_mesh, point);
+    ASSERT_TRUE(idx.has_value());
+    ASSERT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 2)[0],
+                    expected_side);
+    ASSERT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
+  };
+
+  check_labels(A, kLeftLabel, kFrontLabel);
+  check_labels(B, kRightLabel, kFrontLabel);
+  check_labels(X1, kRightLabel, kBackLabel);
+  check_labels(X2, kInteriorLabel, kBackLabel);
+  check_labels(X3, kLeftLabel, kBackLabel);
+
+  auto check_forward_derivative = [&](Point point, Vec expected_fwd) {
+    std::optional<uint32_t> idx = FindVertexIndex(result_mesh, point);
+    ASSERT_TRUE(idx.has_value());
+    auto fwd = result_mesh.FloatVertexAttribute(*idx, 3);
+    EXPECT_NEAR(fwd[0], expected_fwd.x, 1e-3);
+    EXPECT_NEAR(fwd[1], expected_fwd.y, 1e-3);
+  };
+
+  // The remaining stroke has length = 5 in y (from y=0 to y=5), so the
+  // recomputed forward derivative across all 5 vertices is exactly {0, 5}.
+  check_forward_derivative(A, {0.0f, 5.0f});
+  check_forward_derivative(B, {0.0f, 5.0f});
+  check_forward_derivative(X1, {0.0f, 5.0f});
+  check_forward_derivative(X2, {0.0f, 5.0f});
+  check_forward_derivative(X3, {0.0f, 5.0f});
 }
 
 TEST(StrokeSubtractionTest, AttributeInterpolation) {

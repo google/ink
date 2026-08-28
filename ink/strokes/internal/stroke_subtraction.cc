@@ -41,6 +41,7 @@
 #include "ink/geometry/point.h"
 #include "ink/geometry/triangle.h"
 #include "ink/geometry/vec.h"
+#include "ink/strokes/internal/brush_tip_extruder/derivative_calculator.h"
 #include "ink/strokes/internal/stroke_vertex.h"
 #include "ink/types/numbers.h"
 #include "ink/types/small_array.h"
@@ -48,6 +49,8 @@
 namespace ink::strokes_internal {
 namespace {
 
+using AverageDerivative =
+    ::ink::brush_tip_extruder_internal::DerivativeCalculator::AverageDerivative;
 using ::ink::geometry_internal::ComputeSubtraction;
 using ::ink::geometry_internal::ComputeTriangulation;
 using ::ink::geometry_internal::Intersects;
@@ -180,6 +183,11 @@ enum BoundaryLabel : int {
   kRightBack = 8,
 };
 
+bool IsLeft(BoundaryLabel label) { return label % 3 == 1; }
+bool IsRight(BoundaryLabel label) { return label % 3 == 2; }
+bool IsFront(BoundaryLabel label) { return label / 3 == 1; }
+bool IsBack(BoundaryLabel label) { return label / 3 == 2; }
+
 // Converts encoded float values to a BoundaryLabel enum value.
 BoundaryLabel DecodeBoundaryLabel(float side, float fwd) {
   int side_idx = (side > 0.0f) ? 2 : (side < 0.0f ? 1 : 0);
@@ -214,7 +222,7 @@ BoundaryLabel GetEdgeLabel(BoundaryLabel u, BoundaryLabel v) {
 //     //depot/google3/third_party/ink/rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
 
 // Returns true if `format` has the attributes required for anti-aliasing.
-bool HasBoundaryLabels(const MeshFormat& format) {
+bool HasAntiAliasingAttributes(const MeshFormat& format) {
   StrokeVertex::FormatAttributeIndices attr_indices =
       StrokeVertex::FindAttributeIndices(format);
   return attr_indices.side_label != -1 && attr_indices.forward_label != -1 &&
@@ -308,6 +316,18 @@ class MeshBuilder {
     auto sd = mutable_mesh_.FloatVertexAttribute(vertex_index,
                                                  attr_indices_.side_derivative);
     return {sd[0], sd[1]};
+  }
+
+  void SetSideDerivative(uint32_t vertex_index, Vec derivative) {
+    mutable_mesh_.SetFloatVertexAttribute(vertex_index,
+                                          attr_indices_.side_derivative,
+                                          {derivative.x, derivative.y});
+  }
+
+  void SetForwardDerivative(uint32_t vertex_index, Vec derivative) {
+    mutable_mesh_.SetFloatVertexAttribute(vertex_index,
+                                          attr_indices_.forward_derivative,
+                                          {derivative.x, derivative.y});
   }
 
   const MutableMesh& GetMesh() const { return mutable_mesh_; }
@@ -594,6 +614,122 @@ void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
 //     //depot/google3/third_party/ink/rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:calculate_antialiasing_and_position_outset,
 //     //depot/google3/third_party/ink/rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
 
+// LINT.IfChange(compute_derivatives)
+// Computes the anti-aliasing derivatives (`side_derivative` and
+// `forward_derivative`) for all the vertices in the mesh.
+void ComputeAndSetDerivatives(MeshBuilder& mesh_builder) {
+  // This function recomputes the anti-aliasing derivatives for all vertices in
+  // the mesh, by iterating over all triangles, accumulating each triangle's
+  // contribution onto its vertices, averaging the accumulated derivatives per
+  // vertex, and then writing them into the mesh.
+  // TODO(b/521448869): Without an efficient way to traverse the mesh's
+  // adjacency graph, we recompute the derivatives across all vertices rather
+  // than restricting to the neighborhood modified by the subtraction.
+  //
+  // Our approach to computing derivatives here is a bit different than that
+  // used during extrusion (see
+  // DerivativeCalculator::AddDerivativesForTriangle), primarily to handle the
+  // more varied topologies and boundary label configurations that can arise in
+  // subtracted meshes.
+  //
+  // It works roughly as follows (see also
+  // strokes/internal/brush_tip_extruder/derivative_calculator.cc and
+  // rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h
+  // for further background and details):
+  //
+  // Recall first that the derivatives are used during rendering to perform
+  // anti-aliasing, specifically to 1) outset the vertices on the mesh boundary
+  // and 2) compute distances of pixel fragments to the mesh boundary in order
+  // to estimate pixel coverage.
+  //
+  // More precisely, for a triangle (p0, p1, p2), the boundary labels of the
+  // vertices define four normalized "distance" fields {f_left, f_right, f_back,
+  // f_front} that map a point p in the triangle to its approximate distance (in
+  // barycentric coordinates) to the respective boundary. These have the form,
+  //    f_s(p) = 1 - \sum_{i=0}^2  \lambda_i(p) * OnSide(s, p_i),
+  // where
+  //   s is a side in {left, right, front, back},
+  //   OnSide(s, p_i) is 1 if vertex p_i is (labeled) on side s and 0 otherwise,
+  //   \lambda_i is the barycentric weight function for the vertex i.
+  //
+  // The derivative vectors for each side are defined as,
+  //   derivative_s = \nabla f_s / | \nabla f_s |^2,
+  // where \nabla is the standard gradient. These vectors point normal to the
+  // boundary, and are scaled so that f_s * |derivative_s| is the distance to
+  // the boundary in stroke units.
+  //
+  // Because the mesh format stores only a single side-derivative (left/right)
+  // and a forward-derivative (front/back), we write to each vertex the side
+  // and forward derivatives matching its side and forward labels
+  // (with interior vertices accumulating both).
+
+  const MutableMesh& mesh = mesh_builder.GetMesh();
+  std::vector<AverageDerivative> side_derivative(mesh.VertexCount());
+  std::vector<AverageDerivative> forward_derivative(mesh.VertexCount());
+
+  for (uint32_t tri_idx = 0; tri_idx < mesh.TriangleCount(); ++tri_idx) {
+    std::array<uint32_t, 3> indices = mesh.TriangleIndices(tri_idx);
+    Triangle triangle = mesh.GetTriangle(tri_idx);
+    float area = triangle.SignedArea();
+    if (area == 0.0f) continue;
+
+    std::array<BoundaryLabel, 3> labels;
+    for (int k = 0; k < 3; ++k) {
+      labels[k] = mesh_builder.GetLabel(indices[k]);
+    }
+
+    // Precompute the gradients of the barycentric weight functions \lambda_i
+    // needed for computing the gradients of f_s. Since \lambda_i is the linear
+    // function where \lambda_i(p_i) = 1 and \lambda_i(p_j) = \lambda_i(p_k) =
+    // 0, \nabla \lambda_i is orthogonal to the opposite edge (p_j, p_k) with
+    // magnitude 1 / altitude_i (where altitude_i is the height of vertex p_i
+    // above the base edge (p_j, p_k)).
+    float inv_twice_area = 1.0f / (2.0 * area);
+    std::array<Vec, 3> grad_lambda = {
+        inv_twice_area * (triangle.p2 - triangle.p1).Orthogonal(),
+        inv_twice_area * (triangle.p0 - triangle.p2).Orthogonal(),
+        inv_twice_area * (triangle.p1 - triangle.p0).Orthogonal(),
+    };
+
+    // Compute the gradients of the distance functions.
+    Vec grad_f_left, grad_f_right, grad_f_front, grad_f_back;
+    for (int i = 0; i < 3; ++i) {
+      if (!IsLeft(labels[i])) grad_f_left += grad_lambda[i];
+      if (!IsRight(labels[i])) grad_f_right += grad_lambda[i];
+      if (!IsFront(labels[i])) grad_f_front += grad_lambda[i];
+      if (!IsBack(labels[i])) grad_f_back += grad_lambda[i];
+    }
+
+    // Compute the derivatives.
+    auto rescale = [](Vec grad) -> Vec {
+      float mag_sq = grad.MagnitudeSquared();
+      return (mag_sq > 0.0f) ? (grad / mag_sq) : Vec{0, 0};
+    };
+    Vec derivative_left = rescale(grad_f_left);
+    Vec derivative_right = rescale(grad_f_right);
+    Vec derivative_front = rescale(grad_f_front);
+    Vec derivative_back = rescale(grad_f_back);
+
+    // Add the derivatives onto the vertices.
+    for (int i = 0; i < 3; ++i) {
+      uint32_t idx = indices[i];
+      if (!IsLeft(labels[i])) side_derivative[idx].Add(-derivative_right);
+      if (!IsRight(labels[i])) side_derivative[idx].Add(derivative_left);
+      if (!IsFront(labels[i])) forward_derivative[idx].Add(-derivative_back);
+      if (!IsBack(labels[i])) forward_derivative[idx].Add(derivative_front);
+    }
+  }
+
+  for (uint32_t i = 0; i < mesh.VertexCount(); ++i) {
+    mesh_builder.SetSideDerivative(i, side_derivative[i].Value());
+    mesh_builder.SetForwardDerivative(i, forward_derivative[i].Value());
+  }
+}
+// LINT.ThenChange(
+//     //depot/google3/third_party/ink/strokes/internal/brush_tip_extruder/derivative_calculator.cc,
+//     //depot/google3/third_party/ink/rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:calculate_antialiasing_and_position_outset,
+//     //depot/google3/third_party/ink/rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
+
 struct SubtractedMesh {
   MutableMesh mesh;
   std::vector<std::vector<uint32_t>> outlines;
@@ -687,7 +823,10 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
   std::vector<std::vector<uint32_t>> outlines =
       ComputeOutlines(sub_mesh.GetMesh());
 
-  if (HasBoundaryLabels(format)) ComputeAndSetLabels(outlines, sub_mesh);
+  if (HasAntiAliasingAttributes(format)) {
+    ComputeAndSetLabels(outlines, sub_mesh);
+    ComputeAndSetDerivatives(sub_mesh);
+  }
 
   return SubtractedMesh{
       .mesh = std::move(sub_mesh).ExtractMesh(),
