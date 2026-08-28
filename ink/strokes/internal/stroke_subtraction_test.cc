@@ -299,7 +299,7 @@ TEST(StrokeSubtractionTest, ComputeLabels1) {
 
   //           H-------------------G
   //           |      mesh_b       |
-  // D---------+---------C         |        forward
+  // D---------+---------C         |    stroke travel direction
   // |         |       / |         |           ^
   // |         |     /   |         |           |
   // | mesh_a  |   /     |         |           +---> right
@@ -333,20 +333,22 @@ TEST(StrokeSubtractionTest, ComputeLabels1) {
   mesh_a.AppendTriangleIndices({0, 1, 2});
   mesh_a.AppendTriangleIndices({0, 2, 3});
 
-  // Set labels
+  // Set the labels: traveling along the stroke from start to end,
+  // AB is front, AD is left, BC is right, CD is back.
 
-  // A is left back
+  // A is left front
   mesh_a.SetFloatVertexAttribute(0, 2, {kLeftLabel});
-  mesh_a.SetFloatVertexAttribute(0, 4, {kBackLabel});
-  // B is right back
+  mesh_a.SetFloatVertexAttribute(0, 4, {kFrontLabel});
+  // B is right front
   mesh_a.SetFloatVertexAttribute(1, 2, {kRightLabel});
-  mesh_a.SetFloatVertexAttribute(1, 4, {kBackLabel});
-  // C is right front
+  mesh_a.SetFloatVertexAttribute(1, 4, {kFrontLabel});
+
+  // C is right back
   mesh_a.SetFloatVertexAttribute(2, 2, {kRightLabel});
-  mesh_a.SetFloatVertexAttribute(2, 4, {kFrontLabel});
-  // D is left front
+  mesh_a.SetFloatVertexAttribute(2, 4, {kBackLabel});
+  // D is left back
   mesh_a.SetFloatVertexAttribute(3, 2, {kLeftLabel});
-  mesh_a.SetFloatVertexAttribute(3, 4, {kFrontLabel});
+  mesh_a.SetFloatVertexAttribute(3, 4, {kBackLabel});
 
   // Set the side and forward derivatives.
   for (uint32_t i = 0; i < 4; ++i) {
@@ -396,11 +398,11 @@ TEST(StrokeSubtractionTest, ComputeLabels1) {
     EXPECT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
   };
 
-  check_labels(A, kLeftLabel, kBackLabel);
-  check_labels(D, kLeftLabel, kFrontLabel);
-  check_labels(X3, kRightLabel, kFrontLabel);
+  check_labels(A, kLeftLabel, kFrontLabel);
+  check_labels(D, kLeftLabel, kBackLabel);
+  check_labels(X3, kRightLabel, kBackLabel);
   check_labels(X2, kRightLabel, kInteriorLabel);
-  check_labels(X1, kRightLabel, kBackLabel);
+  check_labels(X1, kRightLabel, kFrontLabel);
 }
 
 TEST(StrokeSubtractionTest, ComputeLabels2) {
@@ -416,7 +418,7 @@ TEST(StrokeSubtractionTest, ComputeLabels2) {
   // |                   /         |
   // |                 /           |
   // |               /             |
-  // |             /               |          +--> forward
+  // |             /               |          +--> stroke travel direction
   // |           /                 |          |
   // |         /                   |          V
   // |       /    J--------I       |          right
@@ -448,20 +450,21 @@ TEST(StrokeSubtractionTest, ComputeLabels2) {
   mesh_a.AppendTriangleIndices({0, 1, 2});
   mesh_a.AppendTriangleIndices({0, 2, 3});
 
-  // Set labels
+  // Set the labels: traveling along the stroke from start to end,
+  // AD is front, CD is left, AB is right, BC is back.
 
-  // A is right back
+  // A is right front
   mesh_a.SetFloatVertexAttribute(0, 2, {kRightLabel});
-  mesh_a.SetFloatVertexAttribute(0, 4, {kBackLabel});
-  // B is right front
+  mesh_a.SetFloatVertexAttribute(0, 4, {kFrontLabel});
+  // B is right back
   mesh_a.SetFloatVertexAttribute(1, 2, {kRightLabel});
-  mesh_a.SetFloatVertexAttribute(1, 4, {kFrontLabel});
-  // C is left front
+  mesh_a.SetFloatVertexAttribute(1, 4, {kBackLabel});
+  // C is left back
   mesh_a.SetFloatVertexAttribute(2, 2, {kLeftLabel});
-  mesh_a.SetFloatVertexAttribute(2, 4, {kFrontLabel});
-  // D is left back
+  mesh_a.SetFloatVertexAttribute(2, 4, {kBackLabel});
+  // D is left front
   mesh_a.SetFloatVertexAttribute(3, 2, {kLeftLabel});
-  mesh_a.SetFloatVertexAttribute(3, 4, {kBackLabel});
+  mesh_a.SetFloatVertexAttribute(3, 4, {kFrontLabel});
 
   // Set the side and forward derivatives.
   for (uint32_t i = 0; i < 4; ++i) {
@@ -515,11 +518,11 @@ TEST(StrokeSubtractionTest, ComputeLabels2) {
 
   // Labeling the vertices is a bit of a puzzle. It may be useful to first note
   // the orientation of the edges (with respect to the orientation of mesh_a):
-  // (A,X1) faces right, (X1,K) faces exactly front-right, (K,J) faces mostly
-  // left and slightly front, (J,I) right, (I,H) back, (H,G) right, (G,X2) back,
-  // and (X2,B) right.
+  // (A,X1) faces right, (X1,K) faces equally back and right, (K,J) faces mostly
+  // left and slightly back, (J,I) right, (I,H) front, (H,G) right, (G,X2)
+  // front, and (X2,B) right.
   //
-  //              J--------I                  +--> forward
+  //              J--------I                  +--> stroke travel direction
   //               \       |                  |
   //                 K     H---G              V
   //                /          |             right
@@ -527,30 +530,30 @@ TEST(StrokeSubtractionTest, ComputeLabels2) {
   //
   // We can roughly reason through as follows:
 
-  check_labels(A, kRightLabel, kBackLabel);
+  check_labels(A, kRightLabel, kFrontLabel);
   // edge (A,X1) should definitely be kRight, since (A,B) was kRight.
-  check_labels(X1, kRightLabel, kFrontLabel);
-  // edge (X1,K) could reasonably be kRight or kFront, but choosing kRight
+  check_labels(X1, kRightLabel, kBackLabel);
+  // edge (X1,K) could reasonably be kRight or kBack, but choosing kRight
   // would demand (K,J) also be kRight (assuming that (J,I) is kRight).
-  // So kFront is chosen.
-  check_labels(K, kInteriorLabel, kFrontLabel);
+  // So kBack is chosen.
+  check_labels(K, kInteriorLabel, kBackLabel);
   // (K,J) is geometrically oriented left, but can not be labeled as such
   // (assuming  again that we'll choose (J,I) to be kRight). Given this,
-  // kFront is the next best choice.
-  check_labels(J, kRightLabel, kFrontLabel);
+  // kBack is the next best choice.
+  check_labels(J, kRightLabel, kBackLabel);
   // (J,I) seems pretty clearly kRight.
-  check_labels(I, kRightLabel, kBackLabel);
-  // (I,H) seems kBack, but could also be kRight. Choosing kRight here would
+  check_labels(I, kRightLabel, kFrontLabel);
+  // (I,H) seems kFront, but could also be kRight. Choosing kRight here would
   // allow (H,G) to be labeled kRight, but then also force (G,X2) to be kRight,
-  // effectively mislabeling two edges. So indeed, kBack.
-  check_labels(H, kInteriorLabel, kBackLabel);
+  // effectively mislabeling two edges. So indeed, kFront.
+  check_labels(H, kInteriorLabel, kFrontLabel);
   // (H,G) would like to be kRight, but that's incompatible with (G,X2) being
-  // set to kBack. Choosing (H,G) to be kBack is prioritized here because (G,X2)
-  // is larger.
-  check_labels(G, kInteriorLabel, kBackLabel);
-  check_labels(X2, kRightLabel, kBackLabel);
+  // set to kFront. Choosing (H,G) to be kFront is prioritized here because
+  // (G,X2) is larger.
+  check_labels(G, kInteriorLabel, kFrontLabel);
+  check_labels(X2, kRightLabel, kFrontLabel);
   // (X2,B) should be kRight, since (A,B) was kRight
-  check_labels(B, kRightLabel, kFrontLabel);
+  check_labels(B, kRightLabel, kBackLabel);
 }
 
 TEST(StrokeSubtractionTest, AttributeInterpolation) {

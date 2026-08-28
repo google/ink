@@ -458,8 +458,8 @@ std::vector<std::vector<uint32_t>> ComputeOutlines(const MutableMesh& mesh) {
 float AlignmentCost(BoundaryLabel label, Vec edge) {
   if (label == kLeft) return edge.x;
   if (label == kRight) return -edge.x;
-  if (label == kFront) return -edge.y;
-  if (label == kBack) return edge.y;
+  if (label == kFront) return edge.y;
+  if (label == kBack) return -edge.y;
   if (label == kInterior) return 0.0f;
   return kInfinity;
 }
