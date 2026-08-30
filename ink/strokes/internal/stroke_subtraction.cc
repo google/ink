@@ -60,6 +60,8 @@ using ::ink::numbers::kPi;
 using TriangleAttributes =
     absl::InlinedVector<std::array<SmallArray<float, 4>, 3>, 4>;
 
+// Relative error margin for 32-bit floating point operations.
+constexpr float kFloatTolerance = 1e-6f;
 constexpr float kInfinity = std::numeric_limits<float>::infinity();
 
 float DistanceSquared(Point a, Point b) { return (a - b).MagnitudeSquared(); }
@@ -318,16 +320,16 @@ class MeshBuilder {
     return {sd[0], sd[1]};
   }
 
-  void SetSideDerivative(uint32_t vertex_index, Vec derivative) {
-    mutable_mesh_.SetFloatVertexAttribute(vertex_index,
-                                          attr_indices_.side_derivative,
-                                          {derivative.x, derivative.y});
-  }
-
-  void SetForwardDerivative(uint32_t vertex_index, Vec derivative) {
-    mutable_mesh_.SetFloatVertexAttribute(vertex_index,
-                                          attr_indices_.forward_derivative,
-                                          {derivative.x, derivative.y});
+  void SetDerivatives(uint32_t vertex_index, Vec side, Vec forward) {
+    // Override zero vectors with a small non-zero value to avoid undefined
+    // zero-divided-by-zero in the rendering pipeline.
+    // TODO(b/555375080): Remove this once the shader issue is sorted out.
+    if (side == Vec{0, 0}) side = {kFloatTolerance, kFloatTolerance};
+    if (forward == Vec{0, 0}) forward = {kFloatTolerance, kFloatTolerance};
+    mutable_mesh_.SetFloatVertexAttribute(
+        vertex_index, attr_indices_.side_derivative, {side.x, side.y});
+    mutable_mesh_.SetFloatVertexAttribute(
+        vertex_index, attr_indices_.forward_derivative, {forward.x, forward.y});
   }
 
   const MutableMesh& GetMesh() const { return mutable_mesh_; }
@@ -712,37 +714,46 @@ void ComputeAndSetDerivatives(MeshBuilder& mesh_builder) {
       labels[k] = mesh_builder.GetLabel(indices[k]);
     }
 
-    // Precompute the gradients of the barycentric weight functions \lambda_i
-    // needed for computing the gradients of f_s. Since \lambda_i is the linear
-    // function where \lambda_i(p_i) = 1 and \lambda_i(p_j) = \lambda_i(p_k) =
-    // 0, \nabla \lambda_i is orthogonal to the opposite edge (p_j, p_k) with
-    // magnitude 1 / altitude_i (where altitude_i is the height of vertex p_i
-    // above the base edge (p_j, p_k)).
-    float inv_twice_area = 1.0f / (2.0 * area);
-    std::array<Vec, 3> grad_lambda = {
-        inv_twice_area * (triangle.p2 - triangle.p1).Orthogonal(),
-        inv_twice_area * (triangle.p0 - triangle.p2).Orthogonal(),
-        inv_twice_area * (triangle.p1 - triangle.p0).Orthogonal(),
+    // The gradients of the distance functions can be computed in terms of the
+    // gradients of the barycentric weight functions as,
+    //    \nabla f_s(p) = \sum_{i=0}^2  -\nabla \lambda_i(p) * OnSide(s, p_i).
+    // The gradients of the barycentric functions can be computed by recalling
+    // that \lambda_i is linear with \lambda_i(p_i) = 1 and
+    // \lambda_i(p_j) = \lambda_i(p_k) = 0, so that \nabla \lambda_i is
+    // orthogonal to the opposite edge (p_j, p_k) with length 1 / altitude_i =
+    // |p_j p_k| / (2 area).
+    //
+    // For numerical stability, we'll normalize by the factor of twice area
+    // once-for-all at the end, when we compute the derivatives.
+
+    // Gradients of the un-normalized barycentric functions ulambda = 2 area
+    // \lambda.
+    std::array<Vec, 3> grad_ulambda = {
+        (triangle.p2 - triangle.p1).Orthogonal(),
+        (triangle.p0 - triangle.p2).Orthogonal(),
+        (triangle.p1 - triangle.p0).Orthogonal(),
     };
 
-    // Compute the gradients of the distance functions.
-    Vec grad_f_left, grad_f_right, grad_f_front, grad_f_back;
+    // Gradients of the un-normalized distance functions uf_s = 2 area f_s.
+    Vec grad_uf_left, grad_uf_right, grad_uf_front, grad_uf_back;
     for (int i = 0; i < 3; ++i) {
-      if (!IsLeft(labels[i])) grad_f_left += grad_lambda[i];
-      if (!IsRight(labels[i])) grad_f_right += grad_lambda[i];
-      if (!IsFront(labels[i])) grad_f_front += grad_lambda[i];
-      if (!IsBack(labels[i])) grad_f_back += grad_lambda[i];
+      if (IsLeft(labels[i])) grad_uf_left -= grad_ulambda[i];
+      if (IsRight(labels[i])) grad_uf_right -= grad_ulambda[i];
+      if (IsFront(labels[i])) grad_uf_front -= grad_ulambda[i];
+      if (IsBack(labels[i])) grad_uf_back -= grad_ulambda[i];
     }
 
-    // Compute the derivatives.
-    auto rescale = [](Vec grad) -> Vec {
+    float two_area = 2.0f * area;
+    auto rescale = [two_area](Vec grad) -> Vec {
       float mag_sq = grad.MagnitudeSquared();
-      return (mag_sq > 0.0f) ? (grad / mag_sq) : Vec{0, 0};
+      return (mag_sq > two_area * kFloatTolerance)
+                 ? ((two_area / mag_sq) * grad)
+                 : Vec{0, 0};
     };
-    Vec derivative_left = rescale(grad_f_left);
-    Vec derivative_right = rescale(grad_f_right);
-    Vec derivative_front = rescale(grad_f_front);
-    Vec derivative_back = rescale(grad_f_back);
+    Vec derivative_left = rescale(grad_uf_left);
+    Vec derivative_right = rescale(grad_uf_right);
+    Vec derivative_front = rescale(grad_uf_front);
+    Vec derivative_back = rescale(grad_uf_back);
 
     // Add the derivatives onto the vertices.
     for (int i = 0; i < 3; ++i) {
@@ -755,8 +766,8 @@ void ComputeAndSetDerivatives(MeshBuilder& mesh_builder) {
   }
 
   for (uint32_t i = 0; i < mesh.VertexCount(); ++i) {
-    mesh_builder.SetSideDerivative(i, side_derivative[i].Value());
-    mesh_builder.SetForwardDerivative(i, forward_derivative[i].Value());
+    mesh_builder.SetDerivatives(i, side_derivative[i].Value(),
+                                forward_derivative[i].Value());
   }
 }
 // LINT.ThenChange(
