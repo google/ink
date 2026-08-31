@@ -105,6 +105,16 @@ std::optional<uint32_t> FindVertexIndex(const Mesh& mesh, Point p) {
   return std::nullopt;
 }
 
+// Asserts that a vertex near `p` exists in `mesh` and has the expected side
+// and forward labels (attributes 2 and 4).
+void CheckVertexLabels(const Mesh& mesh, Point p, float expected_side,
+                       float expected_fwd) {
+  std::optional<uint32_t> idx = FindVertexIndex(mesh, p);
+  ASSERT_TRUE(idx.has_value());
+  EXPECT_FLOAT_EQ(mesh.FloatVertexAttribute(*idx, 2)[0], expected_side);
+  EXPECT_FLOAT_EQ(mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
+}
+
 // Returns the value of the given attribute at point `p`, by finding the
 // triangle in `pm` containing `p` and interpolating its vertex attributes.
 // Assumes that there are no overlapping triangles.
@@ -390,20 +400,11 @@ TEST(StrokeSubtractionTest, ComputeLabels1) {
 
   const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
 
-  auto check_labels = [&](Point point, float expected_side,
-                          float expected_fwd) {
-    std::optional<uint32_t> idx = FindVertexIndex(result_mesh, point);
-    ASSERT_TRUE(idx.has_value());
-    EXPECT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 2)[0],
-                    expected_side);
-    EXPECT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
-  };
-
-  check_labels(A, kLeftLabel, kFrontLabel);
-  check_labels(D, kLeftLabel, kBackLabel);
-  check_labels(X3, kRightLabel, kBackLabel);
-  check_labels(X2, kRightLabel, kInteriorLabel);
-  check_labels(X1, kRightLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, A, kLeftLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, D, kLeftLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, X3, kRightLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, X2, kRightLabel, kInteriorLabel);
+  CheckVertexLabels(result_mesh, X1, kRightLabel, kFrontLabel);
 }
 
 TEST(StrokeSubtractionTest, ComputeLabels2) {
@@ -508,15 +509,6 @@ TEST(StrokeSubtractionTest, ComputeLabels2) {
 
   const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
 
-  auto check_labels = [&](Point point, float expected_side,
-                          float expected_fwd) {
-    std::optional<uint32_t> idx = FindVertexIndex(result_mesh, point);
-    ASSERT_TRUE(idx.has_value());
-    EXPECT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 2)[0],
-                    expected_side);
-    EXPECT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
-  };
-
   // Labeling the vertices is a bit of a puzzle. It may be useful to first note
   // the orientation of the edges (with respect to the orientation of mesh_a):
   // (A,X1) faces right, (X1,K) faces equally back and right, (K,J) faces mostly
@@ -531,30 +523,203 @@ TEST(StrokeSubtractionTest, ComputeLabels2) {
   //
   // We can roughly reason through as follows:
 
-  check_labels(A, kRightLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, A, kRightLabel, kFrontLabel);
   // edge (A,X1) should definitely be kRight, since (A,B) was kRight.
-  check_labels(X1, kRightLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, X1, kRightLabel, kBackLabel);
   // edge (X1,K) could reasonably be kRight or kBack, but choosing kRight
   // would demand (K,J) also be kRight (assuming that (J,I) is kRight).
   // So kBack is chosen.
-  check_labels(K, kInteriorLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, K, kInteriorLabel, kBackLabel);
   // (K,J) is geometrically oriented left, but can not be labeled as such
   // (assuming  again that we'll choose (J,I) to be kRight). Given this,
   // kBack is the next best choice.
-  check_labels(J, kRightLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, J, kRightLabel, kBackLabel);
   // (J,I) seems pretty clearly kRight.
-  check_labels(I, kRightLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, I, kRightLabel, kFrontLabel);
   // (I,H) seems kFront, but could also be kRight. Choosing kRight here would
   // allow (H,G) to be labeled kRight, but then also force (G,X2) to be kRight,
   // effectively mislabeling two edges. So indeed, kFront.
-  check_labels(H, kInteriorLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, H, kInteriorLabel, kFrontLabel);
   // (H,G) would like to be kRight, but that's incompatible with (G,X2) being
   // set to kFront. Choosing (H,G) to be kFront is prioritized here because
   // (G,X2) is larger.
-  check_labels(G, kInteriorLabel, kFrontLabel);
-  check_labels(X2, kRightLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, G, kInteriorLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, X2, kRightLabel, kFrontLabel);
   // (X2,B) should be kRight, since (A,B) was kRight
-  check_labels(B, kRightLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, B, kRightLabel, kBackLabel);
+}
+
+TEST(StrokeSubtractionTest, ComputeLabels3) {
+  // Tests the case where a frame-shaped `mesh_b` (EFGH - IJKL) erases the
+  // entire outer boundary of `mesh_a` (ABCD), verifying that the newly formed
+  // outer boundary of the surviving interior piece is assigned proper boundary
+  // labels.
+  //
+  //  H-----------------------------------G
+  //  |                                   |
+  //  |                                   |
+  //  |      D---------------------C      |
+  //  |      |                     |      |
+  //  |      |                     |      |   stroke travel direction
+  //  |      |     L----------K    |      |              ^
+  //  |      |     |          |    |      |              |
+  //  |      |     |          |    |      |              +---> right
+  //  |      |     |          |    |      |
+  //  |      |     I----------J    |      |
+  //  |      |                     |      |
+  //  |      |                     |      |
+  //  |      A---------------------B      |
+  //  |                                   |
+  //  E-----------------------------------F
+
+  Point A{0, 0}, B{30, 0}, C{30, 30}, D{0, 30};
+  Point E{-5, -5}, F{35, -5}, G{35, 35}, H{-5, 35}, I{10, 10}, J{20, 10},
+      K{20, 20}, L{10, 20};
+
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
+       {AttributeType::kFloat2Unpacked, AttributeId::kSideDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kSideLabel},
+       {AttributeType::kFloat2Unpacked, AttributeId::kForwardDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kForwardLabel}},
+      IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  MutableMesh mesh_a(*format);
+  for (const Point& p : {A, B, C, D}) mesh_a.AppendVertex(p);
+  mesh_a.AppendTriangleIndices({0, 1, 2});
+  mesh_a.AppendTriangleIndices({0, 2, 3});
+
+  mesh_a.SetFloatVertexAttribute(0, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(0, 4, {kFrontLabel});
+  mesh_a.SetFloatVertexAttribute(1, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(1, 4, {kFrontLabel});
+  mesh_a.SetFloatVertexAttribute(2, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(2, 4, {kBackLabel});
+  mesh_a.SetFloatVertexAttribute(3, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(3, 4, {kBackLabel});
+
+  for (uint32_t i = 0; i < 4; ++i) {
+    mesh_a.SetFloatVertexAttribute(i, 1, {30.0f, 0.0f});
+    mesh_a.SetFloatVertexAttribute(i, 3, {0.0f, 30.0f});
+  }
+
+  std::vector<uint32_t> mesh_a_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  // Set up mesh_b as an outer frame erasing mesh_a's perimeter:
+  MutableMesh mesh_b(MeshFormat{});
+  for (const Point& p : {E, F, G, H, I, J, K, L}) {
+    mesh_b.AppendVertex(p);
+  }
+  mesh_b.AppendTriangleIndices({0, 1, 5});  // E, F, J
+  mesh_b.AppendTriangleIndices({0, 5, 4});  // E, J, I
+  mesh_b.AppendTriangleIndices({1, 2, 6});  // F, G, K
+  mesh_b.AppendTriangleIndices({1, 6, 5});  // F, K, J
+  mesh_b.AppendTriangleIndices({2, 3, 7});  // G, H, L
+  mesh_b.AppendTriangleIndices({2, 7, 6});  // G, L, K
+  mesh_b.AppendTriangleIndices({3, 0, 4});  // H, E, I
+  mesh_b.AppendTriangleIndices({3, 4, 7});  // H, I, L
+
+  std::vector<uint32_t> mesh_b_frame_outer = {0, 3, 2, 1};  // EHGF
+  std::vector<uint32_t> mesh_b_frame_inner = {4, 5, 6, 7};  // IJKL
+  absl::StatusOr<PartitionedMesh> mesh_b_pm = PartitionedMesh::FromMutableMesh(
+      mesh_b, {{mesh_b_frame_outer, mesh_b_frame_inner}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
+
+  CheckVertexLabels(result_mesh, I, kLeftLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, J, kRightLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, K, kRightLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, L, kLeftLabel, kBackLabel);
+}
+
+TEST(StrokeSubtractionTest, ComputeLabels4) {
+  //  D------------------------------------C
+  //  |                                    |
+  //  |                                    |
+  //  |           H----------G             |
+  //  |           |          |             |
+  //  |           |          |             |
+  //  |           |          |             |   stroke travel direction
+  //  |           |  mesh_b  |             |              ^
+  //  |           E----------F             |              |
+  //  |                                    |              +---> right
+  //  |    mesh_a                          |
+  //  A------------------------------------B
+
+  Point A{0, 0}, B{30, 0}, C{30, 30}, D{0, 30};
+  Point E{10, 10}, F{20, 10}, G{20, 20}, H{10, 20};
+
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
+       {AttributeType::kFloat2Unpacked, AttributeId::kSideDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kSideLabel},
+       {AttributeType::kFloat2Unpacked, AttributeId::kForwardDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kForwardLabel}},
+      IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  MutableMesh mesh_a(*format);
+  for (const Point& p : {A, B, C, D}) mesh_a.AppendVertex(p);
+  mesh_a.AppendTriangleIndices({0, 1, 2});  // A, B, C
+  mesh_a.AppendTriangleIndices({0, 2, 3});  // A, C, D
+
+  mesh_a.SetFloatVertexAttribute(0, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(0, 4, {kFrontLabel});
+  mesh_a.SetFloatVertexAttribute(1, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(1, 4, {kFrontLabel});
+  mesh_a.SetFloatVertexAttribute(2, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(2, 4, {kBackLabel});
+  mesh_a.SetFloatVertexAttribute(3, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(3, 4, {kBackLabel});
+
+  for (uint32_t i = 0; i < 4; ++i) {
+    mesh_a.SetFloatVertexAttribute(i, 1, {30.0f, 0.0f});
+    mesh_a.SetFloatVertexAttribute(i, 3, {0.0f, 30.0f});
+  }
+
+  std::vector<uint32_t> mesh_a_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  MutableMesh mesh_b(MeshFormat{});
+  for (const Point& p : {E, F, G, H}) mesh_b.AppendVertex(p);
+  mesh_b.AppendTriangleIndices({0, 1, 2});  // E, F, G
+  mesh_b.AppendTriangleIndices({0, 2, 3});  // E, G, H
+
+  std::vector<uint32_t> mesh_b_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
+
+  // Check outer boundary vertices preserved:
+  CheckVertexLabels(result_mesh, A, kLeftLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, B, kRightLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, C, kRightLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, D, kLeftLabel, kBackLabel);
+
+  // Check hole boundary vertices:
+  CheckVertexLabels(result_mesh, E, kRightLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, F, kLeftLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, G, kLeftLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, H, kRightLabel, kFrontLabel);
 }
 
 TEST(StrokeSubtractionTest, ComputeSideDerivatives) {
@@ -1057,7 +1222,11 @@ TEST(StrokeSubtractionTest, FullDeleted) {
   Point E{-5, -5}, F{15, -5}, G{15, 15}, H{-5, 15};
 
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
-      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition}},
+      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
+       {AttributeType::kFloat2Unpacked, AttributeId::kSideDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kSideLabel},
+       {AttributeType::kFloat2Unpacked, AttributeId::kForwardDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kForwardLabel}},
       IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 

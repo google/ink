@@ -486,10 +486,10 @@ float AlignmentCost(BoundaryLabel label, Vec edge) {
 
 // A helper function to assign boundary labels for the vertices (strictly)
 // between indices `i` and `j % n` in `outline`, writing the computed
-// labels into `labels`.
-void ComputeLabels(absl::Span<const uint32_t> outline, size_t i, size_t j,
-                   std::vector<BoundaryLabel>& labels,
-                   const MeshBuilder& mesh_builder) {
+// labels into `labels`, and returning the total optimal alignment cost.
+float ComputeLabels(absl::Span<const uint32_t> outline, size_t i, size_t j,
+                    std::vector<BoundaryLabel>& labels,
+                    const MeshBuilder& mesh_builder) {
   // Our approach for labeling is to try to assign vertex labels so that the
   // induced edge labels (left, right, front, back) are aligned with their
   // geometric orientation (relative to the original mesh frame, defined by its
@@ -568,6 +568,30 @@ void ComputeLabels(absl::Span<const uint32_t> outline, size_t i, size_t j,
     curr_label = bptr[k - i][curr_label];
     labels[(k - 1) % n] = static_cast<BoundaryLabel>(curr_label);
   }
+
+  return cost[labels[j % n]];
+}
+
+// A helper function to assign boundary labels for the vertices in `outline`,
+// writing the computed labels into `labels`.
+void ComputeLabels(absl::Span<const uint32_t> outline,
+                   std::vector<BoundaryLabel>& labels,
+                   const MeshBuilder& mesh_builder) {
+  // We follow the optimization approach described above in the `ComputeLabels`
+  // overload: we iterate through choices for the first vertex, compute the
+  // for each choice the optimal labeling of the remaining vertices, and choose
+  // the one with the minimum cost.
+  const size_t n = outline.size();
+  float best = kInfinity;
+  for (int l = 0; l < 9; ++l) {
+    std::vector<BoundaryLabel> candidate_labels = labels;
+    candidate_labels[0] = static_cast<BoundaryLabel>(l);
+    float cost = ComputeLabels(outline, 0, n, candidate_labels, mesh_builder);
+    if (cost < best) {
+      best = cost;
+      labels = std::move(candidate_labels);
+    }
+  }
 }
 
 // Computes anti-aliasing labels for boundary vertices.
@@ -585,11 +609,23 @@ void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
 
   for (absl::Span<const uint32_t> outline : outlines) {
     // Read all the vertex labels from the mesh.
+    if (outline.empty()) continue;
     const size_t n = outline.size();
     std::vector<BoundaryLabel> labels;
     labels.reserve(n);
     for (uint32_t vertex_index : outline) {
       labels.push_back(mesh_builder.GetLabel(vertex_index));
+    }
+
+    // Check for the unlikely case that the entire outline is unlabeled, and
+    // handle it specially.
+    if (absl::c_all_of(labels,
+                       [](BoundaryLabel l) { return l == kInterior; })) {
+      ComputeLabels(outline, labels, mesh_builder);
+      for (size_t k = 0; k < n; ++k) {
+        mesh_builder.SetLabel(outline[k], labels[k]);
+      }
+      continue;
     }
 
     // Iterate through to find maximal unlabeled segments.
@@ -605,8 +641,6 @@ void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
         }
       }
     }
-
-    // TODO(b/521449017): handle case when entire boundary is erased.
   }
 }
 // LINT.ThenChange(
