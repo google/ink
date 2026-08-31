@@ -805,6 +805,7 @@ cc_test(
     srcs = ["stroke_subtraction_test.cc"],
     deps = [
         ":stroke_subtraction",
+        ":stroke_vertex",
         "//ink/geometry:affine_transform",
         "//ink/geometry:fuzz_domains",
         "//ink/geometry:mesh_format",

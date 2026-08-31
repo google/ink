@@ -38,6 +38,7 @@
 #include "ink/geometry/rect.h"
 #include "ink/geometry/triangle.h"
 #include "ink/geometry/vec.h"
+#include "ink/strokes/internal/stroke_vertex.h"
 #include "ink/types/small_array.h"
 
 namespace ink::strokes_internal {
@@ -111,8 +112,53 @@ void CheckVertexLabels(const Mesh& mesh, Point p, float expected_side,
                        float expected_fwd) {
   std::optional<uint32_t> idx = FindVertexIndex(mesh, p);
   ASSERT_TRUE(idx.has_value());
-  EXPECT_FLOAT_EQ(mesh.FloatVertexAttribute(*idx, 2)[0], expected_side);
-  EXPECT_FLOAT_EQ(mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
+  EXPECT_EQ(StrokeVertex::Label{mesh.FloatVertexAttribute(*idx, 2)[0]}
+                .DecodeSideCategory(),
+            StrokeVertex::Label{expected_side}.DecodeSideCategory());
+  EXPECT_EQ(StrokeVertex::Label{mesh.FloatVertexAttribute(*idx, 4)[0]}
+                .DecodeForwardCategory(),
+            StrokeVertex::Label{expected_fwd}.DecodeForwardCategory());
+}
+
+// Asserts that a vertex near `p` exists in `mesh` and has the expected side
+// derivative (attribute 1).
+void CheckVertexSideDerivative(const Mesh& mesh, Point p, Vec expected_side) {
+  std::optional<uint32_t> idx = FindVertexIndex(mesh, p);
+  ASSERT_TRUE(idx.has_value());
+  auto side = mesh.FloatVertexAttribute(*idx, 1);
+  EXPECT_NEAR(side[0], expected_side.x, 1e-3);
+  EXPECT_NEAR(side[1], expected_side.y, 1e-3);
+}
+
+// Asserts that a vertex near `p` exists in `mesh` and has the expected forward
+// derivative (attribute 3).
+void CheckVertexForwardDerivative(const Mesh& mesh, Point p, Vec expected_fwd) {
+  std::optional<uint32_t> idx = FindVertexIndex(mesh, p);
+  ASSERT_TRUE(idx.has_value());
+  auto fwd = mesh.FloatVertexAttribute(*idx, 3);
+  EXPECT_NEAR(fwd[0], expected_fwd.x, 1e-3);
+  EXPECT_NEAR(fwd[1], expected_fwd.y, 1e-3);
+}
+
+// Asserts that a vertex near `p` exists in `mesh` and has the expected decoded
+// side margin (attribute 2).
+void CheckVertexSideMargin(const Mesh& mesh, Point p, float expected_margin) {
+  std::optional<uint32_t> idx = FindVertexIndex(mesh, p);
+  ASSERT_TRUE(idx.has_value());
+  float side_label_val = mesh.FloatVertexAttribute(*idx, 2)[0];
+  EXPECT_THAT(StrokeVertex::Label{side_label_val}.DecodeMargin(),
+              FloatNear(expected_margin, 1e-3f));
+}
+
+// Asserts that a vertex near `p` exists in `mesh` and has the expected decoded
+// forward margin (attribute 4).
+void CheckVertexForwardMargin(const Mesh& mesh, Point p,
+                              float expected_margin) {
+  std::optional<uint32_t> idx = FindVertexIndex(mesh, p);
+  ASSERT_TRUE(idx.has_value());
+  float fwd_label_val = mesh.FloatVertexAttribute(*idx, 4)[0];
+  EXPECT_THAT(StrokeVertex::Label{fwd_label_val}.DecodeMargin(),
+              FloatNear(expected_margin, 1e-3f));
 }
 
 // Returns the value of the given attribute at point `p`, by finding the
@@ -810,36 +856,19 @@ TEST(StrokeSubtractionTest, ComputeSideDerivatives) {
 
   const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
 
-  auto check_labels = [&](Point point, float expected_side,
-                          float expected_fwd) {
-    std::optional<uint32_t> idx = FindVertexIndex(result_mesh, point);
-    ASSERT_TRUE(idx.has_value());
-    ASSERT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 2)[0],
-                    expected_side);
-    ASSERT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
-  };
-
-  check_labels(A, kLeftLabel, kFrontLabel);
-  check_labels(D, kLeftLabel, kBackLabel);
-  check_labels(X3, kRightLabel, kBackLabel);
-  check_labels(X2, kRightLabel, kInteriorLabel);
-  check_labels(X1, kRightLabel, kFrontLabel);
-
-  auto check_side_derivative = [&](Point point, Vec expected_side) {
-    std::optional<uint32_t> idx = FindVertexIndex(result_mesh, point);
-    ASSERT_TRUE(idx.has_value());
-    auto side = result_mesh.FloatVertexAttribute(*idx, 1);
-    EXPECT_NEAR(side[0], expected_side.x, 1e-3);
-    EXPECT_NEAR(side[1], expected_side.y, 1e-3);
-  };
+  CheckVertexLabels(result_mesh, A, kLeftLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, D, kLeftLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, X3, kRightLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, X2, kRightLabel, kInteriorLabel);
+  CheckVertexLabels(result_mesh, X1, kRightLabel, kFrontLabel);
 
   // The remaining stroke has width = 5 so the recomputed side derivative across
   // all 5 vertices is exactly {5, 0}.
-  check_side_derivative(A, {5.0f, 0.0f});
-  check_side_derivative(D, {5.0f, 0.0f});
-  check_side_derivative(X1, {5.0f, 0.0f});
-  check_side_derivative(X2, {5.0f, 0.0f});
-  check_side_derivative(X3, {5.0f, 0.0f});
+  CheckVertexSideDerivative(result_mesh, A, {5.0f, 0.0f});
+  CheckVertexSideDerivative(result_mesh, D, {5.0f, 0.0f});
+  CheckVertexSideDerivative(result_mesh, X1, {5.0f, 0.0f});
+  CheckVertexSideDerivative(result_mesh, X2, {5.0f, 0.0f});
+  CheckVertexSideDerivative(result_mesh, X3, {5.0f, 0.0f});
 }
 
 TEST(StrokeSubtractionTest, ComputeForwardDerivatives) {
@@ -928,36 +957,133 @@ TEST(StrokeSubtractionTest, ComputeForwardDerivatives) {
 
   const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
 
-  auto check_labels = [&](Point point, float expected_side,
-                          float expected_fwd) {
-    std::optional<uint32_t> idx = FindVertexIndex(result_mesh, point);
-    ASSERT_TRUE(idx.has_value());
-    ASSERT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 2)[0],
-                    expected_side);
-    ASSERT_FLOAT_EQ(result_mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
-  };
-
-  check_labels(A, kLeftLabel, kFrontLabel);
-  check_labels(B, kRightLabel, kFrontLabel);
-  check_labels(X1, kRightLabel, kBackLabel);
-  check_labels(X2, kInteriorLabel, kBackLabel);
-  check_labels(X3, kLeftLabel, kBackLabel);
-
-  auto check_forward_derivative = [&](Point point, Vec expected_fwd) {
-    std::optional<uint32_t> idx = FindVertexIndex(result_mesh, point);
-    ASSERT_TRUE(idx.has_value());
-    auto fwd = result_mesh.FloatVertexAttribute(*idx, 3);
-    EXPECT_NEAR(fwd[0], expected_fwd.x, 1e-3);
-    EXPECT_NEAR(fwd[1], expected_fwd.y, 1e-3);
-  };
+  CheckVertexLabels(result_mesh, A, kLeftLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, B, kRightLabel, kFrontLabel);
+  CheckVertexLabels(result_mesh, X1, kRightLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, X2, kInteriorLabel, kBackLabel);
+  CheckVertexLabels(result_mesh, X3, kLeftLabel, kBackLabel);
 
   // The remaining stroke has length = 5 in y (from y=0 to y=5), so the
   // recomputed forward derivative across all 5 vertices is exactly {0, 5}.
-  check_forward_derivative(A, {0.0f, 5.0f});
-  check_forward_derivative(B, {0.0f, 5.0f});
-  check_forward_derivative(X1, {0.0f, 5.0f});
-  check_forward_derivative(X2, {0.0f, 5.0f});
-  check_forward_derivative(X3, {0.0f, 5.0f});
+  CheckVertexForwardDerivative(result_mesh, A, {0.0f, 5.0f});
+  CheckVertexForwardDerivative(result_mesh, B, {0.0f, 5.0f});
+  CheckVertexForwardDerivative(result_mesh, X1, {0.0f, 5.0f});
+  CheckVertexForwardDerivative(result_mesh, X2, {0.0f, 5.0f});
+  CheckVertexForwardDerivative(result_mesh, X3, {0.0f, 5.0f});
+}
+
+TEST(StrokeSubtractionTest, ComputeMargins) {
+  // As with the anti-aliasing derivatives, the margins are not uniquely
+  // determined by the geometry of the subtraction -- they depend on the
+  // triangulation and boundary labels. We try to contrive a test case that
+  // minimizes the ambiguity: mesh_b bites a concave piece out of a triangle of
+  // mesh_a.
+  //
+  //                      J--------I
+  //                     /         |
+  //    D---------------C          |
+  //    |             //|          |
+  //    |          /  / |          |
+  //    |       /    /  |          |
+  //    |    /      /   |          |
+  //    | /        /    |          |
+  //    E         F     |  mesh_b  |
+  //    | \        \    |          |
+  //    |    \      \   |          |
+  //    |       \    \  |          |
+  //    |          \  \ |          |
+  //    | mesh_a      \\|          |
+  //    A---------------B          |
+  //                     \         |
+  //                      G--------H
+
+  Point A{0, -2}, B{10, -2}, C{10, 2}, D{0, 2}, E{0, 0};
+  Point F{2, 0}, G{14, -3}, H{16, -4}, I{16, 4}, J{14, 3};
+
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
+       {AttributeType::kFloat2Unpacked, AttributeId::kSideDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kSideLabel},
+       {AttributeType::kFloat2Unpacked, AttributeId::kForwardDerivative},
+       {AttributeType::kFloat1Unpacked, AttributeId::kForwardLabel}},
+      IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  // Set up mesh_a.
+  MutableMesh mesh_a(*format);
+  for (const Point& p : {A, B, C, D, E}) mesh_a.AppendVertex(p);
+  mesh_a.AppendTriangleIndices({4, 0, 1});  // EAB
+  mesh_a.AppendTriangleIndices({4, 1, 2});  // EBC
+  mesh_a.AppendTriangleIndices({4, 2, 3});  // ECD
+  mesh_a.SetFloatVertexAttribute(0, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(0, 4, {kFrontLabel});
+  mesh_a.SetFloatVertexAttribute(1, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(1, 4, {kFrontLabel});
+  mesh_a.SetFloatVertexAttribute(2, 2, {kRightLabel});
+  mesh_a.SetFloatVertexAttribute(2, 4, {kBackLabel});
+  mesh_a.SetFloatVertexAttribute(3, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(3, 4, {kBackLabel});
+  mesh_a.SetFloatVertexAttribute(4, 2, {kLeftLabel});
+  mesh_a.SetFloatVertexAttribute(4, 4, {kInteriorLabel});
+
+  for (uint32_t i = 0; i < 5; ++i) {
+    mesh_a.SetFloatVertexAttribute(i, 1, {20.0f, 0.0f});
+    mesh_a.SetFloatVertexAttribute(i, 3, {0.0f, 4.0f});
+  }
+
+  std::vector<uint32_t> mesh_a_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  MutableMesh mesh_b(MeshFormat{});
+  for (const Point& p : {F, G, H, I, J}) mesh_b.AppendVertex(p);
+  mesh_b.AppendTriangleIndices({0, 1, 2});  // FGH
+  mesh_b.AppendTriangleIndices({0, 2, 3});  // FHI
+  mesh_b.AppendTriangleIndices({0, 3, 4});  // FIJ
+
+  std::vector<uint32_t> mesh_b_outline = {0, 4, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  // Subtract
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
+
+  // Note that the result of the subtraction is the mesh with triangles
+  // EBF, EFC, ECD, and EAB.
+
+  // The vertex F must be labeled right.
+  CheckVertexLabels(result_mesh, F, kRightLabel, kInteriorLabel);
+
+  // Given the triangulation and the labeling, the derivatives can, with a
+  // little effort, be computed.
+  CheckVertexForwardDerivative(result_mesh, B, {0.0f, 2.0f});
+  CheckVertexForwardDerivative(result_mesh, C, {0.0f, 2.0f});
+  CheckVertexForwardDerivative(result_mesh, F, {0.0f, 2.0f});
+
+  CheckVertexSideDerivative(result_mesh, B, {4.132f, 3.226f});
+  CheckVertexSideDerivative(result_mesh, C, {4.132f, -3.226f});
+  CheckVertexSideDerivative(result_mesh, F, {0.485f, 0.0f});
+
+  // The margins can also be computed, although this time requiring considerable
+  // effort and close attention to the details of
+  // `ComputeTriangleMarginUpperBounds`.
+  // As a check, since the derivatives of B and C point into the concavity, we
+  // expect them to be constrained.
+  CheckVertexSideMargin(result_mesh, B, 0.349f);
+  CheckVertexForwardMargin(result_mesh, B, StrokeVertex::kMaximumMargin);
+  CheckVertexSideMargin(result_mesh, C, 0.349f);
+  CheckVertexForwardMargin(result_mesh, C, StrokeVertex::kMaximumMargin);
+
+  // On the other hand F, at the center of the concavity, is unconstrained.
+  CheckVertexSideMargin(result_mesh, F, StrokeVertex::kMaximumMargin);
+  CheckVertexForwardMargin(result_mesh, F, 0.0f);
 }
 
 TEST(StrokeSubtractionTest, AttributeInterpolation) {

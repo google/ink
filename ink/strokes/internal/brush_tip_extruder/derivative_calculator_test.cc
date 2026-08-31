@@ -14,6 +14,7 @@
 
 #include "ink/strokes/internal/brush_tip_extruder/derivative_calculator.h"
 
+#include <array>
 #include <cstdint>
 #include <vector>
 
@@ -22,6 +23,7 @@
 #include "absl/types/span.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
+#include "ink/geometry/triangle.h"
 #include "ink/geometry/type_matchers.h"
 #include "ink/geometry/vec.h"
 #include "ink/strokes/internal/brush_tip_extruder/mutable_mesh_view.h"
@@ -583,6 +585,60 @@ TEST(DerivativeCalculatorDeathTest, NonEmptyIndicesWithNoDataMeshView) {
   DerivativeCalculator calculator;
   EXPECT_DEATH_IF_SUPPORTED(calculator.UpdateMesh({0, 1}, {2, 3}, mesh_view),
                             "");
+}
+
+TEST_F(DerivativeCalculatorTest,
+       ComputeTriangleMarginUpperBoundsUnconstrained) {
+  //  p2
+  //  |\
+  //  | \
+  //  |  \
+  //  |   \
+  //  |    \
+  //  p0----p1 ===> outset
+  //  ||
+  //   V outset
+
+  Triangle triangle = {.p0 = {0, 0}, .p1 = {10, 0}, .p2 = {0, 10}};
+  std::array<float, 3> outset_signs = {1.0f, 1.0f, 0.0f};
+  std::array<Vec, 3> derivatives = {Vec{-1, -1}, Vec{1, 0}, Vec{0, 1}};
+
+  std::array<float, 3> bounds =
+      DerivativeCalculator::ComputeTriangleMarginUpperBounds(
+          triangle, outset_signs, derivatives);
+
+  EXPECT_FLOAT_EQ(bounds[0], StrokeVertex::kMaximumMargin);
+  EXPECT_FLOAT_EQ(bounds[1], StrokeVertex::kMaximumMargin);
+  EXPECT_FLOAT_EQ(bounds[2], 0.0f);
+}
+
+TEST_F(DerivativeCalculatorTest, ComputeTriangleMarginUpperBoundsConstrained) {
+  // Construct a triangle where vertex 0's outset ray crosses the bounding ray
+  // of vertex 1.
+  //                                     . bounding segment of p1
+  //                                  .
+  //            p0========================> outset
+  //           /  \             .
+  //          /    \         .
+  //         /      \     .
+  //        /        \ .
+  //       /       .  \
+  //      /     .      \
+  //     /   .          \
+  //    / .              \
+  //  p1-----------------p2
+
+  Triangle triangle = {.p0 = {0, 10}, .p1 = {-10, 0}, .p2 = {10, 0}};
+  std::array<float, 3> outset_signs = {1.0f, 1.0f, 1.0f};
+  std::array<Vec, 3> derivatives = {Vec{10, 0}, Vec{-10, 0}, Vec{10, 0}};
+
+  std::array<float, 3> bounds =
+      DerivativeCalculator::ComputeTriangleMarginUpperBounds(
+          triangle, outset_signs, derivatives);
+
+  // Vertex 0's margin is clamped by the intersection with the bounding ray
+  // radiating from p1 through edge p0-p2 (at ratio 2/9).
+  EXPECT_FLOAT_EQ(bounds[0], 2.0f / 9.0f);
 }
 
 }  // namespace
