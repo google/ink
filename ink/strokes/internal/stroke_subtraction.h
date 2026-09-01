@@ -48,7 +48,8 @@ absl::StatusOr<PartitionedMesh> Subtract(const PartitionedMesh& mesh_a,
                                          const AffineTransform& transform_a,
                                          const PartitionedMesh& mesh_b,
                                          const AffineTransform& transform_b,
-                                         float epsilon);
+                                         float epsilon,
+                                         bool anti_aliasing_enabled = false);
 
 }  // namespace ink::strokes_internal
 
