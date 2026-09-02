@@ -245,7 +245,7 @@ TEST(StrokeSegmentationTest, SegmentSpatiallyWithAttributes) {
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2Unpacked,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat1Unpacked,
-                           MeshFormat::AttributeId::kColorShiftHsl}},
+                           MeshFormat::AttributeId::kColorShiftHcl}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 

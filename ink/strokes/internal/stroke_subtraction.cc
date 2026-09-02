@@ -108,34 +108,33 @@ std::array<double, 3> ComputeHeights(const Triangle& tri, double det) {
   return {det / v0.Magnitude(), det / v1.Magnitude(), det / v2.Magnitude()};
 }
 
-// Maps HSL shifts to coordinates where they interpolate linearly.
+// Maps HCL shifts to coordinates where they interpolate linearly.
 //
-// The interpolation scheme for HSL shift values is defined via their mapping to
+// The interpolation scheme for HCL shift values is defined via their mapping to
 // linear RGB values, which are interpolated linearly during rasterization.
 //
 // The RGB values are obtained by applying the shift to a uniform (vertex
-// independent) base RGB color. Although the shift acts as an affine
-// transformation in RGB space, the transformation's matrix elements are
-// nonlinear in the HSL shift values. This function maps the HSL shift
-// into coordinates in terms of which the affine transformation is linear.
+// independent) base RGB color. This transformation is nonlinear, so this
+// function maps the HCL shift into coordinates in terms of which linear
+// interpolation will produce better results.
 //
-// LINT.IfChange(hsl_shift_linear_space)
-SmallArray<float, 4> HslShiftToLinearSpace(SmallArray<float, 4> val) {
+// LINT.IfChange(hcl_shift_linear_space)
+SmallArray<float, 4> HclShiftToLinearSpace(SmallArray<float, 4> val) {
   ABSL_DCHECK_GE(val.Size(), 2);
-  float hue_shift = 2 * kPi * val[0], saturation_shift = val[1];
-  val[0] = (saturation_shift + 1) * std::cos(hue_shift);
-  val[1] = (saturation_shift + 1) * std::sin(hue_shift);
+  float hue_shift = 2.0f * kPi * val[0], chroma_shift = val[1];
+  val[0] = (chroma_shift + 1) * std::cos(hue_shift);
+  val[1] = (chroma_shift + 1) * std::sin(hue_shift);
   return val;
 }
 
-SmallArray<float, 4> LinearSpaceToHslShift(SmallArray<float, 4> val) {
+SmallArray<float, 4> LinearSpaceToHclShift(SmallArray<float, 4> val) {
   ABSL_DCHECK_GE(val.Size(), 2);
   float dx = val[0], dy = val[1];
   val[0] = std::atan2(dy, dx) / (2.0f * kPi);
   val[1] = std::hypot(dx, dy) - 1.0f;
   return val;
 }
-// LINT.ThenChange(../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hsl_and_opacity_shift)
+// LINT.ThenChange(../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hcl_and_opacity_shift)
 
 // Helper function to extract and linearize triangle vertex attributes.
 TriangleAttributes GetTriangleAttributes(
@@ -155,11 +154,11 @@ TriangleAttributes GetTriangleAttributes(
         id == MeshFormat::AttributeId::kForwardLabel) {
       continue;
     }
-    if (id == MeshFormat::AttributeId::kColorShiftHsl) {
+    if (id == MeshFormat::AttributeId::kColorShiftHcl) {
       attributes[i] = {
-          HslShiftToLinearSpace(mesh.FloatVertexAttribute(indices[0], i)),
-          HslShiftToLinearSpace(mesh.FloatVertexAttribute(indices[1], i)),
-          HslShiftToLinearSpace(mesh.FloatVertexAttribute(indices[2], i))};
+          HclShiftToLinearSpace(mesh.FloatVertexAttribute(indices[0], i)),
+          HclShiftToLinearSpace(mesh.FloatVertexAttribute(indices[1], i)),
+          HclShiftToLinearSpace(mesh.FloatVertexAttribute(indices[2], i))};
     } else {
       attributes[i] = {mesh.FloatVertexAttribute(indices[0], i),
                        mesh.FloatVertexAttribute(indices[1], i),
@@ -366,9 +365,9 @@ class MeshBuilder {
                         weights[2] * vals[2][c];
       }
 
-      // Don't forget to map the HSL shift back to proper coordinates.
-      if (id == MeshFormat::AttributeId::kColorShiftHsl) {
-        interp_val = LinearSpaceToHslShift(interp_val);
+      // Don't forget to map the HCL shift back to proper coordinates.
+      if (id == MeshFormat::AttributeId::kColorShiftHcl) {
+        interp_val = LinearSpaceToHclShift(interp_val);
       }
       mutable_mesh_.SetFloatVertexAttribute(new_index, attr, interp_val);
     }

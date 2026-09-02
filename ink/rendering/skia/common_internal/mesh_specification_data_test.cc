@@ -283,7 +283,7 @@ TEST(MeshSpecificationDataTest, CreateFromUnpackedStrokeFormat) {
           {MeshFormat::AttributeType::kFloat1Unpacked,
            MeshFormat::AttributeId::kOpacityShift},
           {MeshFormat::AttributeType::kFloat3Unpacked,
-           MeshFormat::AttributeId::kColorShiftHsl},
+           MeshFormat::AttributeId::kColorShiftHcl},
           {MeshFormat::AttributeType::kFloat2Unpacked,
            MeshFormat::AttributeId::kSideDerivative},
           {MeshFormat::AttributeType::kFloat1Unpacked,
@@ -313,7 +313,7 @@ TEST(MeshSpecificationDataTest, CreateFromUnpackedStrokeFormat) {
           ShaderAttributeIs(MeshSpecificationData::AttributeType::kFloat3,
                             "forwardDerivativeAndLabel"),
           ShaderAttributeIs(MeshSpecificationData::AttributeType::kFloat3,
-                            "hslShift"),
+                            "hclShift"),
           ShaderAttributeIs(MeshSpecificationData::AttributeType::kFloat3,
                             "surfaceUvAndPaintAnimationOffset")));
 }
@@ -374,7 +374,7 @@ TEST(MeshSpecificationDataTest,
           {MeshFormat::AttributeType::kFloat3Unpacked,
            MeshFormat::AttributeId::kCustom0},
           {MeshFormat::AttributeType::kFloat3Unpacked,
-           MeshFormat::AttributeId::kColorShiftHsl},
+           MeshFormat::AttributeId::kColorShiftHcl},
           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
            MeshFormat::AttributeId::kSideDerivative},
       },
@@ -430,10 +430,10 @@ MeshFormat MakeFormatWithSkippedAttribute(
   return *new_format;
 }
 
-TEST(MeshSpecificationDataTest, CreateForStrokeWithoutHslColorShiftIsOk) {
-  MeshFormat format_without_hsl = MakeFormatWithSkippedAttribute(
-      StrokeVertex::FullMeshFormat(), MeshFormat::AttributeId::kColorShiftHsl);
-  EXPECT_THAT(MeshSpecificationData::CreateForStroke(format_without_hsl),
+TEST(MeshSpecificationDataTest, CreateForStrokeWithoutHclColorShiftIsOk) {
+  MeshFormat format_without_hcl = MakeFormatWithSkippedAttribute(
+      StrokeVertex::FullMeshFormat(), MeshFormat::AttributeId::kColorShiftHcl);
+  EXPECT_THAT(MeshSpecificationData::CreateForStroke(format_without_hcl),
               IsOk());
 }
 
@@ -489,7 +489,7 @@ GetFormatTypesAndIds(const MeshFormat& format) {
 TEST(MeshSpecificationDataTest,
      CreateForStrokeWithUnsupportedAttributeOrderReturnsError) {
   // Modify the `InProgressStroke` format by performing a single swap of
-  // attributes. Because HSL shift is the only format attribute that is not
+  // attributes. Because HCL shift is the only format attribute that is not
   // required to be paired, any single swap will cause an unsupported order.
 
   auto types_and_ids = GetFormatTypesAndIds(StrokeVertex::FullMeshFormat());
@@ -544,7 +544,7 @@ TEST(MeshSpecificationDataTest,
 
   EXPECT_THAT(
       MeshSpecificationData::CreateForStroke(MakeFormatWithModifiedType(
-          types_and_ids, StrokeVertex::kFullFormatAttributeIndices.hsl_shift,
+          types_and_ids, StrokeVertex::kFullFormatAttributeIndices.hcl_shift,
           MeshFormat::AttributeType::kFloat3PackedInOneFloat)),
       StatusIs(absl::StatusCode::kInvalidArgument,
                HasSubstr("Unsupported type")));

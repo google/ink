@@ -46,14 +46,14 @@ std::optional<AttributeType> FindTypeForPositionAndOpacityShift(
   return std::nullopt;
 }
 
-// Returns the supported `AttributeType` for the HSL shift attribute based on
+// Returns the supported `AttributeType` for the HCL shift attribute based on
 // its `MeshFormat::AttributeType`.
-std::optional<AttributeType> FindTypeForHslShift(
-    MeshFormat::AttributeType hsl_shift_type) {
-  if (hsl_shift_type == MeshFormat::AttributeType::kFloat3Unpacked) {
+std::optional<AttributeType> FindTypeForHclShift(
+    MeshFormat::AttributeType hcl_shift_type) {
+  if (hcl_shift_type == MeshFormat::AttributeType::kFloat3Unpacked) {
     return AttributeType::kFloat3;
   }
-  if (hsl_shift_type ==
+  if (hcl_shift_type ==
       MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10) {
     return AttributeType::kUByte4;
   }
@@ -151,19 +151,19 @@ GetValidatedStrokeAttributeTypesAndOffsets(
       .offset = attributes[attribute_indices.position].packed_offset};
 
   // --------------------------------------------------------------------------
-  // HSL color-shift
-  if (attribute_indices.hsl_shift != -1) {
-    std::optional<AttributeType> hsl_shift_type =
-        FindTypeForHslShift(attributes[attribute_indices.hsl_shift].type);
-    if (!hsl_shift_type.has_value()) {
+  // HCL color-shift
+  if (attribute_indices.hcl_shift != -1) {
+    std::optional<AttributeType> hcl_shift_type =
+        FindTypeForHclShift(attributes[attribute_indices.hcl_shift].type);
+    if (!hcl_shift_type.has_value()) {
       return absl::InvalidArgumentError(
-          absl::StrCat("Unsupported type for `kColorShiftHsl` attribute. Got "
+          absl::StrCat("Unsupported type for `kColorShiftHcl` attribute. Got "
                        "`mesh_format`: ",
                        mesh_format));
     }
-    result.hsl_shift = {
-        .type = *hsl_shift_type,
-        .offset = attributes[attribute_indices.hsl_shift].packed_offset};
+    result.hcl_shift = {
+        .type = *hcl_shift_type,
+        .offset = attributes[attribute_indices.hcl_shift].packed_offset};
   }
 
   // --------------------------------------------------------------------------
@@ -257,9 +257,9 @@ StrokeAttributeTypesAndOffsets GetInProgressStrokeAttributeTypesAndOffsets(
       .type = AttributeType::kFloat3,
       .offset = format_attributes[attribute_indices.position].unpacked_offset};
 
-  result.hsl_shift = {
+  result.hcl_shift = {
       .type = AttributeType::kFloat3,
-      .offset = format_attributes[attribute_indices.hsl_shift].unpacked_offset};
+      .offset = format_attributes[attribute_indices.hcl_shift].unpacked_offset};
 
   result.side_derivative_and_label = {
       .type = AttributeType::kFloat3,

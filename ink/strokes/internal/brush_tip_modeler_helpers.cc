@@ -677,8 +677,8 @@ struct BrushTipStateModifiers {
   float pinch_offset = 0;
   float paint_animation_progress_offset = 0;  // always in range [0, 2)
   Angle hue_offset;                           // always in range [0, 2π) radians
-  float saturation_multiplier = 1;
-  float luminosity_offset = 0;
+  float chroma_multiplier = 1;
+  float lightness_offset = 0;
   float opacity_multiplier = 1;
 };
 
@@ -757,12 +757,12 @@ void ApplyModifierToTarget(float modifier, BrushBehavior::Target target,
           (tip_state_modifiers.hue_offset + Angle::Radians(modifier))
               .Normalized();
       break;
-    case BrushBehavior::Target::kSaturationMultiplier:
-      tip_state_modifiers.saturation_multiplier =
-          NanSafeMultiply(tip_state_modifiers.saturation_multiplier, modifier);
+    case BrushBehavior::Target::kChromaMultiplier:
+      tip_state_modifiers.chroma_multiplier =
+          NanSafeMultiply(tip_state_modifiers.chroma_multiplier, modifier);
       break;
-    case BrushBehavior::Target::kLuminosityOffset:
-      tip_state_modifiers.luminosity_offset += modifier;
+    case BrushBehavior::Target::kLightnessOffset:
+      tip_state_modifiers.lightness_offset += modifier;
       break;
     case BrushBehavior::Target::kOpacityMultiplier:
       tip_state_modifiers.opacity_multiplier =
@@ -808,13 +808,13 @@ void ApplyModifiersToTipState(const BrushTipStateModifiers& modifiers,
     tip_state.hue_offset_in_full_turns =
         modifiers.hue_offset.Normalized() / kFullTurn;
   }
-  if (modifiers.saturation_multiplier != 1) {
-    tip_state.saturation_multiplier =
-        std::clamp(modifiers.saturation_multiplier, 0.f, 2.f);
+  if (modifiers.chroma_multiplier != 1) {
+    tip_state.chroma_multiplier =
+        std::clamp(modifiers.chroma_multiplier, 0.f, 2.f);
   }
-  if (modifiers.luminosity_offset != 0) {
-    tip_state.luminosity_offset =
-        std::clamp(modifiers.luminosity_offset, -1.f, 1.f);
+  if (modifiers.lightness_offset != 0) {
+    tip_state.lightness_offset =
+        std::clamp(modifiers.lightness_offset, -1.f, 1.f);
   }
   if (modifiers.opacity_multiplier != 1) {
     tip_state.opacity_multiplier = std::clamp(

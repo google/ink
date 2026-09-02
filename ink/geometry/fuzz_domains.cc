@@ -46,7 +46,7 @@ fuzztest::Domain<float> NotNanFloat() {
 fuzztest::Domain<MeshFormat::AttributeId> StandardAttributeId() {
   return fuzztest::ElementOf({
       MeshFormat::AttributeId::kPosition,
-      MeshFormat::AttributeId::kColorShiftHsl,
+      MeshFormat::AttributeId::kColorShiftHcl,
       MeshFormat::AttributeId::kTexture,
       MeshFormat::AttributeId::kSideDerivative,
       MeshFormat::AttributeId::kSideLabel,

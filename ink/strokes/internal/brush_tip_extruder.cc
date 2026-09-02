@@ -428,9 +428,9 @@ void ExtrudeGeometry(const ExtrusionPoints& points,
   // of simplier vertex packing). The color shift components that actually
   // represent [0, 2] multipliers will be decoded in the shader.
   float opacity_shift = tip_state.opacity_multiplier - 1.f;
-  std::array<float, 3> hsl_shift = {tip_state.hue_offset_in_full_turns,
-                                    tip_state.saturation_multiplier - 1.f,
-                                    tip_state.luminosity_offset};
+  std::array<float, 3> hcl_shift = {tip_state.hue_offset_in_full_turns,
+                                    tip_state.chroma_multiplier - 1.f,
+                                    tip_state.lightness_offset};
 
   AffineTransform position_to_particle_surface_uv =
       ComputeParticleSurfaceUvTransform(tip_state);
@@ -451,12 +451,12 @@ void ExtrudeGeometry(const ExtrusionPoints& points,
   };
 
   for (Point point : points.left) {
-    geometry.AppendLeftVertex(point, opacity_shift, hsl_shift,
+    geometry.AppendLeftVertex(point, opacity_shift, hcl_shift,
                               compute_surface_uv(point),
                               tip_state.paint_animation_progress_offset);
   }
   for (Point point : points.right) {
-    geometry.AppendRightVertex(point, opacity_shift, hsl_shift,
+    geometry.AppendRightVertex(point, opacity_shift, hcl_shift,
                                compute_surface_uv(point),
                                tip_state.paint_animation_progress_offset);
   }

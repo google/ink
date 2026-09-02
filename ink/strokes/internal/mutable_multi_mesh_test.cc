@@ -56,7 +56,7 @@ TEST(MutableMultiMeshTest, UsesSameMeshFormatForAllPartitions) {
   // Create a new `MutableMultiMesh` with some non-trivial mesh format.
   absl::StatusOr<MeshFormat> format =
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
-                           MeshFormat::AttributeId::kColorShiftHsl},
+                           MeshFormat::AttributeId::kColorShiftHcl},
                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat3PackedInTwoFloats,

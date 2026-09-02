@@ -247,15 +247,15 @@ JNI_METHOD(brush, ColorFunctionNative, jlong, createHueOffset)
                                              &ThrowExceptionFromStatusCallback);
 }
 
-JNI_METHOD(brush, ColorFunctionNative, jlong, createSaturationMultiplier)
+JNI_METHOD(brush, ColorFunctionNative, jlong, createChromaMultiplier)
 (JNIEnv* env, jobject thiz, jfloat multiplier) {
-  return ColorFunctionNative_createSaturationMultiplier(
+  return ColorFunctionNative_createChromaMultiplier(
       env, multiplier, &ThrowExceptionFromStatusCallback);
 }
 
-JNI_METHOD(brush, ColorFunctionNative, jlong, createLuminosityOffset)
+JNI_METHOD(brush, ColorFunctionNative, jlong, createLightnessOffset)
 (JNIEnv* env, jobject thiz, jfloat offset) {
-  return ColorFunctionNative_createLuminosityOffset(
+  return ColorFunctionNative_createLightnessOffset(
       env, offset, &ThrowExceptionFromStatusCallback);
 }
 
@@ -282,14 +282,14 @@ JNI_METHOD(brush, ColorFunctionNative, jfloat, getHueOffsetDegrees)
   return ColorFunctionNative_getHueOffsetDegrees(native_pointer);
 }
 
-JNI_METHOD(brush, ColorFunctionNative, jfloat, getSaturationMultiplier)
+JNI_METHOD(brush, ColorFunctionNative, jfloat, getChromaMultiplier)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return ColorFunctionNative_getSaturationMultiplier(native_pointer);
+  return ColorFunctionNative_getChromaMultiplier(native_pointer);
 }
 
-JNI_METHOD(brush, ColorFunctionNative, jfloat, getLuminosityOffset)
+JNI_METHOD(brush, ColorFunctionNative, jfloat, getLightnessOffset)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return ColorFunctionNative_getLuminosityOffset(native_pointer);
+  return ColorFunctionNative_getLightnessOffset(native_pointer);
 }
 
 JNI_METHOD(brush, ColorFunctionNative, jlong, computeReplaceColorLong)

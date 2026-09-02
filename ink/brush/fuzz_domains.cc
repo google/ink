@@ -241,8 +241,8 @@ Domain<BrushBehavior::Target> ArbitraryBrushBehaviorTarget(
       BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize,
       BrushBehavior::Target::kPaintAnimationProgressOffset,
       BrushBehavior::Target::kHueOffsetInRadians,
-      BrushBehavior::Target::kSaturationMultiplier,
-      BrushBehavior::Target::kLuminosityOffset,
+      BrushBehavior::Target::kChromaMultiplier,
+      BrushBehavior::Target::kLightnessOffset,
       BrushBehavior::Target::kOpacityMultiplier,
   };
   if (variant == DomainVariant::kValidAndSerializable) {
@@ -271,14 +271,12 @@ Domain<ColorFunction::HueOffset> ValidColorFunctionHueOffset() {
   return StructOf<ColorFunction::HueOffset>(FiniteAngle());
 }
 
-Domain<ColorFunction::SaturationMultiplier>
-ValidColorFunctionSaturationMultiplier() {
-  return StructOf<ColorFunction::SaturationMultiplier>(
-      FiniteNonNegativeFloat());
+Domain<ColorFunction::ChromaMultiplier> ValidColorFunctionChromaMultiplier() {
+  return StructOf<ColorFunction::ChromaMultiplier>(FiniteNonNegativeFloat());
 }
 
-Domain<ColorFunction::LuminosityOffset> ValidColorFunctionLuminosityOffset() {
-  return StructOf<ColorFunction::LuminosityOffset>(Finite<float>());
+Domain<ColorFunction::LightnessOffset> ValidColorFunctionLightnessOffset() {
+  return StructOf<ColorFunction::LightnessOffset>(Finite<float>());
 }
 
 Domain<ColorFunction::ReplaceColor> ValidColorFunctionReplaceColor() {
@@ -814,8 +812,8 @@ Domain<BrushTip> SerializableBrushTip() {
 Domain<ColorFunction> ValidColorFunction() {
   return StructOf<ColorFunction>(VariantOf(
       ValidColorFunctionOpacityMultiplier(), ValidColorFunctionHueOffset(),
-      ValidColorFunctionSaturationMultiplier(),
-      ValidColorFunctionLuminosityOffset(), ValidColorFunctionReplaceColor()));
+      ValidColorFunctionChromaMultiplier(), ValidColorFunctionLightnessOffset(),
+      ValidColorFunctionReplaceColor()));
 }
 
 Domain<EasingFunction> ValidEasingFunction() {

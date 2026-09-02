@@ -125,7 +125,7 @@ message MeshFormat {
   enum AttributeId {
     ATTR_ID_UNSPECIFIED = 0;
     ATTR_ID_POSITION = 1;
-    ATTR_ID_COLOR_SHIFT_HSL = 2;
+    ATTR_ID_COLOR_SHIFT_HCL = 2;
     ATTR_ID_TEXTURE = 3;
     ATTR_ID_SIDE_DERIVATIVE = 4;
     ATTR_ID_SIDE_LABEL = 5;

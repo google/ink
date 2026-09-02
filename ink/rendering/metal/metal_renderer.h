@@ -116,11 +116,11 @@ class MetalRenderer {
     // This attribute is always present.
     uint32_t position_and_opacity_shift_offset = 0;  // 4 bytes
 
-    // Offset of the HSL shift attribute in bytes.
+    // Offset of the HCL shift attribute in bytes.
     //
     // This attribute is optional, and a value of -1 indicates that the
     // attribute is not present.
-    int32_t hsl_shift_offset = -1;  // 4 bytes
+    int32_t hcl_shift_offset = -1;  // 4 bytes
 
     // Offset of the side derivative and label attribute in bytes.
     //

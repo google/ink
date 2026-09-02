@@ -31,31 +31,55 @@
 namespace ink {
 namespace {
 
-// LINT.IfChange(yiq_transform)
-std::array<float, 4> ColorToYiqa(const Color& color) {
+// Convert between `Color` and the Oklab color space. These formulae come from
+// https://bottosson.github.io/posts/oklab/.
+//
+// LINT.IfChange(oklab_transform)
+std::array<float, 4> ColorToOklab(const Color& color) {
   Color::RgbaFloat rgba =
       color.InColorSpace(ColorSpace::kSrgb).AsFloat(Color::Format::kLinear);
-  float y = rgba.r * +0.299 + rgba.g * +0.587 + rgba.b * +0.114;
-  float i = rgba.r * +0.596 + rgba.g * -0.275 + rgba.b * -0.321;
-  float q = rgba.r * +0.212 + rgba.g * -0.523 + rgba.b * +0.311;
-  return {y, i, q, rgba.a};
+
+  float l =
+      rgba.r * 0.4122214708f + rgba.g * 0.5363325363f + rgba.b * 0.0514459929f;
+  float m =
+      rgba.r * 0.2119034982f + rgba.g * 0.6806995451f + rgba.b * 0.1073969566f;
+  float s =
+      rgba.r * 0.0883024619f + rgba.g * 0.2817188376f + rgba.b * 0.6299787005f;
+  l = std::cbrt(l);
+  m = std::cbrt(m);
+  s = std::cbrt(s);
+
+  float ok_L = l * 0.2104542553f + m * 0.7936177850f - s * 0.0040720468f;
+  float ok_a = l * 1.9779984951f - m * 2.4285922050f + s * 0.4505937099f;
+  float ok_b = l * 0.0259040371f + m * 0.7827717662f - s * 0.8086757660f;
+  return {ok_L, ok_a, ok_b, rgba.a};
 }
 
-Color ColorFromYiqa(const std::array<float, 4>& yiqa, ColorSpace color_space) {
-  float y = yiqa[0];
-  float i = yiqa[1];
-  float q = yiqa[2];
-  float a = yiqa[3];
+Color ColorFromOklab(const std::array<float, 4>& oklab,
+                     ColorSpace color_space) {
+  float ok_L = oklab[0];
+  float ok_a = oklab[1];
+  float ok_b = oklab[2];
+  float alpha = oklab[3];
 
-  float r = y + i * +0.956 + q * +0.621;
-  float g = y + i * -0.272 + q * -0.647;
-  float b = y + i * -1.107 + q * +1.704;
+  float l = ok_L + ok_a * +0.3963377774f + ok_b * +0.2158037573f;
+  float m = ok_L + ok_a * -0.1055613458f + ok_b * -0.0638541728f;
+  float s = ok_L + ok_a * -0.0894841775f + ok_b * -1.2914855480f;
+  l = l * l * l;
+  m = m * m * m;
+  s = s * s * s;
 
-  return Color::FromFloat(r, g, b, a, Color::Format::kLinear, ColorSpace::kSrgb)
+  float r = l * +4.0767416621f + m * -3.3077115913f + s * +0.2309699292f;
+  float g = l * -1.2684380046f + m * +2.6097574011f + s * -0.3413193965f;
+  float b = l * -0.0041960863f + m * -0.7034186147f + s * +1.7076147010f;
+
+  return Color::FromFloat(r, g, b, alpha, Color::Format::kLinear,
+                          ColorSpace::kSrgb)
       .InColorSpace(color_space);
 }
 // LINT.ThenChange(
-//   ../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hsl_and_opacity_shift
+//   ../rendering/skia/common_internal/sksl_fragment_shader_helper_functions.h:oklab_transform,
+//   ../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:oklab_transform,
 // )
 
 }  // namespace
@@ -78,27 +102,30 @@ Color ColorFunction::OpacityMultiplier::operator()(const Color& color) const {
   return color.WithAlphaFloat(multiplier * color.GetAlphaFloat());
 }
 
+// LINT.IfChange(hcl_transform)
 Color ColorFunction::HueOffset::operator()(const Color& color) const {
-  std::array<float, 4> yiqa = ColorToYiqa(color);
-  Point iq = AffineTransform::Rotate(-offset).Apply(Point{yiqa[1], yiqa[2]});
-  yiqa[1] = iq.x;
-  yiqa[2] = iq.y;
-  return ColorFromYiqa(yiqa, color.GetColorSpace());
+  std::array<float, 4> oklab = ColorToOklab(color);
+  Point ab = AffineTransform::Rotate(offset).Apply(Point{oklab[1], oklab[2]});
+  oklab[1] = ab.x;
+  oklab[2] = ab.y;
+  return ColorFromOklab(oklab, color.GetColorSpace());
 }
 
-Color ColorFunction::SaturationMultiplier::operator()(
-    const Color& color) const {
-  std::array<float, 4> yiqa = ColorToYiqa(color);
-  yiqa[1] *= multiplier;
-  yiqa[2] *= multiplier;
-  return ColorFromYiqa(yiqa, color.GetColorSpace());
+Color ColorFunction::ChromaMultiplier::operator()(const Color& color) const {
+  std::array<float, 4> oklab = ColorToOklab(color);
+  oklab[1] *= multiplier;
+  oklab[2] *= multiplier;
+  return ColorFromOklab(oklab, color.GetColorSpace());
 }
 
-Color ColorFunction::LuminosityOffset::operator()(const Color& color) const {
-  std::array<float, 4> yiqa = ColorToYiqa(color);
-  yiqa[0] += offset;
-  return ColorFromYiqa(yiqa, color.GetColorSpace());
+Color ColorFunction::LightnessOffset::operator()(const Color& color) const {
+  std::array<float, 4> oklab = ColorToOklab(color);
+  oklab[0] += offset;
+  return ColorFromOklab(oklab, color.GetColorSpace());
 }
+// LINT.ThenChange(
+//   ../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hcl_and_opacity_shift
+// )
 
 Color ColorFunction::ReplaceColor::operator()(
     const Color& ignored_original_color) const {
@@ -130,22 +157,22 @@ absl::Status ValidateColorFunctionParameters(
 }
 
 absl::Status ValidateColorFunctionParameters(
-    const ColorFunction::SaturationMultiplier& saturation) {
-  if (!std::isfinite(saturation.multiplier) || saturation.multiplier < 0) {
+    const ColorFunction::ChromaMultiplier& chroma) {
+  if (!std::isfinite(chroma.multiplier) || chroma.multiplier < 0) {
     return absl::InvalidArgumentError(
-        absl::StrCat("`ColorFunction::SaturationMultiplier::multiplier` must "
+        absl::StrCat("`ColorFunction::ChromaMultiplier::multiplier` must "
                      "be finite and non-negative, got: ",
-                     saturation.multiplier));
+                     chroma.multiplier));
   }
   return absl::OkStatus();
 }
 
 absl::Status ValidateColorFunctionParameters(
-    const ColorFunction::LuminosityOffset& luminosity) {
-  if (!std::isfinite(luminosity.offset)) {
+    const ColorFunction::LightnessOffset& lightness) {
+  if (!std::isfinite(lightness.offset)) {
     return absl::InvalidArgumentError(absl::StrCat(
-        "`ColorFunction::LuminosityOffset::offset` must be finite, got: ",
-        luminosity.offset));
+        "`ColorFunction::LightnessOffset::offset` must be finite, got: ",
+        lightness.offset));
   }
   return absl::OkStatus();
 }
@@ -177,12 +204,12 @@ Version CalculateMinimumRequiredVersion(const ColorFunction::HueOffset& hue) {
 }
 
 Version CalculateMinimumRequiredVersion(
-    const ColorFunction::SaturationMultiplier& saturation) {
+    const ColorFunction::ChromaMultiplier& chroma) {
   return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(
-    const ColorFunction::LuminosityOffset& luminosity) {
+    const ColorFunction::LightnessOffset& lightness) {
   return Version::kDevelopment();
 }
 
@@ -222,14 +249,12 @@ std::string ToFormattedString(const ColorFunction::HueOffset& hue) {
   return absl::StrCat("HueOffset{", hue.offset, "}");
 }
 
-std::string ToFormattedString(
-    const ColorFunction::SaturationMultiplier& saturation) {
-  return absl::StrCat("SaturationMultiplier{", saturation.multiplier, "}");
+std::string ToFormattedString(const ColorFunction::ChromaMultiplier& chroma) {
+  return absl::StrCat("ChromaMultiplier{", chroma.multiplier, "}");
 }
 
-std::string ToFormattedString(
-    const ColorFunction::LuminosityOffset& luminosity) {
-  return absl::StrCat("LuminosityOffset{", luminosity.offset, "}");
+std::string ToFormattedString(const ColorFunction::LightnessOffset& lightness) {
+  return absl::StrCat("LightnessOffset{", lightness.offset, "}");
 }
 
 std::string ToFormattedString(const ColorFunction::ReplaceColor& replace) {

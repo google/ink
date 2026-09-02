@@ -276,7 +276,7 @@ TEST(PartitionedMeshTest, FromMutableMeshThatRequiresPartitioningWithOutlines) {
 TEST(PartitionedMeshTest, FromMutableMeshOmitAttribute) {
   absl::StatusOr<MeshFormat> original_format =
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat3PackedInTwoFloats,
-                           MeshFormat::AttributeId::kColorShiftHsl},
+                           MeshFormat::AttributeId::kColorShiftHcl},
                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
@@ -293,7 +293,7 @@ TEST(PartitionedMeshTest, FromMutableMeshOmitAttribute) {
   ASSERT_THAT(expected_format, IsOk());
 
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
-      mutable_mesh, {{0, 1, 2}}, {MeshFormat::AttributeId::kColorShiftHsl});
+      mutable_mesh, {{0, 1, 2}}, {MeshFormat::AttributeId::kColorShiftHcl});
 
   ASSERT_THAT(shape, IsOk());
   ASSERT_EQ(shape->RenderGroupCount(), 1);
@@ -489,7 +489,7 @@ TEST(PartitionedMeshTest, FromMeshesWithDifferentFormats) {
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat2Unpacked,
                            MeshFormat::AttributeId::kPosition},
                           {MeshFormat::AttributeType::kFloat3Unpacked,
-                           MeshFormat::AttributeId::kColorShiftHsl}},
+                           MeshFormat::AttributeId::kColorShiftHcl}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format_a, IsOk());
   absl::StatusOr<MeshFormat> format_b =

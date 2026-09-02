@@ -41,7 +41,7 @@ struct TypeAndByteOffset {
 
 struct StrokeAttributeTypesAndOffsets {
   TypeAndByteOffset position_and_opacity_shift;
-  std::optional<TypeAndByteOffset> hsl_shift;
+  std::optional<TypeAndByteOffset> hcl_shift;
   TypeAndByteOffset side_derivative_and_label;
   TypeAndByteOffset forward_derivative_and_label;
   std::optional<TypeAndByteOffset> surface_uv_and_paint_animation_offset;

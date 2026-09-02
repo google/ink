@@ -43,9 +43,9 @@ float GetOpacityShift(const MutableMesh& mesh, uint32_t index) {
   return attribute[0];
 }
 
-std::array<float, 3> GetHslShift(const MutableMesh& mesh, uint32_t index) {
+std::array<float, 3> GetHclShift(const MutableMesh& mesh, uint32_t index) {
   const SmallArray<float, 4>& attribute = mesh.FloatVertexAttribute(
-      index, StrokeVertex::kFullFormatAttributeIndices.hsl_shift);
+      index, StrokeVertex::kFullFormatAttributeIndices.hcl_shift);
   ABSL_CHECK_EQ(attribute.Size(), 3);
   return {attribute[0], attribute[1], attribute[2]};
 }
@@ -66,21 +66,21 @@ TEST(GeometryNonPositionAttributesTest,
   std::array<float, 2> left_opacity_shifts = {-0.5, 0.5};
   std::array<float, 2> right_opacity_shifts = {-0.5, 0.5};
 
-  std::array<std::array<float, 3>, 4> left_hsl_shifts = {
+  std::array<std::array<float, 3>, 4> left_hcl_shifts = {
       std::array<float, 3>({-0.7, 0.2, 0.9}),
       std::array<float, 3>({-0.6, 0.4, 0.8})};
-  std::array<std::array<float, 3>, 4> right_hsl_shifts = {
+  std::array<std::array<float, 3>, 4> right_hcl_shifts = {
       std::array<float, 3>({-0.6, -0.4, -1}),
       std::array<float, 3>({-0.8, 0, 1})};
 
   geometry.AppendLeftVertex(Point{0, 0}, left_opacity_shifts[0],
-                            left_hsl_shifts[0]);
+                            left_hcl_shifts[0]);
   geometry.AppendLeftVertex(Point{0, 1}, left_opacity_shifts[1],
-                            left_hsl_shifts[1]);
+                            left_hcl_shifts[1]);
   geometry.AppendRightVertex(Point{1, 0}, right_opacity_shifts[0],
-                             right_hsl_shifts[0]);
+                             right_hcl_shifts[0]);
   geometry.AppendRightVertex(Point{1, 1}, right_opacity_shifts[1],
-                             right_hsl_shifts[1]);
+                             right_hcl_shifts[1]);
   geometry.ProcessNewVertices(0, BrushTipState{});
 
   ASSERT_EQ(geometry.LeftSide().indices.size(), 2);
@@ -98,15 +98,15 @@ TEST(GeometryNonPositionAttributesTest,
   EXPECT_THAT(GetOpacityShift(mesh, geometry.RightSide().indices[1]),
               FloatEq(right_opacity_shifts[1]));
 
-  EXPECT_THAT(GetHslShift(mesh, geometry.LeftSide().indices[0]),
-              ElementsAreArray(left_hsl_shifts[0]));
-  EXPECT_THAT(GetHslShift(mesh, geometry.LeftSide().indices[1]),
-              ElementsAreArray(left_hsl_shifts[1]));
+  EXPECT_THAT(GetHclShift(mesh, geometry.LeftSide().indices[0]),
+              ElementsAreArray(left_hcl_shifts[0]));
+  EXPECT_THAT(GetHclShift(mesh, geometry.LeftSide().indices[1]),
+              ElementsAreArray(left_hcl_shifts[1]));
 
-  EXPECT_THAT(GetHslShift(mesh, geometry.RightSide().indices[0]),
-              ElementsAreArray(right_hsl_shifts[0]));
-  EXPECT_THAT(GetHslShift(mesh, geometry.RightSide().indices[1]),
-              ElementsAreArray(right_hsl_shifts[1]));
+  EXPECT_THAT(GetHclShift(mesh, geometry.RightSide().indices[0]),
+              ElementsAreArray(right_hcl_shifts[0]));
+  EXPECT_THAT(GetHclShift(mesh, geometry.RightSide().indices[1]),
+              ElementsAreArray(right_hcl_shifts[1]));
 }
 
 TEST(GeometryNonPositionAttributesTest, SurfaceUvValuesAreSetInMesh) {
@@ -116,19 +116,19 @@ TEST(GeometryNonPositionAttributesTest, SurfaceUvValuesAreSetInMesh) {
 
   geometry.AppendLeftVertex(Point{0, 0},
                             /* opacity_shift = */ 0,
-                            /* hsl_shift = */ {},
+                            /* hcl_shift = */ {},
                             /* surface_uv = */ {0.1, 0.2});
   geometry.AppendLeftVertex(Point{0, 1},
                             /* opacity_shift = */ 0,
-                            /* hsl_shift = */ {},
+                            /* hcl_shift = */ {},
                             /* surface_uv = */ {0.3, 0.4});
   geometry.AppendRightVertex(Point{1, 0},
                              /* opacity_shift = */ 0,
-                             /* hsl_shift = */ {},
+                             /* hcl_shift = */ {},
                              /* surface_uv = */ {0.5, 0.6});
   geometry.AppendRightVertex(Point{1, 1},
                              /* opacity_shift = */ 0,
-                             /* hsl_shift = */ {},
+                             /* hcl_shift = */ {},
                              /* surface_uv = */ {0.7, 0.8});
   geometry.ProcessNewVertices(0, BrushTipState{});
 

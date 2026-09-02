@@ -183,7 +183,7 @@ TEST(MutableMeshViewTest, GetAndSetPositionAndVertexWithNewMesh) {
       .position = {1, 2},
       .new_non_position_attributes = {
           .opacity_shift = 0.5,
-          .hsl_shift = {0.1, -0.3, 0.8},
+          .hcl_shift = {0.1, -0.3, 0.8},
           .side_derivative = {3, 4},
           .side_label = StrokeVertex::kExteriorLeftLabel,
           .forward_derivative = {6, 7},
@@ -200,7 +200,7 @@ TEST(MutableMeshViewTest, GetAndSetPositionAndVertexWithNewMesh) {
   ExtrudedVertex set_vertex = {
       .position = {-2, -3},
       .new_non_position_attributes = {.opacity_shift = -0.3,
-                                      .hsl_shift = {0.5, 0.4, 1.0},
+                                      .hcl_shift = {0.5, 0.4, 1.0},
                                       .side_derivative = {-4, -5},
                                       .side_label =
                                           StrokeVertex::kExteriorRightLabel,
@@ -244,7 +244,7 @@ TEST(MutableMeshViewTest, GetDerivativesAndLabelsWithNewMesh) {
       .position = {1, 2},
       .new_non_position_attributes = {
           .opacity_shift = -0.8,
-          .hsl_shift = {0.2, 0.3, 0.4},
+          .hcl_shift = {0.2, 0.3, 0.4},
           .side_derivative = {3, 4},
           .side_label = StrokeVertex::kExteriorLeftLabel,
           .forward_derivative = {6, 7},

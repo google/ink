@@ -46,12 +46,12 @@ struct BrushTipState {
   // The hue angle offset, measured in full turns in the range [0, 1), to
   // add to the brush color at this tip position.
   float hue_offset_in_full_turns = 0.f;
-  // The saturation multiplier, in the range [0, 2], to apply to the brush color
+  // The chroma multiplier, in the range [0, 2], to apply to the brush color
   // at this tip position.
-  float saturation_multiplier = 1.f;
-  // The luminosity offset, in the range [-1, 1], to apply to the brush color at
+  float chroma_multiplier = 1.f;
+  // The lightness offset, in the range [-1, 1], to apply to the brush color at
   // this tip position.
-  float luminosity_offset = 0.f;
+  float lightness_offset = 0.f;
   // The opacity multiplier, in the range [0, 2], to apply to the brush color at
   // this tip position.
   float opacity_multiplier = 1.f;

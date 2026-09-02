@@ -135,14 +135,14 @@ TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithoutColorShift) {
   absl::flat_hash_set<MeshFormat::AttributeId> required_attributes;
   brush_internal::AddAttributeIdsRequiredByCoat(coat, required_attributes);
   EXPECT_THAT(required_attributes,
-              Not(Contains(MeshFormat::AttributeId::kColorShiftHsl)));
+              Not(Contains(MeshFormat::AttributeId::kColorShiftHcl)));
 }
 
 TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithColorShift) {
   constexpr BrushBehavior::Target kColorShiftTargets[] = {
       BrushBehavior::Target::kHueOffsetInRadians,
-      BrushBehavior::Target::kSaturationMultiplier,
-      BrushBehavior::Target::kLuminosityOffset,
+      BrushBehavior::Target::kChromaMultiplier,
+      BrushBehavior::Target::kLightnessOffset,
   };
   for (BrushBehavior::Target target : kColorShiftTargets) {
     BrushTip tip = {
@@ -161,7 +161,7 @@ TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithColorShift) {
     absl::flat_hash_set<MeshFormat::AttributeId> required_attributes;
     brush_internal::AddAttributeIdsRequiredByCoat(coat, required_attributes);
     EXPECT_THAT(required_attributes,
-                Contains(MeshFormat::AttributeId::kColorShiftHsl));
+                Contains(MeshFormat::AttributeId::kColorShiftHcl));
   }
 }
 

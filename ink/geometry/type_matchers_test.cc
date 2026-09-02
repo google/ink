@@ -144,12 +144,12 @@ TEST(TriangleNearTest, NotEqual) {
 TEST(MeshFormatEqTest, Equal) {
   EXPECT_THAT(MeshFormat(), MeshFormatEq(MeshFormat()));
   EXPECT_THAT(*MeshFormat::Create(
-                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
                    {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
               MeshFormatEq(*MeshFormat::Create(
-                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
                    {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked)));
@@ -157,11 +157,11 @@ TEST(MeshFormatEqTest, Equal) {
 
 TEST(MeshFormatEqTest, DifferentNumberOfAttrs) {
   EXPECT_THAT(*MeshFormat::Create(
-                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
               Not(MeshFormatEq(*MeshFormat::Create(
-                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
                    {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked))));
@@ -169,12 +169,12 @@ TEST(MeshFormatEqTest, DifferentNumberOfAttrs) {
 
 TEST(MeshFormatEqTest, DifferentAttrType) {
   EXPECT_THAT(*MeshFormat::Create(
-                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
                    {AttrType::kFloat3Unpacked, AttrId::kCustom0}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
               Not(MeshFormatEq(*MeshFormat::Create(
-                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
                    {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked))));
@@ -182,12 +182,12 @@ TEST(MeshFormatEqTest, DifferentAttrType) {
 
 TEST(MeshFormatEqTest, DifferentAttrName) {
   EXPECT_THAT(*MeshFormat::Create(
-                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
                    {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
               Not(MeshFormatEq(*MeshFormat::Create(
-                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
                    {AttrType::kFloat3PackedInTwoFloats, AttrId::kTexture}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked))));
@@ -195,25 +195,25 @@ TEST(MeshFormatEqTest, DifferentAttrName) {
 
 TEST(MeshFormatEqTest, DifferentPositionAttrIndex) {
   EXPECT_THAT(*MeshFormat::Create(
-                  {{AttrType::kFloat2PackedInOneFloat, AttrId::kColorShiftHsl},
+                  {{AttrType::kFloat2PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
                    {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
               Not(MeshFormatEq(*MeshFormat::Create(
                   {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-                   {AttrType::kFloat2PackedInOneFloat, AttrId::kColorShiftHsl},
+                   {AttrType::kFloat2PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked))));
 }
 
 TEST(MeshFormatEqTest, DifferentIndexFormat) {
   EXPECT_THAT(*MeshFormat::Create(
-                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
                    {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
                   MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
               Not(MeshFormatEq(*MeshFormat::Create(
-                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+                  {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
                    {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked))));

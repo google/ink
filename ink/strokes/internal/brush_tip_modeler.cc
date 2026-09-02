@@ -82,7 +82,7 @@ float InitialTargetModifierValue(BrushBehavior::Target target) {
     case BrushBehavior::Target::kWidthMultiplier:
     case BrushBehavior::Target::kHeightMultiplier:
     case BrushBehavior::Target::kSizeMultiplier:
-    case BrushBehavior::Target::kSaturationMultiplier:
+    case BrushBehavior::Target::kChromaMultiplier:
     case BrushBehavior::Target::kOpacityMultiplier:
       return 1.f;
     case BrushBehavior::Target::kSlantOffsetInRadians:
@@ -95,7 +95,7 @@ float InitialTargetModifierValue(BrushBehavior::Target target) {
     case BrushBehavior::Target::kPositionOffsetLateralInMultiplesOfBrushSize:
     case BrushBehavior::Target::kPaintAnimationProgressOffset:
     case BrushBehavior::Target::kHueOffsetInRadians:
-    case BrushBehavior::Target::kLuminosityOffset:
+    case BrushBehavior::Target::kLightnessOffset:
       return 0.f;
   }
   ABSL_LOG(FATAL)

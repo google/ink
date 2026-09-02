@@ -90,11 +90,11 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
       kOpacityCodingParams8bit = {.offset = -1, .scale = 2.f / 254};
   // LINT.ThenChange(
   //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:position_and_opacity_unpacking)
-  // LINT.IfChange(hsl_packing)
+  // LINT.IfChange(hcl_packing)
   constexpr MeshAttributeCodingParams::ComponentCodingParams
-      kHslCodingParams10bit = {.offset = -1, .scale = 2.f / 1022};
+      kHclCodingParams10bit = {.offset = -1, .scale = 2.f / 1022};
   // LINT.ThenChange(
-  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:hsl_shift_unpacking)
+  //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:hcl_shift_unpacking)
 
   // LINT.IfChange(label_packing)
   // Vertex labels are already represented with 1 byte's worth of integral
@@ -133,12 +133,12 @@ std::optional<MeshAttributeCodingParams> GetCustomPackingParams(
             .components = {kOpacityCodingParams8bit}};
       }
       break;
-    case MeshFormat::AttributeId::kColorShiftHsl:
+    case MeshFormat::AttributeId::kColorShiftHcl:
       if (attribute.type ==
           MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10) {
-        return MeshAttributeCodingParams{.components = {kHslCodingParams10bit,
-                                                        kHslCodingParams10bit,
-                                                        kHslCodingParams10bit}};
+        return MeshAttributeCodingParams{.components = {kHclCodingParams10bit,
+                                                        kHclCodingParams10bit,
+                                                        kHclCodingParams10bit}};
       }
       break;
     case MeshFormat::AttributeId::kSideLabel:
@@ -213,7 +213,7 @@ MeshFormat MakeValidatedFullFormat() {
           },
           {
               MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10,
-              MeshFormat::AttributeId::kColorShiftHsl,
+              MeshFormat::AttributeId::kColorShiftHcl,
           },
           {
               MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
@@ -272,8 +272,8 @@ StrokeVertex::FormatAttributeIndices StrokeVertex::FindAttributeIndices(
       case MeshFormat::AttributeId::kOpacityShift:
         indices.opacity_shift = index;
         break;
-      case MeshFormat::AttributeId::kColorShiftHsl:
-        indices.hsl_shift = index;
+      case MeshFormat::AttributeId::kColorShiftHcl:
+        indices.hcl_shift = index;
         break;
       case MeshFormat::AttributeId::kSideDerivative:
         indices.side_derivative = index;
@@ -348,16 +348,16 @@ namespace {
 void SetNonPositionAttributes(
     MutableMesh& mesh, uint32_t index,
     const StrokeVertex::NonPositionAttributes& attributes) {
-  // Clamp the opacity and HSL shifts to within their expected bounds so that
+  // Clamp the opacity and HCL shifts to within their expected bounds so that
   // they can be packed with hard-coded `MeshAttributePackingParams`.
   mesh.SetFloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.opacity_shift,
       {std::clamp(attributes.opacity_shift, -1.f, 1.f)});
   mesh.SetFloatVertexAttribute(
-      index, StrokeVertex::kFullFormatAttributeIndices.hsl_shift,
-      {std::clamp(attributes.hsl_shift[0], -1.f, 1.f),
-       std::clamp(attributes.hsl_shift[1], -1.f, 1.f),
-       std::clamp(attributes.hsl_shift[2], -1.f, 1.f)});
+      index, StrokeVertex::kFullFormatAttributeIndices.hcl_shift,
+      {std::clamp(attributes.hcl_shift[0], -1.f, 1.f),
+       std::clamp(attributes.hcl_shift[1], -1.f, 1.f),
+       std::clamp(attributes.hcl_shift[2], -1.f, 1.f)});
 
   mesh.SetFloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.side_derivative,
@@ -477,9 +477,9 @@ StrokeVertex::NonPositionAttributes Lerp(
 
   return {
       .opacity_shift = Lerp(a.opacity_shift, b.opacity_shift, t),
-      .hsl_shift = {Lerp(a.hsl_shift[0], b.hsl_shift[0], t),
-                    Lerp(a.hsl_shift[1], b.hsl_shift[1], t),
-                    Lerp(a.hsl_shift[2], b.hsl_shift[2], t)},
+      .hcl_shift = {Lerp(a.hcl_shift[0], b.hcl_shift[0], t),
+                    Lerp(a.hcl_shift[1], b.hcl_shift[1], t),
+                    Lerp(a.hcl_shift[2], b.hcl_shift[2], t)},
       .side_label = LerpLabel(a.side_label, b.side_label, t),
       .forward_label = LerpLabel(a.forward_label, b.forward_label, t),
       .surface_uv = Lerp(a.surface_uv, b.surface_uv, t),
@@ -501,10 +501,10 @@ StrokeVertex::NonPositionAttributes BarycentricLerp(
   return {
       .opacity_shift =
           BarycentricLerp(a.opacity_shift, b.opacity_shift, c.opacity_shift, t),
-      .hsl_shift =
-          {BarycentricLerp(a.hsl_shift[0], b.hsl_shift[0], c.hsl_shift[0], t),
-           BarycentricLerp(a.hsl_shift[1], b.hsl_shift[1], c.hsl_shift[1], t),
-           BarycentricLerp(a.hsl_shift[2], b.hsl_shift[2], c.hsl_shift[2], t)},
+      .hcl_shift =
+          {BarycentricLerp(a.hcl_shift[0], b.hcl_shift[0], c.hcl_shift[0], t),
+           BarycentricLerp(a.hcl_shift[1], b.hcl_shift[1], c.hcl_shift[1], t),
+           BarycentricLerp(a.hcl_shift[2], b.hcl_shift[2], c.hcl_shift[2], t)},
       .side_label =
           BarycentricLerpLabel(a.side_label, b.side_label, c.side_label, t),
       .forward_label = BarycentricLerpLabel(a.forward_label, b.forward_label,

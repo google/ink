@@ -421,10 +421,10 @@ proto::BrushBehavior::Target EncodeBrushBehaviorTarget(
       return proto::BrushBehavior::TARGET_UNSPECIFIED;
     case BrushBehavior::Target::kHueOffsetInRadians:
       return proto::BrushBehavior::TARGET_HUE_OFFSET_IN_RADIANS;
-    case BrushBehavior::Target::kSaturationMultiplier:
-      return proto::BrushBehavior::TARGET_SATURATION_MULTIPLIER;
-    case BrushBehavior::Target::kLuminosityOffset:
-      return proto::BrushBehavior::TARGET_LUMINOSITY_OFFSET;
+    case BrushBehavior::Target::kChromaMultiplier:
+      return proto::BrushBehavior::TARGET_CHROMA_MULTIPLIER;
+    case BrushBehavior::Target::kLightnessOffset:
+      return proto::BrushBehavior::TARGET_LIGHTNESS_OFFSET;
     case BrushBehavior::Target::kOpacityMultiplier:
       return proto::BrushBehavior::TARGET_OPACITY_MULTIPLIER;
   }
@@ -450,10 +450,10 @@ absl::StatusOr<BrushBehavior::Target> DecodeBrushBehaviorTarget(
       return BrushBehavior::Target::kCornerRoundingOffset;
     case proto::BrushBehavior::TARGET_HUE_OFFSET_IN_RADIANS:
       return BrushBehavior::Target::kHueOffsetInRadians;
-    case proto::BrushBehavior::TARGET_SATURATION_MULTIPLIER:
-      return BrushBehavior::Target::kSaturationMultiplier;
-    case proto::BrushBehavior::TARGET_LUMINOSITY_OFFSET:
-      return BrushBehavior::Target::kLuminosityOffset;
+    case proto::BrushBehavior::TARGET_CHROMA_MULTIPLIER:
+      return BrushBehavior::Target::kChromaMultiplier;
+    case proto::BrushBehavior::TARGET_LIGHTNESS_OFFSET:
+      return BrushBehavior::Target::kLightnessOffset;
     case proto::BrushBehavior::TARGET_OPACITY_MULTIPLIER:
       return BrushBehavior::Target::kOpacityMultiplier;
     case proto::BrushBehavior::
@@ -569,15 +569,15 @@ void EncodeColorFunctionParameters(const ColorFunction::HueOffset& hue,
 }
 
 void EncodeColorFunctionParameters(
-    const ColorFunction::SaturationMultiplier& saturation,
+    const ColorFunction::ChromaMultiplier& chroma,
     proto::ColorFunction& proto_out) {
-  proto_out.set_saturation_multiplier(saturation.multiplier);
+  proto_out.set_chroma_multiplier(chroma.multiplier);
 }
 
 void EncodeColorFunctionParameters(
-    const ColorFunction::LuminosityOffset& luminosity,
+    const ColorFunction::LightnessOffset& lightness,
     proto::ColorFunction& proto_out) {
-  proto_out.set_luminosity_offset(luminosity.offset);
+  proto_out.set_lightness_offset(lightness.offset);
 }
 
 void EncodeColorFunctionParameters(const ColorFunction::ReplaceColor& replace,
@@ -606,12 +606,12 @@ absl::StatusOr<ColorFunction> DecodeColorFunction(
     case proto::ColorFunction::kHueOffsetRadians:
       return ColorFunction{ColorFunction::HueOffset{
           .offset = Angle::Radians(proto.hue_offset_radians())}};
-    case proto::ColorFunction::kSaturationMultiplier:
-      return ColorFunction{ColorFunction::SaturationMultiplier{
-          .multiplier = proto.saturation_multiplier()}};
-    case proto::ColorFunction::kLuminosityOffset:
+    case proto::ColorFunction::kChromaMultiplier:
+      return ColorFunction{ColorFunction::ChromaMultiplier{
+          .multiplier = proto.chroma_multiplier()}};
+    case proto::ColorFunction::kLightnessOffset:
       return ColorFunction{
-          ColorFunction::LuminosityOffset{.offset = proto.luminosity_offset()}};
+          ColorFunction::LightnessOffset{.offset = proto.lightness_offset()}};
     case proto::ColorFunction::FUNCTION_NOT_SET:
       break;
   }

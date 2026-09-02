@@ -107,8 +107,8 @@ proto::MeshFormat::AttributeId EncodeMeshAttributeId(
   switch (id) {
     case MeshFormat::AttributeId::kPosition:
       return proto::MeshFormat::ATTR_ID_POSITION;
-    case MeshFormat::AttributeId::kColorShiftHsl:
-      return proto::MeshFormat::ATTR_ID_COLOR_SHIFT_HSL;
+    case MeshFormat::AttributeId::kColorShiftHcl:
+      return proto::MeshFormat::ATTR_ID_COLOR_SHIFT_HCL;
     case MeshFormat::AttributeId::kOpacityShift:
       return proto::MeshFormat::ATTR_ID_OPACITY_SHIFT;
     case MeshFormat::AttributeId::kTexture:
@@ -154,8 +154,8 @@ absl::StatusOr<MeshFormat::AttributeId> DecodeMeshAttributeId(
   switch (id_proto) {
     case proto::MeshFormat::ATTR_ID_POSITION:
       return MeshFormat::AttributeId::kPosition;
-    case proto::MeshFormat::ATTR_ID_COLOR_SHIFT_HSL:
-      return MeshFormat::AttributeId::kColorShiftHsl;
+    case proto::MeshFormat::ATTR_ID_COLOR_SHIFT_HCL:
+      return MeshFormat::AttributeId::kColorShiftHcl;
     case proto::MeshFormat::ATTR_ID_OPACITY_SHIFT:
       return MeshFormat::AttributeId::kOpacityShift;
     case proto::MeshFormat::ATTR_ID_TEXTURE:

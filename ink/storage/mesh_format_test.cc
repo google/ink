@@ -100,7 +100,7 @@ TEST(MeshTest, EncodeMeshFormatClearsExistingProto) {
 
   absl::StatusOr<MeshFormat> format =
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
-                           MeshFormat::AttributeId::kColorShiftHsl},
+                           MeshFormat::AttributeId::kColorShiftHcl},
                           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                            MeshFormat::AttributeId::kPosition}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
@@ -110,7 +110,7 @@ TEST(MeshTest, EncodeMeshFormatClearsExistingProto) {
   proto::MeshFormat expected_proto;
   expected_proto.add_attribute_types(
       proto::MeshFormat::ATTR_TYPE_FLOAT4_PACKED_IN_ONE_FLOAT);
-  expected_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_COLOR_SHIFT_HSL);
+  expected_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_COLOR_SHIFT_HCL);
   expected_proto.add_attribute_types(
       proto::MeshFormat::ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT);
   expected_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_POSITION);

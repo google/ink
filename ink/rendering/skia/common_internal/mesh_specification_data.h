@@ -162,7 +162,7 @@ struct MeshSpecificationData {
   // Returns an invalid argument error if `mesh_format` is not supported.
   // Support requirements:
   //   * The format must contain all properties of an `InProgressStroke` vertex
-  //     with the exception of HSL color shift, which is optional.
+  //     with the exception of HCL color shift, which is optional.
   //   * The following `MeshFormat::Attribute`s must be at adjacent indices in
   //     the format:
   //       a. position immediately followed by opacity-shift

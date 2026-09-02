@@ -877,12 +877,12 @@ TEST(InProgressStrokeTest, CopyToStrokeOmitUnneededAttributes) {
   // `RetainAttributes::kUsedByThisBrush`.
   ASSERT_EQ(stroke.BrushCoatCount(), 1u);
   EXPECT_THAT(GetAttributeIds(stroke.GetMeshFormat(0)),
-              Contains(MeshFormat::AttributeId::kColorShiftHsl));
+              Contains(MeshFormat::AttributeId::kColorShiftHcl));
   Stroke finished_stroke =
       stroke.CopyToStroke(InProgressStroke::RetainAttributes::kUsedByThisBrush);
   ASSERT_EQ(finished_stroke.GetShape().RenderGroupCount(), 1u);
   EXPECT_THAT(GetAttributeIds(finished_stroke.GetShape().RenderGroupFormat(0)),
-              Not(Contains(MeshFormat::AttributeId::kColorShiftHsl)));
+              Not(Contains(MeshFormat::AttributeId::kColorShiftHcl)));
 
   // The position data should be unaffected by the omission of other attributes.
   EXPECT_THAT(

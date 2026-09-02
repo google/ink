@@ -64,53 +64,64 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
     // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:apply_opacity_shift)
 
-    // Returns a new *unpremultiplied* color by applying `hslShift` and
-    // `opacityShift` to `colorUnpremul`. Both the input color and the output
-    // color are unpremultiplied linear sRGB, and may include RGB values outside
-    // the range [0, 1], e.g. for wide-gamut colors. The current implementation
-    // performs the shift in the YIQ color space, using the Rec. 601 primaries,
-    // though it might be better to use the sRGB primaries instead.
-    //
-    // NOTE: there is no separate `applyHSLShift()` taking two `float3`s to help
-    // prevent accidentally passing arguments in the wrong order.
-    //
-    // LINT.IfChange(apply_hsl_and_opacity_shift)
+    // LINT.IfChange(oklab_transform)
     R"(
-    float4 applyHSLAndOpacityShift(const float3 hslShift,
-                                   const float opacityShift,
-                                   const float4 colorUnpremul) {
-      float3 rgb = colorUnpremul.rgb;
+    float4 convertLinearSrgbToOklab(const float4 rgbaUnpremul) {
+      float3 rgb = rgbaUnpremul.rgb;
 
-      float y = dot(rgb, float3(0.299,  0.587,  0.114));
-      float i = dot(rgb, float3(0.596, -0.275, -0.321));
-      float q = dot(rgb, float3(0.212, -0.523,  0.311));
+      float3 lms = float3(
+          dot(rgb, float3(0.4122214708, 0.5363325363, 0.0514459929)),
+          dot(rgb, float3(0.2119034982, 0.6806995451, 0.1073969566)),
+          dot(rgb, float3(0.0883024619, 0.2817188376, 0.6299787005)));
+      // Sign-preserving cube root (SkSL has no cbrt function).
+      lms = sign(lms) * pow(abs(lms), float3(1.0 / 3.0));
 
-      // When colorUnpremul.rgb is pure black, (y, i, q) == (0, 0, 0), and
-      // atan(0, 0) is undefined. To avoid that, we set hueRadians to 0 in that
-      // case. Generally we aim to avoid branching in the shader for
-      // performance, but in this case the branching is on a uniform value,
-      // which is not an issue for performance like branching on a vertex
-      // attribute value is.
-      float hueRadians = colorUnpremul.rgb == float3(0, 0, 0) ? 0 : atan(q, i);
-
-      float chroma = sqrt(i * i + q * q);
-
-      hueRadians -= hslShift.x * radians(360);
-      chroma *= (hslShift.y + 1);
-      y += hslShift.z;
-      i = chroma * cos(hueRadians);
-      q = chroma * sin(hueRadians);
-
-      float3 yiq = float3(y, i, q);
-      rgb = float3(dot(yiq, float3(1,  0.956,  0.621)),
-                   dot(yiq, float3(1, -0.272, -0.647)),
-                   dot(yiq, float3(1, -1.107,  1.704)));
-      return float4(rgb, applyOpacityShift(opacityShift, colorUnpremul.a));
+      return float4(
+          dot(lms, float3(0.2104542553,  0.7936177850, -0.0040720468)),
+          dot(lms, float3(1.9779984951, -2.4285922050,  0.4505937099)),
+          dot(lms, float3(0.0259040371,  0.7827717662, -0.8086757660)),
+          rgbaUnpremul.a);
     })"
     // LINT.ThenChange(
-    //     ../../../brush/color_function.cc:yiq_transform,
-    //     ../../../rendering/webgpu/StrokeShader.wgsl:apply_hsl_and_opacity_shift,
-    //     ../../../strokes/internal/stroke_subtraction.cc:hsl_shift_linear_space)
+    //     ../../../brush/color_function.cc:oklab_transform,
+    //     ../../../rendering/webgpu/StrokeShader.wgsl:oklab_transform)
+
+    // Returns a new *unpremultiplied* color by applying `hclShift` and
+    // `opacityShift` to `colorUnpremul`. Both the input color and the output
+    // color are unpremultiplied linear sRGB, and may include RGB values outside
+    // the range [0, 1], e.g. for wide-gamut colors. The shift is performed in
+    // the Oklab color space; see https://bottosson.github.io/posts/oklab/ for
+    // details on the conversion formulae.
+    //
+    // NOTE: there is no separate `applyHCLShift()` taking two `float3`s to help
+    // prevent accidentally passing arguments in the wrong order.
+    //
+    // LINT.IfChange(apply_hcl_and_opacity_shift)
+    R"(
+    float4 applyHCLAndOpacityShiftToOklab(const float3 hclShift,
+                                          const float opacityShift,
+                                          const float4 oklabUnpremul) {
+      float L = oklabUnpremul.x;
+      float a = oklabUnpremul.y;
+      float b = oklabUnpremul.z;
+
+      float chroma = sqrt(a * a + b * b);
+      // When (a, b) == (0, 0), atan(0, 0) is undefined. Set hueRadians to 0
+      // in that case.
+      float hueRadians = (a == 0.0 && b == 0.0) ? 0.0 : atan(b, a);
+
+      hueRadians += hclShift.x * radians(360.0);
+      chroma *= (hclShift.y + 1.0);
+      L += hclShift.z;
+      a = chroma * cos(hueRadians);
+      b = chroma * sin(hueRadians);
+
+      return float4(L, a, b, applyOpacityShift(opacityShift, oklabUnpremul.a));
+    })"
+    // LINT.ThenChange(
+    //     ../../../brush/color_function.cc:hcl_transform,
+    //     ../../../rendering/webgpu/StrokeShader.wgsl:apply_hcl_and_opacity_shift,
+    //     ../../../strokes/internal/stroke_subtraction.cc:hcl_shift_linear_space)
 
     // Decodes the values of the side and forward margins given the side and
     // forward `labels`.
@@ -416,14 +427,14 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     //     ../../../strokes/internal/stroke_vertex.cc:label_packing,
     //     ../../../rendering/webgpu/StrokeShader.wgsl:derivative_and_label_unpacking)
 
-    // Unpacks an HSL color-shift value into a `float3` from one of the
+    // Unpacks an HCL color-shift value into a `float3` from one of the
     // supported "packed" types.
-    // LINT.IfChange(hsl_shift_unpacking)
+    // LINT.IfChange(hcl_shift_unpacking)
     R"(
-    float3 unpackHSLColorShift(const float3 unpackedValue) {
+    float3 unpackHCLColorShift(const float3 unpackedValue) {
       return unpackedValue;
     }
-    float3 unpackHSLColorShift(const half4 packedValue0To1) {
+    float3 unpackHCLColorShift(const half4 packedValue0To1) {
       float4 packedValue0To255 = floor(255.0 * packedValue0To1 + 0.5);
       return float3(
           4.0 * packedValue0To255.x + floor(packedValue0To255.y / 64.0),
@@ -432,8 +443,8 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
       ) / 511.0 - float3(1.0);
     })"
     // LINT.ThenChange(
-    //     ../../../strokes/internal/stroke_vertex.cc:hsl_packing,
-    //     ../../../rendering/webgpu/StrokeShader.wgsl:hsl_shift_unpacking)
+    //     ../../../strokes/internal/stroke_vertex.cc:hcl_packing,
+    //     ../../../rendering/webgpu/StrokeShader.wgsl:hcl_shift_unpacking)
 
     // Unpacks a surface UV value into a `float2` from one of the supported
     // "packed" types.

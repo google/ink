@@ -32,8 +32,8 @@ fuzztest::Domain<BrushTipState> ValidBrushTipState() {
       /*pinch=*/fuzztest::InRange<float>(0, 1),
       /*paint_animation_progress_offset=*/fuzztest::InRange<float>(0, 1),
       /*hue_offset_in_full_turns=*/fuzztest::InRange<float>(0, 1),
-      /*saturation_multiplier=*/fuzztest::InRange<float>(0, 2),
-      /*luminosity_shift=*/fuzztest::InRange<float>(-1, 1),
+      /*chroma_multiplier=*/fuzztest::InRange<float>(0, 2),
+      /*lightness_offset=*/fuzztest::InRange<float>(-1, 1),
       /*opacity_multiplier=*/fuzztest::InRange<float>(0, 2));
 }
 

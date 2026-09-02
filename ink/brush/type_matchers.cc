@@ -60,17 +60,16 @@ MATCHER_P(HueOffsetParametersEqMatcher, expected, "") {
       arg, result_listener);
 }
 
-MATCHER_P(SaturationMultiplierParametersEqMatcher, expected, "") {
+MATCHER_P(ChromaMultiplierParametersEqMatcher, expected, "") {
   return ExplainMatchResult(
-      AllOf(Field("multiplier",
-                  &ColorFunction::SaturationMultiplier::multiplier,
+      AllOf(Field("multiplier", &ColorFunction::ChromaMultiplier::multiplier,
                   FloatEq(expected.multiplier))),
       arg, result_listener);
 }
 
-MATCHER_P(LuminosityOffsetParametersEqMatcher, expected, "") {
+MATCHER_P(LightnessOffsetParametersEqMatcher, expected, "") {
   return ExplainMatchResult(
-      AllOf(Field("offset", &ColorFunction::LuminosityOffset::offset,
+      AllOf(Field("offset", &ColorFunction::LightnessOffset::offset,
                   FloatEq(expected.offset))),
       arg, result_listener);
 }
@@ -95,15 +94,15 @@ MATCHER_P(ReplaceColorParametersEqMatcher, expected, "") {
 }
 
 [[maybe_unused]] Matcher<ColorFunction::Parameters> ColorFunctionParametersEq(
-    ColorFunction::SaturationMultiplier saturation) {
-  return VariantWith<ColorFunction::SaturationMultiplier>(
-      SaturationMultiplierParametersEqMatcher(saturation));
+    ColorFunction::ChromaMultiplier chroma) {
+  return VariantWith<ColorFunction::ChromaMultiplier>(
+      ChromaMultiplierParametersEqMatcher(chroma));
 }
 
 [[maybe_unused]] Matcher<ColorFunction::Parameters> ColorFunctionParametersEq(
-    ColorFunction::LuminosityOffset luminosity) {
-  return VariantWith<ColorFunction::LuminosityOffset>(
-      LuminosityOffsetParametersEqMatcher(luminosity));
+    ColorFunction::LightnessOffset lightness) {
+  return VariantWith<ColorFunction::LightnessOffset>(
+      LightnessOffsetParametersEqMatcher(lightness));
 }
 
 [[maybe_unused]] Matcher<ColorFunction::Parameters> ColorFunctionParametersEq(

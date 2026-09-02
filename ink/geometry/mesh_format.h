@@ -159,7 +159,7 @@ class MeshFormat {
   // LINT.IfChange(attribute_id)
   enum class AttributeId : uint8_t {
     kPosition,
-    kColorShiftHsl,
+    kColorShiftHcl,
     kOpacityShift,
     kTexture,
     kSideDerivative,

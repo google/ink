@@ -72,11 +72,11 @@ MeshFormat MakeFormatWithSkippedAttribute(
   return *new_format;
 }
 
-TEST(CreateMeshSpecificationTest, MakeForStrokeWithoutHslColorShift) {
+TEST(CreateMeshSpecificationTest, MakeForStrokeWithoutHclColorShift) {
   absl::StatusOr<MeshSpecificationData> data =
       MeshSpecificationData::CreateForStroke(MakeFormatWithSkippedAttribute(
           StrokeVertex::FullMeshFormat(),
-          MeshFormat::AttributeId::kColorShiftHsl));
+          MeshFormat::AttributeId::kColorShiftHcl));
   ASSERT_THAT(data, IsOk());
   EXPECT_THAT(CreateMeshSpecification(*data), IsOkAndHolds(Pointer(NotNull())));
 }

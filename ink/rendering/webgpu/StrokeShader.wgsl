@@ -132,7 +132,7 @@ struct Uniforms {
   // Offsets of each renderer vertex attribute in bytes.
   // A negative value means the attribute is not present.
   positionAndOpacityShiftOffset: u32,
-  hslShiftOffset: i32,
+  hclShiftOffset: i32,
   sideDerivativeAndLabelOffset: i32,
 
   // ===========================================================================
@@ -293,49 +293,82 @@ fn unpackDerivativeAndLabel(unpackingTransform: vec4<f32>,
 }
 // LINT.ThenChange(../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:label_packing)
 
-// LINT.IfChange(hsl_shift_unpacking)
-fn unpackHSLColorShift(packedValue0To255: vec4<f32>) -> vec3<f32> {
+// LINT.IfChange(hcl_shift_unpacking)
+fn unpackHCLColorShift(packedValue0To255: vec4<f32>) -> vec3<f32> {
   return vec3<f32>(
     4.0 * packedValue0To255.x + floor(packedValue0To255.y / 64.0),
     1024.0 * fract(packedValue0To255.y / 64.0) + floor(packedValue0To255.z / 16.0),
     1024.0 * fract(packedValue0To255.z / 16.0) + packedValue0To255.w / 4.0
   ) / 511.0 - vec3<f32>(1.0);
 }
-// LINT.ThenChange(../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:hsl_shift_unpacking)
+// LINT.ThenChange(../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:hcl_shift_unpacking)
 
-// LINT.IfChange(apply_hsl_and_opacity_shift)
-fn applyHSLAndOpacityShift(hslShift: vec3<f32>,
-                           opacityShift: f32,
-                           colorUnpremul: vec4<f32>) -> vec4<f32> {
-  var rgb = colorUnpremul.rgb;
+// LINT.IfChange(oklab_transform)
+fn convertLinearSrgbToOklab(rgbaUnpremul: vec4<f32>) -> vec4<f32> {
+  var rgb = rgbaUnpremul.rgb;
 
-  var y = dot(rgb, vec3<f32>(0.299,  0.587,  0.114));
-  var i = dot(rgb, vec3<f32>(0.596, -0.275, -0.321));
-  var q = dot(rgb, vec3<f32>(0.212, -0.523,  0.311));
+  var lms = vec3<f32>(
+    dot(rgb, vec3<f32>(0.4122214708, 0.5363325363, 0.0514459929)),
+    dot(rgb, vec3<f32>(0.2119034982, 0.6806995451, 0.1073969566)),
+    dot(rgb, vec3<f32>(0.0883024619, 0.2817188376, 0.6299787005))
+  );
+  // Sign-preserving cube root (WGSL has no cbrt function).
+  lms = sign(lms) * pow(abs(lms), vec3<f32>(1.0 / 3.0));
+
+  return vec3<f32>(
+    dot(lms, vec3<f32>(0.2104542553,  0.7936177850, -0.0040720468)),
+    dot(lms, vec3<f32>(1.9779984951, -2.4285922050,  0.4505937099)),
+    dot(lms, vec3<f32>(0.0259040371,  0.7827717662, -0.8086757660)),
+    rgbaUnpremul.a
+  );
+}
+
+fn convertOklabToLinearSrgb(oklabUnpremul: vec4<f32>) -> vec4<f32> {
+  var lab = oklabUnpremul.xyz;
+
+  lms = vec3<f32>(
+    dot(lab, vec3<f32>(1.0,  0.3963377774,  0.2158037573)),
+    dot(lab, vec3<f32>(1.0, -0.1055613458, -0.0638541728)),
+    dot(lab, vec3<f32>(1.0, -0.0894841775, -1.2914855480))
+  );
+  lms = lms * lms * lms;
+
+  return vec4<f32>(
+    dot(lms, vec3<f32>( 4.0767416621, -3.3077115913,  0.2309699292)),
+    dot(lms, vec3<f32>(-1.2684380046,  2.6097574011, -0.3413193965)),
+    dot(lms, vec3<f32>(-0.0041960863, -0.7034186147,  1.7076147010)),
+    oklabUnpremul.a
+  );
+}
+// LINT.ThenChange(
+//     ../../brush/color_function.cc:oklab_transform,
+//     ../skia/common_internal/sksl_fragment_shader_helper_functions.h:oklab_transform,
+//     ../skia/common_internal/sksl_vertex_shader_helper_functions.h:oklab_transform,
+// )
+
+// LINT.IfChange(apply_hcl_and_opacity_shift)
+fn applyHCLAndOpacityShiftToOklab(hclShift: vec3<f32>,
+                                  opacityShift: f32,
+                                  oklabUnpremul: vec4<f32>) -> vec4<f32> {
+  var L = oklabUnpremul.x;
+  var a = oklabUnpremul.y;
+  var b = oklabUnpremul.z;
 
   var hueRadians = 0.0;
-  if (any(colorUnpremul.rgb != vec3<f32>(0.0, 0.0, 0.0))) {
-    hueRadians = atan2(q, i);
+  if (a != 0.0 || b != 0.0) {
+    hueRadians = atan2(b, a);
   }
+  var chroma = sqrt(a * a + b * b);
 
-  let chroma = sqrt(i * i + q * q);
+  hueRadians += hclShift.x * radians(360.0);
+  chroma *= (hclShift.y + 1.0);
+  L += hclShift.z;
+  a = chroma * cos(hueRadians);
+  b = chroma * sin(hueRadians);
 
-  hueRadians -= hslShift.x * 6.283185307179586;
-  let newChroma = chroma * (hslShift.y + 1.0);
-  let newY = y + hslShift.z;
-  
-  let newI = newChroma * cos(hueRadians);
-  let newQ = newChroma * sin(hueRadians);
-
-  let yiq = vec3<f32>(newY, newI, newQ);
-  rgb = vec3<f32>(
-    dot(yiq, vec3<f32>(1.0,  0.956,  0.621)),
-    dot(yiq, vec3<f32>(1.0, -0.272, -0.647)),
-    dot(yiq, vec3<f32>(1.0, -1.107,  1.704))
-  );
-  return vec4<f32>(rgb, applyOpacityShift(opacityShift, colorUnpremul.a));
+  return vec4<f32>(L, a, b, applyOpacityShift(opacityShift, colorUnpremul.a));
 }
-// LINT.ThenChange(../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hsl_and_opacity_shift)
+// LINT.ThenChange(../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hcl_and_opacity_shift)
 
 // LINT.IfChange(decode_margins)
 fn decodeMargins(labels: vec2<f32>) -> vec2<f32> {
@@ -458,7 +491,7 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
       uniforms.sideDerivativeAndLabelOffset >= 0 &&
       uniforms.forwardDerivativeAndLabelOffset >= 0;
   let surfaceUvEnabled = uniforms.surfaceUvAndAnimationOffsetOffset >= 0;
-  let hslShiftEnabled = uniforms.hslShiftOffset >= 0;
+  let hclShiftEnabled = uniforms.hclShiftOffset >= 0;
   let stride = u32(abs(uniforms.vertexStride));
   let floatOffset = (vertexID * stride) / 4u;
   let positionAndOpacityShiftFloatOffset = uniforms.positionAndOpacityShiftOffset / 4u;
@@ -475,16 +508,16 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
     surfaceUvFloatOffset = u32(uniforms.surfaceUvAndAnimationOffsetOffset) / 4u;
   }
 
-  var hslShiftFloatOffset = 0xffffffffu;
-  if (hslShiftEnabled) {
-    hslShiftFloatOffset = u32(uniforms.hslShiftOffset) / 4u;
+  var hclShiftFloatOffset = 0xffffffffu;
+  if (hclShiftEnabled) {
+    hclShiftFloatOffset = u32(uniforms.hclShiftOffset) / 4u;
   }
 
   var pos = vec2<f32>(0.0, 0.0);
   var opacityShift = 0.0;
   var sideDerivativeAndLabel = vec3<f32>(0.0, 0.0, 0.0);
   var forwardDerivativeAndLabel = vec3<f32>(0.0, 0.0, 0.0);
-  var hslShift = vec3<f32>(0.0, 0.0, 0.0);
+  var hclShift = vec3<f32>(0.0, 0.0, 0.0);
   var surfaceUV = vec2<f32>(0.0, 0.0);
 
   if (isPackedVertexData) {
@@ -503,9 +536,9 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
         ubyte4AsF32To4xF32In0To255(vertices[floatOffset + forwardDerivativeAndLabelFloatOffset]));
     }
 
-    if (hslShiftEnabled) {
-      hslShift = unpackHSLColorShift(
-        ubyte4AsF32To4xF32In0To255(vertices[floatOffset + hslShiftFloatOffset]));
+    if (hclShiftEnabled) {
+      hclShift = unpackHCLColorShift(
+        ubyte4AsF32To4xF32In0To255(vertices[floatOffset + hclShiftFloatOffset]));
     }
     if (surfaceUvEnabled) {
       surfaceUV = unpackSurfaceUv(
@@ -536,11 +569,11 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
       );
     }
 
-    if (hslShiftEnabled) {
-      hslShift = vec3<f32>(
-        vertices[floatOffset + hslShiftFloatOffset],
-        vertices[floatOffset + hslShiftFloatOffset + 1u],
-        vertices[floatOffset + hslShiftFloatOffset + 2u]);
+    if (hclShiftEnabled) {
+      hclShift = vec3<f32>(
+        vertices[floatOffset + hclShiftFloatOffset],
+        vertices[floatOffset + hclShiftFloatOffset + 1u],
+        vertices[floatOffset + hclShiftFloatOffset + 2u]);
     }
   }
 
@@ -576,8 +609,8 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
   out.position = uniforms.projectionTransform * objectToCanvasTransform *
     vec4<f32>(pos, 0.0, 1.0);
 
-  let shiftedColorAndAlpha = applyHSLAndOpacityShift(hslShift, opacityShift, uniforms.color);
-  out.color = vec4<f32>(shiftedColorAndAlpha.rgb * shiftedColorAndAlpha.a, shiftedColorAndAlpha.a);
+  let colorOklab = convertLinearSrgbToOklab(uniforms.color);
+  out.color = applyHCLAndOpacityShiftToOklab(hclShift, opacityShift, colorOklab);
 
   return out;
 }
@@ -588,7 +621,8 @@ fn fragmentMain(in: VertexOut) -> @location(0) vec4<f32> {
       uniforms.sideDerivativeAndLabelOffset >= 0 &&
       uniforms.forwardDerivativeAndLabelOffset >= 0;
 
-  var color = in.color;
+  var color = convertOklabToLinearSrgb(in.color);
+  color.rgb *= colorRgba.a;
   if (aaEnabled) {
     color *= simulatedPixelCoverage(in.aaPixelsPerDimension,
                                     in.aaNormalizedToEdgeLRFB,
