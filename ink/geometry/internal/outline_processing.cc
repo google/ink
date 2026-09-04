@@ -1217,4 +1217,35 @@ ShapeOutline ComputeSubtraction(const ShapeOutline& shape_a,
   return ShapeOutline(StitchIntersectionChains(std::move(raw_chains)));
 }
 
+std::vector<Segment> SubtractSegment(const Segment& segment,
+                                     const ShapeOutline& shape) {
+  // Represent the segment as a degenerate `ShapeOutline` to reuse outline
+  // processing utilities.
+  int orientation = IsLeftOrBelow(segment.start, segment.end) ? 1 : -1;
+  ShapeOutline segment_shape(
+      {MonotoneChain({segment.start, segment.end}, orientation)});
+
+  // Find the intersections between `segment` and boundary of `shape`.
+  // `FindBoundaryIntersections` returns a list of pair of lists of
+  // intersections for each of `segment_shape` and `shape` and each chain; we
+  // only care about the intersections on the first and only chain in
+  // `segment_shape`.
+  absl::InlinedVector<ChainIntersection, 2> intersections =
+      FindBoundaryIntersections(segment_shape, shape).first.at(0);
+
+  // Extract the sub-segments that are outside of `shape`.
+  std::vector<MonotoneChain> pieces;
+  SliceChain(segment_shape.Chains()[0], intersections,
+             /*is_subtracted=*/false, shape, pieces);
+  std::vector<Segment> result;
+  result.reserve(pieces.size());
+  for (const MonotoneChain& piece : pieces) {
+    result.push_back(Segment{piece.StartPoint(), piece.EndPoint()});
+  }
+
+  if (orientation == -1) absl::c_reverse(result);
+
+  return result;
+}
+
 }  // namespace ink::geometry_internal

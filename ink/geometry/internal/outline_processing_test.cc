@@ -24,11 +24,14 @@
 #include "ink/geometry/internal/test_matchers.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
+#include "ink/geometry/segment.h"
 #include "ink/geometry/triangle.h"
 
 namespace ink::geometry_internal {
 namespace {
 
+using ::testing::ElementsAre;
+using ::testing::IsEmpty;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
@@ -1049,6 +1052,87 @@ TEST(ComputeSubtractionTests, VertexVertexNontransverse3) {
   ShapeOutline result = ComputeSubtraction(shape_abc, shape_bde);
 
   EXPECT_THAT(result, ShapeOutlineNear(shape_abc, kFloatTolerance));
+}
+
+TEST(SubtractSegmentTests, DisjointSegment) {
+  //           F-----------E
+  //           |           |       B
+  //           |           |      /
+  //           |           |     /
+  //           |           |    A
+  //           C-----------D
+  Point A{5, -1}, B{6, 1}, C{-2, -2}, D{2, -2}, E{2, 2}, F{-2, 2};
+
+  Segment segment{A, B};
+  ShapeOutline quad({{{C, D, E}, 1}, {{C, F, E}, -1}});
+
+  std::vector<Segment> result = SubtractSegment(segment, quad);
+  EXPECT_THAT(result, ElementsAre(segment));
+}
+
+TEST(SubtractSegmentTests, PartiallyErasedSegment) {
+  //           F-----------E
+  //           |           |
+  //           |      B    |
+  //           |     /     |
+  //           |    /      |
+  //           C---/-------D
+  //              /
+  //             A
+  Point A{-1, -3}, B{1, 1}, C{-2, -2}, D{2, -2}, E{2, 2}, F{-2, 2};
+  Point X{-0.5, -2};  // Intersection of AB and CD
+
+  Segment segment{A, B};
+  ShapeOutline quad({{{C, D, E}, 1}, {{C, F, E}, -1}});
+
+  std::vector<Segment> result = SubtractSegment(segment, quad);
+  EXPECT_THAT(result, ElementsAre(Segment{A, X}));
+}
+
+TEST(SubtractSegmentTests, ErasedSegmentWithMultiplePieces) {
+  //         F-------------------E
+  //         |                   |
+  //         |      J-----K      |
+  //         |      |     |      |
+  //    B----|------|-----|------|-----A
+  //         |      |     |      |
+  //  H------G      I-----L      |
+  //  |                          |
+  //  |                          |
+  //  |                          |
+  //  C--------------------------D
+  Point A{16, 8}, B{0, 8};
+  Point C{0, 0}, D{14, 0}, E{14, 12}, F{4, 12}, G{4, 6}, H{0, 6};
+  Point I{7, 6}, J{7, 9}, K{10, 9}, L{10, 6};
+  Point X1{4, 8};   // Intersection of AB and FG
+  Point X2{7, 8};   // Intersection of AB and IJ
+  Point X3{10, 8};  // Intersection of AB and KL
+  Point X4{14, 8};  // Intersection of AB and ED
+
+  Segment segment{A, B};
+  ShapeOutline shape(
+      {{{C, D, E}, 1}, {{I, J, K}, 1}, {{C, H, G, F, E}, -1}, {{I, L, K}, -1}});
+
+  std::vector<Segment> result = SubtractSegment(segment, shape);
+
+  EXPECT_THAT(result,
+              ElementsAre(Segment{A, X4}, Segment{X3, X2}, Segment{X1, B}));
+}
+
+TEST(SubtractSegmentTests, FullyErasedSegment) {
+  //           F-----------E
+  //           |     B     |
+  //           |    /      |
+  //           |   /       |
+  //           |  A        |
+  //           C-----------D
+  Point A{-1, 1}, B{1, 1}, C{-2, -2}, D{2, -2}, E{2, 2}, F{-2, 2};
+
+  Segment segment{A, B};
+  ShapeOutline quad({{{C, D, E}, 1}, {{C, F, E}, -1}});
+
+  std::vector<Segment> result = SubtractSegment(segment, quad);
+  EXPECT_THAT(result, IsEmpty());
 }
 }  // namespace
 }  // namespace ink::geometry_internal

@@ -21,6 +21,7 @@
 #include "absl/types/span.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/rect.h"
+#include "ink/geometry/segment.h"
 #include "ink/geometry/triangle.h"
 
 namespace ink::geometry_internal {
@@ -142,9 +143,17 @@ std::vector<std::vector<Point>> ComputeBoundaryLoops(const ShapeOutline& shape);
 std::pair<std::vector<Point>, std::vector<std::array<uint32_t, 3>>>
 ComputeTriangulation(const ShapeOutline& shape);
 
-// Computes the boolean difference (shape_a - shape_b) of two shapes.
+// Computes the boolean difference (`shape_a` - `shape_b`) of two non-degenerate
+// (i.e. with no collapsed boundaries) shapes. Here by non-degenerate we mean
+// that the shape has a
 ShapeOutline ComputeSubtraction(const ShapeOutline& shape_a,
                                 const ShapeOutline& shape_b);
+
+// Computes the boolean difference (`segment` - `shape`) of a non-degenerate
+//  segment (i.e. of non-zero length) and returns the result as a list of
+//  sub-segments.
+std::vector<Segment> SubtractSegment(const Segment& segment,
+                                     const ShapeOutline& shape);
 
 }  // namespace ink::geometry_internal
 
