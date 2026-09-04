@@ -63,10 +63,11 @@ constexpr absl::string_view kAnimationRepeatModeName = "uAnimationRepeatMode";
 // Shared fragment shader used for both InProgressStroke and Stroke.
 constexpr absl::string_view kFragmentMain = R"(
   float2 main(const Varyings varyings, out float4 color) {
-    color =
-      varyings.color * simulatedPixelCoverage(varyings.pixelsPerDimension,
-                                              varyings.normalizedToEdgeLRFB,
-                                              varyings.outsetPixelsLRFB);
+    float4 rgba = convertOklabToLinearSrgb(varyings.colorOklab);
+    rgba.rgb *= rgba.a;
+    color = rgba * simulatedPixelCoverage(varyings.pixelsPerDimension,
+                                          varyings.normalizedToEdgeLRFB,
+                                          varyings.outsetPixelsLRFB);
     return varyings.textureCoords;
   })";
 
@@ -146,10 +147,9 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
             varyings.normalizedToEdgeLRFB,
             varyings.outsetPixelsLRFB);
 
-        varyings.color = applyHSLAndOpacityShift(
+        varyings.colorOklab = applyHSLAndOpacityShift(
             attributes.hslShift, attributes.positionAndOpacityShift.z,
-            uBrushColor);
-        varyings.color.rgb *= varyings.color.a;
+            convertLinearSrgbToOklab(uBrushColor));
 
         if (uTextureMapping == 1) {
           varyings.textureCoords = calculateStampingTextureUv(
@@ -213,7 +213,7 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
   return MeshSpecificationData{
       .attributes = rendering_attributes,
       .vertex_stride = kInProgressStrokeFormat.UnpackedVertexStride(),
-      .varyings = {{.type = VaryingType::kFloat4, .name = "color"},
+      .varyings = {{.type = VaryingType::kFloat4, .name = "colorOklab"},
                    {.type = VaryingType::kFloat2, .name = "textureCoords"},
                    {.type = VaryingType::kFloat2, .name = "pixelsPerDimension"},
                    {.type = VaryingType::kFloat4,
@@ -299,14 +299,16 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
             varyings.outsetPixelsLRFB);
   )";
   constexpr absl::string_view kVertexMainColorWithHslShift = R"(
-        varyings.color =
-            applyHSLAndOpacityShift(unpackHSLColorShift(attributes.hslShift),
-                                    positionAndOpacityShift.z, uBrushColor);
-        varyings.color.rgb *= varyings.color.a;
+        varyings.colorOklab = applyHSLAndOpacityShift(
+            unpackHSLColorShift(attributes.hslShift),
+            positionAndOpacityShift.z,
+            convertLinearSrgbToOklab(uBrushColor));
   )";
   constexpr absl::string_view kVertexMainColorWithoutHslShift = R"(
-        float a = applyOpacityShift(positionAndOpacityShift.z, uBrushColor.a);
-        varyings.color = float4(uBrushColor.rgb * a, a);
+        float4 oklab = convertLinearSrgbToOklab(uBrushColor);
+        varyings.colorOklab = float4(
+            oklab.xyz,
+            applyOpacityShift(positionAndOpacityShift.z, oklab.a));
   )";
 
   // There are three cases for computing texture coordinates in the shader.
@@ -378,7 +380,7 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
       .attributes = SmallArray<Attribute, kMaxAttributes>(
           absl::MakeSpan(mesh_specification_attributes)),
       .vertex_stride = mesh_format.PackedVertexStride(),
-      .varyings = {{.type = VaryingType::kFloat4, .name = "color"},
+      .varyings = {{.type = VaryingType::kFloat4, .name = "colorOklab"},
                    {.type = VaryingType::kFloat2, .name = "pixelsPerDimension"},
                    {.type = VaryingType::kFloat4,
                     .name = "normalizedToEdgeLRFB"},

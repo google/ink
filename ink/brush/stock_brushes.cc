@@ -449,8 +449,8 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                                       /*position_offset_range_end=*/0.35f,
                                       /*distance_traveled_range_start=*/0.0f,
                                       /*distance_traveled_range_end=*/0.22f,
-                                      /*luminosity_range_start=*/0.48f,
-                                      /*luminosity_range_end=*/2.0f));
+                                      /*luminosity_range_start=*/0.21f,
+                                      /*luminosity_range_end=*/0.9));
         coats.push_back(MiniEmojiCoat(client_texture_id,
                                       /*tip_scale=*/0.3f,
                                       /*tip_rotation_degrees=*/-35.0f,
@@ -459,8 +459,8 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                                       /*position_offset_range_end=*/0.32f,
                                       /*distance_traveled_range_start=*/0.1f,
                                       /*distance_traveled_range_end=*/0.74f,
-                                      /*luminosity_range_start=*/0.8f,
-                                      /*luminosity_range_end=*/2.0f));
+                                      /*luminosity_range_start=*/0.36f,
+                                      /*luminosity_range_end=*/0.9));
         coats.push_back(MiniEmojiCoat(client_texture_id,
                                       /*tip_scale=*/0.45f,
                                       /*tip_rotation_degrees=*/45.0f,
@@ -469,8 +469,8 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                                       /*position_offset_range_end=*/0.25f,
                                       /*distance_traveled_range_start=*/0.01f,
                                       /*distance_traveled_range_end=*/0.74f,
-                                      /*luminosity_range_start=*/0.8f,
-                                      /*luminosity_range_end=*/2.0f));
+                                      /*luminosity_range_start=*/0.36f,
+                                      /*luminosity_range_end=*/0.9));
       }
       // Emoji stamp coat.
       BrushBehavior distance_to_size_behavior = {

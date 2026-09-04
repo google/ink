@@ -64,12 +64,40 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
     // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:apply_opacity_shift)
 
+    // Converts an (unpremultiplied) color in linear sRGB to Oklab.  For details
+    // on the conversion formula, see https://bottosson.github.io/posts/oklab/
+    // and/or https://en.wikipedia.org/wiki/Oklab_color_space.
+    //
+    // TODO(b/552570769): We should just convert the base brush color to Oklab
+    // once before setting the uniform, rather than doing it over and over for
+    // each vertex.
+    //
+    // LINT.IfChange(oklab_transform)
+    R"(
+    float4 convertLinearSrgbToOklab(const float4 rgbaUnpremul) {
+      float3 rgb = rgbaUnpremul.rgb;
+
+      float3 lms = float3(
+          dot(rgb, float3(0.4122214708, 0.5363325363, 0.0514459929)),
+          dot(rgb, float3(0.2119034982, 0.6806995451, 0.1073969566)),
+          dot(rgb, float3(0.0883024619, 0.2817188376, 0.6299787005)));
+      // Sign-preserving cube root (SkSL has no cbrt function).
+      float3 lms_cbrt = sign(lms) * pow(abs(lms), float3(1.0 / 3.0));
+
+      return float4(
+          dot(lms_cbrt, float3(0.2104542553,  0.7936177850, -0.0040720468)),
+          dot(lms_cbrt, float3(1.9779984951, -2.4285922050,  0.4505937099)),
+          dot(lms_cbrt, float3(0.0259040371,  0.7827717662, -0.8086757660)),
+          rgbaUnpremul.a);
+    })"
+    // LINT.ThenChange(
+    //     ../../../brush/color_function.cc:oklab_transform,
+    //     ../../../rendering/webgpu/StrokeShader.wgsl:oklab_transform)
+
     // Returns a new *unpremultiplied* color by applying `hslShift` and
-    // `opacityShift` to `colorUnpremul`. Both the input color and the output
-    // color are unpremultiplied linear sRGB, and may include RGB values outside
-    // the range [0, 1], e.g. for wide-gamut colors. The current implementation
-    // performs the shift in the YIQ color space, using the Rec. 601 primaries,
-    // though it might be better to use the sRGB primaries instead.
+    // `opacityShift` to `oklabUnpremul`. Both the input color and the output
+    // color are unpremultiplied Oklab, and may include out-of-gamut component
+    // values.
     //
     // NOTE: there is no separate `applyHSLShift()` taking two `float3`s to help
     // prevent accidentally passing arguments in the wrong order.
@@ -78,37 +106,24 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     R"(
     float4 applyHSLAndOpacityShift(const float3 hslShift,
                                    const float opacityShift,
-                                   const float4 colorUnpremul) {
-      float3 rgb = colorUnpremul.rgb;
+                                   const float4 oklabUnpremul) {
+      float L = oklabUnpremul.x;
+      float2 ab = oklabUnpremul.yz;
 
-      float y = dot(rgb, float3(0.299,  0.587,  0.114));
-      float i = dot(rgb, float3(0.596, -0.275, -0.321));
-      float q = dot(rgb, float3(0.212, -0.523,  0.311));
+      float hueOffsetRadians = hslShift.x * radians(360.0);
+      float hueOffsetSin = sin(hueOffsetRadians);
+      float hueOffsetCos = cos(hueOffsetRadians);
+      float chromaMultiplier = hslShift.y + 1.0;
+      float lightnessOffset = hslShift.z;
 
-      // When colorUnpremul.rgb is pure black, (y, i, q) == (0, 0, 0), and
-      // atan(0, 0) is undefined. To avoid that, we set hueRadians to 0 in that
-      // case. Generally we aim to avoid branching in the shader for
-      // performance, but in this case the branching is on a uniform value,
-      // which is not an issue for performance like branching on a vertex
-      // attribute value is.
-      float hueRadians = colorUnpremul.rgb == float3(0, 0, 0) ? 0 : atan(q, i);
+      ab = float2x2(hueOffsetCos, hueOffsetSin, -hueOffsetSin, hueOffsetCos) * ab;
+      ab *= chromaMultiplier;
+      L += lightnessOffset;
 
-      float chroma = sqrt(i * i + q * q);
-
-      hueRadians -= hslShift.x * radians(360);
-      chroma *= (hslShift.y + 1);
-      y += hslShift.z;
-      i = chroma * cos(hueRadians);
-      q = chroma * sin(hueRadians);
-
-      float3 yiq = float3(y, i, q);
-      rgb = float3(dot(yiq, float3(1,  0.956,  0.621)),
-                   dot(yiq, float3(1, -0.272, -0.647)),
-                   dot(yiq, float3(1, -1.107,  1.704)));
-      return float4(rgb, applyOpacityShift(opacityShift, colorUnpremul.a));
+      return float4(L, ab, applyOpacityShift(opacityShift, oklabUnpremul.a));
     })"
     // LINT.ThenChange(
-    //     ../../../brush/color_function.cc:yiq_transform,
+    //     ../../../brush/color_function.cc:hsl_transform,
     //     ../../../rendering/webgpu/StrokeShader.wgsl:apply_hsl_and_opacity_shift,
     //     ../../../strokes/internal/stroke_subtraction.cc:hsl_shift_linear_space)
 

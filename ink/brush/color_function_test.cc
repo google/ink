@@ -269,12 +269,12 @@ TEST(ColorFunctionTest, ApplyHueOffset) {
                   Color::Red())
                   .ClampedToGamut()
                   .AsFloat(Color::Format::kGammaEncoded),
-              ChannelStructNear({0.71, 0, 1, 1}, 1e-2));
+              ChannelStructNear({0.64, 0.31, 1, 1}, 1e-2));
   EXPECT_THAT((ColorFunction{ColorFunction::HueOffset{Angle::Degrees(180)}})(
                   Color::Red())
                   .ClampedToGamut()
                   .AsFloat(Color::Format::kGammaEncoded),
-              ChannelStructNear({0, 0.8, 0.8, 1}, 1e-2));
+              ChannelStructNear({0, 0.66, 0.86, 1}, 1e-2));
 }
 
 TEST(ColorFunctionTest, ApplySaturationMultiplier) {
@@ -285,11 +285,11 @@ TEST(ColorFunctionTest, ApplySaturationMultiplier) {
   EXPECT_THAT(
       (ColorFunction{ColorFunction::SaturationMultiplier{0.5}})(Color::Red())
           .AsFloat(Color::Format::kGammaEncoded),
-      ChannelStructNear({0.83, 0.42, 0.42, 1}, 1e-2));
+      ChannelStructNear({0.79, 0.40, 0.35, 1}, 1e-2));
   EXPECT_THAT(
       (ColorFunction{ColorFunction::SaturationMultiplier{0}})(Color::Red())
           .AsFloat(Color::Format::kGammaEncoded),
-      ChannelStructNear({0.58, 0.58, 0.58, 1}, 1e-2));
+      ChannelStructNear({0.53, 0.53, 0.53, 1}, 1e-2));
 }
 
 TEST(ColorFunctionTest, ApplyLuminosityOffset) {
@@ -298,15 +298,15 @@ TEST(ColorFunctionTest, ApplyLuminosityOffset) {
                   .AsFloat(Color::Format::kGammaEncoded),
               ChannelStructNear({1, 0, 0, 1}, 1e-2));
   EXPECT_THAT(
-      (ColorFunction{ColorFunction::LuminosityOffset{0.5}})(Color::Red())
+      (ColorFunction{ColorFunction::LuminosityOffset{0.25}})(Color::Red())
           .ClampedToGamut()
           .AsFloat(Color::Format::kGammaEncoded),
-      ChannelStructNear({1, 0.74, 0.74, 1}, 1e-2));
+      ChannelStructNear({1, 0.51, 0.42, 1}, 1e-2));
   EXPECT_THAT(
-      (ColorFunction{ColorFunction::LuminosityOffset{-0.5}})(Color::Red())
+      (ColorFunction{ColorFunction::LuminosityOffset{-0.25}})(Color::Red())
           .ClampedToGamut()
           .AsFloat(Color::Format::kGammaEncoded),
-      ChannelStructNear({0.74, 0, 0, 1}, 1e-2));
+      ChannelStructNear({0.63, 0, 0, 1}, 1e-2));
 }
 
 TEST(ColorFunctionTest, ApplyReplaceColor) {

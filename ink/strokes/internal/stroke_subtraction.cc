@@ -111,18 +111,17 @@ std::array<double, 3> ComputeHeights(const Triangle& tri, double det) {
 // Maps HSL shifts to coordinates where they interpolate linearly.
 //
 // The interpolation scheme for HSL shift values is defined via their mapping to
-// linear RGB values, which are interpolated linearly during rasterization.
+// linear Oklab values, which are interpolated linearly during rasterization.
 //
-// The RGB values are obtained by applying the shift to a uniform (vertex
-// independent) base RGB color. Although the shift acts as an affine
-// transformation in RGB space, the transformation's matrix elements are
-// nonlinear in the HSL shift values. This function maps the HSL shift
-// into coordinates in terms of which the affine transformation is linear.
+// The per-vertex Oklab colors are obtained by applying the cylindrical shift to
+// a uniform (vertex independent) base Oklab color. This function maps the HSL
+// shift into coordinates in terms of which linear interpolation will produce
+// better results.
 //
 // LINT.IfChange(hsl_shift_linear_space)
 SmallArray<float, 4> HslShiftToLinearSpace(SmallArray<float, 4> val) {
   ABSL_DCHECK_GE(val.Size(), 2);
-  float hue_shift = 2 * kPi * val[0], saturation_shift = val[1];
+  float hue_shift = 2.0f * kPi * val[0], saturation_shift = val[1];
   val[0] = (saturation_shift + 1) * std::cos(hue_shift);
   val[1] = (saturation_shift + 1) * std::sin(hue_shift);
   return val;

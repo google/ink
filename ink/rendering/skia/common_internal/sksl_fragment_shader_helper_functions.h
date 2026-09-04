@@ -28,6 +28,31 @@ namespace ink::skia_common_internal {
 // literals concatenated by the compiler, which allows insertion of
 // documentation comments for each function.
 inline constexpr absl::string_view kSkSLFragmentShaderHelpers =
+    // Converts an (unpremultiplied) color in Oklab to linear sRGB.  For details
+    // on the conversion formula, see https://bottosson.github.io/posts/oklab/
+    // and/or https://en.wikipedia.org/wiki/Oklab_color_space.
+    //
+    // LINT.IfChange(oklab_transform)
+    R"(
+    float4 convertOklabToLinearSrgb(float4 oklabUnpremul) {
+      float3 lab = oklabUnpremul.xyz;
+
+      float3 lms_cbrt = float3(
+          dot(lab, float3(1.0,  0.3963377774,  0.2158037573)),
+          dot(lab, float3(1.0, -0.1055613458, -0.0638541728)),
+          dot(lab, float3(1.0, -0.0894841775, -1.2914855480)));
+      float3 lms = lms_cbrt * lms_cbrt * lms_cbrt;
+
+      return float4(
+          dot(lms, float3( 4.0767416621, -3.3077115913,  0.2309699292)),
+          dot(lms, float3(-1.2684380046,  2.6097574011, -0.3413193965)),
+          dot(lms, float3(-0.0041960863, -0.7034186147,  1.7076147010)),
+          oklabUnpremul.a);
+    })"
+    // LINT.ThenChange(
+    //     ../../../brush/color_function.cc:oklab_transform,
+    //     ../../../rendering/webgpu/StrokeShader.wgsl:oklab_transform)
+
     // Returns the simulated pixel coverage of the current fragment so that it
     // can be used to perform antialiasing.
     //
