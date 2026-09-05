@@ -1044,7 +1044,7 @@ TEST(StrokeSubtractionTest, AttributeInterpolation) {
   }
 }
 
-TEST(StrokeSubtractionTest, HslColorShiftInterpolation) {
+TEST(StrokeSubtractionTest, HclColorShiftInterpolation) {
   //
   // A-----------B
   //  \  mesh_a /
@@ -1062,7 +1062,7 @@ TEST(StrokeSubtractionTest, HslColorShiftInterpolation) {
 
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttributeType::kFloat2Unpacked, AttributeId::kPosition},
-       {AttributeType::kFloat3Unpacked, AttributeId::kColorShiftHsl}},
+       {AttributeType::kFloat3Unpacked, AttributeId::kColorShiftHcl}},
       IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -1101,20 +1101,21 @@ TEST(StrokeSubtractionTest, HslColorShiftInterpolation) {
 
   std::optional<uint32_t> index_d = FindVertexIndex(result_mesh, D);
   ASSERT_TRUE(index_d.has_value());
-  ink::SmallArray<float, 4> hsl = result_mesh.FloatVertexAttribute(*index_d, 1);
+  ink::SmallArray<float, 4> hcl_shift =
+      result_mesh.FloatVertexAttribute(*index_d, 1);
 
   // Note that D = 3/8 A + 3/8 B + 2/8 C.
-  // Recall also that the HSL values are:
+  // Recall also that the HCL shift values are:
   //  A: (0.9f, 0.5f, 0.4f)
   //  B: (0.8f, 0.5f, 0.8f)
   //  C: (0.1f, 0.4f, 0.2f)
-  EXPECT_THAT(hsl.Values(),
+  EXPECT_THAT(hcl_shift.Values(),
               ElementsAre(
-                  // Hue and saturation are linearly interpolated after mapping
-                  // from polar coordinates to cartesian coordinates.
+                  // Hue and chroma shift are linearly interpolated after
+                  // mapping from polar coordinates to cartesian coordinates.
                   FloatNear(-0.099683f, kFloatTolerance),
                   FloatNear(0.125730f, kFloatTolerance),
-                  // Lightness interpolates linearly.
+                  // Lightness shift interpolates linearly.
                   FloatNear(0.5f, kFloatTolerance)));
 }
 

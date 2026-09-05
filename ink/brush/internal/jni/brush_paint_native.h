@@ -116,12 +116,12 @@ int64_t ColorFunctionNative_createHueOffset(
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str));
 
-int64_t ColorFunctionNative_createSaturationMultiplier(
+int64_t ColorFunctionNative_createChromaMultiplier(
     void* jni_env_pass_through, float multiplier,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str));
 
-int64_t ColorFunctionNative_createLuminosityOffset(
+int64_t ColorFunctionNative_createLightnessOffset(
     void* jni_env_pass_through, float offset,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str));
@@ -138,9 +138,9 @@ float ColorFunctionNative_getOpacityMultiplier(int64_t native_ptr);
 
 float ColorFunctionNative_getHueOffsetDegrees(int64_t native_ptr);
 
-float ColorFunctionNative_getSaturationMultiplier(int64_t native_ptr);
+float ColorFunctionNative_getChromaMultiplier(int64_t native_ptr);
 
-float ColorFunctionNative_getLuminosityOffset(int64_t native_ptr);
+float ColorFunctionNative_getLightnessOffset(int64_t native_ptr);
 
 int64_t ColorFunctionNative_computeReplaceColorLong(
     void* jni_env_pass_through, int64_t native_ptr,

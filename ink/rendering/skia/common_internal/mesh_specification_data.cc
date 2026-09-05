@@ -147,8 +147,8 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
             varyings.normalizedToEdgeLRFB,
             varyings.outsetPixelsLRFB);
 
-        varyings.colorOklab = applyHSLAndOpacityShift(
-            attributes.hslShift, attributes.positionAndOpacityShift.z,
+        varyings.colorOklab = applyHCLAndOpacityShift(
+            attributes.hclShift, attributes.positionAndOpacityShift.z,
             convertLinearSrgbToOklab(uBrushColor));
 
         if (uTextureMapping == 1) {
@@ -191,9 +191,9 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
       .offset = types_and_offsets.position_and_opacity_shift.offset,
       .name = "positionAndOpacityShift"};
 
-  rendering_attributes[1] = {.type = types_and_offsets.hsl_shift->type,
-                             .offset = types_and_offsets.hsl_shift->offset,
-                             .name = "hslShift"};
+  rendering_attributes[1] = {.type = types_and_offsets.hcl_shift->type,
+                             .offset = types_and_offsets.hcl_shift->offset,
+                             .name = "hclShift"};
 
   rendering_attributes[2] = {
       .type = types_and_offsets.side_derivative_and_label.type,
@@ -298,13 +298,13 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
             varyings.normalizedToEdgeLRFB,
             varyings.outsetPixelsLRFB);
   )";
-  constexpr absl::string_view kVertexMainColorWithHslShift = R"(
-        varyings.colorOklab = applyHSLAndOpacityShift(
-            unpackHSLColorShift(attributes.hslShift),
+  constexpr absl::string_view kVertexMainColorWithHclShift = R"(
+        varyings.colorOklab = applyHCLAndOpacityShift(
+            unpackHCLColorShift(attributes.hclShift),
             positionAndOpacityShift.z,
             convertLinearSrgbToOklab(uBrushColor));
   )";
-  constexpr absl::string_view kVertexMainColorWithoutHslShift = R"(
+  constexpr absl::string_view kVertexMainColorWithoutHclShift = R"(
         float4 oklab = convertLinearSrgbToOklab(uBrushColor);
         varyings.colorOklab = float4(
             oklab.xyz,
@@ -362,11 +362,11 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
        .offset = types_and_offsets.forward_derivative_and_label.offset,
        .name = "forwardDerivativeAndLabel"}};
 
-  if (types_and_offsets.hsl_shift.has_value()) {
+  if (types_and_offsets.hcl_shift.has_value()) {
     mesh_specification_attributes.push_back(
-        {.type = types_and_offsets.hsl_shift->type,
-         .offset = types_and_offsets.hsl_shift->offset,
-         .name = "hslShift"});
+        {.type = types_and_offsets.hcl_shift->type,
+         .offset = types_and_offsets.hcl_shift->offset,
+         .name = "hclShift"});
   }
   if (types_and_offsets.surface_uv_and_paint_animation_offset.has_value()) {
     mesh_specification_attributes.push_back(
@@ -411,9 +411,9 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
            {.type = UniformType::kInt, .id = UniformId::kAnimationRepeatMode}},
       .vertex_shader_source = absl::StrCat(
           kSkSLCommonShaderHelpers, kSkSLVertexShaderHelpers, kVertexMainStart,
-          types_and_offsets.hsl_shift.has_value()
-              ? kVertexMainColorWithHslShift
-              : kVertexMainColorWithoutHslShift,
+          types_and_offsets.hcl_shift.has_value()
+              ? kVertexMainColorWithHclShift
+              : kVertexMainColorWithoutHclShift,
           types_and_offsets.surface_uv_and_paint_animation_offset.has_value()
               // TODO: b/330511293 - If there's a surface UV, but no paint
               // animation offset, use `kVertexMainTextureUvWithSurfaceUvOnly`

@@ -44,8 +44,9 @@ namespace ink {
 // tip shape can be circular, or pill-shaped, or a rounded triangle, or a
 // rounded convex quadrilateral.
 //
-// Through `BrushBehavior`s, the tip can also produce a per-vertex HSLA color
-// shift that can be used to augment the `Brush` color when drawing.
+// Through `BrushBehavior`s, the tip can also produce a per-vertex HCLA (hue,
+// chroma, lightness, alpha) color shift that can be used to augment the `Brush`
+// color when drawing.
 //
 // The default parameters produce a static circular tip shape, with diameter
 // equal to the `Brush` size and no color shift.

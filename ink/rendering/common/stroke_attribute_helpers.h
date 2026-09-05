@@ -31,7 +31,7 @@ enum class AttributeType {
   kFloat3 = 2,
   kUByte4 = 4,
 };
-// LINT.ThenChange(../../..//third_party/java/androidx/ink/rendering/main/android/canvas/internal/CanvasMeshRenderer.android.kt:shader_variable_types)
+// LINT.ThenChange(../../../java/androidx/ink/rendering/main/android/canvas/internal/CanvasMeshRenderer.android.kt:shader_variable_types)
 
 // Vertex attribute type and offset.
 struct TypeAndByteOffset {
@@ -41,7 +41,7 @@ struct TypeAndByteOffset {
 
 struct StrokeAttributeTypesAndOffsets {
   TypeAndByteOffset position_and_opacity_shift;
-  std::optional<TypeAndByteOffset> hsl_shift;
+  std::optional<TypeAndByteOffset> hcl_shift;
   TypeAndByteOffset side_derivative_and_label;
   TypeAndByteOffset forward_derivative_and_label;
   std::optional<TypeAndByteOffset> surface_uv_and_paint_animation_offset;

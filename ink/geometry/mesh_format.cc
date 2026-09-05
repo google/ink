@@ -61,7 +61,7 @@ bool IsValidAttributeType(MeshFormat::AttributeType type) {
 bool IsValidAttributeId(MeshFormat::AttributeId id) {
   switch (id) {
     case MeshFormat::AttributeId::kPosition:
-    case MeshFormat::AttributeId::kColorShiftHsl:
+    case MeshFormat::AttributeId::kColorShiftHcl:
     case MeshFormat::AttributeId::kOpacityShift:
     case MeshFormat::AttributeId::kTexture:
     case MeshFormat::AttributeId::kSideDerivative:
@@ -434,8 +434,8 @@ std::string ToFormattedString(MeshFormat::AttributeId id) {
   switch (id) {
     case MeshFormat::AttributeId::kPosition:
       return "kPosition";
-    case MeshFormat::AttributeId::kColorShiftHsl:
-      return "kColorShiftHsl";
+    case MeshFormat::AttributeId::kColorShiftHcl:
+      return "kColorShiftHcl";
     case MeshFormat::AttributeId::kOpacityShift:
       return "kOpacityShift";
     case MeshFormat::AttributeId::kTexture:

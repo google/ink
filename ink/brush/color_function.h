@@ -49,8 +49,9 @@ struct ColorFunction {
                            const OpacityMultiplier&) = default;
   };
 
-  // Applies an additive offset to the color's hue angle.  The offset angle must
-  // be finite, but can be positive or negative (or zero).
+  // Applies an additive offset to the color's hue angle, while maintaining the
+  // same level of perceived lightness.  The offset angle must be finite, but
+  // can be positive or negative (or zero).
   struct HueOffset {
     Angle offset;
 
@@ -58,25 +59,28 @@ struct ColorFunction {
     friend bool operator==(const HueOffset&, const HueOffset&) = default;
   };
 
-  // Applies a multiplier to the color's saturation.  The multiplier must be
-  // finite and nonnegative.  Typical multiplier values range between 0 and 1.
-  struct SaturationMultiplier {
+  // Applies a multiplier to the color's chroma.  A value greater than 1 makes
+  // the color more saturated, a value less than 1 makes the color less
+  // saturated, and a value of 0 makes the color grayscale.  The multiplier must
+  // be finite and nonnegative.  Typical multiplier values range between 0 and
+  // 1.
+  struct ChromaMultiplier {
     float multiplier = 1;
 
     Color operator()(const Color& color) const;
-    friend bool operator==(const SaturationMultiplier&,
-                           const SaturationMultiplier&) = default;
+    friend bool operator==(const ChromaMultiplier&,
+                           const ChromaMultiplier&) = default;
   };
 
-  // Applies an additive offset to the color's luminosity.  The offset must be
-  // finite, but can be positive or negative (or zero).  Typical offset values
-  // range between -1 and 1.
-  struct LuminosityOffset {
+  // Applies an additive offset to the color's perceived lightness.  The offset
+  // must be finite, but can be positive or negative (or zero).  Typical offset
+  // values range between -1 and 1.
+  struct LightnessOffset {
     float offset = 0;
 
     Color operator()(const Color& color) const;
-    friend bool operator==(const LuminosityOffset&,
-                           const LuminosityOffset&) = default;
+    friend bool operator==(const LightnessOffset&,
+                           const LightnessOffset&) = default;
   };
 
   // Ignores the original color and replaces it with a fixed color.
@@ -90,8 +94,8 @@ struct ColorFunction {
   // Union of possible color function parameters.
   // LINT.IfChange(color_function_mapping)
   using Parameters =
-      std::variant<OpacityMultiplier, HueOffset, SaturationMultiplier,
-                   LuminosityOffset, ReplaceColor>;
+      std::variant<OpacityMultiplier, HueOffset, ChromaMultiplier,
+                   LightnessOffset, ReplaceColor>;
   // LINT.ThenChange(../../java/androidx/ink/brush/main/BrushPaint.kt:color_function_mapping)
   Parameters parameters;
 
@@ -113,10 +117,8 @@ std::string ToFormattedString(const ColorFunction& color_function);
 std::string ToFormattedString(const ColorFunction::Parameters& parameters);
 std::string ToFormattedString(const ColorFunction::OpacityMultiplier& opacity);
 std::string ToFormattedString(const ColorFunction::HueOffset& hue);
-std::string ToFormattedString(
-    const ColorFunction::SaturationMultiplier& saturation);
-std::string ToFormattedString(
-    const ColorFunction::LuminosityOffset& luminosity);
+std::string ToFormattedString(const ColorFunction::ChromaMultiplier& chroma);
+std::string ToFormattedString(const ColorFunction::LightnessOffset& lightness);
 std::string ToFormattedString(const ColorFunction::ReplaceColor& replace);
 
 }  // namespace brush_internal
@@ -143,13 +145,13 @@ H AbslHashValue(H h, const ColorFunction::HueOffset& hue) {
 }
 
 template <typename H>
-H AbslHashValue(H h, const ColorFunction::SaturationMultiplier& saturation) {
-  return H::combine(std::move(h), saturation.multiplier);
+H AbslHashValue(H h, const ColorFunction::ChromaMultiplier& chroma) {
+  return H::combine(std::move(h), chroma.multiplier);
 }
 
 template <typename H>
-H AbslHashValue(H h, const ColorFunction::LuminosityOffset& luminosity) {
-  return H::combine(std::move(h), luminosity.offset);
+H AbslHashValue(H h, const ColorFunction::LightnessOffset& lightness) {
+  return H::combine(std::move(h), lightness.offset);
 }
 
 template <typename H>

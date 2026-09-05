@@ -214,16 +214,18 @@ BrushBehavior PredictionFadeOutBehavior();
  * traveled behavior
  * @param distanceTraveledRangeEnd the end of the range for the distance
  * traveled behavior
- * @param luminosityRangeStart the start of the range for the luminosity
+ * @param lightnessRangeStart the start of the range for the lightness
  * behavior
- * @param luminosityRangeEnd the end of the range for the luminosity behavior
+ * @param lightnessRangeEnd the end of the range for the lightness behavior
  */
-BrushCoat MiniEmojiCoat(
-    std::string client_texture_id, float tip_scale, float tip_rotation_degrees,
-    float tip_particle_gap_distance_scale, float position_offset_range_start,
-    float position_offset_range_end, float distance_traveled_range_start,
-    float distance_traveled_range_end, float luminosity_range_start,
-    float luminosity_range_end);
+BrushCoat MiniEmojiCoat(std::string client_texture_id, float tip_scale,
+                        float tip_rotation_degrees,
+                        float tip_particle_gap_distance_scale,
+                        float position_offset_range_start,
+                        float position_offset_range_end,
+                        float distance_traveled_range_start,
+                        float distance_traveled_range_end,
+                        float lightness_range_start, float lightness_range_end);
 }  // namespace ink::stock_brushes
 
 #endif  // INK_BRUSH_STOCK_BRUSHES_H_

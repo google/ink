@@ -116,11 +116,11 @@ struct StrokeVertex {
     // allowed to create values outside of this range.
     float opacity_shift = 0;
     // Values to be used by a renderer to shift the per-vertex color by
-    // individually adjusting hue, saturation, and luminosity.
+    // individually adjusting hue, chroma, and lightness.
     //
     // Values will usually be within the range [-1, 1], but extrapolation is
     // allowed to create values outside of this range.
-    std::array<float, 3> hsl_shift = {0, 0, 0};
+    std::array<float, 3> hcl_shift = {0, 0, 0};
     // Approximate derivative of position with respect to the barycentric
     // coordinate that points across the width of the stroke in triangles that
     // include this vertex.
@@ -148,7 +148,7 @@ struct StrokeVertex {
   struct FormatAttributeIndices {
     int8_t position = -1;
     int8_t opacity_shift = -1;
-    int8_t hsl_shift = -1;
+    int8_t hcl_shift = -1;
     int8_t side_derivative = -1;
     int8_t side_label = -1;
     int8_t forward_derivative = -1;
@@ -166,7 +166,7 @@ struct StrokeVertex {
   static constexpr FormatAttributeIndices kFullFormatAttributeIndices = {
       .position = 0,
       .opacity_shift = 1,
-      .hsl_shift = 2,
+      .hcl_shift = 2,
       .side_derivative = 3,
       .side_label = 4,
       .forward_derivative = 5,

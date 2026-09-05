@@ -157,7 +157,7 @@ TEST(StrokeVertexTest,
        {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
         MeshFormat::AttributeId::kOpacityShift},
        {MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10,
-        MeshFormat::AttributeId::kColorShiftHsl},
+        MeshFormat::AttributeId::kColorShiftHcl},
        {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
         MeshFormat::AttributeId::kSideLabel},
        {MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
@@ -189,7 +189,7 @@ TEST(StrokeVertexTest, MakeCustomPackingArraySkipsMatchingAttributes) {
        {MeshFormat::AttributeType::kFloat1Unpacked,
         MeshFormat::AttributeId::kOpacityShift},
        {MeshFormat::AttributeType::kFloat3Unpacked,
-        MeshFormat::AttributeId::kColorShiftHsl},
+        MeshFormat::AttributeId::kColorShiftHcl},
        {MeshFormat::AttributeType::kFloat2Unpacked,
         MeshFormat::AttributeId::kSideDerivative},
        {MeshFormat::AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
@@ -263,15 +263,15 @@ TEST(StrokeVertexTest, MemoryLayoutMatchesUnpackedFullMeshFormat) {
       attribute.unpacked_width,
       sizeof(decltype(StrokeVertex::NonPositionAttributes::opacity_shift)));
 
-  // HSL shift:
-  ASSERT_LT(StrokeVertex::kFullFormatAttributeIndices.hsl_shift,
+  // HCL shift:
+  ASSERT_LT(StrokeVertex::kFullFormatAttributeIndices.hcl_shift,
             format.Attributes().size());
   attribute =
-      format.Attributes()[StrokeVertex::kFullFormatAttributeIndices.hsl_shift];
+      format.Attributes()[StrokeVertex::kFullFormatAttributeIndices.hcl_shift];
   EXPECT_EQ(attribute.unpacked_offset,
-            offsetof(StrokeVertex, non_position_attributes.hsl_shift));
+            offsetof(StrokeVertex, non_position_attributes.hcl_shift));
   EXPECT_EQ(attribute.unpacked_width,
-            sizeof(decltype(StrokeVertex::NonPositionAttributes::hsl_shift)));
+            sizeof(decltype(StrokeVertex::NonPositionAttributes::hcl_shift)));
 
   // Side derivative:
   ASSERT_LT(StrokeVertex::kFullFormatAttributeIndices.side_derivative,
@@ -348,8 +348,8 @@ TEST(StrokeVertexTest, FindAttributeIndicesResultMatchesFullFormatIndices) {
             StrokeVertex::kFullFormatAttributeIndices.position);
   EXPECT_EQ(indices.opacity_shift,
             StrokeVertex::kFullFormatAttributeIndices.opacity_shift);
-  EXPECT_EQ(indices.hsl_shift,
-            StrokeVertex::kFullFormatAttributeIndices.hsl_shift);
+  EXPECT_EQ(indices.hcl_shift,
+            StrokeVertex::kFullFormatAttributeIndices.hcl_shift);
   EXPECT_EQ(indices.side_derivative,
             StrokeVertex::kFullFormatAttributeIndices.side_derivative);
   EXPECT_EQ(indices.side_label,
@@ -379,7 +379,7 @@ TEST(StrokeVertexTest, FindAttributeIndicesReturnsMinusOneForNotFound) {
       StrokeVertex::FindAttributeIndices(*format);
   EXPECT_EQ(indices.position, 1);
   EXPECT_EQ(indices.opacity_shift, -1);
-  EXPECT_EQ(indices.hsl_shift, -1);
+  EXPECT_EQ(indices.hcl_shift, -1);
   EXPECT_EQ(indices.side_derivative, -1);
   EXPECT_EQ(indices.side_label, -1);
   EXPECT_EQ(indices.forward_derivative, -1);
@@ -391,7 +391,7 @@ TEST(StrokeVertexTest, FindAttributeIndicesReturnsMinusOneForNotFound) {
 TEST(StrokeVertexTest, EqualityOfNonPositionAttributes) {
   StrokeVertex::NonPositionAttributes a = {
       .opacity_shift = 0.3,
-      .hsl_shift = {-0.25, 0.5, -0.7},
+      .hcl_shift = {-0.25, 0.5, -0.7},
       .side_derivative = {1, 2},
       .side_label = StrokeVertex::kExteriorLeftLabel,
       .forward_derivative = {3, 4},
@@ -411,7 +411,7 @@ TEST(StrokeVertexTest, EqualityOfNonPositionAttributes) {
   EXPECT_FALSE(a == b);  // NOLINT
 
   a = b;
-  b.hsl_shift = {-1, 0, 0.5};
+  b.hcl_shift = {-1, 0, 0.5};
   EXPECT_FALSE(a == b);  // NOLINT
 
   a = b;
@@ -443,7 +443,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
   StrokeVertex::Label shared_side_label = StrokeVertex::kExteriorLeftLabel;
   StrokeVertex::NonPositionAttributes a = {
       .opacity_shift = 0.1,
-      .hsl_shift = {0.2, 0.3, 0.5},
+      .hcl_shift = {0.2, 0.3, 0.5},
       .side_derivative = {1, 2},
       .side_label = shared_side_label,
       .forward_derivative = {3, 4},
@@ -453,7 +453,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
   };
   StrokeVertex::NonPositionAttributes b = {
       .opacity_shift = -0.3,
-      .hsl_shift = {0.4, 0.5, 0.7},
+      .hcl_shift = {0.4, 0.5, 0.7},
       .side_derivative = {-5, 4},
       .side_label = shared_side_label,
       .forward_derivative = {8, 1},
@@ -469,7 +469,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
 
   StrokeVertex::NonPositionAttributes result = Lerp(a, b, -0.1);
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.14);
-  EXPECT_THAT(result.hsl_shift, Pointwise(FloatEq(), {0.18, 0.28, 0.48}));
+  EXPECT_THAT(result.hcl_shift, Pointwise(FloatEq(), {0.18, 0.28, 0.48}));
   EXPECT_THAT(result.side_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.side_label, a.side_label);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
@@ -479,7 +479,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
 
   result = Lerp(a, b, 0);
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.1);
-  EXPECT_THAT(result.hsl_shift, Pointwise(FloatEq(), {0.2, 0.3, 0.5}));
+  EXPECT_THAT(result.hcl_shift, Pointwise(FloatEq(), {0.2, 0.3, 0.5}));
   EXPECT_THAT(result.side_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.side_label, a.side_label);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
@@ -489,7 +489,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
 
   result = Lerp(a, b, 0.25);
   EXPECT_FLOAT_EQ(result.opacity_shift, 0);
-  EXPECT_THAT(result.hsl_shift, Pointwise(FloatEq(), {0.25, 0.35, 0.55}));
+  EXPECT_THAT(result.hcl_shift, Pointwise(FloatEq(), {0.25, 0.35, 0.55}));
   EXPECT_THAT(result.side_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.side_label, a.side_label);
   EXPECT_EQ(result.side_label, b.side_label);
@@ -500,7 +500,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
 
   result = Lerp(a, b, 1);
   EXPECT_FLOAT_EQ(result.opacity_shift, -0.3);
-  EXPECT_THAT(result.hsl_shift, Pointwise(FloatEq(), {0.4, 0.5, 0.7}));
+  EXPECT_THAT(result.hcl_shift, Pointwise(FloatEq(), {0.4, 0.5, 0.7}));
   EXPECT_THAT(result.side_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.side_label, b.side_label);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
@@ -510,7 +510,7 @@ TEST(StrokeVertexTest, LerpNonPositionAttributes) {
 
   result = Lerp(a, b, 1.2);
   EXPECT_FLOAT_EQ(result.opacity_shift, -0.38);
-  EXPECT_THAT(result.hsl_shift, Pointwise(FloatEq(), {0.44, 0.54, 0.74}));
+  EXPECT_THAT(result.hcl_shift, Pointwise(FloatEq(), {0.44, 0.54, 0.74}));
   EXPECT_THAT(result.side_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.side_label, b.side_label);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
@@ -528,7 +528,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
 
   StrokeVertex::NonPositionAttributes a = {
       .opacity_shift = -1,
-      .hsl_shift = {-0.5, 0, 0.5},
+      .hcl_shift = {-0.5, 0, 0.5},
       .side_derivative = {1, 2},
       .side_label = ac_side_label,
       .forward_derivative = {3, 4},
@@ -538,7 +538,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
   };
   StrokeVertex::NonPositionAttributes b = {
       .opacity_shift = 0,
-      .hsl_shift = {0, 0.4, 0.2},
+      .hcl_shift = {0, 0.4, 0.2},
       .side_derivative = {-5, 4},
       .side_label = b_side_label,
       .forward_derivative = {8, 1},
@@ -548,7 +548,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
   };
   StrokeVertex::NonPositionAttributes c = {
       .opacity_shift = 1,
-      .hsl_shift = {1, -0.5, -0.2},
+      .hcl_shift = {1, -0.5, -0.2},
       .side_derivative = {3, 5},
       .side_label = ac_side_label,
       .forward_derivative = {8, -2},
@@ -567,7 +567,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
   StrokeVertex::NonPositionAttributes result =
       BarycentricLerp(a, b, c, {0.25, 0.75, 0});
   EXPECT_FLOAT_EQ(result.opacity_shift, -0.25);
-  EXPECT_THAT(result.hsl_shift, Pointwise(FloatEq(), {-0.125, 0.3, 0.275}));
+  EXPECT_THAT(result.hcl_shift, Pointwise(FloatEq(), {-0.125, 0.3, 0.275}));
   EXPECT_THAT(result.side_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.side_label, StrokeVertex::kInteriorLabel);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
@@ -577,7 +577,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
 
   result = BarycentricLerp(a, b, c, {0.25, 0, 0.75});
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.5);
-  EXPECT_THAT(result.hsl_shift, Pointwise(FloatEq(), {0.625, -0.375, -0.025}));
+  EXPECT_THAT(result.hcl_shift, Pointwise(FloatEq(), {0.625, -0.375, -0.025}));
   EXPECT_THAT(result.side_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.side_label, a.side_label);
   EXPECT_EQ(result.side_label, c.side_label);
@@ -588,7 +588,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
 
   result = BarycentricLerp(a, b, c, {0, 0.25, 0.75});
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.75);
-  EXPECT_THAT(result.hsl_shift, Pointwise(FloatEq(), {0.75, -0.275, -0.1}));
+  EXPECT_THAT(result.hcl_shift, Pointwise(FloatEq(), {0.75, -0.275, -0.1}));
   EXPECT_THAT(result.side_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.side_label, StrokeVertex::kInteriorLabel);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
@@ -599,7 +599,7 @@ TEST(StrokeVertexTest, BarycentricLerpNonPositionAttributes) {
 
   result = BarycentricLerp(a, b, c, {0.25, 0.25, 0.5});
   EXPECT_FLOAT_EQ(result.opacity_shift, 0.25);
-  EXPECT_THAT(result.hsl_shift, Pointwise(FloatEq(), {0.375, -0.15, 0.075}));
+  EXPECT_THAT(result.hcl_shift, Pointwise(FloatEq(), {0.375, -0.15, 0.075}));
   EXPECT_THAT(result.side_derivative, VecEq({0, 0}));
   EXPECT_EQ(result.side_label, StrokeVertex::kInteriorLabel);
   EXPECT_THAT(result.forward_derivative, VecEq({0, 0}));
@@ -617,7 +617,7 @@ TEST(StrokeVertexTest, GetFromMesh) {
       .non_position_attributes =
           {
               .opacity_shift = 0.25,
-              .hsl_shift = {0.25, 0.5, 0.75},
+              .hcl_shift = {0.25, 0.5, 0.75},
               .side_derivative = {3, 4},
               .side_label = StrokeVertex::kExteriorLeftLabel,
               .forward_derivative = {6, 7},
@@ -633,10 +633,10 @@ TEST(StrokeVertexTest, GetFromMesh) {
       index, StrokeVertex::kFullFormatAttributeIndices.opacity_shift,
       {expected.non_position_attributes.opacity_shift});
   mesh.SetFloatVertexAttribute(
-      index, StrokeVertex::kFullFormatAttributeIndices.hsl_shift,
-      {expected.non_position_attributes.hsl_shift[0],
-       expected.non_position_attributes.hsl_shift[1],
-       expected.non_position_attributes.hsl_shift[2]});
+      index, StrokeVertex::kFullFormatAttributeIndices.hcl_shift,
+      {expected.non_position_attributes.hcl_shift[0],
+       expected.non_position_attributes.hcl_shift[1],
+       expected.non_position_attributes.hcl_shift[2]});
   mesh.SetFloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.side_derivative,
       {expected.non_position_attributes.side_derivative.x,
@@ -757,7 +757,7 @@ TEST(StrokeVertexTest, AppendToMesh) {
       .non_position_attributes =
           {
               .opacity_shift = 0.1,
-              .hsl_shift = {0.2, 0.3, 0.4},
+              .hcl_shift = {0.2, 0.3, 0.4},
               .side_derivative = {3, 4},
               .side_label = {.encoded_value = 5},
               .forward_derivative = {6, 7},
@@ -782,10 +782,10 @@ TEST(StrokeVertexTest, AppendToMesh) {
   EXPECT_FLOAT_EQ(attribute[0], expected.non_position_attributes.opacity_shift);
 
   attribute = mesh.FloatVertexAttribute(
-      index, StrokeVertex::kFullFormatAttributeIndices.hsl_shift);
+      index, StrokeVertex::kFullFormatAttributeIndices.hcl_shift);
   ASSERT_EQ(attribute.Size(), 3);
   EXPECT_THAT(attribute.Values(),
-              Pointwise(FloatEq(), expected.non_position_attributes.hsl_shift));
+              Pointwise(FloatEq(), expected.non_position_attributes.hcl_shift));
 
   attribute = mesh.FloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.side_derivative);
@@ -833,7 +833,7 @@ TEST(StrokeVertexTest, SetInMesh) {
       .non_position_attributes =
           {
               .opacity_shift = -0.5,
-              .hsl_shift = {-1, 0.7, 0.2},
+              .hcl_shift = {-1, 0.7, 0.2},
               .side_derivative = {3, 4},
               .side_label = StrokeVertex::kExteriorLeftLabel,
               .forward_derivative = {6, 7},
@@ -856,10 +856,10 @@ TEST(StrokeVertexTest, SetInMesh) {
   EXPECT_FLOAT_EQ(attribute[0], expected.non_position_attributes.opacity_shift);
 
   attribute = mesh.FloatVertexAttribute(
-      index, StrokeVertex::kFullFormatAttributeIndices.hsl_shift);
+      index, StrokeVertex::kFullFormatAttributeIndices.hcl_shift);
   ASSERT_EQ(attribute.Size(), 3);
   EXPECT_THAT(attribute.Values(),
-              Pointwise(FloatEq(), expected.non_position_attributes.hsl_shift));
+              Pointwise(FloatEq(), expected.non_position_attributes.hcl_shift));
 
   attribute = mesh.FloatVertexAttribute(
       index, StrokeVertex::kFullFormatAttributeIndices.side_derivative);
@@ -905,32 +905,32 @@ TEST(StrokeVertexTest, OutOfBoundsColorShiftValuesAreClamped) {
   StrokeVertex::SetInMesh(
       mesh, 0,
       {.non_position_attributes = {.opacity_shift = -2,
-                                   .hsl_shift = {-2, -2, -2}}});
+                                   .hcl_shift = {-2, -2, -2}}});
   StrokeVertex::NonPositionAttributes attributes =
       StrokeVertex::GetFromMesh(mesh, 0).non_position_attributes;
   EXPECT_EQ(attributes.opacity_shift, -1);
-  EXPECT_THAT(attributes.hsl_shift, Each(-1));
+  EXPECT_THAT(attributes.hcl_shift, Each(-1));
 
   StrokeVertex::SetInMesh(mesh, 1,
                           {.non_position_attributes = {
-                               .opacity_shift = 2, .hsl_shift = {2, 2, 2}}});
+                               .opacity_shift = 2, .hcl_shift = {2, 2, 2}}});
   attributes = StrokeVertex::GetFromMesh(mesh, 1).non_position_attributes;
   EXPECT_EQ(attributes.opacity_shift, 1);
-  EXPECT_THAT(attributes.hsl_shift, Each(Eq(1)));
+  EXPECT_THAT(attributes.hcl_shift, Each(Eq(1)));
 
   StrokeVertex::AppendToMesh(
       mesh, {.non_position_attributes = {.opacity_shift = -2,
-                                         .hsl_shift = {-2, -2, -2}}});
+                                         .hcl_shift = {-2, -2, -2}}});
   attributes = StrokeVertex::GetFromMesh(mesh, 3).non_position_attributes;
   EXPECT_EQ(attributes.opacity_shift, -1);
-  EXPECT_THAT(attributes.hsl_shift, Each(-1));
+  EXPECT_THAT(attributes.hcl_shift, Each(-1));
 
   StrokeVertex::AppendToMesh(
       mesh, {.non_position_attributes = {.opacity_shift = 2,
-                                         .hsl_shift = {2, 2, 2}}});
+                                         .hcl_shift = {2, 2, 2}}});
   attributes = StrokeVertex::GetFromMesh(mesh, 4).non_position_attributes;
   EXPECT_EQ(attributes.opacity_shift, 1);
-  EXPECT_THAT(attributes.hsl_shift, Each(Eq(1)));
+  EXPECT_THAT(attributes.hcl_shift, Each(Eq(1)));
 }
 
 TEST(StrokeVertexTest, SetSideDerivativeInMesh) {

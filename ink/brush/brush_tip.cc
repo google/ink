@@ -43,8 +43,8 @@ bool BrushTipUsesColorShift(const BrushTip& tip) {
       if (const auto* output = std::get_if<BrushBehavior::TargetNode>(&node)) {
         switch (output->target) {
           case BrushBehavior::Target::kHueOffsetInRadians:
-          case BrushBehavior::Target::kSaturationMultiplier:
-          case BrushBehavior::Target::kLuminosityOffset:
+          case BrushBehavior::Target::kChromaMultiplier:
+          case BrushBehavior::Target::kLightnessOffset:
             return true;
           default:
             break;
@@ -127,7 +127,7 @@ void AddAttributeIdsRequiredByTip(
     const BrushTip& tip,
     absl::flat_hash_set<MeshFormat::AttributeId>& attribute_ids) {
   if (BrushTipUsesColorShift(tip)) {
-    attribute_ids.insert(MeshFormat::AttributeId::kColorShiftHsl);
+    attribute_ids.insert(MeshFormat::AttributeId::kColorShiftHcl);
   }
 }
 

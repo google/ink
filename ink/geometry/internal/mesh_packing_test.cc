@@ -1686,7 +1686,7 @@ TEST(MeshPackingTest, ReadUnpackedFloatAttributeFromByteArrayCustomFormat) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
   std::vector<std::byte> bytes =
@@ -1981,7 +1981,7 @@ TEST(MeshPackingTest, ComputeCodingParamsArray) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -2009,7 +2009,7 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayWithCustomParams) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -2042,7 +2042,7 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayWrongNumberOfBounds) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -2057,7 +2057,7 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayWrongNumberOfCustomParams) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -2079,7 +2079,7 @@ TEST(MeshPackingTest,
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -2104,7 +2104,7 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayCustomParamsIsInvalid) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -2146,7 +2146,7 @@ TEST(MeshPackingTest,
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -2188,7 +2188,7 @@ TEST(MeshPackingTest, ComputeCodingParamsArrayPercolatesErrors) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -2225,7 +2225,7 @@ TEST(MeshPackingTest, CopyAndPackPartitionVerticesCustomFormat) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
   std::vector<std::byte> bytes =
@@ -2306,7 +2306,7 @@ TEST(MeshPackingTest,
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
   std::vector<std::byte> bytes =
@@ -2434,7 +2434,7 @@ TEST(MeshPackingDeathTest,
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(
@@ -2459,7 +2459,7 @@ TEST(MeshPackingDeathTest,
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(
@@ -2484,7 +2484,7 @@ TEST(MeshPackingDeathTest,
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat1Unpacked, AttrId::kCustom0},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl}},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
   EXPECT_DEATH_IF_SUPPORTED(

@@ -94,7 +94,7 @@ bool MeshFormatSupports(const MeshFormat& mesh_format,
   absl::flat_hash_set<MeshFormat::AttributeId> required_attribute_ids;
   brush_internal::AddAttributeIdsRequiredByPaint(paint, required_attribute_ids);
   // TODO: b/346530293 - Check for attributes that are always required (e.g.
-  //   position) and those that may be required by the tip (e.g. HSL shift).
+  //   position) and those that may be required by the tip (e.g. HCL shift).
   //   That can happen either at a higher level (e.g. not inside a loop over the
   //   paint preferences), or earlier such as when a `Stroke` is constructed
   //   with a preexisting `PartitionedMesh`.

@@ -297,8 +297,8 @@ BrushCoat MiniEmojiCoat(
     std::string client_texture_id, float tip_scale, float tip_rotation_degrees,
     float tip_particle_gap_distance_scale, float position_offset_range_start,
     float position_offset_range_end, float distance_traveled_range_start,
-    float distance_traveled_range_end, float luminosity_range_start,
-    float luminosity_range_end) {
+    float distance_traveled_range_end, float lightness_range_start,
+    float lightness_range_end) {
   BrushBehavior time_since_input_to_size_behavior = {
       .nodes = {SourceNode{
                     .source = Source::kTimeSinceInputInSeconds,
@@ -312,7 +312,7 @@ BrushCoat MiniEmojiCoat(
       .developer_comment =
           "Animates each mini emoji particle to scale down over time, until it "
           "completely disappears."};
-  BrushBehavior constant_hue_and_luminosity_offset_behavior = {
+  BrushBehavior constant_hue_and_lightness_offset_behavior = {
       .nodes = {ConstantNode{.value = 0.0f},
                 TargetNode{
                     .target = Target::kHueOffsetInRadians,
@@ -322,12 +322,12 @@ BrushCoat MiniEmojiCoat(
                 },
                 ConstantNode{.value = 0.0f},
                 TargetNode{
-                    .target = Target::kLuminosityOffset,
-                    .target_modifier_range = {luminosity_range_start,
-                                              luminosity_range_end},
+                    .target = Target::kLightnessOffset,
+                    .target_modifier_range = {lightness_range_start,
+                                              lightness_range_end},
                 }},
       .developer_comment =
-          "Applies a constant hue and luminosity offset to the mini emoji "
+          "Applies a constant hue and lightness offset to the mini emoji "
           "particles, to help differentiate them visually from the main emoji "
           "stamp."};
   BrushBehavior distance_traveled_to_offset_y_behavior = {
@@ -352,7 +352,7 @@ BrushCoat MiniEmojiCoat(
       .rotation = Angle::Degrees(tip_rotation_degrees),
       .particle_gap_distance_scale = tip_particle_gap_distance_scale,
       .behaviors = {time_since_input_to_size_behavior,
-                    constant_hue_and_luminosity_offset_behavior,
+                    constant_hue_and_lightness_offset_behavior,
                     distance_traveled_to_offset_y_behavior},
   };
   BrushPaint paint = {
@@ -449,8 +449,8 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                                       /*position_offset_range_end=*/0.35f,
                                       /*distance_traveled_range_start=*/0.0f,
                                       /*distance_traveled_range_end=*/0.22f,
-                                      /*luminosity_range_start=*/0.21f,
-                                      /*luminosity_range_end=*/0.9));
+                                      /*lightness_range_start=*/0.21f,
+                                      /*lightness_range_end=*/0.9));
         coats.push_back(MiniEmojiCoat(client_texture_id,
                                       /*tip_scale=*/0.3f,
                                       /*tip_rotation_degrees=*/-35.0f,
@@ -459,8 +459,8 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                                       /*position_offset_range_end=*/0.32f,
                                       /*distance_traveled_range_start=*/0.1f,
                                       /*distance_traveled_range_end=*/0.74f,
-                                      /*luminosity_range_start=*/0.36f,
-                                      /*luminosity_range_end=*/0.9));
+                                      /*lightness_range_start=*/0.36f,
+                                      /*lightness_range_end=*/0.9));
         coats.push_back(MiniEmojiCoat(client_texture_id,
                                       /*tip_scale=*/0.45f,
                                       /*tip_rotation_degrees=*/45.0f,
@@ -469,8 +469,8 @@ BrushFamily EmojiHighlighter(std::string client_texture_id,
                                       /*position_offset_range_end=*/0.25f,
                                       /*distance_traveled_range_start=*/0.01f,
                                       /*distance_traveled_range_end=*/0.74f,
-                                      /*luminosity_range_start=*/0.36f,
-                                      /*luminosity_range_end=*/0.9));
+                                      /*lightness_range_start=*/0.36f,
+                                      /*lightness_range_end=*/0.9));
       }
       // Emoji stamp coat.
       BrushBehavior distance_to_size_behavior = {

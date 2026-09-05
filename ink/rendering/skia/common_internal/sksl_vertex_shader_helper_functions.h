@@ -52,7 +52,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     // LINT.IfChange(orthogonal)
     R"(
     float2 orthogonal(const float2 v) { return float2(-v.y, v.x); })"
-    // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:orthogonal)
+    // LINT.ThenChange(../../webgpu/StrokeShader.wgsl:orthogonal)
 
     // Returns a new opacity by applying `opacityShift` to `baseOpacity`.
     // `opacityShift` is expected to be a value in the range [-1, 1].
@@ -62,7 +62,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     float applyOpacityShift(const float opacityShift, const float baseOpacity) {
       return saturate((opacityShift + 1) * baseOpacity);
     })"
-    // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:apply_opacity_shift)
+    // LINT.ThenChange(../../webgpu/StrokeShader.wgsl:apply_opacity_shift)
 
     // Converts an (unpremultiplied) color in linear sRGB to Oklab.  For details
     // on the conversion formula, see https://bottosson.github.io/posts/oklab/
@@ -92,29 +92,29 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
     // LINT.ThenChange(
     //     ../../../brush/color_function.cc:oklab_transform,
-    //     ../../../rendering/webgpu/StrokeShader.wgsl:oklab_transform)
+    //     ../../webgpu/StrokeShader.wgsl:oklab_transform)
 
-    // Returns a new *unpremultiplied* color by applying `hslShift` and
+    // Returns a new *unpremultiplied* color by applying `hclShift` and
     // `opacityShift` to `oklabUnpremul`. Both the input color and the output
     // color are unpremultiplied Oklab, and may include out-of-gamut component
     // values.
     //
-    // NOTE: there is no separate `applyHSLShift()` taking two `float3`s to help
+    // NOTE: there is no separate `applyHCLShift()` taking two `float3`s to help
     // prevent accidentally passing arguments in the wrong order.
     //
-    // LINT.IfChange(apply_hsl_and_opacity_shift)
+    // LINT.IfChange(apply_hcl_and_opacity_shift)
     R"(
-    float4 applyHSLAndOpacityShift(const float3 hslShift,
+    float4 applyHCLAndOpacityShift(const float3 hclShift,
                                    const float opacityShift,
                                    const float4 oklabUnpremul) {
       float L = oklabUnpremul.x;
       float2 ab = oklabUnpremul.yz;
 
-      float hueOffsetRadians = hslShift.x * radians(360.0);
+      float hueOffsetRadians = hclShift.x * radians(360.0);
       float hueOffsetSin = sin(hueOffsetRadians);
       float hueOffsetCos = cos(hueOffsetRadians);
-      float chromaMultiplier = hslShift.y + 1.0;
-      float lightnessOffset = hslShift.z;
+      float chromaMultiplier = hclShift.y + 1.0;
+      float lightnessOffset = hclShift.z;
 
       ab = float2x2(hueOffsetCos, hueOffsetSin, -hueOffsetSin, hueOffsetCos) * ab;
       ab *= chromaMultiplier;
@@ -123,9 +123,9 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
       return float4(L, ab, applyOpacityShift(opacityShift, oklabUnpremul.a));
     })"
     // LINT.ThenChange(
-    //     ../../../brush/color_function.cc:hsl_transform,
-    //     ../../../rendering/webgpu/StrokeShader.wgsl:apply_hsl_and_opacity_shift,
-    //     ../../../strokes/internal/stroke_subtraction.cc:hsl_shift_linear_space)
+    //     ../../../brush/color_function.cc:hcl_transform,
+    //     ../../webgpu/StrokeShader.wgsl:apply_hcl_and_opacity_shift,
+    //     ../../../strokes/internal/stroke_subtraction.cc:hcl_shift_linear_space)
 
     // Decodes the values of the side and forward margins given the side and
     // forward `labels`.
@@ -141,7 +141,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     // LINT.ThenChange(
     //     ../../../strokes/internal/stroke_vertex.cc:margin_encoding,
     //     ../../../strokes/internal/stroke_vertex.h:margin_encoding,
-    //     ../../../rendering/webgpu/StrokeShader.wgsl:decode_margins)
+    //     ../../webgpu/StrokeShader.wgsl:decode_margins)
 
     // Computes per-vertex properties needed for antialiasing and returns an
     // offset that should be added to `varyings.position`.
@@ -273,7 +273,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
 
       return sideOutset + (1.0 - commonForwardMagnitude) * forwardOutset;
     })"
-    // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
+    // LINT.ThenChange(../../webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
 
     // Calculates an integer frame index for a brush paint animation using
     // "restart" mode for repetitions. In this mode, the animation uses the
@@ -384,7 +384,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
       );
       return unpackingTransform.yw * unpacked + unpackingTransform.xz;
     })"
-    // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:unpack_float2_packed_into_ubyte3)
+    // LINT.ThenChange(../../webgpu/StrokeShader.wgsl:unpack_float2_packed_into_ubyte3)
 
     // ------------------------------------------------------------------------
     // Unpacking functions for particular shader vertex attributes
@@ -409,7 +409,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
     // LINT.ThenChange(
     //     ../../../strokes/internal/stroke_vertex.cc:opacity_packing,
-    //     ../../../rendering/webgpu/StrokeShader.wgsl:position_and_opacity_unpacking)
+    //     ../../webgpu/StrokeShader.wgsl:position_and_opacity_unpacking)
 
     // Unpacks a combined derivative-and-label value into a `float3` from one of
     // the supported "packed" types.
@@ -429,16 +429,16 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
     // LINT.ThenChange(
     //     ../../../strokes/internal/stroke_vertex.cc:label_packing,
-    //     ../../../rendering/webgpu/StrokeShader.wgsl:derivative_and_label_unpacking)
+    //     ../../webgpu/StrokeShader.wgsl:derivative_and_label_unpacking)
 
-    // Unpacks an HSL color-shift value into a `float3` from one of the
+    // Unpacks an HCL color-shift value into a `float3` from one of the
     // supported "packed" types.
-    // LINT.IfChange(hsl_shift_unpacking)
+    // LINT.IfChange(hcl_shift_unpacking)
     R"(
-    float3 unpackHSLColorShift(const float3 unpackedValue) {
+    float3 unpackHCLColorShift(const float3 unpackedValue) {
       return unpackedValue;
     }
-    float3 unpackHSLColorShift(const half4 packedValue0To1) {
+    float3 unpackHCLColorShift(const half4 packedValue0To1) {
       float4 packedValue0To255 = floor(255.0 * packedValue0To1 + 0.5);
       return float3(
           4.0 * packedValue0To255.x + floor(packedValue0To255.y / 64.0),
@@ -447,8 +447,8 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
       ) / 511.0 - float3(1.0);
     })"
     // LINT.ThenChange(
-    //     ../../../strokes/internal/stroke_vertex.cc:hsl_packing,
-    //     ../../../rendering/webgpu/StrokeShader.wgsl:hsl_shift_unpacking)
+    //     ../../../strokes/internal/stroke_vertex.cc:hcl_packing,
+    //     ../../webgpu/StrokeShader.wgsl:hcl_shift_unpacking)
 
     // Unpacks a surface UV value into a `float2` from one of the supported
     // "packed" types.
@@ -510,7 +510,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
     // LINT.ThenChange(
     //     ../../../strokes/internal/stroke_vertex.cc:uv_packing,
-    //     ../../../rendering/webgpu/StrokeShader.wgsl:surface_uv_unpacking)
+    //     ../../webgpu/StrokeShader.wgsl:surface_uv_unpacking)
 
     // Unpacks a paint animation offset value into a `float` from one of the
     // supported "packed" types.

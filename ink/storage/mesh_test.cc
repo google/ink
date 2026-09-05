@@ -207,7 +207,7 @@ TEST(MeshTest, EncodeAndDecodeMeshWithCustomFormat) {
 TEST(MeshTest, EncodeAndDecodeFullyPackedMesh) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+       {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
        {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());

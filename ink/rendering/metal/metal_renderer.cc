@@ -64,7 +64,7 @@ using ::ink::strokes_internal::StrokeVertex;
 // LINT.IfChange(texture_mapping_modes)
 constexpr uint32_t kTextureMappingModeTiling = 0;
 constexpr uint32_t kTextureMappingModeStamping = 1;
-// LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:texture_mapping_modes)
+// LINT.ThenChange(../webgpu/StrokeShader.wgsl:texture_mapping_modes)
 
 struct MeshBuffers {
   // Opaque pointer to `INKMeshBuffers`, configured to handle cleanup.
@@ -234,8 +234,8 @@ void MetalRenderer::DrawWithStencilAlreadySet(
   uint32_t position_offset =
       static_cast<uint32_t>(offsets.position_and_opacity_shift.offset);
   // Optional attributes, set to -1 if not present.
-  int32_t hsl_offset =
-      offsets.hsl_shift.has_value() ? offsets.hsl_shift->offset : -1;
+  int32_t hcl_offset =
+      offsets.hcl_shift.has_value() ? offsets.hcl_shift->offset : -1;
   int32_t side_offset = offsets.side_derivative_and_label.offset;
   int32_t forward_offset = offsets.forward_derivative_and_label.offset;
   int32_t surface_offset =
@@ -263,7 +263,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
       // Negative stride indicates unpacked vertex data.
       .vertex_stride = -static_cast<int32_t>(vertex_stride),
       .position_and_opacity_shift_offset = position_offset,
-      .hsl_shift_offset = hsl_offset,
+      .hcl_shift_offset = hcl_offset,
       .side_derivative_and_label_offset = request_shader_aa ? side_offset : -1,
       .forward_derivative_and_label_offset =
           request_shader_aa ? forward_offset : -1,
@@ -373,8 +373,8 @@ void MetalRenderer::DrawWithStencilAlreadySet(
   uint32_t position_offset =
       static_cast<uint32_t>(offsets.position_and_opacity_shift.offset);
   // Optional attributes, set to -1 if not present.
-  int32_t hsl_offset =
-      offsets.hsl_shift.has_value() ? offsets.hsl_shift->offset : -1;
+  int32_t hcl_offset =
+      offsets.hcl_shift.has_value() ? offsets.hcl_shift->offset : -1;
   int32_t side_offset = offsets.side_derivative_and_label.offset;
   int32_t forward_offset = offsets.forward_derivative_and_label.offset;
   int32_t surface_offset =
@@ -426,7 +426,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
             forward_derivative_unpacking_transform,
         .vertex_stride = vertex_stride,
         .position_and_opacity_shift_offset = position_offset,
-        .hsl_shift_offset = hsl_offset,
+        .hcl_shift_offset = hcl_offset,
         .side_derivative_and_label_offset =
             request_shader_aa ? side_offset : -1,
         .forward_derivative_and_label_offset =

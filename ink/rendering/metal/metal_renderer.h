@@ -40,8 +40,8 @@ class MetalRenderer {
   // LINT.IfChange(max_texture_layers)
   static constexpr int kMaxTextureLayers = 4;
   // LINT.ThenChange(
-  //   ../../../rendering/webgpu/StrokeShader.wgsl:max_texture_layers,
-  //   ../../../brush/brush_paint.cc:max_texture_layers
+  //   ../webgpu/StrokeShader.wgsl:max_texture_layers,
+  //   ../../brush/brush_paint.cc:max_texture_layers
   // )
 
   // One of the texture layers in the brush.
@@ -116,11 +116,11 @@ class MetalRenderer {
     // This attribute is always present.
     uint32_t position_and_opacity_shift_offset = 0;  // 4 bytes
 
-    // Offset of the HSL shift attribute in bytes.
+    // Offset of the HCL shift attribute in bytes.
     //
     // This attribute is optional, and a value of -1 indicates that the
     // attribute is not present.
-    int32_t hsl_shift_offset = -1;  // 4 bytes
+    int32_t hcl_shift_offset = -1;  // 4 bytes
 
     // Offset of the side derivative and label attribute in bytes.
     //
@@ -167,7 +167,7 @@ class MetalRenderer {
     ShaderTextureLayer layers[kMaxTextureLayers] = {};
     // LINT.ThenChange(:max_texture_layers)
   };
-  // LINT.ThenChange(../../../rendering/webgpu/StrokeShader.wgsl:uniforms)
+  // LINT.ThenChange(../webgpu/StrokeShader.wgsl:uniforms)
 
   static_assert(sizeof(Uniforms) % 16 == 0);
 

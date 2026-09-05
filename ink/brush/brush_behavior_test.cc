@@ -176,10 +176,10 @@ TEST(BrushBehaviorTest, StringifyTarget) {
             "kPaintAnimationProgressOffset");
   EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kHueOffsetInRadians),
             "kHueOffsetInRadians");
-  EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kSaturationMultiplier),
-            "kSaturationMultiplier");
-  EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kLuminosityOffset),
-            "kLuminosityOffset");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kChromaMultiplier),
+            "kChromaMultiplier");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kLightnessOffset),
+            "kLightnessOffset");
   EXPECT_EQ(absl::StrCat(BrushBehavior::Target::kOpacityMultiplier),
             "kOpacityMultiplier");
   EXPECT_EQ(absl::StrCat(static_cast<BrushBehavior::Target>(91)), "Target(91)");

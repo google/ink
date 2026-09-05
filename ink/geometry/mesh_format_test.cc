@@ -63,7 +63,7 @@ TEST(MeshFormatTest, StringifyAttributeType) {
 
 TEST(MeshFormatTest, StringifyAttributeId) {
   EXPECT_EQ(absl::StrCat(AttrId::kPosition), "kPosition");
-  EXPECT_EQ(absl::StrCat(AttrId::kColorShiftHsl), "kColorShiftHsl");
+  EXPECT_EQ(absl::StrCat(AttrId::kColorShiftHcl), "kColorShiftHcl");
   EXPECT_EQ(absl::StrCat(AttrId::kOpacityShift), "kOpacityShift");
   EXPECT_EQ(absl::StrCat(AttrId::kTexture), "kTexture");
   EXPECT_EQ(absl::StrCat(AttrId::kSideDerivative), "kSideDerivative");
@@ -101,14 +101,14 @@ TEST(MeshFormatTest, StringifyMeshFormat) {
       "MeshFormat({{kFloat2Unpacked, kPosition}}, position_attribute_index=0, "
       "index_format=k32BitUnpacked16BitPacked)");
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
-      {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+      {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
   EXPECT_EQ(
       absl::StrCat(*format),
-      "MeshFormat({{kFloat4PackedInOneFloat, kColorShiftHsl}, "
+      "MeshFormat({{kFloat4PackedInOneFloat, kColorShiftHcl}, "
       "{kFloat2PackedInOneFloat, kPosition}, "
       "{kFloat3PackedInTwoFloats, kCustom0}}, "
       "position_attribute_index=1, index_format=k16BitUnpacked16BitPacked)");
@@ -146,7 +146,7 @@ TEST(MeshFormatTest, ConstructWithOneAttribute) {
 
 TEST(MeshFormatTest, ConstructWithMultipleAttributes) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
-      {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+      {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
@@ -154,7 +154,7 @@ TEST(MeshFormatTest, ConstructWithMultipleAttributes) {
 
   EXPECT_THAT(format->Attributes(),
               ElementsAre(FieldsAre(AttrType::kFloat4PackedInOneFloat,
-                                    AttrId::kColorShiftHsl, 0, 0, 16, 4),
+                                    AttrId::kColorShiftHcl, 0, 0, 16, 4),
                           FieldsAre(AttrType::kFloat2PackedInOneFloat,
                                     AttrId::kPosition, 16, 4, 8, 4),
                           FieldsAre(AttrType::kFloat3PackedInTwoFloats,
@@ -185,7 +185,7 @@ TEST(MeshFormatTest, ConstructionErrorTooManyAttributes) {
 
 TEST(MeshFormatTest, ConstructionErrorNoPosition) {
   EXPECT_THAT(
-      MeshFormat::Create({{AttrType::kFloat2Unpacked, AttrId::kColorShiftHsl}},
+      MeshFormat::Create({{AttrType::kFloat2Unpacked, AttrId::kColorShiftHcl}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
       StatusIs(absl::StatusCode::kInvalidArgument,
                HasSubstr("Missing a kPosition")));
@@ -235,7 +235,7 @@ TEST(MeshFormatTest, ConstructionErrorBadAttributeId) {
 
 TEST(MeshFormatTest, WithoutAttributesRemoveOne) {
   absl::StatusOr<MeshFormat> original = MeshFormat::Create(
-      {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+      {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
@@ -246,13 +246,13 @@ TEST(MeshFormatTest, WithoutAttributesRemoveOne) {
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(expected, IsOk());
   absl::StatusOr<MeshFormat> actual =
-      original->WithoutAttributes({AttrId::kColorShiftHsl});
+      original->WithoutAttributes({AttrId::kColorShiftHcl});
   EXPECT_EQ(actual, expected);
 }
 
 TEST(MeshFormatTest, WithoutAttributesRemoveMultiple) {
   absl::StatusOr<MeshFormat> original = MeshFormat::Create(
-      {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+      {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom1}},
@@ -264,7 +264,7 @@ TEST(MeshFormatTest, WithoutAttributesRemoveMultiple) {
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
   ASSERT_THAT(expected, IsOk());
   absl::StatusOr<MeshFormat> actual =
-      original->WithoutAttributes({AttrId::kCustom0, AttrId::kColorShiftHsl});
+      original->WithoutAttributes({AttrId::kCustom0, AttrId::kColorShiftHcl});
   EXPECT_EQ(actual, expected);
 }
 
@@ -296,7 +296,7 @@ TEST(MeshFormatTest, TotalComponentCount) {
   EXPECT_EQ(MeshFormat().TotalComponentCount(), 2);
 
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
-      {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+      {{AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
        {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
        {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
       MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
@@ -460,7 +460,7 @@ TEST(MeshFormatDeathTest, BadEnumValues) {
 TEST(MeshFormatTest, IsPackedEquivalent) {
   absl::StatusOr<MeshFormat> original = MeshFormat::Create(
       {
-          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
           {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
       },
@@ -469,7 +469,7 @@ TEST(MeshFormatTest, IsPackedEquivalent) {
 
   absl::StatusOr<MeshFormat> exact = MeshFormat::Create(
       {
-          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
           {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
       },
@@ -480,7 +480,7 @@ TEST(MeshFormatTest, IsPackedEquivalent) {
 
   absl::StatusOr<MeshFormat> position_type_changed = MeshFormat::Create(
       {
-          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
           {AttrType::kFloat2Unpacked, AttrId::kPosition},
           {AttrType::kFloat3Unpacked, AttrId::kCustom0},
       },
@@ -492,7 +492,7 @@ TEST(MeshFormatTest, IsPackedEquivalent) {
 
   absl::StatusOr<MeshFormat> position_index_changed = MeshFormat::Create(
       {
-          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
           {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
       },
@@ -504,7 +504,7 @@ TEST(MeshFormatTest, IsPackedEquivalent) {
 
   absl::StatusOr<MeshFormat> extra_attribute = MeshFormat::Create(
       {
-          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
           {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
           {AttrType::kFloat4PackedInThreeFloats, AttrId::kCustom1},
@@ -516,7 +516,7 @@ TEST(MeshFormatTest, IsPackedEquivalent) {
 
   absl::StatusOr<MeshFormat> missing_attribute = MeshFormat::Create(
       {
-          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
@@ -528,7 +528,7 @@ TEST(MeshFormatTest, IsPackedEquivalent) {
 TEST(MeshFormatTest, IsUnpackedEquivalent) {
   absl::StatusOr<MeshFormat> original = MeshFormat::Create(
       {
-          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
           {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
       },
@@ -537,7 +537,7 @@ TEST(MeshFormatTest, IsUnpackedEquivalent) {
 
   absl::StatusOr<MeshFormat> exact = MeshFormat::Create(
       {
-          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
           {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
       },
@@ -547,7 +547,7 @@ TEST(MeshFormatTest, IsUnpackedEquivalent) {
 
   absl::StatusOr<MeshFormat> packing_scheme_change = MeshFormat::Create(
       {
-          {AttrType::kFloat4PackedInTwoFloats, AttrId::kColorShiftHsl},
+          {AttrType::kFloat4PackedInTwoFloats, AttrId::kColorShiftHcl},
           {AttrType::kFloat2Unpacked, AttrId::kPosition},
           {AttrType::kFloat3Unpacked, AttrId::kCustom0},
       },
@@ -558,7 +558,7 @@ TEST(MeshFormatTest, IsUnpackedEquivalent) {
 
   absl::StatusOr<MeshFormat> position_index_changed = MeshFormat::Create(
       {
-          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
           {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
       },
@@ -569,7 +569,7 @@ TEST(MeshFormatTest, IsUnpackedEquivalent) {
 
   absl::StatusOr<MeshFormat> extra_attribute = MeshFormat::Create(
       {
-          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
           {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0},
           {AttrType::kFloat4PackedInThreeFloats, AttrId::kCustom1},
@@ -580,7 +580,7 @@ TEST(MeshFormatTest, IsUnpackedEquivalent) {
 
   absl::StatusOr<MeshFormat> missing_attribute = MeshFormat::Create(
       {
-          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHsl},
+          {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
           {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
       },
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
@@ -665,7 +665,7 @@ TEST(MeshFormatTest, Hash) {
           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
            MeshFormat::AttributeId::kPosition},
           {MeshFormat::AttributeType::kFloat3Unpacked,
-           MeshFormat::AttributeId::kColorShiftHsl},
+           MeshFormat::AttributeId::kColorShiftHcl},
           {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
            MeshFormat::AttributeId::kSideDerivative},
       },
@@ -680,7 +680,7 @@ TEST(MeshFormatTest, Hash) {
               {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
                MeshFormat::AttributeId::kSideDerivative},
               {MeshFormat::AttributeType::kFloat3Unpacked,
-               MeshFormat::AttributeId::kColorShiftHsl},
+               MeshFormat::AttributeId::kColorShiftHcl},
           },
           MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(with_non_position_attributes_reordered, IsOk());

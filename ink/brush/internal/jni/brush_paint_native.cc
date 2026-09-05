@@ -337,21 +337,21 @@ int64_t ColorFunctionNative_createHueOffset(
       jni_env_pass_through, throw_from_status_callback);
 }
 
-int64_t ColorFunctionNative_createSaturationMultiplier(
+int64_t ColorFunctionNative_createChromaMultiplier(
     void* jni_env_pass_through, float multiplier,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str)) {
   return ValidateAndHoistColorFunctionOrThrow(
-      ColorFunction::SaturationMultiplier{.multiplier = multiplier},
+      ColorFunction::ChromaMultiplier{.multiplier = multiplier},
       jni_env_pass_through, throw_from_status_callback);
 }
 
-int64_t ColorFunctionNative_createLuminosityOffset(
+int64_t ColorFunctionNative_createLightnessOffset(
     void* jni_env_pass_through, float offset,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str)) {
   return ValidateAndHoistColorFunctionOrThrow(
-      ColorFunction::LuminosityOffset{.offset = offset}, jni_env_pass_through,
+      ColorFunction::LightnessOffset{.offset = offset}, jni_env_pass_through,
       throw_from_status_callback);
 }
 
@@ -384,14 +384,14 @@ float ColorFunctionNative_getHueOffsetDegrees(int64_t native_ptr) {
       .offset.ValueInDegrees();
 }
 
-float ColorFunctionNative_getSaturationMultiplier(int64_t native_ptr) {
-  return std::get<ColorFunction::SaturationMultiplier>(
+float ColorFunctionNative_getChromaMultiplier(int64_t native_ptr) {
+  return std::get<ColorFunction::ChromaMultiplier>(
              CastToColorFunction(native_ptr).parameters)
       .multiplier;
 }
 
-float ColorFunctionNative_getLuminosityOffset(int64_t native_ptr) {
-  return std::get<ColorFunction::LuminosityOffset>(
+float ColorFunctionNative_getLightnessOffset(int64_t native_ptr) {
+  return std::get<ColorFunction::LightnessOffset>(
              CastToColorFunction(native_ptr).parameters)
       .offset;
 }

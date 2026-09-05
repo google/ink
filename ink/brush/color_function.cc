@@ -108,7 +108,7 @@ Color ColorFunction::OpacityMultiplier::operator()(const Color& color) const {
   return color.WithAlphaFloat(multiplier * color.GetAlphaFloat());
 }
 
-// LINT.IfChange(hsl_transform)
+// LINT.IfChange(hcl_transform)
 Color ColorFunction::HueOffset::operator()(const Color& color) const {
   std::array<float, 4> oklab = ColorToOklab(color);
   Point ab = AffineTransform::Rotate(offset).Apply(Point{oklab[1], oklab[2]});
@@ -117,21 +117,20 @@ Color ColorFunction::HueOffset::operator()(const Color& color) const {
   return ColorFromOklab(oklab, color.GetColorSpace());
 }
 
-Color ColorFunction::SaturationMultiplier::operator()(
-    const Color& color) const {
+Color ColorFunction::ChromaMultiplier::operator()(const Color& color) const {
   std::array<float, 4> oklab = ColorToOklab(color);
   oklab[1] *= multiplier;
   oklab[2] *= multiplier;
   return ColorFromOklab(oklab, color.GetColorSpace());
 }
 
-Color ColorFunction::LuminosityOffset::operator()(const Color& color) const {
+Color ColorFunction::LightnessOffset::operator()(const Color& color) const {
   std::array<float, 4> oklab = ColorToOklab(color);
   oklab[0] += offset;
   return ColorFromOklab(oklab, color.GetColorSpace());
 }
 // LINT.ThenChange(
-//   ../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hsl_and_opacity_shift
+//   ../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hcl_and_opacity_shift
 // )
 
 Color ColorFunction::ReplaceColor::operator()(
@@ -164,22 +163,22 @@ absl::Status ValidateColorFunctionParameters(
 }
 
 absl::Status ValidateColorFunctionParameters(
-    const ColorFunction::SaturationMultiplier& saturation) {
-  if (!std::isfinite(saturation.multiplier) || saturation.multiplier < 0) {
+    const ColorFunction::ChromaMultiplier& chroma) {
+  if (!std::isfinite(chroma.multiplier) || chroma.multiplier < 0) {
     return absl::InvalidArgumentError(
-        absl::StrCat("`ColorFunction::SaturationMultiplier::multiplier` must "
+        absl::StrCat("`ColorFunction::ChromaMultiplier::multiplier` must "
                      "be finite and non-negative, got: ",
-                     saturation.multiplier));
+                     chroma.multiplier));
   }
   return absl::OkStatus();
 }
 
 absl::Status ValidateColorFunctionParameters(
-    const ColorFunction::LuminosityOffset& luminosity) {
-  if (!std::isfinite(luminosity.offset)) {
+    const ColorFunction::LightnessOffset& lightness) {
+  if (!std::isfinite(lightness.offset)) {
     return absl::InvalidArgumentError(absl::StrCat(
-        "`ColorFunction::LuminosityOffset::offset` must be finite, got: ",
-        luminosity.offset));
+        "`ColorFunction::LightnessOffset::offset` must be finite, got: ",
+        lightness.offset));
   }
   return absl::OkStatus();
 }
@@ -211,12 +210,12 @@ Version CalculateMinimumRequiredVersion(const ColorFunction::HueOffset& hue) {
 }
 
 Version CalculateMinimumRequiredVersion(
-    const ColorFunction::SaturationMultiplier& saturation) {
+    const ColorFunction::ChromaMultiplier& chroma) {
   return Version::kDevelopment();
 }
 
 Version CalculateMinimumRequiredVersion(
-    const ColorFunction::LuminosityOffset& luminosity) {
+    const ColorFunction::LightnessOffset& lightness) {
   return Version::kDevelopment();
 }
 
@@ -256,14 +255,12 @@ std::string ToFormattedString(const ColorFunction::HueOffset& hue) {
   return absl::StrCat("HueOffset{", hue.offset, "}");
 }
 
-std::string ToFormattedString(
-    const ColorFunction::SaturationMultiplier& saturation) {
-  return absl::StrCat("SaturationMultiplier{", saturation.multiplier, "}");
+std::string ToFormattedString(const ColorFunction::ChromaMultiplier& chroma) {
+  return absl::StrCat("ChromaMultiplier{", chroma.multiplier, "}");
 }
 
-std::string ToFormattedString(
-    const ColorFunction::LuminosityOffset& luminosity) {
-  return absl::StrCat("LuminosityOffset{", luminosity.offset, "}");
+std::string ToFormattedString(const ColorFunction::LightnessOffset& lightness) {
+  return absl::StrCat("LightnessOffset{", lightness.offset, "}");
 }
 
 std::string ToFormattedString(const ColorFunction::ReplaceColor& replace) {
