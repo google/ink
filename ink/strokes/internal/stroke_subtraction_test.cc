@@ -14,6 +14,8 @@
 
 #include "ink/strokes/internal/stroke_subtraction.h"
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -24,6 +26,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/affine_transform.h"
@@ -113,6 +116,35 @@ void CheckVertexLabels(const Mesh& mesh, Point p, float expected_side,
   ASSERT_TRUE(idx.has_value());
   EXPECT_FLOAT_EQ(mesh.FloatVertexAttribute(*idx, 2)[0], expected_side);
   EXPECT_FLOAT_EQ(mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
+}
+
+// Verifies that no interior edge (shared by multiple triangles) in `mesh` is
+// mislabeled with a boundary label.
+void ExpectNoMislabeledInteriorEdges(const Mesh& mesh) {
+  absl::flat_hash_map<std::pair<uint32_t, uint32_t>, int> edge_tri_count;
+  for (uint32_t t = 0; t < mesh.TriangleCount(); ++t) {
+    std::array<uint32_t, 3> tri = mesh.TriangleIndices(t);
+    for (int i = 0; i < 3; ++i) {
+      edge_tri_count[std::minmax(tri[i], tri[(i + 1) % 3])]++;
+    }
+  }
+
+  for (const auto& [edge, count] : edge_tri_count) {
+    if (count < 2) continue;  // Boundary edge; skip.
+
+    auto [u, v] = edge;
+    float side_u = mesh.FloatVertexAttribute(u, 2)[0];
+    float side_v = mesh.FloatVertexAttribute(v, 2)[0];
+    float fwd_u = mesh.FloatVertexAttribute(u, 4)[0];
+    float fwd_v = mesh.FloatVertexAttribute(v, 4)[0];
+
+    bool same_side = (side_u > 0 && side_v > 0) || (side_u < 0 && side_v < 0);
+    bool same_fwd = (fwd_u > 0 && fwd_v > 0) || (fwd_u < 0 && fwd_v < 0);
+
+    EXPECT_FALSE(same_side || same_fwd)
+        << "Interior edge between " << mesh.VertexPosition(u) << " and "
+        << mesh.VertexPosition(v) << " is mislabeled with a boundary label.";
+  }
 }
 
 // Returns the value of the given attribute at point `p`, by finding the
@@ -303,6 +335,131 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
       ElementsAre(FloatEq(0.0f), FloatEq(0.5f), FloatEq(0.5f), FloatEq(1.0f)));
 }
 
+TEST(StrokeSubtractionTest, VertexWelding) {
+  // We should make sure that there are no duplicate vertices or seams in the
+  // subtraction result, especially when a subtraction cuts through an edge
+  // shared by two triangles.
+  //
+  // H-------------------G
+  // |   mesh_b          |
+  // |         A         |
+  // |        /|\        |
+  // E-------/-|-\-------F
+  //        /  |  \
+  //       /   |   \
+  //      /    |    \
+  //     /     |     \
+  //    /      |      \
+  //   /       |       \
+  //  /        | mesh_a \
+  // B---------C---------D
+
+  Point A{0, 0}, B{-5, -1e6f}, C{0, -1e6f}, D{5, -1e6f};
+  Point E{-3, -2}, F{3, -2}, G{3, 2}, H{-3, 2};
+
+  // Set up mesh_a
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition}},
+      IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  MutableMesh mesh_a(*format);
+  for (const Point& p : {A, B, C, D}) mesh_a.AppendVertex(p);
+  mesh_a.AppendTriangleIndices({0, 1, 2});
+  mesh_a.AppendTriangleIndices({0, 2, 3});
+
+  std::vector<uint32_t> mesh_a_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  // Set up mesh_b
+  MutableMesh mesh_b(MeshFormat{});
+  for (const Point& p : {E, F, G, H}) mesh_b.AppendVertex(p);
+  mesh_b.AppendTriangleIndices({0, 1, 2});
+  mesh_b.AppendTriangleIndices({0, 2, 3});
+
+  std::vector<uint32_t> mesh_b_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  // Subtract
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  // The result should have 4 triangles and 6 vertices.
+  EXPECT_EQ(NumTriangles(*result), 4);
+  EXPECT_EQ(NumVertices(*result), 6);
+}
+
+TEST(StrokeSubtractionTest, DegenerateTriangle) {
+  // Degenerate triangles arise frequently in input meshes and need to be
+  // handled with care to ensure that they do not leave seams in the mesh or
+  // zig-zags in the outline. `Subtract` chooses to filter out the degenerate
+  // triangles by welding along the duplicate edge.
+
+  //           H---------------------G
+  //           |             mesh_b  |
+  // D---------+--------C,C'         |
+  // |         |       / |           |
+  // |         |     /   |           |
+  // | mesh_a  |   /     |           |
+  // |         | /       |           |
+  // |         |         |           |
+  // |       / |         |           |
+  // |     /   |         |           |
+  // |   /     |         |           |
+  // | /       |         |           |
+  // A---------+---------B           |
+  //           |                     |
+  //           E---------------------F
+  Point A{0, 0}, B{10, 0}, C{10, 10}, C_prime{10, 10}, D{0, 10};
+  Point E{5, -5}, F{15, -5}, G{15, 15}, H{5, 15};
+  Point X1{5, 0};   // Intersection of AB and EH
+  Point X2{5, 5};   // Intersection of AC and EH
+  Point X3{5, 10};  // Intersection of CD and EH
+
+  // Set up mesh_a with a degenerate triangle {C, C', A} connecting two
+  // triangles where C and C' have coincident positions.
+  MutableMesh mesh_a(MeshFormat{});
+  for (const Point& p : {A, B, C, D, C_prime}) mesh_a.AppendVertex(p);
+  mesh_a.AppendTriangleIndices({2, 0, 1});  // {C, A, B}
+  mesh_a.AppendTriangleIndices({4, 3, 0});  // {C', D, A}
+  mesh_a.AppendTriangleIndices({2, 4, 0});  // {C, C', A} (degenerate)
+
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a);
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  MutableMesh mesh_b(MeshFormat{});
+  for (const Point& p : {E, F, G, H}) mesh_b.AppendVertex(p);
+
+  mesh_b.AppendTriangleIndices({0, 1, 2});
+  mesh_b.AppendTriangleIndices({0, 2, 3});
+
+  constexpr uint32_t mesh_b_outline[] = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  // Subtract
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  EXPECT_EQ(NumTriangles(*result), 3);
+  EXPECT_EQ(NumVertices(*result), 5);
+
+  ASSERT_EQ(result->OutlineCount(0), 1);
+  std::vector<Point> outline_points = GetOutlinePoints(*result, 0, 0);
+  EXPECT_THAT(outline_points,
+              IsCyclicPermutationOf(std::vector<Point>{A, D, X3, X2, X1}));
+}
+
 TEST(StrokeSubtractionTest, ComputeLabels1) {
   // Note that there is no single canonically "correct" labeling for boundary
   // vertices. This test verifies that the heuristic alignment cost optimization
@@ -405,6 +562,9 @@ TEST(StrokeSubtractionTest, ComputeLabels1) {
   CheckVertexLabels(result_mesh, X3, kRightLabel, kBackLabel);
   CheckVertexLabels(result_mesh, X2, kRightLabel, kInteriorLabel);
   CheckVertexLabels(result_mesh, X1, kRightLabel, kFrontLabel);
+
+  // Check that no interior edge gets labeled as boundary.
+  ExpectNoMislabeledInteriorEdges(result_mesh);
 }
 
 TEST(StrokeSubtractionTest, ComputeLabels2) {
@@ -499,8 +659,10 @@ TEST(StrokeSubtractionTest, ComputeLabels2) {
       AffineTransform::Identity(), 0.1f, /*anti_aliasing_enabled=*/true);
   ASSERT_THAT(result, IsOk());
 
-  EXPECT_EQ(NumTriangles(*result), 9);
-  EXPECT_EQ(NumVertices(*result), 11);
+  // Subdivision is required to ensure that chord edges are not labeled as
+  // boundaries.
+  EXPECT_GE(NumTriangles(*result), 9);
+  EXPECT_GE(NumVertices(*result), 11);
 
   ASSERT_EQ(result->OutlineCount(0), 1);
   std::vector<Point> outline_points = GetOutlinePoints(*result, 0, 0);
@@ -547,6 +709,9 @@ TEST(StrokeSubtractionTest, ComputeLabels2) {
   CheckVertexLabels(result_mesh, X2, kRightLabel, kFrontLabel);
   // (X2,B) should be kRight, since (A,B) was kRight
   CheckVertexLabels(result_mesh, B, kRightLabel, kBackLabel);
+
+  // Check that subdivision worked.
+  ExpectNoMislabeledInteriorEdges(result_mesh);
 }
 
 TEST(StrokeSubtractionTest, ComputeLabels3) {
@@ -640,6 +805,8 @@ TEST(StrokeSubtractionTest, ComputeLabels3) {
   CheckVertexLabels(result_mesh, J, kRightLabel, kFrontLabel);
   CheckVertexLabels(result_mesh, K, kRightLabel, kBackLabel);
   CheckVertexLabels(result_mesh, L, kLeftLabel, kBackLabel);
+
+  ExpectNoMislabeledInteriorEdges(result_mesh);
 }
 
 TEST(StrokeSubtractionTest, ComputeLabels4) {
@@ -720,6 +887,8 @@ TEST(StrokeSubtractionTest, ComputeLabels4) {
   CheckVertexLabels(result_mesh, F, kLeftLabel, kBackLabel);
   CheckVertexLabels(result_mesh, G, kLeftLabel, kFrontLabel);
   CheckVertexLabels(result_mesh, H, kRightLabel, kFrontLabel);
+
+  ExpectNoMislabeledInteriorEdges(result_mesh);
 }
 
 TEST(StrokeSubtractionTest, ComputeSideDerivatives) {

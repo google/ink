@@ -20,6 +20,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -39,6 +40,7 @@
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
+#include "ink/geometry/segment.h"
 #include "ink/geometry/triangle.h"
 #include "ink/geometry/vec.h"
 #include "ink/strokes/internal/brush_tip_extruder/derivative_calculator.h"
@@ -57,14 +59,18 @@ using ::ink::geometry_internal::Intersects;
 using ::ink::geometry_internal::ShapeOutline;
 using ::ink::numbers::kPi;
 
-using TriangleAttributes =
-    absl::InlinedVector<std::array<SmallArray<float, 4>, 3>, 4>;
+using VertexAttributes = absl::InlinedVector<SmallArray<float, 4>, 4>;
 
 // Relative error margin for 32-bit floating point operations.
 constexpr float kFloatTolerance = 1e-6f;
 constexpr float kInfinity = std::numeric_limits<float>::infinity();
 
-float DistanceSquared(Point a, Point b) { return (a - b).MagnitudeSquared(); }
+// A map of an undirected edge {u, v} (oriented so that u < v) to a list of its
+// adjacent triangles and their relative orientations (+1 if (u,v) is in counter
+// clockwise ordered in the triangle, -1 otherwise).
+using EdgeTriangleAdjacencyMap =
+    absl::flat_hash_map<std::pair<uint32_t, uint32_t>,
+                        absl::InlinedVector<std::pair<uint32_t, int>, 2>>;
 
 // A representation of a triangulation, consisting of a list of `vertices` and
 // `triangles` represented by triplets of indices of vertices.
@@ -73,9 +79,45 @@ struct Triangulation {
   std::vector<std::array<uint32_t, 3>> triangles;
 };
 
+float DistanceSquared(Point a, Point b) { return (a - b).MagnitudeSquared(); }
+
+// Associates the triangle to its directed edge (u,v) in the given adjacency
+// map.
+void AddEdgeToAdjacencyMap(uint32_t u, uint32_t v, uint32_t tri_index,
+                           EdgeTriangleAdjacencyMap& edge_tri_map) {
+  if (u < v) {
+    edge_tri_map[{u, v}].push_back({tri_index, 1});
+  } else {
+    edge_tri_map[{v, u}].push_back({tri_index, -1});
+  }
+}
+
+// Associates the triangle to its three edges in the given adjacency map.
+void AddTriangleToAdjacencyMap(const std::array<uint32_t, 3>& tri,
+                               uint32_t tri_index,
+                               EdgeTriangleAdjacencyMap& edge_tri_map) {
+  AddEdgeToAdjacencyMap(tri[0], tri[1], tri_index, edge_tri_map);
+  AddEdgeToAdjacencyMap(tri[1], tri[2], tri_index, edge_tri_map);
+  AddEdgeToAdjacencyMap(tri[2], tri[0], tri_index, edge_tri_map);
+}
+
+// Remaps the three vertex indices of a triangle using `index_map`.
+std::array<uint32_t, 3> MapIndices(const std::array<uint32_t, 3>& tri,
+                                   absl::Span<const uint32_t> index_map) {
+  return {index_map[tri[0]], index_map[tri[1]], index_map[tri[2]]};
+}
+
+// Returns the vertex in `tri` opposite to the edge (`u`, `v`).
+uint32_t OppositeVertex(const std::array<uint32_t, 3>& tri, uint32_t u,
+                        uint32_t v) {
+  if (tri[0] != u && tri[0] != v) return tri[0];
+  if (tri[1] != u && tri[1] != v) return tri[1];
+  return tri[2];
+}
+
 // Returns the homogenous transform from world space to the barycentric coords
 // for the given triangle.
-// TODO(b/932647697): Consider defining this as a separate an externally visible
+// TODO(b/932647697): Consider defining this as a separate externally visible
 // utility function, or reusing similar existing functions in ink/geometry.
 std::array<double, 9> ComputeBarycentricTransform(const Triangle& tri) {
   Vec v0 = tri.p1 - tri.p0;
@@ -136,33 +178,28 @@ SmallArray<float, 4> LinearSpaceToHclShift(SmallArray<float, 4> val) {
 }
 // LINT.ThenChange(../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hcl_and_opacity_shift)
 
-// Helper function to extract and linearize triangle vertex attributes.
-TriangleAttributes GetTriangleAttributes(
-    const Mesh& mesh, const std::array<uint32_t, 3>& indices) {
-  absl::InlinedVector<std::array<SmallArray<float, 4>, 3>, 4> attributes(
-      mesh.Format().Attributes().size());
+// Helper function that extracts and linearizes the vertex attributes of the
+// given vertex in `mesh`.
+template <typename MeshType>
+VertexAttributes GetVertexAttributes(const MeshType& mesh, uint32_t vertex) {
+  VertexAttributes attributes(mesh.Format().Attributes().size());
   for (uint32_t i = 0; i < attributes.size(); ++i) {
     MeshFormat::AttributeId id = mesh.Format().Attributes()[i].id;
 
     // Since the position is already stored elsewhere, skip loading it.
-    if (id == MeshFormat::AttributeId::kPosition) {
-      continue;
-    }
+    if (id == MeshFormat::AttributeId::kPosition) continue;
 
-    // These attributes should not be interpolated.
-    if (id == MeshFormat::AttributeId::kSideLabel ||
-        id == MeshFormat::AttributeId::kForwardLabel) {
-      continue;
-    }
+    // The anti aliasing labels shouldn't be interpolated.
+    if (id == MeshFormat::AttributeId::kSideLabel) continue;
+    if (id == MeshFormat::AttributeId::kForwardLabel) continue;
+
+    // Color shift attributes need to be linearized for interpolation; all other
+    // attributes get linearly interpolated.
     if (id == MeshFormat::AttributeId::kColorShiftHcl) {
-      attributes[i] = {
-          HclShiftToLinearSpace(mesh.FloatVertexAttribute(indices[0], i)),
-          HclShiftToLinearSpace(mesh.FloatVertexAttribute(indices[1], i)),
-          HclShiftToLinearSpace(mesh.FloatVertexAttribute(indices[2], i))};
+      attributes[i] =
+          HclShiftToLinearSpace(mesh.FloatVertexAttribute(vertex, i));
     } else {
-      attributes[i] = {mesh.FloatVertexAttribute(indices[0], i),
-                       mesh.FloatVertexAttribute(indices[1], i),
-                       mesh.FloatVertexAttribute(indices[2], i)};
+      attributes[i] = mesh.FloatVertexAttribute(vertex, i);
     }
   }
   return attributes;
@@ -191,8 +228,8 @@ bool IsBack(BoundaryLabel label) { return label / 3 == 2; }
 
 // Converts encoded float values to a BoundaryLabel enum value.
 BoundaryLabel DecodeBoundaryLabel(float side, float fwd) {
-  int side_idx = (side > 0.0f) ? 2 : (side < 0.0f ? 1 : 0);
-  int fwd_idx = (fwd > 0.0f) ? 2 : (fwd < 0.0f ? 1 : 0);
+  int side_idx = (side > 0.5f) ? 2 : (side < -0.5f ? 1 : 0);
+  int fwd_idx = (fwd > 0.5f) ? 2 : (fwd < -0.5f ? 1 : 0);
   return static_cast<BoundaryLabel>(3 * fwd_idx + side_idx);
 }
 
@@ -231,15 +268,83 @@ bool HasAntiAliasingAttributes(const MeshFormat& format) {
          attr_indices.forward_derivative != -1;
 }
 
-// Properties of an input mesh triangle, including the `indices` of the points
-// in the mesh, the `transform` from the mesh's coordinate space to the
-// triangle's barycentric coordinates, the geometric `heights` (altitudes) of
-// the triangle, and mesh vertex attributes `attributes` of its vertices.
+// Welds coincident topological boundary edges with opposite orientations and
+// returns an index map with merged canonical vertex roots.
+std::vector<uint32_t> StitchSeamEdges(
+    const EdgeTriangleAdjacencyMap& edge_tri_map,
+    const MutableMesh& mutable_mesh) {
+  // This function welds together triangles that are geometrically adjacent, but
+  // whose shared edge is duplicated in the mesh (i.e., they have distinct, but
+  // coincident, vertices).
+  //
+  // The approach is to first compute the topological boundary, consisting of
+  // all directed edges adjacent to only one triangle. We then organize the
+  // boundary edges by their geometric positions, look for directed edges that
+  // are coincident and have opposite orientations, and weld those together by
+  // merging their endpoint vertices.
+
+  // Initialize the index_map with identity mapping.
+  std::vector<uint32_t> index_map(mutable_mesh.VertexCount());
+  std::iota(index_map.begin(), index_map.end(), 0);
+
+  // Union-find type helpers to merge vertices.
+  auto find = [&](uint32_t v) {
+    while (v != index_map[v]) {
+      index_map[v] = index_map[index_map[v]];
+      v = index_map[v];
+    }
+    return v;
+  };
+  auto merge = [&](uint32_t a, uint32_t b) { index_map[find(a)] = find(b); };
+
+  absl::flat_hash_map<std::pair<Point, Point>,
+                      absl::InlinedVector<std::pair<uint32_t, uint32_t>, 1>>
+      geometric_boundary;
+  for (const auto& [edge, incident] : edge_tri_map) {
+    if (incident.size() != 1) continue;
+    auto [u, v] = edge;
+    // The `edge_tri_map` stores undirected edges with u < v; orient the
+    // directed edge (u -> v) to match the adjacent triangle.
+    if (incident[0].second < 0) std::swap(u, v);
+    Point pu = mutable_mesh.VertexPosition(u);
+    Point pv = mutable_mesh.VertexPosition(v);
+    geometric_boundary[{pu, pv}].push_back({u, v});
+  }
+
+  for (auto& [seg, edges] : geometric_boundary) {
+    if (edges.empty()) continue;
+
+    // Look for coincident edges oriented in the opposite direction.
+    auto opp_it = geometric_boundary.find({seg.second, seg.first});
+    if (opp_it == geometric_boundary.end()) continue;
+    auto& opp_edges = opp_it->second;
+
+    // Pair up and weld the edges.
+    while (!edges.empty() && !opp_edges.empty()) {
+      auto [u, v] = edges.back();
+      edges.pop_back();
+      auto [u_opp, v_opp] = opp_edges.back();
+      opp_edges.pop_back();
+      merge(u, v_opp);
+      merge(v, u_opp);
+    }
+  }
+
+  // Compress paths in index_map.
+  for (uint32_t& id : index_map) id = find(id);
+  return index_map;
+}
+
+// Properties of an input mesh triangle, including the `triangle` geometry, the
+// `indices` of its vertices in the result mesh, the `transform` from the mesh's
+// coordinate space to the triangle's barycentric coordinates, the geometric
+// `heights` (altitudes) of the triangle, and the `attributes` of its vertices.
 struct TriangleData {
+  Triangle triangle;
   std::array<uint32_t, 3> indices;
   std::array<double, 9> transform;
   std::array<double, 3> heights;
-  TriangleAttributes attributes;
+  std::array<VertexAttributes, 3> attributes;
 };
 
 // A helper class to incrementally construct a `MutableMesh` during mesh
@@ -252,45 +357,82 @@ class MeshBuilder {
       : mutable_mesh_(format),
         attr_indices_(StrokeVertex::FindAttributeIndices(format)) {}
 
-  // Copies the vertex and its attributes from the given `mesh` at
-  // `vertex_index` and appends it to this mesh, and returns
-  // the index of the newly added vertex in this mesh.
-  uint32_t CopyVertex(const Mesh& mesh, uint32_t vertex_index) {
-    uint32_t new_index = mutable_mesh_.VertexCount();
-    mutable_mesh_.AppendVertex(mesh.VertexPosition(vertex_index));
+  // Initializes the builder with vertices from `meshes`, welds any coincident
+  // boundary edges, and returns a mapping of each vertex in `meshes` to its
+  // canonical copy in `mutable_mesh_`.
+  std::vector<std::vector<uint32_t>> Initialize(absl::Span<const Mesh> meshes) {
     const MeshFormat& format = mutable_mesh_.Format();
-    for (uint32_t i = 0; i < format.Attributes().size(); ++i) {
-      if (i == format.PositionAttributeIndex()) continue;
-      mutable_mesh_.SetFloatVertexAttribute(
-          new_index, i, mesh.FloatVertexAttribute(vertex_index, i));
+
+    EdgeTriangleAdjacencyMap edge_tri_adj;
+    std::vector<std::vector<uint32_t>> index_maps(meshes.size());
+
+    // A global index, across all meshes, for each triangle.
+    uint32_t tri_idx = 0;
+    for (size_t m = 0; m < meshes.size(); ++m) {
+      const Mesh& mesh = meshes[m];
+      index_maps[m].reserve(mesh.VertexCount());
+
+      // Copy the vertices.
+      for (uint32_t i = 0; i < mesh.VertexCount(); ++i) {
+        uint32_t new_index = mutable_mesh_.VertexCount();
+        mutable_mesh_.AppendVertex(mesh.VertexPosition(i));
+        for (uint32_t attr = 0; attr < format.Attributes().size(); ++attr) {
+          if (attr == format.PositionAttributeIndex()) continue;
+          mutable_mesh_.SetFloatVertexAttribute(
+              new_index, attr, mesh.FloatVertexAttribute(i, attr));
+        }
+        index_maps[m].push_back(new_index);
+      }
+
+      for (uint32_t k = 0; k < mesh.TriangleCount(); ++k) {
+        tri_idx += 1;
+        Triangle tri = mesh.GetTriangle(k);
+        std::array<uint32_t, 3> tri_indices =
+            MapIndices(mesh.TriangleIndices(k), index_maps[m]);
+        // To avoid having to deal with subtracting degenerate triangles, we
+        // omit adding them to the edge adjacency map, which temporarily creates
+        // a topological seam in the mesh that's stitched back together below.
+        if (tri.p0 == tri.p1 || tri.p1 == tri.p2 || tri.p2 == tri.p0) continue;
+
+        AddTriangleToAdjacencyMap(tri_indices, tri_idx, edge_tri_adj);
+      }
     }
-    return new_index;
+
+    // Stitch seam edges together by welding their vertices.
+    std::vector<uint32_t> index_remap =
+        StitchSeamEdges(edge_tri_adj, mutable_mesh_);
+    for (auto& index_map : index_maps) {
+      for (uint32_t& v : index_map) v = index_remap[v];
+    }
+
+    return index_maps;
   }
 
   // Finds an existing vertex or adds one for a point `p` contained in the
   // given `triangle` (whose vertices are assumed to have already been added
   // to the result mesh), and returns its index. The `epsilon` parameter
-  // specifies the tolerance for snapping to vertices/edges.
+  // indicates the scale of the geometry.
   uint32_t GetOrAddVertex(Point p, const TriangleData& triangle,
                           float epsilon) {
+    if (p == triangle.triangle.p0) return triangle.indices[0];
+    if (p == triangle.triangle.p1) return triangle.indices[1];
+    if (p == triangle.triangle.p2) return triangle.indices[2];
+
     std::array<double, 3> weights =
         ComputeBarycentricCoordinates(p, triangle.transform);
-    std::array<bool, 3> near_zero = {
-        weights[0] * triangle.heights[0] < epsilon,
-        weights[1] * triangle.heights[1] < epsilon,
-        weights[2] * triangle.heights[2] < epsilon};
+    std::array<double, 3> dist = {weights[0] * triangle.heights[0],
+                                  weights[1] * triangle.heights[1],
+                                  weights[2] * triangle.heights[2]};
 
-    if (near_zero[1] && near_zero[2]) return triangle.indices[0];
-    if (near_zero[2] && near_zero[0]) return triangle.indices[1];
-    if (near_zero[0] && near_zero[1]) return triangle.indices[2];
-
-    for (int side = 0; side < 3; ++side) {
-      if (near_zero[side]) {
-        return GetOrAddEdgeVertex(p, side, triangle, weights, epsilon);
-      }
+    auto min_it = std::min_element(dist.begin(), dist.end());
+    if (*min_it < epsilon) {
+      return GetOrAddEdgeVertex(p, min_it - dist.begin(), triangle, weights);
     }
 
-    return AddVertex(p, triangle, weights);
+    return AddVertex(p, triangle.attributes,
+                     std::array{static_cast<float>(weights[0]),
+                                static_cast<float>(weights[1]),
+                                static_cast<float>(weights[2])});
   }
 
   Point GetPosition(uint32_t vertex_index) const {
@@ -333,36 +475,108 @@ class MeshBuilder {
 
   const MutableMesh& GetMesh() const { return mutable_mesh_; }
 
+  const auto& GetEdgeTriangleAdjacencyMap() const { return edge_tri_adj_map_; }
+
   // Extracts the underlying MutableMesh by moving it, consuming the
   // MeshBuilder.
   MutableMesh ExtractMesh() && { return std::move(mutable_mesh_); }
 
   // Adds a triangle to the subtraction result mesh.
   void AddTriangle(const std::array<uint32_t, 3>& triangle) {
+    ABSL_DCHECK_NE(triangle[0], triangle[1]);
+    ABSL_DCHECK_NE(triangle[1], triangle[2]);
+    ABSL_DCHECK_NE(triangle[2], triangle[0]);
+    uint32_t tri_index = mutable_mesh_.TriangleCount();
     mutable_mesh_.AppendTriangleIndices(triangle);
+    AddTriangleToAdjacencyMap(triangle, tri_index, edge_tri_adj_map_);
+  }
+
+  // Subdivides the interior edge between `u` and `v` by inserting a midpoint
+  // vertex, splitting its incident triangles, and updating edge_tri_adj_map_.
+  void SubdivideEdge(uint32_t u, uint32_t v) {
+    // To subdivide the edge, we first add a vertex at the midpoint of the edge,
+    // then break each adjacent triangle up into two pieces, and then update the
+    // edge triangle adjacency map.
+
+    uint32_t m = AddVertex(Segment{GetPosition(u), GetPosition(v)}.Midpoint(),
+                           std::array{GetVertexAttributes(mutable_mesh_, u),
+                                      GetVertexAttributes(mutable_mesh_, v)},
+                           /*weights=*/std::array{0.5f, 0.5f});
+    SetLabel(m, kInterior);
+
+    // Get the adjacent triangles.
+    auto it = edge_tri_adj_map_.find(std::minmax(u, v));
+    if (it == edge_tri_adj_map_.end()) return;
+    auto adjacent_triangles = it->second;
+
+    // Remove the old edge from the adjacency map.
+    edge_tri_adj_map_.erase(it);
+
+    for (const auto& [tri_idx, orientation] : adjacent_triangles) {
+      // Orient the triangle vertices as (a, b, c) in counterclockwise order,
+      // with (a, b) as the directed subdivided edge.
+      std::array<uint32_t, 3> tri = mutable_mesh_.TriangleIndices(tri_idx);
+      uint32_t a = std::min(u, v), b = std::max(u, v);
+      if (orientation < 0) std::swap(a, b);
+      uint32_t c = OppositeVertex(tri, u, v);
+      //          c
+      //         /|\
+      //        / | \
+      //       /  |  \
+      //      / T1|T2 \
+      //     /    |    \
+      //    a-----m-----b
+
+      // With the edge (a,b) subdivided, the triangle is now a quad
+      // (a, m, b, c), which we break into two new triangles.
+
+      // Reuse the index of the old triangle, for triangle T1
+      uint32_t t1_idx = tri_idx;
+      mutable_mesh_.SetTriangleIndices(t1_idx, {c, a, m});
+
+      // Add a triangle for triangle T2.
+      uint32_t t2_idx = mutable_mesh_.TriangleCount();
+      mutable_mesh_.AppendTriangleIndices({c, m, b});
+
+      // Now some bookkeeping to update the edge triangle adjacency map:
+
+      // Since T1 uses the same index as the old triangle, no need to update
+      // (a,c). On the other hand, edge (b, c) is now adjacent to T2
+      for (auto& [t_idx, orient] : edge_tri_adj_map_[std::minmax(b, c)]) {
+        if (t_idx == t1_idx) {
+          t_idx = t2_idx;
+          break;
+        }
+      }
+      // Then add all the new edges.
+      AddEdgeToAdjacencyMap(a, m, t1_idx, edge_tri_adj_map_);
+      AddEdgeToAdjacencyMap(m, c, t1_idx, edge_tri_adj_map_);
+      AddEdgeToAdjacencyMap(m, b, t2_idx, edge_tri_adj_map_);
+      AddEdgeToAdjacencyMap(c, m, t2_idx, edge_tri_adj_map_);
+    }
   }
 
  private:
   // Adds a vertex at `position` to the subtraction result mesh, with attributes
-  // obtained by interpolating the given `triangle` attributes with the given
-  // barycentric `weights`, and returns the index of the newly added vertex.
-  uint32_t AddVertex(Point position, const TriangleData& triangle,
-                     const std::array<double, 3>& weights) {
+  // obtained by interpolating the given `vertex_attrs` with the given
+  // `weights`, and returns the index of the newly added vertex.
+  uint32_t AddVertex(Point position,
+                     absl::Span<const VertexAttributes> vertex_attrs,
+                     absl::Span<const float> weights) {
+    ABSL_DCHECK_EQ(vertex_attrs.size(), weights.size());
+    ABSL_DCHECK(!vertex_attrs.empty());
     uint32_t new_index = mutable_mesh_.VertexCount();
     mutable_mesh_.AppendVertex(position);
     const MeshFormat& format = mutable_mesh_.Format();
-    ABSL_DCHECK_EQ(triangle.attributes.size(), format.Attributes().size());
-    for (uint32_t attr = 0; attr < triangle.attributes.size(); ++attr) {
+    for (uint32_t attr = 0; attr < format.Attributes().size(); ++attr) {
       MeshFormat::AttributeId id = format.Attributes()[attr].id;
+      if (vertex_attrs[0][attr].Size() == 0) continue;
 
-      const std::array<SmallArray<float, 4>, 3>& vals =
-          triangle.attributes[attr];
-      if (vals[0].Size() == 0) continue;
-
-      SmallArray<float, 4> interp_val(vals[0].Size());
-      for (uint8_t c = 0; c < vals[0].Size(); ++c) {
-        interp_val[c] = weights[0] * vals[0][c] + weights[1] * vals[1][c] +
-                        weights[2] * vals[2][c];
+      SmallArray<float, 4> interp_val(vertex_attrs[0][attr].Size());
+      for (size_t k = 0; k < vertex_attrs.size(); ++k) {
+        for (uint8_t c = 0; c < interp_val.Size(); ++c) {
+          interp_val[c] += weights[k] * vertex_attrs[k][attr][c];
+        }
       }
 
       // Don't forget to map the HCL shift back to proper coordinates.
@@ -377,20 +591,22 @@ class MeshBuilder {
   // Finds an existing vertex or adds one for a point `p` lying along the side
   // `side` of `triangle`, and returns its index.
   uint32_t GetOrAddEdgeVertex(Point p, int side, const TriangleData& triangle,
-                              const std::array<double, 3>& weights,
-                              float epsilon) {
+                              const std::array<double, 3>& weights) {
     // Get vertices of the endpoints of `side`.
     uint32_t v1 = triangle.indices[(side == 2) ? 0 : side + 1];
     uint32_t v2 = triangle.indices[(side == 0) ? 2 : side - 1];
 
-    if (v1 > v2) std::swap(v1, v2);
-
-    auto& edge_points = edge_vertex_map_[{v1, v2}];
+    auto& edge_points = edge_vertex_map_[std::minmax(v1, v2)];
     for (const auto& [existing_p, existing_index] : edge_points) {
-      if (DistanceSquared(p, existing_p) <= epsilon * epsilon)
-        return existing_index;
+      // The subtraction in `outline_processing.h` guarantees identical
+      // intersection points for shared edges, regardless of edge orientation.
+      if (existing_p == p) return existing_index;
     }
-    uint32_t new_index = AddVertex(p, triangle, weights);
+
+    uint32_t new_index = AddVertex(p, triangle.attributes,
+                                   std::array{static_cast<float>(weights[0]),
+                                              static_cast<float>(weights[1]),
+                                              static_cast<float>(weights[2])});
     edge_points.push_back({p, new_index});
     return new_index;
   }
@@ -405,6 +621,10 @@ class MeshBuilder {
   absl::flat_hash_map<std::pair<uint32_t, uint32_t>,
                       absl::InlinedVector<std::pair<Point, uint32_t>, 2>>
       edge_vertex_map_;
+
+  // Maps an undirected edge {u, v} (represented as (min(u, v), max(u, v))) to
+  // its incident triangles.
+  EdgeTriangleAdjacencyMap edge_tri_adj_map_;
 };
 
 // Computes the geometric boolean difference `tri` - `shape_b` as a
@@ -419,54 +639,48 @@ Triangulation SubtractTriangle(const Triangle& tri,
 
 // Computes outlines and returns the (clockwise oriented) outlines of the given
 // `mesh`.
-std::vector<std::vector<uint32_t>> ComputeOutlines(const MutableMesh& mesh) {
-  // To compute the outline, we first compute the "simplicial boundary"
-  // (the set of directed boundary edges of triangles that aren't
-  // "cancelled" out by an adjacent triangle) of the mesh. Then we trace the
-  // boundary edges to extract the outline.
+std::vector<std::vector<uint32_t>> ComputeOutlines(
+    const MeshBuilder& mesh_builder) {
+  const MutableMesh& mesh = mesh_builder.GetMesh();
+
+  // To compute the outline, we first iterate through all boundary edges (those
+  // with only one adjacent triangle) and build an adjacency map `boundary` that
+  // maps each boundary vertex to its next vertex in a counterclockwise walk of
+  // the boundary.
+  std::vector<int> boundary(mesh.VertexCount(), -1);
+
   // TODO(b/523326691): Consider initializing `boundary` with the existing mesh
   // outlines to avoid recomputing the outline for untouched parts of the mesh.
+  // TODO(b/521449017): Handle pinch points where multiple boundary loops meet
+  // at a common vertex.
 
-  // We store the simplicial boundary in a vertex adjacency list `boundary`,
-  // representing directed edges of the mesh. As we add triangle boundaries, we
-  // make sure to remove cancelled edges (i.e. if (v, u) is already present in
-  // the adjacency list, adding (u, v) removes it). The capacity of 4 is chosen
-  // as 4 is the typical degree of a vertex in a triangle strip.
-  std::vector<absl::InlinedVector<uint32_t, 4>> boundary(mesh.VertexCount());
-  for (uint32_t tri_idx = 0; tri_idx < mesh.TriangleCount(); ++tri_idx) {
-    std::array<uint32_t, 3> triangle = mesh.TriangleIndices(tri_idx);
-    uint32_t u = triangle[2];
-    for (uint32_t v : triangle) {
-      if (absl::erase_if(boundary[v], [u](uint32_t x) { return x == u; }) ==
-          0) {
-        boundary[u].push_back(v);
-      }
-      u = v;
-    }
+  for (const auto& [edge, tris] : mesh_builder.GetEdgeTriangleAdjacencyMap()) {
+    if (tris.size() != 1) continue;
+    auto [u, v] = edge;
+    // Orient the edge counter-clockwise.
+    if (tris[0].second < 0) std::swap(u, v);
+    boundary[u] = v;
   }
 
-  // `boundary` now is an adjaceny map of the boundary outline of the graph: for
-  // any boundary vertex u, `boundary[u]` is the singleton list consisting of
-  // the successor vertex of `u` in a counterclockwise walk of the boundary. We
-  // now traverse the `boundary` to extract the outline as a sequence of
+  // We now traverse the `boundary` to extract the outline as a sequence of
   // vertices.
   std::vector<std::vector<uint32_t>> outlines;
   for (uint32_t start = 0; start < boundary.size(); ++start) {
-    while (!boundary[start].empty()) {
-      std::vector<uint32_t> loop = {start};
-      uint32_t curr = start;
-      while (!boundary[curr].empty()) {
-        uint32_t next = boundary[curr].back();
-        boundary[curr].pop_back();
-        if (next == start) break;
-        loop.push_back(next);
-        curr = next;
-      }
+    if (boundary[start] < 0) continue;
 
-      if (loop.size() > 2) {
-        std::reverse(loop.begin(), loop.end());
-        outlines.push_back(std::move(loop));
-      }
+    std::vector<uint32_t> loop = {start};
+    uint32_t curr = start;
+    while (boundary[curr] >= 0) {
+      uint32_t next = boundary[curr];
+      boundary[curr] = -1;
+      if (next == start) break;
+      loop.push_back(next);
+      curr = next;
+    }
+
+    if (loop.size() > 2) {
+      std::reverse(loop.begin(), loop.end());
+      outlines.push_back(std::move(loop));
     }
   }
   return outlines;
@@ -579,7 +793,7 @@ void ComputeLabels(absl::Span<const uint32_t> outline,
                    std::vector<BoundaryLabel>& labels,
                    const MeshBuilder& mesh_builder) {
   // We follow the optimization approach described above in the `ComputeLabels`
-  // overload: we iterate through choices for the first vertex, compute the
+  // overload: we iterate through choices for the first vertex, compute
   // for each choice the optimal labeling of the remaining vertices, and choose
   // the one with the minimum cost.
   const size_t n = outline.size();
@@ -601,12 +815,17 @@ void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
   // The boundary of the result mesh typically consists of alternating
   // segments of the original mesh boundary and subtracted shape boundary.
   // During the subtraction computation, the labels of the original mesh
-  // vertices are copied (see CopyVertex), while those of the subtracted shape
-  // are set to kInterior (see GetTriangleAttributes).
+  // vertices are copied (see Initialize), while those of the subtracted shape
+  // are set to kInterior (see GetVertexAttributes).
   //
   // To avoid recomputing the labels for the untouched portions of the mesh, we
   // instead traverse the outline to identify maximal segments of unlabeled
   // vertices and compute new labels for each.
+  //
+  // To simplify computing labels, we first assign vertex labels based purely on
+  // boundary edges. This however can cause interior edges to mistakenly be
+  // labeled with a boundary label. To rectify this, in a subsequent
+  // post-processing step, we subdivide any such mislabeled interior edges.
 
   for (absl::Span<const uint32_t> outline : outlines) {
     // Read all the vertex labels from the mesh.
@@ -643,6 +862,20 @@ void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
       }
     }
   }
+
+  // Find all mislabeled interior edges and subdivide them.
+  // TODO(b/523326691): Try edge-flipping where feasible instead of subdividing.
+  std::vector<std::pair<uint32_t, uint32_t>> mislabeled;
+  for (const auto& [edge, tris] : mesh_builder.GetEdgeTriangleAdjacencyMap()) {
+    if (tris.size() != 2) continue;
+    const auto [u, v] = edge;
+    if (GetEdgeLabel(mesh_builder.GetLabel(u), mesh_builder.GetLabel(v)) !=
+        kInterior) {
+      mislabeled.push_back(edge);
+    }
+  }
+
+  for (const auto& [u, v] : mislabeled) mesh_builder.SubdivideEdge(u, v);
 }
 // LINT.ThenChange(
 //     //depot/google3/third_party/ink/strokes/internal/stroke_vertex.h:margin_encoding,
@@ -796,27 +1029,27 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
   // indices of the corresponding vertices in the resulting `mutable_mesh`.
 
   MeshBuilder sub_mesh(format);
-
-  // Copy over all of the vertices. Vertices not belonging to any triangle
-  // will be removed by PartitionedMesh::FromMutableMeshGroups.
-  for (const Mesh& mesh : meshes) {
-    for (uint32_t i = 0; i < mesh.VertexCount(); ++i) {
-      sub_mesh.CopyVertex(mesh, i);
-    }
-  }
+  // Initialize by copying over all vertices from `meshes`, preprocessing the
+  // input meshes to filter out degenerate triangles and stitch seams, and
+  // obtain a mapping from vertices in `meshes` to their copy in `sub_mesh`.
+  std::vector<std::vector<uint32_t>> index_maps = sub_mesh.Initialize(meshes);
 
   // Process the triangles.
-  uint32_t vertex_offset = 0;
-  for (const Mesh& mesh : meshes) {
+  for (size_t mesh_idx = 0; mesh_idx < meshes.size(); ++mesh_idx) {
+    const Mesh& mesh = meshes[mesh_idx];
+    const std::vector<uint32_t>& index_map = index_maps[mesh_idx];
+
     for (uint32_t tri_idx = 0; tri_idx < mesh.TriangleCount(); ++tri_idx) {
-      std::array<uint32_t, 3> old_indices = mesh.TriangleIndices(tri_idx);
-
-      // Indices of the copied over vertices of the triangle in the result mesh.
-      std::array<uint32_t, 3> indices = {old_indices[0] + vertex_offset,
-                                         old_indices[1] + vertex_offset,
-                                         old_indices[2] + vertex_offset};
-
       Triangle tri = mesh.GetTriangle(tri_idx);
+
+      // Skip degenerate triangles.
+      // TODO(b/521449017): Triangles with coincident vertices arise frequently
+      // due to quantization during encoding. Degenerate triangles that have no
+      // coincident vertices are expected to be uncommon, but should be handled.
+      if (tri.p0 == tri.p1 || tri.p1 == tri.p2 || tri.p2 == tri.p0) continue;
+
+      std::array<uint32_t, 3> old_indices = mesh.TriangleIndices(tri_idx);
+      std::array<uint32_t, 3> indices = MapIndices(old_indices, index_map);
 
       // If there is no intersection with the bounding box, add the triangle
       // and move on.
@@ -836,10 +1069,13 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
       // interpolation.
       std::array<double, 9> transform = ComputeBarycentricTransform(tri);
       const TriangleData triangle = {
+          .triangle = tri,
           .indices = indices,
           .transform = transform,
           .heights = ComputeHeights(tri, transform[8]),
-          .attributes = GetTriangleAttributes(mesh, old_indices)};
+          .attributes = {GetVertexAttributes(mesh, old_indices[0]),
+                         GetVertexAttributes(mesh, old_indices[1]),
+                         GetVertexAttributes(mesh, old_indices[2])}};
 
       // Add all the vertices of the fragments and get their indices.
       std::vector<uint32_t> mapped_indices(fragments.vertices.size());
@@ -849,24 +1085,13 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
       }
 
       // Add all the triangle fragments.
-      for (const std::array<uint32_t, 3>& fragment : fragments.triangles) {
-        std::array<uint32_t, 3> fragment_triangle = {
-            mapped_indices[fragment[0]], mapped_indices[fragment[1]],
-            mapped_indices[fragment[2]]};
-        if (fragment_triangle[0] == fragment_triangle[1] ||
-            fragment_triangle[1] == fragment_triangle[2] ||
-            fragment_triangle[2] == fragment_triangle[0]) {
-          continue;
-        }
-        sub_mesh.AddTriangle(fragment_triangle);
+      for (const auto& frag_tri : fragments.triangles) {
+        sub_mesh.AddTriangle(MapIndices(frag_tri, mapped_indices));
       }
     }
-
-    vertex_offset += mesh.VertexCount();
   }
 
-  std::vector<std::vector<uint32_t>> outlines =
-      ComputeOutlines(sub_mesh.GetMesh());
+  std::vector<std::vector<uint32_t>> outlines = ComputeOutlines(sub_mesh);
 
   if (HasAntiAliasingAttributes(format) && anti_aliasing_enabled) {
     ComputeAndSetLabels(outlines, sub_mesh);
