@@ -123,7 +123,7 @@ bool PartitionedMeshNative_isEmpty(int64_t native_ptr) {
 }
 
 PartitionedMeshNative_Box PartitionedMeshNative_getBounds(int64_t native_ptr) {
-  const std::optional<Rect>& bounds_rect =
+  std::optional<Rect> bounds_rect =
       CastToPartitionedMesh(native_ptr).Bounds().AsRect();
   ABSL_CHECK(bounds_rect.has_value());
   return {bounds_rect->XMin(), bounds_rect->YMin(), bounds_rect->XMax(),
