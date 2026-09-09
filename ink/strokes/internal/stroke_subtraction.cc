@@ -64,7 +64,14 @@ using TriangleAttributes =
 constexpr float kFloatTolerance = 1e-6f;
 constexpr float kInfinity = std::numeric_limits<float>::infinity();
 
-float DistanceSquared(Point a, Point b) { return (a - b).MagnitudeSquared(); }
+// A map of undirected edges to their adjacent triangles. Each edge {u, v} is
+// canonically represented as a pair (u, v) with u < v. Each adjacent triangle
+// is represented by a pair consisting of its triangle index and a ±1
+// orientation indicating whether (u, v) aligns with the triangle's
+// counterclockwise order.
+using EdgeTriangleAdjacencyMap =
+    absl::flat_hash_map<std::pair<uint32_t, uint32_t>,
+                        absl::InlinedVector<std::pair<uint32_t, int>, 2>>;
 
 // A representation of a triangulation, consisting of a list of `vertices` and
 // `triangles` represented by triplets of indices of vertices.
@@ -72,6 +79,29 @@ struct Triangulation {
   std::vector<Point> vertices;
   std::vector<std::array<uint32_t, 3>> triangles;
 };
+
+float DistanceSquared(Point a, Point b) { return (a - b).MagnitudeSquared(); }
+
+// Associates the triangle `tri_index` with its directed edge (u,v) in
+// `edge_tri_map`, (assuming (u, v) is an edge of counter clockwise oriented
+// triangle).
+void AddEdgeToAdjacencyMap(uint32_t u, uint32_t v, uint32_t tri_index,
+                           EdgeTriangleAdjacencyMap& edge_tri_map) {
+  if (u < v) {
+    edge_tri_map[{u, v}].push_back({tri_index, 1});
+  } else {
+    edge_tri_map[{v, u}].push_back({tri_index, -1});
+  }
+}
+
+// Associates the triangle to its three edges in the given adjacency map.
+void AddTriangleToAdjacencyMap(const std::array<uint32_t, 3>& tri,
+                               uint32_t tri_index,
+                               EdgeTriangleAdjacencyMap& edge_tri_map) {
+  AddEdgeToAdjacencyMap(tri[0], tri[1], tri_index, edge_tri_map);
+  AddEdgeToAdjacencyMap(tri[1], tri[2], tri_index, edge_tri_map);
+  AddEdgeToAdjacencyMap(tri[2], tri[0], tri_index, edge_tri_map);
+}
 
 // Returns the homogenous transform from world space to the barycentric coords
 // for the given triangle.
@@ -332,13 +362,17 @@ class MeshBuilder {
 
   const MutableMesh& GetMesh() const { return mutable_mesh_; }
 
+  const auto& GetEdgeTriangleAdjacencyMap() const { return edge_tri_adj_map_; }
+
   // Extracts the underlying MutableMesh by moving it, consuming the
   // MeshBuilder.
   MutableMesh ExtractMesh() && { return std::move(mutable_mesh_); }
 
   // Adds a triangle to the subtraction result mesh.
   void AddTriangle(const std::array<uint32_t, 3>& triangle) {
+    uint32_t tri_index = mutable_mesh_.TriangleCount();
     mutable_mesh_.AppendTriangleIndices(triangle);
+    AddTriangleToAdjacencyMap(triangle, tri_index, edge_tri_adj_map_);
   }
 
  private:
@@ -403,6 +437,10 @@ class MeshBuilder {
   absl::flat_hash_map<std::pair<uint32_t, uint32_t>,
                       absl::InlinedVector<std::pair<Point, uint32_t>, 2>>
       edge_vertex_map_;
+
+  // Maps an undirected edge {u, v} (represented as (min(u, v), max(u, v))) to
+  // its incident triangles.
+  EdgeTriangleAdjacencyMap edge_tri_adj_map_;
 };
 
 // Computes the geometric boolean difference `tri` - `shape_b` as a
@@ -417,54 +455,48 @@ Triangulation SubtractTriangle(const Triangle& tri,
 
 // Computes outlines and returns the (clockwise oriented) outlines of the given
 // `mesh`.
-std::vector<std::vector<uint32_t>> ComputeOutlines(const MutableMesh& mesh) {
-  // To compute the outline, we first compute the "simplicial boundary"
-  // (the set of directed boundary edges of triangles that aren't
-  // "cancelled" out by an adjacent triangle) of the mesh. Then we trace the
-  // boundary edges to extract the outline.
+std::vector<std::vector<uint32_t>> ComputeOutlines(
+    const MeshBuilder& mesh_builder) {
+  const MutableMesh& mesh = mesh_builder.GetMesh();
+
+  // To compute the outline, we first iterate through all boundary edges (those
+  // with only one adjacent triangle) and build an adjacency map `boundary` that
+  // maps each boundary vertex to its next vertex in a counterclockwise walk of
+  // the boundary.
+  std::vector<int> boundary(mesh.VertexCount(), -1);
+
   // TODO(b/523326691): Consider initializing `boundary` with the existing mesh
   // outlines to avoid recomputing the outline for untouched parts of the mesh.
+  // TODO(b/521449017): Handle pinch points where multiple boundary loops meet
+  // at a common vertex.
 
-  // We store the simplicial boundary in a vertex adjacency list `boundary`,
-  // representing directed edges of the mesh. As we add triangle boundaries, we
-  // make sure to remove cancelled edges (i.e. if (v, u) is already present in
-  // the adjacency list, adding (u, v) removes it). The capacity of 4 is chosen
-  // as 4 is the typical degree of a vertex in a triangle strip.
-  std::vector<absl::InlinedVector<uint32_t, 4>> boundary(mesh.VertexCount());
-  for (uint32_t tri_idx = 0; tri_idx < mesh.TriangleCount(); ++tri_idx) {
-    std::array<uint32_t, 3> triangle = mesh.TriangleIndices(tri_idx);
-    uint32_t u = triangle[2];
-    for (uint32_t v : triangle) {
-      if (absl::erase_if(boundary[v], [u](uint32_t x) { return x == u; }) ==
-          0) {
-        boundary[u].push_back(v);
-      }
-      u = v;
-    }
+  for (const auto& [edge, tris] : mesh_builder.GetEdgeTriangleAdjacencyMap()) {
+    if (tris.size() != 1) continue;
+    auto [u, v] = edge;
+    // Orient the edge counter-clockwise.
+    if (tris[0].second < 0) std::swap(u, v);
+    boundary[u] = v;
   }
 
-  // `boundary` now is an adjaceny map of the boundary outline of the graph: for
-  // any boundary vertex u, `boundary[u]` is the singleton list consisting of
-  // the successor vertex of `u` in a counterclockwise walk of the boundary. We
-  // now traverse the `boundary` to extract the outline as a sequence of
+  // We now traverse the `boundary` to extract the outline as a sequence of
   // vertices.
   std::vector<std::vector<uint32_t>> outlines;
   for (uint32_t start = 0; start < boundary.size(); ++start) {
-    while (!boundary[start].empty()) {
-      std::vector<uint32_t> loop = {start};
-      uint32_t curr = start;
-      while (!boundary[curr].empty()) {
-        uint32_t next = boundary[curr].back();
-        boundary[curr].pop_back();
-        if (next == start) break;
-        loop.push_back(next);
-        curr = next;
-      }
+    if (boundary[start] < 0) continue;
 
-      if (loop.size() > 2) {
-        std::reverse(loop.begin(), loop.end());
-        outlines.push_back(std::move(loop));
-      }
+    std::vector<uint32_t> loop = {start};
+    uint32_t curr = start;
+    while (boundary[curr] >= 0) {
+      uint32_t next = boundary[curr];
+      boundary[curr] = -1;
+      if (next == start) break;
+      loop.push_back(next);
+      curr = next;
+    }
+
+    if (loop.size() > 2) {
+      std::reverse(loop.begin(), loop.end());
+      outlines.push_back(std::move(loop));
     }
   }
   return outlines;
@@ -864,8 +896,7 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
     vertex_offset += mesh.VertexCount();
   }
 
-  std::vector<std::vector<uint32_t>> outlines =
-      ComputeOutlines(sub_mesh.GetMesh());
+  std::vector<std::vector<uint32_t>> outlines = ComputeOutlines(sub_mesh);
 
   if (HasAntiAliasingAttributes(format) && anti_aliasing_enabled) {
     ComputeAndSetLabels(outlines, sub_mesh);
