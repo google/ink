@@ -64,36 +64,6 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
     // LINT.ThenChange(../../webgpu/StrokeShader.wgsl:apply_opacity_shift)
 
-    // Converts an (unpremultiplied) color in linear sRGB to Oklab.  For details
-    // on the conversion formula, see https://bottosson.github.io/posts/oklab/
-    // and/or https://en.wikipedia.org/wiki/Oklab_color_space.
-    //
-    // TODO(b/552570769): We should just convert the base brush color to Oklab
-    // once before setting the uniform, rather than doing it over and over for
-    // each vertex.
-    //
-    // LINT.IfChange(oklab_transform)
-    R"(
-    float4 convertLinearSrgbToOklab(const float4 rgbaUnpremul) {
-      float3 rgb = rgbaUnpremul.rgb;
-
-      float3 lms = float3(
-          dot(rgb, float3(0.4122214708, 0.5363325363, 0.0514459929)),
-          dot(rgb, float3(0.2119034982, 0.6806995451, 0.1073969566)),
-          dot(rgb, float3(0.0883024619, 0.2817188376, 0.6299787005)));
-      // Sign-preserving cube root (SkSL has no cbrt function).
-      float3 lms_cbrt = sign(lms) * pow(abs(lms), float3(1.0 / 3.0));
-
-      return float4(
-          dot(lms_cbrt, float3(0.2104542553,  0.7936177850, -0.0040720468)),
-          dot(lms_cbrt, float3(1.9779984951, -2.4285922050,  0.4505937099)),
-          dot(lms_cbrt, float3(0.0259040371,  0.7827717662, -0.8086757660)),
-          rgbaUnpremul.a);
-    })"
-    // LINT.ThenChange(
-    //     ../../../brush/color_function.cc:oklab_transform,
-    //     ../../webgpu/StrokeShader.wgsl:oklab_transform)
-
     // Returns a new *unpremultiplied* color by applying `hclShift` and
     // `opacityShift` to `oklabUnpremul`. Both the input color and the output
     // color are unpremultiplied Oklab, and may include out-of-gamut component

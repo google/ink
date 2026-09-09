@@ -139,10 +139,9 @@ TEST(MeshUniformDataTest, WithObjectToCanvasLinearComponent) {
 }
 
 Color GetStoredColor(const uint8_t* data) {
-  Color::RgbaFloat stored;
+  Color::OklabFloat stored;
   std::memcpy(&stored, data, sizeof(stored));
-  return Color::FromFloat(stored.r, stored.g, stored.b, stored.a,
-                          Color::Format::kLinear, ColorSpace::kSrgb);
+  return Color::FromOklab(stored);
 }
 
 TEST(MeshUniformDataTest, WithBrushColor) {
@@ -159,10 +158,10 @@ TEST(MeshUniformDataTest, WithBrushColor) {
         }
       )"),
       SkString(R"(
-        layout(color) uniform float4 uBrushColor;
+        uniform float4 uBrushColorOklab;
 
         float2 main(const Varyings varyings, out float4 color) {
-          color = uBrushColor;
+          color = uBrushColorOklab;
           return varyings.position;
         }
       )"));
@@ -294,10 +293,10 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
         }
       )"),
       SkString(R"(
-        layout(color) uniform float4 uBrushColor;
+        uniform float4 uBrushColorOklab;
 
         float2 main(const Varyings varyings, out float4 color) {
-          color = uBrushColor;
+          color = uBrushColorOklab;
           return varyings.position;
         }
       )"));
@@ -311,7 +310,7 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
   ASSERT_NE(object_to_canvas_linear_component_uniform, nullptr);
 
   const SkMeshSpecification::Uniform* color_uniform =
-      result.specification->findUniform("uBrushColor");
+      result.specification->findUniform("uBrushColorOklab");
   ASSERT_NE(color_uniform, nullptr);
 
   MeshUniformData data(*result.specification);

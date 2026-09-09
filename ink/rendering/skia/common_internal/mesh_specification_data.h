@@ -71,8 +71,8 @@ struct MeshSpecificationData {
     // This requires that the object-to-canvas matrix used during drawing is an
     // affine transform.
     kObjectToCanvasLinearComponent = 0,
-    // The unpremultiplied, gamma-encoded RGBA value `Brush::GetColor()`.
-    kBrushColor = 1,
+    // `Brush::GetColor()` converted into (unpremultiplied) Oklab space.
+    kBrushColorOklab = 1,
     // Transform parameters used to convert packed attribute values to back to
     // their original values. See `Mesh::VertexAttributeUnpackingParams()`.
     kPositionUnpackingTransform = 2,

@@ -220,6 +220,25 @@ class Color {
   // Like AsUint8, but packs the four uint8 values into a single RGBA uint32.
   uint32_t AsPackedUint32RGBA(Format format) const;
 
+  // Return type for `AsOklab()`.
+  struct OklabFloat {
+    float ok_L;
+    float ok_a;
+    float ok_b;
+    float alpha;
+  };
+
+  // Returns (unpremultiplied) Oklab values for this color.
+  OklabFloat AsOklab() const;
+
+  // Constructs a Color from (unpremultiplied) Oklab parameters.  The
+  // `color_space` parameter specifies the color space that the returned `Color`
+  // should be represented in; it does not affect the interpretation of the
+  // `oklab` parameters.  Depending on the parameters passed, the returned
+  // `Color` may be out-of-gamut.
+  static Color FromOklab(OklabFloat oklab,
+                         ColorSpace color_space = ColorSpace::kSrgb);
+
   template <typename Sink>
   friend void AbslStringify(Sink& sink, const Color& color) {
     sink.Append(color.ToFormattedString());
@@ -265,23 +284,31 @@ class Color {
   std::string ToFormattedString() const;
 };
 
+namespace color_internal {
 std::string ToFormattedString(Color::Format format);
 std::string ToFormattedString(Color::RgbaFloat rgba);
 std::string ToFormattedString(Color::RgbaUint8 rgba);
+std::string ToFormattedString(Color::OklabFloat oklab);
+}  // namespace color_internal
 
 template <typename Sink>
 void AbslStringify(Sink& sink, Color::Format format) {
-  sink.Append(ToFormattedString(format));
+  sink.Append(color_internal::ToFormattedString(format));
 }
 
 template <typename Sink>
 void AbslStringify(Sink& sink, Color::RgbaFloat rgba) {
-  sink.Append(ToFormattedString(rgba));
+  sink.Append(color_internal::ToFormattedString(rgba));
 }
 
 template <typename Sink>
 void AbslStringify(Sink& sink, Color::RgbaUint8 rgba) {
-  sink.Append(ToFormattedString(rgba));
+  sink.Append(color_internal::ToFormattedString(rgba));
+}
+
+template <typename Sink>
+void AbslStringify(Sink& sink, Color::OklabFloat oklab) {
+  sink.Append(color_internal::ToFormattedString(oklab));
 }
 
 }  // namespace ink

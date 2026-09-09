@@ -105,6 +105,20 @@ MATCHER_P(ChannelStructEqUint8Matcher, expected, "") {
       std::array<uint8_t, 4>{arg.r, arg.g, arg.b, arg.a});
 }
 
+MATCHER_P2(OklabFloatNearMatcher, expected, tolerance,
+           absl::StrCat(negation ? "isn't" : "is", " within ", tolerance,
+                        " of ", expected)) {
+  return ExplainMatchResult(AllOf(Field("ok_L", &Color::OklabFloat::ok_L,
+                                        FloatNear(expected.ok_L, tolerance)),
+                                  Field("ok_a", &Color::OklabFloat::ok_a,
+                                        FloatNear(expected.ok_a, tolerance)),
+                                  Field("ok_b", &Color::OklabFloat::ok_b,
+                                        FloatNear(expected.ok_b, tolerance)),
+                                  Field("alpha", &Color::OklabFloat::alpha,
+                                        FloatNear(expected.alpha, tolerance))),
+                            arg, result_listener);
+}
+
 }  // namespace
 
 Matcher<std::array<float, 9>> NearIdentityMatrix(double eps) {
@@ -151,6 +165,11 @@ Matcher<Color::RgbaUint8> ChannelStructEq(const Color::RgbaUint8& expected) {
 Matcher<Color::RgbaUint8> ChannelStructEqUint8s(
     const std::array<uint8_t, 4>& expected) {
   return ChannelStructEqUint8Matcher(expected);
+}
+
+Matcher<Color::OklabFloat> OklabFloatNear(Color::OklabFloat expected,
+                                          float tolerance) {
+  return OklabFloatNearMatcher(expected, tolerance);
 }
 
 }  // namespace ink

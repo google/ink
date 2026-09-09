@@ -117,7 +117,7 @@ struct Uniforms {
   // ===========================================================================
   // 16 bytes each
   // ===========================================================================
-  color: vec4<f32>,
+  colorOklab: vec4<f32>,
   positionUnpackingTransform: vec4<f32>,
   sideDerivativeUnpackingTransform: vec4<f32>,
   forwardDerivativeUnpackingTransform: vec4<f32>,
@@ -304,25 +304,6 @@ fn unpackHCLColorShift(packedValue0To255: vec4<f32>) -> vec3<f32> {
 // LINT.ThenChange(../skia/common_internal/sksl_vertex_shader_helper_functions.h:hcl_shift_unpacking)
 
 // LINT.IfChange(oklab_transform)
-fn convertLinearSrgbToOklab(rgbaUnpremul: vec4<f32>) -> vec4<f32> {
-  var rgb = rgbaUnpremul.rgb;
-
-  var lms = vec3<f32>(
-    dot(rgb, vec3<f32>(0.4122214708, 0.5363325363, 0.0514459929)),
-    dot(rgb, vec3<f32>(0.2119034982, 0.6806995451, 0.1073969566)),
-    dot(rgb, vec3<f32>(0.0883024619, 0.2817188376, 0.6299787005))
-  );
-  // Sign-preserving cube root (WGSL has no cbrt function).
-  var lms_cbrt = sign(lms) * pow(abs(lms), vec3<f32>(1.0 / 3.0));
-
-  return vec4<f32>(
-    dot(lms_cbrt, vec3<f32>(0.2104542553,  0.7936177850, -0.0040720468)),
-    dot(lms_cbrt, vec3<f32>(1.9779984951, -2.4285922050,  0.4505937099)),
-    dot(lms_cbrt, vec3<f32>(0.0259040371,  0.7827717662, -0.8086757660)),
-    rgbaUnpremul.a
-  );
-}
-
 fn convertOklabToLinearSrgb(oklabUnpremul: vec4<f32>) -> vec4<f32> {
   var lab = oklabUnpremul.xyz;
 
@@ -341,9 +322,8 @@ fn convertOklabToLinearSrgb(oklabUnpremul: vec4<f32>) -> vec4<f32> {
   );
 }
 // LINT.ThenChange(
-//     ../../brush/color_function.cc:oklab_transform,
+//     ../../color/color.cc:oklab_transform,
 //     ../skia/common_internal/sksl_fragment_shader_helper_functions.h:oklab_transform,
-//     ../skia/common_internal/sksl_vertex_shader_helper_functions.h:oklab_transform,
 // )
 
 // LINT.IfChange(apply_hcl_and_opacity_shift)
@@ -606,8 +586,8 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
   out.position = uniforms.projectionTransform * objectToCanvasTransform *
     vec4<f32>(pos, 0.0, 1.0);
 
-  let colorOklab = convertLinearSrgbToOklab(uniforms.color);
-  out.color = applyHCLAndOpacityShift(hclShift, opacityShift, colorOklab);
+  out.color =
+      applyHCLAndOpacityShift(hclShift, opacityShift, uniforms.colorOklab);
 
   return out;
 }

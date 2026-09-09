@@ -55,6 +55,9 @@ constexpr float kColorTestEps = 3.8e-6;
 ::testing::Matcher<Color::RgbaUint8> ChannelStructEqUint8s(
     const std::array<uint8_t, 4>& expected);
 
+::testing::Matcher<Color::OklabFloat> OklabFloatNear(Color::OklabFloat expected,
+                                                     float tolerance);
+
 }  // namespace ink
 
 #endif  // INK_COLOR_TYPE_MATCHERS_H_

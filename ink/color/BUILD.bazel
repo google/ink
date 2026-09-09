@@ -22,10 +22,7 @@ package(
 cc_library(
     name = "color",
     srcs = ["color.cc"],
-    hdrs = [
-        "color.h",
-        "color_helpers.h",
-    ],
+    hdrs = ["color.h"],
     deps = [
         ":color_space",
         "@abseil-cpp//absl/log:absl_check",
@@ -46,17 +43,6 @@ cc_test(
         "@abseil-cpp//absl/hash:hash_testing",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
-        "@fuzztest//fuzztest",
-        "@fuzztest//fuzztest:fuzztest_gtest_main",
-    ],
-)
-
-cc_test(
-    name = "color_helpers_test",
-    srcs = ["color_helpers_test.cc"],
-    deps = [
-        ":color",
-        ":type_matchers",
         "@fuzztest//fuzztest",
         "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],

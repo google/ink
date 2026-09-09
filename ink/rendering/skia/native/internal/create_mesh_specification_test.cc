@@ -145,7 +145,7 @@ TEST(CreateMeshSpecificationTest, TryCreateWithMissingExpectedUniform) {
                   .varyings = {},
                   .uniforms = {{
                       .type = MeshSpecificationData::UniformType::kFloat4,
-                      .id = MeshSpecificationData::UniformId::kBrushColor,
+                      .id = MeshSpecificationData::UniformId::kBrushColorOklab,
                   }},
                   .vertex_shader_source = R"(
                     uniform float2 uPositionOffset;
@@ -176,7 +176,7 @@ TEST(CreateMeshSpecificationTest, TryCreateWithUnexpectedUniformType) {
                   .varyings = {},
                   .uniforms = {{
                       .type = MeshSpecificationData::UniformType::kFloat4,
-                      .id = MeshSpecificationData::UniformId::kBrushColor,
+                      .id = MeshSpecificationData::UniformId::kBrushColorOklab,
                   }},
                   .vertex_shader_source = R"(
                     Varyings main(const Attributes attributes) {
@@ -186,10 +186,10 @@ TEST(CreateMeshSpecificationTest, TryCreateWithUnexpectedUniformType) {
                     }
                   )",
                   .fragment_shader_source = R"(
-                    layout(color) uniform float3 uBrushColor;  // WRONG TYPE
+                    uniform float3 uBrushColorOklab;  // WRONG TYPE
 
                     float2 main(const Varyings varyings, out float4 color) {
-                      color = float4(uBrushColor, 1.0);
+                      color = float4(uBrushColorOklab, 1.0);
                       return varyings.position;
                     }
                   )",
@@ -328,7 +328,7 @@ TEST(CreateMeshSpecificationDeathTest, MakeWithNonEnumeratorUniformType) {
               .varyings = {},
               .uniforms = {{
                   .type = static_cast<MeshSpecificationData::UniformType>(99),
-                  .id = MeshSpecificationData::UniformId::kBrushColor,
+                  .id = MeshSpecificationData::UniformId::kBrushColorOklab,
               }},
               .vertex_shader_source = R"(
                     Varyings main(const Attributes attributes) {
@@ -338,10 +338,10 @@ TEST(CreateMeshSpecificationDeathTest, MakeWithNonEnumeratorUniformType) {
                     }
                   )",
               .fragment_shader_source = R"(
-                    layout(color) uniform float4 uBrushColor;
+                    uniform float4 uBrushColorOklab;
                     float2 main(const Varyings varyings, out float4 color) {
-                      color = float4(uBrushColor.rgb * uBrushColor.a,
-                                     uBrushColor.a);
+                      color = float4(uBrushColorOklab.xyz * uBrushColorOklab.a,
+                                     uBrushColorOklab.a);
                       return varyings.position;
                     }
                   )",
@@ -372,10 +372,10 @@ TEST(CreateMeshSpecificationDeathTest, MakeWithNonEnumeratorUniformId) {
                     }
                   )",
               .fragment_shader_source = R"(
-                    layout(color) uniform float4 uBrushColor;
+                    uniform float4 uBrushColorOklab;
                     float2 main(const Varyings varyings, out float4 color) {
-                      color = float4(uBrushColor.rgb * uBrushColor.a,
-                                     uBrushColor.a);
+                      color = float4(uBrushColorOklab.xyz * uBrushColorOklab.a,
+                                     uBrushColorOklab.a);
                       return varyings.position;
                     }
                   )",

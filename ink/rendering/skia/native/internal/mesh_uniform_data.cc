@@ -44,7 +44,7 @@ SkMeshSpecification::Uniform::Type ExpectedSkiaUniformType(
     MeshSpecificationData::UniformId uniform_id) {
   switch (uniform_id) {
     case MeshSpecificationData::UniformId::kObjectToCanvasLinearComponent:
-    case MeshSpecificationData::UniformId::kBrushColor:
+    case MeshSpecificationData::UniformId::kBrushColorOklab:
     case MeshSpecificationData::UniformId::kPositionUnpackingTransform:
     case MeshSpecificationData::UniformId::kSideDerivativeUnpackingTransform:
     case MeshSpecificationData::UniformId::kForwardDerivativeUnpackingTransform:
@@ -102,8 +102,8 @@ MeshUniformData::MeshUniformData(const SkMeshSpecification& spec)
       object_to_canvas_linear_component_offset_(FindUniformOffset(
           spec,
           MeshSpecificationData::UniformId::kObjectToCanvasLinearComponent)),
-      brush_color_offset_(FindUniformOffset(
-          spec, MeshSpecificationData::UniformId::kBrushColor)),
+      brush_color_oklab_offset_(FindUniformOffset(
+          spec, MeshSpecificationData::UniformId::kBrushColorOklab)),
       texture_mapping_offset_(FindUniformOffset(
           spec, MeshSpecificationData::UniformId::kTextureMapping)),
       texture_animation_progress_offset_(FindUniformOffset(
@@ -145,7 +145,7 @@ std::array<float, 4> UnpackingParamsFloat4(
 bool IsUnpackingTransform(MeshSpecificationData::UniformId uniform_id) {
   switch (uniform_id) {
     case MeshSpecificationData::UniformId::kObjectToCanvasLinearComponent:
-    case MeshSpecificationData::UniformId::kBrushColor:
+    case MeshSpecificationData::UniformId::kBrushColorOklab:
     case MeshSpecificationData::UniformId::kTextureMapping:
     case MeshSpecificationData::UniformId::kTextureAnimationProgress:
     case MeshSpecificationData::UniformId::kNumTextureAnimationFrames:
@@ -193,10 +193,9 @@ MeshUniformData::MeshUniformData(
 }
 
 void MeshUniformData::SetBrushColor(const Color& color) {
-  Color::RgbaFloat rgba =
-      color.InColorSpace(ColorSpace::kSrgb).AsFloat(Color::Format::kLinear);
-  static_assert(sizeof(rgba) == 4 * sizeof(float));
-  SetUniformIfPresent(WritableData(), brush_color_offset_, rgba);
+  Color::OklabFloat oklab = color.AsOklab();
+  static_assert(sizeof(oklab) == 4 * sizeof(float));
+  SetUniformIfPresent(WritableData(), brush_color_oklab_offset_, oklab);
 }
 
 void MeshUniformData::SetTextureMappingMode(int mapping) {

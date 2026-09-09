@@ -42,7 +42,7 @@ using ::ink::strokes_internal::StrokeVertex;
 // Uniform names for each `MeshSpecificationData::UniformId`.
 constexpr absl::string_view kObjectToCanvasLinearComponentName =
     "uObjectToCanvasLinearComponent";
-constexpr absl::string_view kUniformBrushColorName = "uBrushColor";
+constexpr absl::string_view kUniformBrushColorOklabName = "uBrushColorOklab";
 constexpr absl::string_view kUniformPositionUnpackingTransformName =
     "uPositionUnpackingTransform";
 constexpr absl::string_view kUniformSideDerivativeUnpackingTransformName =
@@ -77,8 +77,8 @@ absl::string_view MeshSpecificationData::GetUniformName(UniformId uniform_id) {
   switch (uniform_id) {
     case UniformId::kObjectToCanvasLinearComponent:
       return kObjectToCanvasLinearComponentName;
-    case UniformId::kBrushColor:
-      return kUniformBrushColorName;
+    case UniformId::kBrushColorOklab:
+      return kUniformBrushColorOklabName;
     case UniformId::kPositionUnpackingTransform:
       return kUniformPositionUnpackingTransformName;
     case UniformId::kSideDerivativeUnpackingTransform:
@@ -112,7 +112,7 @@ MeshSpecificationData::CreateForInProgressStroke(
 }
 
 MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
-  static_assert(kUniformBrushColorName == "uBrushColor");
+  static_assert(kUniformBrushColorOklabName == "uBrushColorOklab");
   static_assert(kObjectToCanvasLinearComponentName ==
                 "uObjectToCanvasLinearComponent");
   static_assert(kTextureMappingName == "uTextureMapping");
@@ -122,12 +122,12 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
   static_assert(kNumTextureAnimationColumnsName ==
                 "uNumTextureAnimationColumns");
   static_assert(kAnimationRepeatModeName == "uAnimationRepeatMode");
-  // Do not use `layout(color)` for uBrushColor, as the color is being converted
-  // into the shader color space manually rather than relying on the implicit
-  // conversion of setColorUniform.
+  // Do not use `layout(color)` for `uBrushColorOklab`, as the color is being
+  // converted into its color space (Oklab) manually rather than relying on any
+  // implicit conversion of `setColorUniform`.
   constexpr absl::string_view kVertexMain = R"(
       uniform float4 uObjectToCanvasLinearComponent;
-      uniform float4 uBrushColor;
+      uniform float4 uBrushColorOklab;
       uniform int uTextureMapping;
       uniform float uTextureAnimationProgress;
       uniform int uNumTextureAnimationFrames;
@@ -149,7 +149,7 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
 
         varyings.colorOklab = applyHCLAndOpacityShift(
             attributes.hclShift, attributes.positionAndOpacityShift.z,
-            convertLinearSrgbToOklab(uBrushColor));
+            uBrushColorOklab);
 
         if (uTextureMapping == 1) {
           varyings.textureCoords = calculateStampingTextureUv(
@@ -219,21 +219,20 @@ MeshSpecificationData MeshSpecificationData::CreateForInProgressStroke() {
                    {.type = VaryingType::kFloat4,
                     .name = "normalizedToEdgeLRFB"},
                    {.type = VaryingType::kFloat4, .name = "outsetPixelsLRFB"}},
-      .uniforms = {{.type = UniformType::kFloat4,
-                    .id = UniformId::kObjectToCanvasLinearComponent},
-                   {.type = UniformType::kFloat4, .id = UniformId::kBrushColor},
-                   {.type = UniformType::kInt,
-                    .id = UniformId::kTextureMapping},
-                   {.type = UniformType::kFloat,
-                    .id = UniformId::kTextureAnimationProgress},
-                   {.type = UniformType::kInt,
-                    .id = UniformId::kNumTextureAnimationFrames},
-                   {.type = UniformType::kInt,
-                    .id = UniformId::kNumTextureAnimationRows},
-                   {.type = UniformType::kInt,
-                    .id = UniformId::kNumTextureAnimationColumns},
-                   {.type = UniformType::kInt,
-                    .id = UniformId::kAnimationRepeatMode}},
+      .uniforms =
+          {{.type = UniformType::kFloat4,
+            .id = UniformId::kObjectToCanvasLinearComponent},
+           {.type = UniformType::kFloat4, .id = UniformId::kBrushColorOklab},
+           {.type = UniformType::kInt, .id = UniformId::kTextureMapping},
+           {.type = UniformType::kFloat,
+            .id = UniformId::kTextureAnimationProgress},
+           {.type = UniformType::kInt,
+            .id = UniformId::kNumTextureAnimationFrames},
+           {.type = UniformType::kInt,
+            .id = UniformId::kNumTextureAnimationRows},
+           {.type = UniformType::kInt,
+            .id = UniformId::kNumTextureAnimationColumns},
+           {.type = UniformType::kInt, .id = UniformId::kAnimationRepeatMode}},
       .vertex_shader_source = absl::StrCat(
           kSkSLCommonShaderHelpers, kSkSLVertexShaderHelpers, kVertexMain),
       .fragment_shader_source = absl::StrCat(
@@ -249,7 +248,7 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
                         GetValidatedStrokeAttributeTypesAndOffsets(
                             mesh_format, attribute_indices));
 
-  static_assert(kUniformBrushColorName == "uBrushColor");
+  static_assert(kUniformBrushColorOklabName == "uBrushColorOklab");
   static_assert(kUniformPositionUnpackingTransformName ==
                 "uPositionUnpackingTransform");
   static_assert(kObjectToCanvasLinearComponentName ==
@@ -265,12 +264,12 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
   static_assert(kNumTextureAnimationColumnsName ==
                 "uNumTextureAnimationColumns");
   static_assert(kAnimationRepeatModeName == "uAnimationRepeatMode");
-  // Do not use `layout(color)` for uBrushColor, as the color is being converted
-  // into the shader color space manually rather than relying on the implicit
-  // conversion of setColorUniform.
+  // Do not use `layout(color)` for `uBrushColorOklab`, as the color is being
+  // converted into its color space (Oklab) manually rather than relying on any
+  // implicit conversion of `setColorUniform`.
   constexpr absl::string_view kVertexMainStart = R"(
       uniform float4 uObjectToCanvasLinearComponent;
-      uniform float4 uBrushColor;
+      uniform float4 uBrushColorOklab;
       uniform float4 uPositionUnpackingTransform;
       uniform float4 uSideUnpackingTransform;
       uniform float4 uForwardUnpackingTransform;
@@ -302,13 +301,12 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
         varyings.colorOklab = applyHCLAndOpacityShift(
             unpackHCLColorShift(attributes.hclShift),
             positionAndOpacityShift.z,
-            convertLinearSrgbToOklab(uBrushColor));
+            uBrushColorOklab);
   )";
   constexpr absl::string_view kVertexMainColorWithoutHclShift = R"(
-        float4 oklab = convertLinearSrgbToOklab(uBrushColor);
         varyings.colorOklab = float4(
-            oklab.xyz,
-            applyOpacityShift(positionAndOpacityShift.z, oklab.a));
+            uBrushColorOklab.xyz,
+            applyOpacityShift(positionAndOpacityShift.z, uBrushColorOklab.a));
   )";
 
   // There are three cases for computing texture coordinates in the shader.
@@ -389,7 +387,7 @@ absl::StatusOr<MeshSpecificationData> MeshSpecificationData::CreateForStroke(
       .uniforms =
           {{.type = UniformType::kFloat4,
             .id = UniformId::kObjectToCanvasLinearComponent},
-           {.type = UniformType::kFloat4, .id = UniformId::kBrushColor},
+           {.type = UniformType::kFloat4, .id = UniformId::kBrushColorOklab},
            {.type = UniformType::kFloat4,
             .id = UniformId::kPositionUnpackingTransform,
             .unpacking_attribute_index = attribute_indices.position},

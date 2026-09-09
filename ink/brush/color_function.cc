@@ -29,66 +29,6 @@
 #include "ink/geometry/point.h"
 
 namespace ink {
-namespace {
-
-// Convert between `Color` and the (unpremultiplied) Oklab color space. These
-// formulae come from https://bottosson.github.io/posts/oklab/; see also
-// https://en.wikipedia.org/wiki/Oklab_color_space.
-//
-// LINT.IfChange(oklab_transform)
-std::array<float, 4> ColorToOklab(const Color& color) {
-  Color::RgbaFloat rgba =
-      color.InColorSpace(ColorSpace::kSrgb).AsFloat(Color::Format::kLinear);
-
-  float l =
-      rgba.r * 0.4122214708f + rgba.g * 0.5363325363f + rgba.b * 0.0514459929f;
-  float m =
-      rgba.r * 0.2119034982f + rgba.g * 0.6806995451f + rgba.b * 0.1073969566f;
-  float s =
-      rgba.r * 0.0883024619f + rgba.g * 0.2817188376f + rgba.b * 0.6299787005f;
-
-  float l_cbrt = std::cbrt(l);
-  float m_cbrt = std::cbrt(m);
-  float s_cbrt = std::cbrt(s);
-
-  float ok_L =
-      l_cbrt * 0.2104542553f + m_cbrt * 0.7936177850f - s_cbrt * 0.0040720468f;
-  float ok_a =
-      l_cbrt * 1.9779984951f - m_cbrt * 2.4285922050f + s_cbrt * 0.4505937099f;
-  float ok_b =
-      l_cbrt * 0.0259040371f + m_cbrt * 0.7827717662f - s_cbrt * 0.8086757660f;
-  return {ok_L, ok_a, ok_b, rgba.a};
-}
-
-Color ColorFromOklab(const std::array<float, 4>& oklab,
-                     ColorSpace color_space) {
-  float ok_L = oklab[0];
-  float ok_a = oklab[1];
-  float ok_b = oklab[2];
-  float alpha = oklab[3];
-
-  float l_cbrt = ok_L + ok_a * +0.3963377774f + ok_b * +0.2158037573f;
-  float m_cbrt = ok_L + ok_a * -0.1055613458f + ok_b * -0.0638541728f;
-  float s_cbrt = ok_L + ok_a * -0.0894841775f + ok_b * -1.2914855480f;
-
-  float l = l_cbrt * l_cbrt * l_cbrt;
-  float m = m_cbrt * m_cbrt * m_cbrt;
-  float s = s_cbrt * s_cbrt * s_cbrt;
-
-  float r = l * +4.0767416621f + m * -3.3077115913f + s * +0.2309699292f;
-  float g = l * -1.2684380046f + m * +2.6097574011f + s * -0.3413193965f;
-  float b = l * -0.0041960863f + m * -0.7034186147f + s * +1.7076147010f;
-
-  return Color::FromFloat(r, g, b, alpha, Color::Format::kLinear,
-                          ColorSpace::kSrgb)
-      .InColorSpace(color_space);
-}
-// LINT.ThenChange(
-//   ../rendering/skia/common_internal/sksl_fragment_shader_helper_functions.h:oklab_transform,
-//   ../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:oklab_transform,
-// )
-
-}  // namespace
 
 Color ColorFunction::ApplyAll(absl::Span<const ColorFunction> functions,
                               const Color& color) {
@@ -110,24 +50,25 @@ Color ColorFunction::OpacityMultiplier::operator()(const Color& color) const {
 
 // LINT.IfChange(hcl_transform)
 Color ColorFunction::HueOffset::operator()(const Color& color) const {
-  std::array<float, 4> oklab = ColorToOklab(color);
-  Point ab = AffineTransform::Rotate(offset).Apply(Point{oklab[1], oklab[2]});
-  oklab[1] = ab.x;
-  oklab[2] = ab.y;
-  return ColorFromOklab(oklab, color.GetColorSpace());
+  Color::OklabFloat oklab = color.AsOklab();
+  Point ok_ab =
+      AffineTransform::Rotate(offset).Apply(Point{oklab.ok_a, oklab.ok_b});
+  oklab.ok_a = ok_ab.x;
+  oklab.ok_b = ok_ab.y;
+  return Color::FromOklab(oklab, color.GetColorSpace());
 }
 
 Color ColorFunction::ChromaMultiplier::operator()(const Color& color) const {
-  std::array<float, 4> oklab = ColorToOklab(color);
-  oklab[1] *= multiplier;
-  oklab[2] *= multiplier;
-  return ColorFromOklab(oklab, color.GetColorSpace());
+  Color::OklabFloat oklab = color.AsOklab();
+  oklab.ok_a *= multiplier;
+  oklab.ok_b *= multiplier;
+  return Color::FromOklab(oklab, color.GetColorSpace());
 }
 
 Color ColorFunction::LightnessOffset::operator()(const Color& color) const {
-  std::array<float, 4> oklab = ColorToOklab(color);
-  oklab[0] += offset;
-  return ColorFromOklab(oklab, color.GetColorSpace());
+  Color::OklabFloat oklab = color.AsOklab();
+  oklab.ok_L += offset;
+  return Color::FromOklab(oklab, color.GetColorSpace());
 }
 // LINT.ThenChange(
 //   ../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hcl_and_opacity_shift

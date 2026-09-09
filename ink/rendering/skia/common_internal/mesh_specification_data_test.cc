@@ -79,7 +79,7 @@ bool IsValidUniformType(MeshSpecificationData::UniformType type) {
 bool IsValidUniformId(MeshSpecificationData::UniformId id) {
   switch (id) {
     case MeshSpecificationData::UniformId::kObjectToCanvasLinearComponent:
-    case MeshSpecificationData::UniformId::kBrushColor:
+    case MeshSpecificationData::UniformId::kBrushColorOklab:
     case MeshSpecificationData::UniformId::kPositionUnpackingTransform:
     case MeshSpecificationData::UniformId::kSideDerivativeUnpackingTransform:
     case MeshSpecificationData::UniformId::kForwardDerivativeUnpackingTransform:
@@ -97,7 +97,7 @@ bool IsValidUniformId(MeshSpecificationData::UniformId id) {
 bool IsUnpackingTransformUniformId(MeshSpecificationData::UniformId id) {
   switch (id) {
     case MeshSpecificationData::UniformId::kObjectToCanvasLinearComponent:
-    case MeshSpecificationData::UniformId::kBrushColor:
+    case MeshSpecificationData::UniformId::kBrushColorOklab:
     case MeshSpecificationData::UniformId::kTextureMapping:
     case MeshSpecificationData::UniformId::kTextureAnimationProgress:
     case MeshSpecificationData::UniformId::kNumTextureAnimationFrames:
@@ -217,7 +217,7 @@ TEST(MeshSpecificationDataTest, GetUniformName) {
           MeshSpecificationData::UniformId::kObjectToCanvasLinearComponent),
       Not(IsEmpty()));
   EXPECT_THAT(MeshSpecificationData::GetUniformName(
-                  MeshSpecificationData::UniformId::kBrushColor),
+                  MeshSpecificationData::UniformId::kBrushColorOklab),
               Not(IsEmpty()));
   EXPECT_THAT(
       MeshSpecificationData::GetUniformName(

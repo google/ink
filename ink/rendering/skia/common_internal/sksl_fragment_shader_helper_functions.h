@@ -50,8 +50,9 @@ inline constexpr absl::string_view kSkSLFragmentShaderHelpers =
           oklabUnpremul.a);
     })"
     // LINT.ThenChange(
-    //     ../../../brush/color_function.cc:oklab_transform,
-    //     ../../../rendering/webgpu/StrokeShader.wgsl:oklab_transform)
+    //     ../../../color/color.cc:oklab_transform,
+    //     ../../webgpu/StrokeShader.wgsl:oklab_transform,
+    // )
 
     // Returns the simulated pixel coverage of the current fragment so that it
     // can be used to perform antialiasing.

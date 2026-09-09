@@ -110,7 +110,7 @@ class MeshUniformData {
 
   // Offsets in bytes into `data_` for where to copy uniform values.
   int16_t object_to_canvas_linear_component_offset_ = -1;
-  int16_t brush_color_offset_ = -1;
+  int16_t brush_color_oklab_offset_ = -1;
   int16_t texture_mapping_offset_ = -1;
   int16_t texture_animation_progress_offset_ = -1;
   int16_t num_texture_animation_frames_offset_ = -1;

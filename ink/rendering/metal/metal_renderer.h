@@ -97,7 +97,7 @@ class MetalRenderer {
     // =========================================================================
     // 16 bytes each
     // =========================================================================
-    simd_float4 color;                                   // 16 bytes
+    simd_float4 color_oklab;                             // 16 bytes
     simd_float4 position_unpacking_transform;            // 16 bytes
     simd_float4 side_derivative_unpacking_transform;     // 16 bytes
     simd_float4 forward_derivative_unpacking_transform;  // 16 bytes
@@ -260,7 +260,7 @@ class MetalRenderer {
   void ClearStencilBuffer(void* render_encoder);
 
   Color EvaluateCoatColor(const Brush& brush, const BrushPaint& paint);
-  simd_float4 MakeColorUniform(const Color& color);
+  simd_float4 MakeColorOklabUniform(const Color& color);
 
   // Creates the `ShaderTextureLayer`s for the given `BrushPaint` and sets the
   // fragment textures and samplers on the given render encoder.

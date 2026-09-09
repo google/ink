@@ -607,6 +607,38 @@ TEST(ColorTest, Stringify) {
       ContainsRegex(R"regex(Color.*0\.6.*0\.4.*0\.7.*0\.8.*sRGB)regex"));
 }
 
+TEST(ColorTest, AsOklab) {
+  EXPECT_THAT(Color::Black().AsOklab(),
+              OklabFloatNear({0.0f, 0.0f, 0.0f, 1.0f}, 1e-6));
+  EXPECT_THAT(Color::White().AsOklab(),
+              OklabFloatNear({1.0f, 0.0f, 0.0f, 1.0f}, 1e-6));
+  EXPECT_THAT(Color::Red().AsOklab(),
+              OklabFloatNear({0.627955f, 0.224863f, 0.125846f, 1.0f}, 1e-6));
+  EXPECT_THAT(Color::GoogleBlue().AsOklab(),
+              OklabFloatNear({0.630386f, -0.031398f, -0.177268f, 1.0f}, 1e-6));
+}
+
+TEST(ColorTest, FromOklab) {
+  EXPECT_THAT(Color::FromOklab({0.0f, 0.0f, 0.0f, 1.0f}, ColorSpace::kSrgb),
+              ColorNearlyEquals(Color::Black()));
+  EXPECT_THAT(Color::FromOklab({1.0f, 0.0f, 0.0f, 1.0f}, ColorSpace::kSrgb),
+              ColorNearlyEquals(Color::White()));
+  EXPECT_THAT(Color::FromOklab({0.627955f, 0.224863f, 0.125846f, 1.0f},
+                               ColorSpace::kSrgb),
+              ColorNearlyEquals(Color::Red()));
+  EXPECT_THAT(Color::FromOklab({0.630386f, -0.031398f, -0.177268f, 1.0f},
+                               ColorSpace::kSrgb),
+              ColorNearlyEquals(Color::GoogleBlue()));
+}
+
+void ColorAsOklabAndBackIsIdentity(const Color& original) {
+  Color::OklabFloat oklab = original.AsOklab();
+  Color round_trip = Color::FromOklab(oklab, original.GetColorSpace());
+  EXPECT_THAT(round_trip, ColorNearlyEquals(original));
+}
+FUZZ_TEST(ColorTest, ColorAsOklabAndBackIsIdentity)
+    .WithDomains(InGamutSrgbColor());
+
 TEST(FormatTest, Stringify) {
   EXPECT_THAT(absl::StrCat(Color::Format::kLinear), StrEq("kLinear"));
   EXPECT_THAT(absl::StrCat(Color::Format::kGammaEncoded),
@@ -626,6 +658,13 @@ TEST(RgbaFloatTest, Stringify) {
 TEST(RgbaUint8Test, Stringify) {
   EXPECT_THAT(absl::StrCat(Color::RgbaUint8{0, 28, 197, 255}),
               StrEq("RgbaUint8{0 28 197 255}"));
+}
+
+TEST(OklabFloatTest, Stringify) {
+  EXPECT_THAT(
+      absl::StrCat(Color::OklabFloat{0.5, 0.75, -0.25, 1.25}),
+      MatchesRegex(
+          R"regex(OklabFloat\{0\.50* 0\.750* -0\.250* 1\.250*\})regex"));
 }
 
 }  // namespace

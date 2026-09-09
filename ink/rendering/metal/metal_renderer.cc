@@ -17,6 +17,7 @@
 #include <simd/matrix.h>
 #include <simd/vector.h>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -211,7 +212,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
   if (brush == nullptr) return;
 
   Color coat_color = EvaluateCoatColor(*brush, paint);
-  simd_float4 color_uniform = MakeColorUniform(coat_color);
+  simd_float4 color_oklab_uniform = MakeColorOklabUniform(coat_color);
 
   const MutableMesh& mesh = in_progress_stroke.GetMesh(coat_index);
   absl::Span<const std::byte> vertex_data = mesh.RawVertexData();
@@ -255,7 +256,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
       .model_transform = model_transform,
       .view_transform = view_transform,
       .projection_transform = projection_transform,
-      .color = color_uniform,
+      .color_oklab = color_oklab_uniform,
       // Nothing to unpack for in-progress strokes.
       .position_unpacking_transform = simd_make_float4(0, 0, 0, 0),
       .side_derivative_unpacking_transform = simd_make_float4(0, 0, 0, 0),
@@ -356,7 +357,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
     simd_float4x4 view_transform, simd_float4x4 projection_transform,
     void* render_encoder) {
   Color coat_color = EvaluateCoatColor(stroke.GetBrush(), paint);
-  simd_float4 color_uniform = MakeColorUniform(coat_color);
+  simd_float4 color_oklab_uniform = MakeColorOklabUniform(coat_color);
 
   const PartitionedMesh& shape = stroke.GetShape();
   const MeshFormat& format = shape.RenderGroupFormat(coat_index);
@@ -418,7 +419,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
         .model_transform = model_transform,
         .view_transform = view_transform,
         .projection_transform = projection_transform,
-        .color = color_uniform,
+        .color_oklab = color_oklab_uniform,
         .position_unpacking_transform = position_unpacking_transform,
         .side_derivative_unpacking_transform =
             side_derivative_unpacking_transform,
@@ -471,11 +472,9 @@ Color MetalRenderer::EvaluateCoatColor(const Brush& brush,
   return ColorFunction::ApplyAll(paint.color_functions, brush.GetColor());
 }
 
-simd_float4 MetalRenderer::MakeColorUniform(const Color& color) {
-  Color linear_color = color.InColorSpace(ColorSpace::kSrgb);
-  Color::RgbaFloat float_color = linear_color.AsFloat(Color::Format::kLinear);
-  return simd_make_float4(float_color.r, float_color.g, float_color.b,
-                          float_color.a);
+simd_float4 MetalRenderer::MakeColorOklabUniform(const Color& color) {
+  Color::OklabFloat oklab = color.AsOklab();
+  return simd_make_float4(oklab.ok_L, oklab.ok_a, oklab.ok_b, oklab.alpha);
 }
 
 void MetalRenderer::FillTextureLayers(const BrushPaint& paint,
