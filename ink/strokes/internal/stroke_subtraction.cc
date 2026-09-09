@@ -231,11 +231,12 @@ bool HasAntiAliasingAttributes(const MeshFormat& format) {
          attr_indices.forward_derivative != -1;
 }
 
-// Properties of an input mesh triangle, including the `indices` of the points
-// in the mesh, the `transform` from the mesh's coordinate space to the
-// triangle's barycentric coordinates, the geometric `heights` (altitudes) of
-// the triangle, and mesh vertex attributes `attributes` of its vertices.
+// Properties of an input mesh triangle, including the `triangle` geometry, the
+// `indices` of its vertices in the result mesh, the `transform` from the mesh's
+// coordinate space to the triangle's barycentric coordinates, the geometric
+// `heights` (altitudes) of the triangle, and the `attributes` of its vertices.
 struct TriangleData {
+  Triangle triangle;
   std::array<uint32_t, 3> indices;
   std::array<double, 9> transform;
   std::array<double, 3> heights;
@@ -270,24 +271,22 @@ class MeshBuilder {
   // Finds an existing vertex or adds one for a point `p` contained in the
   // given `triangle` (whose vertices are assumed to have already been added
   // to the result mesh), and returns its index. The `epsilon` parameter
-  // specifies the tolerance for snapping to vertices/edges.
+  // indicates the scale of the geometry.
   uint32_t GetOrAddVertex(Point p, const TriangleData& triangle,
                           float epsilon) {
+    if (p == triangle.triangle.p0) return triangle.indices[0];
+    if (p == triangle.triangle.p1) return triangle.indices[1];
+    if (p == triangle.triangle.p2) return triangle.indices[2];
+
     std::array<double, 3> weights =
         ComputeBarycentricCoordinates(p, triangle.transform);
-    std::array<bool, 3> near_zero = {
-        weights[0] * triangle.heights[0] < epsilon,
-        weights[1] * triangle.heights[1] < epsilon,
-        weights[2] * triangle.heights[2] < epsilon};
+    std::array<double, 3> dist = {weights[0] * triangle.heights[0],
+                                  weights[1] * triangle.heights[1],
+                                  weights[2] * triangle.heights[2]};
 
-    if (near_zero[1] && near_zero[2]) return triangle.indices[0];
-    if (near_zero[2] && near_zero[0]) return triangle.indices[1];
-    if (near_zero[0] && near_zero[1]) return triangle.indices[2];
-
-    for (int side = 0; side < 3; ++side) {
-      if (near_zero[side]) {
-        return GetOrAddEdgeVertex(p, side, triangle, weights, epsilon);
-      }
+    auto min_it = std::min_element(dist.begin(), dist.end());
+    if (*min_it < epsilon) {
+      return GetOrAddEdgeVertex(p, min_it - dist.begin(), triangle, weights);
     }
 
     return AddVertex(p, triangle, weights);
@@ -377,19 +376,18 @@ class MeshBuilder {
   // Finds an existing vertex or adds one for a point `p` lying along the side
   // `side` of `triangle`, and returns its index.
   uint32_t GetOrAddEdgeVertex(Point p, int side, const TriangleData& triangle,
-                              const std::array<double, 3>& weights,
-                              float epsilon) {
+                              const std::array<double, 3>& weights) {
     // Get vertices of the endpoints of `side`.
     uint32_t v1 = triangle.indices[(side == 2) ? 0 : side + 1];
     uint32_t v2 = triangle.indices[(side == 0) ? 2 : side - 1];
 
-    if (v1 > v2) std::swap(v1, v2);
-
-    auto& edge_points = edge_vertex_map_[{v1, v2}];
+    auto& edge_points = edge_vertex_map_[std::minmax(v1, v2)];
     for (const auto& [existing_p, existing_index] : edge_points) {
-      if (DistanceSquared(p, existing_p) <= epsilon * epsilon)
-        return existing_index;
+      // The subtraction in `outline_processing.h` guarantees identical
+      // intersection points for shared edges, regardless of edge orientation.
+      if (existing_p == p) return existing_index;
     }
+
     uint32_t new_index = AddVertex(p, triangle, weights);
     edge_points.push_back({p, new_index});
     return new_index;
@@ -836,6 +834,7 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
       // interpolation.
       std::array<double, 9> transform = ComputeBarycentricTransform(tri);
       const TriangleData triangle = {
+          .triangle = tri,
           .indices = indices,
           .transform = transform,
           .heights = ComputeHeights(tri, transform[8]),

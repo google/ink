@@ -303,6 +303,66 @@ TEST(StrokeSubtractionTest, TriangleMinusTriangle) {
       ElementsAre(FloatEq(0.0f), FloatEq(0.5f), FloatEq(0.5f), FloatEq(1.0f)));
 }
 
+TEST(StrokeSubtractionTest, VertexWelding) {
+  // We should make sure that there are no duplicate vertices or seams in the
+  // subtraction result, especially when a subtraction cuts through an edge
+  // shared by two triangles.
+  //
+  // H-------------------G
+  // |   mesh_b          |
+  // |         A         |
+  // |        /|\        |
+  // E-------/-|-\-------F
+  //        /  |  \
+  //       /   |   \
+  //      /    |    \
+  //     /     |     \
+  //    /      |      \
+  //   /       |       \
+  //  /        | mesh_a \
+  // B---------C---------D
+
+  Point A{0, 0}, B{-5, -1e6f}, C{0, -1e6f}, D{5, -1e6f};
+  Point E{-3, -2}, F{3, -2}, G{3, 2}, H{-3, 2};
+
+  // Set up mesh_a
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttributeType::kFloat2Unpacked, AttributeId::kPosition}},
+      IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  MutableMesh mesh_a(*format);
+  for (const Point& p : {A, B, C, D}) mesh_a.AppendVertex(p);
+  mesh_a.AppendTriangleIndices({0, 1, 2});
+  mesh_a.AppendTriangleIndices({0, 2, 3});
+
+  std::vector<uint32_t> mesh_a_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a, {{mesh_a_outline}});
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  // Set up mesh_b
+  MutableMesh mesh_b(MeshFormat{});
+  for (const Point& p : {E, F, G, H}) mesh_b.AppendVertex(p);
+  mesh_b.AppendTriangleIndices({0, 1, 2});
+  mesh_b.AppendTriangleIndices({0, 2, 3});
+
+  std::vector<uint32_t> mesh_b_outline = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  // Subtract
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  // The result should have 4 triangles and 6 vertices.
+  EXPECT_EQ(NumTriangles(*result), 4);
+  EXPECT_EQ(NumVertices(*result), 6);
+}
+
 TEST(StrokeSubtractionTest, ComputeLabels1) {
   // Note that there is no single canonically "correct" labeling for boundary
   // vertices. This test verifies that the heuristic alignment cost optimization
