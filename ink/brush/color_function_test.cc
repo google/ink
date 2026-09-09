@@ -263,47 +263,47 @@ TEST(ColorFunctionTest, ApplyHueOffset) {
       (ColorFunction{ColorFunction::HueOffset{Angle::Degrees(0)}})(Color::Red())
           .ClampedToGamut()
           .AsFloat(Color::Format::kGammaEncoded),
-      ChannelStructNear({1, 0, 0, 1}, 1e-2));
+      RgbaFloatNear({1, 0, 0, 1}, 1e-2));
   EXPECT_THAT((ColorFunction{ColorFunction::HueOffset{Angle::Degrees(-90)}})(
                   Color::Red())
                   .ClampedToGamut()
                   .AsFloat(Color::Format::kGammaEncoded),
-              ChannelStructNear({0.64, 0.31, 1, 1}, 1e-2));
+              RgbaFloatNear({0.64, 0.31, 1, 1}, 1e-2));
   EXPECT_THAT((ColorFunction{ColorFunction::HueOffset{Angle::Degrees(180)}})(
                   Color::Red())
                   .ClampedToGamut()
                   .AsFloat(Color::Format::kGammaEncoded),
-              ChannelStructNear({0, 0.66, 0.86, 1}, 1e-2));
+              RgbaFloatNear({0, 0.66, 0.86, 1}, 1e-2));
 }
 
 TEST(ColorFunctionTest, ApplyChromaMultiplier) {
   EXPECT_THAT((ColorFunction{ColorFunction::ChromaMultiplier{1}})(Color::Red())
                   .AsFloat(Color::Format::kGammaEncoded),
-              ChannelStructNear({1, 0, 0, 1}, 1e-2));
+              RgbaFloatNear({1, 0, 0, 1}, 1e-2));
   EXPECT_THAT(
       (ColorFunction{ColorFunction::ChromaMultiplier{0.5}})(Color::Red())
           .AsFloat(Color::Format::kGammaEncoded),
-      ChannelStructNear({0.79, 0.40, 0.35, 1}, 1e-2));
+      RgbaFloatNear({0.79, 0.40, 0.35, 1}, 1e-2));
   EXPECT_THAT((ColorFunction{ColorFunction::ChromaMultiplier{0}})(Color::Red())
                   .AsFloat(Color::Format::kGammaEncoded),
-              ChannelStructNear({0.53, 0.53, 0.53, 1}, 1e-2));
+              RgbaFloatNear({0.53, 0.53, 0.53, 1}, 1e-2));
 }
 
 TEST(ColorFunctionTest, ApplyLightnessOffset) {
   EXPECT_THAT((ColorFunction{ColorFunction::LightnessOffset{0}})(Color::Red())
                   .ClampedToGamut()
                   .AsFloat(Color::Format::kGammaEncoded),
-              ChannelStructNear({1, 0, 0, 1}, 1e-2));
+              RgbaFloatNear({1, 0, 0, 1}, 1e-2));
   EXPECT_THAT(
       (ColorFunction{ColorFunction::LightnessOffset{0.25}})(Color::Red())
           .ClampedToGamut()
           .AsFloat(Color::Format::kGammaEncoded),
-      ChannelStructNear({1, 0.51, 0.42, 1}, 1e-2));
+      RgbaFloatNear({1, 0.51, 0.42, 1}, 1e-2));
   EXPECT_THAT(
       (ColorFunction{ColorFunction::LightnessOffset{-0.25}})(Color::Red())
           .ClampedToGamut()
           .AsFloat(Color::Format::kGammaEncoded),
-      ChannelStructNear({0.63, 0, 0, 1}, 1e-2));
+      RgbaFloatNear({0.63, 0, 0, 1}, 1e-2));
 }
 
 TEST(ColorFunctionTest, ApplyReplaceColor) {

@@ -29,7 +29,9 @@ namespace {
 using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
+using ::testing::Eq;
 using ::testing::Field;
+using ::testing::FloatEq;
 using ::testing::FloatNear;
 using ::testing::Ge;
 using ::testing::Le;
@@ -64,45 +66,35 @@ MATCHER_P(ColorNearlyEqualsMatcher, expected, "") {
   return arg.NearlyEquals(expected);
 }
 
-MATCHER_P2(ChannelStructNearArrayMatcher, expected, tolerance,
-           absl::StrFormat("%s within %f of {%f, %f, %f, %f}",
-                           negation ? "isn't" : "is", tolerance, expected[0],
-                           expected[1], expected[2], expected[3])) {
-  return Matches(Vec4Near(expected, tolerance))(
-      std::array<float, 4>{arg.r, arg.g, arg.b, arg.a});
+MATCHER_P2(RgbaFloatNearMatcher, expected, tolerance,
+           absl::StrCat(negation ? "isn't" : "is", " within ", tolerance,
+                        " of ", expected)) {
+  return ExplainMatchResult(
+      AllOf(Field("r", &Color::RgbaFloat::r, FloatNear(expected.r, tolerance)),
+            Field("g", &Color::RgbaFloat::g, FloatNear(expected.g, tolerance)),
+            Field("b", &Color::RgbaFloat::b, FloatNear(expected.b, tolerance)),
+            Field("a", &Color::RgbaFloat::a, FloatNear(expected.a, tolerance))),
+      arg, result_listener);
 }
 
-MATCHER_P2(ChannelStructNearChannelStructMatcher, expected, tolerance,
-           absl::StrFormat("%s within %f of {%f, %f, %f, %f}",
-                           negation ? "isn't" : "is", tolerance, expected.r,
-                           expected.g, expected.b, expected.a)) {
-  return Matches(::testing::FieldsAre(
-      FloatNear(expected.r, tolerance), FloatNear(expected.g, tolerance),
-      FloatNear(expected.b, tolerance), FloatNear(expected.a, tolerance)))(arg);
+MATCHER_P(RgbaFloatEqMatcher, expected,
+          absl::StrCat(negation ? "isn't " : "is ", expected)) {
+  return ExplainMatchResult(
+      AllOf(Field("r", &Color::RgbaFloat::r, FloatEq(expected.r)),
+            Field("g", &Color::RgbaFloat::g, FloatEq(expected.g)),
+            Field("b", &Color::RgbaFloat::b, FloatEq(expected.b)),
+            Field("a", &Color::RgbaFloat::a, FloatEq(expected.a))),
+      arg, result_listener);
 }
 
-MATCHER_P(ChannelStructEqFloatMatcher, expected, "") {
-  return Matches(ElementsAreArray(expected))(
-      std::array<float, 4>{arg.r, arg.g, arg.b, arg.a});
-}
-
-MATCHER_P(ChannelStructEqMatcher, expected, "") {
-  return Matches(AllOf(Field(&Color::RgbaUint8::r, expected.r),
-                       Field(&Color::RgbaUint8::g, expected.g),
-                       Field(&Color::RgbaUint8::b, expected.b),
-                       Field(&Color::RgbaUint8::a, expected.a)))(arg);
-}
-
-MATCHER_P(ChannelStructEqChannelStructMatcher, expected, "") {
-  return Matches(AllOf(Field(&Color::RgbaFloat::r, expected.r),
-                       Field(&Color::RgbaFloat::g, expected.g),
-                       Field(&Color::RgbaFloat::b, expected.b),
-                       Field(&Color::RgbaFloat::a, expected.a)))(arg);
-}
-
-MATCHER_P(ChannelStructEqUint8Matcher, expected, "") {
-  return Matches(ElementsAreArray(expected))(
-      std::array<uint8_t, 4>{arg.r, arg.g, arg.b, arg.a});
+MATCHER_P(RgbaUint8EqMatcher, expected,
+          absl::StrCat(negation ? "isn't " : "is ", expected)) {
+  return ExplainMatchResult(
+      AllOf(Field("r", &Color::RgbaUint8::r, Eq(expected.r)),
+            Field("g", &Color::RgbaUint8::g, Eq(expected.g)),
+            Field("b", &Color::RgbaUint8::b, Eq(expected.b)),
+            Field("a", &Color::RgbaUint8::a, Eq(expected.a))),
+      arg, result_listener);
 }
 
 MATCHER_P2(OklabFloatNearMatcher, expected, tolerance,
@@ -138,33 +130,17 @@ Matcher<Color> ColorNearlyEquals(const Color& expected) {
   return ColorNearlyEqualsMatcher(expected);
 }
 
-Matcher<Color::RgbaFloat> ChannelStructNear(
-    const std::array<float, 4>& expected, float tolerance) {
-  return ChannelStructNearArrayMatcher(expected, tolerance);
+Matcher<Color::RgbaFloat> RgbaFloatNear(Color::RgbaFloat expected,
+                                        float tolerance) {
+  return RgbaFloatNearMatcher(expected, tolerance);
 }
 
-Matcher<Color::RgbaFloat> ChannelStructNearChannelStruct(
-    const Color::RgbaFloat& expected, float tolerance) {
-  return ChannelStructNearChannelStructMatcher(expected, tolerance);
+Matcher<Color::RgbaFloat> RgbaFloatEq(Color::RgbaFloat expected) {
+  return RgbaFloatEqMatcher(expected);
 }
 
-Matcher<Color::RgbaFloat> ChannelStructEqFloats(
-    const std::array<float, 4>& expected) {
-  return ChannelStructEqFloatMatcher(expected);
-}
-
-Matcher<Color::RgbaFloat> ChannelStructEqChannelStruct(
-    const Color::RgbaFloat& expected) {
-  return ChannelStructEqChannelStructMatcher(expected);
-}
-
-Matcher<Color::RgbaUint8> ChannelStructEq(const Color::RgbaUint8& expected) {
-  return ChannelStructEqMatcher(expected);
-}
-
-Matcher<Color::RgbaUint8> ChannelStructEqUint8s(
-    const std::array<uint8_t, 4>& expected) {
-  return ChannelStructEqUint8Matcher(expected);
+Matcher<Color::RgbaUint8> RgbaUint8Eq(Color::RgbaUint8 expected) {
+  return RgbaUint8EqMatcher(expected);
 }
 
 Matcher<Color::OklabFloat> OklabFloatNear(Color::OklabFloat expected,

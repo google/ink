@@ -178,19 +178,19 @@ TEST(PointLerpTest, AmountLessThanZero) {
 TEST(ColorRgbaFloatLerpTest, AmountBetweenZeroAndOne) {
   EXPECT_THAT(Lerp(Color::RgbaFloat({100.0, 100.0, 100.0, 100.0}),
                    Color::RgbaFloat({200.0, 200.0, 200.0, 200.0}), 0.1),
-              ChannelStructEqFloats({110.0, 110.0, 110.0, 110.0}));
+              RgbaFloatEq({110.0, 110.0, 110.0, 110.0}));
 }
 
 TEST(ColorRgbaFloatLerpTest, AmountGreaterThanOne) {
   EXPECT_THAT(Lerp(Color::RgbaFloat({100.0, 100.0, 100.0, 100.0}),
                    Color::RgbaFloat({200.0, 200.0, 200.0, 200.0}), 1.1),
-              ChannelStructEqFloats({210.0, 210.0, 210.0, 210.0}));
+              RgbaFloatEq({210.0, 210.0, 210.0, 210.0}));
 }
 
 TEST(ColorRgbaFloatLerpTest, AmountLessThanZero) {
   EXPECT_THAT(Lerp(Color::RgbaFloat({100.0, 100.0, 100.0, 100.0}),
                    Color::RgbaFloat({200.0, 200.0, 200.0, 200.0}), -0.1),
-              ChannelStructEqFloats({90.0, 90.0, 90.0, 90.0}));
+              RgbaFloatEq({90.0, 90.0, 90.0, 90.0}));
 }
 
 TEST(AngleLerpTest, AmountBetweenZeroAndOne) {

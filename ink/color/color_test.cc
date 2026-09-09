@@ -136,7 +136,9 @@ void ExpectFromFloatBackToFloatIsNear(
       EXPECT_THAT(Color::FromFloat(rgba[0], rgba[1], rgba[2], rgba[3], format,
                                    color_space)
                       .AsFloat(format),
-                  ChannelStructNear(expected_rgba, kColorTestEps))
+                  RgbaFloatNear({expected_rgba[0], expected_rgba[1],
+                                 expected_rgba[2], expected_rgba[3]},
+                                kColorTestEps))
           << absl::StrFormat("for case %v %v", format, color_space);
     }
   }
@@ -170,16 +172,16 @@ void FromFloatClampsNegativeAlphaToZero(float alpha) {
     EXPECT_THAT(
         Color::FromFloat(0.5, 0.4, 0.3, alpha, Format::kLinear, color_space)
             .AsFloat(Format::kLinear),
-        ChannelStructNear({0.5f, 0.4f, 0.3f, 0.0f}, kColorTestEps));
+        RgbaFloatNear({0.5f, 0.4f, 0.3f, 0.0f}, kColorTestEps));
     EXPECT_THAT(Color::FromFloat(0.5, 0.4, 0.3, alpha, Format::kGammaEncoded,
                                  color_space)
                     .AsFloat(Format::kGammaEncoded),
-                ChannelStructNear({0.5f, 0.4f, 0.3f, 0.0f}, kColorTestEps));
+                RgbaFloatNear({0.5f, 0.4f, 0.3f, 0.0f}, kColorTestEps));
     // For premultiplied alpha=0, all color channels must be zero too.
     EXPECT_THAT(Color::FromFloat(0.0, 0.0, 0.0, alpha,
                                  Format::kPremultipliedAlpha, color_space)
                     .AsFloat(Format::kPremultipliedAlpha),
-                ChannelStructNear({0.0f, 0.0f, 0.0f, 0.0f}, kColorTestEps));
+                RgbaFloatNear({0.0f, 0.0f, 0.0f, 0.0f}, kColorTestEps));
   }
 }
 FUZZ_TEST(ColorTest, FromFloatClampsNegativeAlphaToZero)
@@ -190,16 +192,16 @@ TEST(ColorTest, FromFloatTreatsNanAlphaAsZero) {
     EXPECT_THAT(
         Color::FromFloat(0.5, 0.4, 0.3, kNan, Format::kLinear, color_space)
             .AsFloat(Format::kLinear),
-        ChannelStructNear({0.5f, 0.4f, 0.3f, 0.0f}, kColorTestEps));
+        RgbaFloatNear({0.5f, 0.4f, 0.3f, 0.0f}, kColorTestEps));
     EXPECT_THAT(Color::FromFloat(0.5, 0.4, 0.3, kNan, Format::kGammaEncoded,
                                  color_space)
                     .AsFloat(Format::kGammaEncoded),
-                ChannelStructNear({0.5f, 0.4f, 0.3f, 0.0f}, kColorTestEps));
+                RgbaFloatNear({0.5f, 0.4f, 0.3f, 0.0f}, kColorTestEps));
     // For premultiplied alpha=0, all color channels must be zero too.
     EXPECT_THAT(Color::FromFloat(0.0, 0.0, 0.0, kNan,
                                  Format::kPremultipliedAlpha, color_space)
                     .AsFloat(Format::kPremultipliedAlpha),
-                ChannelStructNear({0.0f, 0.0f, 0.0f, 0.0f}, kColorTestEps));
+                RgbaFloatNear({0.0f, 0.0f, 0.0f, 0.0f}, kColorTestEps));
   }
 }
 
@@ -226,15 +228,15 @@ void FromFloatClampsAlphaGreaterThanOne(float alpha) {
     EXPECT_THAT(
         Color::FromFloat(0.5, 0.4, 0.3, alpha, Format::kLinear, color_space)
             .AsFloat(Format::kLinear),
-        ChannelStructNear({0.5f, 0.4f, 0.3f, 1.0f}, kColorTestEps));
+        RgbaFloatNear({0.5f, 0.4f, 0.3f, 1.0f}, kColorTestEps));
     EXPECT_THAT(Color::FromFloat(0.5, 0.4, 0.3, alpha, Format::kGammaEncoded,
                                  color_space)
                     .AsFloat(Format::kGammaEncoded),
-                ChannelStructNear({0.5f, 0.4f, 0.3f, 1.0f}, kColorTestEps));
+                RgbaFloatNear({0.5f, 0.4f, 0.3f, 1.0f}, kColorTestEps));
     EXPECT_THAT(Color::FromFloat(0.5, 0.4, 0.3, alpha,
                                  Format::kPremultipliedAlpha, color_space)
                     .AsFloat(Format::kPremultipliedAlpha),
-                ChannelStructNear({0.5f, 0.4f, 0.3f, 1.0f}, kColorTestEps));
+                RgbaFloatNear({0.5f, 0.4f, 0.3f, 1.0f}, kColorTestEps));
   }
 }
 FUZZ_TEST(ColorTest, FromFloatClampsAlphaGreaterThanOne)
@@ -263,7 +265,7 @@ FUZZ_TEST(ColorTest, FromFloatAndAsFloatAcceptAnyValues);
 void AsFloatPremultipliedAlphaZeroIsAllZeros(const std::array<float, 3>& rgb) {
   EXPECT_THAT(Color::FromFloat(rgb[0], rgb[1], rgb[2], 0, Format::kLinear)
                   .AsFloat(Format::kPremultipliedAlpha),
-              ChannelStructEqFloats({0.0f, 0.0f, 0.0f, 0.0f}));
+              RgbaFloatEq({0.0f, 0.0f, 0.0f, 0.0f}));
 }
 FUZZ_TEST(ColorTest, AsFloatPremultipliedAlphaZeroIsAllZeros);
 
@@ -347,13 +349,13 @@ TEST(ColorTest, FromUint8AllZerosAlwaysMeansTransparentBlack) {
   }
 }
 
-void FromUint8BackToUint8IsIdentity(const std::array<uint8_t, 4>& rgba) {
+void FromUint8BackToUint8IsIdentity(Color::RgbaUint8 rgba) {
   for (auto format : {Format::kLinear, Format::kGammaEncoded}) {
     for (auto color_space : kAllColorSpaces) {
-      EXPECT_THAT(Color::FromUint8(rgba[0], rgba[1], rgba[2], rgba[3], format,
-                                   color_space)
-                      .AsUint8(format),
-                  ChannelStructEqUint8s(rgba))
+      EXPECT_THAT(
+          Color::FromUint8(rgba.r, rgba.g, rgba.b, rgba.a, format, color_space)
+              .AsUint8(format),
+          RgbaUint8Eq(rgba))
           << absl::StrFormat("for case %v %v", format, color_space);
     }
   }
@@ -370,8 +372,7 @@ TEST(ColorTest, AsUint8Rounds) {
   const Color c =
       Color::FromFloat(127.0f / 255.0f, 135.5f / 255.0f, 254.49f / 255.0f,
                        200.5f / 255.0f, Format::kLinear);
-  EXPECT_THAT(c.AsUint8(Format::kLinear),
-              ChannelStructEqUint8s({127, 136, 254, 201}));
+  EXPECT_THAT(c.AsUint8(Format::kLinear), RgbaUint8Eq({127, 136, 254, 201}));
 }
 
 void AsUint8WorksWithAnyValues(const std::array<float, 4>& rgba) {
@@ -474,9 +475,9 @@ TEST(ColorTest, ColorsInDifferentColorSpacesAreNotEqual) {
   ASSERT_EQ(in_srgb.GetColorSpace(), ColorSpace::kSrgb);
   Color in_p3 = in_srgb.InColorSpace(ColorSpace::kDisplayP3);
   EXPECT_THAT(in_srgb.AsFloat(Format::kLinear),
-              ChannelStructEqFloats({0.0f, 0.0f, 0.0f, 1.0f}));
+              RgbaFloatEq({0.0f, 0.0f, 0.0f, 1.0f}));
   EXPECT_THAT(in_p3.AsFloat(Format::kLinear),
-              ChannelStructEqFloats({0.0f, 0.0f, 0.0f, 1.0f}));
+              RgbaFloatEq({0.0f, 0.0f, 0.0f, 1.0f}));
   EXPECT_NE(in_srgb, in_p3);
   EXPECT_NE(in_p3, in_srgb);
 }

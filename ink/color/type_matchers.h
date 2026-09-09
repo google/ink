@@ -38,22 +38,12 @@ constexpr float kColorTestEps = 3.8e-6;
 
 ::testing::Matcher<Color> ColorNearlyEquals(const Color& expected);
 
-::testing::Matcher<Color::RgbaFloat> ChannelStructNear(
-    const std::array<float, 4>& expected, float tolerance);
+::testing::Matcher<Color::RgbaFloat> RgbaFloatNear(Color::RgbaFloat expected,
+                                                   float tolerance);
 
-::testing::Matcher<Color::RgbaFloat> ChannelStructNearChannelStruct(
-    const Color::RgbaFloat& expected, float tolerance);
+::testing::Matcher<Color::RgbaFloat> RgbaFloatEq(Color::RgbaFloat expected);
 
-::testing::Matcher<Color::RgbaFloat> ChannelStructEqFloats(
-    const std::array<float, 4>& expected);
-
-::testing::Matcher<Color::RgbaFloat> ChannelStructEqChannelStruct(
-    const Color::RgbaFloat& expected);
-
-::testing::Matcher<Color::RgbaUint8> ChannelStructEq(
-    const Color::RgbaUint8& expected);
-::testing::Matcher<Color::RgbaUint8> ChannelStructEqUint8s(
-    const std::array<uint8_t, 4>& expected);
+::testing::Matcher<Color::RgbaUint8> RgbaUint8Eq(Color::RgbaUint8 expected);
 
 ::testing::Matcher<Color::OklabFloat> OklabFloatNear(Color::OklabFloat expected,
                                                      float tolerance);

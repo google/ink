@@ -25,8 +25,6 @@
 namespace ink::brush_tip_extruder_internal {
 namespace {
 
-using ::ink::ChannelStructEqChannelStruct;
-using ::ink::ChannelStructNear;
 using ::ink::strokes_internal::LegacyVertex;
 using ::ink::strokes_internal::StrokeVertex;
 using ::testing::Eq;
@@ -89,7 +87,7 @@ TEST(ExtrudedVertexTest, CreatedFromLegacy) {
   ExtrudedVertex vertex = ExtrudedVertex::FromLegacy(legacy_vertex);
 
   EXPECT_THAT(vertex.position, PointEq(legacy_vertex.position));
-  EXPECT_THAT(vertex.color, ChannelStructEqChannelStruct(legacy_vertex.color));
+  EXPECT_THAT(vertex.color, RgbaFloatEq(legacy_vertex.color));
   EXPECT_THAT(vertex.texture_coords, PointEq(legacy_vertex.texture_coords));
   EXPECT_THAT(vertex.secondary_texture_coords,
               PointEq(legacy_vertex.secondary_texture_coords));
@@ -104,7 +102,7 @@ TEST(ExtrudedVertexTest, ConvertedToLegacy) {
 
   EXPECT_THAT(legacy_vertex.position,
               PointEq({vertex.position.x, vertex.position.y}));
-  EXPECT_THAT(legacy_vertex.color, ChannelStructEqChannelStruct(vertex.color));
+  EXPECT_THAT(legacy_vertex.color, RgbaFloatEq(vertex.color));
   EXPECT_THAT(legacy_vertex.texture_coords, PointEq(vertex.texture_coords));
   EXPECT_THAT(legacy_vertex.secondary_texture_coords,
               PointEq(vertex.secondary_texture_coords));
@@ -138,7 +136,7 @@ TEST(ExtrudedVertexTest, Interpolate) {
   EXPECT_EQ(
       vertex.new_non_position_attributes,
       StrokeVertex::NonPositionAttributes{.side_label = shared_side_label});
-  EXPECT_THAT(vertex.color, ChannelStructNear({0.25, 0, 0.75, 1}, 0.01));
+  EXPECT_THAT(vertex.color, RgbaFloatNear({0.25, 0, 0.75, 1}, 0.01));
   EXPECT_THAT(vertex.texture_coords, PointNear({8.75, -1.25}, 0.01));
   EXPECT_THAT(vertex.secondary_texture_coords, PointNear({4, 1.5}, 0.01));
 }
@@ -174,7 +172,7 @@ TEST(ExtrudedVertexTest, Extrapolate) {
       Eq(StrokeVertex::NonPositionAttributes{
           .side_label = a.new_non_position_attributes.side_label,
           .forward_label = a.new_non_position_attributes.forward_label}));
-  EXPECT_THAT(vertex.color, ChannelStructNear({0.75, 0, 0.25, 1}, 0.01));
+  EXPECT_THAT(vertex.color, RgbaFloatNear({0.75, 0, 0.25, 1}, 0.01));
   EXPECT_THAT(vertex.texture_coords, PointNear({2.5, -7.5}, 0.01));
   EXPECT_THAT(vertex.secondary_texture_coords, PointNear({-1, -1}, 0.01));
 }
@@ -207,7 +205,7 @@ TEST(ExtrudedVertexTest, BarycentricPositionInsideTriangle) {
   EXPECT_THAT(vertex.position, PointEq({0.25, 0.25}));
   EXPECT_EQ(vertex.new_non_position_attributes,
             StrokeVertex::NonPositionAttributes{});
-  EXPECT_THAT(vertex.color, ChannelStructNear({0.25, 0.12, 0.12, 1}, 0.01));
+  EXPECT_THAT(vertex.color, RgbaFloatNear({0.25, 0.12, 0.12, 1}, 0.01));
   EXPECT_THAT(vertex.texture_coords, PointNear({1.5, 2.25}, 0.01));
   EXPECT_THAT(vertex.secondary_texture_coords, PointNear({3.5, 4.75}, 0.01));
 }
@@ -240,7 +238,7 @@ TEST(ExtrudedVertexTest, BarycentricPositionOutsideTriangle) {
   EXPECT_THAT(vertex.position, PointEq({1, 1}));
   EXPECT_EQ(vertex.new_non_position_attributes,
             StrokeVertex::NonPositionAttributes{});
-  EXPECT_THAT(vertex.color, ChannelStructNear({-0.5, 0.5, 0.5, 1}, 0.01));
+  EXPECT_THAT(vertex.color, RgbaFloatNear({-0.5, 0.5, 0.5, 1}, 0.01));
   EXPECT_THAT(vertex.texture_coords, PointNear({3, 3}, 0.01));
   EXPECT_THAT(vertex.secondary_texture_coords, PointNear({5, 7}, 0.01));
 }
