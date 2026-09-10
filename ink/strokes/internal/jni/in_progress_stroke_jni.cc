@@ -130,9 +130,9 @@ JNI_METHOD(strokes, InProgressStrokeNative, void, getAndOverwriteInput)
       env, InProgressStrokeNative_getInput(native_pointer, index), j_input);
 }
 
-JNI_METHOD(strokes, InProgressStrokeNative, jfloat, getBaseAnimationPhase)
+JNI_METHOD(strokes, InProgressStrokeNative, jfloat, getBasePaintAnimationPhase)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return InProgressStrokeNative_getBaseAnimationPhase(native_pointer);
+  return InProgressStrokeNative_getBasePaintAnimationPhase(native_pointer);
 }
 
 JNI_METHOD(strokes, InProgressStrokeNative, jint, getBrushCoatCount)

@@ -85,9 +85,9 @@ JNI_METHOD(strokes, StrokeInputBatchNative, jint, getNoiseSeed)
   return StrokeInputBatchNative_getNoiseSeed(native_pointer);
 }
 
-JNI_METHOD(strokes, StrokeInputBatchNative, jfloat, getBaseAnimationPhase)
+JNI_METHOD(strokes, StrokeInputBatchNative, jfloat, getBasePaintAnimationPhase)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
-  return StrokeInputBatchNative_getBaseAnimationPhase(native_pointer);
+  return StrokeInputBatchNative_getBasePaintAnimationPhase(native_pointer);
 }
 
 // ************ Native Implementation of MutableStrokeInputBatch ************
@@ -124,9 +124,11 @@ JNI_METHOD(strokes, MutableStrokeInputBatchNative, void, setNoiseSeed)
   MutableStrokeInputBatchNative_setNoiseSeed(native_pointer, seed);
 }
 
-JNI_METHOD(strokes, MutableStrokeInputBatchNative, void, setBaseAnimationPhase)
+JNI_METHOD(strokes, MutableStrokeInputBatchNative, void,
+           setBasePaintAnimationPhase)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jfloat phase) {
-  MutableStrokeInputBatchNative_setBaseAnimationPhase(native_pointer, phase);
+  MutableStrokeInputBatchNative_setBasePaintAnimationPhase(native_pointer,
+                                                           phase);
 }
 
 }  // extern "C"

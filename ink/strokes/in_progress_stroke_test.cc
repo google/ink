@@ -255,15 +255,16 @@ TEST(InProgressStrokeTest, ClearAfterStart) {
   EXPECT_FALSE(stroke.ChangesWithTime());
 }
 
-TEST(InProgressStrokeTest, SetNoiseSeedAndBaseAnimationPhase) {
+TEST(InProgressStrokeTest, SetNoiseSeedAndBasePaintAnimationPhase) {
   InProgressStroke stroke;
   stroke.Start(CreateRectangularTestBrush(), /*noise_seed=*/12345,
                /*base_animation_phase=*/0.75f);
   EXPECT_EQ(stroke.GetInputs().GetNoiseSeed(), 12345);
-  EXPECT_EQ(stroke.GetInputs().GetBaseAnimationPhase(), 0.75f);
+  EXPECT_EQ(stroke.GetInputs().GetBasePaintAnimationPhase(), 0.75f);
 }
 
-TEST(InProgressStrokeTest, NoiseSeedAndBaseAnimationPhaseAfterUpdateShape) {
+TEST(InProgressStrokeTest,
+     NoiseSeedAndBasePaintAnimationPhaseAfterUpdateShape) {
   InProgressStroke stroke;
   stroke.Start(CreateRectangularTestBrush(), /*noise_seed=*/12345,
                /*base_animation_phase=*/0.75f);
@@ -277,7 +278,7 @@ TEST(InProgressStrokeTest, NoiseSeedAndBaseAnimationPhaseAfterUpdateShape) {
   EXPECT_THAT(stroke.UpdateShape(Duration32::Seconds(0.15)), IsOk());
 
   EXPECT_EQ(stroke.GetInputs().GetNoiseSeed(), 12345);
-  EXPECT_EQ(stroke.GetInputs().GetBaseAnimationPhase(), 0.75f);
+  EXPECT_EQ(stroke.GetInputs().GetBasePaintAnimationPhase(), 0.75f);
 }
 
 TEST(InProgressStrokeTest, EnqueueInputsWithoutStart) {

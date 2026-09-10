@@ -99,9 +99,9 @@ MATCHER_P(StrokeInputBatchEqMatcher, expected, "") {
       AllOf(StrokeInputBatchIsArrayMatcher(expected_inputs),
             Property("GetNoiseSeed", &StrokeInputBatch::GetNoiseSeed,
                      Eq(expected.GetNoiseSeed())),
-            Property("GetBaseAnimationPhase",
-                     &StrokeInputBatch::GetBaseAnimationPhase,
-                     FloatEq(expected.GetBaseAnimationPhase()))),
+            Property("GetBasePaintAnimationPhase",
+                     &StrokeInputBatch::GetBasePaintAnimationPhase,
+                     FloatEq(expected.GetBasePaintAnimationPhase()))),
       arg, result_listener);
 }
 

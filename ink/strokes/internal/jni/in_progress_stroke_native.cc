@@ -169,7 +169,7 @@ void InProgressStrokeNative_populateInputs(
     ABSL_CHECK_OK(batch.Append(inputs.Get(i)));
   }
   batch.SetNoiseSeed(inputs.GetNoiseSeed());
-  batch.SetBaseAnimationPhase(inputs.GetBaseAnimationPhase());
+  batch.SetBasePaintAnimationPhase(inputs.GetBasePaintAnimationPhase());
 }
 
 InProgressStrokeNative_Input InProgressStrokeNative_getInput(
@@ -188,11 +188,12 @@ InProgressStrokeNative_Input InProgressStrokeNative_getInput(
           .orientation_radians = input.orientation.ValueInRadians()};
 }
 
-float InProgressStrokeNative_getBaseAnimationPhase(int64_t native_pointer) {
+float InProgressStrokeNative_getBasePaintAnimationPhase(
+    int64_t native_pointer) {
   return CastToInProgressStrokeWrapper(native_pointer)
       .Stroke()
       .GetInputs()
-      .GetBaseAnimationPhase();
+      .GetBasePaintAnimationPhase();
 }
 
 int InProgressStrokeNative_getBrushCoatCount(int64_t native_pointer) {

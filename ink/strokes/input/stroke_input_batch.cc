@@ -67,7 +67,7 @@ StrokeInputBatch::ConstIterator StrokeInputBatch::ConstIterator::operator++(
 void StrokeInputBatch::Clear() {
   ClearInputs();
   noise_seed_ = 0;
-  base_animation_phase_ = 0.0f;
+  base_paint_animation_phase_ = 0.0f;
 }
 
 void StrokeInputBatch::ClearInputs() {
@@ -311,7 +311,7 @@ void StrokeInputBatch::Reserve(int size, const StrokeInput& sample_input) {
 
 absl::StatusOr<StrokeInputBatch> StrokeInputBatch::Create(
     absl::Span<const StrokeInput> inputs, uint32_t noise_seed,
-    float base_animation_phase) {
+    float base_paint_animation_phase) {
   StrokeInputBatch batch;
 
   if (!inputs.empty()) {
@@ -320,7 +320,7 @@ absl::StatusOr<StrokeInputBatch> StrokeInputBatch::Create(
   }
 
   batch.SetNoiseSeed(noise_seed);
-  batch.SetBaseAnimationPhase(base_animation_phase);
+  batch.SetBasePaintAnimationPhase(base_paint_animation_phase);
   return batch;
 }
 
@@ -329,10 +329,10 @@ absl::Status StrokeInputBatch::Append(const StrokeInputBatch& inputs) {
 
   if (IsEmpty()) {
     uint32_t old_noise_seed = noise_seed_;
-    float old_animation_phase = base_animation_phase_;
+    float old_animation_phase = base_paint_animation_phase_;
     *this = inputs;
     noise_seed_ = old_noise_seed;
-    base_animation_phase_ = old_animation_phase;
+    base_paint_animation_phase_ = old_animation_phase;
     return absl::OkStatus();
   }
 
@@ -429,8 +429,9 @@ std::string StrokeInputBatch::ToFormattedString() const {
   if (noise_seed_ != 0) {
     absl::StrAppend(&str, ", noise_seed=", noise_seed_);
   }
-  if (base_animation_phase_ != 0.0f) {
-    absl::StrAppend(&str, ", base_animation_phase=", base_animation_phase_);
+  if (base_paint_animation_phase_ != 0.0f) {
+    absl::StrAppend(
+        &str, ", base_paint_animation_phase=", base_paint_animation_phase_);
   }
   str.push_back(']');
   return str;

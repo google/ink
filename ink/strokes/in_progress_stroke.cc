@@ -64,7 +64,7 @@ void InProgressStroke::Start(const Brush& brush, uint32_t noise_seed,
   Clear();
   brush_ = brush;
   processed_inputs_.SetNoiseSeed(noise_seed);
-  processed_inputs_.SetBaseAnimationPhase(base_animation_phase);
+  processed_inputs_.SetBasePaintAnimationPhase(base_animation_phase);
   inputs_are_finished_ = false;
 
   absl::Span<const BrushCoat> coats = brush_->GetCoats();

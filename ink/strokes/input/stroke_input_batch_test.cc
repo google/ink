@@ -106,15 +106,16 @@ TEST(StrokeInputBatchTest, Stringify) {
   EXPECT_EQ(absl::StrCat(batch),
             "StrokeInputBatch[StrokeInput[Unknown, (1, 2), 1s],"
             " StrokeInput[Unknown, (3, 4), 2s]]");
-  batch.SetBaseAnimationPhase(0.25f);
-  EXPECT_EQ(absl::StrCat(batch),
-            "StrokeInputBatch[StrokeInput[Unknown, (1, 2), 1s],"
-            " StrokeInput[Unknown, (3, 4), 2s], base_animation_phase=0.25]");
+  batch.SetBasePaintAnimationPhase(0.25f);
+  EXPECT_EQ(
+      absl::StrCat(batch),
+      "StrokeInputBatch[StrokeInput[Unknown, (1, 2), 1s],"
+      " StrokeInput[Unknown, (3, 4), 2s], base_paint_animation_phase=0.25]");
   batch.SetNoiseSeed(12345);
   EXPECT_EQ(absl::StrCat(batch),
             "StrokeInputBatch[StrokeInput[Unknown, (1, 2), 1s],"
             " StrokeInput[Unknown, (3, 4), 2s], noise_seed=12345,"
-            " base_animation_phase=0.25]");
+            " base_paint_animation_phase=0.25]");
 }
 
 TEST(StrokeInputBatchTest, DefaultConstructed) {
@@ -233,7 +234,7 @@ TEST(StrokeInputBatchTest, AppendEmptyToNonEmpty) {
 TEST(StrokeInputBatchTest, AppendNonEmptyToEmpty) {
   StrokeInputBatch batch1;
   batch1.SetNoiseSeed(12345u);
-  batch1.SetBaseAnimationPhase(0.125f);
+  batch1.SetBasePaintAnimationPhase(0.125f);
 
   StrokeInputBatch batch2;
   StrokeInput input = MakeValidTestInput();
@@ -243,7 +244,7 @@ TEST(StrokeInputBatchTest, AppendNonEmptyToEmpty) {
   EXPECT_THAT(batch1.Append(batch2), IsOk());
   EXPECT_THAT(batch1, StrokeInputBatchIsArray({input}));
   EXPECT_EQ(batch1.GetNoiseSeed(), 12345u);
-  EXPECT_EQ(batch1.GetBaseAnimationPhase(), 0.125f);
+  EXPECT_EQ(batch1.GetBasePaintAnimationPhase(), 0.125f);
 }
 
 TEST(StrokeInputBatchTest, SetReplacingOnlyExistingValue) {
@@ -251,13 +252,13 @@ TEST(StrokeInputBatchTest, SetReplacingOnlyExistingValue) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   ASSERT_THAT(batch.Append(input_vector[0]), IsOk());
   batch.SetNoiseSeed(12345u);
-  batch.SetBaseAnimationPhase(0.125f);
+  batch.SetBasePaintAnimationPhase(0.125f);
 
   StrokeInput replacement = input_vector[1];
   EXPECT_THAT(batch.Set(0, replacement), IsOk());
   EXPECT_THAT(batch, StrokeInputBatchIsArray({replacement}));
   EXPECT_EQ(batch.GetNoiseSeed(), 12345u);
-  EXPECT_EQ(batch.GetBaseAnimationPhase(), 0.125f);
+  EXPECT_EQ(batch.GetBasePaintAnimationPhase(), 0.125f);
 }
 
 TEST(StrokeInputBatchTest, Set) {
@@ -357,7 +358,7 @@ TEST(StrokeInputBatchTest, SetReplacingLastValueOfMany) {
 TEST(StrokeInputBatchTest, Clear) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create(
-      input_vector, /*noise_seed=*/12345, /*base_animation_phase=*/0.75f);
+      input_vector, /*noise_seed=*/12345, /*base_paint_animation_phase=*/0.75f);
   ASSERT_THAT(batch, IsOk());
 
   ASSERT_FALSE(batch->IsEmpty());
@@ -367,7 +368,7 @@ TEST(StrokeInputBatchTest, Clear) {
   ASSERT_TRUE(batch->HasOrientation());
   ASSERT_EQ(batch->GetToolType(), StrokeInput::ToolType::kStylus);
   EXPECT_EQ(batch->GetNoiseSeed(), 12345u);
-  EXPECT_EQ(batch->GetBaseAnimationPhase(), 0.75f);
+  EXPECT_EQ(batch->GetBasePaintAnimationPhase(), 0.75f);
 
   batch->Clear();
   // Batch should now be empty, the tool type should be unknown, and noise seed
@@ -379,7 +380,7 @@ TEST(StrokeInputBatchTest, Clear) {
   ASSERT_FALSE(batch->HasOrientation());
   EXPECT_EQ(batch->GetToolType(), StrokeInput::ToolType::kUnknown);
   EXPECT_EQ(batch->GetNoiseSeed(), 0u);
-  EXPECT_EQ(batch->GetBaseAnimationPhase(), 0.0f);
+  EXPECT_EQ(batch->GetBasePaintAnimationPhase(), 0.0f);
 }
 
 TEST(StrokeInputBatchTest, AppendAfterClear) {
@@ -1372,7 +1373,7 @@ TEST(StrokeInputBatchTest, EraseWithStartEqualToSize) {
 TEST(StrokeInputBatchTest, EraseAll) {
   absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create(
       MakeValidTestInputSequence(StrokeInput::ToolType::kStylus),
-      /*noise_seed=*/12345, /*base_animation_phase=*/0.75f);
+      /*noise_seed=*/12345, /*base_paint_animation_phase=*/0.75f);
   ASSERT_THAT(batch, IsOk());
   batch->Erase(0, batch->Size());
   EXPECT_TRUE(batch->IsEmpty());
@@ -1380,7 +1381,7 @@ TEST(StrokeInputBatchTest, EraseAll) {
   // Unlike `Clear()`, `Erase()` does not reset the noise seed or base animation
   // phase, even if all inputs get erased.
   EXPECT_EQ(batch->GetNoiseSeed(), 12345u);
-  EXPECT_EQ(batch->GetBaseAnimationPhase(), 0.75f);
+  EXPECT_EQ(batch->GetBasePaintAnimationPhase(), 0.75f);
 }
 
 TEST(StrokeInputBatchTest, EraseWithNoPressure) {

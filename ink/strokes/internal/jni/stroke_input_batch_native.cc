@@ -96,8 +96,9 @@ int StrokeInputBatchNative_getNoiseSeed(int64_t native_pointer) {
   return CastToStrokeInputBatch(native_pointer).GetNoiseSeed();
 }
 
-float StrokeInputBatchNative_getBaseAnimationPhase(int64_t native_pointer) {
-  return CastToStrokeInputBatch(native_pointer).GetBaseAnimationPhase();
+float StrokeInputBatchNative_getBasePaintAnimationPhase(
+    int64_t native_pointer) {
+  return CastToStrokeInputBatch(native_pointer).GetBasePaintAnimationPhase();
 }
 
 void MutableStrokeInputBatchNative_clear(int64_t native_pointer) {
@@ -157,9 +158,10 @@ void MutableStrokeInputBatchNative_setNoiseSeed(int64_t native_pointer,
   CastToMutableStrokeInputBatch(native_pointer).SetNoiseSeed(seed);
 }
 
-void MutableStrokeInputBatchNative_setBaseAnimationPhase(int64_t native_pointer,
-                                                         float phase) {
-  CastToMutableStrokeInputBatch(native_pointer).SetBaseAnimationPhase(phase);
+void MutableStrokeInputBatchNative_setBasePaintAnimationPhase(
+    int64_t native_pointer, float phase) {
+  CastToMutableStrokeInputBatch(native_pointer)
+      .SetBasePaintAnimationPhase(phase);
 }
 
 }  // extern "C"
