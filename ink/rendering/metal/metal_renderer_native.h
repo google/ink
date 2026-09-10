@@ -17,7 +17,6 @@
 
 // C-compatible library header for Kotlin-native bindings.
 
-#include <simd/types.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -31,7 +30,7 @@ extern "C" {
 // samples per pixel for MSAA. If -1, shader-based antialiasing will be used
 // instead. `texture_for_id_callback` is a callback used to retrieve textures
 // for given texture ID strings, and returns a nullable raw pointer to a
-// `CGImage`.
+// `UIImage`.
 int64_t MetalRendererNative_create(
     void* device, uint64_t color_pixel_format, uint64_t stencil_pixel_format,
     int sample_count,

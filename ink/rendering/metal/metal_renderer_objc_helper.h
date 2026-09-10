@@ -40,7 +40,7 @@ namespace ink::rendering::metal_objc {
 // `sample_count`: The number of samples used for multisampling, or nullopt to
 //   use shader-based AA.
 // `texture_bitmap_store`: Optional opaque pointer to
-// `id<INKTextureBitmapStore>` used for
+// `id<INKTextureImageSource>` used for
 //   texture lookup.
 absl::StatusOr<std::unique_ptr<void, std::function<void(void*)>>>
 CreateINKMetalRendererState(
@@ -48,7 +48,7 @@ CreateINKMetalRendererState(
     uint64_t stencil_pixel_format_val, std::optional<int> sample_count,
     void* absl_nullable texture_bitmap_store_ptr = nullptr);
 
-// Creates a wrapper implementing `INKTextureBitmapStore` that delegates to a
+// Creates a wrapper implementing `INKTextureImageSource` that delegates to a
 // Kotlin callback.
 // Returns an opaque pointer to the wrapper, which should be passed to
 // `CreateINKMetalRendererState`.

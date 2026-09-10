@@ -178,7 +178,7 @@ class MetalRenderer {
   // `sample_count`: The number of samples used for multisampling. Set to
   //   1 to enable shader-based anti-aliasing instead.
   // `texture_bitmap_store`: Optional opaque pointer to
-  // `id<INKTextureBitmapStore>`.
+  // `id<INKTextureImageSource>`.
   static absl::StatusOr<MetalRenderer> Create(
       void* device, uint64_t color_pixel_format, uint64_t stencil_pixel_format,
       std::optional<int> sample_count = std::nullopt,

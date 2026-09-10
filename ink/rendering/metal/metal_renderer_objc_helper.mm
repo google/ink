@@ -15,9 +15,11 @@
 #import "ink/rendering/metal/metal_renderer_objc_helper.h"
 
 #import <CoreFoundation/CFBase.h>
+#import <CoreImage/CIImage.h>
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
+#import <UIKit/UIKit.h>
 
 #import <functional>
 
@@ -26,7 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/geometry/mesh.h"
-#import "ink/rendering/metal/INKTextureBitmapStore.h"
+#import "ink/rendering/metal/INKTextureImageSource.h"
 #include "ink/rendering/metal/ink_metal_shaders_embedded.h"
 
 __attribute__((objc_subclassing_restricted))
@@ -57,7 +59,7 @@ __attribute__((objc_subclassing_restricted))
 @end
 
 __attribute__((objc_subclassing_restricted))
-@interface KotlinTextureStoreWrapper : NSObject<INKTextureBitmapStore>
+@interface KotlinTextureStoreWrapper : NSObject<INKTextureImageSource>
 @property(nonatomic) int64_t kotlinMetalRendererNativePtr;
 @property(nonatomic, readonly) void* (*callback)(int64_t, const char*);
 
@@ -86,10 +88,10 @@ __attribute__((objc_subclassing_restricted))
   return self;
 }
 
-- (CGImageRef)textureForID:(NSString*)textureID {
+- (UIImage*)textureForID:(NSString*)textureID {
   if (self.callback == nullptr || self.kotlinMetalRendererNativePtr == 0) return nullptr;
   const char* c_texture_id = [textureID UTF8String];
-  return (CGImageRef)(*self.callback)(self.kotlinMetalRendererNativePtr, c_texture_id);
+  return (__bridge UIImage*)(*self.callback)(self.kotlinMetalRendererNativePtr, c_texture_id);
 }
 
 @end
@@ -103,12 +105,13 @@ __attribute__((objc_subclassing_restricted))
 @property(nonatomic, readonly, nonnull) id<MTLDepthStencilState> discardSelfOverlapStencilState;
 @property(nonatomic, readonly, nonnull) id<MTLDepthStencilState> clearStencilBufferStencilState;
 @property(nonatomic, readonly, nonnull) id<MTLDepthStencilState> noOpStencilState;
-@property(nonatomic, readonly, nullable) id<INKTextureBitmapStore> textureBitmapStore;
+@property(nonatomic, readonly, nullable) id<INKTextureImageSource> textureBitmapStore;
 @property(nonatomic, readonly, nonnull) MTKTextureLoader* textureLoader;
 @property(nonatomic, readonly, nonnull)
     NSMutableDictionary<NSString*, id<MTLTexture>>* textureCache;
 @property(nonatomic, readonly, nonnull)
     NSMutableArray<NSMutableArray<id<MTLSamplerState>>*>* samplerCache;
+@property(nonatomic, readwrite, nullable) CIContext* ciContext;
 
 - (instancetype)init NS_UNAVAILABLE;
 
@@ -118,7 +121,7 @@ __attribute__((objc_subclassing_restricted))
     discardSelfOverlapStencilState:(nullable id<MTLDepthStencilState>)discardSelfOverlapStencilState
     clearStencilBufferStencilState:(nullable id<MTLDepthStencilState>)clearStencilBufferStencilState
                   noOpStencilState:(nullable id<MTLDepthStencilState>)noOpStencilState
-                textureBitmapStore:(nullable id<INKTextureBitmapStore>)textureBitmapStore
+                textureBitmapStore:(nullable id<INKTextureImageSource>)textureBitmapStore
     NS_DESIGNATED_INITIALIZER;
 
 @end
@@ -131,7 +134,7 @@ __attribute__((objc_subclassing_restricted))
     discardSelfOverlapStencilState:(nullable id<MTLDepthStencilState>)discardSelfOverlapStencilState
     clearStencilBufferStencilState:(nullable id<MTLDepthStencilState>)clearStencilBufferStencilState
                   noOpStencilState:(nullable id<MTLDepthStencilState>)noOpStencilState
-                textureBitmapStore:(nullable id<INKTextureBitmapStore>)textureBitmapStore {
+                textureBitmapStore:(nullable id<INKTextureImageSource>)textureBitmapStore {
   self = [super init];
   if (self) {
     _device = device;
@@ -177,7 +180,7 @@ MTLSamplerAddressMode TextureWrapToMTLSamplerAddressMode(BrushPaint::TextureWrap
 
 absl::StatusOr<std::unique_ptr<void, std::function<void(void*)>>> CreateINKMetalRendererState(
     id<MTLDevice> device, MTLPixelFormat color_pixel_format, MTLPixelFormat stencil_pixel_format,
-    std::optional<int> sample_count, id<INKTextureBitmapStore> texture_bitmap_store) {
+    std::optional<int> sample_count, id<INKTextureImageSource> texture_bitmap_store) {
   if (!device) {
     return absl::InvalidArgumentError("Device cannot be nil");
   }
@@ -343,7 +346,7 @@ void DrawIndexedTriangles(id<MTLRenderCommandEncoder> render_encoder, const void
 
 id<MTLTexture> GetOrLoadMTLTexture(INKMetalRendererState* state, const char* client_texture_id) {
   if (!client_texture_id) return nullptr;
-  id<INKTextureBitmapStore> texture_bitmap_store = state.textureBitmapStore;
+  id<INKTextureImageSource> texture_bitmap_store = state.textureBitmapStore;
   if (!texture_bitmap_store) return nullptr;
 
   NSMutableDictionary<NSString*, id<MTLTexture>>* texture_cache = state.textureCache;
@@ -352,7 +355,15 @@ id<MTLTexture> GetOrLoadMTLTexture(INKMetalRendererState* state, const char* cli
   NSString* ns_texture_id = [NSString stringWithUTF8String:client_texture_id];
   id<MTLTexture> texture = texture_cache[ns_texture_id];
   if (!texture && texture_bitmap_store) {
-    CGImageRef cg_image = [texture_bitmap_store textureForID:ns_texture_id];
+    UIImage* ui_image = [texture_bitmap_store textureForID:ns_texture_id];
+    CGImageRef cg_image = ui_image.CGImage;
+    if (!cg_image && ui_image.CIImage) {
+      if (!state.ciContext) {
+        state.ciContext = [CIContext contextWithOptions:nil];
+      }
+      cg_image = [state.ciContext createCGImage:ui_image.CIImage
+                                       fromRect:[ui_image.CIImage extent]];
+    }
     if (cg_image) {
       NSError* error = nil;
       texture = [texture_loader newTextureWithCGImage:cg_image options:nil error:&error];
@@ -409,7 +420,7 @@ absl::StatusOr<std::unique_ptr<void, std::function<void(void*)>>> CreateINKMetal
   return CreateINKMetalRendererState(
       (__bridge id<MTLDevice>)device_ptr, static_cast<MTLPixelFormat>(color_pixel_format_val),
       static_cast<MTLPixelFormat>(stencil_pixel_format_val), sample_count,
-      (__bridge id<INKTextureBitmapStore>)texture_bitmap_store_ptr);
+      (__bridge id<INKTextureImageSource>)texture_bitmap_store_ptr);
 }
 
 std::shared_ptr<void> CreateKotlinTextureStoreWrapper(

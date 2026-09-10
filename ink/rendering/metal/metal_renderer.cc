@@ -246,7 +246,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
 
   if (request_shader_aa && (forward_offset < 0 || side_offset < 0)) {
     ABSL_LOG(WARNING)
-        << "INKMetalRenderer shader-based anti-aliasing requested, but mesh "
+        << "MetalRenderer shader-based anti-aliasing requested, but mesh "
            "format does not contain side derivative and forward derivative "
            "attributes.";
     return;
@@ -385,7 +385,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
 
   if (request_shader_aa && (forward_offset < 0 || side_offset < 0)) {
     ABSL_LOG(WARNING)
-        << "INKMetalRenderer shader-based anti-aliasing requested, but mesh "
+        << "MetalRenderer shader-based anti-aliasing requested, but mesh "
            "format does not contain side derivative and forward derivative "
            "attributes.";
     return;

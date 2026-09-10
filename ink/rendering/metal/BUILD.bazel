@@ -67,15 +67,13 @@ cc_library(
 )
 
 objc_library(
-    name = "texture_bitmap_store",
-    hdrs = ["INKTextureBitmapStore.h"],
-    module_name = "INKTextureBitmapStore",
-    sdk_frameworks = [
-        "CoreGraphics",
-        "Foundation",
-    ],
+    name = "texture_image_source",
+    hdrs = ["INKTextureImageSource.h"],
+    module_name = "INKTextureImageSource",
+    sdk_frameworks = ["Foundation"],
     target_compatible_with = ["@platforms//os:ios"],
     visibility = ["//visibility:public"],
+    deps = ["//third_party/apple_frameworks:UIKit"],
 )
 
 objc_library(
@@ -92,9 +90,11 @@ objc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":ink_metal_shaders_embedded",
-        ":texture_bitmap_store",
+        ":texture_image_source",
         "//ink/brush:brush_paint",
         "//ink/geometry:mesh",
+        "//third_party/apple_frameworks:CoreImage",
+        "//third_party/apple_frameworks:UIKit",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
