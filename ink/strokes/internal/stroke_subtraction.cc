@@ -20,6 +20,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -101,6 +102,12 @@ void AddTriangleToAdjacencyMap(const std::array<uint32_t, 3>& tri,
   AddEdgeToAdjacencyMap(tri[0], tri[1], tri_index, edge_tri_map);
   AddEdgeToAdjacencyMap(tri[1], tri[2], tri_index, edge_tri_map);
   AddEdgeToAdjacencyMap(tri[2], tri[0], tri_index, edge_tri_map);
+}
+
+// Remaps the three vertex indices of a triangle using `index_map`.
+std::array<uint32_t, 3> MapIndices(const std::array<uint32_t, 3>& tri,
+                                   absl::Span<const uint32_t> index_map) {
+  return {index_map[tri[0]], index_map[tri[1]], index_map[tri[2]]};
 }
 
 // Returns the homogenous transform from world space to the barycentric coords
@@ -261,6 +268,73 @@ bool HasAntiAliasingAttributes(const MeshFormat& format) {
          attr_indices.forward_derivative != -1;
 }
 
+// Welds coincident topological boundary edges with opposite orientations and
+// returns an index map with merged canonical vertex roots.
+std::vector<uint32_t> StitchSeamEdges(
+    const EdgeTriangleAdjacencyMap& edge_tri_map,
+    const MutableMesh& mutable_mesh) {
+  // This function welds together triangles that are geometrically adjacent, but
+  // whose shared edge is duplicated in the mesh (i.e., they have distinct, but
+  // coincident, vertices).
+  //
+  // The approach is to first compute the topological boundary, consisting of
+  // all directed edges adjacent to only one triangle. We then organize the
+  // boundary edges by their geometric positions, look for directed edges that
+  // are coincident and have opposite orientations, and weld those together by
+  // merging their endpoint vertices.
+
+  // Initialize the index_map with identity mapping.
+  std::vector<uint32_t> index_map(mutable_mesh.VertexCount());
+  std::iota(index_map.begin(), index_map.end(), 0);
+
+  // Union-find type helpers to merge vertices.
+  auto find = [&](uint32_t v) {
+    while (v != index_map[v]) {
+      index_map[v] = index_map[index_map[v]];
+      v = index_map[v];
+    }
+    return v;
+  };
+  auto merge = [&](uint32_t a, uint32_t b) { index_map[find(a)] = find(b); };
+
+  absl::flat_hash_map<std::pair<Point, Point>,
+                      absl::InlinedVector<std::pair<uint32_t, uint32_t>, 1>>
+      geometric_boundary;
+  for (const auto& [edge, incident] : edge_tri_map) {
+    if (incident.size() != 1) continue;
+    auto [u, v] = edge;
+    // The `edge_tri_map` stores undirected edges with u < v; orient the
+    // directed edge (u -> v) to match the adjacent triangle.
+    if (incident[0].second < 0) std::swap(u, v);
+    Point pu = mutable_mesh.VertexPosition(u);
+    Point pv = mutable_mesh.VertexPosition(v);
+    geometric_boundary[{pu, pv}].push_back({u, v});
+  }
+
+  for (auto& [seg, edges] : geometric_boundary) {
+    if (edges.empty()) continue;
+
+    // Look for coincident edges oriented in the opposite direction.
+    auto opp_it = geometric_boundary.find({seg.second, seg.first});
+    if (opp_it == geometric_boundary.end()) continue;
+    auto& opp_edges = opp_it->second;
+
+    // Pair up and weld the edges.
+    while (!edges.empty() && !opp_edges.empty()) {
+      auto [u, v] = edges.back();
+      edges.pop_back();
+      auto [u_opp, v_opp] = opp_edges.back();
+      opp_edges.pop_back();
+      merge(u, v_opp);
+      merge(v, u_opp);
+    }
+  }
+
+  // Compress paths in index_map.
+  for (uint32_t& id : index_map) id = find(id);
+  return index_map;
+}
+
 // Properties of an input mesh triangle, including the `triangle` geometry, the
 // `indices` of its vertices in the result mesh, the `transform` from the mesh's
 // coordinate space to the triangle's barycentric coordinates, the geometric
@@ -283,19 +357,55 @@ class MeshBuilder {
       : mutable_mesh_(format),
         attr_indices_(StrokeVertex::FindAttributeIndices(format)) {}
 
-  // Copies the vertex and its attributes from the given `mesh` at
-  // `vertex_index` and appends it to this mesh, and returns
-  // the index of the newly added vertex in this mesh.
-  uint32_t CopyVertex(const Mesh& mesh, uint32_t vertex_index) {
-    uint32_t new_index = mutable_mesh_.VertexCount();
-    mutable_mesh_.AppendVertex(mesh.VertexPosition(vertex_index));
+  // Initializes the builder with vertices from `meshes`, welds any coincident
+  // boundary edges, and returns a mapping of each vertex in `meshes` to its
+  // canonical copy in `mutable_mesh_`.
+  std::vector<std::vector<uint32_t>> Initialize(absl::Span<const Mesh> meshes) {
     const MeshFormat& format = mutable_mesh_.Format();
-    for (uint32_t i = 0; i < format.Attributes().size(); ++i) {
-      if (i == format.PositionAttributeIndex()) continue;
-      mutable_mesh_.SetFloatVertexAttribute(
-          new_index, i, mesh.FloatVertexAttribute(vertex_index, i));
+
+    EdgeTriangleAdjacencyMap edge_tri_adj;
+    std::vector<std::vector<uint32_t>> index_maps(meshes.size());
+
+    // A global index, across all meshes, for each triangle.
+    uint32_t tri_idx = 0;
+    for (size_t m = 0; m < meshes.size(); ++m) {
+      const Mesh& mesh = meshes[m];
+      index_maps[m].reserve(mesh.VertexCount());
+
+      // Copy the vertices.
+      for (uint32_t i = 0; i < mesh.VertexCount(); ++i) {
+        uint32_t new_index = mutable_mesh_.VertexCount();
+        mutable_mesh_.AppendVertex(mesh.VertexPosition(i));
+        for (uint32_t attr = 0; attr < format.Attributes().size(); ++attr) {
+          if (attr == format.PositionAttributeIndex()) continue;
+          mutable_mesh_.SetFloatVertexAttribute(
+              new_index, attr, mesh.FloatVertexAttribute(i, attr));
+        }
+        index_maps[m].push_back(new_index);
+      }
+
+      for (uint32_t k = 0; k < mesh.TriangleCount(); ++k) {
+        tri_idx += 1;
+        Triangle tri = mesh.GetTriangle(k);
+        std::array<uint32_t, 3> tri_indices =
+            MapIndices(mesh.TriangleIndices(k), index_maps[m]);
+        // To avoid having to deal with subtracting degenerate triangles, we
+        // omit adding them to the edge adjacency map, which temporarily creates
+        // a topological seam in the mesh that's stitched back together below.
+        if (tri.p0 == tri.p1 || tri.p1 == tri.p2 || tri.p2 == tri.p0) continue;
+
+        AddTriangleToAdjacencyMap(tri_indices, tri_idx, edge_tri_adj);
+      }
     }
-    return new_index;
+
+    // Stitch seam edges together by welding their vertices.
+    std::vector<uint32_t> index_remap =
+        StitchSeamEdges(edge_tri_adj, mutable_mesh_);
+    for (auto& index_map : index_maps) {
+      for (uint32_t& v : index_map) v = index_remap[v];
+    }
+
+    return index_maps;
   }
 
   // Finds an existing vertex or adds one for a point `p` contained in the
@@ -370,6 +480,9 @@ class MeshBuilder {
 
   // Adds a triangle to the subtraction result mesh.
   void AddTriangle(const std::array<uint32_t, 3>& triangle) {
+    ABSL_DCHECK_NE(triangle[0], triangle[1]);
+    ABSL_DCHECK_NE(triangle[1], triangle[2]);
+    ABSL_DCHECK_NE(triangle[2], triangle[0]);
     uint32_t tri_index = mutable_mesh_.TriangleCount();
     mutable_mesh_.AppendTriangleIndices(triangle);
     AddTriangleToAdjacencyMap(triangle, tri_index, edge_tri_adj_map_);
@@ -826,27 +939,27 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
   // indices of the corresponding vertices in the resulting `mutable_mesh`.
 
   MeshBuilder sub_mesh(format);
-
-  // Copy over all of the vertices. Vertices not belonging to any triangle
-  // will be removed by PartitionedMesh::FromMutableMeshGroups.
-  for (const Mesh& mesh : meshes) {
-    for (uint32_t i = 0; i < mesh.VertexCount(); ++i) {
-      sub_mesh.CopyVertex(mesh, i);
-    }
-  }
+  // Initialize by copying over all vertices from `meshes`, preprocessing the
+  // input meshes to filter out degenerate triangles and stitch seams, and
+  // obtain a mapping from vertices in `meshes` to their copy in `sub_mesh`.
+  std::vector<std::vector<uint32_t>> index_maps = sub_mesh.Initialize(meshes);
 
   // Process the triangles.
-  uint32_t vertex_offset = 0;
-  for (const Mesh& mesh : meshes) {
+  for (size_t mesh_idx = 0; mesh_idx < meshes.size(); ++mesh_idx) {
+    const Mesh& mesh = meshes[mesh_idx];
+    const std::vector<uint32_t>& index_map = index_maps[mesh_idx];
+
     for (uint32_t tri_idx = 0; tri_idx < mesh.TriangleCount(); ++tri_idx) {
-      std::array<uint32_t, 3> old_indices = mesh.TriangleIndices(tri_idx);
-
-      // Indices of the copied over vertices of the triangle in the result mesh.
-      std::array<uint32_t, 3> indices = {old_indices[0] + vertex_offset,
-                                         old_indices[1] + vertex_offset,
-                                         old_indices[2] + vertex_offset};
-
       Triangle tri = mesh.GetTriangle(tri_idx);
+
+      // Skip degenerate triangles.
+      // TODO(b/521449017): Triangles with coincident vertices arise frequently
+      // due to quantization during encoding. Degenerate triangles that have no
+      // coincident vertices are expected to be uncommon, but should be handled.
+      if (tri.p0 == tri.p1 || tri.p1 == tri.p2 || tri.p2 == tri.p0) continue;
+
+      std::array<uint32_t, 3> old_indices = mesh.TriangleIndices(tri_idx);
+      std::array<uint32_t, 3> indices = MapIndices(old_indices, index_map);
 
       // If there is no intersection with the bounding box, add the triangle
       // and move on.
@@ -880,20 +993,10 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
       }
 
       // Add all the triangle fragments.
-      for (const std::array<uint32_t, 3>& fragment : fragments.triangles) {
-        std::array<uint32_t, 3> fragment_triangle = {
-            mapped_indices[fragment[0]], mapped_indices[fragment[1]],
-            mapped_indices[fragment[2]]};
-        if (fragment_triangle[0] == fragment_triangle[1] ||
-            fragment_triangle[1] == fragment_triangle[2] ||
-            fragment_triangle[2] == fragment_triangle[0]) {
-          continue;
-        }
-        sub_mesh.AddTriangle(fragment_triangle);
+      for (const auto& frag_tri : fragments.triangles) {
+        sub_mesh.AddTriangle(MapIndices(frag_tri, mapped_indices));
       }
     }
-
-    vertex_offset += mesh.VertexCount();
   }
 
   std::vector<std::vector<uint32_t>> outlines = ComputeOutlines(sub_mesh);

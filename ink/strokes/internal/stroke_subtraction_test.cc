@@ -363,6 +363,71 @@ TEST(StrokeSubtractionTest, VertexWelding) {
   EXPECT_EQ(NumVertices(*result), 6);
 }
 
+TEST(StrokeSubtractionTest, DegenerateTriangle) {
+  // Degenerate triangles arise frequently in input meshes and need to be
+  // handled with care to ensure that they do not leave seams in the mesh or
+  // zig-zags in the outline. `Subtract` chooses to filter out the degenerate
+  // triangles by welding along the duplicate edge.
+
+  //           H---------------------G
+  //           |             mesh_b  |
+  // D---------+--------C,C'         |
+  // |         |       / |           |
+  // |         |     /   |           |
+  // | mesh_a  |   /     |           |
+  // |         | /       |           |
+  // |         |         |           |
+  // |       / |         |           |
+  // |     /   |         |           |
+  // |   /     |         |           |
+  // | /       |         |           |
+  // A---------+---------B           |
+  //           |                     |
+  //           E---------------------F
+  Point A{0, 0}, B{10, 0}, C{10, 10}, C_prime{10, 10}, D{0, 10};
+  Point E{5, -5}, F{15, -5}, G{15, 15}, H{5, 15};
+  Point X1{5, 0};   // Intersection of AB and EH
+  Point X2{5, 5};   // Intersection of AC and EH
+  Point X3{5, 10};  // Intersection of CD and EH
+
+  // Set up mesh_a with a degenerate triangle {C, C', A} connecting two
+  // triangles where C and C' have coincident positions.
+  MutableMesh mesh_a(MeshFormat{});
+  for (const Point& p : {A, B, C, D, C_prime}) mesh_a.AppendVertex(p);
+  mesh_a.AppendTriangleIndices({2, 0, 1});  // {C, A, B}
+  mesh_a.AppendTriangleIndices({4, 3, 0});  // {C', D, A}
+  mesh_a.AppendTriangleIndices({2, 4, 0});  // {C, C', A} (degenerate)
+
+  absl::StatusOr<PartitionedMesh> mesh_a_pm =
+      PartitionedMesh::FromMutableMesh(mesh_a);
+  ASSERT_THAT(mesh_a_pm, IsOk());
+
+  MutableMesh mesh_b(MeshFormat{});
+  for (const Point& p : {E, F, G, H}) mesh_b.AppendVertex(p);
+
+  mesh_b.AppendTriangleIndices({0, 1, 2});
+  mesh_b.AppendTriangleIndices({0, 2, 3});
+
+  constexpr uint32_t mesh_b_outline[] = {0, 3, 2, 1};
+  absl::StatusOr<PartitionedMesh> mesh_b_pm =
+      PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
+  ASSERT_THAT(mesh_b_pm, IsOk());
+
+  // Subtract
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
+  ASSERT_THAT(result, IsOk());
+
+  EXPECT_EQ(NumTriangles(*result), 3);
+  EXPECT_EQ(NumVertices(*result), 5);
+
+  ASSERT_EQ(result->OutlineCount(0), 1);
+  std::vector<Point> outline_points = GetOutlinePoints(*result, 0, 0);
+  EXPECT_THAT(outline_points,
+              IsCyclicPermutationOf(std::vector<Point>{A, D, X3, X2, X1}));
+}
+
 TEST(StrokeSubtractionTest, ComputeLabels1) {
   // Note that there is no single canonically "correct" labeling for boundary
   // vertices. This test verifies that the heuristic alignment cost optimization
