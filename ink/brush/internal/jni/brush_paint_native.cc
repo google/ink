@@ -45,6 +45,7 @@ using ::ink::MeshFormat;
 using ::ink::Vec;
 using ::ink::brush_internal::AddAttributeIdsRequiredByPaint;
 using ::ink::brush_internal::CalculateMinimumRequiredVersion;
+using ::ink::brush_internal::CalculatePaintAnimationLoopDuration;
 using ::ink::brush_internal::ValidateBrushPaint;
 using ::ink::brush_internal::ValidateBrushPaintTextureLayer;
 using ::ink::native::CastToBrushPaint;
@@ -145,6 +146,13 @@ int64_t BrushPaintNative_newCopyOfColorFunction(int64_t native_ptr, int index) {
 
 int BrushPaintNative_getSelfOverlapInt(int64_t native_ptr) {
   return static_cast<int>(CastToBrushPaint(native_ptr).self_overlap);
+}
+
+int64_t BrushPaintNative_getPaintAnimationLoopDurationMillis(
+    int64_t native_pointer) {
+  const BrushPaint& brush_paint = CastToBrushPaint(native_pointer);
+  return absl::ToInt64Milliseconds(
+      CalculatePaintAnimationLoopDuration(brush_paint));
 }
 
 bool BrushPaintNative_isCompatibleWithMeshFormat(

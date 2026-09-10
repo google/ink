@@ -314,6 +314,7 @@ cc_library(
         "//ink/geometry:vec",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/functional:overload",
+        "@abseil-cpp//absl/log:absl_check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",

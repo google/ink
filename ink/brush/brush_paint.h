@@ -345,6 +345,19 @@ absl::Status ValidateBrushPaintTopLevel(const BrushPaint& paint);
 absl::Status ValidateBrushPaintTextureLayer(
     const BrushPaint::TextureLayer& layer);
 
+// Returns the duration of a complete paint animation loop for this brush paint
+// (such that the paint goes through one complete loop and returns to its
+// starting point), or zero if this brush paint is not animated. The
+// `BrushPaint` must be valid.
+absl::Duration CalculatePaintAnimationLoopDuration(const BrushPaint& paint);
+
+// Returns the duration of a complete paint animation loop for this texture
+// layer (such that it goes through one complete loop and returns to its
+// starting point), or zero if this texture layer is not animated. The
+// `TextureLayer` must be valid.
+absl::Duration CalculatePaintAnimationLoopDuration(
+    const BrushPaint::TextureLayer& texture_layer);
+
 // Calculates the minimum version of the Ink library that is required to use
 // this brush paint.
 Version CalculateMinimumRequiredVersion(const BrushPaint& paint);

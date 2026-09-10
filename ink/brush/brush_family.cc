@@ -37,6 +37,8 @@
 
 namespace ink {
 
+using ::ink::brush_internal::CalculatePaintAnimationLoopDuration;
+
 BrushFamily::InputModel BrushFamily::DefaultInputModel() {
   return SlidingWindowModel{};
 }
@@ -92,35 +94,26 @@ absl::StatusOr<BrushFamily> BrushFamily::Create(
     // probably either have the same animation duration, or be a non-animated
     // fallback.
     for (const BrushPaint& paint : coat.paint_preferences) {
-      for (const BrushPaint::TextureLayer& texture_layer :
-           paint.texture_layers) {
-        if (const auto* stamping_texture =
-                std::get_if<BrushPaint::StampingTexture>(&texture_layer)) {
-          if (stamping_texture->animation_duration == absl::ZeroDuration() ||
-              stamping_texture->animation_frames == 1) {
-            continue;  // This texture is not animated.
-          }
-          // Because we've already validated each `BrushCoat`, we know that each
-          // texture's `animation_duration` is a whole number of milliseconds,
-          // so `ToInt64Milliseconds` isn't losing any precision here.
-          int64_t texture_duration_ms =
-              absl::ToInt64Milliseconds(stamping_texture->animation_duration);
-          if (full_duration_ms == 0) {
-            full_duration_ms = texture_duration_ms;
-            continue;
-          }
-          // Because we've already validated each `BrushCoat`, we know that
-          // `texture_duration_ms` is at most (1 << 24), and similarly we know
-          // that `full_duration_ms` is at most (1 << 24) so far, so their
-          // product is at most (1 << 48), and therefore this 64-bit `std::lcm`
-          // call can't overflow.
-          full_duration_ms = std::lcm(full_duration_ms, texture_duration_ms);
-          if (full_duration_ms > (1 << 24)) {
-            return absl::InvalidArgumentError(
-                "The LCM of all texture animation durations in a `BrushFamily` "
-                "must be no more than 2^24 milliseconds");
-          }
-        }
+      absl::Duration paint_duration =
+          CalculatePaintAnimationLoopDuration(paint);
+      // Because we've already validated each `BrushCoat`, we know that each
+      // paint's animation duration is a whole number of milliseconds, so
+      // `ToInt64Milliseconds` isn't losing any precision here.
+      int64_t paint_duration_ms = absl::ToInt64Milliseconds(paint_duration);
+      if (full_duration_ms == 0) {
+        full_duration_ms = paint_duration_ms;
+        continue;
+      }
+      // Because we've already validated each `BrushCoat`, we know that
+      // `paint_duration_ms` is at most (1 << 24), and we also know that
+      // `full_duration_ms` is at most (1 << 24) so far, so their product is
+      // at most (1 << 48), and therefore this 64-bit `std::lcm` call can't
+      // overflow.
+      full_duration_ms = std::lcm(full_duration_ms, paint_duration_ms);
+      if (full_duration_ms > (1 << 24)) {
+        return absl::InvalidArgumentError(
+            "The LCM of all texture animation durations in a `BrushFamily` "
+            "must be no more than 2^24 milliseconds");
       }
     }
   }

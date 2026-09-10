@@ -46,6 +46,9 @@ int64_t BrushPaintNative_newCopyOfColorFunction(int64_t native_ptr, int index);
 
 int BrushPaintNative_getSelfOverlapInt(int64_t native_ptr);
 
+int64_t BrushPaintNative_getPaintAnimationLoopDurationMillis(
+    int64_t native_pointer);
+
 bool BrushPaintNative_isCompatibleWithMeshFormat(
     int64_t native_ptr, int64_t mesh_format_native_ptr);
 

@@ -103,6 +103,11 @@ JNI_METHOD(brush, BrushPaintNative, jint, getSelfOverlapInt)
   return BrushPaintNative_getSelfOverlapInt(native_pointer);
 }
 
+JNI_METHOD(brush, BrushPaintNative, jlong, getPaintAnimationLoopDurationMillis)
+(JNIEnv* env, jobject object, jlong native_pointer) {
+  return BrushPaintNative_getPaintAnimationLoopDurationMillis(native_pointer);
+}
+
 JNI_METHOD(brush, BrushPaintNative, jboolean, isCompatibleWithMeshFormat)
 (JNIEnv* env, jobject obj, jlong native_pointer,
  jlong mesh_format_native_pointer) {

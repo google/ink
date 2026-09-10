@@ -22,6 +22,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/functional/overload.h"
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
@@ -326,6 +327,28 @@ absl::Status ValidateBrushPaint(const BrushPaint& paint) {
   }
   ABSL_RETURN_IF_ERROR(ValidateBrushPaintTopLevel(paint));
   return absl::OkStatus();
+}
+
+absl::Duration CalculatePaintAnimationLoopDuration(const BrushPaint& paint) {
+  ABSL_DCHECK_OK(ValidateBrushPaint(paint));
+  // For now, all texture layers in a valid `BrushPaint` are required to be of
+  // the same type, and are required to all have the same animation duration.
+  // Therefore, we can just return the animation duration of the first texture
+  // layer, if any.
+  return paint.texture_layers.empty()
+             ? absl::ZeroDuration()
+             : CalculatePaintAnimationLoopDuration(paint.texture_layers[0]);
+}
+
+absl::Duration CalculatePaintAnimationLoopDuration(
+    const BrushPaint::TextureLayer& texture_layer) {
+  ABSL_DCHECK_OK(ValidateBrushPaintTextureLayer(texture_layer));
+  if (const auto* stamping_texture =
+          std::get_if<BrushPaint::StampingTexture>(&texture_layer);
+      stamping_texture != nullptr && stamping_texture->animation_frames > 1) {
+    return stamping_texture->animation_duration;
+  }
+  return absl::ZeroDuration();
 }
 
 Version CalculateMinimumRequiredVersion(
