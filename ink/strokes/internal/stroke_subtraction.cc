@@ -40,6 +40,7 @@
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
+#include "ink/geometry/segment.h"
 #include "ink/geometry/triangle.h"
 #include "ink/geometry/vec.h"
 #include "ink/strokes/internal/brush_tip_extruder/derivative_calculator.h"
@@ -58,8 +59,7 @@ using ::ink::geometry_internal::Intersects;
 using ::ink::geometry_internal::ShapeOutline;
 using ::ink::numbers::kPi;
 
-using TriangleAttributes =
-    absl::InlinedVector<std::array<SmallArray<float, 4>, 3>, 4>;
+using VertexAttributes = absl::InlinedVector<SmallArray<float, 4>, 4>;
 
 // Relative error margin for 32-bit floating point operations.
 constexpr float kFloatTolerance = 1e-6f;
@@ -110,9 +110,18 @@ std::array<uint32_t, 3> MapIndices(const std::array<uint32_t, 3>& tri,
   return {index_map[tri[0]], index_map[tri[1]], index_map[tri[2]]};
 }
 
+// Returns the vertex in `tri` opposite to the edge (`u`, `v`).
+uint32_t OppositeVertex(const std::array<uint32_t, 3>& tri, uint32_t u,
+                        uint32_t v) {
+  if (tri[0] != u && tri[0] != v) return tri[0];
+  if (tri[1] != u && tri[1] != v) return tri[1];
+  ABSL_DCHECK(tri[2] != u && tri[2] != v);
+  return tri[2];
+}
+
 // Returns the homogenous transform from world space to the barycentric coords
 // for the given triangle.
-// TODO(b/932647697): Consider defining this as a separate an externally visible
+// TODO(b/932647697): Consider defining this as a separate externally visible
 // utility function, or reusing similar existing functions in ink/geometry.
 std::array<double, 9> ComputeBarycentricTransform(const Triangle& tri) {
   Vec v0 = tri.p1 - tri.p0;
@@ -173,33 +182,28 @@ SmallArray<float, 4> LinearSpaceToHclShift(SmallArray<float, 4> val) {
 }
 // LINT.ThenChange(../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hcl_and_opacity_shift)
 
-// Helper function to extract and linearize triangle vertex attributes.
-TriangleAttributes GetTriangleAttributes(
-    const Mesh& mesh, const std::array<uint32_t, 3>& indices) {
-  absl::InlinedVector<std::array<SmallArray<float, 4>, 3>, 4> attributes(
-      mesh.Format().Attributes().size());
+// Helper function that extracts and linearizes the vertex attributes of the
+// given vertex in `mesh`.
+template <typename MeshType>
+VertexAttributes GetVertexAttributes(const MeshType& mesh, uint32_t vertex) {
+  VertexAttributes attributes(mesh.Format().Attributes().size());
   for (uint32_t i = 0; i < attributes.size(); ++i) {
     MeshFormat::AttributeId id = mesh.Format().Attributes()[i].id;
 
     // Since the position is already stored elsewhere, skip loading it.
-    if (id == MeshFormat::AttributeId::kPosition) {
-      continue;
-    }
+    if (id == MeshFormat::AttributeId::kPosition) continue;
 
-    // These attributes should not be interpolated.
-    if (id == MeshFormat::AttributeId::kSideLabel ||
-        id == MeshFormat::AttributeId::kForwardLabel) {
-      continue;
-    }
+    // The anti aliasing labels shouldn't be interpolated.
+    if (id == MeshFormat::AttributeId::kSideLabel) continue;
+    if (id == MeshFormat::AttributeId::kForwardLabel) continue;
+
+    // Color shift attributes need to be linearized for interpolation; all other
+    // attributes get linearly interpolated.
     if (id == MeshFormat::AttributeId::kColorShiftHcl) {
-      attributes[i] = {
-          HclShiftToLinearSpace(mesh.FloatVertexAttribute(indices[0], i)),
-          HclShiftToLinearSpace(mesh.FloatVertexAttribute(indices[1], i)),
-          HclShiftToLinearSpace(mesh.FloatVertexAttribute(indices[2], i))};
+      attributes[i] =
+          HclShiftToLinearSpace(mesh.FloatVertexAttribute(vertex, i));
     } else {
-      attributes[i] = {mesh.FloatVertexAttribute(indices[0], i),
-                       mesh.FloatVertexAttribute(indices[1], i),
-                       mesh.FloatVertexAttribute(indices[2], i)};
+      attributes[i] = mesh.FloatVertexAttribute(vertex, i);
     }
   }
   return attributes;
@@ -228,8 +232,8 @@ bool IsBack(BoundaryLabel label) { return label / 3 == 2; }
 
 // Converts encoded float values to a BoundaryLabel enum value.
 BoundaryLabel DecodeBoundaryLabel(float side, float fwd) {
-  int side_idx = (side > 0.0f) ? 2 : (side < 0.0f ? 1 : 0);
-  int fwd_idx = (fwd > 0.0f) ? 2 : (fwd < 0.0f ? 1 : 0);
+  int side_idx = (side > 0.5f) ? 2 : (side < -0.5f ? 1 : 0);
+  int fwd_idx = (fwd > 0.5f) ? 2 : (fwd < -0.5f ? 1 : 0);
   return static_cast<BoundaryLabel>(3 * fwd_idx + side_idx);
 }
 
@@ -344,7 +348,7 @@ struct TriangleData {
   std::array<uint32_t, 3> indices;
   std::array<double, 9> transform;
   std::array<double, 3> heights;
-  TriangleAttributes attributes;
+  std::array<VertexAttributes, 3> attributes;
 };
 
 // A helper class to incrementally construct a `MutableMesh` during mesh
@@ -429,7 +433,10 @@ class MeshBuilder {
       return GetOrAddEdgeVertex(p, min_it - dist.begin(), triangle, weights);
     }
 
-    return AddVertex(p, triangle, weights);
+    return AddVertex(p, triangle.attributes,
+                     std::array{static_cast<float>(weights[0]),
+                                static_cast<float>(weights[1]),
+                                static_cast<float>(weights[2])});
   }
 
   Point GetPosition(uint32_t vertex_index) const {
@@ -488,27 +495,92 @@ class MeshBuilder {
     AddTriangleToAdjacencyMap(triangle, tri_index, edge_tri_adj_map_);
   }
 
+  // Subdivides the interior edge between `u` and `v` by inserting a midpoint
+  // vertex, splitting its incident triangles, and updating edge_tri_adj_map_.
+  void SubdivideEdge(uint32_t u, uint32_t v) {
+    // To subdivide the edge, we first add a vertex at the midpoint of the edge,
+    // then break each adjacent triangle up into two pieces, and then update the
+    // edge triangle adjacency map.
+
+    uint32_t m = AddVertex(Segment{GetPosition(u), GetPosition(v)}.Midpoint(),
+                           std::array{GetVertexAttributes(mutable_mesh_, u),
+                                      GetVertexAttributes(mutable_mesh_, v)},
+                           /*weights=*/std::array{0.5f, 0.5f});
+    SetLabel(m, kInterior);
+
+    // Get the adjacent triangles.
+    auto it = edge_tri_adj_map_.find(std::minmax(u, v));
+    if (it == edge_tri_adj_map_.end()) return;
+    auto adjacent_triangles = it->second;
+
+    // Remove the old edge from the adjacency map.
+    edge_tri_adj_map_.erase(it);
+
+    for (const auto& [tri_idx, orientation] : adjacent_triangles) {
+      // Orient the triangle vertices as (a, b, c) in counterclockwise order,
+      // with (a, b) as the directed subdivided edge.
+      std::array<uint32_t, 3> tri = mutable_mesh_.TriangleIndices(tri_idx);
+      uint32_t a = std::min(u, v), b = std::max(u, v);
+      if (orientation < 0) std::swap(a, b);
+      uint32_t c = OppositeVertex(tri, u, v);
+      //          c
+      //         /|\
+      //        / | \
+      //       /  |  \
+      //      / T1|T2 \
+      //     /    |    \
+      //    a-----m-----b
+
+      // With the edge (a,b) subdivided, the triangle is now a quad
+      // (a, m, b, c), which we break into two new triangles.
+
+      // Reuse the index of the old triangle, for triangle T1
+      uint32_t t1_idx = tri_idx;
+      mutable_mesh_.SetTriangleIndices(t1_idx, {c, a, m});
+
+      // Add a triangle for triangle T2.
+      uint32_t t2_idx = mutable_mesh_.TriangleCount();
+      mutable_mesh_.AppendTriangleIndices({c, m, b});
+
+      // Now some bookkeeping to update the edge triangle adjacency map:
+
+      // Since T1 uses the same index as the old triangle, no need to update
+      // (a,c). On the other hand, edge (b, c) is now adjacent to T2
+      for (auto& [t_idx, orient] : edge_tri_adj_map_[std::minmax(b, c)]) {
+        if (t_idx == t1_idx) {
+          t_idx = t2_idx;
+          break;
+        }
+      }
+      // Then add all the new edges.
+      AddEdgeToAdjacencyMap(a, m, t1_idx, edge_tri_adj_map_);
+      AddEdgeToAdjacencyMap(m, c, t1_idx, edge_tri_adj_map_);
+      AddEdgeToAdjacencyMap(m, b, t2_idx, edge_tri_adj_map_);
+      AddEdgeToAdjacencyMap(c, m, t2_idx, edge_tri_adj_map_);
+    }
+  }
+
  private:
   // Adds a vertex at `position` to the subtraction result mesh, with attributes
-  // obtained by interpolating the given `triangle` attributes with the given
-  // barycentric `weights`, and returns the index of the newly added vertex.
-  uint32_t AddVertex(Point position, const TriangleData& triangle,
-                     const std::array<double, 3>& weights) {
+  // obtained by interpolating the given `vertex_attrs` with the given
+  // `weights`, and returns the index of the newly added vertex.
+  uint32_t AddVertex(Point position,
+                     absl::Span<const VertexAttributes> vertex_attrs,
+                     absl::Span<const float> weights) {
+    ABSL_DCHECK_EQ(vertex_attrs.size(), weights.size());
+    ABSL_DCHECK(!vertex_attrs.empty());
     uint32_t new_index = mutable_mesh_.VertexCount();
     mutable_mesh_.AppendVertex(position);
     const MeshFormat& format = mutable_mesh_.Format();
-    ABSL_DCHECK_EQ(triangle.attributes.size(), format.Attributes().size());
-    for (uint32_t attr = 0; attr < triangle.attributes.size(); ++attr) {
+    for (uint32_t attr = 0; attr < format.Attributes().size(); ++attr) {
       MeshFormat::AttributeId id = format.Attributes()[attr].id;
+      if (vertex_attrs[0][attr].Size() == 0) continue;
 
-      const std::array<SmallArray<float, 4>, 3>& vals =
-          triangle.attributes[attr];
-      if (vals[0].Size() == 0) continue;
-
-      SmallArray<float, 4> interp_val(vals[0].Size());
-      for (uint8_t c = 0; c < vals[0].Size(); ++c) {
-        interp_val[c] = weights[0] * vals[0][c] + weights[1] * vals[1][c] +
-                        weights[2] * vals[2][c];
+      SmallArray<float, 4> interp_val(vertex_attrs[0][attr].Size());
+      for (size_t k = 0; k < vertex_attrs.size(); ++k) {
+        for (uint8_t c = 0; c < interp_val.Size(); ++c) {
+          interp_val[c] += weights[k] * vertex_attrs[k][attr][c];
+        }
       }
 
       // Don't forget to map the HCL shift back to proper coordinates.
@@ -535,7 +607,10 @@ class MeshBuilder {
       if (existing_p == p) return existing_index;
     }
 
-    uint32_t new_index = AddVertex(p, triangle, weights);
+    uint32_t new_index = AddVertex(p, triangle.attributes,
+                                   std::array{static_cast<float>(weights[0]),
+                                              static_cast<float>(weights[1]),
+                                              static_cast<float>(weights[2])});
     edge_points.push_back({p, new_index});
     return new_index;
   }
@@ -722,7 +797,7 @@ void ComputeLabels(absl::Span<const uint32_t> outline,
                    std::vector<BoundaryLabel>& labels,
                    const MeshBuilder& mesh_builder) {
   // We follow the optimization approach described above in the `ComputeLabels`
-  // overload: we iterate through choices for the first vertex, compute the
+  // overload: we iterate through choices for the first vertex, compute
   // for each choice the optimal labeling of the remaining vertices, and choose
   // the one with the minimum cost.
   const size_t n = outline.size();
@@ -744,12 +819,17 @@ void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
   // The boundary of the result mesh typically consists of alternating
   // segments of the original mesh boundary and subtracted shape boundary.
   // During the subtraction computation, the labels of the original mesh
-  // vertices are copied (see CopyVertex), while those of the subtracted shape
-  // are set to kInterior (see GetTriangleAttributes).
+  // vertices are copied (see Initialize), while those of the subtracted shape
+  // are set to kInterior (see GetVertexAttributes).
   //
   // To avoid recomputing the labels for the untouched portions of the mesh, we
   // instead traverse the outline to identify maximal segments of unlabeled
   // vertices and compute new labels for each.
+  //
+  // To simplify computing labels, we first assign vertex labels based purely on
+  // boundary edges. This however can cause interior edges to mistakenly be
+  // labeled with a boundary label. To rectify this, in a subsequent
+  // post-processing step, we subdivide any such mislabeled interior edges.
 
   for (absl::Span<const uint32_t> outline : outlines) {
     // Read all the vertex labels from the mesh.
@@ -786,6 +866,20 @@ void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
       }
     }
   }
+
+  // Find all mislabeled interior edges and subdivide them.
+  // TODO(b/523326691): Try edge-flipping where feasible instead of subdividing.
+  std::vector<std::pair<uint32_t, uint32_t>> mislabeled;
+  for (const auto& [edge, tris] : mesh_builder.GetEdgeTriangleAdjacencyMap()) {
+    if (tris.size() != 2) continue;
+    const auto [u, v] = edge;
+    if (GetEdgeLabel(mesh_builder.GetLabel(u), mesh_builder.GetLabel(v)) !=
+        kInterior) {
+      mislabeled.push_back(edge);
+    }
+  }
+
+  for (const auto& [u, v] : mislabeled) mesh_builder.SubdivideEdge(u, v);
 }
 // LINT.ThenChange(
 //     //depot/google3/third_party/ink/strokes/internal/stroke_vertex.h:margin_encoding,
@@ -983,7 +1077,9 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
           .indices = indices,
           .transform = transform,
           .heights = ComputeHeights(tri, transform[8]),
-          .attributes = GetTriangleAttributes(mesh, old_indices)};
+          .attributes = {GetVertexAttributes(mesh, old_indices[0]),
+                         GetVertexAttributes(mesh, old_indices[1]),
+                         GetVertexAttributes(mesh, old_indices[2])}};
 
       // Add all the vertices of the fragments and get their indices.
       std::vector<uint32_t> mapped_indices(fragments.vertices.size());

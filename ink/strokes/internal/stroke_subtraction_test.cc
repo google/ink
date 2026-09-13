@@ -14,6 +14,8 @@
 
 #include "ink/strokes/internal/stroke_subtraction.h"
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -24,6 +26,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "ink/geometry/affine_transform.h"
@@ -113,6 +116,33 @@ void CheckVertexLabels(const Mesh& mesh, Point p, float expected_side,
   ASSERT_TRUE(idx.has_value());
   EXPECT_FLOAT_EQ(mesh.FloatVertexAttribute(*idx, 2)[0], expected_side);
   EXPECT_FLOAT_EQ(mesh.FloatVertexAttribute(*idx, 4)[0], expected_fwd);
+}
+
+// Verifies that no interior edge (shared by multiple triangles) in `mesh` is
+// mislabeled with a boundary label.
+void ExpectNoMislabeledInteriorEdges(const Mesh& mesh) {
+  absl::flat_hash_map<std::pair<uint32_t, uint32_t>, int> edge_tri_count;
+  for (uint32_t t = 0; t < mesh.TriangleCount(); ++t) {
+    std::array<uint32_t, 3> tri = mesh.TriangleIndices(t);
+    for (int i = 0; i < 3; ++i) {
+      edge_tri_count[std::minmax(tri[i], tri[(i + 1) % 3])]++;
+    }
+  }
+
+  for (const auto& [edge, count] : edge_tri_count) {
+    if (count < 2) continue;  // Boundary edge; skip.
+
+    auto [u, v] = edge;
+    float side_u = mesh.FloatVertexAttribute(u, 2)[0];
+    float side_v = mesh.FloatVertexAttribute(v, 2)[0];
+    float fwd_u = mesh.FloatVertexAttribute(u, 4)[0];
+    float fwd_v = mesh.FloatVertexAttribute(v, 4)[0];
+
+    bool same_side = (side_u > 0 && side_v > 0) || (side_u < 0 && side_v < 0);
+    bool same_fwd = (fwd_u > 0 && fwd_v > 0) || (fwd_u < 0 && fwd_v < 0);
+
+    EXPECT_FALSE(same_side || same_fwd);
+  }
 }
 
 // Returns the value of the given attribute at point `p`, by finding the
@@ -530,6 +560,9 @@ TEST(StrokeSubtractionTest, ComputeLabels1) {
   CheckVertexLabels(result_mesh, X3, kRightLabel, kBackLabel);
   CheckVertexLabels(result_mesh, X2, kRightLabel, kInteriorLabel);
   CheckVertexLabels(result_mesh, X1, kRightLabel, kFrontLabel);
+
+  // Check that no interior edge gets labeled as boundary.
+  ExpectNoMislabeledInteriorEdges(result_mesh);
 }
 
 TEST(StrokeSubtractionTest, ComputeLabels2) {
@@ -624,8 +657,10 @@ TEST(StrokeSubtractionTest, ComputeLabels2) {
       AffineTransform::Identity(), 0.1f, /*anti_aliasing_enabled=*/true);
   ASSERT_THAT(result, IsOk());
 
-  EXPECT_EQ(NumTriangles(*result), 9);
-  EXPECT_EQ(NumVertices(*result), 11);
+  // Subdivision is required to ensure that chord edges are not labeled as
+  // boundaries.
+  EXPECT_GT(NumTriangles(*result), 9);
+  EXPECT_GT(NumVertices(*result), 11);
 
   ASSERT_EQ(result->OutlineCount(0), 1);
   std::vector<Point> outline_points = GetOutlinePoints(*result, 0, 0);
@@ -672,6 +707,9 @@ TEST(StrokeSubtractionTest, ComputeLabels2) {
   CheckVertexLabels(result_mesh, X2, kRightLabel, kFrontLabel);
   // (X2,B) should be kRight, since (A,B) was kRight
   CheckVertexLabels(result_mesh, B, kRightLabel, kBackLabel);
+
+  // Check that subdivision worked.
+  ExpectNoMislabeledInteriorEdges(result_mesh);
 }
 
 TEST(StrokeSubtractionTest, ComputeLabels3) {
@@ -765,6 +803,8 @@ TEST(StrokeSubtractionTest, ComputeLabels3) {
   CheckVertexLabels(result_mesh, J, kRightLabel, kFrontLabel);
   CheckVertexLabels(result_mesh, K, kRightLabel, kBackLabel);
   CheckVertexLabels(result_mesh, L, kLeftLabel, kBackLabel);
+
+  ExpectNoMislabeledInteriorEdges(result_mesh);
 }
 
 TEST(StrokeSubtractionTest, ComputeLabels4) {
@@ -845,6 +885,8 @@ TEST(StrokeSubtractionTest, ComputeLabels4) {
   CheckVertexLabels(result_mesh, F, kLeftLabel, kBackLabel);
   CheckVertexLabels(result_mesh, G, kLeftLabel, kFrontLabel);
   CheckVertexLabels(result_mesh, H, kRightLabel, kFrontLabel);
+
+  ExpectNoMislabeledInteriorEdges(result_mesh);
 }
 
 TEST(StrokeSubtractionTest, ComputeSideDerivatives) {
