@@ -31,6 +31,7 @@ typedef struct {
   float pressure;
   float tilt_radians;
   float orientation_radians;
+  float barrel_twist_radians;
 } InProgressStrokeNative_Input;
 
 typedef struct {

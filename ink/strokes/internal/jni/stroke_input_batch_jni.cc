@@ -80,6 +80,11 @@ JNI_METHOD(strokes, StrokeInputBatchNative, jboolean, hasOrientation)
   return StrokeInputBatchNative_hasOrientation(native_pointer);
 }
 
+JNI_METHOD(strokes, StrokeInputBatchNative, jboolean, hasBarrelTwist)
+(JNIEnv* env, jobject thiz, jlong native_pointer) {
+  return StrokeInputBatchNative_hasBarrelTwist(native_pointer);
+}
+
 JNI_METHOD(strokes, StrokeInputBatchNative, jint, getNoiseSeed)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   return StrokeInputBatchNative_getNoiseSeed(native_pointer);
@@ -94,10 +99,10 @@ JNI_METHOD(strokes, StrokeInputBatchNative, jfloat, getBasePaintAnimationPhase)
 JNI_METHOD(strokes, MutableStrokeInputBatchNative, jboolean, appendSingle)
 (JNIEnv* env, jobject thiz, jlong native_pointer, jint tool_type, jfloat x,
  jfloat y, jlong elapsed_time_millis, jfloat stroke_unit_length_cm,
- jfloat pressure, jfloat tilt, jfloat orientation) {
+ jfloat pressure, jfloat tilt, jfloat orientation, jfloat barrel_twist) {
   return MutableStrokeInputBatchNative_appendSingle(
       env, native_pointer, tool_type, x, y, elapsed_time_millis,
-      stroke_unit_length_cm, pressure, tilt, orientation,
+      stroke_unit_length_cm, pressure, tilt, orientation, barrel_twist,
       &ThrowExceptionFromStatusCallback);
 }
 

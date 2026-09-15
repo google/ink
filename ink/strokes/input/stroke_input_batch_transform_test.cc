@@ -39,31 +39,36 @@ std::vector<StrokeInput> MakeValidTestInputSequence(
            .elapsed_time = Duration32::Seconds(5),
            .pressure = 0.4,
            .tilt = Angle::Radians(1.f),
-           .orientation = Angle::Radians(2.f)},
+           .orientation = Angle::Radians(2.f),
+           .barrel_twist = Angle::Radians(0.1f)},
           {.tool_type = tool_type,
            .position = {10, 23},
            .elapsed_time = Duration32::Seconds(6),
            .pressure = 0.3,
            .tilt = Angle::Radians(0.9f),
-           .orientation = Angle::Radians(0.9f)},
+           .orientation = Angle::Radians(0.9f),
+           .barrel_twist = Angle::Radians(0.2f)},
           {.tool_type = tool_type,
            .position = {10, 23},
            .elapsed_time = Duration32::Seconds(7),
            .pressure = 0.5,
            .tilt = Angle::Radians(0.8),
-           .orientation = Angle::Radians(1.1)},
+           .orientation = Angle::Radians(1.1),
+           .barrel_twist = Angle::Radians(0.3f)},
           {.tool_type = tool_type,
            .position = {5, 5},
            .elapsed_time = Duration32::Seconds(8),
            .pressure = 0.8,
            .tilt = Angle::Radians(1.5),
-           .orientation = Angle::Radians(1.3)},
+           .orientation = Angle::Radians(1.3),
+           .barrel_twist = Angle::Radians(0.4f)},
           {.tool_type = tool_type,
            .position = {4, 3},
            .elapsed_time = Duration32::Seconds(9),
            .pressure = 1.0,
            .tilt = Angle::Radians(1.3),
-           .orientation = Angle::Radians(1.5)}};
+           .orientation = Angle::Radians(1.5),
+           .barrel_twist = Angle::Radians(0.5f)}};
 }
 
 StrokeInput MakeValidTestInput(
@@ -73,7 +78,8 @@ StrokeInput MakeValidTestInput(
           .elapsed_time = Duration32::Seconds(5),
           .pressure = 0.4,
           .tilt = Angle::Radians(1),
-          .orientation = Angle::Radians(2)};
+          .orientation = Angle::Radians(2),
+          .barrel_twist = Angle::Radians(0.1f)};
 }
 
 TEST(StrokeInputBatchTransformTest,

@@ -53,6 +53,9 @@ StrokeInputBatch::ConstIterator& StrokeInputBatch::ConstIterator::operator++() {
     if (value_.HasPressure()) value_.pressure = *iter++;
     if (value_.HasTilt()) value_.tilt = Angle::Radians(*iter++);
     if (value_.HasOrientation()) value_.orientation = Angle::Radians(*iter++);
+    if (value_.HasBarrelTwist()) {
+      value_.barrel_twist = Angle::Radians(*iter++);
+    }
   }
   return *this;
 }
@@ -83,6 +86,7 @@ void StrokeInputBatch::ClearInputs() {
   has_pressure_ = false;
   has_tilt_ = false;
   has_orientation_ = false;
+  has_barrel_twist_ = false;
 }
 
 StrokeInputBatch StrokeInputBatch::MakeDeepCopy() const {
@@ -102,8 +106,8 @@ using ::ink::stroke_input_internal::ValidateConsecutiveInputs;
 // This includes checking that the `input`:
 //   * Has a valid `tool_type`
 //   * Has all finite floating point values
-//   * If they are reported, `pressure`, `tilt` and `orientation` are in their
-//     respective valid range
+//   * If they are reported, `pressure`, `tilt`, `orientation`, and
+//     `barrel_twist` are in their respective valid range
 absl::Status ValidateSingleInput(const StrokeInput& input) {
   if (input.tool_type != StrokeInput::ToolType::kUnknown &&
       input.tool_type != StrokeInput::ToolType::kMouse &&
@@ -161,6 +165,15 @@ absl::Status ValidateSingleInput(const StrokeInput& input) {
                          input.orientation));
   }
 
+  if (!std::isfinite(input.barrel_twist.ValueInRadians()) ||
+      (input.HasBarrelTwist() &&
+       !(input.barrel_twist >= Angle() && input.barrel_twist <= kFullTurn))) {
+    return absl::InvalidArgumentError(
+        absl::Substitute("`StrokeInput::barrel_twist` must be -1 or in the "
+                         "range [0, 2 * pi]. Got: $0",
+                         input.barrel_twist));
+  }
+
   return absl::OkStatus();
 }
 
@@ -186,6 +199,7 @@ void StrokeInputBatch::SetInlineFormatMetadata(const StrokeInput& input) {
   has_pressure_ = input.HasPressure();
   has_tilt_ = input.HasTilt();
   has_orientation_ = input.HasOrientation();
+  has_barrel_twist_ = input.HasBarrelTwist();
 }
 
 namespace {
@@ -199,6 +213,9 @@ void AppendInputToFloatVector(const StrokeInput& input,
   if (input.HasTilt()) data.push_back(input.tilt.ValueInRadians());
   if (input.HasOrientation()) {
     data.push_back(input.orientation.ValueInRadians());
+  }
+  if (input.HasBarrelTwist()) {
+    data.push_back(input.barrel_twist.ValueInRadians());
   }
 }
 
@@ -239,6 +256,7 @@ absl::Status StrokeInputBatch::Set(int i, const StrokeInput& input) {
   if (HasPressure()) *iter++ = input.pressure;
   if (HasTilt()) *iter++ = input.tilt.ValueInRadians();
   if (HasOrientation()) *iter++ = input.orientation.ValueInRadians();
+  if (HasBarrelTwist()) *iter++ = input.barrel_twist.ValueInRadians();
 
   return absl::OkStatus();
 }
@@ -256,7 +274,9 @@ StrokeInput StrokeInputBatch::Get(int i) const {
           .pressure = HasPressure() ? *iter++ : StrokeInput::kNoPressure,
           .tilt = HasTilt() ? Angle::Radians(*iter++) : StrokeInput::kNoTilt,
           .orientation = HasOrientation() ? Angle::Radians(*iter++)
-                                          : StrokeInput::kNoOrientation};
+                                          : StrokeInput::kNoOrientation,
+          .barrel_twist = HasBarrelTwist() ? Angle::Radians(*iter++)
+                                           : StrokeInput::kNoBarrelTwist};
 }
 
 absl::Status StrokeInputBatch::PrepareForAppend(

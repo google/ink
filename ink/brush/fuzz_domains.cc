@@ -184,6 +184,8 @@ Domain<BrushBehavior::Source> ArbitraryBrushBehaviorSource() {
       BrushBehavior::Source::kTiltYInRadians,
       BrushBehavior::Source::kOrientationInRadians,
       BrushBehavior::Source::kOrientationAboutZeroInRadians,
+      BrushBehavior::Source::kBarrelTwistInRadians,
+      BrushBehavior::Source::kBarrelTwistAboutZeroInRadians,
       BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond,
       BrushBehavior::Source::kVelocityXInMultiplesOfBrushSizePerSecond,
       BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond,

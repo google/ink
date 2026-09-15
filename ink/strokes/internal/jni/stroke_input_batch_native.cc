@@ -58,7 +58,8 @@ StrokeInputBatchNative_Input StrokeInputBatchNative_getStrokeInput(
           .stroke_unit_length_cm = input.stroke_unit_length.ToCentimeters(),
           .pressure = input.pressure,
           .tilt_radians = input.tilt.ValueInRadians(),
-          .orientation_radians = input.orientation.ValueInRadians()};
+          .orientation_radians = input.orientation.ValueInRadians(),
+          .barrel_twist_radians = input.barrel_twist.ValueInRadians()};
 }
 
 int64_t StrokeInputBatchNative_getDurationMillis(int64_t native_pointer) {
@@ -92,6 +93,10 @@ bool StrokeInputBatchNative_hasOrientation(int64_t native_pointer) {
   return CastToStrokeInputBatch(native_pointer).HasOrientation();
 }
 
+bool StrokeInputBatchNative_hasBarrelTwist(int64_t native_pointer) {
+  return CastToStrokeInputBatch(native_pointer).HasBarrelTwist();
+}
+
 int StrokeInputBatchNative_getNoiseSeed(int64_t native_pointer) {
   return CastToStrokeInputBatch(native_pointer).GetNoiseSeed();
 }
@@ -108,7 +113,7 @@ void MutableStrokeInputBatchNative_clear(int64_t native_pointer) {
 bool MutableStrokeInputBatchNative_appendSingle(
     void* jni_env_pass_through, int64_t native_pointer, int tool_type, float x,
     float y, int64_t elapsed_time_millis, float stroke_unit_length_cm,
-    float pressure, float tilt, float orientation,
+    float pressure, float tilt, float orientation, float barrel_twist,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str)) {
   StrokeInput input = {
@@ -119,7 +124,8 @@ bool MutableStrokeInputBatchNative_appendSingle(
           PhysicalDistance::Centimeters(stroke_unit_length_cm),
       .pressure = pressure,
       .tilt = Angle::Radians(tilt),
-      .orientation = Angle::Radians(orientation)};
+      .orientation = Angle::Radians(orientation),
+      .barrel_twist = Angle::Radians(barrel_twist)};
 
   if (absl::Status status =
           CastToMutableStrokeInputBatch(native_pointer).Append(input);

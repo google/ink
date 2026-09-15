@@ -49,6 +49,10 @@ TEST(BrushBehaviorTest, StringifySource) {
             "kOrientationInRadians");
   EXPECT_EQ(absl::StrCat(BrushBehavior::Source::kOrientationAboutZeroInRadians),
             "kOrientationAboutZeroInRadians");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::Source::kBarrelTwistInRadians),
+            "kBarrelTwistInRadians");
+  EXPECT_EQ(absl::StrCat(BrushBehavior::Source::kBarrelTwistAboutZeroInRadians),
+            "kBarrelTwistAboutZeroInRadians");
   EXPECT_EQ(absl::StrCat(
                 BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond),
             "kSpeedInMultiplesOfBrushSizePerSecond");

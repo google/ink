@@ -75,6 +75,11 @@ class StrokeInputBatchTest : public ::testing::Test {
     input_proto_.mutable_orientation()->add_deltas(5);
     input_proto_.mutable_orientation()->add_deltas(1);
     input_proto_.mutable_orientation()->add_deltas(1);
+    input_proto_.mutable_barrel_twist()->set_offset(0.0f);
+    input_proto_.mutable_barrel_twist()->set_scale(0.1f);
+    input_proto_.mutable_barrel_twist()->add_deltas(1);
+    input_proto_.mutable_barrel_twist()->add_deltas(2);
+    input_proto_.mutable_barrel_twist()->add_deltas(3);
     input_proto_.set_tool_type(CodedStrokeInputBatch::STYLUS);
     input_proto_.set_stroke_unit_length_in_centimeters(0.1);
 
@@ -85,21 +90,24 @@ class StrokeInputBatchTest : public ::testing::Test {
           .stroke_unit_length = PhysicalDistance::Centimeters(0.1),
           .pressure = 0.2,
           .tilt = Angle::Radians(0.4),
-          .orientation = Angle::Radians(0.5)},
+          .orientation = Angle::Radians(0.5),
+          .barrel_twist = Angle::Radians(0.1)},
          {.tool_type = StrokeInput::ToolType::kStylus,
           .position = {7, 4},
           .elapsed_time = Duration32::Seconds(0.5f),
           .stroke_unit_length = PhysicalDistance::Centimeters(0.1),
           .pressure = 0.3,
           .tilt = Angle::Radians(0.4),
-          .orientation = Angle::Radians(0.6)},
+          .orientation = Angle::Radians(0.6),
+          .barrel_twist = Angle::Radians(0.3)},
          {.tool_type = StrokeInput::ToolType::kStylus,
           .position = {8, 2},
           .elapsed_time = Duration32::Seconds(1.0f),
           .stroke_unit_length = PhysicalDistance::Centimeters(0.1),
           .pressure = 0.6,
           .tilt = Angle::Radians(0.5),
-          .orientation = Angle::Radians(0.7)}});
+          .orientation = Angle::Radians(0.7),
+          .barrel_twist = Angle::Radians(0.6)}});
     ABSL_CHECK_OK(input_batch);
     input_batch_ = *std::move(input_batch);
   }
@@ -147,6 +155,10 @@ TEST_F(StrokeInputBatchTest, EncodeInputs) {
               IsOkAndHolds(ElementsAre(FloatNear(0.5f, epsilon),
                                        FloatNear(0.6f, epsilon),
                                        FloatNear(0.7f, epsilon))));
+  EXPECT_THAT(DecodeFloatNumericRun(encoded_input_proto.barrel_twist()),
+              IsOkAndHolds(ElementsAre(FloatNear(0.1f, epsilon),
+                                       FloatNear(0.3f, epsilon),
+                                       FloatNear(0.6f, epsilon))));
 
   EXPECT_NE(encoded_input_proto.x_stroke_space().scale(), 1.0f);
   EXPECT_NE(encoded_input_proto.y_stroke_space().scale(), 1.0f);
@@ -216,25 +228,16 @@ TEST_F(StrokeInputBatchTest, EncodeSingleInputPosition) {
 }
 
 TEST_F(StrokeInputBatchTest, EncodeLargeTimeValues) {
-  absl::StatusOr<StrokeInputBatch> input_batch =
-      StrokeInputBatch::Create({{.tool_type = StrokeInput::ToolType::kStylus,
-                                 .position = {10, 3},
-                                 .elapsed_time = Duration32::Zero(),
-                                 .pressure = 0.4,
-                                 .tilt = Angle::Radians(1.1),
-                                 .orientation = Angle::Radians(2)},
-                                {.tool_type = StrokeInput::ToolType::kStylus,
-                                 .position = {7, 4},
-                                 .elapsed_time = Duration32::Seconds(20000.f),
-                                 .pressure = 0.3,
-                                 .tilt = Angle::Radians(0.7),
-                                 .orientation = Angle::Radians(0.9)},
-                                {.tool_type = StrokeInput::ToolType::kStylus,
-                                 .position = {8, 2},
-                                 .elapsed_time = Duration32::Seconds(40000.f),
-                                 .pressure = 0.7,
-                                 .tilt = Angle::Radians(0.9),
-                                 .orientation = Angle::Radians(1.1)}});
+  absl::StatusOr<StrokeInputBatch> input_batch = StrokeInputBatch::Create(
+      {{.tool_type = StrokeInput::ToolType::kStylus,
+        .position = {10, 3},
+        .elapsed_time = Duration32::Zero()},
+       {.tool_type = StrokeInput::ToolType::kStylus,
+        .position = {7, 4},
+        .elapsed_time = Duration32::Seconds(20000.f)},
+       {.tool_type = StrokeInput::ToolType::kStylus,
+        .position = {8, 2},
+        .elapsed_time = Duration32::Seconds(40000.f)}});
   ASSERT_THAT(input_batch, IsOk());
 
   CodedStrokeInputBatch input_proto;
@@ -284,32 +287,35 @@ TEST_F(StrokeInputBatchTest, RoundTripInputsThatQuantizeTheSame) {
       IsOkAndHolds(ElementsAre(StrokeInputEq(input1), StrokeInputEq(input3))));
 }
 
-TEST_F(StrokeInputBatchTest, ClearPressureTiltOrientation) {
-  // Start the CodedStrokeInputBatch with non-empty pressure/tilt/orientation,
-  // so we can test that those get cleared.
+TEST_F(StrokeInputBatchTest, ClearPressureTiltOrientationTwist) {
+  // Start the CodedStrokeInputBatch with non-empty
+  // pressure/tilt/orientation/twist, so we can test that those get cleared.
   CodedStrokeInputBatch input_batch;
   input_batch.mutable_pressure()->add_deltas(1);
   input_batch.mutable_tilt()->add_deltas(1);
   input_batch.mutable_orientation()->add_deltas(1);
+  input_batch.mutable_barrel_twist()->add_deltas(1);
 
-  // Encode an StrokeInputBatch with no pressure/tilt/orientation data.
+  // Encode an StrokeInputBatch with no pressure/tilt/orientation/twist data.
   absl::StatusOr<StrokeInputBatch> inputs =
       StrokeInputBatch::Create({{.position = {1.75, 2.25},
                                  .elapsed_time = Duration32::Zero(),
                                  .pressure = StrokeInput::kNoPressure,
                                  .tilt = StrokeInput::kNoTilt,
-                                 .orientation = StrokeInput::kNoOrientation}});
+                                 .orientation = StrokeInput::kNoOrientation,
+                                 .barrel_twist = StrokeInput::kNoBarrelTwist}});
   ASSERT_THAT(inputs, IsOk());
   EncodeStrokeInputBatch(*inputs, input_batch);
 
   // The CodedStrokeInputBatch should now have position data, but the
-  // pressure/tilt/orientation data should have been cleared.
+  // pressure/tilt/orientation/twist data should have been cleared.
   EXPECT_TRUE(input_batch.has_x_stroke_space());
   EXPECT_TRUE(input_batch.has_y_stroke_space());
   EXPECT_TRUE(input_batch.has_elapsed_time_seconds());
   EXPECT_FALSE(input_batch.has_pressure());
   EXPECT_FALSE(input_batch.has_tilt());
   EXPECT_FALSE(input_batch.has_orientation());
+  EXPECT_FALSE(input_batch.has_barrel_twist());
 }
 
 void DecodeStrokeInputBatchDoesNotCrashOnArbitraryInput(

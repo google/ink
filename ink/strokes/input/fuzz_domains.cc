@@ -54,6 +54,9 @@ fuzztest::Domain<Angle> ValidTilt() {
 // The domain of all valid, non-absent stroke input orientation values.
 fuzztest::Domain<Angle> ValidOrientation() { return NormalizedAngle(); }
 
+// The domain of all valid, non-absent stroke input barrel twist values.
+fuzztest::Domain<Angle> ValidBarrelTwist() { return NormalizedAngle(); }
+
 // Given a sequence of (position, time) pairs, returns a copy of the sequence
 // that is sorted by the time values.
 std::vector<std::pair<Point, Duration32>> XytsSortedByTime(
@@ -87,7 +90,8 @@ fuzztest::Domain<StrokeInputBatch> StrokeInputBatchWithPositionsAndMinSize(
                    float base_animation_phase,
                    const std::optional<std::vector<float>>& pressures,
                    const std::optional<std::vector<Angle>>& tilts,
-                   const std::optional<std::vector<Angle>>& orientations) {
+                   const std::optional<std::vector<Angle>>& orientations,
+                   const std::optional<std::vector<Angle>>& barrel_twists) {
               std::vector<StrokeInput> inputs;
               inputs.reserve(xyts.size());
               for (size_t i = 0; i < xyts.size(); ++i) {
@@ -104,6 +108,9 @@ fuzztest::Domain<StrokeInputBatch> StrokeInputBatchWithPositionsAndMinSize(
                     .orientation = orientations.has_value()
                                        ? (*orientations)[i]
                                        : StrokeInput::kNoOrientation,
+                    .barrel_twist = barrel_twists.has_value()
+                                        ? (*barrel_twists)[i]
+                                        : StrokeInput::kNoBarrelTwist,
                 });
               }
               absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create(
@@ -121,7 +128,9 @@ fuzztest::Domain<StrokeInputBatch> StrokeInputBatchWithPositionsAndMinSize(
             fuzztest::OptionalOf(
                 fuzztest::VectorOf(ValidTilt()).WithSize(xyts.size())),
             fuzztest::OptionalOf(
-                fuzztest::VectorOf(ValidOrientation()).WithSize(xyts.size())));
+                fuzztest::VectorOf(ValidOrientation()).WithSize(xyts.size())),
+            fuzztest::OptionalOf(
+                fuzztest::VectorOf(ValidBarrelTwist()).WithSize(xyts.size())));
       },
       ValidXytSequence(position_domain, min_size));
 }
@@ -148,7 +157,9 @@ fuzztest::Domain<StrokeInput> ValidStrokeInput() {
                       ValidPressure()),
       fuzztest::OneOf(fuzztest::Just(StrokeInput::kNoTilt), ValidTilt()),
       fuzztest::OneOf(fuzztest::Just(StrokeInput::kNoOrientation),
-                      ValidOrientation()));
+                      ValidOrientation()),
+      fuzztest::OneOf(fuzztest::Just(StrokeInput::kNoBarrelTwist),
+                      ValidBarrelTwist()));
 }
 
 fuzztest::Domain<StrokeInputBatch> ArbitraryStrokeInputBatch() {

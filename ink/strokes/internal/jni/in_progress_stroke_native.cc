@@ -185,7 +185,8 @@ InProgressStrokeNative_Input InProgressStrokeNative_getInput(
           .stroke_unit_length_cm = input.stroke_unit_length.ToCentimeters(),
           .pressure = input.pressure,
           .tilt_radians = input.tilt.ValueInRadians(),
-          .orientation_radians = input.orientation.ValueInRadians()};
+          .orientation_radians = input.orientation.ValueInRadians(),
+          .barrel_twist_radians = input.barrel_twist.ValueInRadians()};
 }
 
 float InProgressStrokeNative_getBasePaintAnimationPhase(

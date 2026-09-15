@@ -179,6 +179,10 @@ proto::BrushBehavior::Source EncodeBrushBehaviorSource(
       return proto::BrushBehavior::SOURCE_ORIENTATION_IN_RADIANS;
     case BrushBehavior::Source::kOrientationAboutZeroInRadians:
       return proto::BrushBehavior::SOURCE_ORIENTATION_ABOUT_ZERO_IN_RADIANS;
+    case BrushBehavior::Source::kBarrelTwistInRadians:
+      return proto::BrushBehavior::SOURCE_BARREL_TWIST_IN_RADIANS;
+    case BrushBehavior::Source::kBarrelTwistAboutZeroInRadians:
+      return proto::BrushBehavior::SOURCE_BARREL_TWIST_ABOUT_ZERO_IN_RADIANS;
     case BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond:
       return proto::BrushBehavior::
           SOURCE_SPEED_IN_MULTIPLES_OF_BRUSH_SIZE_PER_SECOND;
@@ -293,6 +297,10 @@ absl::StatusOr<BrushBehavior::Source> DecodeBrushBehaviorSource(
       return BrushBehavior::Source::kOrientationInRadians;
     case proto::BrushBehavior::SOURCE_ORIENTATION_ABOUT_ZERO_IN_RADIANS:
       return BrushBehavior::Source::kOrientationAboutZeroInRadians;
+    case proto::BrushBehavior::SOURCE_BARREL_TWIST_IN_RADIANS:
+      return BrushBehavior::Source::kBarrelTwistInRadians;
+    case proto::BrushBehavior::SOURCE_BARREL_TWIST_ABOUT_ZERO_IN_RADIANS:
+      return BrushBehavior::Source::kBarrelTwistAboutZeroInRadians;
     case proto::BrushBehavior::
         SOURCE_SPEED_IN_MULTIPLES_OF_BRUSH_SIZE_PER_SECOND:
       return BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond;

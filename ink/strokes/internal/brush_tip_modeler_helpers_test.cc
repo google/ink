@@ -203,6 +203,41 @@ TEST_F(ProcessBehaviorNodeTest, SourceNodeOrientationAboutZeroInRadians) {
   EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
 }
 
+TEST_F(ProcessBehaviorNodeTest, SourceNodeBarrelTwistInRadians) {
+  BrushBehavior::SourceNode source_node = {
+      .source = BrushBehavior::Source::kBarrelTwistInRadians,
+      .source_value_range = {0, Angle::Degrees(360).ValueInRadians()},
+  };
+
+  current_input_.barrel_twist = Angle::Degrees(270);
+  ProcessBehaviorNode(source_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(FloatNear(0.75f, 1e-5)));
+
+  // If barrel twist data is missing, the source node emits a null value.
+  stack_.clear();
+  current_input_.barrel_twist = StrokeInput::kNoBarrelTwist;
+  ProcessBehaviorNode(source_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+}
+
+TEST_F(ProcessBehaviorNodeTest, SourceNodeBarrelTwistAboutZeroInRadians) {
+  BrushBehavior::SourceNode source_node = {
+      .source = BrushBehavior::Source::kBarrelTwistAboutZeroInRadians,
+      .source_value_range = {Angle::Degrees(-180).ValueInRadians(),
+                             Angle::Degrees(180).ValueInRadians()},
+  };
+
+  current_input_.barrel_twist = Angle::Degrees(270);
+  ProcessBehaviorNode(source_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(FloatNear(0.25f, 1e-5)));
+
+  // If barrel twist data is missing, the source node emits a null value.
+  stack_.clear();
+  current_input_.barrel_twist = StrokeInput::kNoBarrelTwist;
+  ProcessBehaviorNode(source_node, context_);
+  EXPECT_THAT(stack_, ElementsAre(NullNodeValueMatcher()));
+}
+
 TEST_F(ProcessBehaviorNodeTest,
        SourceNodeSpeedInMultiplesOfBrushSizePerSecond) {
   BrushBehavior::SourceNode source_node = {

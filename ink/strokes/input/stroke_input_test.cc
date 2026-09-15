@@ -51,9 +51,10 @@ TEST(StrokeInputTest, Stringify) {
                 .pressure = 1.0f,
                 .tilt = kFullTurn / 8,
                 .orientation = kFullTurn * 0.75f,
+                .barrel_twist = kFullTurn * 0.25f,
             }),
             "StrokeInput[Stylus, (0, -4), 4.5s, stroke_unit_length=6.5cm, "
-            "pressure=1, tilt=0.25π, orientation=1.5π]");
+            "pressure=1, tilt=0.25π, orientation=1.5π, barrel_twist=0.5π]");
 }
 
 TEST(StrokeInputTest, DefaultInitializedInput) {
@@ -62,50 +63,72 @@ TEST(StrokeInputTest, DefaultInitializedInput) {
   EXPECT_FALSE(input.HasPressure());
   EXPECT_FALSE(input.HasTilt());
   EXPECT_FALSE(input.HasOrientation());
+  EXPECT_FALSE(input.HasBarrelTwist());
 }
 
 TEST(StrokeInputTest, NoStrokeUnitLength) {
   StrokeInput input = {.stroke_unit_length = StrokeInput::kNoStrokeUnitLength,
                        .pressure = 0,
                        .tilt = Angle::Radians(0),
-                       .orientation = Angle::Radians(0)};
+                       .orientation = Angle::Radians(0),
+                       .barrel_twist = Angle::Radians(0)};
   EXPECT_FALSE(input.HasStrokeUnitLength());
   EXPECT_TRUE(input.HasPressure());
   EXPECT_TRUE(input.HasTilt());
   EXPECT_TRUE(input.HasOrientation());
+  EXPECT_TRUE(input.HasBarrelTwist());
 }
 
 TEST(StrokeInputTest, NoPressure) {
   StrokeInput input = {.stroke_unit_length = PhysicalDistance::Inches(1),
                        .pressure = StrokeInput::kNoPressure,
                        .tilt = Angle::Radians(0),
-                       .orientation = Angle::Radians(0)};
+                       .orientation = Angle::Radians(0),
+                       .barrel_twist = Angle::Radians(0)};
   EXPECT_TRUE(input.HasStrokeUnitLength());
   EXPECT_FALSE(input.HasPressure());
   EXPECT_TRUE(input.HasTilt());
   EXPECT_TRUE(input.HasOrientation());
+  EXPECT_TRUE(input.HasBarrelTwist());
 }
 
 TEST(StrokeInputTest, NoTilt) {
   StrokeInput input = {.stroke_unit_length = PhysicalDistance::Inches(1),
                        .pressure = 0,
                        .tilt = StrokeInput::kNoTilt,
-                       .orientation = Angle::Radians(0)};
+                       .orientation = Angle::Radians(0),
+                       .barrel_twist = Angle::Radians(0)};
   EXPECT_TRUE(input.HasStrokeUnitLength());
   EXPECT_TRUE(input.HasPressure());
   EXPECT_FALSE(input.HasTilt());
   EXPECT_TRUE(input.HasOrientation());
+  EXPECT_TRUE(input.HasBarrelTwist());
 }
 
 TEST(StrokeInputTest, NoOrientation) {
   StrokeInput input = {.stroke_unit_length = PhysicalDistance::Inches(1),
                        .pressure = 0,
                        .tilt = Angle::Radians(0),
-                       .orientation = StrokeInput::kNoOrientation};
+                       .orientation = StrokeInput::kNoOrientation,
+                       .barrel_twist = Angle::Radians(0)};
   EXPECT_TRUE(input.HasStrokeUnitLength());
   EXPECT_TRUE(input.HasPressure());
   EXPECT_TRUE(input.HasTilt());
   EXPECT_FALSE(input.HasOrientation());
+  EXPECT_TRUE(input.HasBarrelTwist());
+}
+
+TEST(StrokeInputTest, NoBarrelTwist) {
+  StrokeInput input = {.stroke_unit_length = PhysicalDistance::Inches(1),
+                       .pressure = 0,
+                       .tilt = Angle::Radians(0),
+                       .orientation = Angle::Radians(0),
+                       .barrel_twist = StrokeInput::kNoBarrelTwist};
+  EXPECT_TRUE(input.HasStrokeUnitLength());
+  EXPECT_TRUE(input.HasPressure());
+  EXPECT_TRUE(input.HasTilt());
+  EXPECT_TRUE(input.HasOrientation());
+  EXPECT_FALSE(input.HasBarrelTwist());
 }
 
 TEST(StrokeInputTest, EqualityAndHashing) {
@@ -141,10 +164,14 @@ TEST(StrokeInputTest, EqualityAndHashing) {
   input_with_orientation.orientation = Angle::Degrees(90);
   EXPECT_NE(input, input_with_orientation);
 
+  StrokeInput input_with_barrel_twist = input;
+  input_with_barrel_twist.barrel_twist = Angle::Degrees(30);
+  EXPECT_NE(input, input_with_barrel_twist);
+
   EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
       {input, input_with_tool_type, input_with_position, input_with_time,
        input_with_stroke_unit_length, input_with_pressure, input_with_tilt,
-       input_with_orientation}));
+       input_with_orientation, input_with_barrel_twist}));
 }
 
 }  // namespace

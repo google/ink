@@ -77,7 +77,8 @@ class CodedStrokeInputBatchIterator {
       CodedNumericRunIterator<float> elapsed_time_seconds,
       CodedNumericRunIterator<float> pressure,
       CodedNumericRunIterator<float> tilt,
-      CodedNumericRunIterator<float> orientation);
+      CodedNumericRunIterator<float> orientation,
+      CodedNumericRunIterator<float> barrel_twist);
 
   void UpdateValue();
 
@@ -89,6 +90,7 @@ class CodedStrokeInputBatchIterator {
   CodedNumericRunIterator<float> pressure_;
   CodedNumericRunIterator<float> tilt_;
   CodedNumericRunIterator<float> orientation_;
+  CodedNumericRunIterator<float> barrel_twist_;
   StrokeInput value_;
 
   friend absl::StatusOr<iterator_range<CodedStrokeInputBatchIterator>>
