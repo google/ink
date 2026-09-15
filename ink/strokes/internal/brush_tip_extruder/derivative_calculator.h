@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
+#include "ink/geometry/triangle.h"
 #include "ink/geometry/vec.h"
 #include "ink/strokes/internal/brush_tip_extruder/mutable_mesh_view.h"
 #include "ink/strokes/internal/stroke_vertex.h"
@@ -81,6 +82,18 @@ class DerivativeCalculator {
   void UpdateMesh(absl::Span<const uint32_t> left_indices_to_update,
                   absl::Span<const uint32_t> right_indices_to_update,
                   MutableMeshView& mesh);
+
+  // Computes the margin upper bounds imposed by `triangle` on its vertices
+  // given the vertex `outset_vectors`.
+  //
+  // The margins bound the extents to which vertices can safely be outset along
+  // their respective outset vectors without inverting the triangle. See
+  // `StrokeVertex::Label` for further background on margins.
+  //
+  // The margins computed by this function are approximate and clamped to the
+  // range [0, StrokeVertex::kMaximumMargin].
+  static std::array<float, 3> ComputeTriangleMarginUpperBounds(
+      const Triangle& triangle, const std::array<Vec, 3>& outset_vectors);
 
  private:
   // Prepares the tracked average derivatives and minimum margins for

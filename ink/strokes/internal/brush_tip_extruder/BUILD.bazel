@@ -80,6 +80,7 @@ cc_test(
         ":mutable_mesh_view",
         "//ink/geometry:mutable_mesh",
         "//ink/geometry:point",
+        "//ink/geometry:triangle",
         "//ink/geometry:type_matchers",
         "//ink/geometry:vec",
         "//ink/strokes/internal:stroke_vertex",

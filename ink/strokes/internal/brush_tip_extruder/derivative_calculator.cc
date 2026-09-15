@@ -358,18 +358,6 @@ void DerivativeCalculator::SaveSideMarginUpperBound(uint32_t index,
 
 namespace {
 
-// Returns the segment starting at a triangle's `vertex_position`, and ending
-// at `vertex_position +/- derivative` such that the segment is oriented away
-// from the triangle's interior.
-//
-// `outset_sign` is expected to be the return value of
-// `StrokeVertex::Label::DerivativeOutsetSign()`.
-Segment MakeOutsetSegment(Point vertex_position, float outset_sign,
-                          Vec derivative) {
-  return {.start = vertex_position,
-          .end = vertex_position + outset_sign * derivative};
-}
-
 // Returns one of the segments that will be used to constrain vertex outsets.
 //
 // For a triangle, the returned segment will start at the given
@@ -422,8 +410,22 @@ Point TrianglePosition(const Triangle& triangle, int vertex_index) {
 void DerivativeCalculator::AddMarginUpperBoundsForTriangle(
     const MutableMeshView& mesh,
     const std::array<uint32_t, 3>& triangle_indices) {
-  Triangle triangle = GetTriangleFromIndices(mesh, triangle_indices);
+  std::array<Vec, 3> outset_vectors;
+  for (int i = 0; i < 3; ++i) {
+    float outset_sign =
+        mesh.GetSideLabel(triangle_indices[i]).DerivativeOutsetSign();
+    outset_vectors[i] =
+        outset_sign * mesh.GetSideDerivative(triangle_indices[i]);
+  }
+  std::array<float, 3> bounds = ComputeTriangleMarginUpperBounds(
+      GetTriangleFromIndices(mesh, triangle_indices), outset_vectors);
+  for (int i = 0; i < 3; ++i) {
+    SaveSideMarginUpperBound(triangle_indices[i], bounds[i]);
+  }
+}
 
+std::array<float, 3> DerivativeCalculator::ComputeTriangleMarginUpperBounds(
+    const Triangle& triangle, const std::array<Vec, 3>& outset_vectors) {
   // Degenerate triangles must be handled separately:
   if (triangle.SignedArea() == 0) {
     // Check if the triangle is degenerate, but no two vertices of the triangle
@@ -431,15 +433,14 @@ void DerivativeCalculator::AddMarginUpperBoundsForTriangle(
     // collinear, so we need to set all of the side margins to 0.
     if (triangle.p0 != triangle.p1 && triangle.p0 != triangle.p2 &&
         triangle.p1 != triangle.p2) {
-      for (int i = 0; i < 3; ++i) {
-        SaveSideMarginUpperBound(triangle_indices[i], 0);
-      }
+      return {0.0f, 0.0f, 0.0f};
     }
     // Otherwise, since two of the vertices share the same position, we can skip
     // the entire triangle. Coincident vertices will be given the same
     // derivative values and be repositioned the same way in the shader, so the
     // degenerate triangle does not impact the margins of any of its vertices.
-    return;
+    return {StrokeVertex::kMaximumMargin, StrokeVertex::kMaximumMargin,
+            StrokeVertex::kMaximumMargin};
   }
 
   // Each triangle splits its exterior into three regions according to the
@@ -476,25 +477,24 @@ void DerivativeCalculator::AddMarginUpperBoundsForTriangle(
       MakeBoundingSegment(triangle.p1, triangle.GetEdge(2)),
       MakeBoundingSegment(triangle.p2, triangle.GetEdge(0))};
 
+  std::array<float, 3> bounds = {StrokeVertex::kMaximumMargin,
+                                 StrokeVertex::kMaximumMargin,
+                                 StrokeVertex::kMaximumMargin};
   for (int i = 0; i < 3; ++i) {
-    Point vertex_position = TrianglePosition(triangle, i);
-    float side_outset_sign =
-        mesh.GetSideLabel(triangle_indices[i]).DerivativeOutsetSign();
-    if (side_outset_sign == 0) {
-      // If the outset sign is 0, this vertex should not be repositioned at
+    if (outset_vectors[i] == Vec{0, 0}) {
+      // If the outset vector is 0, this vertex should not be repositioned at
       // all, and the upper bound is 0. This happens for an interior vertex
       // label.
-      SaveSideMarginUpperBound(triangle_indices[i], 0);
+      bounds[i] = 0.0f;
       continue;
     }
-    Segment side_outset_segment =
-        MakeOutsetSegment(vertex_position, side_outset_sign,
-                          mesh.GetSideDerivative(triangle_indices[i]));
-    float margin_upper_bound = std::min(
-        MarginUpperBound(side_outset_segment, bounding_segments[(i + 1) % 3]),
-        MarginUpperBound(side_outset_segment, bounding_segments[(i + 2) % 3]));
-    SaveSideMarginUpperBound(triangle_indices[i], margin_upper_bound);
+    Point pos = TrianglePosition(triangle, i);
+    Segment outset_segment = {.start = pos, .end = pos + outset_vectors[i]};
+    bounds[i] = std::min(
+        MarginUpperBound(outset_segment, bounding_segments[(i + 1) % 3]),
+        MarginUpperBound(outset_segment, bounding_segments[(i + 2) % 3]));
   }
+  return bounds;
 }
 
 namespace {

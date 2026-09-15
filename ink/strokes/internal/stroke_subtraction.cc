@@ -51,8 +51,8 @@
 namespace ink::strokes_internal {
 namespace {
 
-using AverageDerivative =
-    ::ink::brush_tip_extruder_internal::DerivativeCalculator::AverageDerivative;
+using ::ink::brush_tip_extruder_internal::DerivativeCalculator;
+using AverageDerivative = DerivativeCalculator::AverageDerivative;
 using ::ink::geometry_internal::ComputeSubtraction;
 using ::ink::geometry_internal::ComputeTriangulation;
 using ::ink::geometry_internal::Intersects;
@@ -230,10 +230,22 @@ bool IsRight(BoundaryLabel label) { return label % 3 == 2; }
 bool IsFront(BoundaryLabel label) { return label / 3 == 1; }
 bool IsBack(BoundaryLabel label) { return label / 3 == 2; }
 
+float SideOutsetSign(BoundaryLabel label) {
+  if (IsLeft(label)) return -1.0f;
+  if (IsRight(label)) return 1.0f;
+  return 0.0f;
+}
+
+float ForwardOutsetSign(BoundaryLabel label) {
+  if (IsFront(label)) return -1.0f;
+  if (IsBack(label)) return 1.0f;
+  return 0.0f;
+}
+
 // Converts encoded float values to a BoundaryLabel enum value.
 BoundaryLabel DecodeBoundaryLabel(float side, float fwd) {
-  int side_idx = (side > 0.5f) ? 2 : (side < -0.5f ? 1 : 0);
-  int fwd_idx = (fwd > 0.5f) ? 2 : (fwd < -0.5f ? 1 : 0);
+  int side_idx = (side >= 0.5f) ? 2 : (side <= -0.5f ? 1 : 0);
+  int fwd_idx = (fwd >= 0.5f) ? 2 : (fwd <= -0.5f ? 1 : 0);
   return static_cast<BoundaryLabel>(3 * fwd_idx + side_idx);
 }
 
@@ -465,6 +477,12 @@ class MeshBuilder {
     return {sd[0], sd[1]};
   }
 
+  Vec GetForwardDerivative(uint32_t vertex_index) const {
+    auto fd = mutable_mesh_.FloatVertexAttribute(
+        vertex_index, attr_indices_.forward_derivative);
+    return {fd[0], fd[1]};
+  }
+
   void SetDerivatives(uint32_t vertex_index, Vec side, Vec forward) {
     // Override zero vectors with a small non-zero value to avoid undefined
     // zero-divided-by-zero in the rendering pipeline.
@@ -475,6 +493,20 @@ class MeshBuilder {
         vertex_index, attr_indices_.side_derivative, {side.x, side.y});
     mutable_mesh_.SetFloatVertexAttribute(
         vertex_index, attr_indices_.forward_derivative, {forward.x, forward.y});
+  }
+
+  void SetMargins(uint32_t vertex_index, float side_margin,
+                  float forward_margin) {
+    BoundaryLabel label = GetLabel(vertex_index);
+    auto [side, forward] = EncodeBoundaryLabel(label);
+    mutable_mesh_.SetFloatVertexAttribute(
+        vertex_index, attr_indices_.side_label,
+        {StrokeVertex::Label{side}.WithMargin(side_margin).encoded_value});
+    mutable_mesh_.SetFloatVertexAttribute(vertex_index,
+                                          attr_indices_.forward_label,
+                                          {StrokeVertex::Label{forward}
+                                               .WithMargin(forward_margin)
+                                               .encoded_value});
   }
 
   const MutableMesh& GetMesh() const { return mutable_mesh_; }
@@ -1006,6 +1038,59 @@ void ComputeAndSetDerivatives(MeshBuilder& mesh_builder) {
                                 forward_derivative[i].Value());
   }
 }
+
+// Computes anti-aliasing margins for all vertices in the mesh.
+void ComputeAndSetMargins(MeshBuilder& mesh_builder) {
+  // Recall that margins are used during rendering to constrain anti-aliasing
+  // vertex outsets and prevent self-overlap and triangle inversion. See the
+  // comments in `StrokeVertex::Label` and the implementation of
+  // `DerivativeCalculator::ComputeTriangleMarginUpperBounds` for details.
+  //
+  // In this function, we recompute the margins for all vertices by iterating
+  // through all triangles in the mesh. Each triangle imposes an upper bound
+  // margin on its vertices. We compute these per-triangle constraints, and
+  // assign each vertex the tightest (minimum) bound across its incident
+  // triangles, and then write the margins to the mesh.
+  // TODO(b/521448869): Recompute margins only for vertices in a neighborhood
+  // of the subtracted area.
+  const MutableMesh& mesh = mesh_builder.GetMesh();
+  const uint32_t num_vertices = mesh.VertexCount();
+  std::vector<float> side_margins(num_vertices, StrokeVertex::kMaximumMargin);
+  std::vector<float> forward_margins(num_vertices,
+                                     StrokeVertex::kMaximumMargin);
+
+  for (uint32_t tri_idx = 0; tri_idx < mesh.TriangleCount(); ++tri_idx) {
+    std::array<uint32_t, 3> indices = mesh.TriangleIndices(tri_idx);
+    Triangle triangle = mesh.GetTriangle(tri_idx);
+
+    std::array<Vec, 3> side_outsets, forward_outsets;
+    for (int i = 0; i < 3; ++i) {
+      BoundaryLabel label = mesh_builder.GetLabel(indices[i]);
+      side_outsets[i] =
+          SideOutsetSign(label) * mesh_builder.GetSideDerivative(indices[i]);
+      forward_outsets[i] = ForwardOutsetSign(label) *
+                           mesh_builder.GetForwardDerivative(indices[i]);
+    }
+
+    std::array<float, 3> side_bounds =
+        DerivativeCalculator::ComputeTriangleMarginUpperBounds(triangle,
+                                                               side_outsets);
+    std::array<float, 3> forward_bounds =
+        DerivativeCalculator::ComputeTriangleMarginUpperBounds(triangle,
+                                                               forward_outsets);
+
+    for (int i = 0; i < 3; ++i) {
+      side_margins[indices[i]] =
+          std::min(side_margins[indices[i]], side_bounds[i]);
+      forward_margins[indices[i]] =
+          std::min(forward_margins[indices[i]], forward_bounds[i]);
+    }
+  }
+
+  for (uint32_t i = 0; i < num_vertices; ++i) {
+    mesh_builder.SetMargins(i, side_margins[i], forward_margins[i]);
+  }
+}
 // LINT.ThenChange(
 //     //depot/google3/third_party/ink/strokes/internal/brush_tip_extruder/derivative_calculator.cc,
 //     //depot/google3/third_party/ink/rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:calculate_antialiasing_and_position_outset,
@@ -1100,6 +1185,7 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
   if (HasAntiAliasingAttributes(format) && anti_aliasing_enabled) {
     ComputeAndSetLabels(outlines, sub_mesh);
     ComputeAndSetDerivatives(sub_mesh);
+    ComputeAndSetMargins(sub_mesh);
   }
 
   return SubtractedMesh{
