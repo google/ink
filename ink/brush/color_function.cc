@@ -14,7 +14,6 @@
 
 #include "ink/brush/color_function.h"
 
-#include <array>
 #include <cmath>
 #include <string>
 #include <variant>
