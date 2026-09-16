@@ -31,6 +31,7 @@ typedef struct {
   float pressure;
   float tilt_radians;
   float orientation_radians;
+  float barrel_twist_radians;
 } StrokeInputBatchNative_Input;
 
 int64_t StrokeInputBatchNative_create(void);
@@ -56,6 +57,8 @@ bool StrokeInputBatchNative_hasTilt(int64_t native_pointer);
 
 bool StrokeInputBatchNative_hasOrientation(int64_t native_pointer);
 
+bool StrokeInputBatchNative_hasBarrelTwist(int64_t native_pointer);
+
 int StrokeInputBatchNative_getNoiseSeed(int64_t native_pointer);
 
 float StrokeInputBatchNative_getBasePaintAnimationPhase(int64_t native_pointer);
@@ -65,7 +68,7 @@ void MutableStrokeInputBatchNative_clear(int64_t native_pointer);
 bool MutableStrokeInputBatchNative_appendSingle(
     void* jni_env_pass_through, int64_t native_pointer, int tool_type, float x,
     float y, int64_t elapsed_time_millis, float stroke_unit_length_cm,
-    float pressure, float tilt, float orientation,
+    float pressure, float tilt, float orientation, float barrel_twist,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str));
 

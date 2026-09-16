@@ -28,10 +28,12 @@ void UpdateJStrokeInputOrThrow(JNIEnv* env, jfloat x, jfloat y,
                                jlong elapsed_time_millis, jint tool_type_int,
                                jfloat stroke_unit_length_cm, jfloat pressure,
                                jfloat tilt_radians, jfloat orientation_radians,
+                               jfloat barrel_twist_radians,
                                jobject j_input_out) {
   env->CallVoidMethod(j_input_out, MethodStrokeInputUpdate(env), x, y,
                       elapsed_time_millis, tool_type_int, stroke_unit_length_cm,
-                      pressure, tilt_radians, orientation_radians);
+                      pressure, tilt_radians, orientation_radians,
+                      barrel_twist_radians);
 }
 
 }  // namespace
@@ -42,7 +44,8 @@ void UpdateJStrokeInputOrThrow(JNIEnv* env,
   UpdateJStrokeInputOrThrow(
       env, input_in.x, input_in.y, input_in.elapsed_time_millis,
       input_in.tool_type_int, input_in.stroke_unit_length_cm, input_in.pressure,
-      input_in.tilt_radians, input_in.orientation_radians, j_input_out);
+      input_in.tilt_radians, input_in.orientation_radians,
+      input_in.barrel_twist_radians, j_input_out);
 }
 
 void UpdateJStrokeInputOrThrow(JNIEnv* env,
@@ -51,7 +54,8 @@ void UpdateJStrokeInputOrThrow(JNIEnv* env,
   UpdateJStrokeInputOrThrow(
       env, input_in.x, input_in.y, input_in.elapsed_time_millis,
       input_in.tool_type_int, input_in.stroke_unit_length_cm, input_in.pressure,
-      input_in.tilt_radians, input_in.orientation_radians, j_input_out);
+      input_in.tilt_radians, input_in.orientation_radians,
+      input_in.barrel_twist_radians, j_input_out);
 }
 
 }  // namespace ink::jni

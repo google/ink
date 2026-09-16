@@ -51,6 +51,8 @@ bool IsValidBehaviorSource(BrushBehavior::Source source) {
     case BrushBehavior::Source::kTiltYInRadians:
     case BrushBehavior::Source::kOrientationInRadians:
     case BrushBehavior::Source::kOrientationAboutZeroInRadians:
+    case BrushBehavior::Source::kBarrelTwistInRadians:
+    case BrushBehavior::Source::kBarrelTwistAboutZeroInRadians:
     case BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond:
     case BrushBehavior::Source::kVelocityXInMultiplesOfBrushSizePerSecond:
     case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:
@@ -112,6 +114,8 @@ absl::Status ValidateSourceAndOutOfRangeCombination(
     case BrushBehavior::Source::kTiltYInRadians:
     case BrushBehavior::Source::kOrientationInRadians:
     case BrushBehavior::Source::kOrientationAboutZeroInRadians:
+    case BrushBehavior::Source::kBarrelTwistInRadians:
+    case BrushBehavior::Source::kBarrelTwistAboutZeroInRadians:
     case BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond:
     case BrushBehavior::Source::kVelocityXInMultiplesOfBrushSizePerSecond:
     case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:
@@ -497,6 +501,8 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::Source source) {
       return Version::k0();
     case BrushBehavior::Source::kTimeSinceStrokeEndInSeconds:
       return Version::k1();
+    case BrushBehavior::Source::kBarrelTwistInRadians:
+    case BrushBehavior::Source::kBarrelTwistAboutZeroInRadians:
     case BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds:
       return Version::kDevelopment();
   }
@@ -686,6 +692,10 @@ std::string ToFormattedString(BrushBehavior::Source source) {
       return "kOrientationInRadians";
     case BrushBehavior::Source::kOrientationAboutZeroInRadians:
       return "kOrientationAboutZeroInRadians";
+    case BrushBehavior::Source::kBarrelTwistInRadians:
+      return "kBarrelTwistInRadians";
+    case BrushBehavior::Source::kBarrelTwistAboutZeroInRadians:
+      return "kBarrelTwistAboutZeroInRadians";
     case BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond:
       return "kSpeedInMultiplesOfBrushSizePerSecond";
     case BrushBehavior::Source::kVelocityXInMultiplesOfBrushSizePerSecond:

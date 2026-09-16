@@ -324,7 +324,7 @@ jclass ClassStrokeInput(JNIEnv* env) {
 jmethodID MethodStrokeInputUpdate(JNIEnv* env) {
   if (method_stroke_input_update == nullptr) {
     method_stroke_input_update =
-        GetMethodId(env, ClassStrokeInput(env), "update", "(FFJIFFFF)V");
+        GetMethodId(env, ClassStrokeInput(env), "update", "(FFJIFFFFF)V");
   }
   return method_stroke_input_update;
 }

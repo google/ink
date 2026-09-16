@@ -27,7 +27,7 @@
 namespace ink {
 
 // A single stroke input specifying input type, position, and time, as well as
-// optional pressure, tilt, and/or orientation.
+// optional pressure, tilt, orientation, and/or barrel twist.
 struct StrokeInput {
   // Input devices that can be used to generate stroke inputs.  These are
   // roughly analogous to the Android `MotionEvent.TOOL_TYPE_*` constants
@@ -41,6 +41,7 @@ struct StrokeInput {
   static constexpr float kNoPressure = -1;
   static constexpr Angle kNoTilt = Angle::Radians(-1);
   static constexpr Angle kNoOrientation = Angle::Radians(-1);
+  static constexpr Angle kNoBarrelTwist = Angle::Radians(-1);
 
   bool HasStrokeUnitLength() const {
     return stroke_unit_length != kNoStrokeUnitLength;
@@ -48,6 +49,7 @@ struct StrokeInput {
   bool HasPressure() const { return pressure != kNoPressure; }
   bool HasTilt() const { return tilt != kNoTilt; }
   bool HasOrientation() const { return orientation != kNoOrientation; }
+  bool HasBarrelTwist() const { return barrel_twist != kNoBarrelTwist; }
 
   // The input device used to generate this stroke input.
   ToolType tool_type = ToolType::kUnknown;
@@ -86,6 +88,16 @@ struct StrokeInput {
   // is a separate condition from the orientation being indeterminant when
   // `tilt` is 0.
   Angle orientation = kNoOrientation;
+  // Barrel twist is the angle that indicates the rotation of the stylus around
+  // its longitudinal axis. A value of zero means that the stylus is not rotated
+  // around its longitudinal axis, and values increase as the stylus rotates
+  // from the positive x axis towards the positive y axis (when looking down the
+  // stylus from its top towards its tip). The value should be normalized to
+  // fall between 0 and 2π in radians, but can be set with either radians or
+  // degrees.
+  //
+  // kNoBarrelTwist indicates that barrel twist is not reported.
+  Angle barrel_twist = kNoBarrelTwist;
 
   bool operator==(const StrokeInput&) const = default;
 
@@ -93,7 +105,8 @@ struct StrokeInput {
   friend H AbslHashValue(H h, const StrokeInput& input) {
     return H::combine(std::move(h), input.tool_type, input.position,
                       input.elapsed_time, input.stroke_unit_length,
-                      input.pressure, input.tilt, input.orientation);
+                      input.pressure, input.tilt, input.orientation,
+                      input.barrel_twist);
   }
 };
 

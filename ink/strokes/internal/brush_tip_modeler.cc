@@ -142,6 +142,8 @@ bool SourceDependsOnNextModeledInput(BrushBehavior::Source source) {
     case BrushBehavior::Source::kTiltYInRadians:
     case BrushBehavior::Source::kOrientationInRadians:
     case BrushBehavior::Source::kOrientationAboutZeroInRadians:
+    case BrushBehavior::Source::kBarrelTwistInRadians:
+    case BrushBehavior::Source::kBarrelTwistAboutZeroInRadians:
     case BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond:
     case BrushBehavior::Source::kVelocityXInMultiplesOfBrushSizePerSecond:
     case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:
@@ -277,6 +279,8 @@ void BrushTipModeler::AppendBehaviorNode(
     case BrushBehavior::Source::kTiltYInRadians:
     case BrushBehavior::Source::kOrientationInRadians:
     case BrushBehavior::Source::kOrientationAboutZeroInRadians:
+    case BrushBehavior::Source::kBarrelTwistInRadians:
+    case BrushBehavior::Source::kBarrelTwistAboutZeroInRadians:
     case BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond:
     case BrushBehavior::Source::kVelocityXInMultiplesOfBrushSizePerSecond:
     case BrushBehavior::Source::kVelocityYInMultiplesOfBrushSizePerSecond:

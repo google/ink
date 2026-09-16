@@ -55,7 +55,8 @@ CodedStrokeInputBatchIterator::CodedStrokeInputBatchIterator(
     CodedNumericRunIterator<float> elapsed_time_seconds,
     CodedNumericRunIterator<float> pressure,
     CodedNumericRunIterator<float> tilt,
-    CodedNumericRunIterator<float> orientation)
+    CodedNumericRunIterator<float> orientation,
+    CodedNumericRunIterator<float> barrel_twist)
     : tool_type_(tool_type),
       stroke_unit_length_(stroke_unit_length),
       x_stroke_space_(x_stroke_space),
@@ -63,7 +64,8 @@ CodedStrokeInputBatchIterator::CodedStrokeInputBatchIterator(
       elapsed_time_seconds_(elapsed_time_seconds),
       pressure_(pressure),
       tilt_(tilt),
-      orientation_(orientation) {
+      orientation_(orientation),
+      barrel_twist_(barrel_twist) {
   UpdateValue();
 }
 
@@ -80,6 +82,9 @@ CodedStrokeInputBatchIterator& CodedStrokeInputBatchIterator::operator++() {
   if (orientation_.HasValue()) {
     ++orientation_;
   }
+  if (barrel_twist_.HasValue()) {
+    ++barrel_twist_;
+  }
   UpdateValue();
   return *this;
 }
@@ -95,6 +100,8 @@ void CodedStrokeInputBatchIterator::UpdateValue() {
       .tilt = tilt_.HasValue() ? Angle::Radians(*tilt_) : StrokeInput::kNoTilt,
       .orientation = orientation_.HasValue() ? Angle::Radians(*orientation_)
                                              : StrokeInput::kNoOrientation,
+      .barrel_twist = barrel_twist_.HasValue() ? Angle::Radians(*barrel_twist_)
+                                               : StrokeInput::kNoBarrelTwist,
   };
 }
 
@@ -110,7 +117,9 @@ DecodeStrokeInputBatchProto(const CodedStrokeInputBatch& input) {
        input.pressure().deltas_size() != num_input_points) ||
       (input.has_tilt() && input.tilt().deltas_size() != num_input_points) ||
       (input.has_orientation() &&
-       input.orientation().deltas_size() != num_input_points)) {
+       input.orientation().deltas_size() != num_input_points) ||
+      (input.has_barrel_twist() &&
+       input.barrel_twist().deltas_size() != num_input_points)) {
     return absl::InvalidArgumentError(
         "invalid StrokeInputBatch: mismatched numeric run lengths");
   }
@@ -138,15 +147,22 @@ DecodeStrokeInputBatchProto(const CodedStrokeInputBatch& input) {
                           DecodeFloatNumericRun(input.orientation()));
   }
 
+  iterator_range<CodedNumericRunIterator<float>> barrel_twist;
+  if (input.has_barrel_twist()) {
+    ABSL_ASSIGN_OR_RETURN(barrel_twist,
+                          DecodeFloatNumericRun(input.barrel_twist()));
+  }
+
   return iterator_range<CodedStrokeInputBatchIterator>{
       CodedStrokeInputBatchIterator(
           tool_type, stroke_unit_length, x_stroke_space.begin(),
           y_stroke_space.begin(), elapsed_time_seconds.begin(),
-          pressure.begin(), tilt.begin(), orientation.begin()),
-      CodedStrokeInputBatchIterator(tool_type, stroke_unit_length,
-                                    x_stroke_space.end(), y_stroke_space.end(),
-                                    elapsed_time_seconds.end(), pressure.end(),
-                                    tilt.end(), orientation.end())};
+          pressure.begin(), tilt.begin(), orientation.begin(),
+          barrel_twist.begin()),
+      CodedStrokeInputBatchIterator(
+          tool_type, stroke_unit_length, x_stroke_space.end(),
+          y_stroke_space.end(), elapsed_time_seconds.end(), pressure.end(),
+          tilt.end(), orientation.end(), barrel_twist.end())};
 }
 
 }  // namespace ink

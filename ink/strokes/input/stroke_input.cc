@@ -55,6 +55,9 @@ std::string ToFormattedString(const StrokeInput& input) {
   if (input.HasOrientation()) {
     absl::StrAppend(&formatted, ", orientation=", input.orientation);
   }
+  if (input.HasBarrelTwist()) {
+    absl::StrAppend(&formatted, ", barrel_twist=", input.barrel_twist);
+  }
   formatted.push_back(']');
   return formatted;
 }

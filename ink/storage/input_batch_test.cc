@@ -74,6 +74,10 @@ TEST(CodedStrokeInputBatchIteratorTest, DecodeStylusStrokeInputBatch) {
           scale: 0.0314159
           deltas: [ 25, -50, 25 ]
         }
+        barrel_twist {
+          scale: 0.0314159
+          deltas: [ -50, 75, 25 ]
+        }
       )pb",
       &coded));
 
@@ -93,6 +97,7 @@ TEST(CodedStrokeInputBatchIteratorTest, DecodeStylusStrokeInputBatch) {
                   .pressure = 0.25f,
                   .tilt = Angle::Radians(kPi / 10),
                   .orientation = Angle::Radians(kPi / 4),
+                  .barrel_twist = Angle::Radians(-kPi / 2),
               },
               1e-5f),
           StrokeInputNear(
@@ -104,6 +109,7 @@ TEST(CodedStrokeInputBatchIteratorTest, DecodeStylusStrokeInputBatch) {
                   .pressure = 0.75f,
                   .tilt = Angle::Radians(2 * kPi / 10),
                   .orientation = Angle::Radians(-kPi / 4),
+                  .barrel_twist = Angle::Radians(kPi / 4),
               },
               1e-5f),
           StrokeInputNear(
@@ -115,6 +121,7 @@ TEST(CodedStrokeInputBatchIteratorTest, DecodeStylusStrokeInputBatch) {
                   .pressure = 0.50f,
                   .tilt = Angle::Radians(3 * kPi / 10),
                   .orientation = Angle::Radians(0.0f),
+                  .barrel_twist = Angle::Radians(kPi / 2),
               },
               1e-5f)));
 }
@@ -154,6 +161,7 @@ TEST(CodedStrokeInputBatchIteratorTest, DecodeMouseStrokeInputBatch) {
                               .pressure = StrokeInput::kNoPressure,
                               .tilt = StrokeInput::kNoTilt,
                               .orientation = StrokeInput::kNoOrientation,
+                              .barrel_twist = StrokeInput::kNoBarrelTwist,
                           }),
                           StrokeInputEq({
                               .tool_type = StrokeInput::ToolType::kMouse,
@@ -163,6 +171,7 @@ TEST(CodedStrokeInputBatchIteratorTest, DecodeMouseStrokeInputBatch) {
                               .pressure = StrokeInput::kNoPressure,
                               .tilt = StrokeInput::kNoTilt,
                               .orientation = StrokeInput::kNoOrientation,
+                              .barrel_twist = StrokeInput::kNoBarrelTwist,
                           }),
                           StrokeInputEq({
                               .tool_type = StrokeInput::ToolType::kMouse,
@@ -172,6 +181,7 @@ TEST(CodedStrokeInputBatchIteratorTest, DecodeMouseStrokeInputBatch) {
                               .pressure = StrokeInput::kNoPressure,
                               .tilt = StrokeInput::kNoTilt,
                               .orientation = StrokeInput::kNoOrientation,
+                              .barrel_twist = StrokeInput::kNoBarrelTwist,
                           })));
 }
 

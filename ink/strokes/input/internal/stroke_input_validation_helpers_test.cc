@@ -43,12 +43,14 @@ TEST(ValidateConsistentAttributesTest, ValidInputsWithAllOptionalProperties) {
                                     .elapsed_time = Duration32::Millis(5),
                                     .pressure = 0.5,
                                     .tilt = kFullTurn / 8,
-                                    .orientation = kHalfTurn},
+                                    .orientation = kHalfTurn,
+                                    .barrel_twist = kQuarterTurn},
                                    {.position = {2, 3},
                                     .elapsed_time = Duration32::Millis(10),
                                     .pressure = 0.6,
                                     .tilt = kQuarterTurn,
-                                    .orientation = kFullTurn}),
+                                    .orientation = kFullTurn,
+                                    .barrel_twist = kHalfTurn}),
       IsOk());
 }
 
@@ -82,6 +84,17 @@ TEST(ValidateConsistentAttributesTest, ValidInputsWithOnlyOrientation) {
                                    {.position = {2, 3},
                                     .elapsed_time = Duration32::Millis(10),
                                     .orientation = kFullTurn}),
+      IsOk());
+}
+
+TEST(ValidateConsistentAttributesTest, ValidInputsWithOnlyBarrelTwist) {
+  EXPECT_THAT(
+      ValidateConsistentAttributes({.position = {1, 2},
+                                    .elapsed_time = Duration32::Millis(5),
+                                    .barrel_twist = kHalfTurn},
+                                   {.position = {2, 3},
+                                    .elapsed_time = Duration32::Millis(10),
+                                    .barrel_twist = kFullTurn}),
       IsOk());
 }
 
@@ -172,18 +185,19 @@ TEST(ValidateConsistentAttributesTest, MismatchedOptionalOrientation) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
 }
 
-TEST(ValidateConsecutiveInputs, MismatchedAttributes) {
-  // Mismatched attributes
+TEST(ValidateConsistentAttributesTest, MismatchedOptionalBarrelTwist) {
   EXPECT_THAT(
-      ValidateConsecutiveInputs({.position = {1, 2},
-                                 .elapsed_time = Duration32::Millis(5),
-                                 .orientation = StrokeInput::kNoOrientation},
-                                {.position = {2, 3},
-                                 .elapsed_time = Duration32::Millis(10),
-                                 .orientation = kHalfTurn}),
-      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
+      ValidateConsistentAttributes(
+          {.position = {1, 2},
+           .elapsed_time = Duration32::Millis(5),
+           .barrel_twist = StrokeInput::kNoBarrelTwist},
+          {.position = {2, 3},
+           .elapsed_time = Duration32::Millis(10),
+           .barrel_twist = kHalfTurn}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("barrel_twist")));
+}
 
-  // Mismatched tool-types
+TEST(ValidateConsecutiveInputs, MismatchedToolTypes) {
   EXPECT_THAT(
       ValidateConsecutiveInputs({.tool_type = StrokeInput::ToolType::kMouse,
                                  .position = {1, 2},
