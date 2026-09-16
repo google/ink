@@ -15,7 +15,6 @@
 #include "ink/color/type_matchers.h"
 
 #include <array>
-#include <cstdint>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
