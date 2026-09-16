@@ -43,13 +43,12 @@ namespace ink::strokes_internal {
 // input mesh. The attributes of vertices in the returned mesh are obtained
 // by linearly interpolating the attributes of the input mesh, except for
 // anti-aliasing attributes (kSideLabel, kSideDerivative, kForwardLabel,
-// kForwardDerivative), which are set to default values.
+// kForwardDerivative), which are recomputed.
 absl::StatusOr<PartitionedMesh> Subtract(const PartitionedMesh& mesh_a,
                                          const AffineTransform& transform_a,
                                          const PartitionedMesh& mesh_b,
                                          const AffineTransform& transform_b,
-                                         float epsilon,
-                                         bool anti_aliasing_enabled = false);
+                                         float epsilon);
 
 }  // namespace ink::strokes_internal
 

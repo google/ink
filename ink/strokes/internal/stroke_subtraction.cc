@@ -1105,8 +1105,7 @@ struct SubtractedMesh {
 // `meshes`.
 SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
                               const MeshFormat& format,
-                              const ShapeOutline& shape_b, float epsilon,
-                              bool anti_aliasing_enabled) {
+                              const ShapeOutline& shape_b, float epsilon) {
   // To compute the subtraction `meshes` - `shape_b`, we process each
   // triangle in `meshes` individually. For each triangle, we first handle the
   // geometry by computing a triangulation of the shape of `triangle` -
@@ -1182,7 +1181,7 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
 
   std::vector<std::vector<uint32_t>> outlines = ComputeOutlines(sub_mesh);
 
-  if (HasAntiAliasingAttributes(format) && anti_aliasing_enabled) {
+  if (HasAntiAliasingAttributes(format)) {
     ComputeAndSetLabels(outlines, sub_mesh);
     ComputeAndSetDerivatives(sub_mesh);
     ComputeAndSetMargins(sub_mesh);
@@ -1241,8 +1240,7 @@ absl::StatusOr<PartitionedMesh> Subtract(const PartitionedMesh& mesh_a,
                                          const AffineTransform& transform_a,
                                          const PartitionedMesh& mesh_b,
                                          const AffineTransform& transform_b,
-                                         float epsilon,
-                                         bool anti_aliasing_enabled) {
+                                         float epsilon) {
   // The approach in this function is to first compute a silhouette of `mesh_b`.
   // Then, for each coat of `mesh_a`, we compute a new mutable mesh representing
   // for the coat minus the silhouette of b. Finally, we assemble the resulting
@@ -1273,9 +1271,8 @@ absl::StatusOr<PartitionedMesh> Subtract(const PartitionedMesh& mesh_a,
   for (uint32_t group = 0; group < num_groups; ++group) {
     // Each coat is handled independently.
     const MeshFormat& format = mesh_a.RenderGroupFormat(group);
-    SubtractedMesh subtracted =
-        SubtractMeshes(mesh_a.RenderGroupMeshes(group), format, shape_b,
-                       epsilon, anti_aliasing_enabled);
+    SubtractedMesh subtracted = SubtractMeshes(mesh_a.RenderGroupMeshes(group),
+                                               format, shape_b, epsilon);
 
     group_mutable_meshes[group] = std::move(subtracted.mesh);
     groups_outlines[group] = std::move(subtracted.outlines);

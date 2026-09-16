@@ -586,9 +586,9 @@ TEST(StrokeSubtractionTest, ComputeLabels1) {
   ASSERT_THAT(mesh_b_pm, IsOk());
 
   // Subtract
-  absl::StatusOr<PartitionedMesh> result = Subtract(
-      *mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
-      AffineTransform::Identity(), 0.1f, /*anti_aliasing_enabled=*/true);
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
   ASSERT_THAT(result, IsOk());
 
   EXPECT_EQ(NumTriangles(*result), 3);
@@ -698,9 +698,9 @@ TEST(StrokeSubtractionTest, ComputeLabels2) {
   ASSERT_THAT(mesh_b_pm, IsOk());
 
   // Subtract
-  absl::StatusOr<PartitionedMesh> result = Subtract(
-      *mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
-      AffineTransform::Identity(), 0.1f, /*anti_aliasing_enabled=*/true);
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
   ASSERT_THAT(result, IsOk());
 
   // Subdivision is required to ensure that chord edges are not labeled as
@@ -838,9 +838,9 @@ TEST(StrokeSubtractionTest, ComputeLabels3) {
       mesh_b, {{mesh_b_frame_outer, mesh_b_frame_inner}});
   ASSERT_THAT(mesh_b_pm, IsOk());
 
-  absl::StatusOr<PartitionedMesh> result = Subtract(
-      *mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
-      AffineTransform::Identity(), 0.1f, /*anti_aliasing_enabled=*/true);
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
   ASSERT_THAT(result, IsOk());
 
   const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
@@ -913,9 +913,9 @@ TEST(StrokeSubtractionTest, ComputeLabels4) {
       PartitionedMesh::FromMutableMesh(mesh_b, {{mesh_b_outline}});
   ASSERT_THAT(mesh_b_pm, IsOk());
 
-  absl::StatusOr<PartitionedMesh> result = Subtract(
-      *mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
-      AffineTransform::Identity(), 0.1f, /*anti_aliasing_enabled=*/true);
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
   ASSERT_THAT(result, IsOk());
 
   const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
@@ -1013,9 +1013,9 @@ TEST(StrokeSubtractionTest, ComputeSideDerivatives) {
   ASSERT_THAT(mesh_b_pm, IsOk());
 
   // Subtract
-  absl::StatusOr<PartitionedMesh> result = Subtract(
-      *mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
-      AffineTransform::Identity(), 0.1f, /*anti_aliasing_enabled=*/true);
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
   ASSERT_THAT(result, IsOk());
 
   EXPECT_EQ(NumTriangles(*result), 3);
@@ -1114,9 +1114,9 @@ TEST(StrokeSubtractionTest, ComputeForwardDerivatives) {
   ASSERT_THAT(mesh_b_pm, IsOk());
 
   // Subtract
-  absl::StatusOr<PartitionedMesh> result = Subtract(
-      *mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
-      AffineTransform::Identity(), 0.1f, /*anti_aliasing_enabled=*/true);
+  absl::StatusOr<PartitionedMesh> result =
+      Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
+               AffineTransform::Identity(), 0.1f);
   ASSERT_THAT(result, IsOk());
 
   EXPECT_EQ(NumTriangles(*result), 3);
@@ -1217,8 +1217,7 @@ TEST(StrokeSubtractionTest, ComputeMargins) {
   // Subtract
   absl::StatusOr<PartitionedMesh> result =
       Subtract(*mesh_a_pm, AffineTransform::Identity(), *mesh_b_pm,
-               AffineTransform::Identity(), 0.1f,
-               /*anti_aliasing_enabled=*/true);
+               AffineTransform::Identity(), 0.1f);
   ASSERT_THAT(result, IsOk());
 
   const Mesh& result_mesh = result->RenderGroupMeshes(0)[0];
