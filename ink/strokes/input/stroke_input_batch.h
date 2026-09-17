@@ -40,8 +40,8 @@ namespace ink {
 // consecutive inputs from all or part of a stroke.
 //
 // The type is more memory efficient than a large array of `StrokeInput`, as it
-// does not use extra memory when pressure, tilt, or orientation values are not
-// reported.
+// does not use extra memory when pressure, tilt, orientation, and/or barrel
+// twist values are not reported.
 //
 // The `StrokeInputBatch` implements copy-on-write, making it cheap to copy
 // independent of batch size. This design supports efficiently sharing the same
@@ -58,9 +58,9 @@ namespace ink {
 //      pressure.
 //   2) The sequence of inputs in the batch must not contain repeated x-y-t
 //      triplets, and the elapsed time values must be non-decreasing.
-//   3) Pressure, tilt, and orientation should either be set to corresponding
-//      sentinel values indicating their absence, or be in the ranges of [0, 1],
-//      [0, π/2], and [0, 2π] respectively.
+//   3) Pressure, tilt, orientation, and barrel twist should either be set to
+//      corresponding sentinel values indicating their absence, or be in the
+//      ranges of [0, 1], [0, π/2], [0, 2π], and [0, 2π] respectively.
 //   4) `StrokeInput::tool_type` must be one of the enumerator values.
 //
 class StrokeInputBatch {
@@ -194,6 +194,7 @@ class StrokeInputBatch {
   bool HasPressure() const;
   bool HasTilt() const;
   bool HasOrientation() const;
+  bool HasBarrelTwist() const;
 
   // Returns the seed value that should be used for seeding any noise generators
   // for brush behaviors when a full stroke is regenerated with this input
@@ -254,7 +255,8 @@ class StrokeInputBatch {
     h = H::combine(std::move(h), batch.size_, batch.tool_type_,
                    batch.stroke_unit_length_, batch.noise_seed_,
                    batch.base_paint_animation_phase_, batch.has_pressure_,
-                   batch.has_tilt_, batch.has_orientation_, batch.data_);
+                   batch.has_tilt_, batch.has_orientation_,
+                   batch.has_barrel_twist_, batch.data_);
     return h;
   }
 
@@ -270,11 +272,12 @@ class StrokeInputBatch {
   // numeric properties of a single `StrokeInput` when the missing optional
   // properties are skipped instead of being stored as sentinel values.
   //
-  // The returned value will be at least 3 - the case when storing only position
-  // and elapsed time. It will be no more than 6, which is the number required
-  // to store an input with all of pressure, tilt, and orientation present.
+  // The returned value will be at least 3, the case when storing only position
+  // and elapsed time. It will be no more than 7, which is the number required
+  // to store an input with all of pressure, tilt, orientation, and barrel twist
+  // present.
   static int FloatsPerInput(bool has_pressure, bool has_tilt,
-                            bool has_orientation);
+                            bool has_orientation, bool has_barrel_twist);
   static int FloatsPerInput(const StrokeInput& input);
   int FloatsPerInput() const;
 
@@ -284,13 +287,13 @@ class StrokeInputBatch {
 
   // Erases all inputs from the batch, and clears the inline member variables
   // that store the "format" of the inputs (i.e. tool type and whether pressure,
-  // tilt, and orientation are present), but does *not* reset either the noise
-  // seed nor the base paint animation phase.
+  // tilt, orientation, and barrel twist are present), but does *not* reset
+  // either the noise seed nor the base paint animation phase.
   void ClearInputs();
 
   // Updates the inline member variables that store the "format" of the inputs
-  // (i.e. tool type and whether pressure, tilt, and orientation are present).
-  // This function should only be called when the batch is empty.
+  // (i.e. tool type and whether pressure, tilt, orientation, and barrel twist
+  // are present).  This function should only be called when the batch is empty.
   void SetInlineFormatMetadata(const StrokeInput& input);
 
   // Implementation helper for AbslStringify.
@@ -307,6 +310,7 @@ class StrokeInputBatch {
   //   * pressure, only if `has_pressure_`
   //   * tilt in radians, only if `has_tilt_`
   //   * orientation in radians, only if `has_orientation_`
+  //   * barrel_twist in radians, only if `has_barrel_twist_`
   //
   // By using `CopyOnWrite<T>` with a vector rather than `CopyOnWrite<T[]>`, we
   // trade a pointer indirection for memory management done by std::vector.
@@ -324,6 +328,7 @@ class StrokeInputBatch {
   bool has_pressure_ = false;
   bool has_tilt_ = false;
   bool has_orientation_ = false;
+  bool has_barrel_twist_ = false;
 };
 
 // Constant iterator type conforms to the named requirements of
@@ -444,6 +449,11 @@ inline bool StrokeInputBatch::HasOrientation() const {
   return has_orientation_;
 }
 
+inline bool StrokeInputBatch::HasBarrelTwist() const {
+  DebugCheckSizeAndFormatAreConsistent();
+  return has_barrel_twist_;
+}
+
 inline StrokeInputBatch::ConstIterator::pointer
 StrokeInputBatch::ConstIterator::operator->() const {
   ABSL_DCHECK(!batch_subdata_.empty())
@@ -463,20 +473,22 @@ inline bool operator==(const StrokeInputBatch::ConstIterator& lhs,
 }
 
 inline int StrokeInputBatch::FloatsPerInput(bool has_pressure, bool has_tilt,
-                                            bool has_orientation) {
+                                            bool has_orientation,
+                                            bool has_barrel_twist) {
   // Minimum of 3 floats (two for position and one elapsed time) plus one for
   // each present optional property:
   return 3 + static_cast<int>(has_pressure) + static_cast<int>(has_tilt) +
-         static_cast<int>(has_orientation);
+         static_cast<int>(has_orientation) + static_cast<int>(has_barrel_twist);
 }
 
 inline int StrokeInputBatch::FloatsPerInput(const StrokeInput& input) {
   return FloatsPerInput(input.HasPressure(), input.HasTilt(),
-                        input.HasOrientation());
+                        input.HasOrientation(), input.HasBarrelTwist());
 }
 
 inline int StrokeInputBatch::FloatsPerInput() const {
-  return FloatsPerInput(has_pressure_, has_tilt_, has_orientation_);
+  return FloatsPerInput(has_pressure_, has_tilt_, has_orientation_,
+                        has_barrel_twist_);
 }
 
 }  // namespace ink

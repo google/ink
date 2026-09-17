@@ -48,7 +48,9 @@ MATCHER_P(StrokeInputEqMatcher, expected,
           Field("pressure", &StrokeInput::pressure, FloatEq(expected.pressure)),
           Field("tilt", &StrokeInput::tilt, AngleEq(expected.tilt)),
           Field("orientation", &StrokeInput::orientation,
-                AngleEq(expected.orientation))),
+                AngleEq(expected.orientation)),
+          Field("barrel_twist", &StrokeInput::barrel_twist,
+                AngleEq(expected.barrel_twist))),
       arg, result_listener);
 }
 
@@ -68,7 +70,9 @@ MATCHER_P2(StrokeInputNearMatcher, expected, tolerance,
             Field("tilt", &StrokeInput::tilt,
                   AngleNear(expected.tilt, tolerance)),
             Field("orientation", &StrokeInput::orientation,
-                  AngleNear(expected.orientation, tolerance))),
+                  AngleNear(expected.orientation, tolerance)),
+            Field("barrel_twist", &StrokeInput::barrel_twist,
+                  AngleNear(expected.barrel_twist, tolerance))),
       arg, result_listener);
 }
 

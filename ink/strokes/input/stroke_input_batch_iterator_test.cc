@@ -46,19 +46,22 @@ TEST(StrokeInputBatchConstIteratorTest, MultipleElementBatch) {
                         .elapsed_time = Duration32::Seconds(5.0f),
                         .pressure = 0.4,
                         .tilt = Angle::Radians(1),
-                        .orientation = Angle::Radians(2)};
+                        .orientation = Angle::Radians(2),
+                        .barrel_twist = Angle::Radians(3)};
   StrokeInput input1 = {.tool_type = StrokeInput::ToolType::kStylus,
                         .position = {10, 23},
                         .elapsed_time = Duration32::Seconds(6.0f),
                         .pressure = 0.3,
                         .tilt = Angle::Radians(1),
-                        .orientation = Angle::Radians(2)};
+                        .orientation = Angle::Radians(2),
+                        .barrel_twist = Angle::Radians(3)};
   StrokeInput input2 = {.tool_type = StrokeInput::ToolType::kStylus,
                         .position = {10, 23},
                         .elapsed_time = Duration32::Seconds(7.0f),
                         .pressure = 0.3,
                         .tilt = Angle::Radians(1),
-                        .orientation = Angle::Radians(1.1)};
+                        .orientation = Angle::Radians(1.1),
+                        .barrel_twist = Angle::Radians(2.1)};
   std::vector<StrokeInput> input_vector = {input0, input1, input2};
 
   ASSERT_THAT(inputs.Append(input_vector), IsOk());
@@ -78,7 +81,8 @@ TEST(StrokeInputBatchConstIteratorTest, SingleInputBatch) {
                         .elapsed_time = Duration32::Seconds(5.0f),
                         .pressure = 0.4,
                         .tilt = Angle::Radians(1),
-                        .orientation = Angle::Radians(2)};
+                        .orientation = Angle::Radians(2),
+                        .barrel_twist = Angle::Radians(3)};
 
   ASSERT_THAT(inputs.Append(input0), IsOk());
   StrokeInputBatch::ConstIterator iter = inputs.begin();
@@ -96,7 +100,8 @@ TEST(StrokeInputBatchConstIteratorTest, LazyInit) {
                         .elapsed_time = Duration32::Seconds(5.0f),
                         .pressure = 0.4,
                         .tilt = Angle::Radians(1),
-                        .orientation = Angle::Radians(2)};
+                        .orientation = Angle::Radians(2),
+                        .barrel_twist = Angle::Radians(3)};
 
   ASSERT_THAT(inputs.Append(input0), IsOk());
   StrokeInputBatch::ConstIterator iter;

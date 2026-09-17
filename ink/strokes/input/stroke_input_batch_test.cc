@@ -50,35 +50,40 @@ std::vector<StrokeInput> MakeValidTestInputSequence(
            .stroke_unit_length = PhysicalDistance::Centimeters(0.1),
            .pressure = 0.4,
            .tilt = Angle::Radians(1.f),
-           .orientation = Angle::Radians(2.f)},
+           .orientation = Angle::Radians(2.f),
+           .barrel_twist = Angle::Radians(1.0f)},
           {.tool_type = tool_type,
            .position = {10, 23},
            .elapsed_time = Duration32::Seconds(6),
            .stroke_unit_length = PhysicalDistance::Centimeters(0.1),
            .pressure = 0.3,
            .tilt = Angle::Radians(0.9f),
-           .orientation = Angle::Radians(0.9f)},
+           .orientation = Angle::Radians(0.9f),
+           .barrel_twist = Angle::Radians(1.1f)},
           {.tool_type = tool_type,
            .position = {10, 23},
            .elapsed_time = Duration32::Seconds(7),
            .stroke_unit_length = PhysicalDistance::Centimeters(0.1),
            .pressure = 0.5,
            .tilt = Angle::Radians(0.8),
-           .orientation = Angle::Radians(1.1)},
+           .orientation = Angle::Radians(1.1),
+           .barrel_twist = Angle::Radians(1.2f)},
           {.tool_type = tool_type,
            .position = {5, 5},
            .elapsed_time = Duration32::Seconds(8),
            .stroke_unit_length = PhysicalDistance::Centimeters(0.1),
            .pressure = 0.8,
            .tilt = Angle::Radians(1.5),
-           .orientation = Angle::Radians(1.3)},
+           .orientation = Angle::Radians(1.3),
+           .barrel_twist = Angle::Radians(1.3f)},
           {.tool_type = tool_type,
            .position = {4, 3},
            .elapsed_time = Duration32::Seconds(9),
            .stroke_unit_length = PhysicalDistance::Centimeters(0.1),
            .pressure = 1.0,
            .tilt = Angle::Radians(1.3),
-           .orientation = Angle::Radians(1.5)}};
+           .orientation = Angle::Radians(1.5),
+           .barrel_twist = Angle::Radians(1.4f)}};
 }
 
 StrokeInput MakeValidTestInput(
@@ -89,7 +94,8 @@ StrokeInput MakeValidTestInput(
           .stroke_unit_length = PhysicalDistance::Centimeters(0.1),
           .pressure = 0.4,
           .tilt = Angle::Radians(1),
-          .orientation = Angle::Radians(2)};
+          .orientation = Angle::Radians(2),
+          .barrel_twist = Angle::Radians(3)};
 }
 
 TEST(StrokeInputBatchTest, Stringify) {
@@ -127,6 +133,7 @@ TEST(StrokeInputBatchTest, DefaultConstructed) {
   EXPECT_FALSE(batch.HasPressure());
   EXPECT_FALSE(batch.HasTilt());
   EXPECT_FALSE(batch.HasOrientation());
+  EXPECT_FALSE(batch.HasBarrelTwist());
 }
 
 TEST(StrokeInputBatchTest, CreateFromEmptySpan) {
@@ -138,6 +145,7 @@ TEST(StrokeInputBatchTest, CreateFromEmptySpan) {
   EXPECT_FALSE(empty_batch->HasPressure());
   EXPECT_FALSE(empty_batch->HasTilt());
   EXPECT_FALSE(empty_batch->HasOrientation());
+  EXPECT_FALSE(empty_batch->HasBarrelTwist());
   EXPECT_EQ(empty_batch->GetToolType(), StrokeInput::ToolType::kUnknown);
 }
 
@@ -153,6 +161,7 @@ TEST(StrokeInputBatchTest, CreateFromNonEmptySpan) {
   EXPECT_TRUE(batch->HasPressure());
   EXPECT_TRUE(batch->HasTilt());
   EXPECT_TRUE(batch->HasOrientation());
+  EXPECT_TRUE(batch->HasBarrelTwist());
   EXPECT_EQ(batch->GetToolType(), input_vector.front().tool_type);
 }
 
@@ -168,6 +177,7 @@ TEST(StrokeInputBatchTest, AppendOneToEmpty) {
   EXPECT_TRUE(batch.HasPressure());
   EXPECT_TRUE(batch.HasTilt());
   EXPECT_TRUE(batch.HasOrientation());
+  EXPECT_TRUE(batch.HasBarrelTwist());
   EXPECT_THAT(batch, StrokeInputBatchIsArray({input}));
 }
 
@@ -366,6 +376,7 @@ TEST(StrokeInputBatchTest, Clear) {
   ASSERT_TRUE(batch->HasPressure());
   ASSERT_TRUE(batch->HasTilt());
   ASSERT_TRUE(batch->HasOrientation());
+  ASSERT_TRUE(batch->HasBarrelTwist());
   ASSERT_EQ(batch->GetToolType(), StrokeInput::ToolType::kStylus);
   EXPECT_EQ(batch->GetNoiseSeed(), 12345u);
   EXPECT_EQ(batch->GetBasePaintAnimationPhase(), 0.75f);
@@ -378,6 +389,7 @@ TEST(StrokeInputBatchTest, Clear) {
   ASSERT_FALSE(batch->HasPressure());
   ASSERT_FALSE(batch->HasTilt());
   ASSERT_FALSE(batch->HasOrientation());
+  ASSERT_FALSE(batch->HasBarrelTwist());
   EXPECT_EQ(batch->GetToolType(), StrokeInput::ToolType::kUnknown);
   EXPECT_EQ(batch->GetNoiseSeed(), 0u);
   EXPECT_EQ(batch->GetBasePaintAnimationPhase(), 0.0f);
@@ -403,6 +415,7 @@ TEST(StrokeInputBatchTest, AppendAfterClear) {
     EXPECT_TRUE(batch->HasPressure());
     EXPECT_TRUE(batch->HasTilt());
     EXPECT_TRUE(batch->HasOrientation());
+    EXPECT_TRUE(batch->HasBarrelTwist());
   }
   {
     absl::StatusOr<StrokeInputBatch> batch =
@@ -423,6 +436,7 @@ TEST(StrokeInputBatchTest, AppendAfterClear) {
     EXPECT_TRUE(batch->HasPressure());
     EXPECT_FALSE(batch->HasTilt());
     EXPECT_TRUE(batch->HasOrientation());
+    EXPECT_TRUE(batch->HasBarrelTwist());
   }
 }
 
@@ -470,7 +484,7 @@ TEST(StrokeInputTest, HasOptionalFields) {
   {
     StrokeInputBatch batch;
 
-    // Test HasTilt returns true when first value has pressure
+    // Test HasTilt returns true when first value has tilt
     StrokeInput input = MakeValidTestInput();
     ASSERT_TRUE(input.HasTilt());
 
@@ -480,7 +494,7 @@ TEST(StrokeInputTest, HasOptionalFields) {
   {
     StrokeInputBatch batch;
 
-    // Test HasTilt returns false when first value doesn't have pressure
+    // Test HasTilt returns false when first value doesn't have tilt
     StrokeInput input = MakeValidTestInput();
     input.tilt = StrokeInput::kNoTilt;
 
@@ -490,7 +504,7 @@ TEST(StrokeInputTest, HasOptionalFields) {
   {
     StrokeInputBatch batch;
 
-    // Test HasOrientation returns true when first value has pressure
+    // Test HasOrientation returns true when first value has orientation
     StrokeInput input = MakeValidTestInput();
     ASSERT_TRUE(input.HasOrientation());
 
@@ -500,12 +514,34 @@ TEST(StrokeInputTest, HasOptionalFields) {
   {
     StrokeInputBatch batch;
 
-    // Test HasOrientation returns false when first value doesn't have pressure
+    // Test HasOrientation returns false when first value doesn't have
+    // orientation
     StrokeInput input = MakeValidTestInput();
     input.orientation = StrokeInput::kNoOrientation;
 
     EXPECT_THAT(batch.Append(input), IsOk());
     EXPECT_FALSE(batch.HasOrientation());
+  }
+  {
+    StrokeInputBatch batch;
+
+    // Test HasBarrelTwist returns true when first value has barrel twist
+    StrokeInput input = MakeValidTestInput();
+    ASSERT_TRUE(input.HasBarrelTwist());
+
+    EXPECT_THAT(batch.Append(input), IsOk());
+    EXPECT_TRUE(batch.HasBarrelTwist());
+  }
+  {
+    StrokeInputBatch batch;
+
+    // Test HasBarrelTwist returns false when first value doesn't have barrel
+    // twist
+    StrokeInput input = MakeValidTestInput();
+    input.barrel_twist = StrokeInput::kNoBarrelTwist;
+
+    EXPECT_THAT(batch.Append(input), IsOk());
+    EXPECT_FALSE(batch.HasBarrelTwist());
   }
 }
 
@@ -587,6 +623,30 @@ TEST(StrokeInputBatchTest, OrientationBelowValidRange) {
 
   EXPECT_THAT(batch.Append(input), StatusIs(absl::StatusCode::kInvalidArgument,
                                             HasSubstr("orientation")));
+  EXPECT_TRUE(batch.IsEmpty());
+  EXPECT_EQ(batch.GetToolType(), StrokeInput::ToolType::kUnknown);
+}
+
+TEST(StrokeInputBatchTest, BarrelTwistAboveValidRange) {
+  StrokeInputBatch batch;
+  // Valid barrel twist should be in the range [0, 2π), setting to 10.
+  StrokeInput input = MakeValidTestInput();
+  input.barrel_twist = Angle::Radians(10.f);
+
+  EXPECT_THAT(batch.Append(input), StatusIs(absl::StatusCode::kInvalidArgument,
+                                            HasSubstr("barrel_twist")));
+  EXPECT_TRUE(batch.IsEmpty());
+  EXPECT_EQ(batch.GetToolType(), StrokeInput::ToolType::kUnknown);
+}
+
+TEST(StrokeInputBatchTest, BarrelTwistBelowValidRange) {
+  StrokeInputBatch batch;
+  // Valid barrel twist should be in the range [0, 2π), setting to -3.
+  StrokeInput input = MakeValidTestInput();
+  input.barrel_twist = Angle::Radians(-3.f);
+
+  EXPECT_THAT(batch.Append(input), StatusIs(absl::StatusCode::kInvalidArgument,
+                                            HasSubstr("barrel_twist")));
   EXPECT_TRUE(batch.IsEmpty());
   EXPECT_EQ(batch.GetToolType(), StrokeInput::ToolType::kUnknown);
 }
@@ -909,7 +969,7 @@ TEST(StrokeInputBatchTest, NonFiniteValues) {
     EXPECT_TRUE(batch.IsEmpty());
   }
   {
-    // Passing in an infinite value for tilt should fail.
+    // Passing in an infinite value for orientation should fail.
     StrokeInput input = MakeValidTestInput();
     input.orientation = Angle::Radians(std::numeric_limits<float>::infinity());
 
@@ -946,6 +1006,46 @@ TEST(StrokeInputBatchTest, NonFiniteValues) {
     EXPECT_THAT(
         batch.Append({input}),
         StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
+    EXPECT_TRUE(batch.IsEmpty());
+  }
+  {
+    // Passing in an infinite value for barrel twist should fail.
+    StrokeInput input = MakeValidTestInput();
+    input.barrel_twist = Angle::Radians(std::numeric_limits<float>::infinity());
+
+    EXPECT_THAT(StrokeInputBatch::Create({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("barrel_twist")));
+
+    StrokeInputBatch batch;
+    EXPECT_THAT(batch.Append(input),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("barrel_twist")));
+    EXPECT_TRUE(batch.IsEmpty());
+
+    EXPECT_THAT(batch.Append({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("barrel_twist")));
+    EXPECT_TRUE(batch.IsEmpty());
+  }
+  {
+    // Passing in a NaN value for barrel twist should fail.
+    StrokeInput input = MakeValidTestInput();
+    input.barrel_twist = Angle::Radians(std::nanf(""));
+
+    EXPECT_THAT(StrokeInputBatch::Create({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("barrel_twist")));
+
+    StrokeInputBatch batch;
+    EXPECT_THAT(batch.Append(input),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("barrel_twist")));
+    EXPECT_TRUE(batch.IsEmpty());
+
+    EXPECT_THAT(batch.Append({input}),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("barrel_twist")));
     EXPECT_TRUE(batch.IsEmpty());
   }
 }
@@ -1081,6 +1181,40 @@ TEST(StrokeInputBatchTest, AppendSpanWithChangedFormatFails) {
     EXPECT_THAT(
         batch->Append(with_orientation),
         StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("orientation")));
+    EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
+  }
+  {
+    // Original input has barrel twist set
+    std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
+    ASSERT_TRUE(input_vector[0].HasBarrelTwist());
+    absl::StatusOr<StrokeInputBatch> batch =
+        StrokeInputBatch::Create({input_vector[0]});
+    ASSERT_THAT(batch, IsOk());
+
+    // Next input has no value for barrel twist, append should fail.
+    StrokeInput no_barrel_twist = input_vector[1];
+    no_barrel_twist.barrel_twist = StrokeInput::kNoBarrelTwist;
+
+    EXPECT_THAT(batch->Append(no_barrel_twist),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("barrel_twist")));
+    EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
+  }
+  {
+    // Original input doesn't have barrel twist set
+    std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
+    input_vector[0].barrel_twist = StrokeInput::kNoBarrelTwist;
+    absl::StatusOr<StrokeInputBatch> batch =
+        StrokeInputBatch::Create({input_vector[0]});
+    ASSERT_THAT(batch, IsOk());
+
+    // Next input has a value for barrel twist, append should fail.
+    StrokeInput with_barrel_twist = input_vector[1];
+    ASSERT_TRUE(with_barrel_twist.HasBarrelTwist());
+
+    EXPECT_THAT(batch->Append(with_barrel_twist),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("barrel_twist")));
     EXPECT_THAT(*batch, StrokeInputBatchIsArray({input_vector[0]}));
   }
 }
@@ -1297,6 +1431,24 @@ TEST(StrokeInputBatchTest, AppendIncompatibleBatch) {
     EXPECT_THAT(*batch, StrokeInputBatchIsArray(initial_inputs));
   }
   {
+    absl::StatusOr<StrokeInputBatch> batch =
+        StrokeInputBatch::Create(initial_inputs);
+    ASSERT_THAT(batch, IsOk());
+    ASSERT_TRUE(batch->HasBarrelTwist());
+
+    // Try to append a batch without barrel twist
+    StrokeInput no_barrel_twist = input_vector[3];
+    no_barrel_twist.barrel_twist = StrokeInput::kNoBarrelTwist;
+    absl::StatusOr<StrokeInputBatch> batch_to_append =
+        StrokeInputBatch::Create({no_barrel_twist});
+    ASSERT_THAT(batch_to_append, IsOk());
+
+    EXPECT_THAT(
+        batch->Append(*batch_to_append),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("all or none")));
+    EXPECT_THAT(*batch, StrokeInputBatchIsArray(initial_inputs));
+  }
+  {
     absl::StatusOr<StrokeInputBatch> batch = StrokeInputBatch::Create(
         {input_vector[0], input_vector[1], input_vector[3]});
     ASSERT_THAT(batch, IsOk());
@@ -1390,17 +1542,20 @@ TEST(StrokeInputBatchTest, EraseWithNoPressure) {
        .elapsed_time = Duration32::Seconds(5),
        .pressure = StrokeInput::kNoPressure,
        .tilt = Angle::Radians(1),
-       .orientation = Angle::Radians(2)},
+       .orientation = Angle::Radians(2),
+       .barrel_twist = Angle::Radians(3)},
       {.position = {10, 23},
        .elapsed_time = Duration32::Seconds(6),
        .pressure = StrokeInput::kNoPressure,
        .tilt = Angle::Radians(0.9),
-       .orientation = Angle::Radians(0.9)},
+       .orientation = Angle::Radians(0.9),
+       .barrel_twist = Angle::Radians(2)},
       {.position = {10, 23},
        .elapsed_time = Duration32::Seconds(7),
        .pressure = StrokeInput::kNoPressure,
        .tilt = Angle::Radians(0.8),
-       .orientation = Angle::Radians(1.1)}};
+       .orientation = Angle::Radians(1.1),
+       .barrel_twist = Angle::Radians(1)}};
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(test_inputs);
   ASSERT_THAT(batch, IsOk());
@@ -1415,17 +1570,20 @@ TEST(StrokeInputBatchTest, EraseWithNoTilt) {
        .elapsed_time = Duration32::Seconds(5),
        .pressure = 0.4,
        .tilt = StrokeInput::kNoTilt,
-       .orientation = Angle::Radians(2)},
+       .orientation = Angle::Radians(2),
+       .barrel_twist = Angle::Radians(3)},
       {.position = {10, 23},
        .elapsed_time = Duration32::Seconds(6),
        .pressure = 0.3,
        .tilt = StrokeInput::kNoTilt,
-       .orientation = Angle::Radians(0.9)},
+       .orientation = Angle::Radians(0.9),
+       .barrel_twist = Angle::Radians(2)},
       {.position = {10, 23},
        .elapsed_time = Duration32::Seconds(7),
        .pressure = 0.5,
        .tilt = StrokeInput::kNoTilt,
-       .orientation = Angle::Radians(1.1)},
+       .orientation = Angle::Radians(1.1),
+       .barrel_twist = Angle::Radians(1)},
   };
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(test_inputs);
@@ -1441,23 +1599,54 @@ TEST(StrokeInputBatchTest, EraseWithNoOrientation) {
        .elapsed_time = Duration32::Seconds(5),
        .pressure = 0.4,
        .tilt = Angle::Radians(1),
-       .orientation = StrokeInput::kNoOrientation},
+       .orientation = StrokeInput::kNoOrientation,
+       .barrel_twist = Angle::Radians(3)},
       {.position = {10, 23},
        .elapsed_time = Duration32::Seconds(6),
        .pressure = 0.3,
        .tilt = Angle::Radians(0.9),
-       .orientation = StrokeInput::kNoOrientation},
+       .orientation = StrokeInput::kNoOrientation,
+       .barrel_twist = Angle::Radians(2)},
       {.position = {10, 23},
        .elapsed_time = Duration32::Seconds(7),
        .pressure = 0.5,
        .tilt = Angle::Radians(0.8),
-       .orientation = StrokeInput::kNoOrientation}};
+       .orientation = StrokeInput::kNoOrientation,
+       .barrel_twist = Angle::Radians(1)}};
   absl::StatusOr<StrokeInputBatch> batch =
       StrokeInputBatch::Create(test_inputs);
   ASSERT_THAT(batch, IsOk());
   batch->Erase(2, 1);
   EXPECT_THAT(*batch,
               StrokeInputBatchIsArray({test_inputs[0], test_inputs[1]}));
+}
+
+TEST(StrokeInputBatchTest, EraseWithNoBarrelTwist) {
+  std::vector<StrokeInput> test_inputs = {
+      {.position = {10, 20},
+       .elapsed_time = Duration32::Seconds(5),
+       .pressure = 0.4,
+       .tilt = Angle::Radians(1),
+       .orientation = Angle::Radians(2),
+       .barrel_twist = StrokeInput::kNoBarrelTwist},
+      {.position = {10, 23},
+       .elapsed_time = Duration32::Seconds(6),
+       .pressure = 0.3,
+       .tilt = Angle::Radians(0.9),
+       .orientation = Angle::Radians(0.9),
+       .barrel_twist = StrokeInput::kNoBarrelTwist},
+      {.position = {10, 23},
+       .elapsed_time = Duration32::Seconds(7),
+       .pressure = 0.5,
+       .tilt = Angle::Radians(0.8),
+       .orientation = Angle::Radians(1.1),
+       .barrel_twist = StrokeInput::kNoBarrelTwist}};
+  absl::StatusOr<StrokeInputBatch> batch =
+      StrokeInputBatch::Create(test_inputs);
+  ASSERT_THAT(batch, IsOk());
+  batch->Erase(1, 1);
+  EXPECT_THAT(*batch,
+              StrokeInputBatchIsArray({test_inputs[0], test_inputs[2]}));
 }
 
 TEST(StrokeInputBatch, GetDurationOnEmptyInput) {
@@ -1499,7 +1688,8 @@ TEST(StrokeInputBatch, DeepCopy) {
                    .stroke_unit_length = PhysicalDistance::Centimeters(0.1),
                    .pressure = 1.0,
                    .tilt = Angle::Radians(1.3),
-                   .orientation = Angle::Radians(1.5)}),
+                   .orientation = Angle::Radians(1.5),
+                   .barrel_twist = Angle::Radians(1.7)}),
               IsOk());
 
   // The original batch should still be empty
@@ -1664,13 +1854,16 @@ TEST(StrokeInputBatchTest, AbslHash) {
   StrokeInputBatch empty_batch;
   StrokeInputBatch one_input_batch;
   ASSERT_THAT(one_input_batch.Append(MakeValidTestInput()), IsOk());
+
   absl::StatusOr<StrokeInputBatch> multi_input_batch =
       StrokeInputBatch::Create(MakeValidTestInputSequence());
   ASSERT_THAT(multi_input_batch, IsOk());
+
   absl::StatusOr<StrokeInputBatch> different_tool_batch =
       StrokeInputBatch::Create(
           MakeValidTestInputSequence(StrokeInput::ToolType::kMouse));
   ASSERT_THAT(different_tool_batch, IsOk());
+
   std::vector<StrokeInput> no_pressure_inputs = MakeValidTestInputSequence();
   for (auto& input : no_pressure_inputs) {
     input.pressure = StrokeInput::kNoPressure;
@@ -1678,6 +1871,7 @@ TEST(StrokeInputBatchTest, AbslHash) {
   absl::StatusOr<StrokeInputBatch> no_pressure_batch =
       StrokeInputBatch::Create(no_pressure_inputs);
   ASSERT_THAT(no_pressure_batch, IsOk());
+
   std::vector<StrokeInput> no_tilt_inputs = MakeValidTestInputSequence();
   for (auto& input : no_tilt_inputs) {
     input.tilt = StrokeInput::kNoTilt;
@@ -1685,6 +1879,7 @@ TEST(StrokeInputBatchTest, AbslHash) {
   absl::StatusOr<StrokeInputBatch> no_tilt_batch =
       StrokeInputBatch::Create(no_tilt_inputs);
   ASSERT_THAT(no_tilt_batch, IsOk());
+
   std::vector<StrokeInput> no_orientation_inputs = MakeValidTestInputSequence();
   for (auto& input : no_orientation_inputs) {
     input.orientation = StrokeInput::kNoOrientation;
@@ -1692,6 +1887,16 @@ TEST(StrokeInputBatchTest, AbslHash) {
   absl::StatusOr<StrokeInputBatch> no_orientation_batch =
       StrokeInputBatch::Create(no_orientation_inputs);
   ASSERT_THAT(no_orientation_batch, IsOk());
+
+  std::vector<StrokeInput> no_barrel_twist_inputs =
+      MakeValidTestInputSequence();
+  for (auto& input : no_barrel_twist_inputs) {
+    input.barrel_twist = StrokeInput::kNoBarrelTwist;
+  }
+  absl::StatusOr<StrokeInputBatch> no_barrel_twist_batch =
+      StrokeInputBatch::Create(no_barrel_twist_inputs);
+  ASSERT_THAT(no_barrel_twist_batch, IsOk());
+
   std::vector<StrokeInput> different_stroke_unit_length_inputs =
       MakeValidTestInputSequence();
   for (auto& input : different_stroke_unit_length_inputs) {
@@ -1704,7 +1909,7 @@ TEST(StrokeInputBatchTest, AbslHash) {
   EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly(
       {empty_batch, one_input_batch, *multi_input_batch, *different_tool_batch,
        *no_pressure_batch, *no_tilt_batch, *no_orientation_batch,
-       *different_stroke_unit_length_batch}));
+       *no_barrel_twist_batch, *different_stroke_unit_length_batch}));
 }
 
 TEST(StrokeInputBatchTest, EqualityAndHashing) {

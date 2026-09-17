@@ -46,6 +46,7 @@ constexpr float kDefaultInverseTimeScale = 1e6;  // microsecond resolution
 constexpr float kInversePressureScale = 4096;
 constexpr float kInverseTiltScale = 4096 / (numbers::kPi / 2);
 constexpr float kInverseOrientationScale = 4096 / (2 * numbers::kPi);
+constexpr float kInverseBarrelTwistScale = 4096 / (2 * numbers::kPi);
 
 namespace {
 
@@ -196,9 +197,25 @@ void EncodeStrokeInputBatch(const StrokeInputBatch& input_batch,
     orientation->mutable_deltas()->Reserve(input_batch.Size());
   }
 
+  // If the input_batch doesn't have barrel twist data, then we can omit
+  // barrel twist data from the CodedStrokeInputBatch, clearing possible
+  // existing data. Otherwise, set up for recording the barrel twist data.
+  CodedNumericRun* barrel_twist = nullptr;
+  if (!input_batch.HasBarrelTwist()) {
+    input_proto.clear_barrel_twist();
+  } else {
+    barrel_twist = input_proto.mutable_barrel_twist();
+    // Barrel twist values always range from 0 to 2pi, so we can just use a
+    // fixed offset/scale for the CodedNumericRun.
+    barrel_twist->set_scale(1.f / kInverseBarrelTwistScale);
+    barrel_twist->clear_offset();
+    barrel_twist->mutable_deltas()->Clear();
+    barrel_twist->mutable_deltas()->Reserve(input_batch.Size());
+  }
+
   // Make another pass over the input data, delta-encoding the positions and
-  // times for the input points and, where applicable, pressure, tilt and
-  // orientation.
+  // times for the input points and, where applicable, pressure, tilt,
+  // orientation, and barrel twist.
   const float scaled_x_origin = stroke_space_bounds.XMin() * inverse_x_scale;
   const float scaled_y_origin = stroke_space_bounds.YMin() * inverse_y_scale;
   int last_int_x = 0;
@@ -207,6 +224,7 @@ void EncodeStrokeInputBatch(const StrokeInputBatch& input_batch,
   int last_int_pressure = 0;
   int last_int_tilt = 0;
   int last_int_orientation = 0;
+  int last_int_barrel_twist = 0;
   for (auto input : input_batch) {
     int int_x =
         ToQuantizedInt(input.position.x, inverse_x_scale, scaled_x_origin);
@@ -238,6 +256,12 @@ void EncodeStrokeInputBatch(const StrokeInputBatch& input_batch,
                                            kInverseOrientationScale);
       orientation->add_deltas(int_orientation - last_int_orientation);
       last_int_orientation = int_orientation;
+    }
+    if (input_batch.HasBarrelTwist()) {
+      int int_barrel_twist = ToQuantizedInt(input.barrel_twist.ValueInRadians(),
+                                            kInverseBarrelTwistScale);
+      barrel_twist->add_deltas(int_barrel_twist - last_int_barrel_twist);
+      last_int_barrel_twist = int_barrel_twist;
     }
   }
 

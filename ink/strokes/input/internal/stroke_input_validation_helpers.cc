@@ -72,6 +72,12 @@ absl::Status ValidateConsistentAttributes(const StrokeInput& first,
         "`orientation`.");
   }
 
+  if (first.HasBarrelTwist() != second.HasBarrelTwist()) {
+    return absl::InvalidArgumentError(
+        "Either all or none of the inputs in a batch must report "
+        "`barrel_twist`.");
+  }
+
   return absl::OkStatus();
 }
 
