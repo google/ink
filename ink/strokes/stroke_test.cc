@@ -86,19 +86,22 @@ StrokeInputBatch CreateFilledInputs() {
                                  .elapsed_time = Duration32::Seconds(0),
                                  .pressure = StrokeInput::kNoPressure,
                                  .tilt = StrokeInput::kNoTilt,
-                                 .orientation = StrokeInput::kNoOrientation},
+                                 .orientation = StrokeInput::kNoOrientation,
+                                 .barrel_twist = StrokeInput::kNoBarrelTwist},
                                 {.tool_type = StrokeInput::ToolType::kStylus,
                                  .position = {11, 5},
                                  .elapsed_time = Duration32::Seconds(1),
                                  .pressure = StrokeInput::kNoPressure,
                                  .tilt = StrokeInput::kNoTilt,
-                                 .orientation = StrokeInput::kNoOrientation},
+                                 .orientation = StrokeInput::kNoOrientation,
+                                 .barrel_twist = StrokeInput::kNoBarrelTwist},
                                 {.tool_type = StrokeInput::ToolType::kStylus,
                                  .position = {12, 2},
                                  .elapsed_time = Duration32::Seconds(2),
                                  .pressure = StrokeInput::kNoPressure,
                                  .tilt = StrokeInput::kNoTilt,
-                                 .orientation = StrokeInput::kNoOrientation}});
+                                 .orientation = StrokeInput::kNoOrientation,
+                                 .barrel_twist = StrokeInput::kNoBarrelTwist}});
   ABSL_CHECK_OK(inputs);
   return *inputs;
 }

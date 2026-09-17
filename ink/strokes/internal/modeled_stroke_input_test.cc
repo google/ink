@@ -32,14 +32,16 @@ TEST(ModeledStrokeInputLerpTest, ZeroT) {
                           .elapsed_time = Duration32::Seconds(52),
                           .pressure = .3f,
                           .tilt = kQuarterTurn,
-                          .orientation = kFullTurn / 16};
+                          .orientation = kFullTurn / 16,
+                          .barrel_twist = kQuarterTurn};
   ModeledStrokeInput b = {.position = {10, 10},
                           .velocity = {5, 5},
                           .traveled_distance = 79.f,
                           .elapsed_time = Duration32::Seconds(56),
                           .pressure = .7f,
                           .tilt = kFullTurn / 8,
-                          .orientation = kFullTurn / 8};
+                          .orientation = kFullTurn / 8,
+                          .barrel_twist = kHalfTurn};
 
   ModeledStrokeInput result = Lerp(a, b, 0);
   EXPECT_THAT(result, ModeledStrokeInputEq(a));
@@ -52,14 +54,16 @@ TEST(ModeledStrokeInputLerpTest, OneT) {
                           .elapsed_time = Duration32::Seconds(52),
                           .pressure = .3f,
                           .tilt = kQuarterTurn,
-                          .orientation = kFullTurn / 16};
+                          .orientation = kFullTurn / 16,
+                          .barrel_twist = kQuarterTurn};
   ModeledStrokeInput b = {.position = {10, 10},
                           .velocity = {5, 5},
                           .traveled_distance = 79.f,
                           .elapsed_time = Duration32::Seconds(56),
                           .pressure = .7f,
                           .tilt = kFullTurn / 8,
-                          .orientation = kFullTurn / 8};
+                          .orientation = kFullTurn / 8,
+                          .barrel_twist = kHalfTurn};
 
   ModeledStrokeInput result = Lerp(a, b, 1);
   EXPECT_THAT(result, ModeledStrokeInputEq(b));
@@ -72,14 +76,16 @@ TEST(ModeledStrokeInputLerpTest, TBetweenZeroAndOne) {
                           .elapsed_time = Duration32::Seconds(52),
                           .pressure = .3f,
                           .tilt = kQuarterTurn,
-                          .orientation = kFullTurn / 16};
+                          .orientation = kFullTurn / 16,
+                          .barrel_twist = kQuarterTurn};
   ModeledStrokeInput b = {.position = {10, 10},
                           .velocity = {5, 5},
                           .traveled_distance = 79.f,
                           .elapsed_time = Duration32::Seconds(56),
                           .pressure = .7f,
                           .tilt = kFullTurn / 8,
-                          .orientation = kFullTurn / 8};
+                          .orientation = kFullTurn / 8,
+                          .barrel_twist = kHalfTurn};
 
   ModeledStrokeInput result = Lerp(a, b, 0.2);
   EXPECT_THAT(result.position, PointEq({2, 2}));
@@ -89,6 +95,7 @@ TEST(ModeledStrokeInputLerpTest, TBetweenZeroAndOne) {
   EXPECT_FLOAT_EQ(result.pressure, 0.38);
   EXPECT_THAT(result.tilt, AngleEq(0.45 * kHalfTurn));
   EXPECT_THAT(result.orientation, AngleEq(0.15 * kHalfTurn));
+  EXPECT_THAT(result.barrel_twist, AngleEq(0.6 * kHalfTurn));
 }
 
 TEST(ModeledStrokeInputLerpTest, AboveOneT) {
@@ -98,14 +105,16 @@ TEST(ModeledStrokeInputLerpTest, AboveOneT) {
                           .elapsed_time = Duration32::Seconds(52),
                           .pressure = .3f,
                           .tilt = kQuarterTurn,
-                          .orientation = kFullTurn / 16};
+                          .orientation = kFullTurn / 16,
+                          .barrel_twist = kQuarterTurn};
   ModeledStrokeInput b = {.position = {10, 10},
                           .velocity = {5, 5},
                           .traveled_distance = 79.f,
                           .elapsed_time = Duration32::Seconds(56),
                           .pressure = .7f,
                           .tilt = kFullTurn / 8,
-                          .orientation = kFullTurn / 8};
+                          .orientation = kFullTurn / 8,
+                          .barrel_twist = kHalfTurn};
 
   ModeledStrokeInput result = Lerp(a, b, 1.1);
   EXPECT_THAT(result.position, PointEq({11, 11}));
@@ -115,6 +124,7 @@ TEST(ModeledStrokeInputLerpTest, AboveOneT) {
   EXPECT_FLOAT_EQ(result.pressure, 0.74);
   EXPECT_THAT(result.tilt, AngleEq(0.225 * kHalfTurn));
   EXPECT_THAT(result.orientation, AngleEq(0.2625 * kHalfTurn));
+  EXPECT_THAT(result.barrel_twist, AngleEq(1.05 * kHalfTurn));
 }
 
 TEST(ModeledStrokeInputLerpTest, BelowZeroT) {
@@ -124,14 +134,16 @@ TEST(ModeledStrokeInputLerpTest, BelowZeroT) {
                           .elapsed_time = Duration32::Seconds(52),
                           .pressure = .3f,
                           .tilt = kQuarterTurn,
-                          .orientation = kFullTurn / 16};
+                          .orientation = kFullTurn / 16,
+                          .barrel_twist = kQuarterTurn};
   ModeledStrokeInput b = {.position = {10, 10},
                           .velocity = {5, 5},
                           .traveled_distance = 79.f,
                           .elapsed_time = Duration32::Seconds(56),
                           .pressure = .7f,
                           .tilt = kFullTurn / 8,
-                          .orientation = kFullTurn / 8};
+                          .orientation = kFullTurn / 8,
+                          .barrel_twist = kHalfTurn};
 
   ModeledStrokeInput result = Lerp(a, b, -0.1);
   EXPECT_THAT(result.position, PointEq({-1, -1}));
@@ -141,6 +153,7 @@ TEST(ModeledStrokeInputLerpTest, BelowZeroT) {
   EXPECT_FLOAT_EQ(result.pressure, 0.26);
   EXPECT_THAT(result.tilt, AngleEq(0.525 * kHalfTurn));
   EXPECT_THAT(result.orientation, AngleEq(0.1125 * kHalfTurn));
+  EXPECT_THAT(result.barrel_twist, AngleEq(0.45 * kHalfTurn));
 }
 
 }  // namespace

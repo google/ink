@@ -44,6 +44,7 @@ struct ModeledStrokeInput {
   float pressure = StrokeInput::kNoPressure;
   Angle tilt = StrokeInput::kNoTilt;
   Angle orientation = StrokeInput::kNoOrientation;
+  Angle barrel_twist = StrokeInput::kNoBarrelTwist;
 };
 
 // Computes the linear interpolation between `a` and `b` when `t` is in the

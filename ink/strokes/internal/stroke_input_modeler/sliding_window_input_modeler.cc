@@ -48,23 +48,26 @@ struct StrokeInputIntegrals {
   Vec position_dt;
   float pressure_dt = 0;
   Angle tilt_dt;
-  // For orientation, we ultimately want a circular mean [1] of the inputs being
-  // averaged together. So rather than summing up orientation angles, we sum up
-  // unit vectors in those directions. At the end, we'll divide by time and take
-  // the direction of the resulting vector as our average orientation direction.
+  // For orientation and barrel twist, we ultimately want a circular mean [1] of
+  // the inputs being averaged together. So rather than summing up
+  // orientation/twist angles, we sum up unit vectors in those directions. At
+  // the end, we'll divide by time and take the direction of the resulting
+  // vector as our average orientation/twist direction.
   //
   // [1] See https://en.wikipedia.org/wiki/Circular_mean
   Vec orientation_dt;
+  Vec barrel_twist_dt;
 };
 
-// Integrates each of position, pressure, tilt, and orientation over the elapsed
-// time between the two inputs, assuming that each of those quantities vary
-// linearly between the two inputs, and add the totals to `integrals`.
+// Integrates each of position, pressure, tilt, orientation, and barrel twist
+// over the elapsed time between the two inputs, assuming that each of those
+// quantities vary linearly between the two inputs, and add the totals to
+// `integrals`.
 void Integrate(StrokeInputIntegrals& integrals, const StrokeInput& input1,
                const StrokeInput& input2) {
   ABSL_DCHECK_LE(input1.elapsed_time, input2.elapsed_time);
   float dt = (input2.elapsed_time - input1.elapsed_time).ToSeconds();
-  // For each of position/pressure/tilt/orientation, we are computing the
+  // For each of position/pressure/tilt/orientation/twist, we are computing the
   // integral with respect to time of the value as it changes from `input1` to
   // `input2`. In the absence of better information, we just assume this change
   // is linear. Therefore, we are effectively computing the area of a trapezoid
@@ -86,6 +89,13 @@ void Integrate(StrokeInputIntegrals& integrals, const StrokeInput& input1,
     integrals.orientation_dt += dt * 0.5 *
                                 (Vec::UnitVecWithDirection(input1.orientation) +
                                  Vec::UnitVecWithDirection(input2.orientation));
+  }
+  if (input1.HasBarrelTwist()) {
+    ABSL_DCHECK(input2.HasBarrelTwist());
+    integrals.barrel_twist_dt +=
+        dt * 0.5 *
+        (Vec::UnitVecWithDirection(input1.barrel_twist) +
+         Vec::UnitVecWithDirection(input2.barrel_twist));
   }
 }
 
@@ -117,6 +127,10 @@ StrokeInput InterpolateStrokeInput(const StrokeInput& input1,
   if (input1.HasOrientation() && input2.HasOrientation()) {
     interpolated.orientation = geometry_internal::NormalizedAngleLerp(
         input1.orientation, input2.orientation, lerp_ratio);
+  }
+  if (input1.HasBarrelTwist() && input2.HasBarrelTwist()) {
+    interpolated.barrel_twist = geometry_internal::NormalizedAngleLerp(
+        input1.barrel_twist, input2.barrel_twist, lerp_ratio);
   }
   return interpolated;
 }
@@ -345,6 +359,7 @@ void SlidingWindowInputModeler::ModelUnstableInputPosition(
         .pressure = input.pressure,
         .tilt = input.tilt,
         .orientation = input.orientation,
+        .barrel_twist = input.barrel_twist,
     });
     return;
   }
@@ -385,6 +400,10 @@ void SlidingWindowInputModeler::ModelUnstableInputPosition(
   if (raw_input_queue_.HasOrientation()) {
     modeled_input.orientation =
         (integrals.orientation_dt / dt).Direction().Normalized();
+  }
+  if (raw_input_queue_.HasBarrelTwist()) {
+    modeled_input.barrel_twist =
+        (integrals.barrel_twist_dt / dt).Direction().Normalized();
   }
   modeled_inputs.push_back(modeled_input);
 }

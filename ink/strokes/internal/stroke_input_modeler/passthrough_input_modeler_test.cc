@@ -48,35 +48,40 @@ std::vector<StrokeInputBatch> MakeStylusInputBatchSequence() {
                                       .stroke_unit_length = stroke_unit_length,
                                       .pressure = 0.4,
                                       .tilt = Angle::Radians(1),
-                                      .orientation = Angle::Radians(2)},
+                                      .orientation = Angle::Radians(2),
+                                      .barrel_twist = Angle::Radians(1.1)},
                                      {.tool_type = tool_type,
                                       .position = {10, 23},
                                       .elapsed_time = Duration32::Seconds(1),
                                       .stroke_unit_length = stroke_unit_length,
                                       .pressure = 0.3,
                                       .tilt = Angle::Radians(0.9),
-                                      .orientation = Angle::Radians(0.9)},
+                                      .orientation = Angle::Radians(0.9),
+                                      .barrel_twist = Angle::Radians(1.2)},
                                      {.tool_type = tool_type,
                                       .position = {10, 17},
                                       .elapsed_time = Duration32::Seconds(2),
                                       .stroke_unit_length = stroke_unit_length,
                                       .pressure = 0.5,
                                       .tilt = Angle::Radians(0.8),
-                                      .orientation = Angle::Radians(1.1)},
+                                      .orientation = Angle::Radians(1.1),
+                                      .barrel_twist = Angle::Radians(1.3)},
                                      {.tool_type = tool_type,
                                       .position = {5, 5},
                                       .elapsed_time = Duration32::Seconds(3),
                                       .stroke_unit_length = stroke_unit_length,
                                       .pressure = 0.8,
                                       .tilt = Angle::Radians(1.5),
-                                      .orientation = Angle::Radians(1.3)},
+                                      .orientation = Angle::Radians(1.3),
+                                      .barrel_twist = Angle::Radians(1.4)},
                                      {.tool_type = tool_type,
                                       .position = {4, 3},
                                       .elapsed_time = Duration32::Seconds(5),
                                       .stroke_unit_length = stroke_unit_length,
                                       .pressure = 1.0,
                                       .tilt = Angle::Radians(1.3),
-                                      .orientation = Angle::Radians(1.5)}};
+                                      .orientation = Angle::Radians(1.5),
+                                      .barrel_twist = Angle::Radians(1.5)}};
 
   std::vector<StrokeInputBatch> batches;
   for (const StrokeInput& input : inputs) {
@@ -109,6 +114,7 @@ TEST(PassthroughInputModelerTest, ModeledInputsMatchRawInputs) {
     EXPECT_THAT(modeled_input.pressure, FloatEq(raw_input.pressure));
     EXPECT_THAT(modeled_input.tilt, AngleEq(raw_input.tilt));
     EXPECT_THAT(modeled_input.orientation, AngleEq(raw_input.orientation));
+    EXPECT_THAT(modeled_input.barrel_twist, AngleEq(raw_input.barrel_twist));
   }
 }
 
