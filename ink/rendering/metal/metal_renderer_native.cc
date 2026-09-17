@@ -57,6 +57,21 @@ simd_float4x4 AffineTransformToSimdMatrix(float m00, float m10, float m20,
       simd_make_float4(0, 0, 1, 0), simd_make_float4(m20, m21, 0, 1));
 }
 
+simd_float4x4 OrthographicProjectionMatrix(double w, double h) {
+  // View coordinates in UIKit (as in Android) are in pixels with the origin
+  // at the top-left and (width, height) at the bottom-right. The projection
+  // transform needs to map those to normalized device coordinates from [-1, 1]
+  // on both axes with the origin in the middle and the Y-axis pointing up.
+  return AffineTransformToSimdMatrix(
+      w > 0 ? 2.0f / w : 0.0f,   // Scale x from [0, width] to [0, 2]
+      0.0f,                      // No skew
+      -1.0f,                     // Translate x from [0, 2] to [-1, 1]
+      0.0f,                      // No skew
+      h > 0 ? -2.0f / h : 0.0f,  // Scale and flip y from [0, height] to [-2, 0]
+      1.0f                       // Translate y from [-2, 0] to [1, -1]
+  );
+}
+
 extern "C" {
 
 int64_t MetalRendererNative_create(
@@ -94,56 +109,43 @@ int64_t MetalRendererNative_create(
 
 void MetalRendererNative_drawInProgressStroke(
     int64_t native_ptr, void* render_encoder,
-    int64_t in_progress_stroke_native_ptr, float model_transform_m00,
-    float model_transform_m10, float model_transform_m20,
-    float model_transform_m01, float model_transform_m11,
-    float model_transform_m21, float view_transform_m00,
-    float view_transform_m10, float view_transform_m20,
-    float view_transform_m01, float view_transform_m11,
-    float view_transform_m21, float projection_transform_m00,
-    float projection_transform_m10, float projection_transform_m20,
-    float projection_transform_m01, float projection_transform_m11,
-    float projection_transform_m21) {
+    int64_t in_progress_stroke_native_ptr, double texture_width,
+    double texture_height, float stroke_to_screen_transform_m00,
+    float stroke_to_screen_transform_m10, float stroke_to_screen_transform_m20,
+    float stroke_to_screen_transform_m01, float stroke_to_screen_transform_m11,
+    float stroke_to_screen_transform_m21) {
   MetalRenderer& metal_renderer = CastToMetalRenderer(native_ptr);
   const InProgressStroke& in_progress_stroke =
       CastToInProgressStrokeWrapper(in_progress_stroke_native_ptr).Stroke();
-  simd_float4x4 model_transform = AffineTransformToSimdMatrix(
-      model_transform_m00, model_transform_m10, model_transform_m20,
-      model_transform_m01, model_transform_m11, model_transform_m21);
+  simd_float4x4 model_transform = matrix_identity_float4x4;
   simd_float4x4 view_transform = AffineTransformToSimdMatrix(
-      view_transform_m00, view_transform_m10, view_transform_m20,
-      view_transform_m01, view_transform_m11, view_transform_m21);
-  simd_float4x4 projection_transform = AffineTransformToSimdMatrix(
-      projection_transform_m00, projection_transform_m10,
-      projection_transform_m20, projection_transform_m01,
-      projection_transform_m11, projection_transform_m21);
+      stroke_to_screen_transform_m00, stroke_to_screen_transform_m10,
+      stroke_to_screen_transform_m20, stroke_to_screen_transform_m01,
+      stroke_to_screen_transform_m11, stroke_to_screen_transform_m21);
+  simd_float4x4 projection_transform =
+      OrthographicProjectionMatrix(texture_width, texture_height);
   metal_renderer.Draw(in_progress_stroke, model_transform, view_transform,
                       projection_transform, render_encoder);
 }
 
-void MetalRendererNative_drawStroke(
-    int64_t native_ptr, void* render_encoder, int64_t stroke_native_ptr,
-    float model_transform_m00, float model_transform_m10,
-    float model_transform_m20, float model_transform_m01,
-    float model_transform_m11, float model_transform_m21,
-    float view_transform_m00, float view_transform_m10,
-    float view_transform_m20, float view_transform_m01,
-    float view_transform_m11, float view_transform_m21,
-    float projection_transform_m00, float projection_transform_m10,
-    float projection_transform_m20, float projection_transform_m01,
-    float projection_transform_m11, float projection_transform_m21) {
+void MetalRendererNative_drawStroke(int64_t native_ptr, void* render_encoder,
+                                    int64_t stroke_native_ptr,
+                                    double texture_width, double texture_height,
+                                    float stroke_to_screen_transform_m00,
+                                    float stroke_to_screen_transform_m10,
+                                    float stroke_to_screen_transform_m20,
+                                    float stroke_to_screen_transform_m01,
+                                    float stroke_to_screen_transform_m11,
+                                    float stroke_to_screen_transform_m21) {
   MetalRenderer& metal_renderer = CastToMetalRenderer(native_ptr);
   const Stroke& stroke = CastToStroke(stroke_native_ptr);
-  simd_float4x4 model_transform = AffineTransformToSimdMatrix(
-      model_transform_m00, model_transform_m10, model_transform_m20,
-      model_transform_m01, model_transform_m11, model_transform_m21);
+  simd_float4x4 model_transform = matrix_identity_float4x4;
   simd_float4x4 view_transform = AffineTransformToSimdMatrix(
-      view_transform_m00, view_transform_m10, view_transform_m20,
-      view_transform_m01, view_transform_m11, view_transform_m21);
-  simd_float4x4 projection_transform = AffineTransformToSimdMatrix(
-      projection_transform_m00, projection_transform_m10,
-      projection_transform_m20, projection_transform_m01,
-      projection_transform_m11, projection_transform_m21);
+      stroke_to_screen_transform_m00, stroke_to_screen_transform_m10,
+      stroke_to_screen_transform_m20, stroke_to_screen_transform_m01,
+      stroke_to_screen_transform_m11, stroke_to_screen_transform_m21);
+  simd_float4x4 projection_transform =
+      OrthographicProjectionMatrix(texture_width, texture_height);
   metal_renderer.Draw(stroke, model_transform, view_transform,
                       projection_transform, render_encoder);
 }
