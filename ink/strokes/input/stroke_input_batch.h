@@ -206,12 +206,12 @@ class StrokeInputBatch {
   // stroke from this input batch.
   void SetNoiseSeed(uint32_t seed);
 
-  // A [0, 2) value that will determine the stroke's overall animation progress
+  // A [0, 1) value that will determine the stroke's overall animation progress
   // at some arbitrary zero clock state, so that different strokes can be
   // animated correctly relative to each other.
   float GetBasePaintAnimationPhase() const;
 
-  // Sets the [0, 2) animation progress value that the stroke should have at
+  // Sets the [0, 1) animation progress value that the stroke should have at
   // clock state zero. For newly-drawn strokes, this value should generally be
   // chosen such that the stroke will be at animation progress 0 at the current
   // clock state for the first input of the stroke.

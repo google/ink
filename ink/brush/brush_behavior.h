@@ -301,8 +301,7 @@ struct BrushBehavior {
     // Adds the target modifier to the initial brush paint animation progress
     // value of the current particle (which is relevant only for strokes with an
     // animated `BrushPaint`). The final progress offset is not clamped, but is
-    // effectively normalized (mod 2, to account for potential use of
-    // `AnimationRepeatMode::kReverse`). If multiple behaviors have this target,
+    // effectively normalized (mod 1). If multiple behaviors have this target,
     // they stack additively.
     kPaintAnimationProgressOffset,
 

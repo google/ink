@@ -135,7 +135,7 @@ struct StrokeVertex {
     Label forward_label = kInteriorLabel;
     // Texture UV coordinates for winding textures.
     Point surface_uv;
-    // Offset for brush paint animation progress, in the range [0, 2).
+    // Offset for brush paint animation progress, in the range [0, 1).
     float paint_animation_offset = 0;
 
     friend bool operator==(const NonPositionAttributes&,

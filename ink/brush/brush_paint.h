@@ -244,19 +244,22 @@ struct BrushPaint {
     // for more details. Must be between 1 and 2^12 (inclusive).
     int animation_columns = 1;
 
-    // The length of time that it takes to loop through all of the
-    // `animation_frames` frames in the texture (in which case each frame will
-    // be displayed for `animation_duration / animation_frames` on average), or
-    // zero to disable looping animations (in which case the animation frame is
-    // controlled solely by any `kPaintAnimationProgressOffset` behavior
-    // targets). If nonzero, this duration must be a whole number of
-    // milliseconds, and no greater than 2^24 ms (about 4.66 hours).
+    // The duration of one complete animation loop for this texture (either
+    // passing through each frame once if `animation_repeat_mode` is `kRestart`,
+    // or passing back and forth through each frame if `animation_repeat_mode`
+    // is `kReverse`), or zero to disable automatic looping animations (in which
+    // case the current animation frame will be controlled solely by any
+    // `kPaintAnimationProgressOffset` behavior targets). If nonzero, this
+    // duration must be a whole number of milliseconds, and no greater than 2^24
+    // ms (about 4.66 hours).
     //
     // Note that this duration is ignored if `animation_frames` is 1 (its
     // default value), because that indicates that animation is disabled.
     absl::Duration animation_duration = absl::Seconds(1);
 
-    // Specifies what should happen when this texture layer's animation repeats.
+    // Specifies what should happen when the animation reaches the last frame:
+    // either it can immediately restart back at the first frame, or it can
+    // reverse direction.
     //
     // Note that this setting is ignored if `animation_frames` is 1 (its default
     // value), because that indicates that animation is disabled.
