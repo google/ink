@@ -82,9 +82,7 @@ struct MeshSpecificationData {
     // TODO: b/375203215 - Get rid of this uniform once we are able to mix
     // different texture mapping modes in a single `BrushPaint`.
     kTextureMapping = 5,
-    // The current progress, a float in [0, 2], of the texture animation. (It
-    // ranges [0, 2] instead of [0, 1] in order to account for
-    // `kAnimationRepeatMode` being set to "reverse" mode.)
+    // The current progress, a float in [0, 1], of the texture animation.
     //
     // We must pass both animation progress and number of frames to the shader,
     // rather than computing a frame index from these on the CPU and passing
