@@ -356,17 +356,26 @@ id<MTLTexture> GetOrLoadMTLTexture(INKMetalRendererState* state, const char* cli
   id<MTLTexture> texture = texture_cache[ns_texture_id];
   if (!texture && texture_bitmap_store) {
     UIImage* ui_image = [texture_bitmap_store textureForID:ns_texture_id];
-    CGImageRef cg_image = ui_image.CGImage;
+    bool owns_cg_image = false;
+    CGImageRef cg_image = ui_image.CGImage ?: ui_image.CIImage.CGImage;
     if (!cg_image && ui_image.CIImage) {
       if (!state.ciContext) {
         state.ciContext = [CIContext contextWithOptions:nil];
       }
+      CGColorSpaceRef color_space = CGColorSpaceCreateDeviceRGB();
       cg_image = [state.ciContext createCGImage:ui_image.CIImage
-                                       fromRect:[ui_image.CIImage extent]];
+                                       fromRect:[ui_image.CIImage extent]
+                                         format:kCIFormatRGBA8
+                                     colorSpace:color_space];
+      CGColorSpaceRelease(color_space);
+      owns_cg_image = (cg_image != nil);
     }
     if (cg_image) {
       NSError* error = nil;
       texture = [texture_loader newTextureWithCGImage:cg_image options:nil error:&error];
+      if (owns_cg_image) {
+        CGImageRelease(cg_image);
+      }
       if (texture) {
         texture_cache[ns_texture_id] = texture;
       }
