@@ -72,17 +72,17 @@ class SlidingWindowInputModeler : public InputModelImpl {
                            int raw_input_queue_real_input_count);
 
   // Helper method for `ModelUnstableInputs()`. Models each unstable input
-  // (computing only position and pressure/tilt/orientation for now) and appends
-  // it to `modeled_inputs`.  Also updates `state.real_input_cutoff` to the
-  // number of modeled inputs with `elapsed_time` no later than
+  // (computing only position and pressure/tilt/orientation/twist for now) and
+  // appends it to `modeled_inputs`.  Also updates `state.real_input_cutoff` to
+  // the number of modeled inputs with `elapsed_time` no later than
   // `real_input_cutoff`.
   void ModelUnstableInputPositions(
       InputModelerState& state, std::vector<ModeledStrokeInput>& modeled_inputs,
       Duration32 real_input_cutoff);
 
   // Helper method for `ModelUnstableInputPositions()`. Appends a new modeled
-  // input (computing only position and pressure/tilt/orientation for now) at
-  // `elapsed_time`, unless it would be within `position_epsilon_` of the
+  // input (computing only position and pressure/tilt/orientation/twist for now)
+  // at `elapsed_time`, unless it would be within `position_epsilon_` of the
   // previous modeled input. Either way, when this returns, `start_index` and
   // `end_index` will be the indices into `raw_input_queue_` of the first raw
   // input before the window and the last raw input after the window; before
