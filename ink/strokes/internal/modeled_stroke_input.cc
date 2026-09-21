@@ -32,6 +32,7 @@ ModeledStrokeInput Lerp(const ModeledStrokeInput& a,
       .pressure = Lerp(a.pressure, b.pressure, t),
       .tilt = Lerp(a.tilt, b.tilt, t),
       .orientation = NormalizedAngleLerp(a.orientation, b.orientation, t),
+      .barrel_twist = NormalizedAngleLerp(a.barrel_twist, b.barrel_twist, t),
   };
 }
 

@@ -64,6 +64,7 @@ void PassthroughInputModeler::AppendInputs(
         .pressure = input.pressure,
         .tilt = input.tilt,
         .orientation = input.orientation,
+        .barrel_twist = input.barrel_twist,
     });
   }
 }

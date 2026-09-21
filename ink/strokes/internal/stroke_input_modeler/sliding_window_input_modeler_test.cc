@@ -110,6 +110,40 @@ TEST(SlidingWindowInputModelerTest, Orientation) {
   }
 }
 
+TEST(SlidingWindowInputModelerTest, BarrelTwist) {
+  StrokeInputModeler modeler;
+  modeler.StartStroke(
+      BrushFamily::SlidingWindowModel{
+          .window_size = Duration32::Millis(10),
+          .upsampling_period = Duration32::Millis(5),
+      },
+      /* brush_epsilon = */ 0.01);
+
+  // Extend the stroke with a bunch of inputs with a barrel twist of 10°, then
+  // a bunch of inputs with a barrel twist of 350°.
+  StrokeInputBatch inputs;
+  for (int i = 0; i < 100; ++i) {
+    StrokeInput input = StrokeInput{
+        .position = {static_cast<float>(i), 0},
+        .elapsed_time = Duration32::Millis(i),
+        .barrel_twist = i < 50 ? Angle::Degrees(10) : Angle::Degrees(350),
+    };
+    ASSERT_THAT(inputs.Append(input), IsOk());
+  }
+  modeler.ExtendStroke(inputs, {}, Duration32::Millis(100));
+
+  // All modeled inputs should have a barrel twist (roughly) between ±10° when
+  // normalized about zero; they shouldn't be naively averaged between 10° and
+  // 350° to get ~180°.
+  EXPECT_THAT(modeler.GetModeledInputs(), SizeIs(Ge(100)));
+  for (const ModeledStrokeInput& modeled_input : modeler.GetModeledInputs()) {
+    ASSERT_NE(modeled_input.barrel_twist, StrokeInput::kNoBarrelTwist);
+    EXPECT_THAT(
+        modeled_input.barrel_twist.NormalizedAboutZero(),
+        AllOf(Ge(Angle::Degrees(-10.0001)), Le(Angle::Degrees(10.0001))));
+  }
+}
+
 TEST(SlidingWindowInputModelerTest, Upsampling) {
   StrokeInputModeler modeler;
   modeler.StartStroke(
