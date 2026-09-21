@@ -134,6 +134,10 @@ struct BrushBehavior {
     kOrientationInRadians,
     // Stylus orientation with values reported in the range (-π, π].
     kOrientationAboutZeroInRadians,
+    // Stylus barrel twist with values reported in the range [0, 2π).
+    kBarrelTwistInRadians,
+    // Stylus barrel twist with values reported in the range (-π, π].
+    kBarrelTwistAboutZeroInRadians,
     // Absolute speed of the modeled stroke input in multiples of the brush size
     // per second. Note that this value doesn't take into account brush
     // behaviors that offset the position of the visual tip of the stroke.

@@ -125,6 +125,12 @@ std::optional<float> GetSourceValue(
           input.tilt == Angle())
         break;
       return input.orientation.NormalizedAboutZero().ValueInRadians();
+    case BrushBehavior::Source::kBarrelTwistInRadians:
+      if (input.barrel_twist == StrokeInput::kNoBarrelTwist) break;
+      return input.barrel_twist.ValueInRadians();
+    case BrushBehavior::Source::kBarrelTwistAboutZeroInRadians:
+      if (input.barrel_twist == StrokeInput::kNoBarrelTwist) break;
+      return input.barrel_twist.NormalizedAboutZero().ValueInRadians();
     case BrushBehavior::Source::kSpeedInMultiplesOfBrushSizePerSecond:
       return input.velocity.Magnitude() / brush_size;
     case BrushBehavior::Source::kVelocityXInMultiplesOfBrushSizePerSecond:
