@@ -265,7 +265,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     float calculateAnimationReverseModeFrameIndex(
         const float progress,
         const int numFrames) {
-      float zigzag = abs(2.0 * fract(0.5 * (progress + 1.0)) - 1.0);
+      float zigzag = abs(2.0 * fract(progress + 0.5) - 1.0);
       return floor(zigzag * float(numFrames - 1) + 0.5);
     })"
 
@@ -275,9 +275,9 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     //     where U measures lateral position across the stroke or particle, and
     //     V measures forward position along the stroke or particle.
     //   * `particleAnimationOffset` is the unpacked per-particle animation
-    //     progress offset at this vertex, from [0, 2).
+    //     progress offset at this vertex, from [0, 1].
     //   * `textureAnimationProgress` is the animation progress value for the
-    //     entire mesh, from [0, 2].
+    //     entire mesh, from [0, 1].
     //   * `numTextureAnimationFrames` is the number of distinct frames in the
     //     animation. The texture is assumed to be divided into a grid, with one
     //     frame in each grid cell, in row-major order. It is permissible for
@@ -301,6 +301,9 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
           rawProgress, numTextureAnimationFrames);
       float reverseModeIndex = calculateAnimationReverseModeFrameIndex(
           rawProgress, numTextureAnimationFrames);
+      // Select between `restartModeIndex` and `reverseModeIndex` depending on
+      // whether `animationRepeatMode` is 0 or 1.  (But maybe a simple branch
+      // would be fine here?)
       float frameIndex = mix(restartModeIndex, reverseModeIndex,
                              float(animationRepeatMode));
 
@@ -489,15 +492,15 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     float unpackPaintAnimationOffset(const float unpackedValue) {
       return unpackedValue;
     })"
-    // A [0, 2) paint animation offset can be packed into one byte, where 0.0
-    // maps to 0 and 2.0 (or rather, values just below 2.0) maps to 255. This
+    // A [0, 1) paint animation offset can be packed into one byte, where 0.0
+    // maps to 0 and 1.0 (or rather, values just below 1.0) maps to 255. This
     // [0, 255] byte is exposed to the shader as a [0, 1] half float. So to
-    // unpack, we simply cast the [0, 1] half float to a full float and multiply
-    // by 2 to get a [0, 2] paint animation offset. (A paint animation offset of
-    // exactly 2 will be harmlessly wrapped back to 0.)
+    // unpack, we simply cast the [0, 1] half float to a full float to get a [0,
+    // 1] paint animation offset. (A paint animation offset of exactly 1 will be
+    // harmlessly wrapped back to 0.)
     R"(
     float unpackPaintAnimationOffset(const half packedValue0To1) {
-      return 2 * float(packedValue0To1);
+      return float(packedValue0To1);
     })"
     // LINT.ThenChange(
     //     ../../../strokes/internal/stroke_vertex.cc:anim_packing)

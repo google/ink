@@ -1749,12 +1749,12 @@ TEST(CreateTipStateTest, WithBehaviorTargetingCornerRounding) {
 TEST(CreateTipStateTest, WithBehaviorTargetingPaintAnimationProgress) {
   BrushTip brush_tip = MakeBaseBrushTip();
   float brush_size = 2.5f;
-  float paint_animation_progress_offset = -3.25;
+  float paint_animation_progress_offset = -0.25;
   BrushTipState state =
       CreateTipState({0, 0}, Vec(), brush_tip, brush_size,
                      {BrushBehavior::Target::kPaintAnimationProgressOffset},
                      {paint_animation_progress_offset});
-  // The final progress offset should be computed mod 2.
+  // The final progress offset should be computed mod 1.
   EXPECT_FLOAT_EQ(state.paint_animation_progress_offset, 0.75);
 }
 

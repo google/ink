@@ -257,6 +257,18 @@ TEST(StrokeInputBatchTest, AppendNonEmptyToEmpty) {
   EXPECT_EQ(batch1.GetBasePaintAnimationPhase(), 0.125f);
 }
 
+TEST(StrokeInputBatchTest, SetBasePaintAnimationPhaseWrapsModuloOne) {
+  StrokeInputBatch batch;
+  batch.SetBasePaintAnimationPhase(0.25f);
+  EXPECT_EQ(batch.GetBasePaintAnimationPhase(), 0.25f);
+
+  batch.SetBasePaintAnimationPhase(1.75f);
+  EXPECT_EQ(batch.GetBasePaintAnimationPhase(), 0.75f);
+
+  batch.SetBasePaintAnimationPhase(-0.25f);
+  EXPECT_EQ(batch.GetBasePaintAnimationPhase(), 0.75f);
+}
+
 TEST(StrokeInputBatchTest, SetReplacingOnlyExistingValue) {
   StrokeInputBatch batch;
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
