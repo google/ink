@@ -166,6 +166,17 @@ void ComputeDerivativeForUnstableInputs(
   // march these start/end indices forward as we iterate (in order to keep this
   // loop O(n)).
   int start_index = 0;
+  if (stable_input_count < num_modeled_inputs) {
+    Duration32 earliest_start =
+        modeled_inputs[stable_input_count].elapsed_time - half_window_size;
+    auto it = std::lower_bound(
+        modeled_inputs.begin(), modeled_inputs.end(), earliest_start,
+        [](const ModeledStrokeInput& m, Duration32 t) {
+          return m.elapsed_time < t;
+        });
+    start_index =
+        std::max(0, static_cast<int>(it - modeled_inputs.begin()) - 1);
+  }
   int end_index = stable_input_count;
   for (int index = stable_input_count; index < num_modeled_inputs; ++index) {
     ModeledStrokeInput& input = modeled_inputs[index];
