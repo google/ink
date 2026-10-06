@@ -423,6 +423,7 @@ class MeshBuilder {
     }
 
     num_input_vertices_ = mutable_mesh_.VertexCount();
+    modified_.assign(num_input_vertices_, false);
 
     WeldSeams(edge_tri_adj, index_maps);
     return index_maps;
@@ -432,6 +433,23 @@ class MeshBuilder {
   // `Initialize` (as opposed to created during subtraction).
   bool IsInputVertex(uint32_t vertex_index) const {
     return vertex_index < num_input_vertices_;
+  }
+
+  // Marks `vertex_index` as needing its anti-aliasing data recomputed.
+  void MarkModified(uint32_t vertex_index) {
+    if (IsInputVertex(vertex_index)) modified_[vertex_index] = true;
+  }
+
+  // Returns true if vertex_index was either marked modified, or was created
+  // during subtraction.
+  bool IsModified(uint32_t vertex_index) const {
+    return !IsInputVertex(vertex_index) || modified_[vertex_index];
+  }
+
+  // Returns whether any of `indices` is modified.
+  bool HasModifiedVertex(const std::array<uint32_t, 3>& indices) const {
+    return IsModified(indices[0]) || IsModified(indices[1]) ||
+           IsModified(indices[2]);
   }
 
   // Finds an existing vertex or adds one for a point `p` contained in the
@@ -479,6 +497,16 @@ class MeshBuilder {
     float fwd = mutable_mesh_.FloatVertexAttribute(
         vertex_index, attr_indices_.forward_label)[0];
     return DecodeBoundaryLabel(side, fwd);
+  }
+
+  // Returns the {side, forward} margins of `vertex_index`.
+  std::pair<float, float> GetMargins(uint32_t vertex_index) const {
+    float side = mutable_mesh_.FloatVertexAttribute(
+        vertex_index, attr_indices_.side_label)[0];
+    float fwd = mutable_mesh_.FloatVertexAttribute(
+        vertex_index, attr_indices_.forward_label)[0];
+    return {StrokeVertex::Label{side}.DecodeMargin(),
+            StrokeVertex::Label{fwd}.DecodeMargin()};
   }
 
   Vec GetSideDerivative(uint32_t vertex_index) const {
@@ -692,6 +720,9 @@ class MeshBuilder {
   // The number of vertices copied from the input meshes by `Initialize`. These
   // occupy indices [0, num_input_vertices_) of `mutable_mesh_`.
   uint32_t num_input_vertices_ = 0;
+
+  // Whether each input vertex is modified (see `MarkModified`).
+  std::vector<bool> modified_;
 
   // A map to help weld triangles back together along split edges. It maps
   // ordered pairs of vertex indices (representing edges in the initial meshes)
@@ -969,13 +1000,14 @@ void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
 // Computes the anti-aliasing derivatives (`side_derivative` and
 // `forward_derivative`) for all the vertices in the mesh.
 void ComputeAndSetDerivatives(MeshBuilder& mesh_builder) {
-  // This function recomputes the anti-aliasing derivatives for all vertices in
-  // the mesh, by iterating over all triangles, accumulating each triangle's
-  // contribution onto its vertices, averaging the accumulated derivatives per
-  // vertex, and then writing them into the mesh.
-  // TODO(b/521448869): Without an efficient way to traverse the mesh's
-  // adjacency graph, we recompute the derivatives across all vertices rather
-  // than restricting to the neighborhood modified by the subtraction.
+  // This function recomputes the anti-aliasing derivatives all vertices
+  // affected by the subtraction, by iterating over all triangles, accumulating
+  // each triangle's contribution onto its vertices, averaging the accumulated
+  // derivatives per vertex, and then writing them into the mesh. Only modified
+  // vertices (vertices affected by the subtraction) are updated; triangles with
+  // no modified vertex are skipped.
+  // TODO(b/523326691): Process only the triangles in a neighborhood of the
+  // subtraction rather than scanning all triangle sin the mesh.
   //
   // Our approach to computing derivatives here is a bit different than that
   // used during extrusion (see
@@ -1020,6 +1052,7 @@ void ComputeAndSetDerivatives(MeshBuilder& mesh_builder) {
 
   for (uint32_t tri_idx = 0; tri_idx < mesh.TriangleCount(); ++tri_idx) {
     std::array<uint32_t, 3> indices = mesh.TriangleIndices(tri_idx);
+    if (!mesh_builder.HasModifiedVertex(indices)) continue;
     Triangle triangle = mesh.GetTriangle(tri_idx);
     float area = triangle.SignedArea();
     if (area == 0.0f) continue;
@@ -1081,6 +1114,7 @@ void ComputeAndSetDerivatives(MeshBuilder& mesh_builder) {
   }
 
   for (uint32_t i = 0; i < mesh.VertexCount(); ++i) {
+    if (!mesh_builder.IsModified(i)) continue;
     mesh_builder.SetDerivatives(i, side_derivative[i].Value(),
                                 forward_derivative[i].Value());
   }
@@ -1093,13 +1127,19 @@ void ComputeAndSetMargins(MeshBuilder& mesh_builder) {
   // comments in `StrokeVertex::Label` and the implementation of
   // `DerivativeCalculator::ComputeTriangleMarginUpperBounds` for details.
   //
-  // In this function, we recompute the margins for all vertices by iterating
-  // through all triangles in the mesh. Each triangle imposes an upper bound
-  // margin on its vertices. We compute these per-triangle constraints, and
-  // assign each vertex the tightest (minimum) bound across its incident
-  // triangles, and then write the margins to the mesh.
-  // TODO(b/521448869): Recompute margins only for vertices in a neighborhood
-  // of the subtracted area.
+  // In this function, we recompute the margins for all vertices affected by the
+  // subtraction. We iterate through all triangles in the mesh; each triangle
+  // imposes an upper bound margin on its vertices. We compute these
+  // per-triangle constraints, and assign each vertex the tightest (minimum)
+  // bound across its incident triangles, and then write the margins to the
+  // mesh.
+  //
+  // Only modified vertices have margins recomputed; triangles with no modified
+  // vertex are skipped. To handle unmodified vertices that are adjacent to
+  // modified vertices (that may have had their derivatives changed), we take
+  // a simplified (conservative) approach of only lowering the margin.
+  // TODO(b/521448869): Consider computing the margin exactly for vertices
+  // adjacent to subtracted vertices.
   const MutableMesh& mesh = mesh_builder.GetMesh();
   const uint32_t num_vertices = mesh.VertexCount();
   std::vector<float> side_margins(num_vertices, StrokeVertex::kMaximumMargin);
@@ -1108,6 +1148,7 @@ void ComputeAndSetMargins(MeshBuilder& mesh_builder) {
 
   for (uint32_t tri_idx = 0; tri_idx < mesh.TriangleCount(); ++tri_idx) {
     std::array<uint32_t, 3> indices = mesh.TriangleIndices(tri_idx);
+    if (!mesh_builder.HasModifiedVertex(indices)) continue;
     Triangle triangle = mesh.GetTriangle(tri_idx);
 
     std::array<Vec, 3> side_outsets, forward_outsets;
@@ -1135,7 +1176,16 @@ void ComputeAndSetMargins(MeshBuilder& mesh_builder) {
   }
 
   for (uint32_t i = 0; i < num_vertices; ++i) {
-    mesh_builder.SetMargins(i, side_margins[i], forward_margins[i]);
+    if (mesh_builder.IsModified(i)) {
+      mesh_builder.SetMargins(i, side_margins[i], forward_margins[i]);
+      continue;
+    }
+    // For unmodified vertices, we only decrease the margin.
+    auto [side, forward] = mesh_builder.GetMargins(i);
+    if (side_margins[i] < side || forward_margins[i] < forward) {
+      mesh_builder.SetMargins(i, std::min(side, side_margins[i]),
+                              std::min(forward, forward_margins[i]));
+    }
   }
 }
 // LINT.ThenChange(
@@ -1196,6 +1246,8 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
       // Otherwise, compute the subtraction and get a triangulation of the
       // leftover geometry of the triangle.
       Triangulation fragments = SubtractTriangle(tri, shape_b);
+      // Mark the corners for anti-aliasing recomputation.
+      for (uint32_t v : indices) sub_mesh.MarkModified(v);
 
       // Early skip if the triangle was entirely erased.
       if (fragments.triangles.empty()) continue;
