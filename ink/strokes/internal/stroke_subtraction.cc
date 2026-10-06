@@ -275,6 +275,14 @@ BoundaryLabel GetEdgeLabel(BoundaryLabel u, BoundaryLabel v) {
 //     //depot/google3/third_party/ink/rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:calculate_antialiasing_and_position_outset,
 //     //depot/google3/third_party/ink/rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
 
+// Returns the boundary label shared by `a` and `b`: each of the side and
+// forward components is kept if they agree, and is otherwise interior.
+BoundaryLabel GetCommonLabel(BoundaryLabel a, BoundaryLabel b) {
+  int side = (a % 3 == b % 3) ? a % 3 : 0;
+  int fwd = (a / 3 == b / 3) ? a / 3 : 0;
+  return static_cast<BoundaryLabel>(3 * fwd + side);
+}
+
 // Returns true if `format` has the attributes required for anti-aliasing.
 bool HasAntiAliasingAttributes(const MeshFormat& format) {
   StrokeVertex::FormatAttributeIndices attr_indices =
@@ -284,9 +292,9 @@ bool HasAntiAliasingAttributes(const MeshFormat& format) {
          attr_indices.forward_derivative != -1;
 }
 
-// Welds coincident topological boundary edges with opposite orientations and
-// returns an index map with merged canonical vertex roots.
-std::vector<uint32_t> StitchSeamEdges(
+// Returns a map from each vertex to the canonical vertex it should be welded
+// to, found by pairing coincident boundary edges with opposite orientations.
+std::vector<uint32_t> ComputeSeamWeldMap(
     const EdgeTriangleAdjacencyMap& edge_tri_map,
     const MutableMesh& mutable_mesh) {
   // This function welds together triangles that are geometrically adjacent, but
@@ -414,14 +422,16 @@ class MeshBuilder {
       }
     }
 
-    // Stitch seam edges together by welding their vertices.
-    std::vector<uint32_t> index_remap =
-        StitchSeamEdges(edge_tri_adj, mutable_mesh_);
-    for (auto& index_map : index_maps) {
-      for (uint32_t& v : index_map) v = index_remap[v];
-    }
+    num_input_vertices_ = mutable_mesh_.VertexCount();
 
+    WeldSeams(edge_tri_adj, index_maps);
     return index_maps;
+  }
+
+  // Returns whether `vertex_index` was copied from the input meshes by
+  // `Initialize` (as opposed to created during subtraction).
+  bool IsInputVertex(uint32_t vertex_index) const {
+    return vertex_index < num_input_vertices_;
   }
 
   // Finds an existing vertex or adds one for a point `p` contained in the
@@ -593,6 +603,35 @@ class MeshBuilder {
   }
 
  private:
+  // Welds coincident seam edges (see also `ComputeSeamWeldMap`), and updates
+  // `index_maps` (see `Initialize`).
+  void WeldSeams(const EdgeTriangleAdjacencyMap& edge_tri_adj,
+                 std::vector<std::vector<uint32_t>>& index_maps) {
+    std::vector<uint32_t> index_remap =
+        ComputeSeamWeldMap(edge_tri_adj, mutable_mesh_);
+
+    // Set each canonical vertex to the common label of its welded copies (see
+    // `GetCommonLabel`). Vertices whose label changes get a zero margin, which
+    // prevents them from being outset by anti-aliasing. (This matches
+    // extrusion, which gives zero margins to the duplicated pivot vertices at
+    // the seams it creates after a self-intersection.)
+    if (HasAntiAliasingAttributes(mutable_mesh_.Format())) {
+      for (uint32_t v = 0; v < index_remap.size(); ++v) {
+        uint32_t root = index_remap[v];
+        if (root == v) continue;
+        BoundaryLabel root_label = GetLabel(root);
+        BoundaryLabel common = GetCommonLabel(root_label, GetLabel(v));
+        if (common == root_label) continue;
+        SetLabel(root, common);
+        SetMargins(root, 0, 0);
+      }
+    }
+
+    for (auto& index_map : index_maps) {
+      for (uint32_t& v : index_map) v = index_remap[v];
+    }
+  }
+
   // Adds a vertex at `position` to the subtraction result mesh, with attributes
   // obtained by interpolating the given `vertex_attrs` with the given
   // `weights`, and returns the index of the newly added vertex.
@@ -649,6 +688,10 @@ class MeshBuilder {
 
   MutableMesh mutable_mesh_;
   StrokeVertex::FormatAttributeIndices attr_indices_;
+
+  // The number of vertices copied from the input meshes by `Initialize`. These
+  // occupy indices [0, num_input_vertices_) of `mutable_mesh_`.
+  uint32_t num_input_vertices_ = 0;
 
   // A map to help weld triangles back together along split edges. It maps
   // ordered pairs of vertex indices (representing edges in the initial meshes)
@@ -851,8 +894,8 @@ void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
   // The boundary of the result mesh typically consists of alternating
   // segments of the original mesh boundary and subtracted shape boundary.
   // During the subtraction computation, the labels of the original mesh
-  // vertices are copied (see Initialize), while those of the subtracted shape
-  // are set to kInterior (see GetVertexAttributes).
+  // vertices are copied (see Initialize), while vertices created along the
+  // subtracted shape are treated as unlabeled (kUndefined; see IsInputVertex).
   //
   // To avoid recomputing the labels for the untouched portions of the mesh, we
   // instead traverse the outline to identify maximal segments of unlabeled
@@ -864,19 +907,23 @@ void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
   // post-processing step, we subdivide any such mislabeled interior edges.
 
   for (absl::Span<const uint32_t> outline : outlines) {
-    // Read all the vertex labels from the mesh.
     if (outline.empty()) continue;
     const size_t n = outline.size();
+
+    // Input vertices keep their labels, including kInterior ones.
+    // Vertices created by the subtraction are initialized to kUndefined.
     std::vector<BoundaryLabel> labels;
     labels.reserve(n);
     for (uint32_t vertex_index : outline) {
-      labels.push_back(mesh_builder.GetLabel(vertex_index));
+      labels.push_back(mesh_builder.IsInputVertex(vertex_index)
+                           ? mesh_builder.GetLabel(vertex_index)
+                           : kUndefined);
     }
 
     // Check for the unlikely case that the entire outline is unlabeled, and
     // handle it specially.
     if (absl::c_all_of(labels,
-                       [](BoundaryLabel l) { return l == kInterior; })) {
+                       [](BoundaryLabel l) { return l == kUndefined; })) {
       ComputeLabels(outline, labels, mesh_builder);
       for (size_t k = 0; k < n; ++k) {
         mesh_builder.SetLabel(outline[k], labels[k]);
@@ -886,9 +933,9 @@ void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
 
     // Iterate through to find maximal unlabeled segments.
     for (size_t i = 0; i < n; ++i) {
-      if (labels[i] != kInterior && labels[(i + 1) % n] == kInterior) {
+      if (labels[i] != kUndefined && labels[(i + 1) % n] == kUndefined) {
         size_t j = i;
-        while (labels[(j + 1) % n] == kInterior) ++j;
+        while (labels[(j + 1) % n] == kUndefined) ++j;
 
         ComputeLabels(outline, i, j + 1, labels, mesh_builder);
 
