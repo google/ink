@@ -44,7 +44,7 @@ Brush MakeBrush(const BrushFamily& family, float brush_size,
 }
 
 void TestCases(Benchmark* b) {
-  int num_test_files = kTestDataFiles.size();
+  int num_test_files = kAllRecordedTestInputFiles.size();
   std::vector<std::pair<std::string, BrushFamily>> stock_brushes_test_params =
       stock_brushes::GetParams();
   for (int test_file_idx = 0; test_file_idx < num_test_files; ++test_file_idx) {
@@ -58,7 +58,8 @@ void TestCases(Benchmark* b) {
 }
 
 void BM_BrushTipModeler(benchmark::State& state) {
-  absl::string_view test_input_name = kTestDataFiles[state.range(0)];
+  absl::string_view test_input_name =
+      kAllRecordedTestInputFiles[state.range(0)];
   const float brush_size = state.range(1);
   const BrushFamily brush_family =
       stock_brushes::GetParams()[state.range(2)].second;

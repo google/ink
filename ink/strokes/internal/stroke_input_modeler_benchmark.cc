@@ -36,7 +36,7 @@ const std::array<BrushFamily::InputModel, 2> input_models = {
 // LINT.ThenChange(../../brush/brush_family.h:input_model_types)
 
 void TestCases(Benchmark* b) {
-  int num_test_inputs = kTestDataFiles.size();
+  int num_test_inputs = kAllRecordedTestInputFiles.size();
   int num_input_models = input_models.size();
   for (int i = 0; i < num_test_inputs; ++i) {
     for (int j = 0; j < num_input_models; ++j) {
@@ -46,7 +46,8 @@ void TestCases(Benchmark* b) {
 }
 
 void BM_IncrementalStrokeInputModeler(benchmark::State& state) {
-  absl::string_view test_input_name = kTestDataFiles[state.range(0)];
+  absl::string_view test_input_name =
+      kAllRecordedTestInputFiles[state.range(0)];
   absl::string_view input_model_name = input_model_names[state.range(1)];
   const BrushFamily::InputModel& input_model = input_models[state.range(1)];
 
@@ -70,7 +71,8 @@ void BM_IncrementalStrokeInputModeler(benchmark::State& state) {
 BENCHMARK(BM_IncrementalStrokeInputModeler)->Apply(TestCases);
 
 void BM_CompleteStrokeInputModeler(benchmark::State& state) {
-  absl::string_view test_input_name = kTestDataFiles[state.range(0)];
+  absl::string_view test_input_name =
+      kAllRecordedTestInputFiles[state.range(0)];
   absl::string_view input_model_name = input_model_names[state.range(1)];
   const BrushFamily::InputModel& input_model = input_models[state.range(1)];
 

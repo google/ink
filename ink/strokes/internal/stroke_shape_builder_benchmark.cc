@@ -44,7 +44,7 @@ Brush MakeBrush(const BrushFamily& family, float brush_size,
 
 void BenchmarkTestCases(Benchmark* b) {
   std::vector<int> brush_sizes;
-  int num_test_files = kTestDataFiles.size();
+  int num_test_files = kSmallRecordedTestInputFiles.size();
   std::vector<stock_brushes::StockBrushesTestParam> stock_brushes_test_params =
       stock_brushes::GetParams();
   // TODO: b/374775850 - Add test cases for unique brushes that test individual
@@ -61,7 +61,8 @@ void BenchmarkTestCases(Benchmark* b) {
 
 void BM_BuildStrokeShape(benchmark::State& state) {
   const float brush_size = state.range(0);
-  absl::string_view test_inputs_name = kTestDataFiles[state.range(1)];
+  absl::string_view test_inputs_name =
+      kSmallRecordedTestInputFiles[state.range(1)];
   const BrushFamily brush_family =
       stock_brushes::GetParams()[state.range(2)].second;
 
@@ -112,7 +113,8 @@ std::vector<StrokeInputModeler> GetIncrementalInputModelers(
 
 void BM_BuildStrokeShapeIncrementally(benchmark::State& state) {
   const float brush_size = state.range(0);
-  absl::string_view test_inputs_name = kTestDataFiles[state.range(1)];
+  absl::string_view test_inputs_name =
+      kSmallRecordedTestInputFiles[state.range(1)];
   const BrushFamily brush_family =
       stock_brushes::GetParams()[state.range(2)].second;
 

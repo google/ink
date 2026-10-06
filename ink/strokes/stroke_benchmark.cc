@@ -44,7 +44,7 @@ Brush MakeBrush(const BrushFamily& family, float brush_size,
 
 void BenchmarkTestCases(Benchmark* b) {
   std::vector<int> brush_sizes;
-  int num_test_files = kTestDataFiles.size();
+  int num_test_files = kSmallRecordedTestInputFiles.size();
   std::vector<stock_brushes::StockBrushesTestParam> stock_brushes_test_params =
       stock_brushes::GetParams();
   // TODO(b/374775850)) Add test cases for unique brushes that test individual
@@ -65,7 +65,8 @@ void BM_Stroke(benchmark::State& state) {
       stock_brushes::GetParams()[state.range(2)].second;
   auto brush = MakeBrush(brush_family, brush_size, kTestBrushEpsilon);
 
-  absl::string_view test_inputs_name = kTestDataFiles[state.range(1)];
+  absl::string_view test_inputs_name =
+      kSmallRecordedTestInputFiles[state.range(1)];
   auto inputs = LoadCompleteStrokeInputs(test_inputs_name);
   ABSL_CHECK_OK(inputs);
 
@@ -86,7 +87,8 @@ void BM_InProgressStroke(benchmark::State& state) {
       stock_brushes::GetParams()[state.range(2)].second;
   auto brush = MakeBrush(brush_family, brush_size, kTestBrushEpsilon);
 
-  absl::string_view test_inputs_name = kTestDataFiles[state.range(1)];
+  absl::string_view test_inputs_name =
+      kSmallRecordedTestInputFiles[state.range(1)];
   auto inputs = LoadIncrementalStrokeInputs(test_inputs_name);
   ABSL_CHECK_OK(inputs);
 

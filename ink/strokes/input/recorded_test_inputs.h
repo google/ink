@@ -29,8 +29,19 @@ namespace ink {
 // The test inputs were recorded with the Stylus Showcase App. The inputs use
 // pixels as stroke-space units. They have a typical scale of O(100) pixels, and
 // typical durations of O(.1) seconds.
-constexpr std::array<absl::string_view, 2> kTestDataFiles = {
-    "spring_shape.binarypb", "straight_line.binarypb"};
+constexpr std::array<absl::string_view, 2> kSmallRecordedTestInputFiles = {
+    "spring_shape.binarypb",
+    "straight_line.binarypb",
+};
+
+// A longer list than `kSmallRecordedTestInputFiles` that also includes some
+// much larger/longer strokes, some of them multiple MB in size.
+constexpr std::array<absl::string_view, 4> kAllRecordedTestInputFiles = {
+    "spring_shape.binarypb",
+    "straight_line.binarypb",
+    "very_long.binarypb",
+    "extremely_long.binarypb",
+};
 
 // The typical brush epsilon used by Stylus Showcase to render the inputs.
 constexpr float kTestBrushEpsilon = 0.1;

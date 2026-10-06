@@ -51,7 +51,7 @@ Envelope GetEnvelope(
 }
 
 TEST(RecordedTestInputsTest, IncrementalInputsHasPrediction) {
-  for (const auto& filename : kTestDataFiles) {
+  for (const auto& filename : kAllRecordedTestInputFiles) {
     auto incremental_inputs = LoadIncrementalStrokeInputs(filename);
     EXPECT_THAT(incremental_inputs, IsOk());
 
@@ -67,7 +67,7 @@ TEST(RecordedTestInputsTest, IncrementalInputsHasPrediction) {
 }
 
 TEST(RecordedTestInputsTest, IncrementalInputsRespectsBounds) {
-  for (const auto& filename : kTestDataFiles) {
+  for (const auto& filename : kAllRecordedTestInputFiles) {
     Rect bounds = Rect::FromTwoPoints({0, 1}, {2, 3});
     auto incremental_inputs = LoadIncrementalStrokeInputs(filename, bounds);
     EXPECT_THAT(incremental_inputs, IsOk());
@@ -77,7 +77,7 @@ TEST(RecordedTestInputsTest, IncrementalInputsRespectsBounds) {
 }
 
 TEST(RecordedTestInputsTest, CompleteInputsWorks) {
-  for (const auto& filename : kTestDataFiles) {
+  for (const auto& filename : kAllRecordedTestInputFiles) {
     auto incremental_inputs = LoadIncrementalStrokeInputs(filename);
     EXPECT_THAT(incremental_inputs, IsOk());
     auto complete_inputs = LoadCompleteStrokeInputs(filename);
@@ -93,7 +93,7 @@ TEST(RecordedTestInputsTest, CompleteInputsWorks) {
 }
 
 TEST(RecordedTestInputsTest, CompleteInputsRespectsBounds) {
-  for (const auto& filename : kTestDataFiles) {
+  for (const auto& filename : kAllRecordedTestInputFiles) {
     Rect bounds = Rect::FromTwoPoints({0, 1}, {2, 3});
     auto complete_inputs = LoadCompleteStrokeInputs(filename, bounds);
     EXPECT_THAT(complete_inputs, IsOk());
