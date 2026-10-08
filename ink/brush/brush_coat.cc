@@ -23,6 +23,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/types/span.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
 #include "ink/brush/version.h"
@@ -86,4 +87,18 @@ std::string ToFormattedString(const BrushCoat& coat) {
 }
 
 }  // namespace brush_internal
+
+bool BrushCoat::IsCompatibleWith(const MeshFormat& mesh_format) const {
+  absl::flat_hash_set<MeshFormat::AttributeId> required_attribute_ids;
+  brush_internal::AddAttributeIdsRequiredByCoat(*this, required_attribute_ids);
+
+  // Check if all required attributes are present in the mesh format.
+  absl::Span<const MeshFormat::Attribute> mesh_attributes =
+      mesh_format.Attributes();
+  for (const MeshFormat::Attribute& attr : mesh_attributes) {
+    required_attribute_ids.erase(attr.id);
+  }
+  return required_attribute_ids.empty();
+}
+
 }  // namespace ink

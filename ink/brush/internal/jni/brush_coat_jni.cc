@@ -45,13 +45,6 @@ JNI_METHOD(brush, BrushCoatNative, jlong, create)
   return result;
 }
 
-JNI_METHOD(brush, BrushCoatNative, jboolean, isCompatibleWithMeshFormat)
-(JNIEnv* env, jobject obj, jlong native_pointer,
- jlong mesh_format_native_pointer) {
-  return BrushCoatNative_isCompatibleWithMeshFormat(native_pointer,
-                                                    mesh_format_native_pointer);
-}
-
 JNI_METHOD(brush, BrushCoatNative, void, free)
 (JNIEnv* env, jobject thiz, jlong native_pointer) {
   BrushCoatNative_free(native_pointer);

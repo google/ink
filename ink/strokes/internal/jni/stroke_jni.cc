@@ -73,6 +73,12 @@ JNI_METHOD(strokes, StrokeNative, jlong, createWithSubtract)
       mask_f, stroke_a, stroke_b, stroke_c, stroke_d, stroke_e, stroke_f);
 }
 
+JNI_METHOD(strokes, StrokeNative, jboolean, shapeSupportsBrush)
+(JNIEnv* env, jobject object, jlong native_pointer,
+ jlong brush_native_pointer) {
+  return StrokeNative_shapeSupportsBrush(native_pointer, brush_native_pointer);
+}
+
 JNI_METHOD(strokes, MultipleStrokesNative, jlong, createWithSplit)
 (JNIEnv* env, jobject object, jlong target_stroke_ptr, jfloat transform_a,
  jfloat transform_b, jfloat transform_c, jfloat transform_d, jfloat transform_e,
