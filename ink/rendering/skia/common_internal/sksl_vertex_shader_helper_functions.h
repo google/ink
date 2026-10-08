@@ -227,7 +227,8 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
 
       float pixelOutsetTarget =
           targetAntialiasingPixelOutset(pixelsPerDimension.x);
-      float2 outsetTargets = float2(pixelOutsetTarget) / pixelsPerDimension;
+      float2 outsetTargets =
+          float2(pixelOutsetTarget) / max(float2(0.000001), pixelsPerDimension);
       float2 outsets = min(outsetTargets, decodeMargins(labels));
       outsets.x = mix(outsetTargets.x, outsets.x,
                       saturate(4.0 * pixelsPerDimension.x - 1.0));

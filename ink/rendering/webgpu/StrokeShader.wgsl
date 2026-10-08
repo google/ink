@@ -389,7 +389,9 @@ fn calculateAntialiasingAndPositionOutset(
 
   let pixelOutsetTarget =
     targetAntialiasingPixelOutset((*pixelsPerDimension).x);
-  let outsetTargets = vec2<f32>(pixelOutsetTarget) / (*pixelsPerDimension);
+  let outsetTargets =
+    vec2<f32>(pixelOutsetTarget) /
+    max(vec2<f32>(0.000001), *pixelsPerDimension);
   var outsets = min(outsetTargets, decodeMargins(labels));
   outsets.x = mix(outsetTargets.x, outsets.x,
                   saturate(4.0 * (*pixelsPerDimension).x - 1.0));
