@@ -73,6 +73,14 @@ class Stroke {
   // one render group per brush coat in `GetBrush()`.
   const PartitionedMesh& GetShape() const { return shape_; }
 
+  // Whether the existing `PartitionedMesh` of this stroke can be used with the
+  // given `Brush`.
+  bool ShapeSupportsBrush(const Brush& brush) const;
+
+  // Whether the existing `PartitionedMesh` of this stroke can be used with the
+  // given `BrushFamily`.
+  bool ShapeSupportsBrushFamily(const BrushFamily& brush_family) const;
+
   // Returns the total input duration for this stroke.
   Duration32 GetInputDuration() const { return inputs_.GetDuration(); }
 

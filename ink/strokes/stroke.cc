@@ -30,7 +30,6 @@
 #include "ink/brush/brush_family.h"
 #include "ink/color/color.h"
 #include "ink/geometry/affine_transform.h"
-#include "ink/geometry/mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/stroke_input_modeler.h"
@@ -41,26 +40,10 @@
 #include "ink/types/duration.h"
 
 namespace ink {
-namespace {
 
 using ::ink::strokes_internal::StrokeInputModeler;
 using ::ink::strokes_internal::StrokeShapeBuilder;
 using ::ink::strokes_internal::StrokeVertex;
-
-bool BrushCoatTipsAreEqual(absl::Span<const BrushCoat> coats1,
-                           absl::Span<const BrushCoat> coats2) {
-  if (coats1.size() != coats2.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < coats1.size(); ++i) {
-    if (coats1[i].tip != coats2[i].tip) {
-      return false;
-    }
-  }
-  return true;
-}
-
-}  // namespace
 
 Stroke::Stroke(const Brush& brush)
     : brush_(brush),
@@ -85,12 +68,32 @@ void Stroke::SetBrushAndInputs(const Brush& brush,
   RegenerateShape();
 }
 
-void Stroke::SetBrush(const Brush& brush) {
-  bool needs_regenerate =
-      brush.GetSize() != brush_.GetSize() ||
-      brush.GetEpsilon() != brush_.GetEpsilon() ||
-      !BrushCoatTipsAreEqual(brush.GetCoats(), brush_.GetCoats());
+bool Stroke::ShapeSupportsBrush(const Brush& other_brush) const {
+  return brush_.GetSize() == other_brush.GetSize() &&
+         brush_.GetEpsilon() == other_brush.GetEpsilon() &&
+         ShapeSupportsBrushFamily(other_brush.GetFamily());
+}
 
+bool Stroke::ShapeSupportsBrushFamily(
+    const BrushFamily& other_brush_family) const {
+  const BrushFamily& brush_family = brush_.GetFamily();
+  if (brush_family.GetInputModel() != other_brush_family.GetInputModel() ||
+      brush_family.GetCoats().size() != other_brush_family.GetCoats().size()) {
+    return false;
+  }
+  for (size_t i = 0; i < brush_family.GetCoats().size(); ++i) {
+    const BrushCoat& coat = brush_family.GetCoats()[i];
+    const BrushCoat& other_coat = other_brush_family.GetCoats()[i];
+    if (coat.tip != other_coat.tip ||
+        !other_coat.IsCompatibleWith(shape_.RenderGroupFormat(i))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void Stroke::SetBrush(const Brush& brush) {
+  bool needs_regenerate = !ShapeSupportsBrush(brush);
   brush_ = brush;
   if (needs_regenerate) {
     RegenerateShape();
@@ -98,8 +101,7 @@ void Stroke::SetBrush(const Brush& brush) {
 }
 
 void Stroke::SetBrushFamily(const BrushFamily& brush_family) {
-  bool needs_regenerate =
-      !BrushCoatTipsAreEqual(brush_family.GetCoats(), brush_.GetCoats());
+  bool needs_regenerate = !ShapeSupportsBrushFamily(brush_family);
   brush_.SetFamily(brush_family);
   if (needs_regenerate) {
     RegenerateShape();

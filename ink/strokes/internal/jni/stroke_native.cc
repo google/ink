@@ -104,6 +104,12 @@ int64_t StrokeNative_createWithSubtract(
                                        mask_transform, stroke_transform));
 }
 
+bool StrokeNative_shapeSupportsBrush(int64_t native_pointer,
+                                     int64_t brush_native_pointer) {
+  return CastToStroke(native_pointer)
+      .ShapeSupportsBrush(CastToBrush(brush_native_pointer));
+}
+
 int64_t MultipleStrokesNative_createWithSplit(
     void* jni_env_pass_through, int64_t target_stroke_ptr, float transform_a,
     float transform_b, float transform_c, float transform_d, float transform_e,

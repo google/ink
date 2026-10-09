@@ -15,6 +15,7 @@
 #ifndef INK_STROKES_INTERNAL_JNI_STROKE_NATIVE_H_
 #define INK_STROKES_INTERNAL_JNI_STROKE_NATIVE_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -67,6 +68,11 @@ int64_t MultipleStrokesNative_releaseStroke(int64_t native_pointer,
 
 // Frees the remaining result of the partial erase.
 void MultipleStrokesNative_free(int64_t native_pointer);
+
+// Returns whether the given `Stroke` can be used with the given `Brush` without
+// regenerating the mesh.
+bool StrokeNative_shapeSupportsBrush(int64_t native_pointer,
+                                     int64_t brush_native_pointer);
 
 #ifdef __cplusplus
 }  // extern "C"
