@@ -23,15 +23,22 @@
 
 namespace ink {
 
+struct SyntheticInputOptions {
+  Duration32 full_stroke_duration = Duration32::Seconds(1);
+  // TODO: b/314950788 - Remove `input_count` once upsampling is implemented.
+  int input_count = 180;
+  StrokeInput::ToolType tool_type = StrokeInput::ToolType::kUnknown;
+  PhysicalDistance stroke_unit_length = StrokeInput::kNoStrokeUnitLength;
+  bool include_pressure = false;
+  bool include_tilt = false;
+  bool include_orientation = false;
+  bool include_barrel_twist = false;
+};
+
 // Returns a single input batch for a complete Lissajous curve stroke. See
 // https://en.wikipedia.org/wiki/Lissajous_curve.
-//
-// Currently returns inputs with only position and time set.
-//
-// TODO: b/314950788 - Remove `input_count` once upsampling is implemented.
 StrokeInputBatch MakeCompleteLissajousCurveInputs(
-    Duration32 full_stroke_duration, const Rect& bounds, int input_count = 180,
-    PhysicalDistance stroke_unit_length = StrokeInput::kNoStrokeUnitLength);
+    const Rect& bounds, const SyntheticInputOptions& options = {});
 
 }  // namespace ink
 

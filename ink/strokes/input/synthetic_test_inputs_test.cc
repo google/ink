@@ -41,48 +41,46 @@ Envelope CalculateEnvelope(const StrokeInputBatch& batch) {
 TEST(InputGeneratorsTest, CompleteLissajousCurveRespectsDuration) {
   Rect bounds = Rect::FromTwoPoints({0, 0}, {1, 1});
 
-  EXPECT_FLOAT_EQ(MakeCompleteLissajousCurveInputs(Duration32::Zero(), bounds)
+  EXPECT_FLOAT_EQ(MakeCompleteLissajousCurveInputs(
+                      bounds, {.full_stroke_duration = Duration32::Zero()})
                       .GetDuration()
                       .ToSeconds(),
                   0);
 
-  EXPECT_FLOAT_EQ(
-      MakeCompleteLissajousCurveInputs(Duration32::Seconds(5), bounds)
-          .GetDuration()
-          .ToSeconds(),
-      5);
+  EXPECT_FLOAT_EQ(MakeCompleteLissajousCurveInputs(
+                      bounds, {.full_stroke_duration = Duration32::Seconds(5)})
+                      .GetDuration()
+                      .ToSeconds(),
+                  5);
 }
 
 TEST(InputGeneratorsTest, CompleteLissajousCurveRespectsBounds) {
   Rect bounds = Rect::FromTwoPoints({0, 1}, {2, 3});
-  EXPECT_THAT(CalculateEnvelope(MakeCompleteLissajousCurveInputs(
-                                    Duration32::Seconds(1), bounds))
-                  .AsRect(),
-              Optional(RectNear(bounds, 0.001f)));
+  EXPECT_THAT(
+      CalculateEnvelope(MakeCompleteLissajousCurveInputs(bounds)).AsRect(),
+      Optional(RectNear(bounds, 0.001f)));
 
   bounds = Rect::FromTwoPoints({2, 1}, {2, 3});
-  EXPECT_THAT(CalculateEnvelope(MakeCompleteLissajousCurveInputs(
-                                    Duration32::Seconds(1), bounds))
-                  .AsRect(),
-              Optional(RectNear(bounds, 0.001f)));
+  EXPECT_THAT(
+      CalculateEnvelope(MakeCompleteLissajousCurveInputs(bounds)).AsRect(),
+      Optional(RectNear(bounds, 0.001f)));
 
   bounds = Rect::FromTwoPoints({0, 3}, {2, 3});
-  EXPECT_THAT(CalculateEnvelope(MakeCompleteLissajousCurveInputs(
-                                    Duration32::Seconds(1), bounds))
-                  .AsRect(),
-              Optional(RectNear(bounds, 0.001f)));
+  EXPECT_THAT(
+      CalculateEnvelope(MakeCompleteLissajousCurveInputs(bounds)).AsRect(),
+      Optional(RectNear(bounds, 0.001f)));
 
   bounds = Rect::FromTwoPoints({3, 3}, {3, 3});
-  EXPECT_THAT(CalculateEnvelope(MakeCompleteLissajousCurveInputs(
-                                    Duration32::Seconds(1), bounds))
-                  .AsRect(),
-              Optional(RectNear(bounds, 0.001f)));
+  EXPECT_THAT(
+      CalculateEnvelope(MakeCompleteLissajousCurveInputs(bounds)).AsRect(),
+      Optional(RectNear(bounds, 0.001f)));
 }
 
 TEST(InputGeneratorsDeathTest, CompleteLissajousCurveInfiniteDuration) {
   EXPECT_DEATH_IF_SUPPORTED(
-      MakeCompleteLissajousCurveInputs(Duration32::Infinite(),
-                                       Rect::FromTwoPoints({0, 0}, {1, 1})),
+      MakeCompleteLissajousCurveInputs(
+          Rect::FromTwoPoints({0, 0}, {1, 1}),
+          {.full_stroke_duration = Duration32::Infinite()}),
       "");
 }
 
@@ -90,7 +88,6 @@ TEST(InputGeneratorsDeathTest, CompleteLissajousCurveInfiniteBounds) {
   constexpr float kInf = std::numeric_limits<float>::infinity();
   EXPECT_DEATH_IF_SUPPORTED(
       MakeCompleteLissajousCurveInputs(
-          Duration32::Seconds(1),
           Rect::FromTwoPoints({-kInf, -kInf}, {kInf, kInf})),
       "");
 }
