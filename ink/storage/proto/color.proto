@@ -20,6 +20,7 @@ package ink.proto;
 
 option java_package = "com.google.ink.proto";
 option java_outer_classname = "ColorProto";
+option java_multiple_files = true;
 
 // LINT.IfChange(color_space)
 enum ColorSpace {
