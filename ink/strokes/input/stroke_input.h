@@ -96,6 +96,10 @@ struct StrokeInput {
   // fall between 0 and 2π in radians, but can be set with either radians or
   // degrees.
   //
+  // Different stylus hardware may vary, but typically, if the stylus has one
+  // flat side along the barrel, then `barrel_twist` will equal zero whenever
+  // the flat side is pointing directly away from the drawing surface.
+  //
   // kNoBarrelTwist indicates that barrel twist is not reported.
   Angle barrel_twist = kNoBarrelTwist;
 
