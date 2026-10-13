@@ -1,5 +1,7 @@
 # Ink
 
+[![BazelTest](https://github.com/google/ink/actions/workflows/bazel-test.yaml/badge.svg)](https://github.com/google/ink/actions/workflows/bazel-test.yaml)
+
 The Ink library is a freehand stroke generation library. It produces smoothed,
 modeled stroke shapes with brush effect shaders as mesh-based vector graphics.
 
