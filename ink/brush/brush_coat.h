@@ -42,6 +42,8 @@ struct BrushCoat {
 
   bool operator==(const BrushCoat&) const = default;
 
+  bool IsCompatibleWith(const MeshFormat& mesh_format) const;
+
   template <typename H>
   friend H AbslHashValue(H h, const BrushCoat& coat) {
     return H::combine(std::move(h), coat.tip, coat.paint_preferences);

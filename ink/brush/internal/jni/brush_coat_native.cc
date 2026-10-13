@@ -17,25 +17,18 @@
 #include <cstdint>
 #include <utility>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
-#include "absl/types/span.h"
 #include "ink/brush/brush_coat.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/internal/jni/brush_native_helper.h"
-#include "ink/geometry/internal/jni/mesh_format_native_helper.h"
-#include "ink/geometry/mesh_format.h"
 
 using ::ink::BrushCoat;
 using ::ink::BrushPaint;
-using ::ink::MeshFormat;
-using ::ink::brush_internal::AddAttributeIdsRequiredByCoat;
 using ::ink::brush_internal::CalculateMinimumRequiredVersion;
 using ::ink::native::CastToBrushCoat;
 using ::ink::native::CastToBrushPaint;
 using ::ink::native::CastToBrushTip;
-using ::ink::native::CastToMeshFormat;
 using ::ink::native::DeleteNativeBrushCoat;
 using ::ink::native::NewNativeBrushCoat;
 using ::ink::native::NewNativeBrushPaint;
@@ -61,22 +54,6 @@ int64_t BrushCoatNative_create(int64_t tip_native_pointer,
 
 void BrushCoatNative_free(int64_t native_pointer) {
   DeleteNativeBrushCoat(native_pointer);
-}
-
-bool BrushCoatNative_isCompatibleWithMeshFormat(
-    int64_t native_pointer, int64_t mesh_format_native_pointer) {
-  // Gather all the attributes that are required by the brush coat.
-  absl::flat_hash_set<MeshFormat::AttributeId> required_attribute_ids;
-  AddAttributeIdsRequiredByCoat(CastToBrushCoat(native_pointer),
-                                required_attribute_ids);
-
-  // Check if all required attributes are present in the mesh format.
-  absl::Span<const MeshFormat::Attribute> mesh_attributes =
-      CastToMeshFormat(mesh_format_native_pointer).Attributes();
-  for (const MeshFormat::Attribute& attr : mesh_attributes) {
-    required_attribute_ids.erase(attr.id);
-  }
-  return required_attribute_ids.empty();
 }
 
 int64_t BrushCoatNative_newCopyOfBrushTip(int64_t native_pointer) {

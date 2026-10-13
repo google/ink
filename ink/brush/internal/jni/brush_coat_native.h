@@ -28,9 +28,6 @@ int64_t BrushCoatNative_create(int64_t tip_native_pointer,
 
 void BrushCoatNative_free(int64_t native_pointer);
 
-bool BrushCoatNative_isCompatibleWithMeshFormat(
-    int64_t native_pointer, int64_t mesh_format_native_pointer);
-
 int64_t BrushCoatNative_newCopyOfBrushTip(int64_t native_pointer);
 
 int BrushCoatNative_getBrushPaintPreferencesCount(int64_t native_pointer);

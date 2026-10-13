@@ -39,6 +39,7 @@
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/envelope.h"
+#include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_test_helpers.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/rect.h"
@@ -442,7 +443,7 @@ TEST(StrokeTest, SetInputGetInputs) {
 TEST(StrokeTest, SetBrushDifferentColor) {
   auto brush = Brush::Create({}, Color::Black(), 12, 1);
   ASSERT_THAT(brush, IsOk());
-  Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
+  Stroke stroke(*brush, CreateFilledInputs());
   ASSERT_THAT(stroke.GetBrush(), BrushEq(*brush));
   PartitionedMesh shape = stroke.GetShape();
 
@@ -482,7 +483,7 @@ TEST(StrokeTest, SetBrushDifferentSize) {
 TEST(StrokeTest, SetBrushDifferentEpsilon) {
   auto brush = Brush::Create({}, Color::Black(), 12, 1);
   ASSERT_THAT(brush, IsOk());
-  Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
+  Stroke stroke(*brush, CreateFilledInputs());
   ASSERT_THAT(stroke.GetBrush(), BrushEq(*brush));
   PartitionedMesh shape = stroke.GetShape();
 
@@ -502,7 +503,7 @@ TEST(StrokeTest, SetBrushWithDifferentTipRegeneratesShape) {
   absl::StatusOr<Brush> brush =
       Brush::Create(*brush_family, Color::Black(), 12, 0.6);
   ASSERT_THAT(brush, IsOk());
-  Stroke stroke(*brush, CreateFilledInputs(), CreateFilledShape());
+  Stroke stroke(*brush, CreateFilledInputs());
   EXPECT_THAT(stroke.GetBrush(), BrushEq(*brush));
   PartitionedMesh shape = stroke.GetShape();
 
@@ -568,6 +569,136 @@ TEST(StrokeTest, SetBrushFamilyWithDifferentTipRegeneratesShape) {
   EXPECT_THAT(stroke.GetBrushFamily(), BrushFamilyEq(*new_family));
   EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshShallowEq(shape)));
   EXPECT_THAT(stroke.GetShape(), Not(PartitionedMeshDeepEq(shape)));
+}
+
+TEST(StrokeTest, ShapeSupportsBrush) {
+  auto brush = Brush::Create({}, Color::Black(), 12, 1);
+  ASSERT_THAT(brush, IsOk());
+  Stroke stroke(*brush, CreateFilledInputs());
+
+  // Same brush is supported.
+  EXPECT_TRUE(stroke.ShapeSupportsBrush(*brush));
+
+  // Different color is supported.
+  auto brush_different_color = Brush::Create({}, Color::Red(), 12, 1);
+  ASSERT_THAT(brush_different_color, IsOk());
+  EXPECT_TRUE(stroke.ShapeSupportsBrush(*brush_different_color));
+
+  // Different size is not supported.
+  auto brush_different_size = Brush::Create({}, Color::Black(), 5, 1);
+  ASSERT_THAT(brush_different_size, IsOk());
+  EXPECT_FALSE(stroke.ShapeSupportsBrush(*brush_different_size));
+
+  // Different epsilon is not supported.
+  auto brush_different_epsilon = Brush::Create({}, Color::Black(), 12, 0.5);
+  ASSERT_THAT(brush_different_epsilon, IsOk());
+  EXPECT_FALSE(stroke.ShapeSupportsBrush(*brush_different_epsilon));
+
+  // Different family (e.g. different tip) is not supported.
+  absl::StatusOr<BrushFamily> different_family =
+      BrushFamily::Create({.scale = {0.3, 1}}, {});
+  ASSERT_THAT(different_family, IsOk());
+  auto brush_different_family =
+      Brush::Create(*different_family, Color::Black(), 12, 1);
+  ASSERT_THAT(brush_different_family, IsOk());
+  EXPECT_FALSE(stroke.ShapeSupportsBrush(*brush_different_family));
+}
+
+TEST(StrokeTest, ShapeSupportsBrushFamily) {
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
+      BrushTip{.scale = {1, 0.5}}, BrushPaint{},
+      BrushFamily::DefaultInputModel(), {.client_brush_family_id = "family-1"});
+  ASSERT_THAT(family, IsOk());
+  absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Black(), 12, 1);
+  ASSERT_THAT(brush, IsOk());
+  Stroke stroke(*brush, CreateFilledInputs());
+
+  // Same family is supported.
+  EXPECT_TRUE(stroke.ShapeSupportsBrushFamily(*family));
+
+  // Family with different metadata is supported.
+  absl::StatusOr<BrushFamily> family_different_metadata = BrushFamily::Create(
+      BrushTip{.scale = {1, 0.5}}, BrushPaint{},
+      BrushFamily::DefaultInputModel(), {.client_brush_family_id = "family-2"});
+  ASSERT_THAT(family_different_metadata, IsOk());
+  EXPECT_TRUE(stroke.ShapeSupportsBrushFamily(*family_different_metadata));
+
+  // Family with different input model is not supported.
+  absl::StatusOr<BrushFamily> family_different_input_model =
+      BrushFamily::Create(BrushTip{.scale = {1, 0.5}}, BrushPaint{},
+                          BrushFamily::PassthroughModel{});
+  ASSERT_THAT(family_different_input_model, IsOk());
+  EXPECT_FALSE(stroke.ShapeSupportsBrushFamily(*family_different_input_model));
+
+  // Family with different number of coats is not supported.
+  BrushCoat coat = {.tip = BrushTip{.scale = {1, 0.5}}};
+  absl::StatusOr<BrushFamily> multi_coat_family =
+      BrushFamily::Create({coat, coat});
+  ASSERT_THAT(multi_coat_family, IsOk());
+  EXPECT_FALSE(stroke.ShapeSupportsBrushFamily(*multi_coat_family));
+
+  // Family with different tip is not supported.
+  absl::StatusOr<BrushFamily> family_different_tip =
+      BrushFamily::Create(BrushTip{.scale = {0.5, 1}}, BrushPaint{});
+  ASSERT_THAT(family_different_tip, IsOk());
+  EXPECT_FALSE(stroke.ShapeSupportsBrushFamily(*family_different_tip));
+
+  // Multi-coat stroke: supported if all coats match, not supported if any
+  // differs.
+  absl::StatusOr<Brush> multi_coat_brush =
+      Brush::Create(*multi_coat_family, Color::Black(), 12, 1);
+  ASSERT_THAT(multi_coat_brush, IsOk());
+  Stroke multi_coat_stroke(*multi_coat_brush, CreateFilledInputs());
+  EXPECT_TRUE(multi_coat_stroke.ShapeSupportsBrushFamily(*multi_coat_family));
+  EXPECT_FALSE(multi_coat_stroke.ShapeSupportsBrushFamily(*family));
+
+  absl::StatusOr<BrushFamily> mismatched_second_coat = BrushFamily::Create(
+      {coat, BrushCoat{.tip = BrushTip{.scale = {0.5, 1}}}});
+  ASSERT_THAT(mismatched_second_coat, IsOk());
+  EXPECT_FALSE(
+      multi_coat_stroke.ShapeSupportsBrushFamily(*mismatched_second_coat));
+}
+
+TEST(StrokeTest, ShapeSupportsBrushFamilyRequiresCompatibleMeshFormat) {
+  absl::StatusOr<MeshFormat> format =
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2Unpacked,
+                           MeshFormat::AttributeId::kPosition},
+                          {MeshFormat::AttributeType::kFloat1Unpacked,
+                           MeshFormat::AttributeId::kSideDerivative},
+                          {MeshFormat::AttributeType::kFloat1Unpacked,
+                           MeshFormat::AttributeId::kSideLabel},
+                          {MeshFormat::AttributeType::kFloat1Unpacked,
+                           MeshFormat::AttributeId::kForwardDerivative},
+                          {MeshFormat::AttributeType::kFloat1Unpacked,
+                           MeshFormat::AttributeId::kForwardLabel},
+                          {MeshFormat::AttributeType::kFloat1Unpacked,
+                           MeshFormat::AttributeId::kOpacityShift}},
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  BrushCoat base_coat;
+  absl::StatusOr<BrushFamily> base_family = BrushFamily::Create({base_coat});
+  ASSERT_THAT(base_family, IsOk());
+  absl::StatusOr<Brush> base_brush =
+      Brush::Create(*base_family, Color::Black(), 10, 0.1);
+  ASSERT_THAT(base_brush, IsOk());
+
+  PartitionedMesh shape = MakeStraightLinePartitionedMesh(18, *format);
+  Stroke stroke(*base_brush, CreateFilledInputs(), shape);
+
+  // Supported because shape format contains all attributes required by
+  // base_coat.
+  EXPECT_TRUE(stroke.ShapeSupportsBrushFamily(*base_family));
+
+  // Stamping texture coat requires kSurfaceUv, which shape format lacks.
+  BrushCoat stamping_coat = {
+      .paint_preferences = {
+          BrushPaint{.texture_layers = {BrushPaint::StampingTexture{
+                         .client_texture_id = std::string(kTestTextureId)}}}}};
+  absl::StatusOr<BrushFamily> stamping_family =
+      BrushFamily::Create({stamping_coat});
+  ASSERT_THAT(stamping_family, IsOk());
+  EXPECT_FALSE(stroke.ShapeSupportsBrushFamily(*stamping_family));
 }
 
 TEST(StrokeTest, GetInputDurationEmptyStroke) {

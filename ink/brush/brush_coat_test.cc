@@ -23,6 +23,7 @@
 #include "absl/hash/hash_testing.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "ink/brush/brush_behavior.h"
@@ -189,6 +190,50 @@ TEST(BrushCoatTest, AddAttributeIdsRequiredByCoatWithStampingTextures) {
   brush_internal::AddAttributeIdsRequiredByCoat(coat, required_attributes);
   EXPECT_THAT(required_attributes,
               Contains(MeshFormat::AttributeId::kSurfaceUv));
+}
+
+TEST(BrushCoatTest, IsCompatibleWith) {
+  absl::StatusOr<MeshFormat> mesh_format_with_surface_uv =
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2Unpacked,
+                           MeshFormat::AttributeId::kPosition},
+                          {MeshFormat::AttributeType::kFloat1Unpacked,
+                           MeshFormat::AttributeId::kSideDerivative},
+                          {MeshFormat::AttributeType::kFloat1Unpacked,
+                           MeshFormat::AttributeId::kSideLabel},
+                          {MeshFormat::AttributeType::kFloat1Unpacked,
+                           MeshFormat::AttributeId::kForwardDerivative},
+                          {MeshFormat::AttributeType::kFloat1Unpacked,
+                           MeshFormat::AttributeId::kForwardLabel},
+                          {MeshFormat::AttributeType::kFloat1Unpacked,
+                           MeshFormat::AttributeId::kOpacityShift},
+                          {MeshFormat::AttributeType::kFloat1Unpacked,
+                           MeshFormat::AttributeId::kSurfaceUv}},
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(mesh_format_with_surface_uv, IsOk());
+
+  absl::StatusOr<MeshFormat> base_mesh_format =
+      mesh_format_with_surface_uv->WithoutAttributes(
+          {MeshFormat::AttributeId::kSurfaceUv});
+  ASSERT_THAT(base_mesh_format, IsOk());
+
+  absl::StatusOr<MeshFormat> missing_required_attribute =
+      base_mesh_format->WithoutAttributes(
+          {MeshFormat::AttributeId::kOpacityShift});
+  ASSERT_THAT(missing_required_attribute, IsOk());
+
+  BrushCoat default_coat;
+  EXPECT_TRUE(default_coat.IsCompatibleWith(*base_mesh_format));
+  EXPECT_TRUE(default_coat.IsCompatibleWith(*mesh_format_with_surface_uv));
+  EXPECT_FALSE(default_coat.IsCompatibleWith(*missing_required_attribute));
+  EXPECT_FALSE(default_coat.IsCompatibleWith(MeshFormat()));
+
+  BrushCoat coat_with_stamping_texture = {
+      .paint_preferences = {
+          BrushPaint{.texture_layers = {BrushPaint::StampingTexture{
+                         .client_texture_id = std::string(kTestTextureId)}}}}};
+  EXPECT_TRUE(coat_with_stamping_texture.IsCompatibleWith(
+      *mesh_format_with_surface_uv));
+  EXPECT_FALSE(coat_with_stamping_texture.IsCompatibleWith(*base_mesh_format));
 }
 
 }  // namespace
