@@ -27,6 +27,7 @@ cc_library(
     name = "cinterop",
     deps = [
         ":brush_family_serialization_native",
+        ":partitioned_mesh_serialization_native",
         ":stroke_input_batch_serialization_native",
     ],
 )
@@ -37,6 +38,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":brush_family_serialization_jni",
+        ":partitioned_mesh_serialization_jni",
         ":stroke_input_batch_serialization_jni",
     ],
 )
@@ -49,6 +51,39 @@ cc_library(
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/log:absl_check",
         "@protobuf//:protobuf_lite",
+    ],
+)
+
+cc_library(
+    name = "partitioned_mesh_serialization_jni",
+    srcs = ["partitioned_mesh_serialization_jni.cc"],
+    tags = ["keep_dep"],
+    deps = [
+        ":partitioned_mesh_serialization_native",
+        "//ink/jni/internal:jni_defines",
+        "//ink/jni/internal:jni_proto_util",
+        "//ink/jni/internal:status_jni_helper",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "partitioned_mesh_serialization_native",
+    srcs = ["partitioned_mesh_serialization_native.cc"],
+    hdrs = ["partitioned_mesh_serialization_native.h"],
+    deps = [
+        ":byte_array_native_helper",
+        "//ink/geometry:partitioned_mesh",
+        "//ink/geometry/internal/jni:partitioned_mesh_native_helper",
+        "//ink/storage:partitioned_mesh",
+        "//ink/storage/proto:mesh_cc_proto",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
     ],
 )
 
