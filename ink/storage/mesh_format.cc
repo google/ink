@@ -14,17 +14,17 @@
 
 #include "ink/storage/mesh_format.h"
 
+#include <cstdint>
 #include <utility>
+#include <vector>
 
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "ink/geometry/internal/mesh_constants.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/storage/proto/mesh.pb.h"
-#include "ink/types/small_array.h"
 
 namespace ink {
 namespace {
@@ -206,13 +206,18 @@ void EncodeMeshFormat(const MeshFormat& format,
   format_proto.mutable_attribute_types()->Reserve(format.Attributes().size());
   format_proto.mutable_attribute_ids()->Clear();
   format_proto.mutable_attribute_ids()->Reserve(format.Attributes().size());
+  format_proto.mutable_attribute_component_counts()->Clear();
+  format_proto.mutable_attribute_component_counts()->Reserve(
+      format.Attributes().size());
   for (MeshFormat::Attribute attribute : format.Attributes()) {
     format_proto.add_attribute_types(EncodeMeshAttributeType(attribute.type));
     format_proto.add_attribute_ids(EncodeMeshAttributeId(attribute.id));
+    format_proto.add_attribute_component_counts(
+        MeshFormat::ComponentCount(attribute.type));
   }
 }
 
-absl::StatusOr<MeshFormat> DecodeMeshFormat(
+absl::StatusOr<DecodedMeshFormat> DecodeMeshFormat(
     const proto::MeshFormat& format_proto,
     MeshFormat::IndexFormat index_format) {
   // Validate the number of attributes so that we can safely construct a
@@ -231,18 +236,58 @@ absl::StatusOr<MeshFormat> DecodeMeshFormat(
                      format_proto.attribute_ids_size(), " attribute IDs)"));
   }
 
-  SmallArray<std::pair<MeshFormat::AttributeType, MeshFormat::AttributeId>,
-             mesh_internal::kMaxVertexAttributes>
-      attributes(num_attributes);
-  for (int i = 0; i < num_attributes; ++i) {
-    ABSL_ASSIGN_OR_RETURN(
-        MeshFormat::AttributeType attr_type,
-        DecodeMeshAttributeType(format_proto.attribute_types(i)));
-    ABSL_ASSIGN_OR_RETURN(MeshFormat::AttributeId attr_id,
-                          DecodeMeshAttributeId(format_proto.attribute_ids(i)));
-    attributes[i] = {attr_type, attr_id};
+  if (!format_proto.attribute_component_counts().empty() &&
+      format_proto.attribute_component_counts_size() != num_attributes) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("attribute count mismatch in MeshFormat proto (has ",
+                     num_attributes, " attribute types, but ",
+                     format_proto.attribute_component_counts_size(),
+                     " attribute component counts)"));
   }
-  return MeshFormat::Create(attributes.Values(), index_format);
+
+  std::vector<std::pair<MeshFormat::AttributeType, MeshFormat::AttributeId>>
+      attributes;
+  attributes.reserve(num_attributes);
+
+  std::vector<uint32_t> attribute_offsets;
+  attribute_offsets.reserve(num_attributes);
+
+  uint32_t attr_offset = 0;
+  for (int i = 0; i < num_attributes; ++i) {
+    uint32_t current_attr_offset = attr_offset;
+
+    absl::StatusOr<MeshFormat::AttributeType> attr_type =
+        DecodeMeshAttributeType(format_proto.attribute_types(i));
+
+    uint32_t component_count;
+    if (attr_type.ok()) {
+      component_count = MeshFormat::ComponentCount(*attr_type);
+    } else if (!format_proto.attribute_component_counts().empty()) {
+      component_count = format_proto.attribute_component_counts(i);
+    } else {
+      return attr_type.status();
+    }
+
+    if (format_proto.attribute_ids(i) != proto::MeshFormat::ATTR_ID_POSITION) {
+      attr_offset += component_count;
+    }
+
+    if (!attr_type.ok()) continue;
+
+    absl::StatusOr<MeshFormat::AttributeId> attr_id =
+        DecodeMeshAttributeId(format_proto.attribute_ids(i));
+    if (!attr_id.ok()) continue;
+
+    attributes.push_back({*attr_type, *attr_id});
+    attribute_offsets.push_back(current_attr_offset);
+  }
+
+  ABSL_ASSIGN_OR_RETURN(MeshFormat format,
+                        MeshFormat::Create(attributes, index_format));
+  return DecodedMeshFormat{
+      .format = std::move(format),
+      .attribute_offsets = std::move(attribute_offsets),
+  };
 }
 
 }  // namespace ink

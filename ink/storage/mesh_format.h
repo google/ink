@@ -15,6 +15,9 @@
 #ifndef INK_STORAGE_MESH_FORMAT_H_
 #define INK_STORAGE_MESH_FORMAT_H_
 
+#include <cstdint>
+#include <vector>
+
 #include "absl/status/statusor.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/storage/proto/mesh.pb.h"
@@ -28,9 +31,20 @@ namespace ink {
 void EncodeMeshFormat(const MeshFormat& format,
                       proto::MeshFormat& format_proto);
 
-// Decodes the proto into a MeshFormat object with the given
-// IndexFormat. Returns an error if the proto is invalid.
-absl::StatusOr<MeshFormat> DecodeMeshFormat(
+// A decoded `MeshFormat` and the component offsets needed to decode a
+// `CodedMesh`.
+struct DecodedMeshFormat {
+  MeshFormat format;
+
+  // For each attribute in `format.Attributes()`, the index of its first
+  // component in `CodedMesh.other_attribute_components` (unused for position).
+  std::vector<uint32_t> attribute_offsets = {0};
+};
+
+// Decodes the proto into a `DecodedMeshFormat` with the given `IndexFormat`.
+// Unrecognized non-position attributes are omitted from `format`. Returns an
+// error if the proto is invalid.
+absl::StatusOr<DecodedMeshFormat> DecodeMeshFormat(
     const proto::MeshFormat& format_proto,
     MeshFormat::IndexFormat index_format);
 

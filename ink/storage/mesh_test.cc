@@ -292,6 +292,114 @@ TEST(MeshTest, DecodeTriangleMesh) {
   EXPECT_THAT(mesh->TriangleIndices(0), ElementsAre(0, 1, 2));
 }
 
+TEST(MeshTest, DecodeUnpackedMeshSkipsUnrecognizedAttributes) {
+  CodedMesh coded_mesh;
+  ASSERT_TRUE(TextFormat::ParseFromString(
+      R"pb(
+        format {
+          attribute_types: [
+            ATTR_TYPE_FLOAT2_UNPACKED,
+            ATTR_TYPE_FLOAT2_UNPACKED,
+            ATTR_TYPE_FLOAT1_UNPACKED,
+            ATTR_TYPE_UNSPECIFIED
+          ]
+          attribute_ids: [
+            ATTR_ID_POSITION,
+            ATTR_ID_UNSPECIFIED,
+            ATTR_ID_OPACITY_SHIFT,
+            ATTR_ID_CUSTOM0
+          ]
+          attribute_component_counts: [ 2, 2, 1, 1 ]
+        }
+        triangle_index { deltas: [ 0, 1, 1 ] }
+        x_stroke_space {
+          scale: 2.5
+          deltas: [ 1, 2, 1 ]
+        }
+        y_stroke_space {
+          scale: 2.5
+          deltas: [ 1, -1, 1 ]
+        }
+        other_attribute_components { deltas: [ 10, 10, 10 ] }
+        other_attribute_components { deltas: [ 20, 20, 20 ] }
+        other_attribute_components {
+          offset: -0.5
+          scale: 0.5
+          deltas: [ 0, 1, 1 ]
+        }
+        other_attribute_components { deltas: [ 30, 30, 30 ] }
+      )pb",
+      &coded_mesh));
+
+  absl::StatusOr<Mesh> decoded = DecodeMesh(coded_mesh);
+  ASSERT_THAT(decoded, IsOk());
+
+  absl::StatusOr<MeshFormat> expected_format =
+      MeshFormat::Create({{AttrType::kFloat2Unpacked, AttrId::kPosition},
+                          {AttrType::kFloat1Unpacked, AttrId::kOpacityShift}},
+                         MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(expected_format, IsOk());
+  EXPECT_THAT(decoded->Format(), MeshFormatEq(*expected_format));
+  ASSERT_EQ(decoded->VertexCount(), 3u);
+  EXPECT_THAT(decoded->FloatVertexAttribute(0, 1).Values(), ElementsAre(-0.5f));
+  EXPECT_THAT(decoded->FloatVertexAttribute(1, 1).Values(), ElementsAre(0.0f));
+  EXPECT_THAT(decoded->FloatVertexAttribute(2, 1).Values(), ElementsAre(0.5f));
+}
+
+TEST(MeshTest, DecodePackedMeshSkipsUnrecognizedAttributes) {
+  CodedMesh coded_mesh;
+  ASSERT_TRUE(TextFormat::ParseFromString(
+      R"pb(
+        format {
+          attribute_types: [
+            ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT,
+            ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT,
+            ATTR_TYPE_FLOAT1_PACKED_IN_ONE_BYTE,
+            ATTR_TYPE_UNSPECIFIED
+          ]
+          attribute_ids: [
+            ATTR_ID_POSITION,
+            ATTR_ID_UNSPECIFIED,
+            ATTR_ID_OPACITY_SHIFT,
+            ATTR_ID_CUSTOM0
+          ]
+          attribute_component_counts: [ 2, 2, 1, 1 ]
+        }
+        triangle_index { deltas: [ 0, 1, 1 ] }
+        x_stroke_space {
+          scale: 2.5
+          deltas: [ 1, 2, 1 ]
+        }
+        y_stroke_space {
+          scale: 2.5
+          deltas: [ 1, -1, 1 ]
+        }
+        other_attribute_components { deltas: [ 10, 10, 10 ] }
+        other_attribute_components { deltas: [ 20, 20, 20 ] }
+        other_attribute_components {
+          offset: -0.5
+          scale: 0.5
+          deltas: [ 0, 1, 1 ]
+        }
+        other_attribute_components { deltas: [ 30, 30, 30 ] }
+      )pb",
+      &coded_mesh));
+
+  absl::StatusOr<Mesh> decoded = DecodeMesh(coded_mesh);
+  ASSERT_THAT(decoded, IsOk());
+
+  absl::StatusOr<MeshFormat> expected_format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kOpacityShift}},
+      MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(expected_format, IsOk());
+  EXPECT_THAT(decoded->Format(), MeshFormatEq(*expected_format));
+  ASSERT_EQ(decoded->VertexCount(), 3u);
+  EXPECT_THAT(decoded->FloatVertexAttribute(0, 1).Values(), ElementsAre(-0.5f));
+  EXPECT_THAT(decoded->FloatVertexAttribute(1, 1).Values(), ElementsAre(0.0f));
+  EXPECT_THAT(decoded->FloatVertexAttribute(2, 1).Values(), ElementsAre(0.5f));
+}
+
 void DecodeMeshDoesNotCrashOnArbitraryInput(const CodedMesh& coded_mesh) {
   DecodeMesh(coded_mesh).IgnoreError();
 }

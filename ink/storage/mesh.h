@@ -17,7 +17,7 @@
 
 #include "absl/status/statusor.h"
 #include "ink/geometry/mesh.h"
-#include "ink/geometry/mesh_format.h"
+#include "ink/storage/mesh_format.h"
 #include "ink/storage/proto/mesh.pb.h"
 
 namespace ink {
@@ -29,9 +29,9 @@ namespace ink {
 // proto if possible.
 void EncodeMesh(const Mesh& mesh, ink::proto::CodedMesh& coded_mesh);
 
-// Same as `EncodeMesh` above, except that the mesh format is not written to the
-// `CodedMesh` proto. This can save space in contexts where the mesh format can
-// be deduced by other means (e.g. within a `CodedModeledShape` proto).
+// Populates the `CodedMesh` by encoding the given `Mesh`, omitting the mesh
+// format. This can save space in contexts where the mesh format can be deduced
+// by other means (e.g. within a `CodedModeledShape` proto).
 void EncodeMeshOmittingFormat(const Mesh& mesh,
                               ink::proto::CodedMesh& coded_mesh);
 
@@ -39,12 +39,10 @@ void EncodeMeshOmittingFormat(const Mesh& mesh,
 // invalid.
 absl::StatusOr<Mesh> DecodeMesh(const ink::proto::CodedMesh& coded_mesh);
 
-// Same as `DecodeMesh` above, except that the `CodedMesh.format` field is
-// ignored, and the given MeshFormat is assumed instead. This can be used as the
-// inverse of the `EncodeMeshOmittingFormat` function above for contexts where
-// the mesh format can be deduced by other means.
+// Decodes the `CodedMesh` into a `Mesh` using the provided `DecodedMeshFormat`
+// (ignoring `CodedMesh.format`). Returns an error if the proto is invalid.
 absl::StatusOr<Mesh> DecodeMeshUsingFormat(
-    const MeshFormat& format, const ink::proto::CodedMesh& coded_mesh);
+    const DecodedMeshFormat& format, const ink::proto::CodedMesh& coded_mesh);
 
 }  // namespace ink
 

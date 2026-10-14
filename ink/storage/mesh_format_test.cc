@@ -32,6 +32,9 @@ namespace {
 using ::absl_testing::IsOk;
 using ::absl_testing::IsOkAndHolds;
 using ::absl_testing::StatusIs;
+using ::testing::AllOf;
+using ::testing::ElementsAre;
+using ::testing::Field;
 using ::testing::HasSubstr;
 
 TEST(MeshTest, DecodeMeshFormatValid) {
@@ -39,11 +42,14 @@ TEST(MeshTest, DecodeMeshFormatValid) {
   format_proto.add_attribute_types(
       proto::MeshFormat::ATTR_TYPE_FLOAT2_UNPACKED);
   format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_POSITION);
+  format_proto.add_attribute_component_counts(2);
 
   EXPECT_THAT(
       DecodeMeshFormat(format_proto,
                        MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
-      IsOkAndHolds(MeshFormatEq(MeshFormat())));
+      IsOkAndHolds(
+          AllOf(Field(&DecodedMeshFormat::format, MeshFormatEq(MeshFormat())),
+                Field(&DecodedMeshFormat::attribute_offsets, ElementsAre(0)))));
 }
 
 TEST(MeshTest, DecodeMeshFormatWithTooManyAttributes) {
@@ -53,6 +59,7 @@ TEST(MeshTest, DecodeMeshFormatWithTooManyAttributes) {
     format_proto.add_attribute_types(
         proto::MeshFormat::ATTR_TYPE_FLOAT2_UNPACKED);
     format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_POSITION);
+    format_proto.add_attribute_component_counts(2);
   }
 
   EXPECT_THAT(
@@ -79,17 +86,60 @@ TEST(MeshTest, DecodeMeshFormatWithAttributeCountMismatch) {
                HasSubstr("attribute count mismatch")));
 }
 
-TEST(MeshTest, DecodeMeshFormatWithInvalidAttributeIdValue) {
+TEST(MeshTest, DecodeMeshFormatWithComponentCountsMismatch) {
+  // Create a MeshFormat proto with two attribute types and IDs, but only one
+  // attribute component count.
   proto::MeshFormat format_proto;
   format_proto.add_attribute_types(
       proto::MeshFormat::ATTR_TYPE_FLOAT2_UNPACKED);
-  format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_UNSPECIFIED);
+  format_proto.add_attribute_types(
+      proto::MeshFormat::ATTR_TYPE_FLOAT3_UNPACKED);
+  format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_POSITION);
+  format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_OPACITY_SHIFT);
+  format_proto.add_attribute_component_counts(2);
 
   EXPECT_THAT(
       DecodeMeshFormat(format_proto,
                        MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
       StatusIs(absl::StatusCode::kInvalidArgument,
-               HasSubstr("invalid ink.proto.MeshFormat.AttributeId value: 0")));
+               HasSubstr("attribute count mismatch")));
+}
+
+TEST(MeshTest, DecodeMeshFormatOmitsUnrecognizedAttributeId) {
+  proto::MeshFormat format_proto;
+  format_proto.add_attribute_types(
+      proto::MeshFormat::ATTR_TYPE_FLOAT1_UNPACKED);
+  format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_UNSPECIFIED);
+  format_proto.add_attribute_component_counts(1);
+  format_proto.add_attribute_types(
+      proto::MeshFormat::ATTR_TYPE_FLOAT2_UNPACKED);
+  format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_POSITION);
+  format_proto.add_attribute_component_counts(2);
+
+  EXPECT_THAT(
+      DecodeMeshFormat(format_proto,
+                       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
+      IsOkAndHolds(
+          AllOf(Field(&DecodedMeshFormat::format, MeshFormatEq(MeshFormat())),
+                Field(&DecodedMeshFormat::attribute_offsets, ElementsAre(1)))));
+}
+
+TEST(MeshTest, DecodeMeshFormatOmitsUnrecognizedAttributeType) {
+  proto::MeshFormat format_proto;
+  format_proto.add_attribute_types(proto::MeshFormat::ATTR_TYPE_UNSPECIFIED);
+  format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_OPACITY_SHIFT);
+  format_proto.add_attribute_component_counts(3);
+  format_proto.add_attribute_types(
+      proto::MeshFormat::ATTR_TYPE_FLOAT2_UNPACKED);
+  format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_POSITION);
+  format_proto.add_attribute_component_counts(2);
+
+  EXPECT_THAT(
+      DecodeMeshFormat(format_proto,
+                       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
+      IsOkAndHolds(
+          AllOf(Field(&DecodedMeshFormat::format, MeshFormatEq(MeshFormat())),
+                Field(&DecodedMeshFormat::attribute_offsets, ElementsAre(3)))));
 }
 
 TEST(MeshTest, EncodeMeshFormatClearsExistingProto) {
@@ -97,6 +147,7 @@ TEST(MeshTest, EncodeMeshFormatClearsExistingProto) {
   format_proto.add_attribute_types(
       proto::MeshFormat::ATTR_TYPE_FLOAT2_UNPACKED);
   format_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_POSITION);
+  format_proto.add_attribute_component_counts(2);
 
   absl::StatusOr<MeshFormat> format =
       MeshFormat::Create({{MeshFormat::AttributeType::kFloat4PackedInOneFloat,
@@ -111,9 +162,11 @@ TEST(MeshTest, EncodeMeshFormatClearsExistingProto) {
   expected_proto.add_attribute_types(
       proto::MeshFormat::ATTR_TYPE_FLOAT4_PACKED_IN_ONE_FLOAT);
   expected_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_COLOR_SHIFT_HCL);
+  expected_proto.add_attribute_component_counts(4);
   expected_proto.add_attribute_types(
       proto::MeshFormat::ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT);
   expected_proto.add_attribute_ids(proto::MeshFormat::ATTR_ID_POSITION);
+  expected_proto.add_attribute_component_counts(2);
   EXPECT_THAT(format_proto, EqualsProto(expected_proto));
 }
 
@@ -130,8 +183,9 @@ void EncodeMeshFormatRoundTrip(const MeshFormat& format) {
   MeshFormat::IndexFormat index_format = format.GetIndexFormat();
   proto::MeshFormat format_proto;
   EncodeMeshFormat(format, format_proto);
-  EXPECT_THAT(DecodeMeshFormat(format_proto, index_format),
-              IsOkAndHolds(MeshFormatEq(format)));
+  EXPECT_THAT(
+      DecodeMeshFormat(format_proto, index_format),
+      IsOkAndHolds(Field(&DecodedMeshFormat::format, MeshFormatEq(format))));
 }
 FUZZ_TEST(MeshTest, EncodeMeshFormatRoundTrip)
     .WithDomains(ArbitraryMeshFormat());

@@ -214,6 +214,7 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithOneTriangleMesh) {
         group_formats {
           attribute_types: [ ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT ]
           attribute_ids: [ ATTR_ID_POSITION ]
+          attribute_component_counts: [ 2 ]
         }
         group_first_mesh_indices: [ 0 ]
         group_first_outline_indices: [ 0 ]
@@ -356,10 +357,12 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoGroups) {
         group_formats {
           attribute_types: [ ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT ]
           attribute_ids: [ ATTR_ID_POSITION ]
+          attribute_component_counts: [ 2 ]
         }
         group_formats {
           attribute_types: [ ATTR_TYPE_FLOAT2_UNPACKED ]
           attribute_ids: [ ATTR_ID_POSITION ]
+          attribute_component_counts: [ 2 ]
         }
         group_first_mesh_indices: [ 0, 1 ]
         group_first_outline_indices: [ 0, 1 ]

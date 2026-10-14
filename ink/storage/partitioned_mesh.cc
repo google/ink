@@ -68,13 +68,12 @@ absl::StatusOr<std::vector<VertexIndexPair>> DecodeOutline(
 // than using the `group_*` fields).
 absl::StatusOr<PartitionedMesh> DecodePartitionedMeshGroupless(
     const ink::proto::CodedModeledShape& shape_proto) {
-  absl::StatusOr<MeshFormat> format = MeshFormat();
+  DecodedMeshFormat format;
 
   std::vector<Mesh> meshes;
   meshes.reserve(shape_proto.meshes_size());
   for (const ink::proto::CodedMesh& coded_mesh : shape_proto.meshes()) {
-    ABSL_ASSIGN_OR_RETURN(Mesh mesh,
-                          DecodeMeshUsingFormat(*format, coded_mesh));
+    ABSL_ASSIGN_OR_RETURN(Mesh mesh, DecodeMeshUsingFormat(format, coded_mesh));
     meshes.push_back(std::move(mesh));
   }
 
@@ -201,7 +200,7 @@ absl::StatusOr<PartitionedMesh> DecodePartitionedMesh(
 
   for (int group_index = 0; group_index < num_groups; ++group_index) {
     ABSL_ASSIGN_OR_RETURN(
-        MeshFormat format,
+        DecodedMeshFormat format,
         DecodeMeshFormat(shape_proto.group_formats(group_index),
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked));
 

@@ -24,7 +24,7 @@
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
+#include "absl/strings/substitute.h"
 #include "absl/types/span.h"
 #include "ink/geometry/internal/mesh_packing.h"
 #include "ink/geometry/mesh.h"
@@ -174,13 +174,17 @@ std::vector<uint32_t> DecodeDeltas(const proto::CodedNumericRun& run) {
   return sequence;
 }
 
-absl::StatusOr<Mesh> DecodePackedMesh(const MeshFormat& format,
+absl::StatusOr<Mesh> DecodePackedMesh(const DecodedMeshFormat& decoded_format,
                                       const ink::proto::CodedMesh& coded_mesh) {
+  const MeshFormat& format = decoded_format.format;
+  ABSL_DCHECK_EQ(decoded_format.attribute_offsets.size(),
+                 format.Attributes().size());
   std::vector<std::vector<uint32_t>> attributes;
   std::vector<MeshAttributeCodingParams> coding_params;
 
-  int non_position_component_index = 0;
-  for (const MeshFormat::Attribute& attribute : format.Attributes()) {
+  for (size_t attr_index = 0; attr_index < format.Attributes().size();
+       ++attr_index) {
+    const MeshFormat::Attribute& attribute = format.Attributes()[attr_index];
     int component_count = MeshFormat::ComponentCount(attribute.type);
     MeshAttributeCodingParams params;
     params.components.Resize(component_count);
@@ -193,12 +197,15 @@ absl::StatusOr<Mesh> DecodePackedMesh(const MeshFormat& format,
       params.components[1] = {.offset = coded_mesh.y_stroke_space().offset(),
                               .scale = coded_mesh.y_stroke_space().scale()};
     } else {
+      uint32_t non_position_component_index =
+          decoded_format.attribute_offsets[attr_index];
       for (int i = 0; i < component_count; ++i) {
         if (non_position_component_index >=
-            coded_mesh.other_attribute_components_size()) {
+            static_cast<uint32_t>(
+                coded_mesh.other_attribute_components_size())) {
           return absl::InvalidArgumentError(
-              absl::StrCat("Attribute index ", non_position_component_index,
-                           " out of bounds in CodedMesh."));
+              absl::Substitute("Attribute index $0 out of bounds in CodedMesh.",
+                               non_position_component_index));
         }
         const auto& coded_component =
             coded_mesh.other_attribute_components(non_position_component_index);
@@ -261,40 +268,39 @@ void EncodeMesh(const Mesh& mesh, CodedMesh& coded_mesh) {
 }
 
 absl::StatusOr<Mesh> DecodeMesh(const ink::proto::CodedMesh& coded_mesh) {
-  absl::StatusOr<MeshFormat> format = MeshFormat();
+  DecodedMeshFormat decoded_format;
   if (coded_mesh.has_format()) {
     // TODO: b/295166196 - `IndexFormat`s will be removed soon; until then, just
     // assume a default `IndexFormat` here.
     ABSL_ASSIGN_OR_RETURN(
-        format,
+        decoded_format,
         DecodeMeshFormat(coded_mesh.format(),
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked));
 
-    if (IsPackedMeshFormat(*format)) {
-      return DecodePackedMesh(*format, coded_mesh);
+    if (IsPackedMeshFormat(decoded_format.format)) {
+      return DecodePackedMesh(decoded_format, coded_mesh);
     }
   }
 
-  return DecodeMeshUsingFormat(*format, coded_mesh);
+  return DecodeMeshUsingFormat(decoded_format, coded_mesh);
 }
 
 absl::StatusOr<Mesh> DecodeMeshUsingFormat(
-    const MeshFormat& format, const ink::proto::CodedMesh& coded_mesh) {
-  int total_component_count = format.TotalComponentCount();
-  int non_position_component_count = total_component_count - 2;
-  if (coded_mesh.other_attribute_components_size() !=
-      non_position_component_count) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("MeshFormat has ", non_position_component_count,
-                     " non-position attribute components, but CodedMesh has ",
-                     coded_mesh.other_attribute_components_size(),
-                     " other_attribute_components"));
+    const DecodedMeshFormat& decoded_format,
+    const ink::proto::CodedMesh& coded_mesh) {
+  const MeshFormat& format = decoded_format.format;
+  if (decoded_format.attribute_offsets.size() != format.Attributes().size()) {
+    return absl::InvalidArgumentError(absl::Substitute(
+        "decoded_format.attribute_offsets size ($0) does not match "
+        "decoded_format.format.Attributes() size ($1).",
+        decoded_format.attribute_offsets.size(), format.Attributes().size()));
   }
-
+  int total_component_count = format.TotalComponentCount();
   std::vector<std::vector<float>> component_vectors;
   component_vectors.reserve(total_component_count);
-  int non_position_component_index = 0;
-  for (const MeshFormat::Attribute& attribute : format.Attributes()) {
+  for (size_t attr_index = 0; attr_index < format.Attributes().size();
+       ++attr_index) {
+    const MeshFormat::Attribute& attribute = format.Attributes()[attr_index];
     if (attribute.id == MeshFormat::AttributeId::kPosition) {
       ABSL_DCHECK_EQ(MeshFormat::ComponentCount(attribute.type), 2);
 
@@ -308,8 +314,17 @@ absl::StatusOr<Mesh> DecodeMeshUsingFormat(
       component_vectors.push_back(
           std::vector<float>(y_stroke_space.begin(), y_stroke_space.end()));
     } else {
+      uint32_t non_position_component_index =
+          decoded_format.attribute_offsets[attr_index];
       int component_count = MeshFormat::ComponentCount(attribute.type);
       for (int i = 0; i < component_count; ++i) {
+        if (non_position_component_index >=
+            static_cast<uint32_t>(
+                coded_mesh.other_attribute_components_size())) {
+          return absl::InvalidArgumentError(
+              absl::Substitute("Attribute index $0 out of bounds in CodedMesh.",
+                               non_position_component_index));
+        }
         ABSL_ASSIGN_OR_RETURN(
             auto component,
             DecodeFloatNumericRun(coded_mesh.other_attribute_components(

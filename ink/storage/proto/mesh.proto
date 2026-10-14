@@ -14,7 +14,7 @@
 
 // Proto definitions for delta-coded storage of Ink strokes.
 
-syntax = "proto2";
+edition = "2023";
 
 package ink.proto;
 
@@ -25,7 +25,7 @@ message CodedMesh {
   // The format that the decoded mesh attributes should be stored in. If this
   // field is absent, the default mesh format (i.e. only an unpacked position
   // attribute) will be assumed by default.
-  optional MeshFormat format = 9;
+  MeshFormat format = 9;
 
   // A list of vertex indices for mesh triangles.  The first three indices
   // indicate the vertices for the first triangle, then the next three for the
@@ -35,7 +35,7 @@ message CodedMesh {
   // This list is non-negative-integer-only (scale=1, offset=0).  However, it
   // turns out that delta-coding is still a (small) win here post-gzip, so we
   // still use CodedNumericRun.
-  optional CodedNumericRun triangle_index = 1;
+  CodedNumericRun triangle_index = 1;
 
   // Was `outline_index`, use `CodedModeledShape.outlines` instead.
   reserved 2;
@@ -48,8 +48,8 @@ message CodedMesh {
   // Typically, a CodedMesh will be stored along with a transformation matrix
   // that maps from the mesh's local coordinate space to the coordinate space of
   // its parent document or grouping.
-  optional CodedNumericRun x_stroke_space = 3;
-  optional CodedNumericRun y_stroke_space = 4;
+  CodedNumericRun x_stroke_space = 3;
+  CodedNumericRun y_stroke_space = 4;
 
   reserved 5 to 8;  // Were legacy unused fields for color shift data.
 
@@ -91,12 +91,12 @@ message CodedModeledShape {
   // The index into the `meshes` field above for the first mesh in each render
   // group. This must have the same number of elements as the `group_formats`
   // field above.
-  repeated uint32 group_first_mesh_indices = 5 [packed = true];
+  repeated uint32 group_first_mesh_indices = 5;
 
   // The index into the `outlines` field above for the first outline in each
   // render group. This must have the same number of elements as the
   // `group_formats` field above.
-  repeated uint32 group_first_outline_indices = 6 [packed = true];
+  repeated uint32 group_first_outline_indices = 6;
 }
 
 // A format specification for mesh data.
@@ -155,10 +155,14 @@ message MeshFormat {
 
   // The size/type of each vertex attribute. This must, at the very least,
   // include a 2-component position attribute.
-  repeated AttributeType attribute_types = 1 [packed = true];
+  repeated AttributeType attribute_types = 1;
 
   // The ID of each vertex attribute.  This array must be the same length as the
   // attribute_types field. For details on how these values are interpreted, see
   // ../../geometry/mesh_format.h
-  repeated AttributeId attribute_ids = 2 [packed = true];
+  repeated AttributeId attribute_ids = 2;
+
+  // The number of scalar components for each vertex attribute as specified by
+  // `attribute_types`.
+  repeated int32 attribute_component_counts = 3;
 }
