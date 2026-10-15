@@ -16,7 +16,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -44,9 +43,8 @@
 #include "ink/geometry/triangle.h"
 #include "ink/geometry/vec.h"
 #include "ink/strokes/internal/brush_tip_extruder/derivative_calculator.h"
+#include "ink/strokes/internal/mesh_attribute_interpolation.h"
 #include "ink/strokes/internal/stroke_vertex.h"
-#include "ink/types/numbers.h"
-#include "ink/types/small_array.h"
 
 namespace ink::strokes_internal {
 namespace {
@@ -57,9 +55,6 @@ using ::ink::geometry_internal::ComputeSubtraction;
 using ::ink::geometry_internal::ComputeTriangulation;
 using ::ink::geometry_internal::Intersects;
 using ::ink::geometry_internal::ShapeOutline;
-using ::ink::numbers::kPi;
-
-using VertexAttributes = absl::InlinedVector<SmallArray<float, 4>, 4>;
 
 // Relative error margin for 32-bit floating point operations.
 constexpr float kFloatTolerance = 1e-6f;
@@ -152,61 +147,6 @@ std::array<double, 3> ComputeHeights(const Triangle& tri, double det) {
   Vec v1 = tri.p0 - tri.p2;
   Vec v2 = tri.p1 - tri.p0;
   return {det / v0.Magnitude(), det / v1.Magnitude(), det / v2.Magnitude()};
-}
-
-// Maps HCL shifts to coordinates where they interpolate linearly.
-//
-// The interpolation scheme for HCL shift values is defined via their mapping to
-// linear Oklab values, which are interpolated linearly during rasterization.
-//
-// The per-vertex Oklab colors are obtained by applying the cylindrical shift to
-// a uniform (vertex independent) base Oklab color. This function maps the HCL
-// shift into coordinates in terms of which linear interpolation will produce
-// better results.
-//
-// LINT.IfChange(hcl_shift_linear_space)
-SmallArray<float, 4> HclShiftToLinearSpace(SmallArray<float, 4> val) {
-  ABSL_DCHECK_GE(val.Size(), 2);
-  float hue_shift = 2.0f * kPi * val[0], chroma_shift = val[1];
-  val[0] = (chroma_shift + 1) * std::cos(hue_shift);
-  val[1] = (chroma_shift + 1) * std::sin(hue_shift);
-  return val;
-}
-
-SmallArray<float, 4> LinearSpaceToHclShift(SmallArray<float, 4> val) {
-  ABSL_DCHECK_GE(val.Size(), 2);
-  float dx = val[0], dy = val[1];
-  val[0] = std::atan2(dy, dx) / (2.0f * kPi);
-  val[1] = std::hypot(dx, dy) - 1.0f;
-  return val;
-}
-// LINT.ThenChange(../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:apply_hcl_and_opacity_shift)
-
-// Helper function that extracts and linearizes the vertex attributes of the
-// given vertex in `mesh`.
-template <typename MeshType>
-VertexAttributes GetVertexAttributes(const MeshType& mesh, uint32_t vertex) {
-  VertexAttributes attributes(mesh.Format().Attributes().size());
-  for (uint32_t i = 0; i < attributes.size(); ++i) {
-    MeshFormat::AttributeId id = mesh.Format().Attributes()[i].id;
-
-    // Since the position is already stored elsewhere, skip loading it.
-    if (id == MeshFormat::AttributeId::kPosition) continue;
-
-    // The anti aliasing labels shouldn't be interpolated.
-    if (id == MeshFormat::AttributeId::kSideLabel) continue;
-    if (id == MeshFormat::AttributeId::kForwardLabel) continue;
-
-    // Color shift attributes need to be linearized for interpolation; all other
-    // attributes get linearly interpolated.
-    if (id == MeshFormat::AttributeId::kColorShiftHcl) {
-      attributes[i] =
-          HclShiftToLinearSpace(mesh.FloatVertexAttribute(vertex, i));
-    } else {
-      attributes[i] = mesh.FloatVertexAttribute(vertex, i);
-    }
-  }
-  return attributes;
 }
 
 // LINT.IfChange(boundary_label_encoding)
@@ -368,7 +308,7 @@ struct TriangleData {
   std::array<uint32_t, 3> indices;
   std::array<double, 9> transform;
   std::array<double, 3> heights;
-  std::array<VertexAttributes, 3> attributes;
+  std::array<InterpolationAttributes, 3> attributes;
 };
 
 // A helper class to incrementally construct a `MutableMesh` during mesh
@@ -572,10 +512,11 @@ class MeshBuilder {
     // then break each adjacent triangle up into two pieces, and then update the
     // edge triangle adjacency map.
 
-    uint32_t m = AddVertex(Segment{GetPosition(u), GetPosition(v)}.Midpoint(),
-                           std::array{GetVertexAttributes(mutable_mesh_, u),
-                                      GetVertexAttributes(mutable_mesh_, v)},
-                           /*weights=*/std::array{0.5f, 0.5f});
+    uint32_t m =
+        AddVertex(Segment{GetPosition(u), GetPosition(v)}.Midpoint(),
+                  std::array{GetInterpolationAttributes(mutable_mesh_, u),
+                             GetInterpolationAttributes(mutable_mesh_, v)},
+                  /*weights=*/std::array{0.5f, 0.5f});
     SetLabel(m, kInterior);
 
     // Get the adjacent triangles.
@@ -664,30 +605,11 @@ class MeshBuilder {
   // obtained by interpolating the given `vertex_attrs` with the given
   // `weights`, and returns the index of the newly added vertex.
   uint32_t AddVertex(Point position,
-                     absl::Span<const VertexAttributes> vertex_attrs,
+                     absl::Span<const InterpolationAttributes> vertex_attrs,
                      absl::Span<const float> weights) {
-    ABSL_DCHECK_EQ(vertex_attrs.size(), weights.size());
-    ABSL_DCHECK(!vertex_attrs.empty());
     uint32_t new_index = mutable_mesh_.VertexCount();
     mutable_mesh_.AppendVertex(position);
-    const MeshFormat& format = mutable_mesh_.Format();
-    for (uint32_t attr = 0; attr < format.Attributes().size(); ++attr) {
-      MeshFormat::AttributeId id = format.Attributes()[attr].id;
-      if (vertex_attrs[0][attr].Size() == 0) continue;
-
-      SmallArray<float, 4> interp_val(vertex_attrs[0][attr].Size());
-      for (size_t k = 0; k < vertex_attrs.size(); ++k) {
-        for (uint8_t c = 0; c < interp_val.Size(); ++c) {
-          interp_val[c] += weights[k] * vertex_attrs[k][attr][c];
-        }
-      }
-
-      // Don't forget to map the HCL shift back to proper coordinates.
-      if (id == MeshFormat::AttributeId::kColorShiftHcl) {
-        interp_val = LinearSpaceToHclShift(interp_val);
-      }
-      mutable_mesh_.SetFloatVertexAttribute(new_index, attr, interp_val);
-    }
+    SetInterpolatedAttributes(mutable_mesh_, new_index, vertex_attrs, weights);
     return new_index;
   }
 
@@ -1260,9 +1182,9 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
           .indices = indices,
           .transform = transform,
           .heights = ComputeHeights(tri, transform[8]),
-          .attributes = {GetVertexAttributes(mesh, old_indices[0]),
-                         GetVertexAttributes(mesh, old_indices[1]),
-                         GetVertexAttributes(mesh, old_indices[2])}};
+          .attributes = {GetInterpolationAttributes(mesh, old_indices[0]),
+                         GetInterpolationAttributes(mesh, old_indices[1]),
+                         GetInterpolationAttributes(mesh, old_indices[2])}};
 
       // Add all the vertices of the fragments and get their indices.
       std::vector<uint32_t> mapped_indices(fragments.vertices.size());

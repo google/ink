@@ -736,10 +736,42 @@ cc_test(
 )
 
 cc_library(
+    name = "mesh_attribute_interpolation",
+    srcs = ["mesh_attribute_interpolation.cc"],
+    hdrs = ["mesh_attribute_interpolation.h"],
+    deps = [
+        "//ink/geometry:mesh",
+        "//ink/geometry:mesh_format",
+        "//ink/geometry:mutable_mesh",
+        "//ink/types:numbers",
+        "//ink/types:small_array",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "mesh_attribute_interpolation_test",
+    srcs = ["mesh_attribute_interpolation_test.cc"],
+    deps = [
+        ":mesh_attribute_interpolation",
+        "//ink/geometry:mesh_format",
+        "//ink/geometry:mutable_mesh",
+        "//ink/geometry:point",
+        "//ink/types:small_array",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "stroke_subtraction",
     srcs = ["stroke_subtraction.cc"],
     hdrs = ["stroke_subtraction.h"],
     deps = [
+        ":mesh_attribute_interpolation",
         ":stroke_vertex",
         "//ink/geometry:affine_transform",
         "//ink/geometry:envelope",
@@ -753,8 +785,6 @@ cc_library(
         "//ink/geometry:vec",
         "//ink/geometry/internal:outline_processing",
         "//ink/strokes/internal/brush_tip_extruder:derivative_calculator",
-        "//ink/types:numbers",
-        "//ink/types:small_array",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:inlined_vector",
@@ -819,7 +849,6 @@ cc_test(
         "//ink/geometry:vec",
         "//ink/geometry/internal:algorithms",
         "//ink/geometry/internal:test_matchers",
-        "//ink/types:small_array",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/status:status_matchers",
         "@abseil-cpp//absl/status:statusor",
