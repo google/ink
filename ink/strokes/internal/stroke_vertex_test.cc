@@ -75,6 +75,35 @@ TEST(StrokeVertexLabelTest, LabelConstantProperties) {
   EXPECT_EQ(StrokeVertex::kExteriorBackLabel.DerivativeOutsetSign(), 1);
 }
 
+TEST(StrokeVertexLabelTest, DecodingIsTolerantToDefault8BitPacking) {
+  absl::StatusOr<MeshAttributeCodingParams> coding_params =
+      mesh_internal::ComputeCodingParams(
+          MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
+          {.minimum = {-127}, .maximum = {127}});
+  ASSERT_THAT(coding_params, IsOk());
+
+  for (StrokeVertex::Label original :
+       {StrokeVertex::kInteriorLabel,
+        StrokeVertex::kExteriorLeftLabel.WithMargin(0),
+        StrokeVertex::kExteriorRightLabel.WithMargin(0),
+        StrokeVertex::kExteriorLeftLabel, StrokeVertex::kExteriorRightLabel}) {
+    std::byte packed_bytes[1];
+    mesh_internal::PackAttribute(
+        MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
+        *coding_params, {original.encoded_value}, packed_bytes);
+    StrokeVertex::Label unpacked = {
+        .encoded_value = mesh_internal::UnpackAttribute(
+            MeshFormat::AttributeType::kFloat1PackedInOneUnsignedByte,
+            *coding_params, packed_bytes)[0]};
+
+    EXPECT_EQ(unpacked.DecodeSideCategory(), original.DecodeSideCategory());
+    EXPECT_EQ(unpacked.DecodeForwardCategory(),
+              original.DecodeForwardCategory());
+    EXPECT_EQ(unpacked.DerivativeOutsetSign(), original.DerivativeOutsetSign());
+    EXPECT_NEAR(unpacked.DecodeMargin(), original.DecodeMargin(), 0.02f);
+  }
+}
+
 TEST(StrokeVertexLabelTest, DecodedMarginDoesNotExceedMaximumFiniteValue) {
   ASSERT_LT(StrokeVertex::kMaximumMargin,
             std::numeric_limits<float>::infinity());

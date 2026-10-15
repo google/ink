@@ -278,22 +278,24 @@ StrokeVertex::NonPositionAttributes BarycentricLerp(
     const StrokeVertex::NonPositionAttributes& c,
     const std::array<float, 3>& t);
 
+// Encoded labels (with margins) are integers in [-127, 127]. Decoding uses ±0.5
+// thresholds to tolerate quantization from mesh packing.
 inline StrokeVertex::SideCategory StrokeVertex::Label::DecodeSideCategory()
     const {
-  return encoded_value < 0    ? StrokeVertex::SideCategory::kExteriorLeft
-         : encoded_value == 0 ? StrokeVertex::SideCategory::kInterior
-                              : StrokeVertex::SideCategory::kExteriorRight;
+  return encoded_value <= -0.5f  ? StrokeVertex::SideCategory::kExteriorLeft
+         : encoded_value >= 0.5f ? StrokeVertex::SideCategory::kExteriorRight
+                                 : StrokeVertex::SideCategory::kInterior;
 }
 
 inline StrokeVertex::ForwardCategory
 StrokeVertex::Label::DecodeForwardCategory() const {
-  return encoded_value < 0    ? StrokeVertex::ForwardCategory::kExteriorFront
-         : encoded_value == 0 ? StrokeVertex::ForwardCategory::kInterior
-                              : StrokeVertex::ForwardCategory::kExteriorBack;
+  return encoded_value <= -0.5f  ? StrokeVertex::ForwardCategory::kExteriorFront
+         : encoded_value >= 0.5f ? StrokeVertex::ForwardCategory::kExteriorBack
+                                 : StrokeVertex::ForwardCategory::kInterior;
 }
 
 inline float StrokeVertex::Label::DerivativeOutsetSign() const {
-  return (encoded_value > 0) - (encoded_value < 0);
+  return (encoded_value >= 0.5f) - (encoded_value <= -0.5f);
 }
 
 }  // namespace ink::strokes_internal

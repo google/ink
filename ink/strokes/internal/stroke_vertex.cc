@@ -56,7 +56,7 @@ constexpr std::pair<float, float> kRangeOfEncodedMarginValues = {1, 127};
 
 StrokeVertex::Label StrokeVertex::Label::WithMargin(
     float margin_fraction) const {
-  if (encoded_value == 0) return *this;
+  if (DerivativeOutsetSign() == 0) return kInteriorLabel;
   return {
       .encoded_value = DerivativeOutsetSign() *
                        std::floor(LinearMap(
@@ -66,9 +66,10 @@ StrokeVertex::Label StrokeVertex::Label::WithMargin(
 }
 
 float StrokeVertex::Label::DecodeMargin() const {
-  if (encoded_value == 0) return 0;
-  return LinearMap(std::abs(encoded_value), kRangeOfEncodedMarginValues,
-                   {0.f, kMaximumMargin});
+  if (DerivativeOutsetSign() == 0) return 0;
+  return std::max(
+      0.f, LinearMap(std::abs(encoded_value), kRangeOfEncodedMarginValues,
+                     {0.f, kMaximumMargin}));
 }
 // LINT.ThenChange(
 //     ../../rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:margin_encoding)
