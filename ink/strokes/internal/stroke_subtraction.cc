@@ -18,14 +18,13 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <numeric>
 #include <optional>
 #include <utility>
 #include <vector>
 
-#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
@@ -39,35 +38,19 @@
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
-#include "ink/geometry/segment.h"
 #include "ink/geometry/triangle.h"
 #include "ink/geometry/vec.h"
-#include "ink/strokes/internal/brush_tip_extruder/derivative_calculator.h"
 #include "ink/strokes/internal/mesh_attribute_interpolation.h"
+#include "ink/strokes/internal/stroke_anti_aliasing.h"
 #include "ink/strokes/internal/stroke_vertex.h"
 
 namespace ink::strokes_internal {
 namespace {
 
-using ::ink::brush_tip_extruder_internal::DerivativeCalculator;
-using AverageDerivative = DerivativeCalculator::AverageDerivative;
 using ::ink::geometry_internal::ComputeSubtraction;
 using ::ink::geometry_internal::ComputeTriangulation;
 using ::ink::geometry_internal::Intersects;
 using ::ink::geometry_internal::ShapeOutline;
-
-// Relative error margin for 32-bit floating point operations.
-constexpr float kFloatTolerance = 1e-6f;
-constexpr float kInfinity = std::numeric_limits<float>::infinity();
-
-// A map of undirected edges to their adjacent triangles. Each edge {u, v} is
-// canonically represented as a pair (u, v) with u < v. Each adjacent triangle
-// is represented by a pair consisting of its triangle index and a ±1
-// orientation indicating whether (u, v) aligns with the triangle's
-// counterclockwise order.
-using EdgeTriangleAdjacencyMap =
-    absl::flat_hash_map<std::pair<uint32_t, uint32_t>,
-                        absl::InlinedVector<std::pair<uint32_t, int>, 2>>;
 
 // A representation of a triangulation, consisting of a list of `vertices` and
 // `triangles` represented by triplets of indices of vertices.
@@ -78,40 +61,10 @@ struct Triangulation {
 
 float DistanceSquared(Point a, Point b) { return (a - b).MagnitudeSquared(); }
 
-// Associates the triangle `tri_index` with its directed edge (u,v) in
-// `edge_tri_map`, (assuming (u, v) is an edge of counter clockwise oriented
-// triangle).
-void AddEdgeToAdjacencyMap(uint32_t u, uint32_t v, uint32_t tri_index,
-                           EdgeTriangleAdjacencyMap& edge_tri_map) {
-  if (u < v) {
-    edge_tri_map[{u, v}].push_back({tri_index, 1});
-  } else {
-    edge_tri_map[{v, u}].push_back({tri_index, -1});
-  }
-}
-
-// Associates the triangle to its three edges in the given adjacency map.
-void AddTriangleToAdjacencyMap(const std::array<uint32_t, 3>& tri,
-                               uint32_t tri_index,
-                               EdgeTriangleAdjacencyMap& edge_tri_map) {
-  AddEdgeToAdjacencyMap(tri[0], tri[1], tri_index, edge_tri_map);
-  AddEdgeToAdjacencyMap(tri[1], tri[2], tri_index, edge_tri_map);
-  AddEdgeToAdjacencyMap(tri[2], tri[0], tri_index, edge_tri_map);
-}
-
 // Remaps the three vertex indices of a triangle using `index_map`.
 std::array<uint32_t, 3> MapIndices(const std::array<uint32_t, 3>& tri,
                                    absl::Span<const uint32_t> index_map) {
   return {index_map[tri[0]], index_map[tri[1]], index_map[tri[2]]};
-}
-
-// Returns the vertex in `tri` opposite to the edge (`u`, `v`).
-uint32_t OppositeVertex(const std::array<uint32_t, 3>& tri, uint32_t u,
-                        uint32_t v) {
-  if (tri[0] != u && tri[0] != v) return tri[0];
-  if (tri[1] != u && tri[1] != v) return tri[1];
-  ABSL_DCHECK(tri[2] != u && tri[2] != v);
-  return tri[2];
 }
 
 // Returns the homogenous transform from world space to the barycentric coords
@@ -149,103 +102,19 @@ std::array<double, 3> ComputeHeights(const Triangle& tri, double det) {
   return {det / v0.Magnitude(), det / v1.Magnitude(), det / v2.Magnitude()};
 }
 
-// LINT.IfChange(boundary_label_encoding)
-
-// A flattened list of all vertex boundary labels. See stroke_vertex.h.
-enum BoundaryLabel : int {
-  kUndefined = -1,
-  kInterior = 0,
-  kLeft = 1,
-  kRight = 2,
-  kFront = 3,
-  kLeftFront = 4,
-  kRightFront = 5,
-  kBack = 6,
-  kLeftBack = 7,
-  kRightBack = 8,
-};
-
-bool IsLeft(BoundaryLabel label) { return label % 3 == 1; }
-bool IsRight(BoundaryLabel label) { return label % 3 == 2; }
-bool IsFront(BoundaryLabel label) { return label / 3 == 1; }
-bool IsBack(BoundaryLabel label) { return label / 3 == 2; }
-
-float SideOutsetSign(BoundaryLabel label) {
-  if (IsLeft(label)) return -1.0f;
-  if (IsRight(label)) return 1.0f;
-  return 0.0f;
-}
-
-float ForwardOutsetSign(BoundaryLabel label) {
-  if (IsFront(label)) return -1.0f;
-  if (IsBack(label)) return 1.0f;
-  return 0.0f;
-}
-
-// Converts encoded float values to a BoundaryLabel enum value.
-BoundaryLabel DecodeBoundaryLabel(float side, float fwd) {
-  int side_idx = (side >= 0.5f) ? 2 : (side <= -0.5f ? 1 : 0);
-  int fwd_idx = (fwd >= 0.5f) ? 2 : (fwd <= -0.5f ? 1 : 0);
-  return static_cast<BoundaryLabel>(3 * fwd_idx + side_idx);
-}
-
-// Converts a BoundaryLabel enum value to its encoded float values.
-std::pair<float, float> EncodeBoundaryLabel(BoundaryLabel label) {
-  // Encoded float values for interior (0.0), left/front (-127.0), and
-  // right/back (127.0) boundary labels.
-  constexpr float kLabelValues[] = {0.0f, -127.0f, 127.0f};
-  return {kLabelValues[label % 3], kLabelValues[label / 3]};
-}
-
-// Returns an edge label (kInterior, kLeft, kRight, kFront, kBack) given the
-// labels of its endpoint vertices.
-BoundaryLabel GetEdgeLabel(BoundaryLabel u, BoundaryLabel v) {
-  if (u == kUndefined || v == kUndefined) return kUndefined;
-  int u_side = u % 3, v_side = v % 3;
-  int u_fwd = u / 3, v_fwd = v / 3;
-  bool same_side = (u_side != 0 && u_side == v_side);
-  bool same_fwd = (u_fwd != 0 && u_fwd == v_fwd);
-  if (same_side && same_fwd) return kUndefined;
-  if (same_side) return static_cast<BoundaryLabel>(u_side);
-  if (same_fwd) return static_cast<BoundaryLabel>(3 * u_fwd);
-  return kInterior;
-}
-// LINT.ThenChange(
-//     //depot/google3/third_party/ink/strokes/internal/stroke_vertex.h:margin_encoding,
-//     //depot/google3/third_party/ink/rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:calculate_antialiasing_and_position_outset,
-//     //depot/google3/third_party/ink/rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
-
-// Returns the boundary label shared by `a` and `b`: each of the side and
-// forward components is kept if they agree, and is otherwise interior.
-BoundaryLabel GetCommonLabel(BoundaryLabel a, BoundaryLabel b) {
-  int side = (a % 3 == b % 3) ? a % 3 : 0;
-  int fwd = (a / 3 == b / 3) ? a / 3 : 0;
-  return static_cast<BoundaryLabel>(3 * fwd + side);
-}
-
-// Returns true if `format` has the attributes required for anti-aliasing.
-bool HasAntiAliasingAttributes(const MeshFormat& format) {
-  StrokeVertex::FormatAttributeIndices attr_indices =
-      StrokeVertex::FindAttributeIndices(format);
-  return attr_indices.side_label != -1 && attr_indices.forward_label != -1 &&
-         attr_indices.side_derivative != -1 &&
-         attr_indices.forward_derivative != -1;
-}
-
 // Returns a map from each vertex to the canonical vertex it should be welded
 // to, found by pairing coincident boundary edges with opposite orientations.
 std::vector<uint32_t> ComputeSeamWeldMap(
-    const EdgeTriangleAdjacencyMap& edge_tri_map,
+    const absl::flat_hash_set<std::pair<uint32_t, uint32_t>>& boundary_edges,
     const MutableMesh& mutable_mesh) {
   // This function welds together triangles that are geometrically adjacent, but
   // whose shared edge is duplicated in the mesh (i.e., they have distinct, but
   // coincident, vertices).
   //
-  // The approach is to first compute the topological boundary, consisting of
-  // all directed edges adjacent to only one triangle. We then organize the
-  // boundary edges by their geometric positions, look for directed edges that
-  // are coincident and have opposite orientations, and weld those together by
-  // merging their endpoint vertices.
+  // To do this, we organize all of the `boundary_edges` by their geometric
+  // positions, and then look for directed edges that are coincident and have
+  // opposite orientations, and weld those together by merging their endpoint
+  // vertices.
 
   // Initialize the index_map with identity mapping.
   std::vector<uint32_t> index_map(mutable_mesh.VertexCount());
@@ -264,12 +133,7 @@ std::vector<uint32_t> ComputeSeamWeldMap(
   absl::flat_hash_map<std::pair<Point, Point>,
                       absl::InlinedVector<std::pair<uint32_t, uint32_t>, 1>>
       geometric_boundary;
-  for (const auto& [edge, incident] : edge_tri_map) {
-    if (incident.size() != 1) continue;
-    auto [u, v] = edge;
-    // The `edge_tri_map` stores undirected edges with u < v; orient the
-    // directed edge (u -> v) to match the adjacent triangle.
-    if (incident[0].second < 0) std::swap(u, v);
+  for (const auto& [u, v] : boundary_edges) {
     Point pu = mutable_mesh.VertexPosition(u);
     Point pv = mutable_mesh.VertexPosition(v);
     geometric_boundary[{pu, pv}].push_back({u, v});
@@ -317,9 +181,7 @@ struct TriangleData {
 // vertices back together along shared edges.
 class MeshBuilder {
  public:
-  explicit MeshBuilder(const MeshFormat& format)
-      : mutable_mesh_(format),
-        attr_indices_(StrokeVertex::FindAttributeIndices(format)) {}
+  explicit MeshBuilder(const MeshFormat& format) : mutable_mesh_(format) {}
 
   // Initializes the builder with vertices from `meshes`, welds any coincident
   // boundary edges, and returns a mapping of each vertex in `meshes` to its
@@ -327,11 +189,9 @@ class MeshBuilder {
   std::vector<std::vector<uint32_t>> Initialize(absl::Span<const Mesh> meshes) {
     const MeshFormat& format = mutable_mesh_.Format();
 
-    EdgeTriangleAdjacencyMap edge_tri_adj;
+    absl::flat_hash_set<std::pair<uint32_t, uint32_t>> boundary_edges;
     std::vector<std::vector<uint32_t>> index_maps(meshes.size());
 
-    // A global index, across all meshes, for each triangle.
-    uint32_t tri_idx = 0;
     for (size_t m = 0; m < meshes.size(); ++m) {
       const Mesh& mesh = meshes[m];
       index_maps[m].reserve(mesh.VertexCount());
@@ -349,48 +209,26 @@ class MeshBuilder {
       }
 
       for (uint32_t k = 0; k < mesh.TriangleCount(); ++k) {
-        tri_idx += 1;
         Triangle tri = mesh.GetTriangle(k);
-        std::array<uint32_t, 3> tri_indices =
-            MapIndices(mesh.TriangleIndices(k), index_maps[m]);
         // To avoid having to deal with subtracting degenerate triangles, we
-        // omit adding them to the edge adjacency map, which temporarily creates
-        // a topological seam in the mesh that's stitched back together below.
+        // omit their edges, which temporarily creates a topological seam in the
+        // mesh that's stitched back together below.
         if (tri.p0 == tri.p1 || tri.p1 == tri.p2 || tri.p2 == tri.p0) continue;
 
-        AddTriangleToAdjacencyMap(tri_indices, tri_idx, edge_tri_adj);
+        std::array<uint32_t, 3> t =
+            MapIndices(mesh.TriangleIndices(k), index_maps[m]);
+        for (int i = 0; i < 3; ++i) {
+          uint32_t u = t[i], v = t[(i + 1) % 3];
+          if (!boundary_edges.erase({v, u})) boundary_edges.insert({u, v});
+        }
       }
     }
 
-    num_input_vertices_ = mutable_mesh_.VertexCount();
-    modified_.assign(num_input_vertices_, false);
-
-    WeldSeams(edge_tri_adj, index_maps);
+    WeldSeams(boundary_edges, index_maps);
     return index_maps;
   }
 
-  // Returns whether `vertex_index` was copied from the input meshes by
-  // `Initialize` (as opposed to created during subtraction).
-  bool IsInputVertex(uint32_t vertex_index) const {
-    return vertex_index < num_input_vertices_;
-  }
-
-  // Marks `vertex_index` as needing its anti-aliasing data recomputed.
-  void MarkModified(uint32_t vertex_index) {
-    if (IsInputVertex(vertex_index)) modified_[vertex_index] = true;
-  }
-
-  // Returns true if vertex_index was either marked modified, or was created
-  // during subtraction.
-  bool IsModified(uint32_t vertex_index) const {
-    return !IsInputVertex(vertex_index) || modified_[vertex_index];
-  }
-
-  // Returns whether any of `indices` is modified.
-  bool HasModifiedVertex(const std::array<uint32_t, 3>& indices) const {
-    return IsModified(indices[0]) || IsModified(indices[1]) ||
-           IsModified(indices[2]);
-  }
+  uint32_t VertexCount() const { return mutable_mesh_.VertexCount(); }
 
   // Finds an existing vertex or adds one for a point `p` contained in the
   // given `triangle` (whose vertices are assumed to have already been added
@@ -419,180 +257,54 @@ class MeshBuilder {
                                 static_cast<float>(weights[2])});
   }
 
-  Point GetPosition(uint32_t vertex_index) const {
-    return mutable_mesh_.VertexPosition(vertex_index);
-  }
-
-  void SetLabel(uint32_t vertex_index, BoundaryLabel label) {
-    auto [side, forward] = EncodeBoundaryLabel(label);
-    mutable_mesh_.SetFloatVertexAttribute(vertex_index,
-                                          attr_indices_.side_label, {side});
-    mutable_mesh_.SetFloatVertexAttribute(
-        vertex_index, attr_indices_.forward_label, {forward});
-  }
-
-  BoundaryLabel GetLabel(uint32_t vertex_index) const {
-    float side = mutable_mesh_.FloatVertexAttribute(
-        vertex_index, attr_indices_.side_label)[0];
-    float fwd = mutable_mesh_.FloatVertexAttribute(
-        vertex_index, attr_indices_.forward_label)[0];
-    return DecodeBoundaryLabel(side, fwd);
-  }
-
-  // Returns the {side, forward} margins of `vertex_index`.
-  std::pair<float, float> GetMargins(uint32_t vertex_index) const {
-    float side = mutable_mesh_.FloatVertexAttribute(
-        vertex_index, attr_indices_.side_label)[0];
-    float fwd = mutable_mesh_.FloatVertexAttribute(
-        vertex_index, attr_indices_.forward_label)[0];
-    return {StrokeVertex::Label{side}.DecodeMargin(),
-            StrokeVertex::Label{fwd}.DecodeMargin()};
-  }
-
-  Vec GetSideDerivative(uint32_t vertex_index) const {
-    auto sd = mutable_mesh_.FloatVertexAttribute(vertex_index,
-                                                 attr_indices_.side_derivative);
-    return {sd[0], sd[1]};
-  }
-
-  Vec GetForwardDerivative(uint32_t vertex_index) const {
-    auto fd = mutable_mesh_.FloatVertexAttribute(
-        vertex_index, attr_indices_.forward_derivative);
-    return {fd[0], fd[1]};
-  }
-
-  void SetDerivatives(uint32_t vertex_index, Vec side, Vec forward) {
-    // Override zero vectors with a small non-zero value to avoid undefined
-    // zero-divided-by-zero in the rendering pipeline.
-    // TODO(b/555375080): Remove this once the shader issue is sorted out.
-    if (side == Vec{0, 0}) side = {kFloatTolerance, kFloatTolerance};
-    if (forward == Vec{0, 0}) forward = {kFloatTolerance, kFloatTolerance};
-    mutable_mesh_.SetFloatVertexAttribute(
-        vertex_index, attr_indices_.side_derivative, {side.x, side.y});
-    mutable_mesh_.SetFloatVertexAttribute(
-        vertex_index, attr_indices_.forward_derivative, {forward.x, forward.y});
-  }
-
-  void SetMargins(uint32_t vertex_index, float side_margin,
-                  float forward_margin) {
-    BoundaryLabel label = GetLabel(vertex_index);
-    auto [side, forward] = EncodeBoundaryLabel(label);
-    mutable_mesh_.SetFloatVertexAttribute(
-        vertex_index, attr_indices_.side_label,
-        {StrokeVertex::Label{side}.WithMargin(side_margin).encoded_value});
-    mutable_mesh_.SetFloatVertexAttribute(vertex_index,
-                                          attr_indices_.forward_label,
-                                          {StrokeVertex::Label{forward}
-                                               .WithMargin(forward_margin)
-                                               .encoded_value});
-  }
-
-  const MutableMesh& GetMesh() const { return mutable_mesh_; }
-
-  const auto& GetEdgeTriangleAdjacencyMap() const { return edge_tri_adj_map_; }
-
-  // Extracts the underlying MutableMesh by moving it, consuming the
-  // MeshBuilder.
-  MutableMesh ExtractMesh() && { return std::move(mutable_mesh_); }
-
   // Adds a triangle to the subtraction result mesh.
   void AddTriangle(const std::array<uint32_t, 3>& triangle) {
     ABSL_DCHECK_NE(triangle[0], triangle[1]);
     ABSL_DCHECK_NE(triangle[1], triangle[2]);
     ABSL_DCHECK_NE(triangle[2], triangle[0]);
-    uint32_t tri_index = mutable_mesh_.TriangleCount();
     mutable_mesh_.AppendTriangleIndices(triangle);
-    AddTriangleToAdjacencyMap(triangle, tri_index, edge_tri_adj_map_);
   }
 
-  // Subdivides the interior edge between `u` and `v` by inserting a midpoint
-  // vertex, splitting its incident triangles, and updating edge_tri_adj_map_.
-  void SubdivideEdge(uint32_t u, uint32_t v) {
-    // To subdivide the edge, we first add a vertex at the midpoint of the edge,
-    // then break each adjacent triangle up into two pieces, and then update the
-    // edge triangle adjacency map.
-
-    uint32_t m =
-        AddVertex(Segment{GetPosition(u), GetPosition(v)}.Midpoint(),
-                  std::array{GetInterpolationAttributes(mutable_mesh_, u),
-                             GetInterpolationAttributes(mutable_mesh_, v)},
-                  /*weights=*/std::array{0.5f, 0.5f});
-    SetLabel(m, kInterior);
-
-    // Get the adjacent triangles.
-    auto it = edge_tri_adj_map_.find(std::minmax(u, v));
-    if (it == edge_tri_adj_map_.end()) return;
-    auto adjacent_triangles = it->second;
-
-    // Remove the old edge from the adjacency map.
-    edge_tri_adj_map_.erase(it);
-
-    for (const auto& [tri_idx, orientation] : adjacent_triangles) {
-      // Orient the triangle vertices as (a, b, c) in counterclockwise order,
-      // with (a, b) as the directed subdivided edge.
-      std::array<uint32_t, 3> tri = mutable_mesh_.TriangleIndices(tri_idx);
-      uint32_t a = std::min(u, v), b = std::max(u, v);
-      if (orientation < 0) std::swap(a, b);
-      uint32_t c = OppositeVertex(tri, u, v);
-      //          c
-      //         /|\
-      //        / | \
-      //       /  |  \
-      //      / T1|T2 \
-      //     /    |    \
-      //    a-----m-----b
-
-      // With the edge (a,b) subdivided, the triangle is now a quad
-      // (a, m, b, c), which we break into two new triangles.
-
-      // Reuse the index of the old triangle, for triangle T1
-      uint32_t t1_idx = tri_idx;
-      mutable_mesh_.SetTriangleIndices(t1_idx, {c, a, m});
-
-      // Add a triangle for triangle T2.
-      uint32_t t2_idx = mutable_mesh_.TriangleCount();
-      mutable_mesh_.AppendTriangleIndices({c, m, b});
-
-      // Now some bookkeeping to update the edge triangle adjacency map:
-
-      // Since T1 uses the same index as the old triangle, no need to update
-      // (a,c). On the other hand, edge (b, c) is now adjacent to T2
-      for (auto& [t_idx, orient] : edge_tri_adj_map_[std::minmax(b, c)]) {
-        if (t_idx == t1_idx) {
-          t_idx = t2_idx;
-          break;
-        }
-      }
-      // Then add all the new edges.
-      AddEdgeToAdjacencyMap(a, m, t1_idx, edge_tri_adj_map_);
-      AddEdgeToAdjacencyMap(m, c, t1_idx, edge_tri_adj_map_);
-      AddEdgeToAdjacencyMap(m, b, t2_idx, edge_tri_adj_map_);
-      AddEdgeToAdjacencyMap(c, m, t2_idx, edge_tri_adj_map_);
-    }
-  }
+  // Extracts the underlying MutableMesh by moving it, consuming the
+  // MeshBuilder.
+  MutableMesh ExtractMesh() && { return std::move(mutable_mesh_); }
 
  private:
   // Welds coincident seam edges (see also `ComputeSeamWeldMap`), and updates
   // `index_maps` (see `Initialize`).
-  void WeldSeams(const EdgeTriangleAdjacencyMap& edge_tri_adj,
-                 std::vector<std::vector<uint32_t>>& index_maps) {
+  void WeldSeams(
+      const absl::flat_hash_set<std::pair<uint32_t, uint32_t>>& boundary_edges,
+      std::vector<std::vector<uint32_t>>& index_maps) {
     std::vector<uint32_t> index_remap =
-        ComputeSeamWeldMap(edge_tri_adj, mutable_mesh_);
+        ComputeSeamWeldMap(boundary_edges, mutable_mesh_);
 
-    // Set each canonical vertex to the common label of its welded copies (see
-    // `GetCommonLabel`). Vertices whose label changes get a zero margin, which
-    // prevents them from being outset by anti-aliasing. (This matches
-    // extrusion, which gives zero margins to the duplicated pivot vertices at
-    // the seams it creates after a self-intersection.)
-    if (HasAntiAliasingAttributes(mutable_mesh_.Format())) {
+    // Set each canonical vertex to keep only the side and forward label
+    // categories shared by all of its welded copies (and otherwise make them
+    // interior). Vertices whose labels change get zero margins, which prevents
+    // them from being outset by anti-aliasing. (This matches extrusion, which
+    // gives zero margins to the duplicated pivot vertices at the seams it
+    // creates after a self-intersection.)
+    StrokeVertex::FormatAttributeIndices attrs =
+        StrokeVertex::FindAttributeIndices(mutable_mesh_.Format());
+    if (attrs.side_label != -1 && attrs.forward_label != -1) {
+      auto zero_margin_label = [&](uint32_t v, int attr) {
+        return StrokeVertex::Label{
+            mutable_mesh_.FloatVertexAttribute(v, attr)[0]}
+            .WithMargin(0)
+            .encoded_value;
+      };
       for (uint32_t v = 0; v < index_remap.size(); ++v) {
         uint32_t root = index_remap[v];
         if (root == v) continue;
-        BoundaryLabel root_label = GetLabel(root);
-        BoundaryLabel common = GetCommonLabel(root_label, GetLabel(v));
-        if (common == root_label) continue;
-        SetLabel(root, common);
-        SetMargins(root, 0, 0);
+        float side = zero_margin_label(root, attrs.side_label);
+        float fwd = zero_margin_label(root, attrs.forward_label);
+        bool same_side = (side == zero_margin_label(v, attrs.side_label));
+        bool same_fwd = (fwd == zero_margin_label(v, attrs.forward_label));
+        if (same_side && same_fwd) continue;
+        mutable_mesh_.SetFloatVertexAttribute(root, attrs.side_label,
+                                              {same_side ? side : 0.0f});
+        mutable_mesh_.SetFloatVertexAttribute(root, attrs.forward_label,
+                                              {same_fwd ? fwd : 0.0f});
       }
     }
 
@@ -637,14 +349,6 @@ class MeshBuilder {
   }
 
   MutableMesh mutable_mesh_;
-  StrokeVertex::FormatAttributeIndices attr_indices_;
-
-  // The number of vertices copied from the input meshes by `Initialize`. These
-  // occupy indices [0, num_input_vertices_) of `mutable_mesh_`.
-  uint32_t num_input_vertices_ = 0;
-
-  // Whether each input vertex is modified (see `MarkModified`).
-  std::vector<bool> modified_;
 
   // A map to help weld triangles back together along split edges. It maps
   // ordered pairs of vertex indices (representing edges in the initial meshes)
@@ -653,10 +357,6 @@ class MeshBuilder {
   absl::flat_hash_map<std::pair<uint32_t, uint32_t>,
                       absl::InlinedVector<std::pair<Point, uint32_t>, 2>>
       edge_vertex_map_;
-
-  // Maps an undirected edge {u, v} (represented as (min(u, v), max(u, v))) to
-  // its incident triangles.
-  EdgeTriangleAdjacencyMap edge_tri_adj_map_;
 };
 
 // Computes the geometric boolean difference `tri` - `shape_b` as a
@@ -668,452 +368,6 @@ Triangulation SubtractTriangle(const Triangle& tri,
   return Triangulation{.vertices = std::move(vertices),
                        .triangles = std::move(triangles)};
 }
-
-// Computes outlines and returns the (clockwise oriented) outlines of the given
-// `mesh`.
-std::vector<std::vector<uint32_t>> ComputeOutlines(
-    const MeshBuilder& mesh_builder) {
-  const MutableMesh& mesh = mesh_builder.GetMesh();
-
-  // To compute the outline, we first iterate through all boundary edges (those
-  // with only one adjacent triangle) and build an adjacency map `boundary` that
-  // maps each boundary vertex to its next vertex in a counterclockwise walk of
-  // the boundary.
-  std::vector<int> boundary(mesh.VertexCount(), -1);
-
-  // TODO(b/523326691): Consider initializing `boundary` with the existing mesh
-  // outlines to avoid recomputing the outline for untouched parts of the mesh.
-  // TODO(b/521449017): Handle pinch points where multiple boundary loops meet
-  // at a common vertex.
-
-  for (const auto& [edge, tris] : mesh_builder.GetEdgeTriangleAdjacencyMap()) {
-    if (tris.size() != 1) continue;
-    auto [u, v] = edge;
-    // Orient the edge counter-clockwise.
-    if (tris[0].second < 0) std::swap(u, v);
-    boundary[u] = v;
-  }
-
-  // We now traverse the `boundary` to extract the outline as a sequence of
-  // vertices.
-  std::vector<std::vector<uint32_t>> outlines;
-  for (uint32_t start = 0; start < boundary.size(); ++start) {
-    if (boundary[start] < 0) continue;
-
-    std::vector<uint32_t> loop = {start};
-    uint32_t curr = start;
-    while (boundary[curr] >= 0) {
-      uint32_t next = boundary[curr];
-      boundary[curr] = -1;
-      if (next == start) break;
-      loop.push_back(next);
-      curr = next;
-    }
-
-    if (loop.size() > 2) {
-      std::reverse(loop.begin(), loop.end());
-      outlines.push_back(std::move(loop));
-    }
-  }
-  return outlines;
-}
-
-// LINT.IfChange(compute_labels)
-
-// The alignment cost measures how well the edge label `label` aligns with
-// `edge`.
-float AlignmentCost(BoundaryLabel label, Vec edge) {
-  if (label == kLeft) return edge.x;
-  if (label == kRight) return -edge.x;
-  if (label == kFront) return edge.y;
-  if (label == kBack) return -edge.y;
-  if (label == kInterior) return 0.0f;
-  return kInfinity;
-}
-
-// A helper function to assign boundary labels for the vertices (strictly)
-// between indices `i` and `j % n` in `outline`, writing the computed
-// labels into `labels`, and returning the total optimal alignment cost.
-float ComputeLabels(absl::Span<const uint32_t> outline, size_t i, size_t j,
-                    std::vector<BoundaryLabel>& labels,
-                    const MeshBuilder& mesh_builder) {
-  // Our approach for labeling is to try to assign vertex labels so that the
-  // induced edge labels (left, right, front, back) are aligned with their
-  // geometric orientation (relative to the original mesh frame, defined by its
-  // side derivatives).
-  //
-  // In practice, this is complicated by the fact that not all edge labels can
-  // be lifted to vertex labels, and it's not always clear how to relax the
-  // alignment goal to find a feasible edge labeling. Instead, we formulate
-  // labeling as an optimization problem: we assign an "alignment cost" to each
-  // edge, and choose vertex labels that minimize the total cost across all
-  // boundary edges.
-  //
-  // In terms of the vertex labels (l1, l2, l3, ...), the total cost function
-  // has the form
-  //    S = cost(l1,l2) + cost(l2,l3) + ...
-  // and can be minimized by standard dynamic programming.
-
-  // Accumulated minimum cost to reach each of the 9 candidate BoundaryLabel
-  // states at the current step.
-  std::array<float, 9> cost;
-  // Backpointer table for DP backtracking: bptr[step][curr] stores the index of
-  // the preceding label (prev) that yielded the minimum cost for state `curr`.
-  std::vector<std::array<int, 9>> bptr(j - i + 1);
-
-  // Initialize the costs.
-  cost.fill(kInfinity);
-  cost[labels[i]] = 0.0f;
-
-  const size_t n = outline.size();
-
-  Point u = mesh_builder.GetPosition(outline[i]);
-  Vec u_sd = mesh_builder.GetSideDerivative(outline[i]);
-
-  for (size_t k = i + 1; k <= j; ++k) {
-    size_t v_idx = outline[k % n];
-    Point v = mesh_builder.GetPosition(v_idx);
-    Vec v_sd = mesh_builder.GetSideDerivative(v_idx);
-
-    Vec edge = u - v;
-    Vec sd = ((u_sd + v_sd) * 0.5f).AsUnitVec();
-    // Compute the edge in local coordinates of the mesh, using the side
-    // derivative sd to define the frame.
-    Vec edge_local = {edge.y * sd.x - edge.x * sd.y,
-                      -(edge.x * sd.x + edge.y * sd.y)};
-
-    // Compute the transition costs to the next step.
-    std::array<float, 9> next_cost;
-    next_cost.fill(kInfinity);
-
-    // Iterate over all labels for (u,v)
-    for (int u_label = 0; u_label < 9; ++u_label) {
-      for (int v_label = 0; v_label < 9; ++v_label) {
-        BoundaryLabel edge_label =
-            GetEdgeLabel(static_cast<BoundaryLabel>(v_label),
-                         static_cast<BoundaryLabel>(u_label));
-
-        // Ignore bad labels (e.g., when the vertex labels give the edge two
-        // labels).
-        if (edge_label == kUndefined) continue;
-
-        float path_cost = cost[v_label] + AlignmentCost(edge_label, edge_local);
-        if (path_cost < next_cost[u_label]) {
-          next_cost[u_label] = path_cost;
-          bptr[k - i][u_label] = v_label;
-        }
-      }
-    }
-    cost = next_cost;
-    u = v;
-    u_sd = v_sd;
-  }
-
-  // Backtrack and update the computed labels in `labels`.
-  int curr_label = labels[j % n];
-  for (size_t k = j; k > i + 1; --k) {
-    curr_label = bptr[k - i][curr_label];
-    labels[(k - 1) % n] = static_cast<BoundaryLabel>(curr_label);
-  }
-
-  return cost[labels[j % n]];
-}
-
-// A helper function to assign boundary labels for the vertices in `outline`,
-// writing the computed labels into `labels`.
-void ComputeLabels(absl::Span<const uint32_t> outline,
-                   std::vector<BoundaryLabel>& labels,
-                   const MeshBuilder& mesh_builder) {
-  // We follow the optimization approach described above in the `ComputeLabels`
-  // overload: we iterate through choices for the first vertex, compute
-  // for each choice the optimal labeling of the remaining vertices, and choose
-  // the one with the minimum cost.
-  const size_t n = outline.size();
-  float best = kInfinity;
-  for (int l = 0; l < 9; ++l) {
-    std::vector<BoundaryLabel> candidate_labels = labels;
-    candidate_labels[0] = static_cast<BoundaryLabel>(l);
-    float cost = ComputeLabels(outline, 0, n, candidate_labels, mesh_builder);
-    if (cost < best) {
-      best = cost;
-      labels = std::move(candidate_labels);
-    }
-  }
-}
-
-// Computes anti-aliasing labels for boundary vertices.
-void ComputeAndSetLabels(absl::Span<const std::vector<uint32_t>> outlines,
-                         MeshBuilder& mesh_builder) {
-  // The boundary of the result mesh typically consists of alternating
-  // segments of the original mesh boundary and subtracted shape boundary.
-  // During the subtraction computation, the labels of the original mesh
-  // vertices are copied (see Initialize), while vertices created along the
-  // subtracted shape are treated as unlabeled (kUndefined; see IsInputVertex).
-  //
-  // To avoid recomputing the labels for the untouched portions of the mesh, we
-  // instead traverse the outline to identify maximal segments of unlabeled
-  // vertices and compute new labels for each.
-  //
-  // To simplify computing labels, we first assign vertex labels based purely on
-  // boundary edges. This however can cause interior edges to mistakenly be
-  // labeled with a boundary label. To rectify this, in a subsequent
-  // post-processing step, we subdivide any such mislabeled interior edges.
-
-  for (absl::Span<const uint32_t> outline : outlines) {
-    if (outline.empty()) continue;
-    const size_t n = outline.size();
-
-    // Input vertices keep their labels, including kInterior ones.
-    // Vertices created by the subtraction are initialized to kUndefined.
-    std::vector<BoundaryLabel> labels;
-    labels.reserve(n);
-    for (uint32_t vertex_index : outline) {
-      labels.push_back(mesh_builder.IsInputVertex(vertex_index)
-                           ? mesh_builder.GetLabel(vertex_index)
-                           : kUndefined);
-    }
-
-    // Check for the unlikely case that the entire outline is unlabeled, and
-    // handle it specially.
-    if (absl::c_all_of(labels,
-                       [](BoundaryLabel l) { return l == kUndefined; })) {
-      ComputeLabels(outline, labels, mesh_builder);
-      for (size_t k = 0; k < n; ++k) {
-        mesh_builder.SetLabel(outline[k], labels[k]);
-      }
-      continue;
-    }
-
-    // Iterate through to find maximal unlabeled segments.
-    for (size_t i = 0; i < n; ++i) {
-      if (labels[i] != kUndefined && labels[(i + 1) % n] == kUndefined) {
-        size_t j = i;
-        while (labels[(j + 1) % n] == kUndefined) ++j;
-
-        ComputeLabels(outline, i, j + 1, labels, mesh_builder);
-
-        for (size_t k = i + 1; k <= j; ++k) {
-          mesh_builder.SetLabel(outline[k % n], labels[k % n]);
-        }
-      }
-    }
-  }
-
-  // Find all mislabeled interior edges and subdivide them.
-  // TODO(b/523326691): Try edge-flipping where feasible instead of subdividing.
-  std::vector<std::pair<uint32_t, uint32_t>> mislabeled;
-  for (const auto& [edge, tris] : mesh_builder.GetEdgeTriangleAdjacencyMap()) {
-    if (tris.size() != 2) continue;
-    const auto [u, v] = edge;
-    if (GetEdgeLabel(mesh_builder.GetLabel(u), mesh_builder.GetLabel(v)) !=
-        kInterior) {
-      mislabeled.push_back(edge);
-    }
-  }
-
-  for (const auto& [u, v] : mislabeled) mesh_builder.SubdivideEdge(u, v);
-}
-// LINT.ThenChange(
-//     //depot/google3/third_party/ink/strokes/internal/stroke_vertex.h:margin_encoding,
-//     //depot/google3/third_party/ink/rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:calculate_antialiasing_and_position_outset,
-//     //depot/google3/third_party/ink/rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
-
-// LINT.IfChange(compute_derivatives)
-// Computes the anti-aliasing derivatives (`side_derivative` and
-// `forward_derivative`) for all the vertices in the mesh.
-void ComputeAndSetDerivatives(MeshBuilder& mesh_builder) {
-  // This function recomputes the anti-aliasing derivatives all vertices
-  // affected by the subtraction, by iterating over all triangles, accumulating
-  // each triangle's contribution onto its vertices, averaging the accumulated
-  // derivatives per vertex, and then writing them into the mesh. Only modified
-  // vertices (vertices affected by the subtraction) are updated; triangles with
-  // no modified vertex are skipped.
-  // TODO(b/523326691): Process only the triangles in a neighborhood of the
-  // subtraction rather than scanning all triangle sin the mesh.
-  //
-  // Our approach to computing derivatives here is a bit different than that
-  // used during extrusion (see
-  // DerivativeCalculator::AddDerivativesForTriangle), primarily to handle the
-  // more varied topologies and boundary label configurations that can arise in
-  // subtracted meshes.
-  //
-  // It works roughly as follows (see also
-  // strokes/internal/brush_tip_extruder/derivative_calculator.cc and
-  // rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h
-  // for further background and details):
-  //
-  // Recall first that the derivatives are used during rendering to perform
-  // anti-aliasing, specifically to 1) outset the vertices on the mesh boundary
-  // and 2) compute distances of pixel fragments to the mesh boundary in order
-  // to estimate pixel coverage.
-  //
-  // More precisely, for a triangle (p0, p1, p2), the boundary labels of the
-  // vertices define four normalized "distance" fields {f_left, f_right, f_back,
-  // f_front} that map a point p in the triangle to its approximate distance (in
-  // barycentric coordinates) to the respective boundary. These have the form,
-  //    f_s(p) = 1 - \sum_{i=0}^2  \lambda_i(p) * OnSide(s, p_i),
-  // where
-  //   s is a side in {left, right, front, back},
-  //   OnSide(s, p_i) is 1 if vertex p_i is (labeled) on side s and 0 otherwise,
-  //   \lambda_i is the barycentric weight function for the vertex i.
-  //
-  // The derivative vectors for each side are defined as,
-  //   derivative_s = \nabla f_s / | \nabla f_s |^2,
-  // where \nabla is the standard gradient. These vectors point normal to the
-  // boundary, and are scaled so that f_s * |derivative_s| is the distance to
-  // the boundary in stroke units.
-  //
-  // Because the mesh format stores only a single side-derivative (left/right)
-  // and a forward-derivative (front/back), we write to each vertex the side
-  // and forward derivatives matching its side and forward labels
-  // (with interior vertices accumulating both).
-
-  const MutableMesh& mesh = mesh_builder.GetMesh();
-  std::vector<AverageDerivative> side_derivative(mesh.VertexCount());
-  std::vector<AverageDerivative> forward_derivative(mesh.VertexCount());
-
-  for (uint32_t tri_idx = 0; tri_idx < mesh.TriangleCount(); ++tri_idx) {
-    std::array<uint32_t, 3> indices = mesh.TriangleIndices(tri_idx);
-    if (!mesh_builder.HasModifiedVertex(indices)) continue;
-    Triangle triangle = mesh.GetTriangle(tri_idx);
-    float area = triangle.SignedArea();
-    if (area == 0.0f) continue;
-
-    std::array<BoundaryLabel, 3> labels;
-    for (int k = 0; k < 3; ++k) {
-      labels[k] = mesh_builder.GetLabel(indices[k]);
-    }
-
-    // The gradients of the distance functions can be computed in terms of the
-    // gradients of the barycentric weight functions as,
-    //    \nabla f_s(p) = \sum_{i=0}^2  -\nabla \lambda_i(p) * OnSide(s, p_i).
-    // The gradients of the barycentric functions can be computed by recalling
-    // that \lambda_i is linear with \lambda_i(p_i) = 1 and
-    // \lambda_i(p_j) = \lambda_i(p_k) = 0, so that \nabla \lambda_i is
-    // orthogonal to the opposite edge (p_j, p_k) with length 1 / altitude_i =
-    // |p_j p_k| / (2 area).
-    //
-    // For numerical stability, we'll normalize by the factor of twice area
-    // once-for-all at the end, when we compute the derivatives.
-
-    // Gradients of the un-normalized barycentric functions ulambda = 2 area
-    // \lambda.
-    std::array<Vec, 3> grad_ulambda = {
-        (triangle.p2 - triangle.p1).Orthogonal(),
-        (triangle.p0 - triangle.p2).Orthogonal(),
-        (triangle.p1 - triangle.p0).Orthogonal(),
-    };
-
-    // Gradients of the un-normalized distance functions uf_s = 2 area f_s.
-    Vec grad_uf_left, grad_uf_right, grad_uf_front, grad_uf_back;
-    for (int i = 0; i < 3; ++i) {
-      if (IsLeft(labels[i])) grad_uf_left -= grad_ulambda[i];
-      if (IsRight(labels[i])) grad_uf_right -= grad_ulambda[i];
-      if (IsFront(labels[i])) grad_uf_front -= grad_ulambda[i];
-      if (IsBack(labels[i])) grad_uf_back -= grad_ulambda[i];
-    }
-
-    float two_area = 2.0f * area;
-    auto rescale = [two_area](Vec grad) -> Vec {
-      float mag_sq = grad.MagnitudeSquared();
-      return (mag_sq > two_area * kFloatTolerance)
-                 ? ((two_area / mag_sq) * grad)
-                 : Vec{0, 0};
-    };
-    Vec derivative_left = rescale(grad_uf_left);
-    Vec derivative_right = rescale(grad_uf_right);
-    Vec derivative_front = rescale(grad_uf_front);
-    Vec derivative_back = rescale(grad_uf_back);
-
-    // Add the derivatives onto the vertices.
-    for (int i = 0; i < 3; ++i) {
-      uint32_t idx = indices[i];
-      if (!IsLeft(labels[i])) side_derivative[idx].Add(-derivative_right);
-      if (!IsRight(labels[i])) side_derivative[idx].Add(derivative_left);
-      if (!IsFront(labels[i])) forward_derivative[idx].Add(-derivative_back);
-      if (!IsBack(labels[i])) forward_derivative[idx].Add(derivative_front);
-    }
-  }
-
-  for (uint32_t i = 0; i < mesh.VertexCount(); ++i) {
-    if (!mesh_builder.IsModified(i)) continue;
-    mesh_builder.SetDerivatives(i, side_derivative[i].Value(),
-                                forward_derivative[i].Value());
-  }
-}
-
-// Computes anti-aliasing margins for all vertices in the mesh.
-void ComputeAndSetMargins(MeshBuilder& mesh_builder) {
-  // Recall that margins are used during rendering to constrain anti-aliasing
-  // vertex outsets and prevent self-overlap and triangle inversion. See the
-  // comments in `StrokeVertex::Label` and the implementation of
-  // `DerivativeCalculator::ComputeTriangleMarginUpperBounds` for details.
-  //
-  // In this function, we recompute the margins for all vertices affected by the
-  // subtraction. We iterate through all triangles in the mesh; each triangle
-  // imposes an upper bound margin on its vertices. We compute these
-  // per-triangle constraints, and assign each vertex the tightest (minimum)
-  // bound across its incident triangles, and then write the margins to the
-  // mesh.
-  //
-  // Only modified vertices have margins recomputed; triangles with no modified
-  // vertex are skipped. To handle unmodified vertices that are adjacent to
-  // modified vertices (that may have had their derivatives changed), we take
-  // a simplified (conservative) approach of only lowering the margin.
-  // TODO(b/521448869): Consider computing the margin exactly for vertices
-  // adjacent to subtracted vertices.
-  const MutableMesh& mesh = mesh_builder.GetMesh();
-  const uint32_t num_vertices = mesh.VertexCount();
-  std::vector<float> side_margins(num_vertices, StrokeVertex::kMaximumMargin);
-  std::vector<float> forward_margins(num_vertices,
-                                     StrokeVertex::kMaximumMargin);
-
-  for (uint32_t tri_idx = 0; tri_idx < mesh.TriangleCount(); ++tri_idx) {
-    std::array<uint32_t, 3> indices = mesh.TriangleIndices(tri_idx);
-    if (!mesh_builder.HasModifiedVertex(indices)) continue;
-    Triangle triangle = mesh.GetTriangle(tri_idx);
-
-    std::array<Vec, 3> side_outsets, forward_outsets;
-    for (int i = 0; i < 3; ++i) {
-      BoundaryLabel label = mesh_builder.GetLabel(indices[i]);
-      side_outsets[i] =
-          SideOutsetSign(label) * mesh_builder.GetSideDerivative(indices[i]);
-      forward_outsets[i] = ForwardOutsetSign(label) *
-                           mesh_builder.GetForwardDerivative(indices[i]);
-    }
-
-    std::array<float, 3> side_bounds =
-        DerivativeCalculator::ComputeTriangleMarginUpperBounds(triangle,
-                                                               side_outsets);
-    std::array<float, 3> forward_bounds =
-        DerivativeCalculator::ComputeTriangleMarginUpperBounds(triangle,
-                                                               forward_outsets);
-
-    for (int i = 0; i < 3; ++i) {
-      side_margins[indices[i]] =
-          std::min(side_margins[indices[i]], side_bounds[i]);
-      forward_margins[indices[i]] =
-          std::min(forward_margins[indices[i]], forward_bounds[i]);
-    }
-  }
-
-  for (uint32_t i = 0; i < num_vertices; ++i) {
-    if (mesh_builder.IsModified(i)) {
-      mesh_builder.SetMargins(i, side_margins[i], forward_margins[i]);
-      continue;
-    }
-    // For unmodified vertices, we only decrease the margin.
-    auto [side, forward] = mesh_builder.GetMargins(i);
-    if (side_margins[i] < side || forward_margins[i] < forward) {
-      mesh_builder.SetMargins(i, std::min(side, side_margins[i]),
-                              std::min(forward, forward_margins[i]));
-    }
-  }
-}
-// LINT.ThenChange(
-//     //depot/google3/third_party/ink/strokes/internal/brush_tip_extruder/derivative_calculator.cc,
-//     //depot/google3/third_party/ink/rendering/skia/common_internal/sksl_vertex_shader_helper_functions.h:calculate_antialiasing_and_position_outset,
-//     //depot/google3/third_party/ink/rendering/webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
 
 struct SubtractedMesh {
   MutableMesh mesh;
@@ -1136,10 +390,17 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
   // indices of the corresponding vertices in the resulting `mutable_mesh`.
 
   MeshBuilder sub_mesh(format);
+
   // Initialize by copying over all vertices from `meshes`, preprocessing the
   // input meshes to filter out degenerate triangles and stitch seams, and
   // obtain a mapping from vertices in `meshes` to their copy in `sub_mesh`.
   std::vector<std::vector<uint32_t>> index_maps = sub_mesh.Initialize(meshes);
+
+  // To help focus (anti-aliasing attribute computations) on only vertices
+  // in a neighborhood of the subtraction, keep track of which vertices are
+  // created or modified (by an incident triangle being subtracted).
+  uint32_t num_input_vertices = sub_mesh.VertexCount();
+  std::vector<bool> modified_vertices(num_input_vertices, false);
 
   // Process the triangles.
   for (size_t mesh_idx = 0; mesh_idx < meshes.size(); ++mesh_idx) {
@@ -1168,8 +429,9 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
       // Otherwise, compute the subtraction and get a triangulation of the
       // leftover geometry of the triangle.
       Triangulation fragments = SubtractTriangle(tri, shape_b);
+
       // Mark the corners for anti-aliasing recomputation.
-      for (uint32_t v : indices) sub_mesh.MarkModified(v);
+      for (uint32_t v : indices) modified_vertices[v] = true;
 
       // Early skip if the triangle was entirely erased.
       if (fragments.triangles.empty()) continue;
@@ -1200,16 +462,23 @@ SubtractedMesh SubtractMeshes(absl::Span<const Mesh> meshes,
     }
   }
 
-  std::vector<std::vector<uint32_t>> outlines = ComputeOutlines(sub_mesh);
+  MutableMesh result = std::move(sub_mesh).ExtractMesh();
 
-  if (HasAntiAliasingAttributes(format)) {
-    ComputeAndSetLabels(outlines, sub_mesh);
-    ComputeAndSetDerivatives(sub_mesh);
-    ComputeAndSetMargins(sub_mesh);
-  }
+  // Outline and anti-aliasing attributes computation
+
+  // Vertices created by the subtraction get new labels.
+  std::vector<bool> new_vertices(result.VertexCount(), true);
+  std::fill_n(new_vertices.begin(), num_input_vertices, false);
+  std::vector<std::vector<uint32_t>> outlines =
+      ComputeOutlinesAndLabels(result, new_vertices);
+
+  // Vertices that were modified or created (including by
+  // `ComputeOutlinesAndLabels`) get new derivatives and margins.
+  modified_vertices.resize(result.VertexCount(), true);
+  ComputeDerivativesAndMargins(result, modified_vertices);
 
   return SubtractedMesh{
-      .mesh = std::move(sub_mesh).ExtractMesh(),
+      .mesh = std::move(result),
       .outlines = std::move(outlines),
   };
 }
