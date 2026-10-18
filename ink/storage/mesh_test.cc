@@ -190,15 +190,28 @@ TEST(MeshTest, EncodeAndDecodeMeshWithCustomFormat) {
   EXPECT_THAT(DecodeFloatNumericRun(coded_mesh.other_attribute_components(0)),
               IsOkAndHolds(ElementsAre(-1, 7, 3)));
 
-  // Decode the coded mesh, and ensure that the format is the same and that the
-  // custom attribute data is still there.
+  // Decode the coded mesh, and ensure that the format includes the added
+  // opacity shift and anti-aliasing attributes and that the custom attribute
+  // data is still there.
   absl::StatusOr<Mesh> decoded = DecodeMesh(coded_mesh);
   ASSERT_THAT(decoded, IsOk());
-  ASSERT_THAT(decoded->Format(), MeshFormatEq(*format));
+  absl::StatusOr<MeshFormat> expected_format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kOpacityShift},
+       {AttrType::kFloat1Unpacked, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+        AttrId::kSideDerivative},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kSideLabel},
+       {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+        AttrId::kForwardDerivative},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kForwardLabel}},
+      MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(expected_format, IsOk());
+  ASSERT_THAT(decoded->Format(), MeshFormatEq(*expected_format));
   ASSERT_EQ(decoded->VertexCount(), 3);
-  EXPECT_EQ(decoded->FloatVertexAttribute(0, 1)[0], -1);
-  EXPECT_EQ(decoded->FloatVertexAttribute(1, 1)[0], 7);
-  EXPECT_EQ(decoded->FloatVertexAttribute(2, 1)[0], 3);
+  EXPECT_EQ(decoded->FloatVertexAttribute(0, 2)[0], -1);
+  EXPECT_EQ(decoded->FloatVertexAttribute(1, 2)[0], 7);
+  EXPECT_EQ(decoded->FloatVertexAttribute(2, 2)[0], 3);
 }
 
 // Encoding and decoding fully packed meshes take slightly different code paths
@@ -206,8 +219,15 @@ TEST(MeshTest, EncodeAndDecodeMeshWithCustomFormat) {
 TEST(MeshTest, EncodeAndDecodeFullyPackedMesh) {
   absl::StatusOr<MeshFormat> format = MeshFormat::Create(
       {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kOpacityShift},
        {AttrType::kFloat4PackedInOneFloat, AttrId::kColorShiftHcl},
-       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kCustom0}},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kCustom0},
+       {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+        AttrId::kSideDerivative},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kSideLabel},
+       {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+        AttrId::kForwardDerivative},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kForwardLabel}},
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(format, IsOk());
 
@@ -218,10 +238,12 @@ TEST(MeshTest, EncodeAndDecodeFullyPackedMesh) {
   std::vector<float> color_l = {.4, .8, 1.2};
   std::vector<float> color_0 = {.8, 1.6, 2.4};
   std::vector<float> custom_attr = {-1, 7, 3};
+  std::vector<float> zeros = {0, 0, 0};
   std::vector<uint32_t> triangles = {0, 1, 2};
   absl::StatusOr<Mesh> mesh = Mesh::Create(
       *format,
-      {position_x, position_y, color_h, color_s, color_l, color_0, custom_attr},
+      {position_x, position_y, zeros, color_h, color_s, color_l, color_0,
+       custom_attr, zeros, zeros, zeros, zeros, zeros, zeros},
       triangles);
   ASSERT_THAT(mesh, IsOk());
   CodedMesh coded_mesh;
@@ -241,18 +263,18 @@ TEST(MeshTest, EncodeAndDecodeFullyPackedMesh) {
   EXPECT_EQ(decoded->TriangleCount(), 1);
   EXPECT_THAT(decoded->TriangleIndices(0), ElementsAre(0, 1, 2));
 
-  EXPECT_EQ(decoded->FloatVertexAttribute(0, 1),
-            mesh->FloatVertexAttribute(0, 1));
-  EXPECT_EQ(decoded->FloatVertexAttribute(1, 1),
-            mesh->FloatVertexAttribute(1, 1));
-  EXPECT_EQ(decoded->FloatVertexAttribute(2, 1),
-            mesh->FloatVertexAttribute(2, 1));
   EXPECT_EQ(decoded->FloatVertexAttribute(0, 2),
             mesh->FloatVertexAttribute(0, 2));
   EXPECT_EQ(decoded->FloatVertexAttribute(1, 2),
             mesh->FloatVertexAttribute(1, 2));
   EXPECT_EQ(decoded->FloatVertexAttribute(2, 2),
             mesh->FloatVertexAttribute(2, 2));
+  EXPECT_EQ(decoded->FloatVertexAttribute(0, 3),
+            mesh->FloatVertexAttribute(0, 3));
+  EXPECT_EQ(decoded->FloatVertexAttribute(1, 3),
+            mesh->FloatVertexAttribute(1, 3));
+  EXPECT_EQ(decoded->FloatVertexAttribute(2, 3),
+            mesh->FloatVertexAttribute(2, 3));
 }
 
 TEST(MeshTest, DecodeEmptyMesh) {
@@ -333,10 +355,16 @@ TEST(MeshTest, DecodeUnpackedMeshSkipsUnrecognizedAttributes) {
   absl::StatusOr<Mesh> decoded = DecodeMesh(coded_mesh);
   ASSERT_THAT(decoded, IsOk());
 
-  absl::StatusOr<MeshFormat> expected_format =
-      MeshFormat::Create({{AttrType::kFloat2Unpacked, AttrId::kPosition},
-                          {AttrType::kFloat1Unpacked, AttrId::kOpacityShift}},
-                         MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  absl::StatusOr<MeshFormat> expected_format = MeshFormat::Create(
+      {{AttrType::kFloat2Unpacked, AttrId::kPosition},
+       {AttrType::kFloat1Unpacked, AttrId::kOpacityShift},
+       {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+        AttrId::kSideDerivative},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kSideLabel},
+       {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+        AttrId::kForwardDerivative},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kForwardLabel}},
+      MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(expected_format, IsOk());
   EXPECT_THAT(decoded->Format(), MeshFormatEq(*expected_format));
   ASSERT_EQ(decoded->VertexCount(), 3u);
@@ -354,15 +382,23 @@ TEST(MeshTest, DecodePackedMeshSkipsUnrecognizedAttributes) {
             ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT,
             ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT,
             ATTR_TYPE_FLOAT1_PACKED_IN_ONE_BYTE,
-            ATTR_TYPE_UNSPECIFIED
+            ATTR_TYPE_UNSPECIFIED,
+            ATTR_TYPE_FLOAT2_PACKED_IN_THREE_BYTES_XY12,
+            ATTR_TYPE_FLOAT1_PACKED_IN_ONE_BYTE,
+            ATTR_TYPE_FLOAT2_PACKED_IN_THREE_BYTES_XY12,
+            ATTR_TYPE_FLOAT1_PACKED_IN_ONE_BYTE
           ]
           attribute_ids: [
             ATTR_ID_POSITION,
             ATTR_ID_UNSPECIFIED,
             ATTR_ID_OPACITY_SHIFT,
-            ATTR_ID_CUSTOM0
+            ATTR_ID_CUSTOM0,
+            ATTR_ID_SIDE_DERIVATIVE,
+            ATTR_ID_SIDE_LABEL,
+            ATTR_ID_FORWARD_DERIVATIVE,
+            ATTR_ID_FORWARD_LABEL
           ]
-          attribute_component_counts: [ 2, 2, 1, 1 ]
+          attribute_component_counts: [ 2, 2, 1, 1, 2, 1, 2, 1 ]
         }
         triangle_index { deltas: [ 0, 1, 1 ] }
         x_stroke_space {
@@ -381,6 +417,12 @@ TEST(MeshTest, DecodePackedMeshSkipsUnrecognizedAttributes) {
           deltas: [ 0, 1, 1 ]
         }
         other_attribute_components { deltas: [ 30, 30, 30 ] }
+        other_attribute_components { deltas: [ 0, 0, 0 ] }
+        other_attribute_components { deltas: [ 0, 0, 0 ] }
+        other_attribute_components { deltas: [ 0, 0, 0 ] }
+        other_attribute_components { deltas: [ 0, 0, 0 ] }
+        other_attribute_components { deltas: [ 0, 0, 0 ] }
+        other_attribute_components { deltas: [ 0, 0, 0 ] }
       )pb",
       &coded_mesh));
 
@@ -389,7 +431,13 @@ TEST(MeshTest, DecodePackedMeshSkipsUnrecognizedAttributes) {
 
   absl::StatusOr<MeshFormat> expected_format = MeshFormat::Create(
       {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kOpacityShift}},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kOpacityShift},
+       {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+        AttrId::kSideDerivative},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kSideLabel},
+       {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+        AttrId::kForwardDerivative},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kForwardLabel}},
       MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
   ASSERT_THAT(expected_format, IsOk());
   EXPECT_THAT(decoded->Format(), MeshFormatEq(*expected_format));
@@ -397,6 +445,43 @@ TEST(MeshTest, DecodePackedMeshSkipsUnrecognizedAttributes) {
   EXPECT_THAT(decoded->FloatVertexAttribute(0, 1).Values(), ElementsAre(-0.5f));
   EXPECT_THAT(decoded->FloatVertexAttribute(1, 1).Values(), ElementsAre(0.0f));
   EXPECT_THAT(decoded->FloatVertexAttribute(2, 1).Values(), ElementsAre(0.5f));
+}
+
+TEST(MeshTest, DecodeMeshPopulatesMissingRequiredAttributes) {
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInThreeUnsignedBytes_XY12, AttrId::kPosition}},
+      MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  absl::StatusOr<Mesh> mesh =
+      Mesh::Create(*format, {{0, 10, 0, 10}, {0, 0, 2, 2}}, {0, 1, 2, 2, 1, 3});
+  ASSERT_THAT(mesh, IsOk());
+
+  CodedMesh coded_mesh;
+  EncodeMesh(*mesh, coded_mesh);
+
+  absl::StatusOr<Mesh> decoded = DecodeMesh(coded_mesh);
+  ASSERT_THAT(decoded, IsOk());
+
+  absl::StatusOr<MeshFormat> expected_format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInThreeUnsignedBytes_XY12, AttrId::kPosition},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kOpacityShift},
+       {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+        AttrId::kSideDerivative},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kSideLabel},
+       {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+        AttrId::kForwardDerivative},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kForwardLabel}},
+      MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(expected_format, IsOk());
+  EXPECT_THAT(decoded->Format(), MeshFormatEq(*expected_format));
+  ASSERT_GE(decoded->VertexCount(), 4u);
+  for (uint32_t v = 0; v < 4; ++v) {
+    EXPECT_THAT(decoded->FloatVertexAttribute(v, 1).Values(),
+                ElementsAre(FloatNear(0.0f, 1e-2f)));
+    EXPECT_TRUE(decoded->FloatVertexAttribute(v, 3)[0] != 0.0f ||
+                decoded->FloatVertexAttribute(v, 5)[0] != 0.0f);
+  }
 }
 
 void DecodeMeshDoesNotCrashOnArbitraryInput(const CodedMesh& coded_mesh) {
@@ -420,6 +505,7 @@ void EncodePositionOnlyMeshRoundTrip(const MutableMesh& mutable_mesh) {
 FUZZ_TEST(MeshTest, EncodePositionOnlyMeshRoundTrip)
     .WithDomains(ValidPackableNonEmptyMutableMesh(*MeshFormat::Create(
         {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+         {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kOpacityShift},
          {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
           AttrId::kSideDerivative},
          {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kSideLabel},

@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include "absl/log/absl_check.h"
@@ -30,11 +31,14 @@
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_packing_types.h"
+#include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/point.h"
 #include "ink/storage/mesh_format.h"
 #include "ink/storage/numeric_run.h"
 #include "ink/storage/proto/coded_numeric_run.pb.h"
 #include "ink/storage/proto/mesh.pb.h"
+#include "ink/strokes/internal/stroke_anti_aliasing.h"
+#include "ink/strokes/internal/stroke_vertex.h"
 #include "ink/types/iterator_range.h"
 #include "ink/types/small_array.h"
 
@@ -163,6 +167,54 @@ bool IsPackedMeshFormat(const MeshFormat& format) {
   return true;
 }
 
+bool HasOpacityShiftAttribute(const MeshFormat& format) {
+  return strokes_internal::StrokeVertex::FindAttributeIndices(format)
+             .opacity_shift != -1;
+}
+
+// Returns a copy of `format` with `kOpacityShift` added immediately after
+// `kPosition` using its default packed type from
+// `StrokeVertex::FullMeshFormat()`.
+absl::StatusOr<MeshFormat> AddOpacityShiftAttribute(const MeshFormat& format) {
+  using strokes_internal::StrokeVertex;
+  MeshFormat full_format = StrokeVertex::FullMeshFormat();
+  absl::Span<const MeshFormat::Attribute> full_attrs = full_format.Attributes();
+  std::vector<std::pair<MeshFormat::AttributeType, MeshFormat::AttributeId>>
+      attrs;
+  attrs.reserve(format.Attributes().size() + 1);
+  for (const MeshFormat::Attribute& attr : format.Attributes()) {
+    attrs.push_back({attr.type, attr.id});
+    if (attr.id == MeshFormat::AttributeId::kPosition) {
+      int index = StrokeVertex::kFullFormatAttributeIndices.opacity_shift;
+      attrs.push_back({full_attrs[index].type, full_attrs[index].id});
+    }
+  }
+  return MeshFormat::Create(attrs, format.GetIndexFormat());
+}
+
+// Returns a copy of `format` with the four anti-aliasing attributes appended at
+// the end using their default packed types from
+// `StrokeVertex::FullMeshFormat()`.
+absl::StatusOr<MeshFormat> AddAntiAliasingAttributes(const MeshFormat& format) {
+  using strokes_internal::StrokeVertex;
+  MeshFormat full_format = StrokeVertex::FullMeshFormat();
+  absl::Span<const MeshFormat::Attribute> full_attrs = full_format.Attributes();
+  std::vector<std::pair<MeshFormat::AttributeType, MeshFormat::AttributeId>>
+      attrs;
+  attrs.reserve(format.Attributes().size() + 4);
+  for (const MeshFormat::Attribute& attr : format.Attributes()) {
+    attrs.push_back({attr.type, attr.id});
+  }
+  for (int index :
+       {StrokeVertex::kFullFormatAttributeIndices.side_derivative,
+        StrokeVertex::kFullFormatAttributeIndices.side_label,
+        StrokeVertex::kFullFormatAttributeIndices.forward_derivative,
+        StrokeVertex::kFullFormatAttributeIndices.forward_label}) {
+    attrs.push_back({full_attrs[index].type, full_attrs[index].id});
+  }
+  return MeshFormat::Create(attrs, format.GetIndexFormat());
+}
+
 std::vector<uint32_t> DecodeDeltas(const proto::CodedNumericRun& run) {
   std::vector<uint32_t> sequence;
   sequence.reserve(run.deltas_size());
@@ -277,7 +329,9 @@ absl::StatusOr<Mesh> DecodeMesh(const ink::proto::CodedMesh& coded_mesh) {
         DecodeMeshFormat(coded_mesh.format(),
                          MeshFormat::IndexFormat::k32BitUnpacked16BitPacked));
 
-    if (IsPackedMeshFormat(decoded_format.format)) {
+    if (IsPackedMeshFormat(decoded_format.format) &&
+        HasOpacityShiftAttribute(decoded_format.format) &&
+        strokes_internal::HasAntiAliasingAttributes(decoded_format.format)) {
       return DecodePackedMesh(decoded_format, coded_mesh);
     }
   }
@@ -347,7 +401,65 @@ absl::StatusOr<Mesh> DecodeMeshUsingFormat(
   std::vector<uint32_t> triangle_indices(triangle_range.begin(),
                                          triangle_range.end());
 
-  return ink::Mesh::Create(format, component_spans, triangle_indices);
+  // To ensure that a decoded mesh can be rendered, check that all required
+  // attributes are present and populate/recompute any that are missing. See
+  // `AddRequiredAttributeIds` in `third_party/ink/brush/brush_coat.cc` and
+  // `GetValidatedStrokeAttributeTypesAndOffsets` in
+  // `third_party/ink/rendering/common/stroke_attribute_helpers.cc` for the
+  // attributes and ordering required for rendering.
+  bool has_opacity_shift = HasOpacityShiftAttribute(format);
+  bool has_aa_attributes = strokes_internal::HasAntiAliasingAttributes(format);
+  if (has_opacity_shift && has_aa_attributes) {
+    return ink::Mesh::Create(format, component_spans, triangle_indices);
+  }
+
+  // Update the format.
+  MeshFormat target_format = format;
+  if (!has_opacity_shift) {
+    ABSL_ASSIGN_OR_RETURN(target_format,
+                          AddOpacityShiftAttribute(target_format));
+  }
+  if (!has_aa_attributes) {
+    ABSL_ASSIGN_OR_RETURN(target_format,
+                          AddAntiAliasingAttributes(target_format));
+  }
+  if (target_format.Attributes().size() >
+      strokes_internal::StrokeVertex::kMaxAttributeCount) {
+    return absl::InvalidArgumentError(
+        "Maximum number of stroke attributes exceeded.");
+  }
+
+  // Update the mesh.
+  const std::vector<float> default_component_values(component_vectors[0].size(),
+                                                    0.0f);
+  if (!has_opacity_shift) {
+    size_t position_component_offset =
+        format.Attributes()[format.PositionAttributeIndex()].unpacked_offset /
+        sizeof(float);
+    component_spans.insert(
+        component_spans.begin() + position_component_offset + 2,
+        default_component_values);
+  }
+  if (!has_aa_attributes) {
+    component_spans.resize(target_format.TotalComponentCount(),
+                           default_component_values);
+  }
+  ABSL_ASSIGN_OR_RETURN(
+      Mesh mesh,
+      ink::Mesh::Create(target_format, component_spans, triangle_indices));
+
+  MutableMesh mutable_mesh = MutableMesh::FromMesh(mesh);
+  ABSL_RETURN_IF_ERROR(mutable_mesh.ValidateTriangles());
+  if (!has_aa_attributes) {
+    strokes_internal::ComputeOutlinesAndLabels(mutable_mesh);
+    strokes_internal::ComputeDerivativesAndMargins(mutable_mesh);
+  }
+  ABSL_ASSIGN_OR_RETURN(
+      auto meshes,
+      mutable_mesh.AsMeshes(
+          strokes_internal::StrokeVertex::MakeCustomPackingArray(target_format)
+              .Values()));
+  return meshes.empty() ? Mesh() : std::move(meshes[0]);
 }
 
 }  // namespace ink
