@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -32,6 +33,7 @@
 #include "ink/geometry/segment.h"
 #include "ink/geometry/triangle.h"
 #include "ink/geometry/vec.h"
+#include "ink/types/small_array.h"
 
 namespace ink {
 
@@ -256,20 +258,18 @@ fuzztest::Domain<Vec> NotNanVec() {
   return fuzztest::StructOf<Vec>(NotNanFloat(), NotNanFloat());
 }
 
-fuzztest::Domain<MutableMesh> ValidPackableNonEmptyPositionOnlyMutableMesh(
-    MeshFormat::AttributeType position_attribute_type,
-    MeshFormat::IndexFormat index_format) {
-  ABSL_CHECK_EQ(MeshFormat::ComponentCount(position_attribute_type), 2);
-
+fuzztest::Domain<MutableMesh> ValidPackableNonEmptyMutableMesh(
+    const MeshFormat& format) {
   // We need at least three vertices. We restrict the values to [-1e18, 1e18] to
   // ensure that neither the dimensions of the mesh bounds nor the area of
-  // individual triangles overflow
+  // individual triangles overflow, and that attribute bounds do not overflow
+  // when computing packing parameters.
   auto positions_domain = fuzztest::VectorOf(PointInRect(Rect::FromTwoPoints(
                                                  {-1e18, -1e18}, {1e18, 1e18})))
                               .WithMinSize(3);
 
-  auto positions_and_tris_domain = fuzztest::FlatMap(
-      [](std::vector<Point> positions) {
+  return fuzztest::FlatMap(
+      [format](std::vector<Point> positions) {
         // Triangle indices must lie in [0, n_verts - 1], and contain no
         // repeated values.
         //
@@ -313,8 +313,44 @@ fuzztest::Domain<MutableMesh> ValidPackableNonEmptyPositionOnlyMutableMesh(
           }
         };
 
-        return fuzztest::PairOf(
-            fuzztest::Just(std::move(positions)),
+        // Generates attribute values for all attributes specified in `format`
+        // for each vertex.
+        auto attributes_domain =
+            fuzztest::VectorOf(
+                fuzztest::Map(
+                    [format](const std::vector<float>& components) {
+                      std::vector<SmallArray<float, 4>> attributes;
+                      attributes.reserve(format.Attributes().size());
+                      size_t offset = 0;
+                      for (MeshFormat::Attribute attr : format.Attributes()) {
+                        uint8_t count = MeshFormat::ComponentCount(attr.type);
+                        attributes.emplace_back(
+                            absl::MakeConstSpan(&components[offset], count));
+                        offset += count;
+                      }
+                      return attributes;
+                    },
+                    fuzztest::VectorOf(fuzztest::InRange(-1e18f, 1e18f))
+                        .WithSize(format.TotalComponentCount())))
+                .WithSize(positions.size());
+
+        return fuzztest::Map(
+            [format](const std::vector<Point>& positions,
+                     const std::vector<std::vector<SmallArray<float, 4>>>&
+                         attributes,
+                     const std::vector<std::array<uint32_t, 3>>& triangles) {
+              MutableMesh m(format);
+              for (size_t v = 0; v < positions.size(); ++v) {
+                m.AppendVertex(positions[v]);
+                for (size_t a = 0; a < attributes[v].size(); ++a) {
+                  if (a == format.PositionAttributeIndex()) continue;
+                  m.SetFloatVertexAttribute(v, a, attributes[v][a]);
+                }
+              }
+              for (const auto& t : triangles) m.AppendTriangleIndices(t);
+              return m;
+            },
+            fuzztest::Just(std::move(positions)), std::move(attributes_domain),
             // We need at least one triangle.
             fuzztest::VectorOf(
                 fuzztest::Map(std::move(tri_winding_correction_map),
@@ -322,21 +358,6 @@ fuzztest::Domain<MutableMesh> ValidPackableNonEmptyPositionOnlyMutableMesh(
                 .WithMinSize(1));
       },
       positions_domain);
-
-  return fuzztest::Map(
-      [position_attribute_type, index_format](
-          std::pair<std::vector<Point>, std::vector<std::array<uint32_t, 3>>>
-              pos_and_tri) {
-        auto format = MeshFormat::Create(
-            {{position_attribute_type, MeshFormat::AttributeId::kPosition}},
-            index_format);
-        ABSL_CHECK_OK(format);
-        MutableMesh m(*format);
-        for (auto p : pos_and_tri.first) m.AppendVertex(p);
-        for (auto t : pos_and_tri.second) m.AppendTriangleIndices(t);
-        return m;
-      },
-      std::move(positions_and_tris_domain));
 }
 
 fuzztest::Domain<std::pair<Triangle, Triangle>> NestedTriangles(Rect rect) {

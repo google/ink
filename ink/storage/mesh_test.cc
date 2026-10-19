@@ -31,7 +31,6 @@
 #include "ink/geometry/type_matchers.h"
 #include "ink/storage/numeric_run.h"
 #include "ink/storage/proto/mesh.pb.h"
-#include "ink/types/iterator_range.h"
 #include "google/protobuf/text_format.h"
 
 namespace ink {
@@ -419,9 +418,15 @@ void EncodePositionOnlyMeshRoundTrip(const MutableMesh& mutable_mesh) {
   EXPECT_THAT(DecodeMesh(mesh_proto), IsOkAndHolds(MeshEq(mesh)));
 }
 FUZZ_TEST(MeshTest, EncodePositionOnlyMeshRoundTrip)
-    .WithDomains(ValidPackableNonEmptyPositionOnlyMutableMesh(
-        AttrType::kFloat2PackedInOneFloat,
-        MeshFormat::IndexFormat::k32BitUnpacked16BitPacked));
+    .WithDomains(ValidPackableNonEmptyMutableMesh(*MeshFormat::Create(
+        {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
+         {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+          AttrId::kSideDerivative},
+         {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kSideLabel},
+         {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+          AttrId::kForwardDerivative},
+         {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kForwardLabel}},
+        MeshFormat::IndexFormat::k32BitUnpacked16BitPacked)));
 
 }  // namespace
 }  // namespace ink

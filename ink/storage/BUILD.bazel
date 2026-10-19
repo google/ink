@@ -170,7 +170,6 @@ cc_test(
         "//ink/geometry:point",
         "//ink/geometry:type_matchers",
         "//ink/storage/proto:mesh_cc_proto",
-        "//ink/types:iterator_range",
         "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/status:status_matchers",
         "@abseil-cpp//absl/status:statusor",

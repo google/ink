@@ -1995,8 +1995,8 @@ void AsMeshesDoesNotFailForValidMutableMesh(const MutableMesh& mesh) {
   EXPECT_THAT(mesh.AsMeshes(), IsOk());
 }
 FUZZ_TEST(MutableMeshTest, AsMeshesDoesNotFailForValidMutableMesh)
-    .WithDomains(ValidPackableNonEmptyPositionOnlyMutableMesh(
-        MeshFormat::AttributeType::kFloat2PackedInOneFloat));
+    .WithDomains(fuzztest::FlatMap(ValidPackableNonEmptyMutableMesh,
+                                   ArbitraryMeshFormat()));
 
 TEST(MutableMeshDeathTest, VertexIndexOutOfBounds) {
   // There is no EXPECT_DEBUG_DEATH_IF_SUPPORTED, so we only run these when

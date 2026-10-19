@@ -80,13 +80,11 @@ fuzztest::Domain<Vec> NotNanVec();
 // non-degenerate, ccw-oriented triangles contained in the given rect.
 fuzztest::Domain<std::pair<Triangle, Triangle>> NestedTriangles(Rect rect);
 
-// The domain of non-empty `MutableMesh`es with only a position attribute of
-// `position_attribute_type`, index of `index_format`, and for which
-// `MutableMesh::ValidateTriangles` succeeds.
-fuzztest::Domain<MutableMesh> ValidPackableNonEmptyPositionOnlyMutableMesh(
-    MeshFormat::AttributeType position_attribute_type,
-    MeshFormat::IndexFormat index_format =
-        MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+// The domain of non-empty `MutableMesh`es with the given `format`, for which
+// `MutableMesh::ValidateTriangles` succeeds. All attribute components have
+// values in [-1e18, 1e18].
+fuzztest::Domain<MutableMesh> ValidPackableNonEmptyMutableMesh(
+    const MeshFormat& format);
 
 }  // namespace ink
 

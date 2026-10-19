@@ -125,6 +125,7 @@ cc_library(
         ":segment",
         ":triangle",
         ":vec",
+        "//ink/types:small_array",
         "@abseil-cpp//absl/log:absl_check",
         "@abseil-cpp//absl/types:span",
         "@fuzztest//fuzztest",
