@@ -13,6 +13,10 @@ concurrency:
 
 jobs:
   bazel_test:
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -23,23 +27,23 @@ jobs:
       USE_BAZEL_VERSION: 8.7.0
 
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # ratchet:actions/checkout@v7.0.1
 
-    - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86  # 0.19.0
+    - if: >-
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == 'google/ink'
+      uses: 'google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed' # ratchet:google-github-actions/auth@v2
+      with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: '${{ secrets.SERVICE_ACCOUNT }}'
+          project_id: '${{ secrets.GCP_PROJECT_ID }}'
+
+    - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86  # ratchet:bazel-contrib/setup-bazel@v0.19.0
       with:
         bazelisk-cache: true
         disk-cache: true
         repository-cache: true
         external-cache: true
-        # This is maintined internally by the Ink Team at Google and requires periodic rotation
-        # of these credentials. Googler admins can update the credentials by going to
-        # https://console.cloud.google.com/iam-admin/serviceaccounts?project=ink-open-source
-        # deleting the expired key, creating a new key in JSON format, and updating the secret in
-        # https://github.com/google/ink/settings/secrets/actions. (Follow the corresponding
-        # instructions for google/ink-stroke-modeler at the same time.)
-        google-credentials: ${{ (github.event_name != 'pull_request' ||
-          github.event.pull_request.head.repo.full_name == 'google/ink') &&
-          secrets.GOOGLE_CREDENTIALS || '' }}
 
     - name: Test
       run: >
