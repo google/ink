@@ -13,6 +13,7 @@
 # limitations under the License.
 
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load(":webgpu_shader.bzl", "generate_shader")
 
 package(
@@ -35,9 +36,23 @@ generate_shader(
     wgsl = "StrokeShader.wgsl",
 )
 
+genrule(
+    name = "stroke_shader_wgsl_string",
+    srcs = ["StrokeShader.wgsl"],
+    outs = ["StrokeShader.wgsl.string"],
+    cmd = """echo 'R"wgsl(' > $@ && cat $(SRCS) >> $@ && echo ')wgsl"' >> $@""",
+)
+
+cc_library(
+    name = "embedded_shaders",
+    hdrs = ["embedded_shaders.h"],
+    textual_hdrs = [":stroke_shader_wgsl_string"],
+)
+
 build_test(
     name = "generate_shaders_build_test",
     targets = [
+        ":embedded_shaders",
         ":stroke_shader_metal_fragment",
         ":stroke_shader_metal_vertex",
     ],
