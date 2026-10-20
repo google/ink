@@ -128,6 +128,10 @@ absl::StatusOr<MeshFormat> MeshFormat::Create(
     if (id == AttributeId::kPosition) {
       position_attribute_index = i;
     }
+    if (id == AttributeId::kColorShiftHcl && ComponentCount(type) < 3) {
+      return absl::InvalidArgumentError(
+          "kColorShiftHcl attribute must have at least 3 components");
+    }
   }
   if (position_attribute_index < 0) {
     return absl::InvalidArgumentError("Missing a kPosition attribute");

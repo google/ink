@@ -225,6 +225,8 @@ class MeshFormat {
   // - Any `AttributeId` value appears more than once
   // - There isn't any attribute with  `AttributeId::kPosition`
   // - The position attribute doesn't have a component count of 2
+  // - The `kColorShiftHcl` attribute (if present) doesn't have a component
+  //   count of at least 3
   static absl::StatusOr<MeshFormat> Create(
       absl::Span<const std::pair<AttributeType, AttributeId>> attributes,
       IndexFormat index_format);

@@ -137,6 +137,18 @@ fuzztest::Domain<MeshFormat::AttributeType> PositionMeshAttributeType() {
       MeshFormat::AttributeType::kFloat2PackedInOneFloat,
   });
 }
+fuzztest::Domain<MeshFormat::AttributeType> ColorShiftHclMeshAttributeType() {
+  return fuzztest::ElementOf({
+      MeshFormat::AttributeType::kFloat3Unpacked,
+      MeshFormat::AttributeType::kFloat3PackedInOneFloat,
+      MeshFormat::AttributeType::kFloat3PackedInTwoFloats,
+      MeshFormat::AttributeType::kFloat3PackedInFourUnsignedBytes_XYZ10,
+      MeshFormat::AttributeType::kFloat4Unpacked,
+      MeshFormat::AttributeType::kFloat4PackedInOneFloat,
+      MeshFormat::AttributeType::kFloat4PackedInTwoFloats,
+      MeshFormat::AttributeType::kFloat4PackedInThreeFloats,
+  });
+}
 // LINT.ThenChange(mesh_format.h:attribute_types)
 
 fuzztest::Domain<MeshFormat> ArbitraryMeshFormat() {
@@ -147,6 +159,7 @@ fuzztest::Domain<MeshFormat> ArbitraryMeshFormat() {
             [num_attributes](
                 MeshFormat::IndexFormat index_format, uint8_t position_index,
                 MeshFormat::AttributeType position_type,
+                MeshFormat::AttributeType color_shift_hcl_type,
                 absl::Span<const MeshFormat::AttributeType> other_types,
                 absl::Span<const MeshFormat::AttributeId> other_ids) {
               ABSL_CHECK_EQ(other_types.size(), other_ids.size());
@@ -163,13 +176,18 @@ fuzztest::Domain<MeshFormat> ArbitraryMeshFormat() {
                    i < static_cast<int>(other_types.size()); ++i) {
                 attributes.emplace_back(other_types[i], other_ids[i]);
               }
+              for (auto& [type, id] : attributes) {
+                if (id == MeshFormat::AttributeId::kColorShiftHcl) {
+                  type = color_shift_hcl_type;
+                }
+              }
               auto format = MeshFormat::Create(attributes, index_format);
               ABSL_CHECK_OK(format);
               return *std::move(format);
             },
             ArbitraryMeshIndexFormat(),
             fuzztest::InRange<uint8_t>(0, num_other_attributes),
-            PositionMeshAttributeType(),
+            PositionMeshAttributeType(), ColorShiftHclMeshAttributeType(),
             fuzztest::VectorOf(ArbitraryMeshAttributeType())
                 .WithSize(num_other_attributes),
             fuzztest::UniqueElementsVectorOf(NonPositionAttributeId())

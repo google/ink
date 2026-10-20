@@ -185,7 +185,7 @@ TEST(MeshFormatTest, ConstructionErrorTooManyAttributes) {
 
 TEST(MeshFormatTest, ConstructionErrorNoPosition) {
   EXPECT_THAT(
-      MeshFormat::Create({{AttrType::kFloat2Unpacked, AttrId::kColorShiftHcl}},
+      MeshFormat::Create({{AttrType::kFloat3Unpacked, AttrId::kColorShiftHcl}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
       StatusIs(absl::StatusCode::kInvalidArgument,
                HasSubstr("Missing a kPosition")));
@@ -213,6 +213,14 @@ TEST(MeshFormatTest, ConstructionErrorMultipleSideLabels) {
 TEST(MeshFormatTest, ConstructionErrorPositionDoesNotHaveTwoComponents) {
   EXPECT_THAT(
       MeshFormat::Create({{AttrType::kFloat1Unpacked, AttrId::kPosition}},
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("components")));
+}
+
+TEST(MeshFormatTest, ConstructionErrorColorShiftHclComponents) {
+  EXPECT_THAT(
+      MeshFormat::Create({{AttrType::kFloat2Unpacked, AttrId::kPosition},
+                          {AttrType::kFloat2Unpacked, AttrId::kColorShiftHcl}},
                          MeshFormat::IndexFormat::k16BitUnpacked16BitPacked),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("components")));
 }

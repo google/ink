@@ -195,13 +195,13 @@ TEST(MeshFormatEqTest, DifferentAttrName) {
 
 TEST(MeshFormatEqTest, DifferentPositionAttrIndex) {
   EXPECT_THAT(*MeshFormat::Create(
-                  {{AttrType::kFloat2PackedInOneFloat, AttrId::kColorShiftHcl},
+                  {{AttrType::kFloat3PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
                    {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked),
               Not(MeshFormatEq(*MeshFormat::Create(
                   {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition},
-                   {AttrType::kFloat2PackedInOneFloat, AttrId::kColorShiftHcl},
+                   {AttrType::kFloat3PackedInOneFloat, AttrId::kColorShiftHcl},
                    {AttrType::kFloat3PackedInTwoFloats, AttrId::kCustom0}},
                   MeshFormat::IndexFormat::k32BitUnpacked16BitPacked))));
 }
