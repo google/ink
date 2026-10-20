@@ -60,8 +60,8 @@ genrule(
 )
 
 cc_library(
-    name = "ink_metal_shaders_embedded",
-    hdrs = ["ink_metal_shaders_embedded.h"],
+    name = "embedded_shaders",
+    hdrs = ["embedded_shaders.h"],
     target_compatible_with = ["@platforms//os:ios"],
     textual_hdrs = [":ink_metal_shaders.bytes"],
 )
@@ -89,7 +89,7 @@ objc_library(
     target_compatible_with = ["@platforms//os:ios"],
     visibility = ["//visibility:private"],
     deps = [
-        ":ink_metal_shaders_embedded",
+        ":embedded_shaders",
         ":texture_image_source",
         "//ink/brush:brush_paint",
         "//ink/geometry:mesh",
@@ -111,7 +111,6 @@ cc_library(
         ":metal_renderer_objc_helper",
         "//ink/brush",
         "//ink/brush:brush_coat",
-        "//ink/brush:brush_family",
         "//ink/brush:brush_paint",
         "//ink/brush:color_function",
         "//ink/brush:stock_brushes",

@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INK_RENDERING_METAL_INK_METAL_SHADERS_EMBEDDED_H_
-#define INK_RENDERING_METAL_INK_METAL_SHADERS_EMBEDDED_H_
+#ifndef INK_RENDERING_METAL_EMBEDDED_SHADERS_H_
+#define INK_RENDERING_METAL_EMBEDDED_SHADERS_H_
 
 #include <cstdint>
 
 namespace ink::rendering::metal_objc {
 
-inline constexpr uint8_t kInkMetalShaders[] = {
+inline constexpr uint8_t kCompiledMetalShaderBytes[] = {
 #include "ink/rendering/metal/ink_metal_shaders.bytes"
 };
 
 }  // namespace ink::rendering::metal_objc
 
-#endif  // INK_RENDERING_METAL_INK_METAL_SHADERS_EMBEDDED_H_
+#endif  // INK_RENDERING_METAL_EMBEDDED_SHADERS_H_

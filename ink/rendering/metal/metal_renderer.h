@@ -22,13 +22,12 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
-#include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/status/statusor.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/color/color.h"
-#include "ink/rendering/metal/metal_renderer_objc_helper.h"
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/stroke.h"
 

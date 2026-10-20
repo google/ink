@@ -29,7 +29,7 @@
 #include "ink/brush/brush_paint.h"
 #include "ink/geometry/mesh.h"
 #import "ink/rendering/metal/INKTextureImageSource.h"
-#include "ink/rendering/metal/ink_metal_shaders_embedded.h"
+#include "ink/rendering/metal/embedded_shaders.h"
 
 __attribute__((objc_subclassing_restricted))
 @interface INKMeshBuffers : NSObject
@@ -185,9 +185,10 @@ absl::StatusOr<std::unique_ptr<void, std::function<void(void*)>>> CreateINKMetal
     return absl::InvalidArgumentError("Device cannot be nil");
   }
 
-  dispatch_data_t shader_data = dispatch_data_create(kInkMetalShaders, std::size(kInkMetalShaders),
-                                                     /*queue=*/nullptr,
-                                                     /*destructor=*/nullptr);
+  dispatch_data_t shader_data =
+      dispatch_data_create(kCompiledMetalShaderBytes, std::size(kCompiledMetalShaderBytes),
+                           /*queue=*/nullptr,
+                           /*destructor=*/nullptr);
   NSError* error = nil;
   id<MTLLibrary> shader_library = [device newLibraryWithData:shader_data error:&error];
   if (!shader_library) {
