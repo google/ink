@@ -300,7 +300,7 @@ cc_test(
         "@abseil-cpp//absl/status:status_matchers",
         "@abseil-cpp//absl/strings",
         "@fuzztest//fuzztest",
-        "@googletest//:gtest_main",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 

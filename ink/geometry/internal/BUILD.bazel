@@ -149,6 +149,7 @@ cc_library(
 cc_test(
     name = "lerp_test",
     srcs = ["lerp_test.cc"],
+    shard_count = 2,
     deps = [
         ":lerp",
         "//ink/color",
@@ -160,7 +161,7 @@ cc_test(
         "//ink/types:duration",
         "//ink/types:type_matchers",
         "@fuzztest//fuzztest",
-        "@googletest//:gtest_main",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 

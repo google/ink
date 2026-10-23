@@ -152,7 +152,7 @@ cc_test(
         "@abseil-cpp//absl/status:status_matchers",
         "@abseil-cpp//absl/status:statusor",
         "@fuzztest//fuzztest",
-        "@googletest//:gtest_main",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -177,7 +177,7 @@ cc_test(
         "//ink/geometry:angle",
         "//ink/geometry:type_matchers",
         "@fuzztest//fuzztest",
-        "@googletest//:gtest_main",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -275,7 +275,7 @@ cc_test(
         "//ink/strokes/input:stroke_input_batch",
         "//ink/types:duration",
         "@fuzztest//fuzztest",
-        "@googletest//:gtest_main",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -424,7 +424,7 @@ cc_test(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
         "@fuzztest//fuzztest",
-        "@googletest//:gtest_main",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 

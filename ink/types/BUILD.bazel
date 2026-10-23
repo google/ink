@@ -32,6 +32,7 @@ cc_library(
 cc_test(
     name = "duration_test",
     srcs = ["duration_test.cc"],
+    shard_count = 2,
     deps = [
         ":duration",
         ":fuzz_domains",

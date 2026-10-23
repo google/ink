@@ -242,7 +242,7 @@ cc_test(
         "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/types:span",
         "@fuzztest//fuzztest",
-        "@googletest//:gtest_main",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
         "@skia//:core",
     ],
 )

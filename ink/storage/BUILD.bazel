@@ -71,6 +71,7 @@ cc_library(
 cc_test(
     name = "stroke_input_batch_test",
     srcs = ["stroke_input_batch_test.cc"],
+    shard_count = 2,
     deps = [
         ":numeric_run",
         ":stroke_input_batch",
@@ -343,7 +344,7 @@ cc_library(
 cc_test(
     name = "brush_test",
     srcs = ["brush_test.cc"],
-    shard_count = 10,
+    shard_count = 5,
     deps = [
         ":brush",
         ":color",
@@ -383,6 +384,7 @@ cc_test(
 cc_test(
     name = "numeric_run_test",
     srcs = ["numeric_run_test.cc"],
+    shard_count = 2,
     deps = [
         ":numeric_run",
         "//ink/storage/proto:coded_numeric_run_cc_proto",
