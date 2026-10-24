@@ -232,7 +232,9 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithOneTriangleMesh) {
 
   ASSERT_EQ(shape->RenderGroupCount(), 1);
   const MeshFormat& format = shape->RenderGroupFormat(0);
-  ASSERT_THAT(format.Attributes(), SizeIs(1));
+  // `DecodeMeshUsingFormat` populates the 5 missing required rendering
+  // attributes.
+  ASSERT_THAT(format.Attributes(), SizeIs(6));
   EXPECT_EQ(format.Attributes()[0].type,
             MeshFormat::AttributeType::kFloat2PackedInOneFloat);
   ASSERT_THAT(shape->Meshes(), SizeIs(1));
@@ -300,7 +302,12 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoTriangleMeshes) {
   ASSERT_THAT(shape, IsOk());
 
   ASSERT_EQ(shape->RenderGroupCount(), 1);
-  EXPECT_THAT(shape->RenderGroupFormat(0), MeshFormatEq(MeshFormat()));
+  const MeshFormat& format = shape->RenderGroupFormat(0);
+  // `DecodeMeshUsingFormat` populates the 5 missing required rendering
+  // attributes.
+  ASSERT_THAT(format.Attributes(), SizeIs(6));
+  EXPECT_EQ(format.Attributes()[0].type,
+            MeshFormat::AttributeType::kFloat2Unpacked);
   ASSERT_THAT(shape->Meshes(), SizeIs(2));
   EXPECT_EQ(shape->Meshes()[0].VertexCount(), 3);
   EXPECT_EQ(shape->Meshes()[0].TriangleCount(), 1);
@@ -373,10 +380,12 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoGroups) {
   ASSERT_THAT(shape, IsOk());
 
   ASSERT_EQ(shape->RenderGroupCount(), 2u);
-  ASSERT_THAT(shape->RenderGroupFormat(0).Attributes(), SizeIs(1));
+  // `DecodeMeshUsingFormat` populates the 5 missing required rendering
+  // attributes.
+  ASSERT_THAT(shape->RenderGroupFormat(0).Attributes(), SizeIs(6));
   EXPECT_EQ(shape->RenderGroupFormat(0).Attributes()[0].type,
             MeshFormat::AttributeType::kFloat2PackedInOneFloat);
-  ASSERT_THAT(shape->RenderGroupFormat(1).Attributes(), SizeIs(1));
+  ASSERT_THAT(shape->RenderGroupFormat(1).Attributes(), SizeIs(6));
   EXPECT_EQ(shape->RenderGroupFormat(1).Attributes()[0].type,
             MeshFormat::AttributeType::kFloat2Unpacked);
   ASSERT_THAT(shape->RenderGroupMeshes(0), SizeIs(1));

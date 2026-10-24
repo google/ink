@@ -610,7 +610,7 @@ void ComputeDerivativesAndMargins(MutableMesh& mesh,
     }
     Triangle triangle = mesh.GetTriangle(tri_idx);
     float area = triangle.SignedArea();
-    if (area == 0.0f) continue;
+    if (area <= 0.0f) continue;
 
     std::array<SideCategory, 3> side_cat;
     std::array<ForwardCategory, 3> fwd_cat;
