@@ -117,6 +117,38 @@ JniTextureMap::JniTextureMap(JNIEnv* env, jobjectArray texture_map_keys,
   }
 }
 
+JniStringMap::JniStringMap(JNIEnv* env, absl_nullable jobjectArray keys,
+                           absl_nullable jobjectArray values) {
+  if (keys == nullptr) {
+    ABSL_CHECK_EQ(values, nullptr);
+    return;
+  }
+  ABSL_CHECK_NE(values, nullptr);
+  jsize size = env->GetArrayLength(keys);
+  ABSL_CHECK_EQ(size, env->GetArrayLength(values));
+
+  keys_.reserve(size);
+  values_.reserve(size);
+  for (jsize i = 0; i < size; ++i) {
+    jstring j_key = static_cast<jstring>(env->GetObjectArrayElement(keys, i));
+    keys_.push_back(JStringToStdString(env, j_key));
+    env->DeleteLocalRef(j_key);
+    jstring j_value =
+        static_cast<jstring>(env->GetObjectArrayElement(values, i));
+    values_.push_back(JStringToStdString(env, j_value));
+    env->DeleteLocalRef(j_value);
+  }
+
+  // As above, taking the c_str pointers needs to wait until after the vectors
+  // are populated.
+  key_ptrs_.reserve(size);
+  value_ptrs_.reserve(size);
+  for (jsize i = 0; i < size; ++i) {
+    key_ptrs_.push_back(keys_[i].c_str());
+    value_ptrs_.push_back(values_[i].c_str());
+  }
+}
+
 TextureBitmapProvider CreateTextureBitmapProvider(
     JNIEnv* env, absl_nullable jobjectArray texture_map_keys,
     absl_nullable jobjectArray texture_map_values) {

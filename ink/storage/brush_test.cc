@@ -21,6 +21,7 @@
 #include <optional>
 #include <string>
 #include <variant>
+#include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -31,6 +32,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
 #include "absl/time/time.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_behavior.h"
@@ -38,6 +40,7 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
 #include "ink/brush/fuzz_domains.h"
 #include "ink/brush/internal/brush_family_internal_accessor.h"
@@ -85,8 +88,10 @@ using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsNull;
 using ::testing::Le;
+using ::testing::Pair;
 using ::testing::Property;
 using ::testing::SizeIs;
+using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::VariantWith;
 
@@ -584,6 +589,296 @@ TEST(BrushTest, EncodeBrushFamilyTextureMapWithNonEmptyProto) {
                               callback);
   EXPECT_EQ(texture_id_to_bitmap_proto_out.size(), 0);
   EXPECT_EQ(callback_count, 0);
+}
+
+constexpr absl::string_view kRenamedTextureIdPrefix = "renamed/";
+
+// Adds `kRenamedTextureIdPrefix` to a texture ID, as a client might do when
+// decoding a brush family to avoid collisions with texture IDs it already uses.
+std::string AddRenamedTextureIdPrefix(absl::string_view texture_id) {
+  return absl::StrCat(kRenamedTextureIdPrefix, texture_id);
+}
+
+// Removes `kRenamedTextureIdPrefix` from a texture ID, undoing
+// `AddRenamedTextureIdPrefix` when encoding.
+std::string RemoveRenamedTextureIdPrefix(absl::string_view texture_id) {
+  return std::string(absl::StripPrefix(texture_id, kRenamedTextureIdPrefix));
+}
+
+// Provides the test bitmaps for the renamed versions of `kTestTextureId1` and
+// `kTestTextureId2`.
+std::optional<std::string> GetBitmapForRenamedTestTextureId(
+    absl::string_view client_texture_id) {
+  if (client_texture_id == AddRenamedTextureIdPrefix(kTestTextureId1)) {
+    return TestPngBytes1x1();
+  }
+  if (client_texture_id == AddRenamedTextureIdPrefix(kTestTextureId2)) {
+    return TestPngBytes2x2();
+  }
+  return std::nullopt;
+}
+
+// Returns a brush family with a tiling texture layer in its first coat and a
+// stamping texture layer in its second coat. If `requires_development_version`
+// is true, the family also uses a color function that requires
+// `Version::kDevelopment()`, which causes its texture layers to be encoded in
+// the newer format.
+absl::StatusOr<BrushFamily> CreateBrushFamilyWithTextureLayers(
+    absl::string_view tiling_texture_id, absl::string_view stamping_texture_id,
+    bool requires_development_version = false) {
+  BrushPaint tiling_paint = {
+      .texture_layers = {BrushPaint::TilingTexture{
+          .client_texture_id = std::string(tiling_texture_id)}}};
+  if (requires_development_version) {
+    tiling_paint.color_functions.push_back(
+        ColorFunction{.parameters = ColorFunction::HueOffset{}});
+  }
+  BrushPaint stamping_paint = {
+      .texture_layers = {BrushPaint::StampingTexture{
+          .client_texture_id = std::string(stamping_texture_id)}}};
+  std::vector<BrushCoat> coats = {{.paint_preferences = {tiling_paint}},
+                                  {.paint_preferences = {stamping_paint}}};
+  return BrushFamily::Create(coats);
+}
+
+// Returns the first texture layer of the first paint preference in the given
+// coat of `family_proto`.
+const proto::BrushPaint::TextureLayer& FirstTextureLayerInCoat(
+    const proto::BrushFamily& family_proto, int coat_index) {
+  return family_proto.coats(coat_index).paint_preferences(0).texture_layers(0);
+}
+
+TEST(BrushTest, EncodeBrushFamilyWritesEncodedTextureIds) {
+  // The stamping texture has no bitmap, but its texture layer should still use
+  // the encoded texture ID.
+  absl::StatusOr<BrushFamily> family = CreateBrushFamilyWithTextureLayers(
+      AddRenamedTextureIdPrefix(kTestTextureId1),
+      AddRenamedTextureIdPrefix("no-bitmap"));
+  ASSERT_THAT(family, IsOk());
+
+  proto::BrushFamily family_proto;
+  EncodeBrushFamily(*family, family_proto, GetBitmapForRenamedTestTextureId,
+                    RemoveRenamedTextureIdPrefix);
+
+  ASSERT_THAT(family_proto.coats(), SizeIs(2));
+  const proto::BrushPaint::TextureLayer& tiling_layer =
+      FirstTextureLayerInCoat(family_proto, 0);
+  ASSERT_FALSE(tiling_layer.has_tiling_texture());
+  EXPECT_EQ(tiling_layer.client_texture_id(), kTestTextureId1);
+  const proto::BrushPaint::TextureLayer& stamping_layer =
+      FirstTextureLayerInCoat(family_proto, 1);
+  ASSERT_FALSE(stamping_layer.has_stamping_texture());
+  EXPECT_EQ(stamping_layer.client_texture_id(), "no-bitmap");
+  EXPECT_THAT(family_proto.texture_id_to_bitmap(),
+              UnorderedElementsAre(
+                  Pair(std::string(kTestTextureId1), TestPngBytes1x1())));
+}
+
+TEST(BrushTest, EncodeBrushFamilyWritesEncodedTextureIdsInNewLayerFormat) {
+  absl::StatusOr<BrushFamily> family = CreateBrushFamilyWithTextureLayers(
+      AddRenamedTextureIdPrefix(kTestTextureId1),
+      AddRenamedTextureIdPrefix(kTestTextureId2),
+      /*requires_development_version=*/true);
+  ASSERT_THAT(family, IsOk());
+
+  proto::BrushFamily family_proto;
+  EncodeBrushFamily(*family, family_proto, GetBitmapForRenamedTestTextureId,
+                    RemoveRenamedTextureIdPrefix);
+
+  ASSERT_THAT(family_proto.coats(), SizeIs(2));
+  const proto::BrushPaint::TextureLayer& tiling_layer =
+      FirstTextureLayerInCoat(family_proto, 0);
+  ASSERT_TRUE(tiling_layer.has_tiling_texture());
+  EXPECT_EQ(tiling_layer.tiling_texture().client_texture_id(), kTestTextureId1);
+  const proto::BrushPaint::TextureLayer& stamping_layer =
+      FirstTextureLayerInCoat(family_proto, 1);
+  ASSERT_TRUE(stamping_layer.has_stamping_texture());
+  EXPECT_EQ(stamping_layer.stamping_texture().client_texture_id(),
+            kTestTextureId2);
+  EXPECT_THAT(family_proto.texture_id_to_bitmap(),
+              UnorderedElementsAre(
+                  Pair(std::string(kTestTextureId1), TestPngBytes1x1()),
+                  Pair(std::string(kTestTextureId2), TestPngBytes2x2())));
+}
+
+TEST(BrushTest, EncodeBrushFamilyTextureMapWritesEncodedTextureIds) {
+  absl::StatusOr<BrushFamily> family = CreateBrushFamilyWithTextureLayers(
+      AddRenamedTextureIdPrefix(kTestTextureId1),
+      AddRenamedTextureIdPrefix(kTestTextureId2));
+  ASSERT_THAT(family, IsOk());
+
+  // Bitmaps are looked up by client texture ID, but stored by encoded ID.
+  Map<std::string, std::string> texture_id_to_bitmap_proto_out;
+  EncodeBrushFamilyTextureMap(*family, texture_id_to_bitmap_proto_out,
+                              GetBitmapForRenamedTestTextureId,
+                              RemoveRenamedTextureIdPrefix);
+
+  EXPECT_THAT(texture_id_to_bitmap_proto_out,
+              UnorderedElementsAre(
+                  Pair(std::string(kTestTextureId1), TestPngBytes1x1()),
+                  Pair(std::string(kTestTextureId2), TestPngBytes2x2())));
+}
+
+TEST(BrushTest,
+     EncodeMultipleBrushFamiliesWritesEncodedTextureIdsInEveryFamily) {
+  absl::StatusOr<BrushFamily> family = CreateBrushFamilyWithTextureLayers(
+      AddRenamedTextureIdPrefix(kTestTextureId1),
+      AddRenamedTextureIdPrefix(kTestTextureId2));
+  ASSERT_THAT(family, IsOk());
+  absl::StatusOr<BrushFamily> development_family =
+      CreateBrushFamilyWithTextureLayers(
+          AddRenamedTextureIdPrefix(kTestTextureId1),
+          AddRenamedTextureIdPrefix(kTestTextureId2),
+          /*requires_development_version=*/true);
+  ASSERT_THAT(development_family, IsOk());
+
+  proto::BrushFamily family_proto;
+  EncodeMultipleBrushFamilies({*family, *development_family}, family_proto,
+                              GetBitmapForRenamedTestTextureId,
+                              RemoveRenamedTextureIdPrefix);
+
+  // The lower-version family is encoded at the top level, with the legacy
+  // texture layer format.
+  ASSERT_THAT(family_proto.coats(), SizeIs(2));
+  EXPECT_EQ(FirstTextureLayerInCoat(family_proto, 0).client_texture_id(),
+            kTestTextureId1);
+  EXPECT_EQ(FirstTextureLayerInCoat(family_proto, 1).client_texture_id(),
+            kTestTextureId2);
+  EXPECT_THAT(family_proto.texture_id_to_bitmap(),
+              UnorderedElementsAre(
+                  Pair(std::string(kTestTextureId1), TestPngBytes1x1()),
+                  Pair(std::string(kTestTextureId2), TestPngBytes2x2())));
+  // The development-version family is nested, with the newer texture layer
+  // format.
+  ASSERT_THAT(family_proto.newer_brush_families(), SizeIs(1));
+  const proto::BrushFamily& newer_family_proto =
+      family_proto.newer_brush_families(0);
+  ASSERT_THAT(newer_family_proto.coats(), SizeIs(2));
+  EXPECT_EQ(FirstTextureLayerInCoat(newer_family_proto, 0)
+                .tiling_texture()
+                .client_texture_id(),
+            kTestTextureId1);
+  EXPECT_EQ(FirstTextureLayerInCoat(newer_family_proto, 1)
+                .stamping_texture()
+                .client_texture_id(),
+            kTestTextureId2);
+  EXPECT_THAT(newer_family_proto.texture_id_to_bitmap(),
+              UnorderedElementsAre(
+                  Pair(std::string(kTestTextureId1), TestPngBytes1x1()),
+                  Pair(std::string(kTestTextureId2), TestPngBytes2x2())));
+}
+
+TEST(BrushTest, EncodeBrushWritesEncodedTextureIds) {
+  absl::StatusOr<BrushFamily> family = CreateBrushFamilyWithTextureLayers(
+      AddRenamedTextureIdPrefix(kTestTextureId1),
+      AddRenamedTextureIdPrefix(kTestTextureId2));
+  ASSERT_THAT(family, IsOk());
+  absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
+  ASSERT_THAT(brush, IsOk());
+
+  proto::Brush brush_proto;
+  EncodeBrush(*brush, brush_proto, GetBitmapForRenamedTestTextureId,
+              RemoveRenamedTextureIdPrefix);
+
+  const proto::BrushFamily& family_proto = brush_proto.brush_family();
+  ASSERT_THAT(family_proto.coats(), SizeIs(2));
+  EXPECT_EQ(FirstTextureLayerInCoat(family_proto, 0).client_texture_id(),
+            kTestTextureId1);
+  EXPECT_EQ(FirstTextureLayerInCoat(family_proto, 1).client_texture_id(),
+            kTestTextureId2);
+  EXPECT_THAT(family_proto.texture_id_to_bitmap(),
+              UnorderedElementsAre(
+                  Pair(std::string(kTestTextureId1), TestPngBytes1x1()),
+                  Pair(std::string(kTestTextureId2), TestPngBytes2x2())));
+}
+
+TEST(BrushTest, EncodeBrushFamilyWithFallbacksIgnoresEncodedTextureIds) {
+  absl::StatusOr<BrushFamily> family =
+      CreateBrushFamilyWithTextureLayers(kTestTextureId1, kTestTextureId2);
+  ASSERT_THAT(family, IsOk());
+  absl::StatusOr<BrushFamily> development_family =
+      CreateBrushFamilyWithTextureLayers(kTestTextureId1, kTestTextureId2,
+                                         /*requires_development_version=*/true);
+  ASSERT_THAT(development_family, IsOk());
+  proto::BrushFamily family_proto_with_fallbacks;
+  EncodeMultipleBrushFamilies({*family, *development_family},
+                              family_proto_with_fallbacks);
+
+  // Decode the lower-version family, renaming its texture IDs.
+  ClientTextureIdProviderAndBitmapReceiver add_prefix =
+      [](absl::string_view encoded_id,
+         absl::string_view bitmap) -> absl::StatusOr<std::string> {
+    return AddRenamedTextureIdPrefix(encoded_id);
+  };
+  absl::StatusOr<BrushFamily> decoded_family =
+      DecodeBrushFamily(family_proto_with_fallbacks, add_prefix,
+                        family->CalculateMinimumRequiredVersion());
+  ASSERT_THAT(decoded_family,
+              IsOkAndHolds(Property(&BrushFamily::HasFallbacks, true)));
+
+  int encoded_texture_id_call_count = 0;
+  EncodedTextureIdProvider remove_prefix =
+      [&encoded_texture_id_call_count](absl::string_view client_texture_id) {
+        encoded_texture_id_call_count++;
+        return RemoveRenamedTextureIdPrefix(client_texture_id);
+      };
+  proto::BrushFamily family_proto_out;
+  EncodeBrushFamily(*decoded_family, family_proto_out,
+                    GetBitmapForRenamedTestTextureId, remove_prefix);
+
+  // The stored proto, which already has the original texture IDs, is written
+  // unchanged.
+  EXPECT_THAT(family_proto_out, EqualsProto(family_proto_with_fallbacks));
+  EXPECT_EQ(encoded_texture_id_call_count, 0);
+}
+
+TEST(BrushTest, EncodeWithEncodedTextureIdsRestoresTextureIdsRenamedByDecode) {
+  absl::StatusOr<BrushFamily> family =
+      CreateBrushFamilyWithTextureLayers(kTestTextureId1, kTestTextureId2);
+  ASSERT_THAT(family, IsOk());
+  TextureBitmapProvider get_bitmap =
+      [](absl::string_view client_texture_id) -> std::optional<std::string> {
+    if (client_texture_id == kTestTextureId1) return TestPngBytes1x1();
+    if (client_texture_id == kTestTextureId2) return TestPngBytes2x2();
+    return std::nullopt;
+  };
+  proto::BrushFamily original_proto;
+  EncodeBrushFamily(*family, original_proto, get_bitmap);
+
+  // Decode, adding a prefix to each texture ID and storing each bitmap under
+  // the new ID, as a client might do to avoid texture ID collisions.
+  std::map<std::string, std::string> texture_store;
+  ClientTextureIdProviderAndBitmapReceiver add_prefix_and_store_bitmap =
+      [&texture_store](
+          absl::string_view encoded_id,
+          absl::string_view bitmap) -> absl::StatusOr<std::string> {
+    std::string client_texture_id = AddRenamedTextureIdPrefix(encoded_id);
+    if (!bitmap.empty()) {
+      texture_store[client_texture_id] = std::string(bitmap);
+    }
+    return client_texture_id;
+  };
+  absl::StatusOr<BrushFamily> decoded_family =
+      DecodeBrushFamily(original_proto, add_prefix_and_store_bitmap);
+  ASSERT_THAT(decoded_family, IsOk());
+  ASSERT_THAT(decoded_family->GetCoats(), SizeIs(2));
+  EXPECT_THAT(decoded_family->GetCoats()[0].paint_preferences[0].texture_layers,
+              ElementsAre(VariantWith<BrushPaint::TilingTexture>(
+                  Field(&BrushPaint::TilingTexture::client_texture_id,
+                        AddRenamedTextureIdPrefix(kTestTextureId1)))));
+
+  // Encoding with the inverse transformation restores the original texture IDs.
+  TextureBitmapProvider get_stored_bitmap =
+      [&texture_store](
+          absl::string_view client_texture_id) -> std::optional<std::string> {
+    auto it = texture_store.find(std::string(client_texture_id));
+    if (it == texture_store.end()) return std::nullopt;
+    return it->second;
+  };
+  proto::BrushFamily round_trip_proto;
+  EncodeBrushFamily(*decoded_family, round_trip_proto, get_stored_bitmap,
+                    RemoveRenamedTextureIdPrefix);
+  EXPECT_THAT(round_trip_proto, EqualsProto(original_proto));
 }
 
 TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {

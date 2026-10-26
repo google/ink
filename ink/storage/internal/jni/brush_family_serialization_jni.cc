@@ -28,6 +28,7 @@
 
 using ::ink::ClientTextureIdProviderAndBitmapReceiver;
 using ::ink::TextureBitmapProvider;
+using ::ink::jni::JniStringMap;
 using ::ink::jni::JniTextureMap;
 using ::ink::jni::JvmByteArrayNativeAlloc;
 using ::ink::jni::JvmByteArrayNativeAllocCallback;
@@ -41,21 +42,30 @@ extern "C" {
 JNI_METHOD(storage, BrushFamilySerializationNative, jbyteArray, encode)
 (JNIEnv* env, jobject object, jlong brush_family_native_pointer,
  absl_nullable jobjectArray texture_map_keys,
- absl_nullable jobjectArray texture_map_values) {
+ absl_nullable jobjectArray texture_map_values,
+ absl_nullable jobjectArray encoded_texture_id_map_keys,
+ absl_nullable jobjectArray encoded_texture_id_map_values) {
   JvmByteArrayNativeAlloc byte_array_allocator(env);
   JniTextureMap texture_map(env, texture_map_keys, texture_map_values);
+  JniStringMap encoded_texture_id_map(env, encoded_texture_id_map_keys,
+                                      encoded_texture_id_map_values);
   return byte_array_allocator.Release(BrushFamilySerializationNative_encode(
       &byte_array_allocator, brush_family_native_pointer,
       texture_map.TextureIds(), texture_map.Bitmaps(),
       texture_map.BitmapLengths(), texture_map.NumTextures(),
-      &JvmByteArrayNativeAllocCallback));
+      encoded_texture_id_map.Keys(), encoded_texture_id_map.Values(),
+      encoded_texture_id_map.Size(), &JvmByteArrayNativeAllocCallback));
 }
 
 JNI_METHOD(storage, BrushFamilySerializationNative, jbyteArray, encodeMultiple)
 (JNIEnv* env, jobject object, jlongArray brush_family_native_pointers,
- jobjectArray texture_map_keys, jobjectArray texture_map_values) {
+ jobjectArray texture_map_keys, jobjectArray texture_map_values,
+ absl_nullable jobjectArray encoded_texture_id_map_keys,
+ absl_nullable jobjectArray encoded_texture_id_map_values) {
   JvmByteArrayNativeAlloc byte_array_allocator(env);
   JniTextureMap texture_map(env, texture_map_keys, texture_map_values);
+  JniStringMap encoded_texture_id_map(env, encoded_texture_id_map_keys,
+                                      encoded_texture_id_map_values);
   jsize pointers_size = env->GetArrayLength(brush_family_native_pointers);
   jlong* pointers =
       env->GetLongArrayElements(brush_family_native_pointers, nullptr);
@@ -65,7 +75,8 @@ JNI_METHOD(storage, BrushFamilySerializationNative, jbyteArray, encodeMultiple)
           &byte_array_allocator, reinterpret_cast<int64_t*>(pointers),
           pointers_size, texture_map.TextureIds(), texture_map.Bitmaps(),
           texture_map.BitmapLengths(), texture_map.NumTextures(),
-          &JvmByteArrayNativeAllocCallback));
+          encoded_texture_id_map.Keys(), encoded_texture_id_map.Values(),
+          encoded_texture_id_map.Size(), &JvmByteArrayNativeAllocCallback));
   env->ReleaseLongArrayElements(brush_family_native_pointers, pointers,
                                 JNI_ABORT);
   return result;
