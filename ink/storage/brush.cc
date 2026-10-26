@@ -1191,14 +1191,21 @@ absl::StatusOr<BrushPaint::BlendMode> DecodeBrushPaintBlendMode(
   }
 }
 
+// The default `EncodedTextureIdProvider`, which writes client texture IDs
+// unchanged.
+std::string EncodedTextureIdUnchanged(absl::string_view client_texture_id) {
+  return std::string(client_texture_id);
+}
+
 void EncodeBrushPaintTexture(Version version,
                              const BrushPaint::TilingTexture& layer,
+                             absl::string_view encoded_texture_id,
                              proto::BrushPaint::TextureLayer& layer_proto_out) {
   layer_proto_out.Clear();
   if (version < kNewTextureLayerEncodingMinVersion) {
     layer_proto_out.set_mapping(
         proto::BrushPaint::TextureLayer::MAPPING_TILING);
-    layer_proto_out.set_client_texture_id(layer.client_texture_id);
+    layer_proto_out.set_client_texture_id(encoded_texture_id);
     layer_proto_out.set_size_unit(EncodeBrushPaintSizeUnit(layer.size_unit));
     layer_proto_out.set_wrap_x(EncodeBrushPaintWrap(layer.wrap_x));
     layer_proto_out.set_wrap_y(EncodeBrushPaintWrap(layer.wrap_y));
@@ -1211,7 +1218,7 @@ void EncodeBrushPaintTexture(Version version,
   } else {
     proto::BrushPaint::TilingTexture* tiling_proto =
         layer_proto_out.mutable_tiling_texture();
-    tiling_proto->set_client_texture_id(layer.client_texture_id);
+    tiling_proto->set_client_texture_id(encoded_texture_id);
     tiling_proto->set_size_unit(EncodeBrushPaintSizeUnit(layer.size_unit));
     tiling_proto->set_wrap_x(EncodeBrushPaintWrap(layer.wrap_x));
     tiling_proto->set_wrap_y(EncodeBrushPaintWrap(layer.wrap_y));
@@ -1227,26 +1234,31 @@ void EncodeBrushPaintTexture(Version version,
 
 void EncodeBrushPaintTexture(Version version,
                              const BrushPaint::StampingTexture& layer,
+                             absl::string_view encoded_texture_id,
                              proto::BrushPaint::TextureLayer& layer_proto_out) {
   layer_proto_out.Clear();
   if (version < kNewTextureLayerEncodingMinVersion) {
     layer_proto_out.set_mapping(
         proto::BrushPaint::TextureLayer::MAPPING_STAMPING);
-    layer_proto_out.set_client_texture_id(layer.client_texture_id);
+    layer_proto_out.set_client_texture_id(encoded_texture_id);
   } else {
     proto::BrushPaint::StampingTexture* stamping_proto =
         layer_proto_out.mutable_stamping_texture();
-    stamping_proto->set_client_texture_id(layer.client_texture_id);
+    stamping_proto->set_client_texture_id(encoded_texture_id);
   }
   layer_proto_out.set_blend_mode(EncodeBrushPaintBlendMode(layer.blend_mode));
 }
 
 void EncodeBrushPaintTextureLayerAtVersion(
     Version version, const BrushPaint::TextureLayer& layer,
+    const EncodedTextureIdProvider& get_encoded_texture_id,
     proto::BrushPaint::TextureLayer& layer_proto_out) {
   std::visit(
-      [version, &layer_proto_out](const auto& texture) {
-        EncodeBrushPaintTexture(version, texture, layer_proto_out);
+      [version, &get_encoded_texture_id,
+       &layer_proto_out](const auto& texture) {
+        EncodeBrushPaintTexture(
+            version, texture, get_encoded_texture_id(texture.client_texture_id),
+            layer_proto_out);
       },
       layer);
 }
@@ -1472,14 +1484,17 @@ absl::StatusOr<BrushFamily::InputModel> DecodeBrushFamilyInputModel(
   return BrushFamily::DefaultInputModel();
 }
 
-void EncodeBrushPaintAtVersion(Version version, const BrushPaint& paint,
-                               proto::BrushPaint& paint_proto_out) {
+void EncodeBrushPaintAtVersion(
+    Version version, const BrushPaint& paint,
+    const EncodedTextureIdProvider& get_encoded_texture_id,
+    proto::BrushPaint& paint_proto_out) {
   paint_proto_out.mutable_texture_layers()->Clear();
   paint_proto_out.mutable_texture_layers()->Reserve(
       paint.texture_layers.size());
   for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
     EncodeBrushPaintTextureLayerAtVersion(
-        version, layer, *paint_proto_out.add_texture_layers());
+        version, layer, get_encoded_texture_id,
+        *paint_proto_out.add_texture_layers());
   }
   for (const ColorFunction& color_function : paint.color_functions) {
     EncodeColorFunction(color_function, *paint_proto_out.add_color_functions());
@@ -1488,14 +1503,16 @@ void EncodeBrushPaintAtVersion(Version version, const BrushPaint& paint,
       EncodeBrushPaintSelfOverlap(paint.self_overlap));
 }
 
-void EncodeBrushCoatAtVersion(Version version, const BrushCoat& coat,
-                              proto::BrushCoat& coat_proto_out) {
+void EncodeBrushCoatAtVersion(
+    Version version, const BrushCoat& coat,
+    const EncodedTextureIdProvider& get_encoded_texture_id,
+    proto::BrushCoat& coat_proto_out) {
   EncodeBrushTip(coat.tip, *coat_proto_out.mutable_tip());
   coat_proto_out.mutable_paint_preferences()->Clear();
   coat_proto_out.mutable_paint_preferences()->Reserve(
       coat.paint_preferences.size());
   for (const BrushPaint& paint : coat.paint_preferences) {
-    EncodeBrushPaintAtVersion(version, paint,
+    EncodeBrushPaintAtVersion(version, paint, get_encoded_texture_id,
                               *coat_proto_out.add_paint_preferences());
   }
 }
@@ -1556,7 +1573,8 @@ absl::StatusOr<BrushBehavior::Node> DecodeBrushBehaviorNode(
 void EncodeBrushPaint(const BrushPaint& paint,
                       proto::BrushPaint& paint_proto_out) {
   Version version = brush_internal::CalculateMinimumRequiredVersion(paint);
-  EncodeBrushPaintAtVersion(version, paint, paint_proto_out);
+  EncodeBrushPaintAtVersion(version, paint, EncodedTextureIdUnchanged,
+                            paint_proto_out);
 }
 
 absl::StatusOr<BrushPaint> DecodeBrushPaint(
@@ -1681,7 +1699,8 @@ absl::StatusOr<BrushBehavior> DecodeBrushBehavior(
 
 void EncodeBrushCoat(const BrushCoat& coat, proto::BrushCoat& coat_proto_out) {
   Version version = brush_internal::CalculateMinimumRequiredVersion(coat);
-  EncodeBrushCoatAtVersion(version, coat, coat_proto_out);
+  EncodeBrushCoatAtVersion(version, coat, EncodedTextureIdUnchanged,
+                           coat_proto_out);
 }
 
 absl::StatusOr<BrushCoat> DecodeBrushCoat(
@@ -1710,7 +1729,8 @@ absl::StatusOr<BrushCoat> DecodeBrushCoat(
 void EncodeBrushFamilyTextureMap(
     const BrushFamily& family,
     google::protobuf::Map<std::string, std::string>& texture_id_to_bitmap_out,
-    TextureBitmapProvider get_bitmap) {
+    TextureBitmapProvider get_bitmap,
+    EncodedTextureIdProvider get_encoded_texture_id) {
   texture_id_to_bitmap_out.clear();
   // The set of texture ids for which we have already called get_bitmap().
   absl::flat_hash_set<std::string> seen_ids;
@@ -1729,7 +1749,8 @@ void EncodeBrushFamilyTextureMap(
           continue;
         }
 
-        texture_id_to_bitmap_out.insert({client_texture_id, *bitmap});
+        texture_id_to_bitmap_out.insert(
+            {get_encoded_texture_id(client_texture_id), *bitmap});
       }
     }
   }
@@ -1740,7 +1761,8 @@ void EncodeBrushFamilyTextureMap(
 // the caller, either `EncodeBrushFamily` or `EncodeMultipleBrushFamilies`.
 void EncodeSingleBrushFamily(const BrushFamily& family,
                              proto::BrushFamily& family_proto_out,
-                             TextureBitmapProvider get_bitmap) {
+                             TextureBitmapProvider get_bitmap,
+                             EncodedTextureIdProvider get_encoded_texture_id) {
   family_proto_out.Clear();
 
   // kDevelopment brush families are not portable. It is OK to serialize them,
@@ -1750,12 +1772,14 @@ void EncodeSingleBrushFamily(const BrushFamily& family,
   Version version = family.CalculateMinimumRequiredVersion();
   family_proto_out.set_min_version(version.value());
 
-  EncodeBrushFamilyTextureMap(
-      family, *family_proto_out.mutable_texture_id_to_bitmap(), get_bitmap);
+  EncodeBrushFamilyTextureMap(family,
+                              *family_proto_out.mutable_texture_id_to_bitmap(),
+                              get_bitmap, get_encoded_texture_id);
   absl::Span<const BrushCoat> coats = family.GetCoats();
   family_proto_out.mutable_coats()->Reserve(coats.size());
   for (const BrushCoat& coat : coats) {
-    EncodeBrushCoatAtVersion(version, coat, *family_proto_out.add_coats());
+    EncodeBrushCoatAtVersion(version, coat, get_encoded_texture_id,
+                             *family_proto_out.add_coats());
   }
 
   EncodeBrushFamilyInputModel(family.GetInputModel(),
@@ -1778,9 +1802,10 @@ void EncodeSingleBrushFamily(const BrushFamily& family,
 namespace {
 
 template <typename T>
-void EncodeMultipleBrushFamiliesInternal(const std::vector<T>& families,
-                                         proto::BrushFamily& family_proto_out,
-                                         TextureBitmapProvider get_bitmap) {
+void EncodeMultipleBrushFamiliesInternal(
+    const std::vector<T>& families, proto::BrushFamily& family_proto_out,
+    TextureBitmapProvider get_bitmap,
+    EncodedTextureIdProvider get_encoded_texture_id) {
   if (families.empty()) {
     return;
   }
@@ -1796,7 +1821,8 @@ void EncodeMultipleBrushFamiliesInternal(const std::vector<T>& families,
     }
 
     proto::BrushFamily family_proto;
-    EncodeSingleBrushFamily(family, family_proto, get_bitmap);
+    EncodeSingleBrushFamily(family, family_proto, get_bitmap,
+                            get_encoded_texture_id);
     family_protos.push_back(std::move(family_proto));
   }
   // Find the lowest versioned brush family, and pack the others into its
@@ -1821,36 +1847,46 @@ void EncodeMultipleBrushFamiliesInternal(const std::vector<T>& families,
 
 void EncodeMultipleBrushFamilies(
     const std::vector<std::reference_wrapper<const BrushFamily>>& families,
-    proto::BrushFamily& family_proto_out, TextureBitmapProvider get_bitmap) {
-  EncodeMultipleBrushFamiliesInternal(families, family_proto_out, get_bitmap);
+    proto::BrushFamily& family_proto_out, TextureBitmapProvider get_bitmap,
+    EncodedTextureIdProvider get_encoded_texture_id) {
+  EncodeMultipleBrushFamiliesInternal(families, family_proto_out, get_bitmap,
+                                      get_encoded_texture_id);
 }
 
-void EncodeMultipleBrushFamilies(const std::vector<BrushFamily>& families,
-                                 proto::BrushFamily& family_proto_out,
-                                 TextureBitmapProvider get_bitmap) {
-  EncodeMultipleBrushFamiliesInternal(families, family_proto_out, get_bitmap);
+void EncodeMultipleBrushFamilies(
+    const std::vector<BrushFamily>& families,
+    proto::BrushFamily& family_proto_out, TextureBitmapProvider get_bitmap,
+    EncodedTextureIdProvider get_encoded_texture_id) {
+  EncodeMultipleBrushFamiliesInternal(families, family_proto_out, get_bitmap,
+                                      get_encoded_texture_id);
 }
 
 // Having an overload for initializer_list avoids an ambiguous overload when
 // this function is called with an initializer list of BrushFamilies.
 void EncodeMultipleBrushFamilies(
     std::initializer_list<std::reference_wrapper<const BrushFamily>> families,
-    proto::BrushFamily& family_proto_out, TextureBitmapProvider get_bitmap) {
+    proto::BrushFamily& family_proto_out, TextureBitmapProvider get_bitmap,
+    EncodedTextureIdProvider get_encoded_texture_id) {
   EncodeMultipleBrushFamiliesInternal(
       std::vector<std::reference_wrapper<const BrushFamily>>(families),
-      family_proto_out, get_bitmap);
+      family_proto_out, get_bitmap, get_encoded_texture_id);
 }
 
 void EncodeBrushFamily(const BrushFamily& family,
                        proto::BrushFamily& family_proto_out,
-                       TextureBitmapProvider get_bitmap) {
+                       TextureBitmapProvider get_bitmap,
+                       EncodedTextureIdProvider get_encoded_texture_id) {
+  // The stored proto already contains the texture IDs (and bitmaps) that the
+  // family was decoded with, so it is written as-is, without calling either
+  // callback.
   if (family.HasFallbacks() &&
       family_proto_out.ParseFromString(
           BrushFamilyInternalAccessor::GetOpaqueDecodedProtoBytesWithFallbacks(
               family))) {
     return;
   }
-  EncodeSingleBrushFamily(family, family_proto_out, get_bitmap);
+  EncodeSingleBrushFamily(family, family_proto_out, get_bitmap,
+                          get_encoded_texture_id);
 }
 
 absl::StatusOr<std::vector<BrushCoat>> DecodeBrushFamilyCoats(
@@ -2003,12 +2039,13 @@ absl::StatusOr<std::vector<BrushFamily>> DecodeMultipleBrushFamilies(
 }
 
 void EncodeBrush(const Brush& brush, proto::Brush& brush_proto_out,
-                 TextureBitmapProvider get_bitmap) {
+                 TextureBitmapProvider get_bitmap,
+                 EncodedTextureIdProvider get_encoded_texture_id) {
   EncodeColor(brush.GetColor(), *brush_proto_out.mutable_color());
   brush_proto_out.set_size_stroke_space(brush.GetSize());
   brush_proto_out.set_epsilon_stroke_space(brush.GetEpsilon());
   EncodeBrushFamily(brush.GetFamily(), *brush_proto_out.mutable_brush_family(),
-                    get_bitmap);
+                    get_bitmap, get_encoded_texture_id);
 }
 
 absl::StatusOr<Brush> DecodeBrush(const proto::Brush& brush_proto,
