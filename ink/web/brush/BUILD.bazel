@@ -1,0 +1,203 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//javascript/typescript:build_defs.bzl", "ts_library")
+load("//testing/karma/builddefs:karma_web_test_suite.bzl", "karma_web_test_suite")  # buildifier: disable=deprecated-function
+
+package(
+    default_applicable_licenses = ["//ink:license"],
+    default_visibility = ["//ink:__subpackages__"],
+)
+
+cc_library(
+    name = "brush_paint_embind",
+    srcs = ["brush_paint_embind.cc"],
+    tags = [
+        "manual",
+        "nobuilder",
+        "notap",
+    ],
+    deps = [
+        "//ink/brush:brush_paint",
+        "//ink/geometry:angle",
+        "//ink/geometry:vec",
+        "//third_party/emscripten:embind",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
+    name = "brush_coat_embind",
+    srcs = ["brush_coat_embind.cc"],
+    tags = [
+        "manual",
+        "nobuilder",
+        "notap",
+    ],
+    deps = [
+        "//ink/brush:brush_coat",
+        "//ink/brush:brush_paint",
+        "//ink/brush:brush_tip",
+        "//third_party/emscripten:embind",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
+    name = "brush_family_embind",
+    srcs = ["brush_family_embind.cc"],
+    tags = [
+        "manual",
+        "nobuilder",
+        "notap",
+    ],
+    deps = [
+        "//ink/brush:brush_coat",
+        "//ink/brush:brush_family",
+        "//third_party/emscripten:embind",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/types:span",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
+    name = "stock_brushes_embind",
+    srcs = ["stock_brushes_embind.cc"],
+    tags = [
+        "manual",
+        "nobuilder",
+        "notap",
+    ],
+    deps = [
+        "//ink/brush:brush_family",
+        "//ink/brush:stock_brushes",
+        "//third_party/emscripten:embind",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
+    name = "brush_embind",
+    srcs = ["brush_embind.cc"],
+    tags = [
+        "manual",
+        "nobuilder",
+        "notap",
+    ],
+    deps = [
+        "//ink/brush",
+        "//ink/brush:brush_family",
+        "//ink/color",
+        "//third_party/emscripten:embind",
+        "@abseil-cpp//absl/log:absl_check",
+    ],
+    alwayslink = True,
+)
+
+ts_library(
+    name = "brush_paint_test_lib",
+    testonly = True,
+    srcs = ["brush_paint_test.ts"],
+    deps = [
+        "//ink/web:ink_wasm_loader",
+        "//third_party/javascript/typings/jasmine",
+    ],
+)
+
+karma_web_test_suite(
+    name = "brush_paint_test",
+    browsers = ["//testing/web/browsers:chrome-linux"],
+    configs = ["//ink/web:chrome_enable_unsafe_webgpu"],
+    data = ["//ink/web:ink_wasm"],
+    karma_plugins = ["//testing/web/build_defs/js_test/karma_plugins/localhost"],
+    deps = [":brush_paint_test_lib"],
+)
+
+ts_library(
+    name = "brush_coat_test_lib",
+    testonly = True,
+    srcs = ["brush_coat_test.ts"],
+    deps = [
+        "//ink/web:ink_wasm_loader",
+        "//third_party/javascript/typings/jasmine",
+    ],
+)
+
+karma_web_test_suite(
+    name = "brush_coat_test",
+    browsers = ["//testing/web/browsers:chrome-linux"],
+    configs = ["//ink/web:chrome_enable_unsafe_webgpu"],
+    data = ["//ink/web:ink_wasm"],
+    karma_plugins = ["//testing/web/build_defs/js_test/karma_plugins/localhost"],
+    deps = [":brush_coat_test_lib"],
+)
+
+ts_library(
+    name = "brush_family_test_lib",
+    testonly = True,
+    srcs = ["brush_family_test.ts"],
+    deps = [
+        "//ink/web:ink_wasm_loader",
+        "//third_party/javascript/typings/jasmine",
+    ],
+)
+
+karma_web_test_suite(
+    name = "brush_family_test",
+    browsers = ["//testing/web/browsers:chrome-linux"],
+    configs = ["//ink/web:chrome_enable_unsafe_webgpu"],
+    data = ["//ink/web:ink_wasm"],
+    karma_plugins = ["//testing/web/build_defs/js_test/karma_plugins/localhost"],
+    deps = [":brush_family_test_lib"],
+)
+
+ts_library(
+    name = "stock_brushes_test_lib",
+    testonly = True,
+    srcs = ["stock_brushes_test.ts"],
+    deps = [
+        "//ink/web:ink_wasm_loader",
+        "//third_party/javascript/typings/jasmine",
+    ],
+)
+
+karma_web_test_suite(
+    name = "stock_brushes_test",
+    browsers = ["//testing/web/browsers:chrome-linux"],
+    configs = ["//ink/web:chrome_enable_unsafe_webgpu"],
+    data = ["//ink/web:ink_wasm"],
+    karma_plugins = ["//testing/web/build_defs/js_test/karma_plugins/localhost"],
+    deps = [":stock_brushes_test_lib"],
+)
+
+ts_library(
+    name = "brush_test_lib",
+    testonly = True,
+    srcs = ["brush_test.ts"],
+    deps = [
+        "//ink/web:ink_wasm_loader",
+        "//third_party/javascript/typings/jasmine",
+    ],
+)
+
+karma_web_test_suite(
+    name = "brush_test",
+    browsers = ["//testing/web/browsers:chrome-linux"],
+    configs = ["//ink/web:chrome_enable_unsafe_webgpu"],
+    data = ["//ink/web:ink_wasm"],
+    karma_plugins = ["//testing/web/build_defs/js_test/karma_plugins/localhost"],
+    deps = [":brush_test_lib"],
+)

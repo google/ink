@@ -1,0 +1,100 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//javascript/typescript:build_defs.bzl", "ts_declaration", "ts_library")
+load("//testing/web/build_defs:web.bzl", "web_test_config")
+load("//third_party/bazel_rules/rules_wasm/wasm:defs.bzl", "wasm_cc_binary")
+
+package(
+    default_applicable_licenses = ["//ink:license"],
+    default_visibility = ["//ink:__subpackages__"],
+)
+
+exports_files([
+    "chrome_enable_unsafe_webgpu.json",
+    "tsconfig.json",
+])
+
+web_test_config(
+    name = "chrome_enable_unsafe_webgpu",
+    metadata = "chrome_enable_unsafe_webgpu.json",
+    deps = [
+        "//testing/web/configs:enable_chrome_gpu",
+    ],
+)
+
+cc_binary(
+    name = "ink_wasm_bin",
+    linkopts = [
+        "--bind",
+        "-sMODULARIZE=1",
+        "-sEXPORT_NAME=createInkModule",
+        "-sALLOW_MEMORY_GROWTH=1",
+        "-sEXPORTED_RUNTIME_METHODS=WebGPU",
+        "-sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$WebGPU",
+    ],
+    tags = [
+        "manual",
+        "nobuilder",
+        "notap",
+    ],
+    deps = [
+        "//ink/web/brush:brush_coat_embind",
+        "//ink/web/brush:brush_embind",
+        "//ink/web/brush:brush_family_embind",
+        "//ink/web/brush:brush_paint_embind",
+        "//ink/web/brush:stock_brushes_embind",
+        "//ink/web/color:color_embind",
+        "//ink/web/geometry:angle_embind",
+        "//ink/web/geometry:point_embind",
+        "//ink/web/geometry:vec_embind",
+        "//ink/web/rendering:webgpu_renderer_embind",
+        "//ink/web/strokes:in_progress_stroke_embind",
+        "//ink/web/strokes:stroke_embind",
+        "//ink/web/strokes:stroke_input_batch_embind",
+        "//ink/web/strokes:stroke_input_embind",
+        "//ink/web/types:duration_embind",
+        "//ink/web/types:physical_distance_embind",
+        "//third_party/emdawnwebgpu:webgpu",
+        "//third_party/emscripten:embind",
+    ],
+)
+
+wasm_cc_binary(
+    name = "ink_wasm",
+    cc_target = ":ink_wasm_bin",
+    tags = [
+        "manual",
+        "nobuilder",
+        "notap",
+    ],
+)
+
+ts_declaration(
+    name = "ink_wasm_types",
+    srcs = ["ink_wasm.d.ts"],
+    deps = ["//third_party/javascript/webgpu_types"],
+)
+
+ts_library(
+    name = "ink_wasm_loader",
+    srcs = ["ink_wasm_loader.ts"],
+    deps = [
+        ":ink_wasm_types",
+        "//third_party/javascript/safevalues",
+        "//third_party/javascript/safevalues/dom",
+        "//third_party/javascript/webgpu_types",
+    ],
+)
