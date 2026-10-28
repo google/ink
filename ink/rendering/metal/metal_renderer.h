@@ -68,12 +68,21 @@ class MetalRenderer {
     simd_float2 tiling_offset = simd_make_float2(0, 0);  // 8 bytes
 
     // =========================================================================
+    // 16 bytes total
+    // =========================================================================
+    float tiling_rotation = 0.0f;    // 4 bytes
+    uint32_t animation_frames = 1;   // 4 bytes
+    uint32_t animation_rows = 1;     // 4 bytes
+    uint32_t animation_columns = 1;  // 4 bytes
+
+    // =========================================================================
     // *************** Only 4 bytes used total, padding added to make 16 bytes *
     // =========================================================================
-    float tiling_rotation = 0.0f;  // 4 bytes
-    float padding0 = 0.0f;
-    float padding1 = 0.0f;
-    float padding2 = 0.0f;
+    uint32_t animation_repeat_mode = static_cast<uint32_t>(
+        BrushPaint::AnimationRepeatMode::kRestart);  // 4 bytes
+    uint32_t padding0 = 0;                           // 4 bytes
+    uint32_t padding1 = 0;                           // 4 bytes
+    uint32_t padding2 = 0;                           // 4 bytes
   };
 
   static_assert(sizeof(ShaderTextureLayer) % 16 == 0);
@@ -160,6 +169,15 @@ class MetalRenderer {
     simd_float2 last_input_pos;  // 8 bytes
 
     // =========================================================================
+    // *************** Only 4 bytes used total, padding added to make 16 bytes *
+    // =========================================================================
+    // The current progress of the brush paint texture animation in [0, 1).
+    float texture_animation_progress = 0.0f;  // 4 bytes
+    uint32_t padding0 = 0;                    // 4 bytes
+    uint32_t padding1 = 0;                    // 4 bytes
+    uint32_t padding2 = 0;                    // 4 bytes
+
+    // =========================================================================
     // 16 byte multiples each
     // =========================================================================
     // LINT.IfChange(texture_layers_tuple)
@@ -206,7 +224,8 @@ class MetalRenderer {
   // `render_encoder`: Opaque pointer to `id<MTLRenderCommandEncoder>`.
   void Draw(const InProgressStroke& in_progress_stroke,
             simd_float4x4 model_transform, simd_float4x4 view_transform,
-            simd_float4x4 projection_transform, void* render_encoder);
+            simd_float4x4 projection_transform, void* render_encoder,
+            float texture_animation_progress = 0.0f);
 
   // Draws the given `stroke` to the given `render_encoder`.
   //
@@ -223,9 +242,11 @@ class MetalRenderer {
   //   coordinates (the lower-left corner is (-1, -1) and the upper-right
   //   corner is (1, 1)).
   // `render_encoder`: Opaque pointer to `id<MTLRenderCommandEncoder>`.
+  // `texture_animation_progress`: The current progress of the brush paint
+  //   texture animation in [0, 1).
   void Draw(const Stroke& stroke, simd_float4x4 model_transform,
             simd_float4x4 view_transform, simd_float4x4 projection_transform,
-            void* render_encoder);
+            void* render_encoder, float texture_animation_progress = 0.0f);
 
  private:
   // Constructs a `MetalRenderer` with initialized Metal pipeline objects.
@@ -241,7 +262,8 @@ class MetalRenderer {
       const BrushPaint& paint, bool request_shader_aa,
       simd_float2 first_input_pos, simd_float2 last_input_pos,
       simd_float4x4 model_transform, simd_float4x4 view_transform,
-      simd_float4x4 projection_transform, void* render_encoder);
+      simd_float4x4 projection_transform, void* render_encoder,
+      float texture_animation_progress = 0.0f);
 
   // Draws a completed stroke with the stencil state already configured.
   //
@@ -251,7 +273,7 @@ class MetalRenderer {
       bool request_shader_aa, simd_float2 first_input_pos,
       simd_float2 last_input_pos, simd_float4x4 model_transform,
       simd_float4x4 view_transform, simd_float4x4 projection_transform,
-      void* render_encoder);
+      void* render_encoder, float texture_animation_progress = 0.0f);
 
   // Clears the stencil buffer using `clear_stencil_stroke_`.
   //
