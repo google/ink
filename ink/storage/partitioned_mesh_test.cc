@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/geometry/partitioned_mesh.h"
+#include "ink/storage/partitioned_mesh.h"
 
+#include <cstdint>
 #include <utility>
 #include <vector>
 
@@ -27,10 +28,11 @@
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_index_types.h"
+#include "ink/geometry/partitioned_mesh.h"
+#include "ink/geometry/point.h"
 #include "ink/geometry/type_matchers.h"
 #include "ink/storage/mesh_format.h"
 #include "ink/storage/numeric_run.h"
-#include "ink/storage/partitioned_mesh.h"
 #include "ink/storage/proto/mesh.pb.h"
 #include "ink/types/iterator_range.h"
 #include "google/protobuf/text_format.h"
@@ -43,9 +45,14 @@ using ::absl_testing::StatusIs;
 using ::ink::proto::CodedModeledShape;
 using ::google::protobuf::TextFormat;
 using ::testing::ElementsAre;
+using ::testing::FloatNear;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
+using ::testing::UnorderedElementsAre;
+
+using AttrId = ::ink::MeshFormat::AttributeId;
+using AttrType = ::ink::MeshFormat::AttributeType;
 
 TEST(PartitionedMeshTest, DecodePartitionedMeshWithGroupCountMismatch) {
   CodedModeledShape shape_proto;
@@ -227,7 +234,8 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithOneTriangleMesh) {
       )pb",
       &shape_proto));
 
-  absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
+  absl::StatusOr<PartitionedMesh> shape =
+      DecodePartitionedMesh(shape_proto, /*fill_missing_attributes=*/false);
   ASSERT_THAT(shape, IsOk());
 
   ASSERT_EQ(shape->RenderGroupCount(), 1);
@@ -296,7 +304,8 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoTriangleMeshes) {
       )pb",
       &shape_proto));
 
-  absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
+  absl::StatusOr<PartitionedMesh> shape =
+      DecodePartitionedMesh(shape_proto, /*fill_missing_attributes=*/false);
   ASSERT_THAT(shape, IsOk());
 
   ASSERT_EQ(shape->RenderGroupCount(), 1);
@@ -369,7 +378,8 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoGroups) {
       )pb",
       &shape_proto));
 
-  absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(shape_proto);
+  absl::StatusOr<PartitionedMesh> shape =
+      DecodePartitionedMesh(shape_proto, /*fill_missing_attributes=*/false);
   ASSERT_THAT(shape, IsOk());
 
   ASSERT_EQ(shape->RenderGroupCount(), 2u);
@@ -395,9 +405,66 @@ TEST(PartitionedMeshTest, DecodePartitionedMeshWithTwoGroups) {
                           VertexIndexPairEq({0, 1})));
 }
 
+TEST(PartitionedMeshTest, DecodePartitionedMeshFillsMissingRequiredAttributes) {
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInThreeUnsignedBytes_XY12, AttrId::kPosition}},
+      MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  absl::StatusOr<Mesh> mesh =
+      Mesh::Create(*format, {{0, 10, 0, 10}, {0, 0, 2, 2}}, {0, 1, 2, 2, 1, 3});
+  ASSERT_THAT(mesh, IsOk());
+
+  absl::StatusOr<PartitionedMesh> original =
+      PartitionedMesh::FromMeshes(absl::MakeSpan(&*mesh, 1));
+  ASSERT_THAT(original, IsOk());
+
+  CodedModeledShape shape_proto;
+  EncodePartitionedMesh(*original, shape_proto);
+
+  absl::StatusOr<PartitionedMesh> decoded = DecodePartitionedMesh(shape_proto);
+  ASSERT_THAT(decoded, IsOk());
+
+  absl::StatusOr<MeshFormat> expected_format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInThreeUnsignedBytes_XY12, AttrId::kPosition},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kOpacityShift},
+       {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+        AttrId::kSideDerivative},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kSideLabel},
+       {AttrType::kFloat2PackedInThreeUnsignedBytes_XY12,
+        AttrId::kForwardDerivative},
+       {AttrType::kFloat1PackedInOneUnsignedByte, AttrId::kForwardLabel}},
+      MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+  ASSERT_THAT(expected_format, IsOk());
+  ASSERT_EQ(decoded->RenderGroupCount(), 1u);
+  EXPECT_THAT(decoded->RenderGroupFormat(0), MeshFormatEq(*expected_format));
+  ASSERT_THAT(decoded->RenderGroupMeshes(0), SizeIs(1));
+  const Mesh& decoded_mesh = decoded->RenderGroupMeshes(0)[0];
+  ASSERT_GE(decoded_mesh.VertexCount(), 4u);
+  for (uint32_t v = 0; v < 4; ++v) {
+    EXPECT_THAT(decoded_mesh.FloatVertexAttribute(v, 1).Values(),
+                ElementsAre(FloatNear(0.0f, 1e-2f)));
+    EXPECT_TRUE(decoded_mesh.FloatVertexAttribute(v, 3)[0] != 0.0f ||
+                decoded_mesh.FloatVertexAttribute(v, 5)[0] != 0.0f);
+  }
+  ASSERT_EQ(decoded->OutlineCount(0), 1u);
+  ASSERT_EQ(decoded->OutlineVertexCount(0, 0), 4u);
+  std::vector<Point> outline_positions;
+  for (uint32_t i = 0; i < decoded->OutlineVertexCount(0, 0); ++i) {
+    outline_positions.push_back(decoded->OutlinePosition(0, 0, i));
+  }
+  EXPECT_THAT(outline_positions,
+              UnorderedElementsAre(
+                  PointNear({0, 0}, 1e-2f), PointNear({10, 0}, 1e-2f),
+                  PointNear({10, 2}, 1e-2f), PointNear({0, 2}, 1e-2f)));
+}
+
 void DecodePartitionedMeshDoesNotCrashOnArbitraryInput(
     const CodedModeledShape& shape_proto) {
-  DecodePartitionedMesh(shape_proto).IgnoreError();
+  DecodePartitionedMesh(shape_proto, /*fill_missing_attributes=*/true)
+      .IgnoreError();
+  DecodePartitionedMesh(shape_proto, /*fill_missing_attributes=*/false)
+      .IgnoreError();
 }
 FUZZ_TEST(PartitionedMeshTest,
           DecodePartitionedMeshDoesNotCrashOnArbitraryInput);

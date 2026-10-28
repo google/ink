@@ -37,6 +37,7 @@ extern "C" {
 
 int64_t PartitionedMeshSerializationNative_createFromProto(
     void* jni_env_pass_through, const int8_t* byte_array, int size,
+    bool fill_missing_attributes,
     void (*throw_from_status_callback)(void* jni_env, int status_code,
                                        const char* status_str)) {
   CodedModeledShape coded_shape;
@@ -50,7 +51,8 @@ int64_t PartitionedMeshSerializationNative_createFromProto(
       return 0;
     }
   }
-  absl::StatusOr<PartitionedMesh> shape = DecodePartitionedMesh(coded_shape);
+  absl::StatusOr<PartitionedMesh> shape =
+      DecodePartitionedMesh(coded_shape, fill_missing_attributes);
   if (!shape.ok()) {
     throw_from_status_callback(jni_env_pass_through,
                                static_cast<int>(shape.status().code()),

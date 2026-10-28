@@ -33,7 +33,8 @@ JNI_METHOD(storage, PartitionedMeshSerializationNative, jlong, createFromProto)
 (JNIEnv* env, jobject object, jbyteArray byte_array, jint length) {
   JvmBytes jvm_bytes = JvmBytes::FromByteArray(env, byte_array);
   jlong native_pointer = PartitionedMeshSerializationNative_createFromProto(
-      env, jvm_bytes.NativeBytes(), length, &ThrowExceptionFromStatusCallback);
+      env, jvm_bytes.NativeBytes(), length, /*fill_missing_attributes=*/true,
+      &ThrowExceptionFromStatusCallback);
   return native_pointer;
 }
 

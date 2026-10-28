@@ -31,8 +31,14 @@ void EncodePartitionedMesh(const PartitionedMesh& shape,
 
 // Decodes the `CodedModeledShape` proto into a `PartitionedMesh`. Returns an
 // error if the proto is invalid.
+//
+// If `fill_missing_attributes` is true, any render group whose format is
+// missing attributes required for rendering (`kOpacityShift` or the
+// anti-aliasing attributes) will have those attributes populated and/or
+// recomputed (along with its outlines).
 absl::StatusOr<PartitionedMesh> DecodePartitionedMesh(
-    const ink::proto::CodedModeledShape& shape_proto);
+    const ink::proto::CodedModeledShape& shape_proto,
+    bool fill_missing_attributes = true);
 
 }  // namespace ink
 

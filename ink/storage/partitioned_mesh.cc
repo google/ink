@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ink/geometry/partitioned_mesh.h"
+#include "ink/storage/partitioned_mesh.h"
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -26,15 +28,193 @@
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mesh_index_types.h"
+#include "ink/geometry/mutable_mesh.h"
+#include "ink/geometry/partitioned_mesh.h"
 #include "ink/storage/mesh.h"
 #include "ink/storage/mesh_format.h"
 #include "ink/storage/numeric_run.h"
-#include "ink/storage/partitioned_mesh.h"
 #include "ink/storage/proto/coded_numeric_run.pb.h"
 #include "ink/storage/proto/mesh.pb.h"
+#include "ink/strokes/internal/stroke_anti_aliasing.h"
+#include "ink/strokes/internal/stroke_vertex.h"
 
 namespace ink {
 namespace {
+
+using ::ink::strokes_internal::StrokeVertex;
+
+bool HasOpacityShiftAttribute(const MeshFormat& format) {
+  return StrokeVertex::FindAttributeIndices(format).opacity_shift != -1;
+}
+
+// Returns whether `format` contains all attributes required for rendering
+// (`kOpacityShift` and the four anti-aliasing attributes). See
+// `AddRequiredAttributeIds` in `ink/brush/brush_coat.cc` and
+// `GetValidatedStrokeAttributeTypesAndOffsets` in
+// `rendering/common/stroke_attribute_helpers.cc` for the attributes and
+// ordering required for rendering.
+// TODO(b/572902140): Consolidate the utility functions for checking for
+// necessary attributes in an appropriate place.
+bool HasRequiredRenderingAttributes(const MeshFormat& format) {
+  return HasOpacityShiftAttribute(format) &&
+         strokes_internal::HasAntiAliasingAttributes(format);
+}
+
+bool HasRequiredRenderingAttributes(
+    absl::Span<const PartitionedMesh::MeshGroup> groups) {
+  for (const PartitionedMesh::MeshGroup& group : groups) {
+    if (group.meshes.empty()) continue;
+    if (!HasRequiredRenderingAttributes(group.meshes[0].Format())) return false;
+  }
+  return true;
+}
+
+// Returns a copy of `format` with any missing required rendering attributes
+// (`kOpacityShift` immediately after `kPosition`, and the four anti-aliasing
+// attributes at the end) added using their default packed types.
+absl::StatusOr<MeshFormat> AddMissingRequiredAttributes(
+    const MeshFormat& format) {
+  using AttributeId = MeshFormat::AttributeId;
+  using AttributeType = MeshFormat::AttributeType;
+
+  std::vector<std::pair<AttributeType, AttributeId>> attrs;
+  for (const MeshFormat::Attribute& attr : format.Attributes()) {
+    attrs.push_back({attr.type, attr.id});
+  }
+
+  if (!HasOpacityShiftAttribute(format)) {
+    attrs.insert(attrs.begin() + format.PositionAttributeIndex() + 1,
+                 {AttributeType::kFloat1PackedInOneUnsignedByte,
+                  AttributeId::kOpacityShift});
+  }
+
+  if (!strokes_internal::HasAntiAliasingAttributes(format)) {
+    attrs.push_back({AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
+                     AttributeId::kSideDerivative});
+    attrs.push_back({AttributeType::kFloat1PackedInOneUnsignedByte,
+                     AttributeId::kSideLabel});
+    attrs.push_back({AttributeType::kFloat2PackedInThreeUnsignedBytes_XY12,
+                     AttributeId::kForwardDerivative});
+    attrs.push_back({AttributeType::kFloat1PackedInOneUnsignedByte,
+                     AttributeId::kForwardLabel});
+  }
+
+  if (attrs.size() > StrokeVertex::kMaxAttributeCount) {
+    return absl::InvalidArgumentError(
+        "Maximum number of stroke attributes exceeded.");
+  }
+  return MeshFormat::Create(attrs,
+                            MeshFormat::IndexFormat::k32BitUnpacked16BitPacked);
+}
+
+// Combines non-empty `group.meshes` (all having the same `MeshFormat`) into a
+// single `MutableMesh` with missing required rendering attributes added
+// (initialized to 0), remaps `group.outlines` into `outlines`, and validates
+// triangles.
+absl::Status CombineMeshesToMutableMesh(
+    const PartitionedMesh::MeshGroup& group, MutableMesh& mutable_mesh,
+    std::vector<std::vector<uint32_t>>& outlines) {
+  const MeshFormat& src_format = group.meshes[0].Format();
+  size_t num_src_attrs = src_format.Attributes().size();
+  size_t pos_attr_index = src_format.PositionAttributeIndex();
+
+  bool should_add_opacity_shift = !HasOpacityShiftAttribute(src_format);
+
+  ABSL_ASSIGN_OR_RETURN(MeshFormat target_format,
+                        AddMissingRequiredAttributes(src_format));
+  mutable_mesh = MutableMesh(target_format);
+
+  // Copy the mesh.
+  std::vector<uint32_t> vertex_offsets;
+  for (const Mesh& mesh : group.meshes) {
+    uint32_t vertex_offset = mutable_mesh.VertexCount();
+
+    for (uint32_t v = 0; v < mesh.VertexCount(); ++v) {
+      mutable_mesh.AppendVertex(mesh.VertexPosition(v));
+      for (size_t src_attr = 0; src_attr < num_src_attrs; ++src_attr) {
+        if (src_attr == pos_attr_index) continue;
+        size_t dst_attr = should_add_opacity_shift && src_attr > pos_attr_index
+                              ? src_attr + 1
+                              : src_attr;
+        mutable_mesh.SetFloatVertexAttribute(
+            vertex_offset + v, dst_attr,
+            mesh.FloatVertexAttribute(v, src_attr));
+      }
+    }
+    for (uint32_t t = 0; t < mesh.TriangleCount(); ++t) {
+      std::array<uint32_t, 3> tri = mesh.TriangleIndices(t);
+      mutable_mesh.AppendTriangleIndices({tri[0] + vertex_offset,
+                                          tri[1] + vertex_offset,
+                                          tri[2] + vertex_offset});
+    }
+
+    vertex_offsets.push_back(vertex_offset);
+  }
+
+  // Copy the outline.
+  for (absl::Span<const VertexIndexPair> outline : group.outlines) {
+    outlines.emplace_back();
+    for (VertexIndexPair v : outline) {
+      if (v.mesh_index >= group.meshes.size() ||
+          v.vertex_index >= group.meshes[v.mesh_index].VertexCount()) {
+        return absl::InvalidArgumentError("Outline index out of bounds.");
+      }
+      outlines.back().push_back(vertex_offsets[v.mesh_index] + v.vertex_index);
+    }
+  }
+  return mutable_mesh.ValidateTriangles();
+}
+
+// Populates missing required rendering attributes and outlines in `group`,
+// using `partitioned_mesh` and `partitioned_outlines` as backing storage for
+// `group`'s non-owning spans.
+absl::Status MakeGroupRenderable(
+    PartitionedMesh::MeshGroup& group, PartitionedMesh& partitioned_mesh,
+    std::vector<absl::Span<const VertexIndexPair>>& partitioned_outlines) {
+  MutableMesh mutable_mesh;
+  std::vector<std::vector<uint32_t>> mutable_mesh_outlines;
+  ABSL_RETURN_IF_ERROR(
+      CombineMeshesToMutableMesh(group, mutable_mesh, mutable_mesh_outlines));
+
+  if (!strokes_internal::HasAntiAliasingAttributes(group.meshes[0].Format())) {
+    mutable_mesh_outlines =
+        strokes_internal::ComputeOutlinesAndLabels(mutable_mesh);
+    strokes_internal::ComputeDerivativesAndMargins(mutable_mesh);
+  }
+
+  std::vector<absl::Span<const uint32_t>> mutable_mesh_outline_spans(
+      mutable_mesh_outlines.begin(), mutable_mesh_outlines.end());
+  ABSL_ASSIGN_OR_RETURN(
+      partitioned_mesh,
+      PartitionedMesh::FromMutableMesh(
+          mutable_mesh, mutable_mesh_outline_spans, /*omit_attributes=*/{},
+          StrokeVertex::MakeCustomPackingArray(mutable_mesh.Format())
+              .Values()));
+
+  partitioned_outlines.clear();
+  partitioned_outlines.reserve(partitioned_mesh.OutlineCount(0));
+  for (uint32_t o = 0; o < partitioned_mesh.OutlineCount(0); ++o) {
+    partitioned_outlines.push_back(partitioned_mesh.Outline(0, o));
+  }
+  group = {.meshes = partitioned_mesh.Meshes(),
+           .outlines = partitioned_outlines};
+  return absl::OkStatus();
+}
+
+absl::StatusOr<PartitionedMesh> CreateRenderablePartitionedMesh(
+    std::vector<PartitionedMesh::MeshGroup> groups) {
+  std::vector<PartitionedMesh> partitioned_meshes(groups.size());
+  std::vector<std::vector<absl::Span<const VertexIndexPair>>>
+      partitioned_outlines(groups.size());
+  for (size_t i = 0; i < groups.size(); ++i) {
+    if (groups[i].meshes.empty()) continue;
+    if (HasRequiredRenderingAttributes(groups[i].meshes[0].Format())) continue;
+
+    ABSL_RETURN_IF_ERROR(MakeGroupRenderable(groups[i], partitioned_meshes[i],
+                                             partitioned_outlines[i]));
+  }
+  return PartitionedMesh::FromMeshGroups(groups);
+}
 
 void EncodeOutline(absl::Span<const VertexIndexPair> outline,
                    ink::proto::CodedNumericRun* outline_proto) {
@@ -67,7 +247,8 @@ absl::StatusOr<std::vector<VertexIndexPair>> DecodeOutline(
 // specifying the `format` field for a single-group `PartitionedMesh`, rather
 // than using the `group_*` fields).
 absl::StatusOr<PartitionedMesh> DecodePartitionedMeshGroupless(
-    const ink::proto::CodedModeledShape& shape_proto) {
+    const ink::proto::CodedModeledShape& shape_proto,
+    bool fill_missing_attributes) {
   DecodedMeshFormat format;
 
   std::vector<Mesh> meshes;
@@ -92,6 +273,11 @@ absl::StatusOr<PartitionedMesh> DecodePartitionedMeshGroupless(
     outline_spans.push_back(outline);
   }
 
+  if (fill_missing_attributes &&
+      !HasRequiredRenderingAttributes(format.format)) {
+    return CreateRenderablePartitionedMesh(
+        {{.meshes = meshes, .outlines = outline_spans}});
+  }
   return PartitionedMesh::FromMeshes(absl::MakeSpan(meshes), outline_spans);
 }
 
@@ -132,7 +318,8 @@ void EncodePartitionedMesh(const PartitionedMesh& shape,
 }
 
 absl::StatusOr<PartitionedMesh> DecodePartitionedMesh(
-    const ink::proto::CodedModeledShape& shape_proto) {
+    const ink::proto::CodedModeledShape& shape_proto,
+    bool fill_missing_attributes) {
   const int num_groups = shape_proto.group_formats_size();
   const int num_meshes = shape_proto.meshes_size();
   const int num_outlines = shape_proto.outlines_size();
@@ -147,7 +334,8 @@ absl::StatusOr<PartitionedMesh> DecodePartitionedMesh(
     if (num_meshes > 0) {
       // There are meshes, but no render groups, so use the deprecated `format`
       // field and put all meshes into a single render group with that format.
-      return DecodePartitionedMeshGroupless(shape_proto);
+      return DecodePartitionedMeshGroupless(shape_proto,
+                                            fill_missing_attributes);
     }
   } else {
     if (shape_proto.group_first_mesh_indices(0) != 0) {
@@ -239,6 +427,9 @@ absl::StatusOr<PartitionedMesh> DecodePartitionedMesh(
     });
   }
 
+  if (fill_missing_attributes && !HasRequiredRenderingAttributes(groups)) {
+    return CreateRenderablePartitionedMesh(std::move(groups));
+  }
   return PartitionedMesh::FromMeshGroups(absl::MakeConstSpan(groups));
 }
 
