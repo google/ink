@@ -122,6 +122,9 @@ class SkiaRenderer {
     // Sets the value of the brush-color property if present.
     void SetBrushColor(const Color& brush_color);
 
+    // Sets the value of the texture animation progress property if present.
+    void SetTextureAnimationProgress(float texture_animation_progress);
+
     void SetImageFilter(sk_sp<SkImageFilter> image_filter);
 
    private:
@@ -164,10 +167,12 @@ class SkiaRenderer {
   // to the stroke by calling a separate renderer member function.
   absl::Status Draw(GrDirectContext* absl_nullable context,
                     const InProgressStroke& stroke,
-                    const AffineTransform& object_to_canvas, SkCanvas& canvas);
+                    const AffineTransform& object_to_canvas, SkCanvas& canvas,
+                    float texture_animation_progress = 0.0f);
   absl::Status Draw(GrDirectContext* absl_nullable context,
                     const Stroke& stroke,
-                    const AffineTransform& object_to_canvas, SkCanvas& canvas);
+                    const AffineTransform& object_to_canvas, SkCanvas& canvas,
+                    float texture_animation_progress = 0.0f);
 
   // Return a new `Drawable` created from an `InProgressStroke`.
   //
