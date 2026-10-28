@@ -363,11 +363,13 @@ absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
 absl::Status SkiaRenderer::Draw(GrDirectContext* absl_nullable context,
                                 const InProgressStroke& stroke,
                                 const AffineTransform& object_to_canvas,
-                                SkCanvas& canvas) {
+                                SkCanvas& canvas,
+                                float texture_animation_progress) {
   // TODO: b/286547863 - Implement `RenderCache` to save and update the created
   // drawable inside the stroke.
   ABSL_ASSIGN_OR_RETURN(Drawable drawable,
                         CreateDrawable(context, stroke, object_to_canvas));
+  drawable.SetTextureAnimationProgress(texture_animation_progress);
   drawable.Draw(canvas);
   return absl::OkStatus();
 }
@@ -375,11 +377,13 @@ absl::Status SkiaRenderer::Draw(GrDirectContext* absl_nullable context,
 absl::Status SkiaRenderer::Draw(GrDirectContext* absl_nullable context,
                                 const Stroke& stroke,
                                 const AffineTransform& object_to_canvas,
-                                SkCanvas& canvas) {
+                                SkCanvas& canvas,
+                                float texture_animation_progress) {
   // TODO: b/286547863 - Implement `RenderCache` to save and update the created
   // drawable inside the stroke.
   ABSL_ASSIGN_OR_RETURN(Drawable drawable,
                         CreateDrawable(context, stroke, object_to_canvas));
+  drawable.SetTextureAnimationProgress(texture_animation_progress);
   drawable.Draw(canvas);
   return absl::OkStatus();
 }
@@ -428,6 +432,19 @@ void SkiaRenderer::Drawable::SetBrushColor(const Color& brush_color) {
   for (Implementation& drawable_impl : drawable_implementations_) {
     std::visit(
         [&brush_color](auto& drawable) { drawable.SetBrushColor(brush_color); },
+        drawable_impl);
+  }
+}
+
+void SkiaRenderer::Drawable::SetTextureAnimationProgress(
+    float texture_animation_progress) {
+  for (Implementation& drawable_impl : drawable_implementations_) {
+    std::visit(
+        absl::Overload(
+            [texture_animation_progress](MeshDrawable& drawable) {
+              drawable.SetTextureAnimationProgress(texture_animation_progress);
+            },
+            [](PathDrawable& drawable) {}),
         drawable_impl);
   }
 }
