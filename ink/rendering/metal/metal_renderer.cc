@@ -128,7 +128,8 @@ void MetalRenderer::Draw(const InProgressStroke& in_progress_stroke,
                          simd_float4x4 model_transform,
                          simd_float4x4 view_transform,
                          simd_float4x4 projection_transform,
-                         void* render_encoder) {
+                         void* render_encoder,
+                         float texture_animation_progress) {
   const Brush* brush = in_progress_stroke.GetBrush();
   if (!brush) return;
   if (in_progress_stroke.InputCount() <= 0) return;
@@ -178,10 +179,10 @@ void MetalRenderer::Draw(const InProgressStroke& in_progress_stroke,
           // again, this time with shader-based AA. This second pass will not
           // draw any of the fragments that were drawn in the first pass, but
           // will add the outset edge fragments with the correct opacity.
-          DrawWithStencilAlreadySet(in_progress_stroke, coat_index, paint,
-                                    false, first_input_pos, last_input_pos,
-                                    model_transform, view_transform,
-                                    projection_transform, render_encoder);
+          DrawWithStencilAlreadySet(
+              in_progress_stroke, coat_index, paint, false, first_input_pos,
+              last_input_pos, model_transform, view_transform,
+              projection_transform, render_encoder, texture_animation_progress);
         }
       } else {
         // No need to clear the stencil buffer, as a nil stencil state will not
@@ -190,11 +191,11 @@ void MetalRenderer::Draw(const InProgressStroke& in_progress_stroke,
                                         objc_renderer_state_.get());
       }
 
-      DrawWithStencilAlreadySet(in_progress_stroke, coat_index, paint,
-                                request_shader_based_anti_aliasing_,
-                                first_input_pos, last_input_pos,
-                                model_transform, view_transform,
-                                projection_transform, render_encoder);
+      DrawWithStencilAlreadySet(
+          in_progress_stroke, coat_index, paint,
+          request_shader_based_anti_aliasing_, first_input_pos, last_input_pos,
+          model_transform, view_transform, projection_transform, render_encoder,
+          texture_animation_progress);
 
       // Only draw with the first compatible paint preference in each coat.
       break;
@@ -207,7 +208,8 @@ void MetalRenderer::DrawWithStencilAlreadySet(
     const BrushPaint& paint, bool request_shader_aa,
     simd_float2 first_input_pos, simd_float2 last_input_pos,
     simd_float4x4 model_transform, simd_float4x4 view_transform,
-    simd_float4x4 projection_transform, void* render_encoder) {
+    simd_float4x4 projection_transform, void* render_encoder,
+    float texture_animation_progress) {
   const Brush* brush = in_progress_stroke.GetBrush();
   if (brush == nullptr) return;
 
@@ -272,6 +274,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
       .brush_size = brush->GetSize(),
       .first_input_pos = first_input_pos,
       .last_input_pos = last_input_pos,
+      .texture_animation_progress = texture_animation_progress,
   };
   FillTextureLayers(paint, render_encoder, std::begin(uniforms.layers),
                     &uniforms.texture_layer_count);
@@ -289,7 +292,8 @@ void MetalRenderer::DrawWithStencilAlreadySet(
 void MetalRenderer::Draw(const Stroke& stroke, simd_float4x4 model_transform,
                          simd_float4x4 view_transform,
                          simd_float4x4 projection_transform,
-                         void* render_encoder) {
+                         void* render_encoder,
+                         float texture_animation_progress) {
   if (stroke.GetInputs().Size() <= 0) return;
 
   const StrokeInputBatch& inputs = stroke.GetInputs();
@@ -327,10 +331,10 @@ void MetalRenderer::Draw(const Stroke& stroke, simd_float4x4 model_transform,
           // using the same stencil buffer to avoid the anti-aliased edges
           // showing up as outlines of the self-overlapping portions of the
           // stroke.
-          DrawWithStencilAlreadySet(stroke, coat_index, paint, false,
-                                    first_input_pos, last_input_pos,
-                                    model_transform, view_transform,
-                                    projection_transform, render_encoder);
+          DrawWithStencilAlreadySet(
+              stroke, coat_index, paint, false, first_input_pos, last_input_pos,
+              model_transform, view_transform, projection_transform,
+              render_encoder, texture_animation_progress);
         }
       } else {
         // No need to clear the stencil buffer, as a nil stencil state will
@@ -342,7 +346,7 @@ void MetalRenderer::Draw(const Stroke& stroke, simd_float4x4 model_transform,
       DrawWithStencilAlreadySet(
           stroke, coat_index, paint, request_shader_based_anti_aliasing_,
           first_input_pos, last_input_pos, model_transform, view_transform,
-          projection_transform, render_encoder);
+          projection_transform, render_encoder, texture_animation_progress);
 
       // Only draw with the first compatible paint preference in each coat.
       break;
@@ -355,7 +359,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
     bool request_shader_aa, simd_float2 first_input_pos,
     simd_float2 last_input_pos, simd_float4x4 model_transform,
     simd_float4x4 view_transform, simd_float4x4 projection_transform,
-    void* render_encoder) {
+    void* render_encoder, float texture_animation_progress) {
   Color coat_color = EvaluateCoatColor(stroke.GetBrush(), paint);
   simd_float4 color_oklab_uniform = MakeColorOklabUniform(coat_color);
 
@@ -436,6 +440,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
         .brush_size = stroke.GetBrush().GetSize(),
         .first_input_pos = first_input_pos,
         .last_input_pos = last_input_pos,
+        .texture_animation_progress = texture_animation_progress,
     };
     FillTextureLayers(paint, render_encoder, std::begin(uniforms.layers),
                       &uniforms.texture_layer_count);
@@ -524,6 +529,12 @@ void MetalRenderer::FillTextureLayers(const BrushPaint& paint,
           .tiling_size = simd_make_float2(0, 0),
           .tiling_offset = simd_make_float2(0, 0),
           .tiling_rotation = 0.0f,
+          .animation_frames = static_cast<uint32_t>(stamping.animation_frames),
+          .animation_rows = static_cast<uint32_t>(stamping.animation_rows),
+          .animation_columns =
+              static_cast<uint32_t>(stamping.animation_columns),
+          .animation_repeat_mode =
+              static_cast<uint32_t>(stamping.animation_repeat_mode),
       };
     } else {
       ABSL_LOG(WARNING) << "Texture layer type is unsupported.";
