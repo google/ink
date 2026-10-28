@@ -54,7 +54,7 @@ void MetalRendererNative_drawInProgressStroke(
     double texture_height, float stroke_to_screen_transform_m00,
     float stroke_to_screen_transform_m10, float stroke_to_screen_transform_m20,
     float stroke_to_screen_transform_m01, float stroke_to_screen_transform_m11,
-    float stroke_to_screen_transform_m21);
+    float stroke_to_screen_transform_m21, float texture_animation_progress);
 
 // Draws a completed stroke using the given render encoder. `render_encoder`
 // is a pointer to a MTLRenderCommandEncoder. `stroke_native_ptr` is a raw
@@ -65,7 +65,8 @@ void MetalRendererNative_drawStroke(
     double texture_width, double texture_height,
     float stroke_to_screen_transform_m00, float stroke_to_screen_transform_m10,
     float stroke_to_screen_transform_m20, float stroke_to_screen_transform_m01,
-    float stroke_to_screen_transform_m11, float stroke_to_screen_transform_m21);
+    float stroke_to_screen_transform_m11, float stroke_to_screen_transform_m21,
+    float texture_animation_progress);
 
 // Deletes the heap-allocated `ink::rendering::MetalRenderer`.
 void MetalRendererNative_free(int64_t native_ptr);
