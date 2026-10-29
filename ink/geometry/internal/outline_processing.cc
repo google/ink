@@ -101,11 +101,6 @@ struct ChainIntersection {
   int sign;
 };
 
-bool IsLeftOrBelow(const Point& a, const Point& b) {
-  if (a.x != b.x) return a.x < b.x;
-  return a.y < b.y;
-}
-
 // Computes the 2D cross product (determinant) of the vectors ab and ac.
 double Determinant(const Point& a, const Point& b, const Point& c) {
   double ux = static_cast<double>(b.x) - a.x;
