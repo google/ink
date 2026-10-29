@@ -41,6 +41,13 @@ namespace ink::geometry_internal {
 // polygon's oriented boundary into a minimal set of oriented monotone
 // chains, and is unique up to vertical boundary segments.
 
+// The ordering of points along a monotone chain: by x-coordinate, and then by
+// y-coordinate.
+inline bool IsLeftOrBelow(const Point& a, const Point& b) {
+  if (a.x != b.x) return a.x < b.x;
+  return a.y < b.y;
+}
+
 class MonotoneChain {
  public:
   MonotoneChain(std::vector<Point> vertices, int orientation);

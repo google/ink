@@ -435,6 +435,18 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "outline_triangulation",
+    srcs = ["outline_triangulation.cc"],
+    hdrs = ["outline_triangulation.h"],
+    deps = [
+        ":outline_processing",
+        "//ink/geometry:point",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 cc_test(
     name = "outline_processing_test",
     srcs = ["outline_processing_test.cc"],
@@ -444,6 +456,18 @@ cc_test(
         "//ink/geometry:point",
         "//ink/geometry:rect",
         "//ink/geometry:segment",
+        "//ink/geometry:triangle",
+        "@googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "outline_triangulation_test",
+    srcs = ["outline_triangulation_test.cc"],
+    deps = [
+        ":outline_processing",
+        ":outline_triangulation",
+        "//ink/geometry:point",
         "//ink/geometry:triangle",
         "@googletest//:gtest_main",
     ],
