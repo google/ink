@@ -122,6 +122,12 @@ class SkiaRenderer {
     // Sets the value of the brush-color property if present.
     void SetBrushColor(const Color& brush_color);
 
+    // Sets the value of the texture animation progress property if present.
+    // `texture_animation_progress` is the normalized progress of the brush
+    // paint texture animation in [0, 1); values outside this range are handled
+    // according to the brush paint's `AnimationRepeatMode`.
+    void SetTextureAnimationProgress(float texture_animation_progress);
+
     void SetImageFilter(sk_sp<SkImageFilter> image_filter);
 
    private:
@@ -151,7 +157,9 @@ class SkiaRenderer {
   ~SkiaRenderer() = default;
 
   // The following overloads draw a `stroke` with the given `object_to_canvas`
-  // transform into the `canvas`.
+  // transform and `texture_animation_progress` (normalized progress in [0, 1);
+  // values outside this range are handled according to the brush paint's
+  // `AnimationRepeatMode`) into the `canvas`.
   //
   // NOTE: This function calls `canvas.setMatrix()`, overwriting any current
   // matrix state. Callers who wish to make use of the `SkCanvas` matrix state
@@ -164,10 +172,12 @@ class SkiaRenderer {
   // to the stroke by calling a separate renderer member function.
   absl::Status Draw(GrDirectContext* absl_nullable context,
                     const InProgressStroke& stroke,
-                    const AffineTransform& object_to_canvas, SkCanvas& canvas);
+                    const AffineTransform& object_to_canvas, SkCanvas& canvas,
+                    float texture_animation_progress = 0.0f);
   absl::Status Draw(GrDirectContext* absl_nullable context,
                     const Stroke& stroke,
-                    const AffineTransform& object_to_canvas, SkCanvas& canvas);
+                    const AffineTransform& object_to_canvas, SkCanvas& canvas,
+                    float texture_animation_progress = 0.0f);
 
   // Return a new `Drawable` created from an `InProgressStroke`.
   //
