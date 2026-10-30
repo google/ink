@@ -110,8 +110,7 @@ struct Uniforms {
   // ===========================================================================
   // 16 byte multiples each
   // ===========================================================================
-  modelTransform: mat4x4<f32>,
-  viewTransform: mat4x4<f32>,
+  objectToCanvasTransform: mat4x4<f32>,
   projectionTransform: mat4x4<f32>,
 
   // ===========================================================================
@@ -560,12 +559,10 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
   var normalizedToEdgeLRFB = vec4<f32>(0.0, 0.0, 0.0, 0.0);
   var outsetPixelsLRFB = vec4<f32>(0.0, 0.0, 0.0, 0.0);
 
-  let objectToCanvasTransform = uniforms.viewTransform * uniforms.modelTransform;
-
   if (aaEnabled) {
     let objectToCanvasLinearComponent = mat2x2<f32>(
-      objectToCanvasTransform[0].xy,
-      objectToCanvasTransform[1].xy
+      uniforms.objectToCanvasTransform[0].xy,
+      uniforms.objectToCanvasTransform[1].xy
     );
 
     pos += calculateAntialiasingAndPositionOutset(
@@ -585,8 +582,8 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
 
   out.positionInStrokeCoords = pos;
   out.surfaceUV = surfaceUV;
-  out.position = uniforms.projectionTransform * objectToCanvasTransform *
-    vec4<f32>(pos, 0.0, 1.0);
+  out.position = uniforms.projectionTransform *
+    uniforms.objectToCanvasTransform * vec4<f32>(pos, 0.0, 1.0);
 
   out.color =
       applyHCLAndOpacityShift(hclShift, opacityShift, uniforms.colorOklab);
