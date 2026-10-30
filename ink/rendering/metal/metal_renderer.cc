@@ -125,8 +125,7 @@ MetalRenderer::MetalRenderer(
       clear_stencil_stroke_(MakeClearStencilStroke()) {}
 
 void MetalRenderer::Draw(const InProgressStroke& in_progress_stroke,
-                         simd_float4x4 model_transform,
-                         simd_float4x4 view_transform,
+                         simd_float4x4 object_to_canvas_transform,
                          simd_float4x4 projection_transform,
                          void* render_encoder) {
   const Brush* brush = in_progress_stroke.GetBrush();
@@ -180,7 +179,7 @@ void MetalRenderer::Draw(const InProgressStroke& in_progress_stroke,
           // will add the outset edge fragments with the correct opacity.
           DrawWithStencilAlreadySet(in_progress_stroke, coat_index, paint,
                                     false, first_input_pos, last_input_pos,
-                                    model_transform, view_transform,
+                                    object_to_canvas_transform,
                                     projection_transform, render_encoder);
         }
       } else {
@@ -190,11 +189,10 @@ void MetalRenderer::Draw(const InProgressStroke& in_progress_stroke,
                                         objc_renderer_state_.get());
       }
 
-      DrawWithStencilAlreadySet(in_progress_stroke, coat_index, paint,
-                                request_shader_based_anti_aliasing_,
-                                first_input_pos, last_input_pos,
-                                model_transform, view_transform,
-                                projection_transform, render_encoder);
+      DrawWithStencilAlreadySet(
+          in_progress_stroke, coat_index, paint,
+          request_shader_based_anti_aliasing_, first_input_pos, last_input_pos,
+          object_to_canvas_transform, projection_transform, render_encoder);
 
       // Only draw with the first compatible paint preference in each coat.
       break;
@@ -206,7 +204,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
     const InProgressStroke& in_progress_stroke, uint32_t coat_index,
     const BrushPaint& paint, bool request_shader_aa,
     simd_float2 first_input_pos, simd_float2 last_input_pos,
-    simd_float4x4 model_transform, simd_float4x4 view_transform,
+    simd_float4x4 object_to_canvas_transform,
     simd_float4x4 projection_transform, void* render_encoder) {
   const Brush* brush = in_progress_stroke.GetBrush();
   if (brush == nullptr) return;
@@ -253,8 +251,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
   }
 
   Uniforms uniforms{
-      .model_transform = model_transform,
-      .view_transform = view_transform,
+      .object_to_canvas_transform = object_to_canvas_transform,
       .projection_transform = projection_transform,
       .color_oklab = color_oklab_uniform,
       // Nothing to unpack for in-progress strokes.
@@ -286,8 +283,8 @@ void MetalRenderer::DrawWithStencilAlreadySet(
           .get());
 }
 
-void MetalRenderer::Draw(const Stroke& stroke, simd_float4x4 model_transform,
-                         simd_float4x4 view_transform,
+void MetalRenderer::Draw(const Stroke& stroke,
+                         simd_float4x4 object_to_canvas_transform,
                          simd_float4x4 projection_transform,
                          void* render_encoder) {
   if (stroke.GetInputs().Size() <= 0) return;
@@ -327,10 +324,9 @@ void MetalRenderer::Draw(const Stroke& stroke, simd_float4x4 model_transform,
           // using the same stencil buffer to avoid the anti-aliased edges
           // showing up as outlines of the self-overlapping portions of the
           // stroke.
-          DrawWithStencilAlreadySet(stroke, coat_index, paint, false,
-                                    first_input_pos, last_input_pos,
-                                    model_transform, view_transform,
-                                    projection_transform, render_encoder);
+          DrawWithStencilAlreadySet(
+              stroke, coat_index, paint, false, first_input_pos, last_input_pos,
+              object_to_canvas_transform, projection_transform, render_encoder);
         }
       } else {
         // No need to clear the stencil buffer, as a nil stencil state will
@@ -341,7 +337,7 @@ void MetalRenderer::Draw(const Stroke& stroke, simd_float4x4 model_transform,
 
       DrawWithStencilAlreadySet(
           stroke, coat_index, paint, request_shader_based_anti_aliasing_,
-          first_input_pos, last_input_pos, model_transform, view_transform,
+          first_input_pos, last_input_pos, object_to_canvas_transform,
           projection_transform, render_encoder);
 
       // Only draw with the first compatible paint preference in each coat.
@@ -353,9 +349,8 @@ void MetalRenderer::Draw(const Stroke& stroke, simd_float4x4 model_transform,
 void MetalRenderer::DrawWithStencilAlreadySet(
     const Stroke& stroke, uint32_t coat_index, const BrushPaint& paint,
     bool request_shader_aa, simd_float2 first_input_pos,
-    simd_float2 last_input_pos, simd_float4x4 model_transform,
-    simd_float4x4 view_transform, simd_float4x4 projection_transform,
-    void* render_encoder) {
+    simd_float2 last_input_pos, simd_float4x4 object_to_canvas_transform,
+    simd_float4x4 projection_transform, void* render_encoder) {
   Color coat_color = EvaluateCoatColor(stroke.GetBrush(), paint);
   simd_float4 color_oklab_uniform = MakeColorOklabUniform(coat_color);
 
@@ -416,8 +411,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
             : simd_make_float4(0, 0, 0, 0);
 
     Uniforms uniforms{
-        .model_transform = model_transform,
-        .view_transform = view_transform,
+        .object_to_canvas_transform = object_to_canvas_transform,
         .projection_transform = projection_transform,
         .color_oklab = color_oklab_uniform,
         .position_unpacking_transform = position_unpacking_transform,
@@ -464,7 +458,7 @@ void MetalRenderer::ClearStencilBuffer(void* render_encoder) {
   DrawWithStencilAlreadySet(clear_stencil_stroke_, 0, paint, false,
                             simd_make_float2(0, 0), simd_make_float2(0, 0),
                             matrix_identity_float4x4, matrix_identity_float4x4,
-                            matrix_identity_float4x4, render_encoder);
+                            render_encoder);
 }
 
 Color MetalRenderer::EvaluateCoatColor(const Brush& brush,
