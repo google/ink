@@ -117,14 +117,13 @@ void MetalRendererNative_drawInProgressStroke(
   MetalRenderer& metal_renderer = CastToMetalRenderer(native_ptr);
   const InProgressStroke& in_progress_stroke =
       CastToInProgressStrokeWrapper(in_progress_stroke_native_ptr).Stroke();
-  simd_float4x4 model_transform = matrix_identity_float4x4;
-  simd_float4x4 view_transform = AffineTransformToSimdMatrix(
+  simd_float4x4 object_to_canvas_transform = AffineTransformToSimdMatrix(
       stroke_to_screen_transform_m00, stroke_to_screen_transform_m10,
       stroke_to_screen_transform_m20, stroke_to_screen_transform_m01,
       stroke_to_screen_transform_m11, stroke_to_screen_transform_m21);
   simd_float4x4 projection_transform =
       OrthographicProjectionMatrix(texture_width, texture_height);
-  metal_renderer.Draw(in_progress_stroke, model_transform, view_transform,
+  metal_renderer.Draw(in_progress_stroke, object_to_canvas_transform,
                       projection_transform, render_encoder);
 }
 
@@ -139,15 +138,14 @@ void MetalRendererNative_drawStroke(int64_t native_ptr, void* render_encoder,
                                     float stroke_to_screen_transform_m21) {
   MetalRenderer& metal_renderer = CastToMetalRenderer(native_ptr);
   const Stroke& stroke = CastToStroke(stroke_native_ptr);
-  simd_float4x4 model_transform = matrix_identity_float4x4;
-  simd_float4x4 view_transform = AffineTransformToSimdMatrix(
+  simd_float4x4 object_to_canvas_transform = AffineTransformToSimdMatrix(
       stroke_to_screen_transform_m00, stroke_to_screen_transform_m10,
       stroke_to_screen_transform_m20, stroke_to_screen_transform_m01,
       stroke_to_screen_transform_m11, stroke_to_screen_transform_m21);
   simd_float4x4 projection_transform =
       OrthographicProjectionMatrix(texture_width, texture_height);
-  metal_renderer.Draw(stroke, model_transform, view_transform,
-                      projection_transform, render_encoder);
+  metal_renderer.Draw(stroke, object_to_canvas_transform, projection_transform,
+                      render_encoder);
 }
 
 void MetalRendererNative_free(int64_t native_ptr) {
