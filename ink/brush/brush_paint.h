@@ -457,7 +457,7 @@ H AbslHashValue(H h, const BrushPaint::StampingTexture& layer) {
   return H::combine(std::move(h), layer.client_texture_id,
                     layer.animation_frames, layer.animation_rows,
                     layer.animation_columns, layer.animation_duration,
-                    layer.blend_mode);
+                    layer.animation_repeat_mode, layer.blend_mode);
 }
 
 template <typename H>

@@ -76,6 +76,30 @@ TEST(BrushPaintTest, TilingTextureSupportsAbslHash) {
   }));
 }
 
+TEST(BrushPaintTest, StampingTextureSupportsAbslHash) {
+  std::string id1 = "foo";
+  std::string id2 = "bar";
+  EXPECT_TRUE(absl::VerifyTypeImplementsAbslHashCorrectly({
+      BrushPaint::StampingTexture{.client_texture_id = id1},
+      BrushPaint::StampingTexture{.client_texture_id = id2},
+      BrushPaint::StampingTexture{.client_texture_id = id1,
+                                  .animation_frames = 2,
+                                  .animation_rows = 2,
+                                  .animation_columns = 2},
+      BrushPaint::StampingTexture{.client_texture_id = id1,
+                                  .animation_rows = 2},
+      BrushPaint::StampingTexture{.client_texture_id = id1,
+                                  .animation_columns = 2},
+      BrushPaint::StampingTexture{.client_texture_id = id1,
+                                  .animation_duration = absl::Seconds(2)},
+      BrushPaint::StampingTexture{
+          .client_texture_id = id1,
+          .animation_repeat_mode = BrushPaint::AnimationRepeatMode::kReverse},
+      BrushPaint::StampingTexture{.client_texture_id = id1,
+                                  .blend_mode = BrushPaint::BlendMode::kXor},
+  }));
+}
+
 TEST(BrushPaintTest, BrushPaintSupportsAbslHash) {
   std::string id1 = "foo";
   std::string id2 = "bar";
