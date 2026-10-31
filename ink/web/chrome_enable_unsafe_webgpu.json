@@ -1,0 +1,26 @@
+{
+  "capabilities": {
+    "goog:chromeOptions": {
+      "args": [
+        "--enable-unsafe-webgpu",
+        "--use-webgpu-adapter=swiftshader",
+        "--enable-features=Vulkan,DefaultANGLEVulkan,VulkanFromANGLE,WebGPU",
+        "--ignore-gpu-blocklist",
+        "--enable-logging",
+        "--disable-vulkan-fallback-to-gl-for-testing",
+        "--disable-vulkan-surface",
+        "--disable-gpu-watchdog",
+        "--disable-features=HeapProfilerReporting"
+      ]
+    }
+  },
+  "extension": {
+    "forceCapabilities": {
+      "goog:chromeOptions": {
+        "args": [
+          "--use-angle=vulkan"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,171 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//javascript/typescript:build_defs.bzl", "ts_library")
+load("//testing/karma/builddefs:karma_web_test_suite.bzl", "karma_web_test_suite")  # buildifier: disable=deprecated-function
+
+package(
+    default_applicable_licenses = ["//ink:license"],
+    default_visibility = ["//ink:__subpackages__"],
+)
+
+cc_library(
+    name = "stroke_input_embind",
+    srcs = ["stroke_input_embind.cc"],
+    tags = [
+        "manual",
+        "nobuilder",
+        "notap",
+    ],
+    deps = [
+        "//ink/geometry:angle",
+        "//ink/geometry:point",
+        "//ink/strokes/input:stroke_input",
+        "//ink/types:duration",
+        "//ink/types:physical_distance",
+        "//third_party/emscripten:embind",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
+    name = "stroke_input_batch_embind",
+    srcs = ["stroke_input_batch_embind.cc"],
+    tags = [
+        "manual",
+        "nobuilder",
+        "notap",
+    ],
+    deps = [
+        "//ink/strokes/input:stroke_input",
+        "//ink/strokes/input:stroke_input_batch",
+        "//third_party/emscripten:embind",
+        "@abseil-cpp//absl/log:absl_check",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
+    name = "stroke_embind",
+    srcs = ["stroke_embind.cc"],
+    tags = [
+        "manual",
+        "nobuilder",
+        "notap",
+    ],
+    deps = [
+        "//ink/brush",
+        "//ink/strokes:stroke",
+        "//ink/strokes/input:stroke_input_batch",
+        "//third_party/emscripten:embind",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
+    name = "in_progress_stroke_embind",
+    srcs = ["in_progress_stroke_embind.cc"],
+    tags = [
+        "manual",
+        "nobuilder",
+        "notap",
+    ],
+    deps = [
+        "//ink/brush",
+        "//ink/strokes:in_progress_stroke",
+        "//ink/strokes:stroke",
+        "//ink/strokes/input:stroke_input_batch",
+        "//ink/types:duration",
+        "//third_party/emscripten:embind",
+        "@abseil-cpp//absl/log:absl_check",
+    ],
+    alwayslink = True,
+)
+
+ts_library(
+    name = "stroke_input_test_lib",
+    testonly = True,
+    srcs = ["stroke_input_test.ts"],
+    deps = [
+        "//ink/web:ink_wasm_loader",
+        "//third_party/javascript/typings/jasmine",
+    ],
+)
+
+karma_web_test_suite(
+    name = "stroke_input_test",
+    browsers = ["//testing/web/browsers:chrome-linux"],
+    configs = ["//ink/web:chrome_enable_unsafe_webgpu"],
+    data = ["//ink/web:ink_wasm"],
+    karma_plugins = ["//testing/web/build_defs/js_test/karma_plugins/localhost"],
+    deps = [":stroke_input_test_lib"],
+)
+
+ts_library(
+    name = "stroke_input_batch_test_lib",
+    testonly = True,
+    srcs = ["stroke_input_batch_test.ts"],
+    deps = [
+        "//ink/web:ink_wasm_loader",
+        "//third_party/javascript/typings/jasmine",
+    ],
+)
+
+karma_web_test_suite(
+    name = "stroke_input_batch_test",
+    browsers = ["//testing/web/browsers:chrome-linux"],
+    configs = ["//ink/web:chrome_enable_unsafe_webgpu"],
+    data = ["//ink/web:ink_wasm"],
+    karma_plugins = ["//testing/web/build_defs/js_test/karma_plugins/localhost"],
+    deps = [":stroke_input_batch_test_lib"],
+)
+
+ts_library(
+    name = "stroke_test_lib",
+    testonly = True,
+    srcs = ["stroke_test.ts"],
+    deps = [
+        "//ink/web:ink_wasm_loader",
+        "//third_party/javascript/typings/jasmine",
+    ],
+)
+
+karma_web_test_suite(
+    name = "stroke_test",
+    browsers = ["//testing/web/browsers:chrome-linux"],
+    configs = ["//ink/web:chrome_enable_unsafe_webgpu"],
+    data = ["//ink/web:ink_wasm"],
+    karma_plugins = ["//testing/web/build_defs/js_test/karma_plugins/localhost"],
+    deps = [":stroke_test_lib"],
+)
+
+ts_library(
+    name = "in_progress_stroke_test_lib",
+    testonly = True,
+    srcs = ["in_progress_stroke_test.ts"],
+    deps = [
+        "//ink/web:ink_wasm_loader",
+        "//third_party/javascript/typings/jasmine",
+    ],
+)
+
+karma_web_test_suite(
+    name = "in_progress_stroke_test",
+    browsers = ["//testing/web/browsers:chrome-linux"],
+    configs = ["//ink/web:chrome_enable_unsafe_webgpu"],
+    data = ["//ink/web:ink_wasm"],
+    karma_plugins = ["//testing/web/build_defs/js_test/karma_plugins/localhost"],
+    deps = [":in_progress_stroke_test_lib"],
+)
