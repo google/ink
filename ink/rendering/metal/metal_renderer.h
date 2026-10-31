@@ -89,9 +89,8 @@ class MetalRenderer {
     // =========================================================================
     // 16 byte multiples each
     // =========================================================================
-    simd_float4x4 model_transform;       // 64 bytes
-    simd_float4x4 view_transform;        // 64 bytes
-    simd_float4x4 projection_transform;  // 64 bytes
+    simd_float4x4 object_to_canvas_transform;  // 64 bytes
+    simd_float4x4 projection_transform;        // 64 bytes
 
     // =========================================================================
     // 16 bytes each
@@ -195,17 +194,16 @@ class MetalRenderer {
   // rendered into the target specified by the render encoder.
   //
   // `in_progress_stroke`: The stroke to be drawn.
-  // `model_transform`: The model transform to be applied in the vertex shader.
-  //   Must transform from stroke coordinates to world coordinates.
-  // `view_transform`: The view transform to be applied in the vertex shader.
-  //   Must transform from world coordinates to view coordinates.
+  // `object_to_canvas_transform`: The object-to-canvas transform to be applied
+  //   in the vertex shader. Must transform from stroke coordinates to view
+  //   coordinates.
   // `projection_transform`: The projection matrix to be applied in the vertex
-  //   shader. Must transform from world coordinates to Y-up normalized device
+  //   shader. Must transform from view coordinates to Y-up normalized device
   //   coordinates (the lower-left corner is (-1, -1) and the upper-right corner
   //   is (1, 1)).
   // `render_encoder`: Opaque pointer to `id<MTLRenderCommandEncoder>`.
   void Draw(const InProgressStroke& in_progress_stroke,
-            simd_float4x4 model_transform, simd_float4x4 view_transform,
+            simd_float4x4 object_to_canvas_transform,
             simd_float4x4 projection_transform, void* render_encoder);
 
   // Draws the given `stroke` to the given `render_encoder`.
@@ -214,18 +212,16 @@ class MetalRenderer {
   // rendered into the target specified by the render encoder.
   //
   // `stroke`: The stroke to be drawn.
-  // `model_transform`: The model transform to be applied in the vertex shader.
-  //   Must transform from stroke coordinates to world coordinates.
-  // `view_transform`: The view transform to be applied in the vertex shader.
-  //   Must transform from world coordinates to view coordinates.
+  // `object_to_canvas_transform`: The object-to-canvas transform to be applied
+  //   in the vertex shader. Must transform from stroke coordinates to view
+  //   coordinates.
   // `projection_transform`: The projection matrix to be applied in the vertex
-  //   shader. Must transform from world coordinates to Y-up normalized device
+  //   shader. Must transform from view coordinates to Y-up normalized device
   //   coordinates (the lower-left corner is (-1, -1) and the upper-right
   //   corner is (1, 1)).
   // `render_encoder`: Opaque pointer to `id<MTLRenderCommandEncoder>`.
-  void Draw(const Stroke& stroke, simd_float4x4 model_transform,
-            simd_float4x4 view_transform, simd_float4x4 projection_transform,
-            void* render_encoder);
+  void Draw(const Stroke& stroke, simd_float4x4 object_to_canvas_transform,
+            simd_float4x4 projection_transform, void* render_encoder);
 
  private:
   // Constructs a `MetalRenderer` with initialized Metal pipeline objects.
@@ -236,12 +232,14 @@ class MetalRenderer {
   // Draws an in-progress stroke with the stencil state already configured.
   //
   // `render_encoder`: Opaque pointer to `id<MTLRenderCommandEncoder>`.
-  void DrawWithStencilAlreadySet(
-      const InProgressStroke& in_progress_stroke, uint32_t coat_index,
-      const BrushPaint& paint, bool request_shader_aa,
-      simd_float2 first_input_pos, simd_float2 last_input_pos,
-      simd_float4x4 model_transform, simd_float4x4 view_transform,
-      simd_float4x4 projection_transform, void* render_encoder);
+  void DrawWithStencilAlreadySet(const InProgressStroke& in_progress_stroke,
+                                 uint32_t coat_index, const BrushPaint& paint,
+                                 bool request_shader_aa,
+                                 simd_float2 first_input_pos,
+                                 simd_float2 last_input_pos,
+                                 simd_float4x4 object_to_canvas_transform,
+                                 simd_float4x4 projection_transform,
+                                 void* render_encoder);
 
   // Draws a completed stroke with the stencil state already configured.
   //
@@ -249,9 +247,8 @@ class MetalRenderer {
   void DrawWithStencilAlreadySet(
       const Stroke& stroke, uint32_t coat_index, const BrushPaint& paint,
       bool request_shader_aa, simd_float2 first_input_pos,
-      simd_float2 last_input_pos, simd_float4x4 model_transform,
-      simd_float4x4 view_transform, simd_float4x4 projection_transform,
-      void* render_encoder);
+      simd_float2 last_input_pos, simd_float4x4 object_to_canvas_transform,
+      simd_float4x4 projection_transform, void* render_encoder);
 
   // Clears the stencil buffer using `clear_stencil_stroke_`.
   //
