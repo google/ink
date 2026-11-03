@@ -663,7 +663,7 @@ TEST(ComputeTriangulationTest, SumTwoDiamonds) {
   //         B     D
   Point A{-4, 0}, B{-1, -3}, C{0, -2}, D{1, -3}, E{4, 0}, F{1, 3}, G{0, 2},
       H{-1, 3};
-  ShapeOutline outline({{{A, B, C, D, E}, 1}, {{E, F, G, H, A}, -1}});
+  ShapeOutline outline({{{A, B, C, D, E}, 1}, {{A, H, G, F, E}, -1}});
 
   auto [points, triangles] = ComputeTriangulation(outline);
   EXPECT_THAT(points, UnorderedElementsAre(A, B, C, D, E, F, G, H));
@@ -931,7 +931,7 @@ TEST(ComputeSubtractionTests, VertexEdgeTransverse3) {
   //       \   /
   //        \ /
   //         A
-  Point A{2, 0}, B{4, 4}, C{0, 4}, D{2, 4}, E{1, 5}, F{2, 4};
+  Point A{2, 0}, B{4, 4}, C{0, 4}, D{2, 4}, E{3, 5}, F{1, 5};
 
   ShapeOutline shape_abc({{{C, A, B}, 1}, {{C, B}, -1}});
   ShapeOutline shape_def({{{F, D, E}, 1}, {{F, E}, -1}});
@@ -1052,6 +1052,27 @@ TEST(ComputeSubtractionTests, VertexVertexNontransverse3) {
   ShapeOutline result = ComputeSubtraction(shape_abc, shape_bde);
 
   EXPECT_THAT(result, ShapeOutlineNear(shape_abc, kFloatTolerance));
+}
+
+TEST(ComputeSubtractionTests, CrossingsNearSliverTip) {
+  // A long, thin triangle ABC far from the origin minus a triangle DEF,
+  // whose edge DE crosses both AC and BC very close to C, where they are less
+  // than a float apart.
+  Point A{2144.10303f, -689.242371f}, B{2144.448f, -688.392212f},
+      C{2065.09351f, -789.556946f};
+  Point D{2063.85327f, -799.479736f}, E{2066.33398f, -779.634155f},
+      F{2055.82397f, -801.350037f};
+
+  // Both crossings round to the same point P.
+  Point P{2065.09375f, -789.556763f};
+
+  ShapeOutline result = ComputeSubtraction(ShapeOutline(Triangle{A, B, C}),
+                                           ShapeOutline(Triangle{D, E, F}));
+
+  // The result is the triangle with its tip cut off at P.
+  EXPECT_THAT(result,
+              ShapeOutlineNear(ShapeOutline({{{P, A, B}, 1}, {{P, B}, -1}}),
+                               kFloatTolerance));
 }
 
 TEST(SubtractSegmentTests, DisjointSegment) {
