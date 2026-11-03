@@ -823,6 +823,7 @@ cc_library(
         "//ink/geometry:triangle",
         "//ink/geometry:vec",
         "//ink/geometry/internal:outline_processing",
+        "//ink/geometry/internal:outline_triangulation",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/container:inlined_vector",

@@ -33,6 +33,7 @@
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/envelope.h"
 #include "ink/geometry/internal/outline_processing.h"
+#include "ink/geometry/internal/outline_triangulation.h"
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mesh_format.h"
 #include "ink/geometry/mutable_mesh.h"
@@ -51,13 +52,7 @@ using ::ink::geometry_internal::ComputeSubtraction;
 using ::ink::geometry_internal::ComputeTriangulation;
 using ::ink::geometry_internal::Intersects;
 using ::ink::geometry_internal::ShapeOutline;
-
-// A representation of a triangulation, consisting of a list of `vertices` and
-// `triangles` represented by triplets of indices of vertices.
-struct Triangulation {
-  std::vector<Point> vertices;
-  std::vector<std::array<uint32_t, 3>> triangles;
-};
+using ::ink::geometry_internal::Triangulation;
 
 // A set of directed boundary edges, where each edge is represented by an
 // ordered pair of vertex indices (u, v) oriented counterclockwise around the
