@@ -695,3 +695,20 @@ fn fragmentMain(in: VertexOut) -> @location(0) vec4<f32> {
     uniforms.layers[uniforms.textureLayerCount - 1u].blendMode
   );
 }
+
+// Full-screen triangle vertex and fragment entry points for clearing the
+// stencil buffer mid-render-pass before `SelfOverlap::kDiscard` coats.
+@vertex
+fn clearVertexMain(
+  @builtin(vertex_index) vertexIndex: u32
+) -> @builtin(position) vec4<f32> {
+  let pos = array<vec2<f32>, 3>(
+    vec2<f32>(-1.0, -1.0),
+    vec2<f32>(3.0, -1.0),
+    vec2<f32>(-1.0, 3.0)
+  );
+  return vec4<f32>(pos[vertexIndex], 0.0, 1.0);
+}
+
+@fragment
+fn clearFragmentMain() {}
