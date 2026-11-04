@@ -1089,10 +1089,10 @@ TEST(GeometryTest, FinishIntersectionBudgetGreaterThanInitial) {
   }
 }
 
-TEST(GeometryTest, SimplificationCausesCwTriangle) {
+TEST(GeometryTest, SimplificationSkipsNonCcwTriangle) {
   // Tests an edge case where `geometry::Simplify` can behave correctly, but
-  // replacing the last vertex of the previous extrusion actually creates a
-  // missed clockwise winding triangle.
+  // replacing the last vertex of the previous extrusion would skip a non-CCW
+  // proposed triangle, which is needed to trigger self-overlap handling.
   //
   // This can happen when three vertices are clustered together relative to the
   // simplification threshold. Because the simplification algorithm does not
@@ -1120,7 +1120,7 @@ TEST(GeometryTest, SimplificationCausesCwTriangle) {
   geometry.ProcessNewVertices(0, PositionToTipState({0, 0}));
 
   // Add the problematic vertex:
-  geometry.AppendRightVertex(Point{1.1, 0.95});
+  geometry.AppendRightVertex(Point{1.1, 1.01});
 
   // Verify that the current setup for the right side would cause the
   // simplification algorithm to remove the {1.05, 1.05} vertex:
@@ -1129,16 +1129,53 @@ TEST(GeometryTest, SimplificationCausesCwTriangle) {
       geometry.RightSide().vertex_buffer;
   EXPECT_THAT(buffered_vertices, ElementsAre(VertexPositionEq({1, 1}),
                                              VertexPositionEq({1.05, 1.05}),
-                                             VertexPositionEq({1.1, 0.95})));
+                                             VertexPositionEq({1.1, 1.01})));
   std::vector<ExtrudedVertex> simplified_vertices;
   SimplifyPolyline(buffered_vertices.cbegin(), buffered_vertices.cend(),
                    simplification_threshold, simplified_vertices);
   EXPECT_THAT(simplified_vertices, ElementsAre(VertexPositionEq({1, 1}),
-                                               VertexPositionEq({1.1, 0.95})));
+                                               VertexPositionEq({1.1, 1.01})));
 
   // But ProcessNewVertices should not be allowed to replace the {1.05, 1.05}
-  // vertex with the one at {1.1, 0.95} because that would cause a CW triangle:
+  // vertex with {1.1, 1.01}, because that would skip the non-CCW triangle
+  // ({0, 1}, {1.05, 1.05}, {1.1, 1.01}) that triggers self-overlap handling.
+  MutableMeshView::IndexType r1_index = geometry.RightSide().indices.back();
   geometry.ProcessNewVertices(simplification_threshold,
+                              PositionToTipState({0, 0}));
+  EXPECT_NE(geometry.GetMeshView().GetPosition(r1_index), (Point{1.1, 1.01}));
+}
+
+TEST(GeometryTest, SimplificationCausesCwTriangle) {
+  // Tests an edge case where `geometry::Simplify` causes a clockwise
+  // triangle. The case arises in tight turns, where points cluster together
+  // and the left-side points envelop a right-side point.
+  //
+  //             L2
+  //          /
+  //      /
+  //  L1       R
+  //      \
+  //          \
+  //             L0
+  //
+  // In this case, the naive line simplification of the left side would replace
+  // vertex L1 with L2 and replace triangle (L0, R, L1) with the clockwise
+  // triangle (L0, R, L2).
+  Point L0{0, 0}, L1{-0.09, 0.5}, L2{0, 1};
+  Point R{-0.03, 0.5};
+
+  MeshData mesh_data;
+  Geometry geometry(MakeView(mesh_data));
+
+  geometry.AppendLeftVertex(L0);
+  geometry.AppendRightVertex(R);
+  geometry.AppendLeftVertex(L1);
+  geometry.ProcessNewVertices(/*simplification_threshold=*/.1,
+                              PositionToTipState({0, 0}));
+
+  geometry.AppendLeftVertex(L2);
+
+  geometry.ProcessNewVertices(/*simplification_threshold=*/.1,
                               PositionToTipState({0, 0}));
   EXPECT_THAT(geometry.GetMeshView(), TrianglesAreNotCw());
 }
