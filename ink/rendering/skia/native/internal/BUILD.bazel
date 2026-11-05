@@ -45,7 +45,6 @@ cc_test(
     deps = [
         ":mesh_uniform_data",
         "//ink/color",
-        "//ink/color:color_space",
         "//ink/color:type_matchers",
         "//ink/geometry:affine_transform",
         "//ink/geometry:angle",
