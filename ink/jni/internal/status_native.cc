@@ -14,17 +14,20 @@
 
 #include "ink/jni/internal/status_native.h"
 
+#include <cstdlib>
+#include <cstring>
+#include <string>
+
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 
 namespace {
 
-void ThrowExceptionFromStatus(void* jni_env_pass_through,
-                              void (*throw_from_status_callback)(void*, int,
-                                                                 const char*),
-                              absl::Status status) {
-  throw_from_status_callback(jni_env_pass_through,
-                             static_cast<int>(status.code()),
-                             status.ToString().c_str());
+void ThrowExceptionFromStatus(
+    void* jni_env_pass_through,
+    void (*throw_from_status_callback)(void* jni_env, const void* status),
+    absl::Status status) {
+  throw_from_status_callback(jni_env_pass_through, &status);
 }
 
 }  // namespace
@@ -55,18 +58,35 @@ int StatusNative_statusCodeUnimplemented() {
   return static_cast<int>(absl::StatusCode::kUnimplemented);
 }
 
+int StatusNative_getStatusCode(const void* status) {
+  ABSL_CHECK(status != nullptr);
+  return static_cast<int>(static_cast<const absl::Status*>(status)->code());
+}
+
+const char* StatusNative_allocateStatusString(const void* status) {
+  ABSL_CHECK(status != nullptr);
+  std::string str = static_cast<const absl::Status*>(status)->ToString(
+      absl::StatusToStringMode::kWithEverything);
+  char* copy = static_cast<char*>(std::malloc(str.size() + 1));
+  ABSL_CHECK(copy != nullptr);
+  std::memcpy(copy, str.c_str(), str.size() + 1);
+  return copy;
+}
+
+void StatusNative_freeStatusString(const char* status_str) {
+  std::free(const_cast<char*>(status_str));
+}
+
 void StatusNative_throwExceptionFromOkStatusForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   ThrowExceptionFromStatus(jni_env_pass_through, throw_from_status_callback,
                            absl::OkStatus());
 }
 
 void StatusNative_throwExceptionFromFailedPreconditionForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str),
+    void (*throw_from_status_callback)(void* jni_env, const void* status),
     const char* message) {
   ThrowExceptionFromStatus(jni_env_pass_through, throw_from_status_callback,
                            absl::FailedPreconditionError(message));
@@ -74,8 +94,7 @@ void StatusNative_throwExceptionFromFailedPreconditionForTesting(
 
 void StatusNative_throwExceptionFromInvalidArgumentForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str),
+    void (*throw_from_status_callback)(void* jni_env, const void* status),
     const char* message) {
   ThrowExceptionFromStatus(jni_env_pass_through, throw_from_status_callback,
                            absl::InvalidArgumentError(message));
@@ -83,8 +102,7 @@ void StatusNative_throwExceptionFromInvalidArgumentForTesting(
 
 void StatusNative_throwExceptionFromNotFoundForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str),
+    void (*throw_from_status_callback)(void* jni_env, const void* status),
     const char* message) {
   ThrowExceptionFromStatus(jni_env_pass_through, throw_from_status_callback,
                            absl::NotFoundError(message));
@@ -92,8 +110,7 @@ void StatusNative_throwExceptionFromNotFoundForTesting(
 
 void StatusNative_throwExceptionFromOutOfRangeForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str),
+    void (*throw_from_status_callback)(void* jni_env, const void* status),
     const char* message) {
   ThrowExceptionFromStatus(jni_env_pass_through, throw_from_status_callback,
                            absl::OutOfRangeError(message));
@@ -101,8 +118,7 @@ void StatusNative_throwExceptionFromOutOfRangeForTesting(
 
 void StatusNative_throwExceptionFromUnimplementedForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str),
+    void (*throw_from_status_callback)(void* jni_env, const void* status),
     const char* message) {
   ThrowExceptionFromStatus(jni_env_pass_through, throw_from_status_callback,
                            absl::UnimplementedError(message));
@@ -110,8 +126,7 @@ void StatusNative_throwExceptionFromUnimplementedForTesting(
 
 void StatusNative_throwExceptionFromUnknownStatusCodeForTesting(
     void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str),
+    void (*throw_from_status_callback)(void* jni_env, const void* status),
     int status_code, const char* message) {
   ThrowExceptionFromStatus(
       jni_env_pass_through, throw_from_status_callback,

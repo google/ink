@@ -79,8 +79,7 @@ int64_t MetalRendererNative_create(
     int sample_count,
     void* (*texture_for_id_callback)(int64_t metal_renderer_native_ptr,
                                      const char* texture_id),
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   std::shared_ptr<void> texture_bitmap_store;
   if (texture_for_id_callback != nullptr) {
     texture_bitmap_store =
@@ -94,9 +93,7 @@ int64_t MetalRendererNative_create(
       texture_bitmap_store.get());
 
   if (!metal_renderer.ok()) {
-    throw_from_status_callback(/*jni_env=*/nullptr,
-                               static_cast<int>(metal_renderer.status().code()),
-                               metal_renderer.status().ToString().c_str());
+    throw_from_status_callback(/*jni_env=*/nullptr, &metal_renderer.status());
     return 0;
   }
   int64_t native_ptr = NewNativeMetalRenderer(*metal_renderer);

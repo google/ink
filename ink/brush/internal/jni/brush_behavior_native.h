@@ -24,8 +24,7 @@ extern "C" {
 int64_t BrushBehaviorNative_createFromOrderedNodes(
     void* jni_env_pass_through, const int64_t* node_native_pointers,
     int num_nodes, const char* developer_comment,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str));
+    void (*throw_from_status_callback)(void* jni_env, const void* status));
 
 void BrushBehaviorNative_free(int64_t native_ptr);
 

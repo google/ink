@@ -36,15 +36,12 @@ using ink::native::NewNativeEasingFunction;
 
 int64_t ValidateAndHoistEasingFunction(
     void* jni_env_pass_through, EasingFunction::Parameters parameters,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   EasingFunction easing_function{.parameters = std::move(parameters)};
   if (absl::Status status =
           ink::brush_internal::ValidateEasingFunction(easing_function);
       !status.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(status.code()),
-                               status.ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &status);
     return 0;
   }
   return NewNativeEasingFunction(std::move(easing_function));
@@ -65,8 +62,7 @@ int64_t EasingFunctionNative_createCopyOf(int64_t other_native_ptr) {
 
 int64_t EasingFunctionNative_createPredefined(
     void* jni_env_pass_through, int value,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistEasingFunction(
       jni_env_pass_through, static_cast<EasingFunction::Predefined>(value),
       throw_from_status_callback);
@@ -74,8 +70,7 @@ int64_t EasingFunctionNative_createPredefined(
 
 int64_t EasingFunctionNative_createCubicBezier(
     void* jni_env_pass_through, float x1, float y1, float x2, float y2,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistEasingFunction(
       jni_env_pass_through,
       EasingFunction::CubicBezier{.x1 = x1, .y1 = y1, .x2 = x2, .y2 = y2},
@@ -84,8 +79,7 @@ int64_t EasingFunctionNative_createCubicBezier(
 
 int64_t EasingFunctionNative_createSteps(
     void* jni_env_pass_through, int step_count, int step_position,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistEasingFunction(
       jni_env_pass_through,
       EasingFunction::Steps{
@@ -98,8 +92,7 @@ int64_t EasingFunctionNative_createSteps(
 
 int64_t EasingFunctionNative_createLinear(
     void* jni_env_pass_through, const float* points, int num_coords,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   std::vector<Point> points_vector;
   points_vector.reserve(num_coords / 2);
   for (int i = 0; i < num_coords; i += 2) {

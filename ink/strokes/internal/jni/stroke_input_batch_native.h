@@ -69,14 +69,12 @@ bool MutableStrokeInputBatchNative_appendSingle(
     void* jni_env_pass_through, int64_t native_pointer, int tool_type, float x,
     float y, int64_t elapsed_time_millis, float stroke_unit_length_cm,
     float pressure, float tilt, float orientation, float barrel_twist,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str));
+    void (*throw_from_status_callback)(void* jni_env, const void* status));
 
 bool MutableStrokeInputBatchNative_appendBatch(
     void* jni_env_pass_through, int64_t native_pointer,
     int64_t append_from_native_pointer,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str));
+    void (*throw_from_status_callback)(void* jni_env, const void* status));
 
 int64_t MutableStrokeInputBatchNative_newCopy(int64_t native_pointer);
 

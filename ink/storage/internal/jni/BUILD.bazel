@@ -116,7 +116,6 @@ cc_library(
         "//ink/storage/proto:stroke_input_batch_cc_proto",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/strokes/internal/jni:stroke_input_batch_native_helper",
-        "@abseil-cpp//absl/log:absl_check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
     ],

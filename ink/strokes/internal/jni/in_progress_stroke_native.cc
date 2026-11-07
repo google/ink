@@ -74,17 +74,14 @@ void InProgressStrokeNative_start(int64_t native_pointer,
 bool InProgressStrokeNative_enqueueInputs(
     void* jni_env_pass_through, int64_t native_pointer,
     int64_t real_inputs_pointer, int64_t predicted_inputs_pointer,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   InProgressStroke& in_progress_stroke =
       CastToMutableInProgressStrokeWrapper(native_pointer).Stroke();
   if (absl::Status status = in_progress_stroke.EnqueueInputs(
           CastToStrokeInputBatch(real_inputs_pointer),
           CastToStrokeInputBatch(predicted_inputs_pointer));
       !status.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(status.code()),
-                               status.ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &status);
     return false;
   }
   return true;
@@ -93,15 +90,12 @@ bool InProgressStrokeNative_enqueueInputs(
 bool InProgressStrokeNative_updateShape(
     void* jni_env_pass_through_pass_through, int64_t native_pointer,
     int64_t j_current_elapsed_time_millis,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   if (absl::Status status =
           CastToMutableInProgressStrokeWrapper(native_pointer)
               .UpdateShape(Duration32::Millis(j_current_elapsed_time_millis));
       !status.ok()) {
-    throw_from_status_callback(jni_env_pass_through_pass_through,
-                               static_cast<int>(status.code()),
-                               status.ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through_pass_through, &status);
     return false;
   }
   return true;

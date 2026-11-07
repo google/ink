@@ -31,14 +31,11 @@ using ::ink::native::CastToEasingFunction;
 using ::ink::native::DeleteNativeBrushBehaviorNode;
 using ::ink::native::NewNativeBrushBehaviorNode;
 
-int64_t ValidateAndHoistNode(void* jni_env_pass_through,
-                             BrushBehavior::Node node,
-                             void (*throw_from_status_callback)(void*, int,
-                                                                const char*)) {
+int64_t ValidateAndHoistNode(
+    void* jni_env_pass_through, BrushBehavior::Node node,
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   if (absl::Status status = ValidateBrushBehaviorNode(node); !status.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(status.code()),
-                               status.ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &status);
     return 0;
   }
   return NewNativeBrushBehaviorNode(std::move(node));
@@ -51,8 +48,7 @@ extern "C" {
 int64_t SourceNodeNative_create(
     void* jni_env_pass_through, int source, float source_value_start,
     float source_value_end, int source_out_of_range_behavior,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistNode(
       jni_env_pass_through,
       BrushBehavior::SourceNode{
@@ -67,8 +63,7 @@ int64_t SourceNodeNative_create(
 
 int64_t ConstantNodeNative_create(
     void* jni_env_pass_through, float value,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistNode(jni_env_pass_through,
                               BrushBehavior::ConstantNode{.value = value},
                               throw_from_status_callback);
@@ -76,8 +71,7 @@ int64_t ConstantNodeNative_create(
 
 int64_t NoiseNodeNative_create(
     void* jni_env_pass_through, int seed, int vary_over, float base_period,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistNode(
       jni_env_pass_through,
       BrushBehavior::NoiseNode{
@@ -91,8 +85,7 @@ int64_t NoiseNodeNative_create(
 int64_t ToolTypeFilterNodeNative_create(
     void* jni_env_pass_through, bool mouse_enabled, bool touch_enabled,
     bool stylus_enabled, bool unknown_enabled,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistNode(
       jni_env_pass_through,
       BrushBehavior::ToolTypeFilterNode{
@@ -106,8 +99,7 @@ int64_t ToolTypeFilterNodeNative_create(
 
 int64_t DampingNodeNative_create(
     void* jni_env_pass_through, int damp_over, float strength,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistNode(
       jni_env_pass_through,
       BrushBehavior::DampingNode{
@@ -119,8 +111,7 @@ int64_t DampingNodeNative_create(
 
 int64_t ResponseNodeNative_create(
     void* jni_env_pass_through, int64_t easing_function_native_pointer,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistNode(jni_env_pass_through,
                               BrushBehavior::ResponseNode{
                                   .response_curve = CastToEasingFunction(
@@ -132,8 +123,7 @@ int64_t ResponseNodeNative_create(
 int64_t IntegralNodeNative_create(
     void* jni_env_pass_through, int integrate_over, float integral_value_start,
     float integral_value_end, int integral_out_of_range_behavior,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistNode(
       jni_env_pass_through,
       BrushBehavior::IntegralNode{
@@ -149,8 +139,7 @@ int64_t IntegralNodeNative_create(
 
 int64_t BinaryOpNodeNative_create(
     void* jni_env_pass_through, int operation,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistNode(
       jni_env_pass_through,
       BrushBehavior::BinaryOpNode{
@@ -161,8 +150,7 @@ int64_t BinaryOpNodeNative_create(
 
 int64_t InterpolationNodeNative_create(
     void* jni_env_pass_through, int interpolation,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistNode(
       jni_env_pass_through,
       BrushBehavior::InterpolationNode{
@@ -175,8 +163,7 @@ int64_t InterpolationNodeNative_create(
 int64_t TargetNodeNative_create(
     void* jni_env_pass_through, int target, float target_modifier_start,
     float target_modifier_end,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistNode(
       jni_env_pass_through,
       BrushBehavior::TargetNode{
@@ -190,8 +177,7 @@ int64_t PolarTargetNodeNative_create(
     void* jni_env_pass_through, int polar_target, float angle_range_start,
     float angle_range_end, float magnitude_range_start,
     float magnitude_range_end,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistNode(
       jni_env_pass_through,
       BrushBehavior::PolarTargetNode{

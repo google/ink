@@ -61,14 +61,12 @@ void InProgressStrokeNative_start(int64_t native_pointer,
 bool InProgressStrokeNative_enqueueInputs(
     void* jni_env_pass_through, int64_t native_pointer,
     int64_t real_inputs_pointer, int64_t predicted_inputs_pointer,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str));
+    void (*throw_from_status_callback)(void* jni_env, const void* status));
 
 bool InProgressStrokeNative_updateShape(
     void* jni_env_pass_through, int64_t native_pointer,
     int64_t j_current_elapsed_time_millis,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str));
+    void (*throw_from_status_callback)(void* jni_env, const void* status));
 
 void InProgressStrokeNative_finishInput(int64_t native_pointer);
 

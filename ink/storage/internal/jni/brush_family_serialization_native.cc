@@ -51,15 +51,14 @@ namespace {
 
 bool ParseBrushFamilyProtoFromByteArray(
     void* jni_env_pass_through, const int8_t* byte_array, int size,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, const void* status),
     ink::proto::BrushFamily& brush_family_proto) {
   ABSL_CHECK(byte_array != nullptr);
   bool success = brush_family_proto.ParseFromArray(byte_array, size);
   if (!success) {
-    throw_from_status_callback(
-        jni_env_pass_through,
-        static_cast<int>(absl::StatusCode::kInvalidArgument),
-        "Failed to parse ink.proto.BrushFamily.");
+    absl::Status status =
+        absl::InvalidArgumentError("Failed to parse ink.proto.BrushFamily.");
+    throw_from_status_callback(jni_env_pass_through, &status);
     return false;
   }
   return true;
@@ -72,7 +71,7 @@ extern "C" {
 int64_t BrushFamilySerializationNative_createFromProto(
     void* jni_env_pass_through, void* on_decode_texture_pass_through,
     const int8_t* byte_array, int size, int max_version,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, const void* status),
     const char* (*on_decode_texture_callback)(void* pass_through,
                                               const char* encoded_id,
                                               const int8_t* bitmap,
@@ -89,9 +88,7 @@ int64_t BrushFamilySerializationNative_createFromProto(
           on_decode_texture_pass_through, on_decode_texture_callback),
       IntToVersion(max_version));
   if (!brush_family.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(brush_family.status().code()),
-                               brush_family.status().ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &brush_family.status());
     return 0;
   }
   return NewNativeBrushFamily(*std::move(brush_family));
@@ -137,7 +134,7 @@ int8_t* BrushFamilySerializationNative_encodeMultiple(
 int64_t MultipleBrushFamiliesNative_createFromProto(
     void* jni_env_pass_through, void* on_decode_texture_pass_through,
     const int8_t* byte_array, int size, int max_version,
-    void (*throw_from_status_callback)(void*, int, const char*),
+    void (*throw_from_status_callback)(void* jni_env, const void* status),
     const char* (*on_decode_texture_callback)(void* pass_through,
                                               const char* encoded_id,
                                               const int8_t* bitmap,
@@ -155,9 +152,7 @@ int64_t MultipleBrushFamiliesNative_createFromProto(
               on_decode_texture_pass_through, on_decode_texture_callback),
           IntToVersion(max_version));
   if (!brush_families.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(brush_families.status().code()),
-                               brush_families.status().ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &brush_families.status());
     return 0;
   }
   std::vector<std::unique_ptr<BrushFamily>> result;

@@ -38,25 +38,21 @@ extern "C" {
 int64_t PartitionedMeshSerializationNative_createFromProto(
     void* jni_env_pass_through, const int8_t* byte_array, int size,
     bool fill_missing_attributes,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   CodedModeledShape coded_shape;
   if (byte_array != nullptr) {
     bool success = coded_shape.ParseFromArray(byte_array, size);
     if (!success) {
-      throw_from_status_callback(
-          jni_env_pass_through,
-          static_cast<int>(absl::StatusCode::kInvalidArgument),
+      absl::Status status = absl::InvalidArgumentError(
           "Failed to parse ink.proto.CodedModeledShape.");
+      throw_from_status_callback(jni_env_pass_through, &status);
       return 0;
     }
   }
   absl::StatusOr<PartitionedMesh> shape =
       DecodePartitionedMesh(coded_shape, fill_missing_attributes);
   if (!shape.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(shape.status().code()),
-                               shape.status().ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &shape.status());
     return 0;
   }
   return NewNativePartitionedMesh(*std::move(shape));

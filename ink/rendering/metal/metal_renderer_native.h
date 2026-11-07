@@ -36,8 +36,7 @@ int64_t MetalRendererNative_create(
     int sample_count,
     void* (*texture_for_id_callback)(int64_t metal_renderer_native_ptr,
                                      const char* texture_id),
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str));
+    void (*throw_from_status_callback)(void* jni_env, const void* status));
 
 // Draws an in-progress stroke using the given render encoder. `render_encoder`
 // is a pointer to a MTLRenderCommandEncoder. `in_progress_stroke_native_ptr` is

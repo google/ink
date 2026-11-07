@@ -16,16 +16,13 @@
 
 #include <jni.h>
 
+#include "absl/log/absl_check.h"
 #include "absl/status/status.h"
-#include "absl/strings/string_view.h"
 #include "ink/jni/internal/jni_jvm_interface.h"
 
 namespace ink::jni {
 
-namespace {
-
-void ThrowExceptionFromStatus(JNIEnv* env, absl::StatusCode status_code,
-                              absl::string_view status_string) {
+void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status) {
   // If an exception was already raised (e.g. from an earlier callback),
   // propagate that as-is.
   if (env->ExceptionCheck()) {
@@ -33,21 +30,15 @@ void ThrowExceptionFromStatus(JNIEnv* env, absl::StatusCode status_code,
   }
   env->CallStaticVoidMethod(
       ClassNativeExceptionHandling(env),
-      MethodNativeExceptionHandlingThrowForNonOkStatus(env), status_code,
-      env->NewStringUTF(status_string.data()));
+      MethodNativeExceptionHandlingThrowForNonOkStatus(env), status.code(),
+      env->NewStringUTF(
+          status.ToString(absl::StatusToStringMode::kWithEverything).c_str()));
 }
 
-}  // namespace
-
-void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status) {
-  ThrowExceptionFromStatus(env, status.code(), status.ToString());
-}
-
-void ThrowExceptionFromStatusCallback(void* jni_env, int status_code,
-                                      const char* status_string) {
+void ThrowExceptionFromStatusCallback(void* jni_env, const void* status) {
+  ABSL_CHECK(status != nullptr);
   ThrowExceptionFromStatus(static_cast<JNIEnv*>(jni_env),
-                           static_cast<absl::StatusCode>(status_code),
-                           status_string == nullptr ? "" : status_string);
+                           *static_cast<const absl::Status*>(status));
 }
 
 }  // namespace ink::jni

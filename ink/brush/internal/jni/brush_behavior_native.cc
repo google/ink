@@ -53,8 +53,7 @@ extern "C" {
 int64_t BrushBehaviorNative_createFromOrderedNodes(
     void* jni_env_pass_through, const int64_t* node_native_pointers,
     int num_nodes, const char* developer_comment,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   BrushBehavior brush_behavior{.developer_comment = developer_comment};
   brush_behavior.nodes.reserve(num_nodes);
   for (int i = 0; i < num_nodes; ++i) {
@@ -63,9 +62,7 @@ int64_t BrushBehaviorNative_createFromOrderedNodes(
   }
   if (absl::Status status = ValidateBrushBehaviorTopLevel(brush_behavior);
       !status.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(status.code()),
-                               status.ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &status);
     return 0;
   }
   return NewNativeBrushBehavior(std::move(brush_behavior));

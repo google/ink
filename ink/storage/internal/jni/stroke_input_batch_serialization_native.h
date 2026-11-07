@@ -25,8 +25,7 @@ extern "C" {
 // the array is empty, byte_array will be nullptr.
 int64_t StrokeInputBatchSerializationNative_createFromProto(
     void* jni_env_pass_through, const int8_t* byte_array, int size,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str));
+    void (*throw_from_status_callback)(void* jni_env, const void* status));
 
 // native_ptr is a raw pointer to an ink::StrokeInputBatch.
 //

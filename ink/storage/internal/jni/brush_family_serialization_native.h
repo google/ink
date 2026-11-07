@@ -24,8 +24,7 @@ extern "C" {
 int64_t BrushFamilySerializationNative_createFromProto(
     void* jni_env_pass_through, void* on_decode_texture_pass_through,
     const int8_t* byte_array, int size, int max_version,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str),
+    void (*throw_from_status_callback)(void* jni_env, const void* status),
     const char* (*on_decode_texture_callback)(void* pass_through,
                                               const char* encoded_id,
                                               const int8_t* bitmap,
@@ -46,8 +45,7 @@ int8_t* BrushFamilySerializationNative_encodeMultiple(
 int64_t MultipleBrushFamiliesNative_createFromProto(
     void* jni_env_pass_through, void* on_decode_texture_pass_through,
     const int8_t* byte_array, int size, int max_version,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str),
+    void (*throw_from_status_callback)(void* jni_env, const void* status),
     const char* (*on_decode_texture_callback)(void* pass_through,
                                               const char* encoded_id,
                                               const int8_t* bitmap,

@@ -56,8 +56,7 @@ int64_t MultipleStrokesNative_createWithSplit(
     void* jni_env_pass_through, int64_t target_stroke_ptr, float transform_a,
     float transform_b, float transform_c, float transform_d, float transform_e,
     float transform_f, float tolerance,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str));
+    void (*throw_from_status_callback)(void* jni_env, const void* status));
 
 int32_t MultipleStrokesNative_getStrokeCount(int64_t native_pointer);
 

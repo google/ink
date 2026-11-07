@@ -33,12 +33,10 @@ int64_t EasingFunctionNative_createCopyOf(int64_t other_native_ptr);
 // EasingFunction::Predefined parameters and returns a pointer to it as
 // int64_t, suitable for wrapping in a Kotlin EasingFunction. If validation
 // fails, calls throw_from_status_callback with the value passed as
-// jni_env_pass_through, the error status code as an int, and the error status
-// message.
+// jni_env_pass_through and a pointer to the error absl::Status as const void*.
 int64_t EasingFunctionNative_createPredefined(
     void* jni_env_pass_through, int value,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str));
+    void (*throw_from_status_callback)(void* jni_env, const void* status));
 
 // Creates a new heap-allocated C++ EasingFunction with
 // EasingFunction::CubicBezier parameters and returns a pointer to it as
@@ -46,8 +44,7 @@ int64_t EasingFunctionNative_createPredefined(
 // fails, calls throw_from_status_callback as above.
 int64_t EasingFunctionNative_createCubicBezier(
     void* jni_env_pass_through, float x1, float y1, float x2, float y2,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str));
+    void (*throw_from_status_callback)(void* jni_env, const void* status));
 
 // Creates a new heap-allocated C++ EasingFunction with
 // EasingFunction::Linear parameters and returns a pointer to it as
@@ -57,8 +54,7 @@ int64_t EasingFunctionNative_createCubicBezier(
 // fails, calls throw_from_status_callback as above.
 int64_t EasingFunctionNative_createLinear(
     void* jni_env_pass_through, const float* points, int num_coords,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str));
+    void (*throw_from_status_callback)(void* jni_env, const void* status));
 
 // Creates a new heap-allocated C++ EasingFunction with
 // EasingFunction::Steps parameters and returns a pointer to it as
@@ -66,8 +62,7 @@ int64_t EasingFunctionNative_createLinear(
 // fails, calls throw_from_status_callback as above.
 int64_t EasingFunctionNative_createSteps(
     void* jni_env_pass_through, int step_count, int step_position,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str));
+    void (*throw_from_status_callback)(void* jni_env, const void* status));
 
 // Frees a Kotlin EasingFunction.nativePointer.
 void EasingFunctionNative_free(int64_t native_ptr);

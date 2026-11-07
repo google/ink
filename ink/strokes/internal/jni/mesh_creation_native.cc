@@ -55,13 +55,10 @@ extern "C" {
 
 int64_t MeshCreationNative_createClosedShapeFromStrokeInputBatch(
     void* jni_env_pass_through, int64_t stroke_input_batch_native_pointer,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   auto throw_from_status = [throw_from_status_callback,
                             jni_env_pass_through](const absl::Status& status) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(status.code()),
-                               status.ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &status);
     return 0;
   };
 

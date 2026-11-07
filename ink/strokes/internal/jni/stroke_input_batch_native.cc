@@ -114,8 +114,7 @@ bool MutableStrokeInputBatchNative_appendSingle(
     void* jni_env_pass_through, int64_t native_pointer, int tool_type, float x,
     float y, int64_t elapsed_time_millis, float stroke_unit_length_cm,
     float pressure, float tilt, float orientation, float barrel_twist,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   StrokeInput input = {
       .tool_type = static_cast<StrokeInput::ToolType>(tool_type),
       .position = {x, y},
@@ -130,9 +129,7 @@ bool MutableStrokeInputBatchNative_appendSingle(
   if (absl::Status status =
           CastToMutableStrokeInputBatch(native_pointer).Append(input);
       !status.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(status.code()),
-                               status.ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &status);
     return false;
   }
   return true;
@@ -141,15 +138,12 @@ bool MutableStrokeInputBatchNative_appendSingle(
 bool MutableStrokeInputBatchNative_appendBatch(
     void* jni_env_pass_through, int64_t native_pointer,
     int64_t append_from_native_pointer,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   if (absl::Status status =
           CastToMutableStrokeInputBatch(native_pointer)
               .Append(CastToStrokeInputBatch(append_from_native_pointer));
       !status.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(status.code()),
-                               status.ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &status);
     return false;
   }
   return true;

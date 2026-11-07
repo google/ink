@@ -32,9 +32,8 @@ void ThrowExceptionFromStatus(JNIEnv* env, const absl::Status& status);
 
 // Version of ThrowExceptionFromStatus that can be used as a callback across the
 // C interface used for Kotlin-native interop. (That interface can't use JNIEnv
-// so it handles that as a void* pass-through.)
-void ThrowExceptionFromStatusCallback(void* jni_env, int status_code,
-                                      const char* status_string);
+// or absl::Status directly, so it passes them as void* / const void*.)
+void ThrowExceptionFromStatusCallback(void* jni_env, const void* status);
 
 }  // namespace ink::jni
 

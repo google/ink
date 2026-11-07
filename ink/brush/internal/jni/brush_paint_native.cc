@@ -62,15 +62,12 @@ using ::ink::native::NewNativeTextureLayer;
 
 int64_t ValidateAndHoistColorFunctionOrThrow(
     ColorFunction::Parameters parameters, void* jni_env_pass_through,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   ColorFunction color_function{.parameters = std::move(parameters)};
   if (absl::Status status =
           ink::brush_internal::ValidateColorFunction(color_function);
       !status.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(status.code()),
-                               status.ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &status);
     return 0;
   }
   return NewNativeColorFunction(std::move(color_function));
@@ -84,8 +81,7 @@ int64_t BrushPaintNative_create(
     void* jni_env_pass_through, const int64_t* texture_layer_native_pointers,
     int num_texture_layers, const int64_t* color_function_native_pointers,
     int num_color_functions, int self_overlap_int,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   std::vector<BrushPaint::TextureLayer> texture_layers;
   texture_layers.reserve(num_texture_layers);
   for (int i = 0; i < num_texture_layers; ++i) {
@@ -105,9 +101,7 @@ int64_t BrushPaintNative_create(
       .color_functions = std::move(color_functions),
       .self_overlap = static_cast<BrushPaint::SelfOverlap>(self_overlap_int)};
   if (absl::Status status = ValidateBrushPaint(brush_paint); !status.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(status.code()),
-                               status.ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &status);
     return 0;
   }
   return NewNativeBrushPaint(std::move(brush_paint));
@@ -175,8 +169,7 @@ int64_t TilingTextureNative_create(
     void* jni_env_pass_through, const char* client_texture_id, float size_x,
     float size_y, float offset_x, float offset_y, float rotation_degrees,
     int size_unit, int origin, int wrap_x, int wrap_y, int blend_mode,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   BrushPaint::TextureLayer texture_layer = {BrushPaint::TilingTexture{
       .client_texture_id = client_texture_id,
       .origin = static_cast<BrushPaint::TextureOrigin>(origin),
@@ -190,9 +183,7 @@ int64_t TilingTextureNative_create(
   }};
   if (absl::Status status = ValidateBrushPaintTextureLayer(texture_layer);
       !status.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(status.code()),
-                               status.ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &status);
     return 0;
   }
   return NewNativeTextureLayer(std::move(texture_layer));
@@ -203,8 +194,7 @@ int64_t StampingTextureNative_create(
     int animation_frames, int animation_rows, int animation_columns,
     int64_t animation_duration_millis, int animation_repeat_mode,
     int blend_mode,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   BrushPaint::TextureLayer texture_layer = {BrushPaint::StampingTexture{
       .client_texture_id = client_texture_id,
       .animation_frames = animation_frames,
@@ -217,9 +207,7 @@ int64_t StampingTextureNative_create(
   }};
   if (absl::Status status = ValidateBrushPaintTextureLayer(texture_layer);
       !status.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(status.code()),
-                               status.ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &status);
     return 0;
   }
   return NewNativeTextureLayer(std::move(texture_layer));
@@ -329,8 +317,7 @@ int TextureLayerNative_getBlendModeInt(int64_t native_ptr) {
 
 int64_t ColorFunctionNative_createOpacityMultiplier(
     void* jni_env_pass_through, float multiplier,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistColorFunctionOrThrow(
       ColorFunction::OpacityMultiplier{.multiplier = multiplier},
       jni_env_pass_through, throw_from_status_callback);
@@ -338,8 +325,7 @@ int64_t ColorFunctionNative_createOpacityMultiplier(
 
 int64_t ColorFunctionNative_createHueOffset(
     void* jni_env_pass_through, float offsetDegrees,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistColorFunctionOrThrow(
       ColorFunction::HueOffset{.offset = Angle::Degrees(offsetDegrees)},
       jni_env_pass_through, throw_from_status_callback);
@@ -347,8 +333,7 @@ int64_t ColorFunctionNative_createHueOffset(
 
 int64_t ColorFunctionNative_createChromaMultiplier(
     void* jni_env_pass_through, float multiplier,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistColorFunctionOrThrow(
       ColorFunction::ChromaMultiplier{.multiplier = multiplier},
       jni_env_pass_through, throw_from_status_callback);
@@ -356,8 +341,7 @@ int64_t ColorFunctionNative_createChromaMultiplier(
 
 int64_t ColorFunctionNative_createLightnessOffset(
     void* jni_env_pass_through, float offset,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistColorFunctionOrThrow(
       ColorFunction::LightnessOffset{.offset = offset}, jni_env_pass_through,
       throw_from_status_callback);
@@ -366,8 +350,7 @@ int64_t ColorFunctionNative_createLightnessOffset(
 int64_t ColorFunctionNative_createReplaceColor(
     void* jni_env_pass_through, float color_red, float color_green,
     float color_blue, float color_alpha, int color_space_id,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   return ValidateAndHoistColorFunctionOrThrow(
       ColorFunction::ReplaceColor{
           .color = Color::FromFloat(color_red, color_green, color_blue,

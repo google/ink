@@ -36,24 +36,20 @@ extern "C" {
 
 int64_t StrokeInputBatchSerializationNative_createFromProto(
     void* jni_env_pass_through, const int8_t* byte_array, int size,
-    void (*throw_from_status_callback)(void* jni_env, int status_code,
-                                       const char* status_str)) {
+    void (*throw_from_status_callback)(void* jni_env, const void* status)) {
   CodedStrokeInputBatch coded_input;
   if (byte_array != nullptr) {
     bool success = coded_input.ParseFromArray(byte_array, size);
     if (!success) {
-      throw_from_status_callback(
-          jni_env_pass_through,
-          static_cast<int>(absl::StatusCode::kInvalidArgument),
+      absl::Status status = absl::InvalidArgumentError(
           "Failed to parse ink.proto.CodedStrokeInputBatch.");
+      throw_from_status_callback(jni_env_pass_through, &status);
       return 0;
     }
   }
   absl::StatusOr<StrokeInputBatch> input = DecodeStrokeInputBatch(coded_input);
   if (!input.ok()) {
-    throw_from_status_callback(jni_env_pass_through,
-                               static_cast<int>(input.status().code()),
-                               input.status().ToString().c_str());
+    throw_from_status_callback(jni_env_pass_through, &input.status());
     return 0;
   }
   return NewNativeStrokeInputBatch(*std::move(input));
