@@ -54,44 +54,75 @@ using ClientTextureIdProviderAndBitmapReceiver =
 using ClientTextureIdProvider =
     std::function<absl::StatusOr<std::string>(absl::string_view encoded_id)>;
 
+// Provides the texture ID to write into a serialized proto in place of a given
+// client texture ID. This is typically the inverse of whatever transformation a
+// `ClientTextureIdProviderAndBitmapReceiver` applied when the brush was
+// decoded, so that encoding restores the texture IDs that were originally
+// serialized. It may be called more than once for the same client texture ID,
+// so it should be deterministic. It should map distinct client texture IDs to
+// distinct encoded IDs; duplicates are neither detected nor resolved.
+using EncodedTextureIdProvider =
+    std::function<std::string(absl::string_view client_texture_id)>;
+
 // Populates the given proto by encoding the given brush object.
 //
 // The proto need not be empty before calling these; they will effectively clear
 // the proto first.
+//
+// `get_bitmap` provides the bitmap, if any, to store in the proto's
+// `texture_id_to_bitmap` map for each client texture ID used by a brush family.
+// `get_encoded_texture_id` provides the texture ID to write into the proto in
+// place of each client texture ID, both as a `texture_id_to_bitmap` key and in
+// each `BrushPaint.TextureLayer`. By default, client texture IDs are written
+// unchanged.
+//
+// If a brush family has fallbacks (see `BrushFamily::HasFallbacks()`),
+// `EncodeBrush` and `EncodeBrushFamily` write the stored proto, with its
+// texture IDs and bitmaps as originally serialized (before any renaming on
+// decode), instead of re-encoding the family; neither callback is used in that
+// case.
 void EncodeBrush(
     const Brush& brush, proto::Brush& brush_proto_out,
-    TextureBitmapProvider get_bitmap = [](absl::string_view id) {
-      return std::nullopt;
-    });
+    TextureBitmapProvider get_bitmap =
+        [](absl::string_view id) { return std::nullopt; },
+    EncodedTextureIdProvider get_encoded_texture_id =
+        [](absl::string_view id) { return std::string(id); });
 void EncodeBrushFamily(
     const BrushFamily& family, proto::BrushFamily& family_proto_out,
-    TextureBitmapProvider get_bitmap = [](absl::string_view id) {
-      return std::nullopt;
-    });
+    TextureBitmapProvider get_bitmap =
+        [](absl::string_view id) { return std::nullopt; },
+    EncodedTextureIdProvider get_encoded_texture_id =
+        [](absl::string_view id) { return std::string(id); });
 void EncodeMultipleBrushFamilies(
     const std::vector<std::reference_wrapper<const BrushFamily>>& families,
     proto::BrushFamily& family_proto_out,
-    TextureBitmapProvider get_bitmap = [](absl::string_view id) {
-      return std::nullopt;
-    });
+    TextureBitmapProvider get_bitmap =
+        [](absl::string_view id) { return std::nullopt; },
+    EncodedTextureIdProvider get_encoded_texture_id =
+        [](absl::string_view id) { return std::string(id); });
 void EncodeMultipleBrushFamilies(
     const std::vector<BrushFamily>& families,
     proto::BrushFamily& family_proto_out,
-    TextureBitmapProvider get_bitmap = [](absl::string_view id) {
-      return std::nullopt;
-    });
+    TextureBitmapProvider get_bitmap =
+        [](absl::string_view id) { return std::nullopt; },
+    EncodedTextureIdProvider get_encoded_texture_id =
+        [](absl::string_view id) { return std::string(id); });
 // Given an initializer list passed brush family references, prefer wrapping
 // the references to copying the underlying BrushFamilies.
 void EncodeMultipleBrushFamilies(
     std::initializer_list<std::reference_wrapper<const BrushFamily>> families,
     proto::BrushFamily& family_proto_out,
-    TextureBitmapProvider get_bitmap = [](absl::string_view id) {
-      return std::nullopt;
-    });
+    TextureBitmapProvider get_bitmap =
+        [](absl::string_view id) { return std::nullopt; },
+    EncodedTextureIdProvider get_encoded_texture_id =
+        [](absl::string_view id) { return std::string(id); });
 void EncodeBrushFamilyTextureMap(
     const BrushFamily& family,
     google::protobuf::Map<std::string, std::string>& texture_id_to_bitmap_out,
-    TextureBitmapProvider get_bitmap);
+    TextureBitmapProvider get_bitmap,
+    EncodedTextureIdProvider get_encoded_texture_id = [](absl::string_view id) {
+      return std::string(id);
+    });
 void EncodeBrushCoat(const BrushCoat& coat, proto::BrushCoat& coat_proto_out);
 void EncodeBrushPaint(const BrushPaint& paint,
                       proto::BrushPaint& paint_proto_out);
