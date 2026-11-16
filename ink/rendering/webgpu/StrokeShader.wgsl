@@ -695,3 +695,26 @@ fn fragmentMain(in: VertexOut) -> @location(0) vec4<f32> {
     uniforms.layers[uniforms.textureLayerCount - 1u].blendMode
   );
 }
+
+// Full-screen triangle vertex and fragment entry points used only by the WebGPU
+// renderer to clear the stencil buffer mid-render-pass before
+// `SelfOverlap::kDiscard` coats. WebGPU only supports `LoadOp::Clear` at the
+// start of a render pass and bakes depth/stencil state and color write masks
+// into the immutable `RenderPipeline` (unlike Metal, which swaps
+// `MTLDepthStencilState` dynamically on the command encoder and reuses its main
+// stroke pipeline), so WebGPU uses a dedicated stencil-clear pipeline with
+// these minimal entry points.
+@vertex
+fn clearVertexMain(
+  @builtin(vertex_index) vertexIndex: u32
+) -> @builtin(position) vec4<f32> {
+  let pos = array<vec2<f32>, 3>(
+    vec2<f32>(-1.0, -1.0),
+    vec2<f32>(3.0, -1.0),
+    vec2<f32>(-1.0, 3.0)
+  );
+  return vec4<f32>(pos[vertexIndex], 0.0, 1.0);
+}
+
+@fragment
+fn clearFragmentMain() {}
