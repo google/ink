@@ -21,6 +21,7 @@
 #include <optional>
 #include <string>
 #include <variant>
+#include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -38,6 +39,7 @@
 #include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
+#include "ink/brush/color_function.h"
 #include "ink/brush/easing_function.h"
 #include "ink/brush/fuzz_domains.h"
 #include "ink/brush/internal/brush_family_internal_accessor.h"
@@ -85,8 +87,10 @@ using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsNull;
 using ::testing::Le;
+using ::testing::Pair;
 using ::testing::Property;
 using ::testing::SizeIs;
+using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::VariantWith;
 
@@ -584,6 +588,251 @@ TEST(BrushTest, EncodeBrushFamilyTextureMapWithNonEmptyProto) {
                               callback);
   EXPECT_EQ(texture_id_to_bitmap_proto_out.size(), 0);
   EXPECT_EQ(callback_count, 0);
+}
+
+TEST(BrushTest, EncodeBrushFamilyTextureMapWithEncodedTextureIds) {
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
+      BrushTip{},
+      {.texture_layers = {
+           BrushPaint::StampingTexture{.client_texture_id = "client-id-1"},
+           BrushPaint::StampingTexture{.client_texture_id = "client-id-2"},
+           BrushPaint::StampingTexture{.client_texture_id = "no-bitmap"}}});
+  ASSERT_THAT(family, IsOk());
+
+  Map<std::string, std::string> texture_id_to_bitmap_out;
+  EncodeBrushFamilyTextureMap(
+      *family, texture_id_to_bitmap_out,
+      [](absl::string_view client_id) -> std::optional<std::string> {
+        if (client_id == "client-id-1") return TestPngBytes1x1();
+        if (client_id == "client-id-2") return TestPngBytes2x2();
+        return std::nullopt;
+      },
+      [](absl::string_view client_id) -> std::string {
+        if (client_id == "client-id-1") return "encoded-id-1";
+        if (client_id == "client-id-2") return "encoded-id-2";
+        return std::string(client_id);
+      });
+
+  EXPECT_THAT(texture_id_to_bitmap_out,
+              UnorderedElementsAre(Pair("encoded-id-1", TestPngBytes1x1()),
+                                   Pair("encoded-id-2", TestPngBytes2x2())));
+}
+
+TEST(BrushTest, EncodeBrushFamilyWithEncodedTextureIds) {
+  // "client-id-2" has no bitmap, verifying its layer still uses the encoded ID.
+  std::vector<BrushCoat> coats = {
+      {.paint_preferences = {{.texture_layers = {BrushPaint::TilingTexture{
+                                  .client_texture_id = "client-id-1"}}},
+                             {.texture_layers = {BrushPaint::StampingTexture{
+                                  .client_texture_id = "client-id-2"}}}}}};
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(coats);
+  ASSERT_THAT(family, IsOk());
+
+  proto::BrushFamily family_proto;
+  EncodeBrushFamily(
+      *family, family_proto,
+      [](absl::string_view client_id) -> std::optional<std::string> {
+        if (client_id == "client-id-1") return TestPngBytes1x1();
+        return std::nullopt;
+      },
+      [](absl::string_view client_id) -> std::string {
+        if (client_id == "client-id-1") return "encoded-id-1";
+        if (client_id == "client-id-2") return "encoded-id-2";
+        return std::string(client_id);
+      });
+
+  ASSERT_EQ(family_proto.coats_size(), 1);
+  const proto::BrushCoat& coat_proto = family_proto.coats(0);
+  ASSERT_EQ(coat_proto.paint_preferences_size(), 2);
+  ASSERT_EQ(coat_proto.paint_preferences(0).texture_layers_size(), 1);
+  EXPECT_EQ(
+      coat_proto.paint_preferences(0).texture_layers(0).client_texture_id(),
+      "encoded-id-1");
+  ASSERT_EQ(coat_proto.paint_preferences(1).texture_layers_size(), 1);
+  EXPECT_EQ(
+      coat_proto.paint_preferences(1).texture_layers(0).client_texture_id(),
+      "encoded-id-2");
+  EXPECT_THAT(family_proto.texture_id_to_bitmap(),
+              UnorderedElementsAre(Pair("encoded-id-1", TestPngBytes1x1())));
+}
+
+TEST(BrushTest, EncodeBrushFamilyWithEncodedTextureIdsInNewLayerFormat) {
+  // `HueOffset` requires `Version::kDevelopment()`, which encodes texture
+  // layers using the nested `tiling_texture` and `stamping_texture` messages.
+  std::vector<BrushCoat> coats = {
+      {.paint_preferences = {{.texture_layers = {BrushPaint::TilingTexture{
+                                  .client_texture_id = "client-id-1"}},
+                              .color_functions = {ColorFunction{
+                                  .parameters = ColorFunction::HueOffset{}}}},
+                             {.texture_layers = {BrushPaint::StampingTexture{
+                                  .client_texture_id = "client-id-2"}}}}}};
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(coats);
+  ASSERT_THAT(family, IsOk());
+
+  proto::BrushFamily family_proto;
+  EncodeBrushFamily(
+      *family, family_proto,
+      [](absl::string_view client_id) -> std::optional<std::string> {
+        if (client_id == "client-id-1") return TestPngBytes1x1();
+        if (client_id == "client-id-2") return TestPngBytes2x2();
+        return std::nullopt;
+      },
+      [](absl::string_view client_id) -> std::string {
+        if (client_id == "client-id-1") return "encoded-id-1";
+        if (client_id == "client-id-2") return "encoded-id-2";
+        return std::string(client_id);
+      });
+
+  ASSERT_EQ(family_proto.coats_size(), 1);
+  const proto::BrushCoat& coat_proto = family_proto.coats(0);
+  ASSERT_EQ(coat_proto.paint_preferences_size(), 2);
+  ASSERT_EQ(coat_proto.paint_preferences(0).texture_layers_size(), 1);
+  EXPECT_EQ(coat_proto.paint_preferences(0)
+                .texture_layers(0)
+                .tiling_texture()
+                .client_texture_id(),
+            "encoded-id-1");
+  ASSERT_EQ(coat_proto.paint_preferences(1).texture_layers_size(), 1);
+  EXPECT_EQ(coat_proto.paint_preferences(1)
+                .texture_layers(0)
+                .stamping_texture()
+                .client_texture_id(),
+            "encoded-id-2");
+  EXPECT_THAT(family_proto.texture_id_to_bitmap(),
+              UnorderedElementsAre(Pair("encoded-id-1", TestPngBytes1x1()),
+                                   Pair("encoded-id-2", TestPngBytes2x2())));
+}
+
+TEST(BrushTest, EncodeMultipleBrushFamiliesWithEncodedTextureIds) {
+  absl::StatusOr<BrushFamily> v0_family = BrushFamily::Create(
+      BrushTip{}, {.texture_layers = {BrushPaint::TilingTexture{
+                       .client_texture_id = "client-id-1"}}});
+  ASSERT_THAT(v0_family, IsOk());
+  absl::StatusOr<BrushFamily> dev_family = BrushFamily::Create(
+      BrushTip{}, {.texture_layers = {BrushPaint::StampingTexture{
+                       .client_texture_id = "client-id-2"}},
+                   .color_functions = {ColorFunction{
+                       .parameters = ColorFunction::HueOffset{}}}});
+  ASSERT_THAT(dev_family, IsOk());
+
+  proto::BrushFamily family_proto;
+  EncodeMultipleBrushFamilies(
+      {*v0_family, *dev_family}, family_proto,
+      [](absl::string_view client_id) -> std::optional<std::string> {
+        if (client_id == "client-id-1") return TestPngBytes1x1();
+        if (client_id == "client-id-2") return TestPngBytes2x2();
+        return std::nullopt;
+      },
+      [](absl::string_view client_id) -> std::string {
+        if (client_id == "client-id-1") return "encoded-id-1";
+        if (client_id == "client-id-2") return "encoded-id-2";
+        return std::string(client_id);
+      });
+
+  ASSERT_EQ(family_proto.coats_size(), 1);
+  ASSERT_EQ(family_proto.coats(0).paint_preferences_size(), 1);
+  ASSERT_EQ(family_proto.coats(0).paint_preferences(0).texture_layers_size(),
+            1);
+  EXPECT_EQ(family_proto.coats(0)
+                .paint_preferences(0)
+                .texture_layers(0)
+                .client_texture_id(),
+            "encoded-id-1");
+  EXPECT_THAT(family_proto.texture_id_to_bitmap(),
+              UnorderedElementsAre(Pair("encoded-id-1", TestPngBytes1x1())));
+
+  ASSERT_EQ(family_proto.newer_brush_families_size(), 1);
+  const proto::BrushFamily& newer_proto = family_proto.newer_brush_families(0);
+  ASSERT_EQ(newer_proto.coats_size(), 1);
+  ASSERT_EQ(newer_proto.coats(0).paint_preferences_size(), 1);
+  ASSERT_EQ(newer_proto.coats(0).paint_preferences(0).texture_layers_size(), 1);
+  EXPECT_EQ(newer_proto.coats(0)
+                .paint_preferences(0)
+                .texture_layers(0)
+                .stamping_texture()
+                .client_texture_id(),
+            "encoded-id-2");
+  EXPECT_THAT(newer_proto.texture_id_to_bitmap(),
+              UnorderedElementsAre(Pair("encoded-id-2", TestPngBytes2x2())));
+}
+
+TEST(BrushTest, EncodeBrushWithEncodedTextureIds) {
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
+      BrushTip{}, {.texture_layers = {BrushPaint::TilingTexture{
+                       .client_texture_id = "client-id-1"}}});
+  ASSERT_THAT(family, IsOk());
+  absl::StatusOr<Brush> brush = Brush::Create(*family, Color::Green(), 10, 1.1);
+  ASSERT_THAT(brush, IsOk());
+
+  proto::Brush brush_proto;
+  EncodeBrush(
+      *brush, brush_proto,
+      [](absl::string_view client_id) -> std::optional<std::string> {
+        if (client_id == "client-id-1") return TestPngBytes1x1();
+        return std::nullopt;
+      },
+      [](absl::string_view client_id) -> std::string {
+        if (client_id == "client-id-1") return "encoded-id-1";
+        return std::string(client_id);
+      });
+
+  const proto::BrushFamily& family_proto = brush_proto.brush_family();
+  ASSERT_EQ(family_proto.coats_size(), 1);
+  ASSERT_EQ(family_proto.coats(0).paint_preferences_size(), 1);
+  ASSERT_EQ(family_proto.coats(0).paint_preferences(0).texture_layers_size(),
+            1);
+  EXPECT_EQ(family_proto.coats(0)
+                .paint_preferences(0)
+                .texture_layers(0)
+                .client_texture_id(),
+            "encoded-id-1");
+  EXPECT_THAT(family_proto.texture_id_to_bitmap(),
+              UnorderedElementsAre(Pair("encoded-id-1", TestPngBytes1x1())));
+}
+
+TEST(BrushTest, EncodeBrushFamilyWithFallbacksIgnoresEncodedTextureIds) {
+  proto::BrushFamily original_proto;
+  ASSERT_TRUE(TextFormat::ParseFromString(
+      R"pb(
+        min_version: 0
+        coats {
+          paint_preferences {
+            texture_layers {
+              client_texture_id: "original-id"
+              mapping: MAPPING_STAMPING
+              blend_mode: BLEND_MODE_SRC_OVER
+            }
+          }
+        }
+        texture_id_to_bitmap { key: "original-id" value: "png-bytes" }
+        newer_brush_families { min_version: 1 }
+      )pb",
+      &original_proto));
+  absl::StatusOr<BrushFamily> family = DecodeBrushFamily(
+      original_proto,
+      [](absl::string_view encoded_id, absl::string_view bitmap) {
+        return "renamed-id";
+      },
+      Version::k0());
+  ASSERT_THAT(family, IsOkAndHolds(Property(&BrushFamily::HasFallbacks, true)));
+
+  int bitmap_call_count = 0;
+  int encoded_id_call_count = 0;
+  proto::BrushFamily encoded_proto;
+  EncodeBrushFamily(
+      *family, encoded_proto,
+      [&bitmap_call_count](absl::string_view id) -> std::optional<std::string> {
+        bitmap_call_count++;
+        return "other-png-bytes";
+      },
+      [&encoded_id_call_count](absl::string_view id) -> std::string {
+        encoded_id_call_count++;
+        return "other-encoded-id";
+      });
+
+  EXPECT_THAT(encoded_proto, EqualsProto(original_proto));
+  EXPECT_EQ(bitmap_call_count, 0);
+  EXPECT_EQ(encoded_id_call_count, 0);
 }
 
 TEST(BrushTest, EncodeBrushFamilyIntoNonEmptyProto) {
