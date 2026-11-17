@@ -100,6 +100,9 @@ absl::StatusOr<BrushFamily> BrushFamily::Create(
       // paint's animation duration is a whole number of milliseconds, so
       // `ToInt64Milliseconds` isn't losing any precision here.
       int64_t paint_duration_ms = absl::ToInt64Milliseconds(paint_duration);
+      if (paint_duration_ms == 0) {
+        continue;
+      }
       if (full_duration_ms == 0) {
         full_duration_ms = paint_duration_ms;
         continue;

@@ -803,10 +803,23 @@ TEST(BrushFamilyTest, NonAnimatedBrushPaintsDoNotCountTowardLoopDuration) {
                 }}}}},
       BrushCoat{CreatePressureTestTip(),
                 {BrushPaint{{BrushPaint::StampingTexture{
+                     .client_texture_id = std::string(kTestTextureId),
+                     .animation_frames = 10,
+                     .animation_rows = 10,
+                     .animation_duration = absl::Milliseconds(13),
+                 }}},
+                 // Non-animated fallback paint preferences after an animated
+                 // paint preference must not zero out the loop duration.
+                 BrushPaint{{BrushPaint::TilingTexture{
+                     .client_texture_id = std::string(kTestTextureId),
+                     .size = {1, 1},
+                 }}}}},
+      BrushCoat{CreatePressureTestTip(),
+                // Non-animated coats after an animated coat must also not zero
+                // out the loop duration.
+                {BrushPaint{{BrushPaint::TilingTexture{
                     .client_texture_id = std::string(kTestTextureId),
-                    .animation_frames = 10,
-                    .animation_rows = 10,
-                    .animation_duration = absl::Milliseconds(13),
+                    .size = {1, 1},
                 }}}}},
   });
   ASSERT_THAT(family, IsOk());
