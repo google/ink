@@ -86,6 +86,31 @@ class JniTextureMap {
   std::vector<int> bitmap_lengths_;
 };
 
+// Converts parallel JVM `String` arrays of map keys and values to C string
+// arrays, which remain valid for the lifetime of this object.
+class JniStringMap {
+ public:
+  JniStringMap(JNIEnv* env, absl_nullable jobjectArray keys,
+               absl_nullable jobjectArray values);
+
+  // Not copyable or movable, since the C string pointers point into the owned
+  // strings.
+  JniStringMap(const JniStringMap&) = delete;
+  JniStringMap& operator=(const JniStringMap&) = delete;
+
+  const char* absl_nonnull* absl_nullable Keys() { return key_ptrs_.data(); }
+  const char* absl_nonnull* absl_nullable Values() {
+    return value_ptrs_.data();
+  }
+  int Size() const { return keys_.size(); }
+
+ private:
+  std::vector<std::string> keys_;
+  std::vector<std::string> values_;
+  std::vector<const char* absl_nonnull> key_ptrs_;
+  std::vector<const char* absl_nonnull> value_ptrs_;
+};
+
 TextureBitmapProvider CreateTextureBitmapProvider(
     JNIEnv* env, absl_nullable jobjectArray texture_map_keys,
     absl_nullable jobjectArray texture_map_values);

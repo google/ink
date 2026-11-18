@@ -86,4 +86,27 @@ TextureBitmapProvider TextureBitmapProviderFromNativeArrays(
   };
 }
 
+EncodedTextureIdProvider EncodedTextureIdProviderFromNativeArrays(
+    const char* absl_nonnull* absl_nullable keys,
+    const char* absl_nonnull* absl_nullable values, int size) {
+  // Shared so that copying the returned provider doesn't copy the map.
+  auto encoded_ids =
+      std::make_shared<absl::flat_hash_map<std::string, std::string>>();
+  if (size > 0) {
+    ABSL_CHECK_NE(keys, nullptr);
+    ABSL_CHECK_NE(values, nullptr);
+    encoded_ids->reserve(size);
+    for (int i = 0; i < size; ++i) {
+      encoded_ids->insert({std::string(keys[i]), std::string(values[i])});
+    }
+  }
+  return [encoded_ids](absl::string_view client_texture_id) -> std::string {
+    if (auto it = encoded_ids->find(client_texture_id);
+        it != encoded_ids->end()) {
+      return it->second;
+    }
+    return std::string(client_texture_id);
+  };
+}
+
 }  // namespace ink::native

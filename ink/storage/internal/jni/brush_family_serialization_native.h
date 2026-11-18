@@ -30,16 +30,28 @@ int64_t BrushFamilySerializationNative_createFromProto(
                                               const int8_t* bitmap,
                                               int bitmap_size));
 
+// Serializes the native brush family to a byte array allocated with
+// `alloc_native_array_callback`. `texture_ids`, `bitmaps`, and `bitmap_lengths`
+// are parallel arrays of size `num_textures` that map client texture IDs to PNG
+// bytes. `encoded_texture_id_map_keys` and `encoded_texture_id_map_values` are
+// parallel arrays of size `encoded_texture_id_map_size` that map client texture
+// IDs to the texture IDs to write in their place; client texture IDs that are
+// not in that map are written unchanged.
 int8_t* BrushFamilySerializationNative_encode(
     void* alloc_native_array_pass_through, int64_t native_pointer,
     const char** texture_ids, const int8_t** bitmaps, const int* bitmap_lengths,
-    int num_textures,
+    int num_textures, const char** encoded_texture_id_map_keys,
+    const char** encoded_texture_id_map_values, int encoded_texture_id_map_size,
     int8_t* (*alloc_native_array_callback)(void* pass_through, int size));
 
+// Like `BrushFamilySerializationNative_encode`, but serializes multiple native
+// brush families together.
 int8_t* BrushFamilySerializationNative_encodeMultiple(
     void* alloc_native_array_pass_through, int64_t* native_pointers,
     int num_brush_families, const char** texture_ids, const int8_t** bitmaps,
     const int* bitmap_lengths, int num_textures,
+    const char** encoded_texture_id_map_keys,
+    const char** encoded_texture_id_map_values, int encoded_texture_id_map_size,
     int8_t* (*alloc_native_array_callback)(void* pass_through, int size));
 
 int64_t MultipleBrushFamiliesNative_createFromProto(

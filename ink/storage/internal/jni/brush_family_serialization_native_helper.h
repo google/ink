@@ -55,6 +55,13 @@ TextureBitmapProvider TextureBitmapProviderFromNativeArrays(
     const int8_t* absl_nullable* absl_nullable bitmaps,
     const int* absl_nullable bitmap_lengths, int num_textures);
 
+// Returns an `EncodedTextureIdProvider` that maps each element of `keys` to the
+// corresponding element of `values` (both arrays of size `size`), and leaves
+// any other client texture ID unchanged.
+EncodedTextureIdProvider EncodedTextureIdProviderFromNativeArrays(
+    const char* absl_nonnull* absl_nullable keys,
+    const char* absl_nonnull* absl_nullable values, int size);
+
 }  // namespace ink::native
 
 #endif  // INK_STORAGE_INTERNAL_JNI_BRUSH_FAMILY_NATIVE_HELPERS_H_

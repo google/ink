@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ink/storage/internal/jni/brush_family_serialization_native.h"
+
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -35,12 +37,14 @@ using ::ink::ClientTextureIdProviderAndBitmapReceiver;
 using ::ink::DecodeBrushFamily;
 using ::ink::DecodeMultipleBrushFamilies;
 using ::ink::EncodeBrushFamily;
+using ::ink::EncodedTextureIdProvider;
 using ::ink::EncodeMultipleBrushFamilies;
 using ::ink::TextureBitmapProvider;
 using ::ink::native::CastToBrushFamily;
 using ::ink::native::CastToMutableMultipleBrushFamilies;
 using ::ink::native::ClientTextureIdProviderAndBitmapReceiverFromNativeCallback;
 using ::ink::native::DeleteMultipleBrushFamilies;
+using ::ink::native::EncodedTextureIdProviderFromNativeArrays;
 using ::ink::native::IntToVersion;
 using ::ink::native::NewNativeBrushFamily;
 using ::ink::native::NewNativeByteArrayFromProto;
@@ -97,14 +101,19 @@ int64_t BrushFamilySerializationNative_createFromProto(
 int8_t* BrushFamilySerializationNative_encode(
     void* alloc_native_array_pass_through, int64_t native_pointer,
     const char** texture_ids, const int8_t** bitmaps, const int* bitmap_lengths,
-    int num_textures,
+    int num_textures, const char** encoded_texture_id_map_keys,
+    const char** encoded_texture_id_map_values, int encoded_texture_id_map_size,
     int8_t* (*alloc_native_array_callback)(void* pass_through, int size)) {
   TextureBitmapProvider texture_bitmap_provider =
       TextureBitmapProviderFromNativeArrays(texture_ids, bitmaps,
                                             bitmap_lengths, num_textures);
+  EncodedTextureIdProvider encoded_texture_id_provider =
+      EncodedTextureIdProviderFromNativeArrays(encoded_texture_id_map_keys,
+                                               encoded_texture_id_map_values,
+                                               encoded_texture_id_map_size);
   ink::proto::BrushFamily brush_family_proto;
   EncodeBrushFamily(CastToBrushFamily(native_pointer), brush_family_proto,
-                    texture_bitmap_provider);
+                    texture_bitmap_provider, encoded_texture_id_provider);
   return NewNativeByteArrayFromProto(alloc_native_array_pass_through,
                                      brush_family_proto,
                                      alloc_native_array_callback);
@@ -114,10 +123,16 @@ int8_t* BrushFamilySerializationNative_encodeMultiple(
     void* alloc_native_array_pass_through, int64_t* native_pointers,
     int num_brush_families, const char** texture_ids, const int8_t** bitmaps,
     const int* bitmap_lengths, int num_textures,
+    const char** encoded_texture_id_map_keys,
+    const char** encoded_texture_id_map_values, int encoded_texture_id_map_size,
     int8_t* (*alloc_native_array_callback)(void* pass_through, int size)) {
   TextureBitmapProvider texture_bitmap_provider =
       TextureBitmapProviderFromNativeArrays(texture_ids, bitmaps,
                                             bitmap_lengths, num_textures);
+  EncodedTextureIdProvider encoded_texture_id_provider =
+      EncodedTextureIdProviderFromNativeArrays(encoded_texture_id_map_keys,
+                                               encoded_texture_id_map_values,
+                                               encoded_texture_id_map_size);
   std::vector<std::reference_wrapper<const BrushFamily>> brush_families;
   brush_families.reserve(num_brush_families);
   for (int i = 0; i < num_brush_families; ++i) {
@@ -125,7 +140,8 @@ int8_t* BrushFamilySerializationNative_encodeMultiple(
   }
   ink::proto::BrushFamily brush_family_proto;
   EncodeMultipleBrushFamilies(brush_families, brush_family_proto,
-                              texture_bitmap_provider);
+                              texture_bitmap_provider,
+                              encoded_texture_id_provider);
   return NewNativeByteArrayFromProto(alloc_native_array_pass_through,
                                      brush_family_proto,
                                      alloc_native_array_callback);
