@@ -24,6 +24,7 @@
 #include "absl/log/absl_check.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
+#include "absl/status/statusor.h"
 #include "ink/rendering/skia/common_internal/mesh_specification_data.h"
 #include "ink/rendering/skia/native/internal/create_mesh_specification.h"
 #include "ink/rendering/skia/native/internal/mesh_uniform_data.h"
@@ -105,6 +106,18 @@ TEST(MeshDrawableTest, CreateSucceedsWithProvidedStartingUniforms) {
                             MakeNonEmptyTestPartition(spec->stride())},
                            starting_uniforms),
       IsOk());
+}
+
+TEST(MeshDrawableTest, BrushPaintLoopDurationMillisDefaultsToZeroAndUpdates) {
+  absl::StatusOr<MeshDrawable> drawable = MeshDrawable::Create(
+      SpecificationForInProgressStroke(), /* blender= */ nullptr,
+      /* shader= */ nullptr, /* color_functions= */ {},
+      /* partitions= */ {});
+  ASSERT_THAT(drawable, IsOk());
+  EXPECT_EQ(drawable->BrushPaintLoopDurationMillis(), 0);
+
+  drawable->SetBrushPaintLoopDurationMillis(1500);
+  EXPECT_EQ(drawable->BrushPaintLoopDurationMillis(), 1500);
 }
 
 TEST(MeshDrawableTest, ReturnsSkiaError) {

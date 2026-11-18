@@ -130,6 +130,7 @@ cc_test(
         "@abseil-cpp//absl/log:absl_check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/status:statusor",
         "@googletest//:gtest_main",
         "@skia//:core",
     ],

@@ -105,6 +105,15 @@ class MeshDrawable {
   void SetAnimationRepeatMode(
       BrushPaint::AnimationRepeatMode animation_repeat_mode);
 
+  // Returns the animation loop duration in milliseconds for the brush paint
+  // used by this drawable, or 0 if it is not animated.
+  int64_t BrushPaintLoopDurationMillis() const;
+
+  // Sets the animation loop duration in milliseconds for the brush paint used
+  // by this drawable.
+  void SetBrushPaintLoopDurationMillis(
+      int64_t brush_paint_loop_duration_millis);
+
   // Sets the value of the object-to-canvas uniform if present.
   void SetObjectToCanvas(const AffineTransform& transform);
 
@@ -128,6 +137,7 @@ class MeshDrawable {
   absl::InlinedVector<Partition, 1> partitions_;
   MeshUniformData uniform_data_;
   sk_sp<SkImageFilter> image_filter_;
+  int64_t brush_paint_loop_duration_millis_ = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -161,6 +171,15 @@ inline void MeshDrawable::SetNumTextureAnimationColumns(int num_columns) {
 inline void MeshDrawable::SetAnimationRepeatMode(
     BrushPaint::AnimationRepeatMode animation_repeat_mode) {
   uniform_data_.SetAnimationRepeatMode(static_cast<int>(animation_repeat_mode));
+}
+
+inline int64_t MeshDrawable::BrushPaintLoopDurationMillis() const {
+  return brush_paint_loop_duration_millis_;
+}
+
+inline void MeshDrawable::SetBrushPaintLoopDurationMillis(
+    int64_t brush_paint_loop_duration_millis) {
+  brush_paint_loop_duration_millis_ = brush_paint_loop_duration_millis;
 }
 
 inline void MeshDrawable::SetObjectToCanvas(const AffineTransform& transform) {

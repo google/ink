@@ -16,6 +16,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/time/time.h"
 #include "ink/color/color.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
@@ -35,6 +36,11 @@ TEST(SkiaRendererDrawableTest, SetObjectToCanvas) {
       AffineTransform::RotateAboutPoint(kFullTurn / 8, {5, -9});
   drawable.SetObjectToCanvas(transform);
   EXPECT_THAT(drawable.ObjectToCanvas(), AffineTransformEq(transform));
+}
+
+TEST(SkiaRendererDrawableTest, SetAnimatorClockStateOnEmptyDrawable) {
+  SkiaRenderer::Drawable drawable;
+  drawable.SetAnimatorClockState(absl::Milliseconds(250));
 }
 
 }  // namespace

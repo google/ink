@@ -24,6 +24,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/time/time.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/color/color.h"
@@ -122,11 +123,9 @@ class SkiaRenderer {
     // Sets the value of the brush-color property if present.
     void SetBrushColor(const Color& brush_color);
 
-    // Sets the value of the texture animation progress property if present.
-    // `texture_animation_progress` is the normalized progress of the brush
-    // paint texture animation in [0, 1); values outside this range are handled
-    // according to the brush paint's `AnimationRepeatMode`.
-    void SetTextureAnimationProgress(float texture_animation_progress);
+    // Sets the paint animation clock state used to calculate the animation
+    // phase for animated brush paints, if present.
+    void SetAnimatorClockState(absl::Duration animator_clock_state);
 
     void SetImageFilter(sk_sp<SkImageFilter> image_filter);
 
@@ -141,10 +140,14 @@ class SkiaRenderer {
                                         skia_native_internal::PathDrawable>;
 
     Drawable(const AffineTransform& object_to_canvas,
-             absl::InlinedVector<Implementation, 1> drawable_impls);
+             absl::InlinedVector<Implementation, 1> drawable_impls,
+             int64_t brush_family_loop_duration_millis = 0,
+             float base_paint_animation_phase = 0.0f);
 
     AffineTransform object_to_canvas_;
     absl::InlinedVector<Implementation, 1> drawable_implementations_;
+    int64_t brush_family_loop_duration_millis_ = 0;
+    float base_paint_animation_phase_ = 0.0f;
   };
 
   explicit SkiaRenderer(absl_nullable std::shared_ptr<TextureBitmapStore>
@@ -157,9 +160,9 @@ class SkiaRenderer {
   ~SkiaRenderer() = default;
 
   // The following overloads draw a `stroke` with the given `object_to_canvas`
-  // transform and `texture_animation_progress` (normalized progress in [0, 1);
-  // values outside this range are handled according to the brush paint's
-  // `AnimationRepeatMode`) into the `canvas`.
+  // transform and `animator_clock_state` (the current state of the paint
+  // animation clock, used to calculate the animation phase for animated brush
+  // paints) into the `canvas`.
   //
   // NOTE: This function calls `canvas.setMatrix()`, overwriting any current
   // matrix state. Callers who wish to make use of the `SkCanvas` matrix state
@@ -173,11 +176,11 @@ class SkiaRenderer {
   absl::Status Draw(GrDirectContext* absl_nullable context,
                     const InProgressStroke& stroke,
                     const AffineTransform& object_to_canvas, SkCanvas& canvas,
-                    float texture_animation_progress = 0.0f);
+                    absl::Duration animator_clock_state = absl::ZeroDuration());
   absl::Status Draw(GrDirectContext* absl_nullable context,
                     const Stroke& stroke,
                     const AffineTransform& object_to_canvas, SkCanvas& canvas,
-                    float texture_animation_progress = 0.0f);
+                    absl::Duration animator_clock_state = absl::ZeroDuration());
 
   // Return a new `Drawable` created from an `InProgressStroke`.
   //

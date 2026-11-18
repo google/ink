@@ -32,9 +32,11 @@
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_coat.h"
+#include "ink/brush/brush_family.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/brush_tip.h"
 #include "ink/color/color.h"
@@ -53,6 +55,7 @@
 #include "ink/strokes/in_progress_stroke.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/stroke.h"
+#include "ink/strokes/stroke_paint_animation_clock.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkM44.h"
 #include "include/core/SkMesh.h"
@@ -161,6 +164,8 @@ absl::StatusOr<MeshDrawable> CreateAndInitializeMeshDrawable(
     mesh_drawable.SetNumTextureAnimationColumns(stamping->animation_columns);
     mesh_drawable.SetAnimationRepeatMode(stamping->animation_repeat_mode);
   }
+  mesh_drawable.SetBrushPaintLoopDurationMillis(absl::ToInt64Milliseconds(
+      brush_internal::CalculatePaintAnimationLoopDuration(brush_paint)));
   // Actual updates of this need to be done on draw.
   mesh_drawable.SetTextureAnimationProgress(0.0f);
   return mesh_drawable;
@@ -191,7 +196,10 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
         CreateDrawableImpl(context, stroke, coat_index, *brush));
     drawables.push_back(std::move(drawable));
   }
-  return Drawable(object_to_canvas, std::move(drawables));
+  return Drawable(object_to_canvas, std::move(drawables),
+                  absl::ToInt64Milliseconds(
+                      brush->GetFamily().GetPaintAnimationLoopDuration()),
+                  stroke.GetInputs().GetBasePaintAnimationPhase());
 }
 
 absl::StatusOr<SkiaRenderer::Drawable::Implementation>
@@ -282,7 +290,10 @@ absl::StatusOr<SkiaRenderer::Drawable> SkiaRenderer::CreateDrawable(
     drawables.push_back(std::move(drawable));
   }
 
-  return Drawable(object_to_canvas, std::move(drawables));
+  return Drawable(object_to_canvas, std::move(drawables),
+                  absl::ToInt64Milliseconds(
+                      brush.GetFamily().GetPaintAnimationLoopDuration()),
+                  stroke.GetInputs().GetBasePaintAnimationPhase());
 }
 
 absl::StatusOr<SkiaRenderer::Drawable::Implementation>
@@ -364,12 +375,12 @@ absl::Status SkiaRenderer::Draw(GrDirectContext* absl_nullable context,
                                 const InProgressStroke& stroke,
                                 const AffineTransform& object_to_canvas,
                                 SkCanvas& canvas,
-                                float texture_animation_progress) {
+                                absl::Duration animator_clock_state) {
   // TODO: b/286547863 - Implement `RenderCache` to save and update the created
   // drawable inside the stroke.
   ABSL_ASSIGN_OR_RETURN(Drawable drawable,
                         CreateDrawable(context, stroke, object_to_canvas));
-  drawable.SetTextureAnimationProgress(texture_animation_progress);
+  drawable.SetAnimatorClockState(animator_clock_state);
   drawable.Draw(canvas);
   return absl::OkStatus();
 }
@@ -378,12 +389,12 @@ absl::Status SkiaRenderer::Draw(GrDirectContext* absl_nullable context,
                                 const Stroke& stroke,
                                 const AffineTransform& object_to_canvas,
                                 SkCanvas& canvas,
-                                float texture_animation_progress) {
+                                absl::Duration animator_clock_state) {
   // TODO: b/286547863 - Implement `RenderCache` to save and update the created
   // drawable inside the stroke.
   ABSL_ASSIGN_OR_RETURN(Drawable drawable,
                         CreateDrawable(context, stroke, object_to_canvas));
-  drawable.SetTextureAnimationProgress(texture_animation_progress);
+  drawable.SetAnimatorClockState(animator_clock_state);
   drawable.Draw(canvas);
   return absl::OkStatus();
 }
@@ -410,9 +421,13 @@ void SkiaRenderer::Drawable::Draw(SkCanvas& canvas) const {
 
 SkiaRenderer::Drawable::Drawable(
     const AffineTransform& object_to_canvas,
-    absl::InlinedVector<Implementation, 1> drawable_impls)
-    : drawable_implementations_(std::move(drawable_impls)) {
+    absl::InlinedVector<Implementation, 1> drawable_impls,
+    int64_t brush_family_loop_duration_millis, float base_paint_animation_phase)
+    : drawable_implementations_(std::move(drawable_impls)),
+      brush_family_loop_duration_millis_(brush_family_loop_duration_millis),
+      base_paint_animation_phase_(base_paint_animation_phase) {
   SetObjectToCanvas(object_to_canvas);
+  SetAnimatorClockState(absl::ZeroDuration());
 }
 
 void SkiaRenderer::Drawable::SetObjectToCanvas(
@@ -436,13 +451,18 @@ void SkiaRenderer::Drawable::SetBrushColor(const Color& brush_color) {
   }
 }
 
-void SkiaRenderer::Drawable::SetTextureAnimationProgress(
-    float texture_animation_progress) {
+void SkiaRenderer::Drawable::SetAnimatorClockState(
+    absl::Duration animator_clock_state) {
+  int64_t clock_state_millis = absl::ToInt64Milliseconds(animator_clock_state);
   for (Implementation& drawable_impl : drawable_implementations_) {
     std::visit(
         absl::Overload(
-            [texture_animation_progress](MeshDrawable& drawable) {
-              drawable.SetTextureAnimationProgress(texture_animation_progress);
+            [this, clock_state_millis](MeshDrawable& drawable) {
+              float progress = CalculateCurrentAnimationPhaseForBrushPaint(
+                  clock_state_millis, brush_family_loop_duration_millis_,
+                  drawable.BrushPaintLoopDurationMillis(),
+                  base_paint_animation_phase_);
+              drawable.SetTextureAnimationProgress(progress);
             },
             [](PathDrawable& drawable) {}),
         drawable_impl);
