@@ -246,6 +246,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     })"
     // LINT.ThenChange(../../webgpu/StrokeShader.wgsl:calculate_antialiasing_and_position_outset)
 
+    // LINT.IfChange(calculate_animation_frame_index)
     // Calculates an integer frame index for a brush paint animation using
     // "restart" mode for repetitions. In this mode, the animation uses the
     // frames in order from first to last, then jumps back to the first frame
@@ -269,6 +270,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
       float zigzag = abs(2.0 * fract(progress + 0.5) - 1.0);
       return floor(zigzag * float(numFrames - 1) + 0.5);
     })"
+    // LINT.ThenChange(../../webgpu/StrokeShader.wgsl:calculate_animation_frame_index)
 
     // Calculates the texture UV coordinates that should be used for a
     // particular vertex of a stamping-textured mesh.
@@ -288,6 +290,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
     //   * `numTextureAnimationColumns` is the number of columns in the grid.
     //   * `animationRepeatMode` should 0 for "restart" mode and 1 for "reverse"
     //     mode.
+    // LINT.IfChange(calculate_stamping_texture_uv)
     R"(
     float2 calculateStampingTextureUv(
         const float2 surfaceUv,
@@ -316,6 +319,7 @@ inline constexpr absl::string_view kSkSLVertexShaderHelpers =
       return vec2((surfaceUv.x + frameColumn) / numColumns,
                   (surfaceUv.y + frameRow) / numRows);
     })"
+    // LINT.ThenChange(../../webgpu/StrokeShader.wgsl:calculate_stamping_texture_uv)
 
     // ------------------------------------------------------------------------
     // Reused unpacking functions for specific `MeshFormat::AttributeType`

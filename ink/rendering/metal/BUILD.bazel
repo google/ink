@@ -54,7 +54,7 @@ genrule(
     name = "ink_metal_shaders_bytes",
     srcs = [":INKMetalShaders"],
     outs = ["ink_metal_shaders.bytes"],
-    cmd = "$(location :input_to_bytes) < $(SRCS) > $@",
+    cmd = "$(execpath :input_to_bytes) < $(SRCS) > $@",
     target_compatible_with = ["@platforms//os:ios"],
     tools = [":input_to_bytes"],
 )
@@ -124,6 +124,7 @@ cc_library(
         "//ink/rendering/common:stroke_attribute_helpers",
         "//ink/strokes:in_progress_stroke",
         "//ink/strokes:stroke",
+        "//ink/strokes:stroke_paint_animation_clock",
         "//ink/strokes/input:stroke_input",
         "//ink/strokes/input:stroke_input_batch",
         "//ink/strokes/internal:stroke_vertex",
@@ -134,6 +135,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -151,5 +153,6 @@ cc_library(
         "//ink/strokes/internal/jni:in_progress_stroke_native_helper",
         "//ink/strokes/internal/jni:stroke_native_helper",
         "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
     ],
 )

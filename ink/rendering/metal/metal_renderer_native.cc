@@ -23,6 +23,7 @@
 #include <optional>
 
 #include "absl/status/statusor.h"
+#include "absl/time/time.h"
 #include "ink/rendering/metal/metal_renderer.h"
 #include "ink/rendering/metal/metal_renderer_objc_helper.h"
 #include "ink/strokes/in_progress_stroke.h"
@@ -110,7 +111,7 @@ void MetalRendererNative_drawInProgressStroke(
     double texture_height, float stroke_to_screen_transform_m00,
     float stroke_to_screen_transform_m10, float stroke_to_screen_transform_m20,
     float stroke_to_screen_transform_m01, float stroke_to_screen_transform_m11,
-    float stroke_to_screen_transform_m21) {
+    float stroke_to_screen_transform_m21, int64_t animator_clock_state_millis) {
   MetalRenderer& metal_renderer = CastToMetalRenderer(native_ptr);
   const InProgressStroke& in_progress_stroke =
       CastToInProgressStrokeWrapper(in_progress_stroke_native_ptr).Stroke();
@@ -121,18 +122,17 @@ void MetalRendererNative_drawInProgressStroke(
   simd_float4x4 projection_transform =
       OrthographicProjectionMatrix(texture_width, texture_height);
   metal_renderer.Draw(in_progress_stroke, object_to_canvas_transform,
-                      projection_transform, render_encoder);
+                      projection_transform, render_encoder,
+                      absl::Milliseconds(animator_clock_state_millis));
 }
 
-void MetalRendererNative_drawStroke(int64_t native_ptr, void* render_encoder,
-                                    int64_t stroke_native_ptr,
-                                    double texture_width, double texture_height,
-                                    float stroke_to_screen_transform_m00,
-                                    float stroke_to_screen_transform_m10,
-                                    float stroke_to_screen_transform_m20,
-                                    float stroke_to_screen_transform_m01,
-                                    float stroke_to_screen_transform_m11,
-                                    float stroke_to_screen_transform_m21) {
+void MetalRendererNative_drawStroke(
+    int64_t native_ptr, void* render_encoder, int64_t stroke_native_ptr,
+    double texture_width, double texture_height,
+    float stroke_to_screen_transform_m00, float stroke_to_screen_transform_m10,
+    float stroke_to_screen_transform_m20, float stroke_to_screen_transform_m01,
+    float stroke_to_screen_transform_m11, float stroke_to_screen_transform_m21,
+    int64_t animator_clock_state_millis) {
   MetalRenderer& metal_renderer = CastToMetalRenderer(native_ptr);
   const Stroke& stroke = CastToStroke(stroke_native_ptr);
   simd_float4x4 object_to_canvas_transform = AffineTransformToSimdMatrix(
@@ -142,7 +142,8 @@ void MetalRendererNative_drawStroke(int64_t native_ptr, void* render_encoder,
   simd_float4x4 projection_transform =
       OrthographicProjectionMatrix(texture_width, texture_height);
   metal_renderer.Draw(stroke, object_to_canvas_transform, projection_transform,
-                      render_encoder);
+                      render_encoder,
+                      absl::Milliseconds(animator_clock_state_millis));
 }
 
 void MetalRendererNative_free(int64_t native_ptr) {

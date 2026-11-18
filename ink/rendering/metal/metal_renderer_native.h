@@ -45,15 +45,15 @@ int64_t MetalRendererNative_create(
 // is drawing to, used to compute the projection transform, since the texture
 // size can't be read from the render encoder. The remaining parameters are the
 // elements of the stroke-to-screen affine transform (used to populate the
-// view transform matrix in the Metal renderer, leaving the model transform
-// as identity).
+// object-to-canvas transform matrix in the Metal renderer) and the state of the
+// animation clock in milliseconds.
 void MetalRendererNative_drawInProgressStroke(
     int64_t native_ptr, void* render_encoder,
     int64_t in_progress_stroke_native_ptr, double texture_width,
     double texture_height, float stroke_to_screen_transform_m00,
     float stroke_to_screen_transform_m10, float stroke_to_screen_transform_m20,
     float stroke_to_screen_transform_m01, float stroke_to_screen_transform_m11,
-    float stroke_to_screen_transform_m21);
+    float stroke_to_screen_transform_m21, int64_t animator_clock_state_millis);
 
 // Draws a completed stroke using the given render encoder. `render_encoder`
 // is a pointer to a MTLRenderCommandEncoder. `stroke_native_ptr` is a raw
@@ -64,7 +64,8 @@ void MetalRendererNative_drawStroke(
     double texture_width, double texture_height,
     float stroke_to_screen_transform_m00, float stroke_to_screen_transform_m10,
     float stroke_to_screen_transform_m20, float stroke_to_screen_transform_m01,
-    float stroke_to_screen_transform_m11, float stroke_to_screen_transform_m21);
+    float stroke_to_screen_transform_m11, float stroke_to_screen_transform_m21,
+    int64_t animator_clock_state_millis);
 
 // Deletes the heap-allocated `ink::rendering::MetalRenderer`.
 void MetalRendererNative_free(int64_t native_ptr);

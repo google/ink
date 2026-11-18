@@ -28,6 +28,7 @@ cc_library(
         ":mesh_creation_jni",
         ":stroke_input_batch_jni",
         ":stroke_jni",
+        ":stroke_paint_animation_clock_jni",
     ],
 )
 
@@ -43,6 +44,7 @@ cc_library(
         ":mesh_creation_native",
         ":stroke_input_batch_native",
         ":stroke_native",
+        ":stroke_paint_animation_clock_native",
     ],
 )
 
@@ -260,5 +262,30 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "stroke_paint_animation_clock_jni",
+    srcs = ["stroke_paint_animation_clock_jni.cc"],
+    tags = ["keep_dep"],
+    deps = [
+        ":stroke_paint_animation_clock_native",
+        "//ink/jni/internal:jni_defines",
+    ] + select({
+        "@platforms//os:android": [],
+        "//conditions:default": [
+            "@rules_jni//jni",
+        ],
+    }),
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "stroke_paint_animation_clock_native",
+    srcs = ["stroke_paint_animation_clock_native.cc"],
+    hdrs = ["stroke_paint_animation_clock_native.h"],
+    deps = [
+        "//ink/strokes:stroke_paint_animation_clock",
     ],
 )

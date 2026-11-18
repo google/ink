@@ -54,21 +54,23 @@ struct VertexOut {
   @location(2) surfaceUV: vec2<f32>,
 
   // ===========================================================================
-  // ********* Only 8 bytes used, padding added to make 16 bytes total *********
+  // ********* Only 12 bytes used, padding added to make 16 bytes total ********
   // ===========================================================================
   // If anti-aliasing is enabled according to isAAEnabled() below, the following
   // values are valid.
   @location(3) aaPixelsPerDimension: vec2<f32>,
+  @location(4) particleAnimationOffset: f32,
   // Padding to make the struct 16-byte aligned.
-  @location(4) unusedPadding: vec2<f32>,
+  @location(5) unusedPadding: f32,
 
   // ===========================================================================
   // 16 bytes each
   // ===========================================================================
-  @location(5) aaNormalizedToEdgeLRFB: vec4<f32>,
-  @location(6) aaOutsetPixelsLRFB: vec4<f32>,
+  @location(6) aaNormalizedToEdgeLRFB: vec4<f32>,
+  @location(7) aaOutsetPixelsLRFB: vec4<f32>,
 }
 
+// LINT.IfChange(texture_layer)
 struct TextureLayer {
   // ===========================================================================
   // 16 bytes total
@@ -85,19 +87,29 @@ struct TextureLayer {
   tilingOffset: vec2<f32>,
 
   // ===========================================================================
-  // ********* Only 4 bytes used, padding added to make 16 bytes total *********
+  // 16 bytes total
   // ===========================================================================
   tilingRotation: f32,
-  padding0: f32,
-  padding1: f32,
-  padding2: f32,
+  stampingAnimationFrames: u32,
+  stampingAnimationRows: u32,
+  stampingAnimationColumns: u32,
+
+  // ===========================================================================
+  // ********* Only 4 bytes used, padding added to make 16 bytes total *********
+  // ===========================================================================
+  stampingAnimationRepeatMode: u32,
+  padding0: u32,
+  padding1: u32,
+  padding2: u32,
 };
+// LINT.ThenChange(../metal/metal_renderer.h:texture_layer, webgpu_renderer.h:texture_layer)
 
 // LINT.IfChange(max_texture_layers)
 const MAX_TEXTURE_LAYERS = 4u;
 // LINT.ThenChange(
 //   :texture_layer_bindings,
-//   ../../ios/rendering/metal/INKMetalRenderer.swift:max_texture_layers,
+//   ../metal/metal_renderer.h:max_texture_layers,
+//   webgpu_renderer.h:max_texture_layers,
 //   ../../brush/brush_paint.cc:max_texture_layers
 // )
 
@@ -149,11 +161,19 @@ struct Uniforms {
   lastInputPos: vec2<f32>,
 
   // ===========================================================================
+  // ********* Only 4 bytes used, padding added to make 16 bytes total *********
+  // ===========================================================================
+  paintAnimationProgress: f32,
+  padding0: u32,
+  padding1: u32,
+  padding2: u32,
+
+  // ===========================================================================
   // Multiples of 16 bytes each
   // ===========================================================================
   layers: array<TextureLayer, MAX_TEXTURE_LAYERS>,
 }
-// LINT.ThenChange(../metal/metal_renderer.h:uniforms)
+// LINT.ThenChange(../metal/metal_renderer.h:uniforms, webgpu_renderer.h:uniforms)
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read> vertices: array<f32>;
@@ -183,8 +203,14 @@ const TEXTURE_SIZE_UNIT_STROKE_COORDINATES: u32 = 1u;
 const TEXTURE_MAPPING_MODE_TILING: u32 = 0u;
 const TEXTURE_MAPPING_MODE_STAMPING: u32 = 1u;
 // LINT.ThenChange(
-//   ../../ios/rendering/metal/INKMetalRenderer.swift:texture_mapping_modes
+//   ../metal/metal_renderer.cc:texture_mapping_modes,
+//   webgpu_renderer.cc:texture_mapping_modes
 // )
+
+// LINT.IfChange(animation_repeat_mode)
+const ANIMATION_REPEAT_MODE_RESTART: u32 = 0u;
+const ANIMATION_REPEAT_MODE_REVERSE: u32 = 1u;
+// LINT.ThenChange(../../ios/brush/INKTextureLayer.h:animation_repeat_mode)
 
 // LINT.IfChange(blend_modes)
 const BLEND_MODE_MODULATE: u32 = 0u;
@@ -264,13 +290,62 @@ fn unpackFloat2PackedIntoUByte3(unpackingTransform: vec4<f32>,
 // LINT.ThenChange(../skia/common_internal/sksl_vertex_shader_helper_functions.h:unpack_float2_packed_into_ubyte3)
 
 // LINT.IfChange(surface_uv_unpacking)
-fn unpackSurfaceUv(packedValue0To255: vec3<f32>) -> vec2<f32> {
-  return vec2<f32>(
-    (16.0 * packedValue0To255.x + floor(packedValue0To255.y / 16.0)),
-    (4096.0 * fract(packedValue0To255.y / 16.0) + packedValue0To255.z)
-  ) / 4095.0;
+fn unpackSurfaceUvAndAnimationOffset(packedValue0To255: vec4<f32>) -> vec3<f32> {
+  return vec3<f32>(
+    vec2<f32>(
+      (16.0 * packedValue0To255.x + floor(packedValue0To255.y / 16.0)),
+      (4096.0 * fract(packedValue0To255.y / 16.0) + packedValue0To255.z)
+    ) / 4095.0,
+    packedValue0To255.w / 255.0
+  );
 }
 // LINT.ThenChange(../skia/common_internal/sksl_vertex_shader_helper_functions.h:surface_uv_unpacking)
+
+// LINT.IfChange(calculate_animation_frame_index)
+fn calculateAnimationRestartModeFrameIndex(progress: f32,
+                                           numFrames: f32) -> f32 {
+  return floor(fract(progress) * numFrames);
+}
+
+fn calculateAnimationReverseModeFrameIndex(progress: f32,
+                                           numFrames: f32) -> f32 {
+  let zigzag = abs(2.0 * fract(progress + 0.5) - 1.0);
+  return floor(zigzag * (numFrames - 1.0) + 0.5);
+}
+// LINT.ThenChange(../skia/common_internal/sksl_vertex_shader_helper_functions.h:calculate_animation_frame_index)
+
+// LINT.IfChange(calculate_stamping_texture_uv)
+fn calculateStampingTextureUv(surfaceUv: vec2<f32>,
+                              particleAnimationOffset: f32,
+                              textureAnimationProgress: f32,
+                              numTextureAnimationFrames: u32,
+                              numTextureAnimationRows: u32,
+                              numTextureAnimationColumns: u32,
+                              animationRepeatMode: u32) -> vec2<f32> {
+  if (numTextureAnimationFrames <= 1u ||
+      numTextureAnimationRows == 0u ||
+      numTextureAnimationColumns == 0u) {
+    return surfaceUv;
+  }
+  let rawProgress = textureAnimationProgress + particleAnimationOffset;
+  let numFrames = f32(numTextureAnimationFrames);
+  var frameIndex = 0.0;
+  if (animationRepeatMode == ANIMATION_REPEAT_MODE_REVERSE) {
+    frameIndex =
+      calculateAnimationReverseModeFrameIndex(rawProgress, numFrames);
+  } else {
+    frameIndex =
+      calculateAnimationRestartModeFrameIndex(rawProgress, numFrames);
+  }
+  let numRows = f32(numTextureAnimationRows);
+  let numColumns = f32(numTextureAnimationColumns);
+  let frameRowFractional = frameIndex / numColumns;
+  let frameRow = floor(frameRowFractional);
+  let frameColumn = floor(fract(frameRowFractional) * numColumns);
+  return (surfaceUv + vec2<f32>(frameColumn, frameRow)) /
+         vec2<f32>(numColumns, numRows);
+}
+// LINT.ThenChange(../skia/common_internal/sksl_vertex_shader_helper_functions.h:calculate_stamping_texture_uv)
 
 // LINT.IfChange(position_and_opacity_unpacking)
 fn unpackPositionAndOpacityShift(unpackingTransform: vec4<f32>,
@@ -497,6 +572,7 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
   var forwardDerivativeAndLabel = vec3<f32>(0.0, 0.0, 0.0);
   var hclShift = vec3<f32>(0.0, 0.0, 0.0);
   var surfaceUV = vec2<f32>(0.0, 0.0);
+  var particleAnimationOffset = 0.0;
 
   if (isPackedVertexData) {
     let positionAndOpacityShift = unpackPositionAndOpacityShift(
@@ -519,9 +595,11 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
         ubyte4AsF32To4xF32In0To255(vertices[floatOffset + hclShiftFloatOffset]));
     }
     if (surfaceUvEnabled) {
-      surfaceUV = unpackSurfaceUv(
-        ubyte4AsF32To4xF32In0To255(vertices[floatOffset + surfaceUvFloatOffset]).xyz
+      let surfaceUvAndAnimationOffset = unpackSurfaceUvAndAnimationOffset(
+        ubyte4AsF32To4xF32In0To255(vertices[floatOffset + surfaceUvFloatOffset])
       );
+      surfaceUV = surfaceUvAndAnimationOffset.xy;
+      particleAnimationOffset = surfaceUvAndAnimationOffset.z;
     }
   } else {
     pos = vec2<f32>(
@@ -545,6 +623,7 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
         vertices[floatOffset + surfaceUvFloatOffset],
         vertices[floatOffset + surfaceUvFloatOffset + 1u]
       );
+      particleAnimationOffset = vertices[floatOffset + surfaceUvFloatOffset + 2u];
     }
 
     if (hclShiftEnabled) {
@@ -576,7 +655,8 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
   }
 
   out.aaPixelsPerDimension = pixelsPerDimension;
-  out.unusedPadding = vec2<f32>(0.0, 0.0);
+  out.particleAnimationOffset = particleAnimationOffset;
+  out.unusedPadding = 0.0;
   out.aaNormalizedToEdgeLRFB = normalizedToEdgeLRFB;
   out.aaOutsetPixelsLRFB = outsetPixelsLRFB;
 
@@ -652,7 +732,15 @@ fn fragmentMain(in: VertexOut) -> @location(0) vec4<f32> {
             scale;
       }
       case TEXTURE_MAPPING_MODE_STAMPING: {
-        normalizedTextureCoords = in.surfaceUV;
+        normalizedTextureCoords = calculateStampingTextureUv(
+          in.surfaceUV,
+          in.particleAnimationOffset,
+          uniforms.paintAnimationProgress,
+          layer.stampingAnimationFrames,
+          layer.stampingAnimationRows,
+          layer.stampingAnimationColumns,
+          layer.stampingAnimationRepeatMode
+        );
       }
       default: {
         normalizedTextureCoords = vec2<f32>(0.0, 0.0);

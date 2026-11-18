@@ -34,6 +34,7 @@
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ink/brush/brush.h"
 #include "ink/brush/brush_coat.h"
@@ -54,6 +55,7 @@
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/internal/stroke_vertex.h"
 #include "ink/strokes/stroke.h"
+#include "ink/strokes/stroke_paint_animation_clock.h"
 #include "ink/types/duration.h"
 
 namespace ink::rendering {
@@ -65,7 +67,8 @@ using ::ink::strokes_internal::StrokeVertex;
 // LINT.IfChange(texture_mapping_modes)
 constexpr uint32_t kTextureMappingModeTiling = 0;
 constexpr uint32_t kTextureMappingModeStamping = 1;
-// LINT.ThenChange(../webgpu/StrokeShader.wgsl:texture_mapping_modes)
+// LINT.ThenChange(../webgpu/StrokeShader.wgsl:texture_mapping_modes,
+// ../webgpu/webgpu_renderer.cc:texture_mapping_modes)
 
 struct MeshBuffers {
   // Opaque pointer to `INKMeshBuffers`, configured to handle cleanup.
@@ -127,7 +130,8 @@ MetalRenderer::MetalRenderer(
 void MetalRenderer::Draw(const InProgressStroke& in_progress_stroke,
                          simd_float4x4 object_to_canvas_transform,
                          simd_float4x4 projection_transform,
-                         void* render_encoder) {
+                         void* render_encoder,
+                         absl::Duration animator_clock_state) {
   const Brush* brush = in_progress_stroke.GetBrush();
   if (!brush) return;
   if (in_progress_stroke.InputCount() <= 0) return;
@@ -149,6 +153,10 @@ void MetalRenderer::Draw(const InProgressStroke& in_progress_stroke,
   for (uint32_t coat_index = 0; coat_index < coat_count; ++coat_index) {
     if (coat_index >= coats.size()) break;
     for (const BrushPaint& paint : coats[coat_index].paint_preferences) {
+      float paint_animation_progress =
+          CalculateCurrentAnimationPhaseForBrushPaint(
+              animator_clock_state, brush->GetFamily(), paint,
+              inputs.GetBasePaintAnimationPhase());
       if (paint.self_overlap == BrushPaint::SelfOverlap::kDiscard) {
         if (!metal_objc::SupportsSelfOverlapDiscard(
                 objc_renderer_state_.get())) {
@@ -177,10 +185,10 @@ void MetalRenderer::Draw(const InProgressStroke& in_progress_stroke,
           // again, this time with shader-based AA. This second pass will not
           // draw any of the fragments that were drawn in the first pass, but
           // will add the outset edge fragments with the correct opacity.
-          DrawWithStencilAlreadySet(in_progress_stroke, coat_index, paint,
-                                    false, first_input_pos, last_input_pos,
-                                    object_to_canvas_transform,
-                                    projection_transform, render_encoder);
+          DrawWithStencilAlreadySet(
+              in_progress_stroke, coat_index, paint, false, first_input_pos,
+              last_input_pos, object_to_canvas_transform, projection_transform,
+              render_encoder, paint_animation_progress);
         }
       } else {
         // No need to clear the stencil buffer, as a nil stencil state will not
@@ -192,7 +200,8 @@ void MetalRenderer::Draw(const InProgressStroke& in_progress_stroke,
       DrawWithStencilAlreadySet(
           in_progress_stroke, coat_index, paint,
           request_shader_based_anti_aliasing_, first_input_pos, last_input_pos,
-          object_to_canvas_transform, projection_transform, render_encoder);
+          object_to_canvas_transform, projection_transform, render_encoder,
+          paint_animation_progress);
 
       // Only draw with the first compatible paint preference in each coat.
       break;
@@ -205,7 +214,8 @@ void MetalRenderer::DrawWithStencilAlreadySet(
     const BrushPaint& paint, bool request_shader_aa,
     simd_float2 first_input_pos, simd_float2 last_input_pos,
     simd_float4x4 object_to_canvas_transform,
-    simd_float4x4 projection_transform, void* render_encoder) {
+    simd_float4x4 projection_transform, void* render_encoder,
+    float paint_animation_progress) {
   const Brush* brush = in_progress_stroke.GetBrush();
   if (brush == nullptr) return;
 
@@ -269,6 +279,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
       .brush_size = brush->GetSize(),
       .first_input_pos = first_input_pos,
       .last_input_pos = last_input_pos,
+      .paint_animation_progress = paint_animation_progress,
   };
   FillTextureLayers(paint, render_encoder, std::begin(uniforms.layers),
                     &uniforms.texture_layer_count);
@@ -286,7 +297,8 @@ void MetalRenderer::DrawWithStencilAlreadySet(
 void MetalRenderer::Draw(const Stroke& stroke,
                          simd_float4x4 object_to_canvas_transform,
                          simd_float4x4 projection_transform,
-                         void* render_encoder) {
+                         void* render_encoder,
+                         absl::Duration animator_clock_state) {
   if (stroke.GetInputs().Size() <= 0) return;
 
   const StrokeInputBatch& inputs = stroke.GetInputs();
@@ -307,6 +319,10 @@ void MetalRenderer::Draw(const Stroke& stroke,
   for (uint32_t coat_index = 0; coat_index < group_count; ++coat_index) {
     if (coat_index >= coats.size()) break;
     for (const BrushPaint& paint : coats[coat_index].paint_preferences) {
+      float paint_animation_progress =
+          CalculateCurrentAnimationPhaseForBrushPaint(
+              animator_clock_state, stroke.GetBrush().GetFamily(), paint,
+              inputs.GetBasePaintAnimationPhase());
       if (paint.self_overlap == BrushPaint::SelfOverlap::kDiscard) {
         if (!metal_objc::SupportsSelfOverlapDiscard(
                 objc_renderer_state_.get())) {
@@ -326,7 +342,8 @@ void MetalRenderer::Draw(const Stroke& stroke,
           // stroke.
           DrawWithStencilAlreadySet(
               stroke, coat_index, paint, false, first_input_pos, last_input_pos,
-              object_to_canvas_transform, projection_transform, render_encoder);
+              object_to_canvas_transform, projection_transform, render_encoder,
+              paint_animation_progress);
         }
       } else {
         // No need to clear the stencil buffer, as a nil stencil state will
@@ -338,7 +355,7 @@ void MetalRenderer::Draw(const Stroke& stroke,
       DrawWithStencilAlreadySet(
           stroke, coat_index, paint, request_shader_based_anti_aliasing_,
           first_input_pos, last_input_pos, object_to_canvas_transform,
-          projection_transform, render_encoder);
+          projection_transform, render_encoder, paint_animation_progress);
 
       // Only draw with the first compatible paint preference in each coat.
       break;
@@ -350,7 +367,8 @@ void MetalRenderer::DrawWithStencilAlreadySet(
     const Stroke& stroke, uint32_t coat_index, const BrushPaint& paint,
     bool request_shader_aa, simd_float2 first_input_pos,
     simd_float2 last_input_pos, simd_float4x4 object_to_canvas_transform,
-    simd_float4x4 projection_transform, void* render_encoder) {
+    simd_float4x4 projection_transform, void* render_encoder,
+    float paint_animation_progress) {
   Color coat_color = EvaluateCoatColor(stroke.GetBrush(), paint);
   simd_float4 color_oklab_uniform = MakeColorOklabUniform(coat_color);
 
@@ -430,6 +448,7 @@ void MetalRenderer::DrawWithStencilAlreadySet(
         .brush_size = stroke.GetBrush().GetSize(),
         .first_input_pos = first_input_pos,
         .last_input_pos = last_input_pos,
+        .paint_animation_progress = paint_animation_progress,
     };
     FillTextureLayers(paint, render_encoder, std::begin(uniforms.layers),
                       &uniforms.texture_layer_count);
@@ -518,6 +537,14 @@ void MetalRenderer::FillTextureLayers(const BrushPaint& paint,
           .tiling_size = simd_make_float2(0, 0),
           .tiling_offset = simd_make_float2(0, 0),
           .tiling_rotation = 0.0f,
+          .stamping_animation_frames =
+              static_cast<uint32_t>(stamping.animation_frames),
+          .stamping_animation_rows =
+              static_cast<uint32_t>(stamping.animation_rows),
+          .stamping_animation_columns =
+              static_cast<uint32_t>(stamping.animation_columns),
+          .stamping_animation_repeat_mode =
+              static_cast<uint32_t>(stamping.animation_repeat_mode),
       };
     } else {
       ABSL_LOG(WARNING) << "Texture layer type is unsupported.";
