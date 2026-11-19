@@ -150,7 +150,7 @@ struct Uniforms {
   // 16 bytes total
   // ===========================================================================
   forwardDerivativeAndLabelOffset: i32,
-  surfaceUvAndAnimationOffsetOffset: i32,
+  surfaceUvAndPaintAnimationOffsetOffset: i32,
   brushSize: f32,
   textureLayerCount: u32,
 
@@ -290,7 +290,7 @@ fn unpackFloat2PackedIntoUByte3(unpackingTransform: vec4<f32>,
 // LINT.ThenChange(../skia/common_internal/sksl_vertex_shader_helper_functions.h:unpack_float2_packed_into_ubyte3)
 
 // LINT.IfChange(surface_uv_unpacking)
-fn unpackSurfaceUvAndAnimationOffset(packedValue0To255: vec4<f32>) -> vec3<f32> {
+fn unpackSurfaceUvAndPaintAnimationOffset(packedValue0To255: vec4<f32>) -> vec3<f32> {
   return vec3<f32>(
     vec2<f32>(
       (16.0 * packedValue0To255.x + floor(packedValue0To255.y / 16.0)),
@@ -543,7 +543,7 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
   let aaEnabled =
       uniforms.sideDerivativeAndLabelOffset >= 0 &&
       uniforms.forwardDerivativeAndLabelOffset >= 0;
-  let surfaceUvEnabled = uniforms.surfaceUvAndAnimationOffsetOffset >= 0;
+  let surfaceUvEnabled = uniforms.surfaceUvAndPaintAnimationOffsetOffset >= 0;
   let hclShiftEnabled = uniforms.hclShiftOffset >= 0;
   let stride = u32(abs(uniforms.vertexStride));
   let floatOffset = (vertexID * stride) / 4u;
@@ -558,7 +558,7 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
 
   var surfaceUvFloatOffset = 0xffffffffu;
   if (surfaceUvEnabled) {
-    surfaceUvFloatOffset = u32(uniforms.surfaceUvAndAnimationOffsetOffset) / 4u;
+    surfaceUvFloatOffset = u32(uniforms.surfaceUvAndPaintAnimationOffsetOffset) / 4u;
   }
 
   var hclShiftFloatOffset = 0xffffffffu;
@@ -595,11 +595,11 @@ fn vertexMain(@builtin(vertex_index) vertexID: u32) -> VertexOut {
         ubyte4AsF32To4xF32In0To255(vertices[floatOffset + hclShiftFloatOffset]));
     }
     if (surfaceUvEnabled) {
-      let surfaceUvAndAnimationOffset = unpackSurfaceUvAndAnimationOffset(
+      let surfaceUvAndPaintAnimationOffset = unpackSurfaceUvAndPaintAnimationOffset(
         ubyte4AsF32To4xF32In0To255(vertices[floatOffset + surfaceUvFloatOffset])
       );
-      surfaceUV = surfaceUvAndAnimationOffset.xy;
-      particleAnimationOffset = surfaceUvAndAnimationOffset.z;
+      surfaceUV = surfaceUvAndPaintAnimationOffset.xy;
+      particleAnimationOffset = surfaceUvAndPaintAnimationOffset.z;
     }
   } else {
     pos = vec2<f32>(
