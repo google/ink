@@ -88,9 +88,9 @@ __attribute__((objc_subclassing_restricted))
   return self;
 }
 
-- (UIImage*)textureForID:(NSString*)textureID {
+- (UIImage*)textureForID:(NSString*)textureId {
   if (self.callback == nullptr || self.kotlinMetalRendererNativePtr == 0) return nullptr;
-  const char* c_texture_id = [textureID UTF8String];
+  const char* c_texture_id = [textureId UTF8String];
   return (__bridge UIImage*)(*self.callback)(self.kotlinMetalRendererNativePtr, c_texture_id);
 }
 
