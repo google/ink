@@ -657,8 +657,8 @@ TEST(BrushTest, EncodeBrushFamilyWithEncodedTextureIds) {
 }
 
 TEST(BrushTest, EncodeBrushFamilyWithEncodedTextureIdsInNewLayerFormat) {
-  // `HueOffset` requires `Version::kDevelopment()`, which encodes texture
-  // layers using the nested `tiling_texture` and `stamping_texture` messages.
+  // `HueOffset` requires `Version::k2()`, which encodes texture layers using
+  // the nested `tiling_texture` and `stamping_texture` messages.
   std::vector<BrushCoat> coats = {
       {.paint_preferences = {{.texture_layers = {BrushPaint::TilingTexture{
                                   .client_texture_id = "client-id-1"}},
@@ -683,6 +683,7 @@ TEST(BrushTest, EncodeBrushFamilyWithEncodedTextureIdsInNewLayerFormat) {
         return std::string(client_id);
       });
 
+  EXPECT_EQ(family_proto.min_version(), Version::k2().value());
   ASSERT_EQ(family_proto.coats_size(), 1);
   const proto::BrushCoat& coat_proto = family_proto.coats(0);
   ASSERT_EQ(coat_proto.paint_preferences_size(), 2);
@@ -693,11 +694,9 @@ TEST(BrushTest, EncodeBrushFamilyWithEncodedTextureIdsInNewLayerFormat) {
                 .client_texture_id(),
             "encoded-id-1");
   ASSERT_EQ(coat_proto.paint_preferences(1).texture_layers_size(), 1);
-  EXPECT_EQ(coat_proto.paint_preferences(1)
-                .texture_layers(0)
-                .stamping_texture()
-                .client_texture_id(),
-            "encoded-id-2");
+  const proto::BrushPaint::StampingTexture& stamping_proto =
+      coat_proto.paint_preferences(1).texture_layers(0).stamping_texture();
+  EXPECT_EQ(stamping_proto.client_texture_id(), "encoded-id-2");
   EXPECT_THAT(family_proto.texture_id_to_bitmap(),
               UnorderedElementsAre(Pair("encoded-id-1", TestPngBytes1x1()),
                                    Pair("encoded-id-2", TestPngBytes2x2())));
@@ -708,16 +707,16 @@ TEST(BrushTest, EncodeMultipleBrushFamiliesWithEncodedTextureIds) {
       BrushTip{}, {.texture_layers = {BrushPaint::TilingTexture{
                        .client_texture_id = "client-id-1"}}});
   ASSERT_THAT(v0_family, IsOk());
-  absl::StatusOr<BrushFamily> dev_family = BrushFamily::Create(
+  absl::StatusOr<BrushFamily> v2_family = BrushFamily::Create(
       BrushTip{}, {.texture_layers = {BrushPaint::StampingTexture{
                        .client_texture_id = "client-id-2"}},
                    .color_functions = {ColorFunction{
                        .parameters = ColorFunction::HueOffset{}}}});
-  ASSERT_THAT(dev_family, IsOk());
+  ASSERT_THAT(v2_family, IsOk());
 
   proto::BrushFamily family_proto;
   EncodeMultipleBrushFamilies(
-      {*v0_family, *dev_family}, family_proto,
+      {*v0_family, *v2_family}, family_proto,
       [](absl::string_view client_id) -> std::optional<std::string> {
         if (client_id == "client-id-1") return TestPngBytes1x1();
         if (client_id == "client-id-2") return TestPngBytes2x2();
@@ -729,6 +728,7 @@ TEST(BrushTest, EncodeMultipleBrushFamiliesWithEncodedTextureIds) {
         return std::string(client_id);
       });
 
+  EXPECT_EQ(family_proto.min_version(), Version::k0().value());
   ASSERT_EQ(family_proto.coats_size(), 1);
   ASSERT_EQ(family_proto.coats(0).paint_preferences_size(), 1);
   ASSERT_EQ(family_proto.coats(0).paint_preferences(0).texture_layers_size(),
@@ -743,6 +743,7 @@ TEST(BrushTest, EncodeMultipleBrushFamiliesWithEncodedTextureIds) {
 
   ASSERT_EQ(family_proto.newer_brush_families_size(), 1);
   const proto::BrushFamily& newer_proto = family_proto.newer_brush_families(0);
+  EXPECT_EQ(newer_proto.min_version(), Version::k2().value());
   ASSERT_EQ(newer_proto.coats_size(), 1);
   ASSERT_EQ(newer_proto.coats(0).paint_preferences_size(), 1);
   ASSERT_EQ(newer_proto.coats(0).paint_preferences(0).texture_layers_size(), 1);
@@ -1408,8 +1409,10 @@ TEST(BrushTest, DecodeBrushFamilyIsOkWithFallbacks) {
                                     newer_brush_families { min_version: 2 }
                                   )pb",
                                   &family_proto));
+  EXPECT_THAT(DecodeBrushFamily(family_proto), IsOk());
   EXPECT_THAT(DecodeBrushFamily(family_proto, Version::k0()), IsOk());
   EXPECT_THAT(DecodeBrushFamily(family_proto, Version::k1()), IsOk());
+  EXPECT_THAT(DecodeBrushFamily(family_proto, Version::k2()), IsOk());
   EXPECT_THAT(DecodeBrushFamily(family_proto, Version::kDevelopment()), IsOk());
 }
 
@@ -1625,22 +1628,44 @@ TEST(BrushTest, EncodeMultipleBrushFamiliesEncodesLowestVersionAtTopLevel) {
                     }})}),
       BrushPaint());
   ASSERT_THAT(family2, IsOk());
-  EncodeMultipleBrushFamilies({family0, *family1, *family2}, family_proto);
+  absl::StatusOr<BrushFamily> family_dev = BrushFamily::Create(
+      BrushTip({1, 1}, 1, Angle::Radians(0), 0, Angle::Radians(0), 0,
+               Duration32::Zero(),
+               {BrushBehavior(
+                   {BrushBehavior::SourceNode{
+                        .source = BrushBehavior::Source::kBarrelTwistInRadians,
+                        .source_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .source_value_range = {0, 1},
+                    },
+                    BrushBehavior::TargetNode{
+                        .target = BrushBehavior::Target::kHeightMultiplier,
+                        .target_modifier_range = {0, 1},
+                    }})}),
+      BrushPaint());
+  ASSERT_THAT(family_dev, IsOk());
+  EncodeMultipleBrushFamilies({family0, *family1, *family2, *family_dev},
+                              family_proto);
   EXPECT_THAT(family_proto.min_version(), Eq(Version::k0().value()));
-  EXPECT_THAT(family_proto.newer_brush_families(), SizeIs(2));
+  EXPECT_THAT(family_proto.newer_brush_families(), SizeIs(3));
   EXPECT_THAT(family_proto.newer_brush_families(0).min_version(),
               Eq(Version::k1().value()));
   EXPECT_THAT(family_proto.newer_brush_families(1).min_version(),
+              Eq(Version::k2().value()));
+  EXPECT_THAT(family_proto.newer_brush_families(2).min_version(),
               Eq(Version::kDevelopment().value()));
   // Reverse the order of the input -- top level should still be lowest version.
   // Order of newer_brush_families should be the same, as we sort them.
   proto::BrushFamily family_proto2;
-  EncodeMultipleBrushFamilies({*family2, *family1, family0}, family_proto2);
+  EncodeMultipleBrushFamilies({*family_dev, *family2, *family1, family0},
+                              family_proto2);
   EXPECT_THAT(family_proto2.min_version(), Eq(Version::k0().value()));
-  EXPECT_THAT(family_proto2.newer_brush_families(), SizeIs(2));
+  EXPECT_THAT(family_proto2.newer_brush_families(), SizeIs(3));
   EXPECT_THAT(family_proto2.newer_brush_families(0).min_version(),
               Eq(Version::k1().value()));
   EXPECT_THAT(family_proto2.newer_brush_families(1).min_version(),
+              Eq(Version::k2().value()));
+  EXPECT_THAT(family_proto2.newer_brush_families(2).min_version(),
               Eq(Version::kDevelopment().value()));
   // Same exact proto output.
   EXPECT_THAT(family_proto, EqualsProto(family_proto2));
@@ -1857,14 +1882,38 @@ TEST(BrushTest, EncodeMultipleDecodeSingleBrushFamilyRoundTrip) {
                     }})}),
       BrushPaint());
   ASSERT_THAT(family2, IsOk());
-  EncodeMultipleBrushFamilies({family0, *family1, *family2}, family_proto);
-  // Decode with kDevelopment (should pick family2)
-  absl::StatusOr<BrushFamily> family2_out =
+  absl::StatusOr<BrushFamily> family_dev = BrushFamily::Create(
+      BrushTip({1, 1}, 1, Angle::Radians(0), 0, Angle::Radians(0), 0,
+               Duration32::Zero(),
+               {BrushBehavior(
+                   {BrushBehavior::SourceNode{
+                        .source = BrushBehavior::Source::kBarrelTwistInRadians,
+                        .source_out_of_range_behavior =
+                            BrushBehavior::OutOfRange::kClamp,
+                        .source_value_range = {0, 1},
+                    },
+                    BrushBehavior::TargetNode{
+                        .target = BrushBehavior::Target::kHeightMultiplier,
+                        .target_modifier_range = {0, 1},
+                    }})}),
+      BrushPaint());
+  ASSERT_THAT(family_dev, IsOk());
+  EncodeMultipleBrushFamilies({family0, *family1, *family2, *family_dev},
+                              family_proto);
+  // Decode with kDevelopment (should pick family_dev)
+  absl::StatusOr<BrushFamily> family_dev_out =
       DecodeBrushFamily(family_proto, Version::kDevelopment());
-  ASSERT_THAT(family2_out, IsOk());
-  EXPECT_THAT(*family2_out, BrushFamilyEq(*family2));
+  ASSERT_THAT(family_dev_out, IsOk());
+  EXPECT_THAT(*family_dev_out, BrushFamilyEq(*family_dev));
   // Re-encode and verify result is identical to original proto
   proto::BrushFamily family_proto_out;
+  EncodeBrushFamily(*family_dev_out, family_proto_out);
+  EXPECT_THAT(family_proto_out, EqualsProto(family_proto));
+  // Decode with k2 (should pick family2)
+  absl::StatusOr<BrushFamily> family2_out =
+      DecodeBrushFamily(family_proto, Version::k2());
+  ASSERT_THAT(family2_out, IsOkAndHolds(BrushFamilyEq(*family2)));
+  // Re-encode and verify result is identical to original proto
   EncodeBrushFamily(*family2_out, family_proto_out);
   EXPECT_THAT(family_proto_out, EqualsProto(family_proto));
   // Decode with k1 (should pick family1)
@@ -1885,10 +1934,12 @@ TEST(BrushTest, EncodeMultipleDecodeSingleBrushFamilyRoundTrip) {
   // After all this, we can still pull all the brush families out.
   absl::StatusOr<std::vector<BrushFamily>> families =
       DecodeMultipleBrushFamilies(family_proto, Version::kDevelopment());
-  EXPECT_THAT(families, IsOkAndHolds(AllOf(
-                            SizeIs(3), ElementsAre(BrushFamilyEq(family0),
-                                                   BrushFamilyEq(*family1),
-                                                   BrushFamilyEq(*family2)))));
+  EXPECT_THAT(
+      families,
+      IsOkAndHolds(AllOf(
+          SizeIs(4),
+          ElementsAre(BrushFamilyEq(family0), BrushFamilyEq(*family1),
+                      BrushFamilyEq(*family2), BrushFamilyEq(*family_dev)))));
 }
 
 TEST(BrushTest, EncodeBrushFamilyWithMalformedProtoBytesLosesFallbacksButIsOk) {
@@ -1926,6 +1977,169 @@ TEST(BrushTest, EncodeBrushFamilyWithMalformedProtoBytesLosesFallbacksButIsOk) {
   EXPECT_THAT(family_out,
               IsOkAndHolds(AllOf(BrushFamilyEq(*family),
                                  Property(&BrushFamily::HasFallbacks, false))));
+}
+
+TEST(BrushTest, DefaultDecodeBrushFamilySucceedsForV2FeaturesAndFailsAtV1) {
+  absl::StatusOr<BrushFamily> time_to_stroke_end_family = BrushFamily::Create(
+      BrushTip{
+          .behaviors = {BrushBehavior{{
+              BrushBehavior::SourceNode{
+                  .source =
+                      BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds,
+                  .source_out_of_range_behavior =
+                      BrushBehavior::OutOfRange::kClamp,
+                  .source_value_range = {0, 1},
+              },
+              BrushBehavior::TargetNode{
+                  .target = BrushBehavior::Target::kHeightMultiplier,
+                  .target_modifier_range = {0, 1},
+              },
+          }}}},
+      BrushPaint{});
+  ASSERT_THAT(time_to_stroke_end_family, IsOk());
+
+  absl::StatusOr<BrushFamily> hue_offset_family = BrushFamily::Create(
+      BrushTip{}, BrushPaint{.color_functions = {ColorFunction{
+                                 .parameters = ColorFunction::HueOffset{
+                                     .offset = Angle::Radians(0.5f)}}}});
+  ASSERT_THAT(hue_offset_family, IsOk());
+
+  absl::StatusOr<BrushFamily> chroma_family = BrushFamily::Create(
+      BrushTip{}, BrushPaint{.color_functions = {ColorFunction{
+                                 .parameters = ColorFunction::ChromaMultiplier{
+                                     .multiplier = 0.5f}}}});
+  ASSERT_THAT(chroma_family, IsOk());
+
+  absl::StatusOr<BrushFamily> lightness_family = BrushFamily::Create(
+      BrushTip{},
+      BrushPaint{
+          .color_functions = {ColorFunction{
+              .parameters = ColorFunction::LightnessOffset{.offset = 0.25f}}}});
+  ASSERT_THAT(lightness_family, IsOk());
+
+  for (const BrushFamily* family :
+       {&*time_to_stroke_end_family, &*hue_offset_family, &*chroma_family,
+        &*lightness_family}) {
+    proto::BrushFamily family_proto;
+    EncodeBrushFamily(*family, family_proto);
+    EXPECT_EQ(family_proto.min_version(), Version::k2().value());
+    EXPECT_THAT(DecodeBrushFamily(family_proto),
+                IsOkAndHolds(BrushFamilyEq(*family)));
+    EXPECT_THAT(
+        DecodeBrushFamily(family_proto, Version::k1()),
+        StatusIs(
+            absl::StatusCode::kInvalidArgument,
+            HasSubstr("Version must be less than or equal to 1, but was 2")));
+  }
+}
+
+TEST(BrushTest,
+     EncodeV2BrushWithNonAnimatedStampingTextureOmitsAnimationFields) {
+  absl::StatusOr<BrushFamily> family = BrushFamily::Create(
+      BrushTip{},
+      BrushPaint{.texture_layers = {BrushPaint::StampingTexture{
+                     .client_texture_id = std::string(kTestTextureId1)}},
+                 .color_functions = {
+                     ColorFunction{.parameters = ColorFunction::HueOffset{
+                                       .offset = Angle::Radians(1.0f)}}}});
+  ASSERT_THAT(family, IsOk());
+
+  proto::BrushFamily family_proto;
+  EncodeBrushFamily(*family, family_proto);
+  EXPECT_EQ(family_proto.min_version(), Version::k2().value());
+  ASSERT_EQ(family_proto.coats_size(), 1);
+  ASSERT_EQ(family_proto.coats(0).paint_preferences_size(), 1);
+  ASSERT_EQ(family_proto.coats(0).paint_preferences(0).texture_layers_size(),
+            1);
+  const proto::BrushPaint::TextureLayer& layer_proto =
+      family_proto.coats(0).paint_preferences(0).texture_layers(0);
+  ASSERT_TRUE(layer_proto.has_stamping_texture());
+  const proto::BrushPaint::StampingTexture& stamping_proto =
+      layer_proto.stamping_texture();
+  EXPECT_EQ(stamping_proto.client_texture_id(), kTestTextureId1);
+
+  absl::StatusOr<BrushFamily> decoded = DecodeBrushFamily(family_proto);
+  ASSERT_THAT(decoded, IsOkAndHolds(BrushFamilyEq(*family)));
+  proto::BrushFamily reencoded_proto;
+  EncodeBrushFamily(*decoded, reencoded_proto);
+  EXPECT_THAT(reencoded_proto, EqualsProto(family_proto));
+}
+
+TEST(BrushTest, EncodeV0AndV1BrushesUseLegacyTextureLayerEncoding) {
+  absl::StatusOr<BrushFamily> v0_tiling_family = BrushFamily::Create(
+      BrushTip{},
+      BrushPaint{.texture_layers = {BrushPaint::TilingTexture{
+                     .client_texture_id = std::string(kTestTextureId1)}}});
+  ASSERT_THAT(v0_tiling_family, IsOk());
+  proto::BrushFamily v0_tiling_proto;
+  EncodeBrushFamily(*v0_tiling_family, v0_tiling_proto);
+  EXPECT_EQ(v0_tiling_proto.min_version(), Version::k0().value());
+  const proto::BrushPaint::TextureLayer& v0_tiling_layer =
+      v0_tiling_proto.coats(0).paint_preferences(0).texture_layers(0);
+  EXPECT_FALSE(v0_tiling_layer.has_tiling_texture());
+  EXPECT_FALSE(v0_tiling_layer.has_stamping_texture());
+  EXPECT_EQ(v0_tiling_layer.mapping(),
+            proto::BrushPaint::TextureLayer::MAPPING_TILING);
+  EXPECT_EQ(v0_tiling_layer.client_texture_id(), kTestTextureId1);
+  EXPECT_THAT(DecodeBrushFamily(v0_tiling_proto, Version::k0()),
+              IsOkAndHolds(BrushFamilyEq(*v0_tiling_family)));
+
+  absl::StatusOr<BrushFamily> v1_stamping_family = BrushFamily::Create(
+      BrushTip{
+          .behaviors = {BrushBehavior{{
+              BrushBehavior::SourceNode{
+                  .source = BrushBehavior::Source::kTimeSinceStrokeEndInSeconds,
+                  .source_out_of_range_behavior =
+                      BrushBehavior::OutOfRange::kClamp,
+                  .source_value_range = {0, 1},
+              },
+              BrushBehavior::TargetNode{
+                  .target = BrushBehavior::Target::kHeightMultiplier,
+                  .target_modifier_range = {0, 1},
+              },
+          }}}},
+      BrushPaint{.texture_layers = {BrushPaint::StampingTexture{
+                     .client_texture_id = std::string(kTestTextureId2)}}});
+  ASSERT_THAT(v1_stamping_family, IsOk());
+  proto::BrushFamily v1_stamping_proto;
+  EncodeBrushFamily(*v1_stamping_family, v1_stamping_proto);
+  EXPECT_EQ(v1_stamping_proto.min_version(), Version::k1().value());
+  const proto::BrushPaint::TextureLayer& v1_stamping_layer =
+      v1_stamping_proto.coats(0).paint_preferences(0).texture_layers(0);
+  EXPECT_FALSE(v1_stamping_layer.has_tiling_texture());
+  EXPECT_FALSE(v1_stamping_layer.has_stamping_texture());
+  EXPECT_EQ(v1_stamping_layer.mapping(),
+            proto::BrushPaint::TextureLayer::MAPPING_STAMPING);
+  EXPECT_EQ(v1_stamping_layer.client_texture_id(), kTestTextureId2);
+  EXPECT_THAT(DecodeBrushFamily(v1_stamping_proto, Version::k1()),
+              IsOkAndHolds(BrushFamilyEq(*v1_stamping_family)));
+}
+
+TEST(BrushTest,
+     DevelopmentFeaturesEncodeAtDevelopmentVersionAndFailDefaultDecode) {
+  absl::StatusOr<BrushFamily> barrel_twist_family = BrushFamily::Create(
+      BrushTip{.behaviors = {BrushBehavior{{
+                   BrushBehavior::SourceNode{
+                       .source = BrushBehavior::Source::kBarrelTwistInRadians,
+                       .source_out_of_range_behavior =
+                           BrushBehavior::OutOfRange::kClamp,
+                       .source_value_range = {0, 1},
+                   },
+                   BrushBehavior::TargetNode{
+                       .target = BrushBehavior::Target::kHeightMultiplier,
+                       .target_modifier_range = {0, 1},
+                   },
+               }}}},
+      BrushPaint{});
+  ASSERT_THAT(barrel_twist_family, IsOk());
+
+  proto::BrushFamily barrel_twist_proto;
+  EncodeBrushFamily(*barrel_twist_family, barrel_twist_proto);
+  EXPECT_EQ(barrel_twist_proto.min_version(), Version::kDevelopment().value());
+  EXPECT_THAT(DecodeBrushFamily(barrel_twist_proto),
+              StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(DecodeBrushFamily(barrel_twist_proto, Version::kDevelopment()),
+              IsOkAndHolds(BrushFamilyEq(*barrel_twist_family)));
 }
 
 }  // namespace

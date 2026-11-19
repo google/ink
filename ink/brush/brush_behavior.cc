@@ -501,9 +501,10 @@ Version CalculateMinimumRequiredVersion(BrushBehavior::Source source) {
       return Version::k0();
     case BrushBehavior::Source::kTimeSinceStrokeEndInSeconds:
       return Version::k1();
+    case BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds:
+      return Version::k2();
     case BrushBehavior::Source::kBarrelTwistInRadians:
     case BrushBehavior::Source::kBarrelTwistAboutZeroInRadians:
-    case BrushBehavior::Source::kTimeFromInputToStrokeEndInSeconds:
       return Version::kDevelopment();
   }
   return Version::kDevelopment();

@@ -28,6 +28,8 @@ Version IntToVersion(int version) {
       return Version::k0();
     case 1:
       return Version::k1();
+    case 2:
+      return Version::k2();
     case std::numeric_limits<int32_t>::max():
       return Version::kDevelopment();
     default:
