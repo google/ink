@@ -32,8 +32,8 @@ namespace ink::skia_native_internal {
 
 // A drawable object wrapping `SkPath` and `SkPaint`.
 //
-// One drawable consists of one or more path objects that should all be drawn
-// with the same paint.
+// One drawable combines all outlines of a brush coat into a single `SkPath`
+// drawn with the same paint.
 class PathDrawable {
  public:
   // Constructs the drawable from a `MutableMesh`.
@@ -67,7 +67,7 @@ class PathDrawable {
   void Draw(SkCanvas& canvas) const;
 
  private:
-  absl::InlinedVector<SkPath, 1> paths_;
+  SkPath path_;
   SkPaint paint_;
   absl::InlinedVector<ColorFunction, 1> color_functions_;
 };

@@ -37,52 +37,45 @@
 namespace ink::skia_native_internal {
 namespace {
 
-// Creates an `SkPath` using `outline_indices` to retrieve path positions from
-// `mesh`.
-SkPath MakePolygonPath(const MutableMesh& mesh,
-                       absl::Span<const uint32_t> outline_indices) {
+// Appends a closed polygon contour to `path_builder` using `outline_indices` to
+// retrieve vertex positions from `mesh`.
+void AppendOutlineToPath(const MutableMesh& mesh,
+                         absl::Span<const uint32_t> outline_indices,
+                         SkPathBuilder& path_builder) {
   ABSL_DCHECK(!outline_indices.empty());
-
-  SkPathBuilder path;
-  path.setFillType(SkPathFillType::kWinding);
 
   Point position = mesh.VertexPosition(outline_indices.front());
   outline_indices.remove_prefix(1);
 
-  path.moveTo(position.x, position.y);
+  path_builder.moveTo(position.x, position.y);
   for (uint32_t index : outline_indices) {
     position = mesh.VertexPosition(index);
-    path.lineTo(position.x, position.y);
+    path_builder.lineTo(position.x, position.y);
   }
-  path.close();
-
-  return path.detach();
+  path_builder.close();
 }
 
-// Creates an `SkPath` using `group_outline_indices` to retrieve path positions
-// from the meshes in `mesh_group`.
-SkPath MakePolygonPath(
+// Appends a closed polygon contour to `path_builder` using
+// `group_outline_indices` to retrieve vertex positions from the meshes in
+// `mesh_group`.
+void AppendOutlineToPath(
     absl::Span<const Mesh> mesh_group,
-    absl::Span<const VertexIndexPair> group_outline_indices) {
+    absl::Span<const VertexIndexPair> group_outline_indices,
+    SkPathBuilder& path_builder) {
   ABSL_DCHECK(!group_outline_indices.empty());
-
-  SkPathBuilder path;
-  path.setFillType(SkPathFillType::kWinding);
 
   Point position =
       mesh_group[group_outline_indices.front().mesh_index].VertexPosition(
           group_outline_indices.front().vertex_index);
   group_outline_indices.remove_prefix(1);
 
-  path.moveTo(position.x, position.y);
+  path_builder.moveTo(position.x, position.y);
   for (VertexIndexPair index_pair : group_outline_indices) {
     position = mesh_group[index_pair.mesh_index].VertexPosition(
         index_pair.vertex_index);
-    path.lineTo(position.x, position.y);
+    path_builder.lineTo(position.x, position.y);
   }
-  path.close();
-
-  return path.detach();
+  path_builder.close();
 }
 
 void SetPaintDefaultsForPath(SkPaint& paint) {
@@ -97,11 +90,14 @@ PathDrawable::PathDrawable(
     absl::Span<const absl::Span<const uint32_t>> index_outlines,
     absl::Span<const ColorFunction> color_functions)
     : color_functions_(color_functions.begin(), color_functions.end()) {
+  SkPathBuilder path_builder;
+  path_builder.setFillType(SkPathFillType::kWinding);
   for (absl::Span<const uint32_t> indices : index_outlines) {
     if (indices.empty()) continue;
 
-    paths_.push_back(MakePolygonPath(mesh, indices));
+    AppendOutlineToPath(mesh, indices, path_builder);
   }
+  path_ = path_builder.detach();
   SetPaintDefaultsForPath(paint_);
 }
 
@@ -109,6 +105,8 @@ PathDrawable::PathDrawable(const PartitionedMesh& shape,
                            uint32_t render_group_index,
                            absl::Span<const ColorFunction> color_functions)
     : color_functions_(color_functions.begin(), color_functions.end()) {
+  SkPathBuilder path_builder;
+  path_builder.setFillType(SkPathFillType::kWinding);
   absl::Span<const Mesh> mesh_group =
       shape.RenderGroupMeshes(render_group_index);
   for (uint32_t i = 0; i < shape.OutlineCount(render_group_index); ++i) {
@@ -116,8 +114,9 @@ PathDrawable::PathDrawable(const PartitionedMesh& shape,
         shape.Outline(render_group_index, i);
     if (indices.empty()) continue;
 
-    paths_.push_back(MakePolygonPath(mesh_group, indices));
+    AppendOutlineToPath(mesh_group, indices, path_builder);
   }
+  path_ = path_builder.detach();
   SetPaintDefaultsForPath(paint_);
 }
 
@@ -135,9 +134,7 @@ void PathDrawable::SetImageFilter(sk_sp<SkImageFilter> image_filter) {
 }
 
 void PathDrawable::Draw(SkCanvas& canvas) const {
-  for (const SkPath& path : paths_) {
-    canvas.drawPath(path, paint_);
-  }
+  canvas.drawPath(path_, paint_);
 }
 
 }  // namespace ink::skia_native_internal
