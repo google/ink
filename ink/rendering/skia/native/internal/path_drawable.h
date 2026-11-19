@@ -24,9 +24,13 @@
 #include "ink/geometry/mesh.h"
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
+#include "include/core/SkBlendMode.h"
 #include "include/core/SkCanvas.h"
+#include "include/core/SkImageFilter.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkPath.h"
+#include "include/core/SkRefCnt.h"
+#include "include/core/SkShader.h"
 
 namespace ink::skia_native_internal {
 
@@ -44,11 +48,15 @@ class PathDrawable {
   // function will need to change to accept a `span<const MutableMesh>`.
   PathDrawable(const MutableMesh& mesh,
                absl::Span<const absl::Span<const uint32_t>> index_outlines,
-               absl::Span<const ColorFunction> color_functions);
+               absl::Span<const ColorFunction> color_functions,
+               sk_sp<SkShader> shader = nullptr,
+               SkBlendMode color_filter_blend_mode = SkBlendMode::kModulate);
 
   // Constructs the drawable from one render group of a `PartitionedMesh`.
   PathDrawable(const PartitionedMesh& shape, uint32_t render_group_index,
-               absl::Span<const ColorFunction> color_functions);
+               absl::Span<const ColorFunction> color_functions,
+               sk_sp<SkShader> shader = nullptr,
+               SkBlendMode color_filter_blend_mode = SkBlendMode::kModulate);
 
   PathDrawable() = default;
   PathDrawable(const PathDrawable&) = default;
@@ -59,7 +67,9 @@ class PathDrawable {
 
   // Sets the brush color to be used for this drawable. The passed-in
   // `brush_color` will be transformed by the `color_functions` passed in during
-  // construction before being applied to the underlying `SkPaint`.
+  // construction before being applied to the underlying `SkPaint` (or blended
+  // with its texture `SkShader` via `color_filter_blend_mode` when a shader is
+  // present).
   void SetBrushColor(const Color& brush_color);
 
   void SetImageFilter(sk_sp<SkImageFilter> image_filter);
@@ -70,6 +80,7 @@ class PathDrawable {
   SkPath path_;
   SkPaint paint_;
   absl::InlinedVector<ColorFunction, 1> color_functions_;
+  SkBlendMode color_filter_blend_mode_ = SkBlendMode::kModulate;
 };
 
 }  // namespace ink::skia_native_internal

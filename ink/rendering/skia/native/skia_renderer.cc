@@ -29,6 +29,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/functional/overload.h"
 #include "absl/log/absl_check.h"
+#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
@@ -56,12 +57,14 @@
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "ink/strokes/stroke.h"
 #include "ink/strokes/stroke_paint_animation_clock.h"
+#include "include/core/SkBlendMode.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkM44.h"
 #include "include/core/SkMesh.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkRect.h"
 #include "include/core/SkRefCnt.h"
+#include "include/core/SkShader.h"
 #include "include/gpu/ganesh/GrDirectContext.h"
 #include "include/gpu/ganesh/SkMeshGanesh.h"
 
@@ -129,6 +132,47 @@ bool IsPathRenderingSupported(const BrushPaint& paint) {
              }) &&
          brush_internal::AllowsSelfOverlapMode(
              paint, BrushPaint::SelfOverlap::kDiscard);
+}
+
+// Returns the `SkBlendMode` for `SkColorFilters::Blend` to combine the brush
+// color with `paint`'s last texture layer.
+//
+// `BrushPaint::BlendMode` defines `src` as the texture and `dst` as the brush
+// color, whereas `SkColorFilters::Blend(color, ...)` treats `color` as `src`
+// and the paint's shader output as `dst`, so `src` and `dst` are swapped.
+SkBlendMode GetPathColorFilterBlendMode(const BrushPaint& paint) {
+  if (paint.texture_layers.empty()) return SkBlendMode::kModulate;
+  BrushPaint::BlendMode blend_mode =
+      std::visit([](const auto& layer) { return layer.blend_mode; },
+                 paint.texture_layers.back());
+  switch (blend_mode) {
+    case BrushPaint::BlendMode::kModulate:
+      return SkBlendMode::kModulate;
+    case BrushPaint::BlendMode::kDstIn:
+      return SkBlendMode::kSrcIn;
+    case BrushPaint::BlendMode::kDstOut:
+      return SkBlendMode::kSrcOut;
+    case BrushPaint::BlendMode::kSrcAtop:
+      return SkBlendMode::kDstATop;
+    case BrushPaint::BlendMode::kSrcIn:
+      return SkBlendMode::kDstIn;
+    case BrushPaint::BlendMode::kSrcOver:
+      return SkBlendMode::kDstOver;
+    case BrushPaint::BlendMode::kDstOver:
+      return SkBlendMode::kSrcOver;
+    case BrushPaint::BlendMode::kSrc:
+      return SkBlendMode::kDst;
+    case BrushPaint::BlendMode::kDst:
+      return SkBlendMode::kSrc;
+    case BrushPaint::BlendMode::kSrcOut:
+      return SkBlendMode::kDstOut;
+    case BrushPaint::BlendMode::kDstAtop:
+      return SkBlendMode::kSrcATop;
+    case BrushPaint::BlendMode::kXor:
+      return SkBlendMode::kXor;
+  }
+  ABSL_LOG(FATAL) << "invalid `BrushPaint::BlendMode` value: "
+                  << static_cast<int>(blend_mode);
 }
 
 absl::StatusOr<MeshDrawable> CreateAndInitializeMeshDrawable(
@@ -258,9 +302,13 @@ absl::StatusOr<MeshDrawable> SkiaRenderer::CreateMeshDrawable(
 absl::StatusOr<PathDrawable> SkiaRenderer::CreatePathDrawable(
     const InProgressStroke& stroke, uint32_t coat_index,
     const BrushPaint& brush_paint, const Brush& brush) {
+  ABSL_ASSIGN_OR_RETURN(sk_sp<SkShader> shader,
+                        shader_cache_.GetShaderForPaint(
+                            brush_paint, brush.GetSize(), stroke.GetInputs()));
   PathDrawable drawable(stroke.GetMesh(coat_index),
                         stroke.GetCoatOutlines(coat_index),
-                        brush_paint.color_functions);
+                        brush_paint.color_functions, std::move(shader),
+                        GetPathColorFilterBlendMode(brush_paint));
   drawable.SetBrushColor(brush.GetColor());
   return drawable;
 }
@@ -323,8 +371,12 @@ SkiaRenderer::CreateDrawableImpl(GrDirectContext* const absl_nullable context,
 absl::StatusOr<PathDrawable> SkiaRenderer::CreatePathDrawable(
     const Stroke& stroke, uint32_t coat_index, const BrushPaint& brush_paint,
     const Brush& brush) {
+  ABSL_ASSIGN_OR_RETURN(sk_sp<SkShader> shader,
+                        shader_cache_.GetShaderForPaint(
+                            brush_paint, brush.GetSize(), stroke.GetInputs()));
   PathDrawable drawable(stroke.GetShape(), coat_index,
-                        brush_paint.color_functions);
+                        brush_paint.color_functions, std::move(shader),
+                        GetPathColorFilterBlendMode(brush_paint));
   drawable.SetBrushColor(brush.GetColor());
   return drawable;
 }

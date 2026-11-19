@@ -15,6 +15,7 @@
 #include "ink/rendering/skia/native/internal/path_drawable.h"
 
 #include <cstdint>
+#include <utility>
 
 #include "absl/log/absl_check.h"
 #include "absl/types/span.h"
@@ -26,13 +27,17 @@
 #include "ink/geometry/mutable_mesh.h"
 #include "ink/geometry/partitioned_mesh.h"
 #include "ink/geometry/point.h"
+#include "include/core/SkBlendMode.h"
 #include "include/core/SkCanvas.h"
+#include "include/core/SkColor.h"
+#include "include/core/SkColorFilter.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkPath.h"
 #include "include/core/SkPathBuilder.h"
 #include "include/core/SkPathTypes.h"
 #include "include/core/SkRefCnt.h"
+#include "include/core/SkShader.h"
 
 namespace ink::skia_native_internal {
 namespace {
@@ -88,8 +93,10 @@ void SetPaintDefaultsForPath(SkPaint& paint) {
 PathDrawable::PathDrawable(
     const MutableMesh& mesh,
     absl::Span<const absl::Span<const uint32_t>> index_outlines,
-    absl::Span<const ColorFunction> color_functions)
-    : color_functions_(color_functions.begin(), color_functions.end()) {
+    absl::Span<const ColorFunction> color_functions, sk_sp<SkShader> shader,
+    SkBlendMode color_filter_blend_mode)
+    : color_functions_(color_functions.begin(), color_functions.end()),
+      color_filter_blend_mode_(color_filter_blend_mode) {
   SkPathBuilder path_builder;
   path_builder.setFillType(SkPathFillType::kWinding);
   for (absl::Span<const uint32_t> indices : index_outlines) {
@@ -99,12 +106,16 @@ PathDrawable::PathDrawable(
   }
   path_ = path_builder.detach();
   SetPaintDefaultsForPath(paint_);
+  paint_.setShader(std::move(shader));
 }
 
 PathDrawable::PathDrawable(const PartitionedMesh& shape,
                            uint32_t render_group_index,
-                           absl::Span<const ColorFunction> color_functions)
-    : color_functions_(color_functions.begin(), color_functions.end()) {
+                           absl::Span<const ColorFunction> color_functions,
+                           sk_sp<SkShader> shader,
+                           SkBlendMode color_filter_blend_mode)
+    : color_functions_(color_functions.begin(), color_functions.end()),
+      color_filter_blend_mode_(color_filter_blend_mode) {
   SkPathBuilder path_builder;
   path_builder.setFillType(SkPathFillType::kWinding);
   absl::Span<const Mesh> mesh_group =
@@ -118,6 +129,7 @@ PathDrawable::PathDrawable(const PartitionedMesh& shape,
   }
   path_ = path_builder.detach();
   SetPaintDefaultsForPath(paint_);
+  paint_.setShader(std::move(shader));
 }
 
 void PathDrawable::SetBrushColor(const Color& brush_color) {
@@ -125,8 +137,14 @@ void PathDrawable::SetBrushColor(const Color& brush_color) {
                            .InColorSpace(ColorSpace::kSrgb)
                            .AsFloat(Color::Format::kLinear);
   sk_sp<SkColorSpace> srgb_linear = SkColorSpace::MakeSRGBLinear();
-  paint_.setColor({.fR = c.r, .fG = c.g, .fB = c.b, .fA = c.a},
-                  srgb_linear.get());
+  SkColor4f sk_color = {.fR = c.r, .fG = c.g, .fB = c.b, .fA = c.a};
+  if (paint_.getShader() != nullptr) {
+    paint_.setColor(SK_ColorWHITE);
+    paint_.setColorFilter(SkColorFilters::Blend(
+        sk_color, std::move(srgb_linear), color_filter_blend_mode_));
+  } else {
+    paint_.setColor(sk_color, srgb_linear.get());
+  }
 }
 
 void PathDrawable::SetImageFilter(sk_sp<SkImageFilter> image_filter) {
