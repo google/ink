@@ -31,15 +31,23 @@
 #include "absl/types/span.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/fuzz_domains.h"
+#include "ink/geometry/affine_transform.h"
+#include "ink/geometry/angle.h"
+#include "ink/geometry/point.h"
+#include "ink/geometry/type_matchers.h"
 #include "ink/rendering/skia/native/texture_bitmap_store.h"
 #include "ink/strokes/input/fuzz_domains.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "include/core/SkAlphaType.h"
 #include "include/core/SkBitmap.h"
+#include "include/core/SkCanvas.h"
+#include "include/core/SkColor.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkColorType.h"
 #include "include/core/SkImage.h"
 #include "include/core/SkImageInfo.h"
+#include "include/core/SkMatrix.h"
+#include "include/core/SkPaint.h"
 #include "include/core/SkRefCnt.h"
 #include "include/core/SkShader.h"
 
@@ -126,6 +134,69 @@ TEST(ShaderCacheTest, GetShaderForTexturedBrushPaint) {
   ASSERT_THAT(image->colorSpace(), NotNull());
   EXPECT_TRUE(image->colorSpace()->gammaIsLinear());
   EXPECT_FALSE(image->colorSpace()->isSRGB());
+}
+
+TEST(ShaderCacheTest, GetShaderForRotatedTilingTexture) {
+  // Create a 2x1 image whose left texel is red and right texel is blue.
+  absl::StatusOr<sk_sp<SkImage>> test_image =
+      CreateImageFromSrgbLinearPixelData(
+          /*width=*/2, /*height=*/1,
+          std::vector<uint8_t>{0xff, 0x00, 0x00, 0xff, 0x00, 0x00, 0xff, 0xff});
+  ASSERT_THAT(test_image, IsOk());
+  FakeBitmapStore provider(*test_image);
+  ShaderCache cache(&provider);
+
+  absl::StatusOr<sk_sp<SkShader>> shader = cache.GetShaderForPaint(
+      BrushPaint{{BrushPaint::TilingTexture{
+          .client_texture_id = std::string(kTestTextureId),
+          .size_unit = BrushPaint::TextureSizeUnit::kStrokeCoordinates,
+          .size = {10, 20},
+          .offset = {0.25f, 0.5f},
+          .rotation = Angle::Degrees(90),
+      }}},
+      /*brush_size=*/5, StrokeInputBatch());
+  ASSERT_THAT(shader, IsOkAndHolds(NotNull()));
+
+  SkMatrix local_matrix;
+  ASSERT_THAT((*shader)->isAImage(&local_matrix, nullptr), NotNull());
+  AffineTransform actual_transform(
+      local_matrix.getScaleX(), local_matrix.getSkewX(),
+      local_matrix.getTranslateX(), local_matrix.getSkewY(),
+      local_matrix.getScaleY(), local_matrix.getTranslateY());
+  AffineTransform expected_transform =
+      AffineTransform::Scale(10, 20) *
+      AffineTransform::RotateAboutPoint(Angle::Degrees(90), {0.5f, 0.5f}) *
+      AffineTransform::Translate({0.25f, 0.5f}) *
+      AffineTransform::Scale(0.5f, 1.0f);
+  EXPECT_THAT(actual_transform, AffineTransformNear(expected_transform, 1e-5f));
+
+  // Verify end-to-end rendering: rotating a 2x1 [red, blue] tile by +90 degrees
+  // about the center of a 2x2 tile places red in the top row and blue in the
+  // bottom row.
+  absl::StatusOr<sk_sp<SkShader>> rotated_tile_shader = cache.GetShaderForPaint(
+      BrushPaint{{BrushPaint::TilingTexture{
+          .client_texture_id = std::string(kTestTextureId),
+          .size_unit = BrushPaint::TextureSizeUnit::kStrokeCoordinates,
+          .size = {2, 2},
+          .rotation = Angle::Degrees(90),
+      }}},
+      /*brush_size=*/1, StrokeInputBatch());
+  ASSERT_THAT(rotated_tile_shader, IsOkAndHolds(NotNull()));
+
+  SkBitmap output;
+  ASSERT_TRUE(output.tryAllocPixels(SkImageInfo::Make(
+      2, 2, SkColorType::kRGBA_8888_SkColorType,
+      SkAlphaType::kPremul_SkAlphaType, SkColorSpace::MakeSRGBLinear())));
+  output.eraseColor(SK_ColorTRANSPARENT);
+  SkCanvas canvas(output);
+  SkPaint paint;
+  paint.setShader(*rotated_tile_shader);
+  canvas.drawPaint(paint);
+
+  EXPECT_EQ(output.getColor(0, 0), SK_ColorRED);
+  EXPECT_EQ(output.getColor(1, 0), SK_ColorRED);
+  EXPECT_EQ(output.getColor(0, 1), SK_ColorBLUE);
+  EXPECT_EQ(output.getColor(1, 1), SK_ColorBLUE);
 }
 
 void CanGetShaderForAnyValidInputs(const BrushPaint& brush_paint,

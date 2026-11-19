@@ -15,6 +15,7 @@
 #include "ink/color/color.h"
 #include "ink/color/color_space.h"
 #include "ink/geometry/affine_transform.h"
+#include "ink/geometry/point.h"
 #include "ink/rendering/skia/native/texture_bitmap_store.h"
 #include "ink/strokes/input/stroke_input_batch.h"
 #include "include/core/SkBitmap.h"
@@ -122,12 +123,17 @@ AffineTransform ComputeTexelToSizeUnitTransform(
             return AffineTransform::Identity();
           },
           [](const BrushPaint::TilingTexture& tiling) {
+            // The texture rotation is specified as being around the center of
+            // the first repetition, so include a pivot point of 50% in both
+            // axes in texture UV space.
+            AffineTransform uv_rotation = AffineTransform::RotateAboutPoint(
+                tiling.rotation, {0.5f, 0.5f});
             // The texture offset is specified as fractions of the texture size;
             // in other words, it should be applied within texture UV space.
             AffineTransform uv_offset =
                 AffineTransform::Translate(tiling.offset);
             return AffineTransform::Scale(tiling.size.x, tiling.size.y) *
-                   uv_offset;
+                   uv_rotation * uv_offset;
           }),
       layer);
   return uv_to_size_unit * texel_to_uv;
