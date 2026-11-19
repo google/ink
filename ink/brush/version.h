@@ -27,6 +27,9 @@ class Version {
   // apps using different releases of this library.
 
   // Included with
+  // [Jetpack 1.1.0-beta01](https://developer.android.com/jetpack/androidx/releases/ink#1.1.0-beta01).
+  static constexpr Version k2() { return Version(2); }
+  // Included with
   // [Jetpack 1.1.0-alpha01](https://developer.android.com/jetpack/androidx/releases/ink#1.1.0-alpha01).
   static constexpr Version k1() { return Version(1); }
   // Included with
@@ -46,7 +49,7 @@ class Version {
   // customization format. Features still under development should be associated
   // with kDevelopment until they are ready to be released, after which they
   // are expected to be supported long-term.
-  static constexpr Version kMaxSupported() { return k1(); }
+  static constexpr Version kMaxSupported() { return k2(); }
 
  private:
   explicit constexpr Version(int32_t value) : value_(value) {
