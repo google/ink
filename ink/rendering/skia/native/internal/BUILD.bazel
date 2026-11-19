@@ -42,6 +42,7 @@ cc_library(
 cc_test(
     name = "mesh_uniform_data_test",
     srcs = ["mesh_uniform_data_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":mesh_uniform_data",
         "//ink/color",
@@ -82,6 +83,7 @@ cc_library(
 cc_test(
     name = "create_mesh_specification_test",
     srcs = ["create_mesh_specification_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":create_mesh_specification",
         "//ink/geometry:mesh_format",
@@ -121,6 +123,7 @@ cc_library(
 cc_test(
     name = "mesh_drawable_test",
     srcs = ["mesh_drawable_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":create_mesh_specification",
         ":mesh_drawable",
@@ -159,6 +162,7 @@ cc_library(
 cc_test(
     name = "mesh_specification_cache_test",
     srcs = ["mesh_specification_cache_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":mesh_specification_cache",
         "//ink/brush",
@@ -229,6 +233,7 @@ cc_library(
 cc_test(
     name = "shader_cache_test",
     srcs = ["shader_cache_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":shader_cache",
         "//ink/brush:brush_paint",
