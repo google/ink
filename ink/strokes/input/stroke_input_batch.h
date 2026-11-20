@@ -165,7 +165,7 @@ class StrokeInputBatch {
   //
   // If `start` + `count` is greater than `Size()`, then all elements from
   // `start` until the end of the input batch are erased. CHECK-fails if `start`
-  // is not less than or equal to `Size()`.
+  // is negative or greater than `Size()`, or if `count` is negative.
   //
   // This will not change the noise seed or base paint animation phase
   // associated with this input batch, even if all inputs are erased.  If you
