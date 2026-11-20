@@ -98,7 +98,7 @@ std::optional<MeshSpecificationData::UniformId> FindUnpackingTransformUniformId(
 MeshUniformData::MeshUniformData() : data_(SkData::MakeEmpty()) {}
 
 MeshUniformData::MeshUniformData(const SkMeshSpecification& spec)
-    : data_(SkData::MakeUninitialized(spec.uniformSize())),
+    : data_(SkData::MakeZeroInitialized(spec.uniformSize())),
       object_to_canvas_linear_component_offset_(FindUniformOffset(
           spec,
           MeshSpecificationData::UniformId::kObjectToCanvasLinearComponent)),

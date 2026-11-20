@@ -64,6 +64,7 @@ JNI_METHOD(rendering_android_canvas_internal, CanvasMeshRendererNative, void,
   std::array<int, MeshSpecificationData::kMaxAttributes> attribute_types;
   std::array<int, MeshSpecificationData::kMaxAttributes> attribute_offsets;
   attribute_types.fill(-1);
+  attribute_offsets.fill(-1);
   for (int i = 0; i < attributes.Size(); i++) {
     attribute_types[i] = static_cast<int>(attributes[i].type);
     attribute_offsets[i] = attributes[i].offset;

@@ -15,6 +15,7 @@
 #include "ink/rendering/skia/native/internal/mesh_uniform_data.h"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <utility>
@@ -341,6 +342,41 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
               AffineTransformEq(AffineTransform::SkewX(5.0)));
   EXPECT_THAT(GetStoredColor(third_get_data->bytes() + color_uniform->offset),
               ColorNearlyEquals(Color::Cyan()));
+}
+
+TEST(MeshUniformDataTest, UnsetUniformBytesAreZeroInitialized) {
+  SkMeshSpecification::Result result = SkMeshSpecification::Make(
+      {{.type = SkMeshSpecification::Attribute::Type::kFloat2,
+        .offset = 0,
+        .name = SkString("position")}},
+      /* vertexStride = */ 8,
+      /* varyings = */ {}, SkString(R"(
+        uniform float4 uObjectToCanvasLinearComponent;
+        uniform int uNumTextureAnimationFrames;
+
+        Varyings main(const Attributes attributes) {
+          Varyings varyings;
+          varyings.position = attributes.position +
+              uObjectToCanvasLinearComponent.xy +
+              float2(uNumTextureAnimationFrames);
+          return varyings;
+        }
+      )"),
+      SkString(R"(
+        float2 main(const Varyings varyings) {
+          return varyings.position;
+        }
+      )"));
+  ASSERT_NE(result.specification, nullptr);
+  ASSERT_GT(result.specification->uniformSize(), 0);
+
+  MeshUniformData data(*result.specification);
+  sk_sp<const SkData> sk_data = data.Get();
+  ASSERT_NE(sk_data, nullptr);
+  ASSERT_EQ(sk_data->size(), result.specification->uniformSize());
+  for (size_t i = 0; i < sk_data->size(); ++i) {
+    EXPECT_EQ(sk_data->bytes()[i], 0) << "at byte offset " << i;
+  }
 }
 
 TEST(MeshUniformDataDeathTest,
