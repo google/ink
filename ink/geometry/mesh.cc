@@ -14,7 +14,6 @@
 
 #include "ink/geometry/mesh.h"
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -43,7 +42,10 @@ namespace {
 
 // Returns bounds for vertex attributes given in quantized form, by decoding
 // the min/max quantized values of each component using `coding_params`.
-std::optional<mesh_internal::AttributeBoundsArray> ComputeAttributeBounds(
+// Requires `coding_params` to be valid for `format` (finite `offset`/`scale`
+// and `scale > 0`). Returns an error if any unpacked bound is non-finite.
+absl::StatusOr<std::optional<mesh_internal::AttributeBoundsArray>>
+ComputeAttributeBounds(
     const MeshFormat& format,
     absl::Span<const MeshAttributeCodingParams> coding_params,
     absl::Span<const absl::Span<const uint32_t>> vertex_attributes) {
@@ -66,10 +68,19 @@ std::optional<mesh_internal::AttributeBoundsArray> ComputeAttributeBounds(
           absl::c_minmax_element(vertex_attributes[span_idx + c_idx]);
       float offset = coding_params[attr_idx].components[c_idx].offset;
       float scale = coding_params[attr_idx].components[c_idx].scale;
-      float bound1 = offset + scale * static_cast<float>(*min_it);
-      float bound2 = offset + scale * static_cast<float>(*max_it);
-      b.minimum[c_idx] = std::min(bound1, bound2);
-      b.maximum[c_idx] = std::max(bound1, bound2);
+      float min_bound = offset + scale * static_cast<float>(*min_it);
+      float max_bound = offset + scale * static_cast<float>(*max_it);
+      // Because `coding_params` has finite `offset` and finite `scale > 0`, and
+      // `0 <= *min_it <= *max_it`, we have `offset <= min_bound <= max_bound`.
+      // Checking `max_bound` is therefore sufficient to ensure both bounds are
+      // finite.
+      if (!ink_internal::IsFinite(max_bound)) {
+        return absl::InvalidArgumentError(absl::Substitute(
+            "Non-finite unpacked value found in attribute span at index $0",
+            span_idx + c_idx));
+      }
+      b.minimum[c_idx] = min_bound;
+      b.maximum[c_idx] = max_bound;
     }
     span_idx += n_components;
   }
@@ -262,11 +273,19 @@ absl::StatusOr<Mesh> Mesh::CreateFromQuantizedData(
   }
   mesh_internal::CodingParamsArray coding_params_array(num_attrs);
   for (size_t i = 0; i < num_attrs; ++i) {
+    const MeshFormat::Attribute& attr = format.Attributes()[i];
+    if (!mesh_internal::IsValidCodingParams(attr.type, coding_params[i])) {
+      return absl::InvalidArgumentError(absl::Substitute(
+          "Coding params for attribute at index $0 with id $1 and type $2 are "
+          "not valid for that type; params = $3",
+          i, attr.id, attr.type, coding_params[i]));
+    }
     coding_params_array[i] = coding_params[i];
   }
 
-  std::optional<mesh_internal::AttributeBoundsArray> attribute_bounds =
-      ComputeAttributeBounds(format, coding_params, vertex_attributes);
+  ABSL_ASSIGN_OR_RETURN(
+      std::optional<mesh_internal::AttributeBoundsArray> attribute_bounds,
+      ComputeAttributeBounds(format, coding_params, vertex_attributes));
   std::vector<std::byte> vertex_data =
       PackQuantizedVertexByteData(format, vertex_attributes);
   std::vector<std::byte> index_data =

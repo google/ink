@@ -68,6 +68,14 @@ constexpr uint32_t MaxValueForBits(uint8_t n_bits) {
                       : (1 << n_bits) - 1;
 }
 
+// Returns true if `coding_params` is valid for `type`:
+// - Always true for unpacked types (offset and scale are ignored).
+// - For packed types, `coding_params.components` must match the component count
+//   of `type`, and every component must have finite `offset`, finite `scale`,
+//   and `scale > 0`.
+bool IsValidCodingParams(MeshFormat::AttributeType type,
+                         const MeshAttributeCodingParams& coding_params);
+
 // Packs a mesh attribute value (`unpacked_value`) into a packed integer
 // representation stored in one or more floats. `PackAttribute` and
 // `UnpackAttribute` are not exactly inverse functions, because packing is

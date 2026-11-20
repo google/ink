@@ -1002,6 +1002,51 @@ TEST(MeshTest, CreateFromQuantizedDataErrorsWithAttributeOutOfBounds) {
               StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("range")));
 }
 
+TEST(MeshTest, CreateFromQuantizedDataErrorsWithInvalidCodingParams) {
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  constexpr float kInf = std::numeric_limits<float>::infinity();
+  constexpr float kNan = std::numeric_limits<float>::quiet_NaN();
+  const std::vector<MeshAttributeCodingParams> invalid_params_list = {
+      // Wrong number of components (1 instead of 2).
+      {{{.offset = 0, .scale = 1}}},
+      // Zero scale.
+      {{{.offset = 0, .scale = 0}, {.offset = 0, .scale = 1}}},
+      // Negative scale.
+      {{{.offset = 0, .scale = -1}, {.offset = 0, .scale = 1}}},
+      // Non-finite scale.
+      {{{.offset = 0, .scale = kInf}, {.offset = 0, .scale = 1}}},
+      {{{.offset = 0, .scale = kNan}, {.offset = 0, .scale = 1}}},
+      // Non-finite offset.
+      {{{.offset = kInf, .scale = 1}, {.offset = 0, .scale = 1}}},
+      {{{.offset = -kInf, .scale = 1}, {.offset = 0, .scale = 1}}},
+      {{{.offset = kNan, .scale = 1}, {.offset = 0, .scale = 1}}},
+  };
+  for (const MeshAttributeCodingParams& params : invalid_params_list) {
+    SCOPED_TRACE(::testing::PrintToString(params));
+    EXPECT_THAT(
+        Mesh::CreateFromQuantizedData(*format, {{0}, {0}}, {}, {params}),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("not valid")));
+  }
+}
+
+TEST(MeshTest, CreateFromQuantizedDataErrorsWithNonFiniteUnpackedBounds) {
+  absl::StatusOr<MeshFormat> format = MeshFormat::Create(
+      {{AttrType::kFloat2PackedInOneFloat, AttrId::kPosition}},
+      MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(format, IsOk());
+
+  std::vector<MeshAttributeCodingParams> coding_params = {
+      {{{.offset = std::numeric_limits<float>::max(), .scale = 1e36f},
+        {.offset = 0, .scale = 1}}}};
+  EXPECT_THAT(
+      Mesh::CreateFromQuantizedData(*format, {{4095}, {0}}, {}, coding_params),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Non-finite")));
+}
+
 TEST(MeshTest, EqualityAndHashing) {
   absl::StatusOr<Mesh> m1 = Mesh::Create(MeshFormat(),
                                          {// Position

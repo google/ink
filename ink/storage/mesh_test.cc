@@ -14,13 +14,17 @@
 
 #include "ink/storage/mesh.h"
 
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "fuzztest/fuzztest.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
@@ -31,6 +35,7 @@
 #include "ink/geometry/type_matchers.h"
 #include "ink/storage/numeric_run.h"
 #include "ink/storage/proto/mesh.pb.h"
+#include "ink/types/small_array.h"
 #include "google/protobuf/text_format.h"
 
 namespace ink {
@@ -38,6 +43,7 @@ namespace {
 
 using ::absl_testing::IsOk;
 using ::absl_testing::IsOkAndHolds;
+using ::absl_testing::StatusIs;
 using ::ink::proto::CodedMesh;
 using ::google::protobuf::TextFormat;
 using ::testing::ElementsAre;
@@ -399,8 +405,50 @@ TEST(MeshTest, DecodePackedMeshSkipsUnrecognizedAttributes) {
   EXPECT_THAT(decoded->FloatVertexAttribute(2, 1).Values(), ElementsAre(0.5f));
 }
 
+TEST(MeshTest, DecodePackedMeshWithInvalidCodingParamsReturnsError) {
+  auto make_packed_coded_mesh = [](float offset, float scale, int32_t delta) {
+    CodedMesh coded_mesh;
+    proto::MeshFormat* format = coded_mesh.mutable_format();
+    format->add_attribute_types(
+        proto::MeshFormat::ATTR_TYPE_FLOAT2_PACKED_IN_ONE_FLOAT);
+    format->add_attribute_ids(proto::MeshFormat::ATTR_ID_POSITION);
+    format->add_attribute_component_counts(2);
+    coded_mesh.mutable_x_stroke_space()->set_offset(offset);
+    coded_mesh.mutable_x_stroke_space()->set_scale(scale);
+    coded_mesh.mutable_x_stroke_space()->add_deltas(delta);
+    coded_mesh.mutable_y_stroke_space()->set_offset(0.0f);
+    coded_mesh.mutable_y_stroke_space()->set_scale(1.0f);
+    coded_mesh.mutable_y_stroke_space()->add_deltas(0);
+    return coded_mesh;
+  };
+
+  EXPECT_THAT(DecodeMesh(make_packed_coded_mesh(0.0f, 0.0f, 1)),
+              StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(DecodeMesh(make_packed_coded_mesh(0.0f, -1.0f, 1)),
+              StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(DecodeMesh(make_packed_coded_mesh(
+                  std::numeric_limits<float>::quiet_NaN(), 1.0f, 1)),
+              StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(DecodeMesh(make_packed_coded_mesh(
+                  0.0f, std::numeric_limits<float>::infinity(), 1)),
+              StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(DecodeMesh(make_packed_coded_mesh(
+                  std::numeric_limits<float>::max(), 1e36f, 4095)),
+              StatusIs(absl::StatusCode::kInvalidArgument));
+}
+
 void DecodeMeshDoesNotCrashOnArbitraryInput(const CodedMesh& coded_mesh) {
-  DecodeMesh(coded_mesh).IgnoreError();
+  absl::StatusOr<Mesh> mesh = DecodeMesh(coded_mesh);
+  if (!mesh.ok()) return;
+  (void)mesh->Bounds();
+  for (uint32_t v = 0; v < mesh->VertexCount(); ++v) {
+    for (size_t a = 0; a < mesh->Format().Attributes().size(); ++a) {
+      SmallArray<float, 4> value = mesh->FloatVertexAttribute(v, a);
+      for (float component : value.Values()) {
+        EXPECT_TRUE(std::isfinite(component));
+      }
+    }
+  }
 }
 FUZZ_TEST(MeshTest, DecodeMeshDoesNotCrashOnArbitraryInput);
 

@@ -63,18 +63,6 @@ bool PackedFloatValuesAreFinite(MeshFormat::AttributeType type,
   return absl::c_all_of(packed_floats.Values(), ink_internal::IsFinite);
 }
 
-bool IsValidCodingParams(MeshFormat::AttributeType type,
-                         const MeshAttributeCodingParams& coding_params) {
-  // Offset and scale are ignored for unpacked types.
-  if (MeshFormat::IsUnpackedType(type)) return true;
-  if (coding_params.components.Size() != MeshFormat::ComponentCount(type))
-    return false;
-  return absl::c_all_of(
-      coding_params.components.Values(), [](const ComponentCodingParams& c) {
-        return std::isfinite(c.offset) && std::isfinite(c.scale) && c.scale > 0;
-      });
-}
-
 bool UnpackedFloatValuesAreRepresentable(
     MeshFormat::AttributeType type,
     const MeshAttributeCodingParams& packing_params,
@@ -225,6 +213,19 @@ void PackQuantizedFloat4PackedInThreeFloats(
 }
 
 }  // namespace
+
+bool IsValidCodingParams(MeshFormat::AttributeType type,
+                         const MeshAttributeCodingParams& coding_params) {
+  // Offset and scale are ignored for unpacked types.
+  if (MeshFormat::IsUnpackedType(type)) return true;
+  if (coding_params.components.Size() != MeshFormat::ComponentCount(type)) {
+    return false;
+  }
+  return absl::c_all_of(
+      coding_params.components.Values(), [](const ComponentCodingParams& c) {
+        return std::isfinite(c.offset) && std::isfinite(c.scale) && c.scale > 0;
+      });
+}
 
 uint32_t PackSingleFloat(const ComponentCodingParams& packing_params,
                          float value) {
