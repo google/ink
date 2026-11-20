@@ -45,6 +45,9 @@ constexpr float kNonFiniteFloats[] = {
 constexpr float kNonInt32Floats[] = {
     2.5f,
     -0.5f,
+    // static_cast<float>(INT32_MAX) rounds up to 2^31 (2147483648.0f), which is
+    // out of range for int32_t.
+    static_cast<float>(std::numeric_limits<int32_t>::max()),
     1e15f,   // integral, but too big for int32_t
     -1e15f,  // integral, but too small for int32_t
     std::numeric_limits<float>::infinity(),
@@ -108,9 +111,24 @@ TEST(NumericRunTest, DecodeFloatNumericRunWithNonFiniteScale) {
   }
 }
 
+TEST(NumericRunTest, DecodeFloatNumericRunOverflowDoesNotTriggerUb) {
+  proto::CodedNumericRun coded;
+  coded.set_offset(std::numeric_limits<float>::max());
+  coded.set_scale(std::numeric_limits<float>::max());
+  coded.add_deltas(10);
+  EXPECT_THAT(
+      DecodeFloatNumericRun(coded),
+      IsOkAndHolds(ElementsAre(std::numeric_limits<float>::infinity())));
+}
+
 void DecodeFloatNumericRunDoesNotCrashOnArbitraryInput(
     const proto::CodedNumericRun& coded) {
-  DecodeFloatNumericRun(coded).IgnoreError();
+  absl::StatusOr<iterator_range<CodedNumericRunIterator<float>>> range =
+      DecodeFloatNumericRun(coded);
+  if (!range.ok()) return;
+  for (float value : *range) {
+    (void)value;
+  }
 }
 FUZZ_TEST(NumericRunTest, DecodeFloatNumericRunDoesNotCrashOnArbitraryInput);
 
@@ -134,9 +152,159 @@ TEST(NumericRunTest, DecodeIntNumericRunWithNonIntegerScale) {
   }
 }
 
+TEST(NumericRunTest, DecodeIntNumericRunAtInt32Boundaries) {
+  constexpr int32_t kInt32Min = std::numeric_limits<int32_t>::min();
+  constexpr int32_t kInt32Max = std::numeric_limits<int32_t>::max();
+  // Largest float strictly less than 2^31 (2^31 - 128).
+  constexpr float kMaxInt32Float = 2147483520.0f;
+
+  {
+    proto::CodedNumericRun coded;
+    coded.set_offset(static_cast<float>(kInt32Min));
+    coded.set_scale(1.0f);
+    coded.add_deltas(0);
+    coded.add_deltas(kInt32Max);
+    coded.add_deltas(kInt32Max);
+    coded.add_deltas(1);
+    EXPECT_THAT(
+        DecodeIntNumericRun(coded),
+        IsOkAndHolds(ElementsAre(kInt32Min, -1, kInt32Max - 1, kInt32Max)));
+  }
+
+  {
+    proto::CodedNumericRun coded;
+    coded.set_offset(kMaxInt32Float);
+    coded.set_scale(0.0f);
+    coded.add_deltas(kInt32Max);
+    coded.add_deltas(kInt32Max);
+    coded.add_deltas(kInt32Max);
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                IsOkAndHolds(ElementsAre(2147483520, 2147483520, 2147483520)));
+  }
+
+  {
+    proto::CodedNumericRun coded;
+    coded.set_offset(0.0f);
+    coded.set_scale(-1.0f);
+    coded.add_deltas(-kInt32Max);
+    coded.add_deltas(kInt32Max);
+    coded.add_deltas(kInt32Max);
+    coded.add_deltas(1);
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                IsOkAndHolds(ElementsAre(kInt32Max, 0, -kInt32Max, kInt32Min)));
+  }
+
+  {
+    proto::CodedNumericRun coded;
+    coded.set_offset(-1.0f);
+    coded.set_scale(2.0f);
+    coded.add_deltas(-1073741823);
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                IsOkAndHolds(ElementsAre(-kInt32Max)));
+  }
+}
+
+TEST(NumericRunTest, DecodeIntNumericRunOutOfRangeReturnsError) {
+  constexpr int32_t kInt32Min = std::numeric_limits<int32_t>::min();
+  constexpr int32_t kInt32Max = std::numeric_limits<int32_t>::max();
+  constexpr float kMaxInt32Float = 2147483520.0f;
+
+  {
+    // Overflow by 1 above INT32_MAX, even if a later delta returns in range.
+    proto::CodedNumericRun coded;
+    coded.add_deltas(kInt32Max);
+    coded.add_deltas(1);
+    coded.add_deltas(-1);
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("out of int32_t range")));
+  }
+
+  {
+    // Overflow by 1 below INT32_MIN.
+    proto::CodedNumericRun coded;
+    coded.add_deltas(kInt32Min);
+    coded.add_deltas(-1);
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("out of int32_t range")));
+  }
+
+  {
+    // Negative scale with delta = INT32_MIN yields +2^31 (INT32_MAX + 1).
+    proto::CodedNumericRun coded;
+    coded.set_scale(-1.0f);
+    coded.add_deltas(kInt32Min);
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("out of int32_t range")));
+  }
+
+  {
+    // Non-unit scale overflowing by 1 below INT32_MIN (-1 + 2 * -1073741824).
+    proto::CodedNumericRun coded;
+    coded.set_offset(-1.0f);
+    coded.set_scale(2.0f);
+    coded.add_deltas(-1073741824);
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("out of int32_t range")));
+  }
+
+  {
+    // Large scale and cumulative deltas that previously overflowed int64_t.
+    proto::CodedNumericRun coded;
+    coded.set_scale(kMaxInt32Float);
+    coded.add_deltas(kInt32Max);
+    coded.add_deltas(kInt32Max);
+    coded.add_deltas(kInt32Max);
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("out of int32_t range")));
+  }
+
+  {
+    proto::CodedNumericRun coded;
+    coded.set_scale(static_cast<float>(kInt32Min));
+    coded.add_deltas(kInt32Max);
+    coded.add_deltas(kInt32Max);
+    coded.add_deltas(kInt32Max);
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("out of int32_t range")));
+  }
+
+  {
+    proto::CodedNumericRun coded;
+    coded.set_scale(static_cast<float>(kInt32Min));
+    coded.add_deltas(kInt32Min);
+    coded.add_deltas(kInt32Min);
+    coded.add_deltas(kInt32Min);
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("out of int32_t range")));
+  }
+
+  {
+    proto::CodedNumericRun coded;
+    coded.set_scale(kMaxInt32Float);
+    coded.add_deltas(kInt32Min);
+    coded.add_deltas(kInt32Min);
+    coded.add_deltas(kInt32Min);
+    EXPECT_THAT(DecodeIntNumericRun(coded),
+                StatusIs(absl::StatusCode::kInvalidArgument,
+                         HasSubstr("out of int32_t range")));
+  }
+}
+
 void DecodeIntNumericRunDoesNotCrashOnArbitraryInput(
     const proto::CodedNumericRun& coded) {
-  DecodeIntNumericRun(coded).IgnoreError();
+  absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>> range =
+      DecodeIntNumericRun(coded);
+  if (!range.ok()) return;
+  for (int32_t value : *range) {
+    (void)value;
+  }
 }
 FUZZ_TEST(NumericRunTest, DecodeIntNumericRunDoesNotCrashOnArbitraryInput);
 

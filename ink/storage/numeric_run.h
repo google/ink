@@ -15,11 +15,10 @@
 #ifndef INK_STORAGE_NUMERIC_RUN_H_
 #define INK_STORAGE_NUMERIC_RUN_H_
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
-#include <limits>
+#include <type_traits>
 
 #include "absl/status/statusor.h"
 #include "ink/storage/proto/coded_numeric_run.pb.h"
@@ -86,15 +85,19 @@ class CodedNumericRunIterator {
   void UpdateDeltaAndValue() {
     if (!HasValue()) return;
     cumulative_delta_ += run_->deltas(index_);
-    if constexpr (std::numeric_limits<T>::is_integer) {
-      int64_t value = static_cast<int64_t>(run_->offset()) +
-                      static_cast<int64_t>(run_->scale()) * cumulative_delta_;
-      value_ = static_cast<T>(std::clamp<int64_t>(
-          value, static_cast<int64_t>(std::numeric_limits<T>::min()),
-          static_cast<int64_t>(std::numeric_limits<T>::max())));
+    if constexpr (std::is_same_v<T, int32_t>) {
+      // `DecodeIntNumericRun` validates that `offset`, `scale`, and every
+      // decoded value `offset + scale * cumulative_delta_` fit in `int32_t`
+      // without overflowing `int64_t`.
+      value_ = static_cast<T>(static_cast<int64_t>(run_->offset()) +
+                              static_cast<int64_t>(run_->scale()) *
+                                  cumulative_delta_);
     } else {
-      value_ = static_cast<T>(run_->offset() +
-                              (double)run_->scale() * cumulative_delta_);
+      static_assert(std::is_same_v<T, float>,
+                    "CodedNumericRunIterator only supports int32_t and float.");
+      value_ =
+          static_cast<T>(run_->offset() + static_cast<double>(run_->scale()) *
+                                              cumulative_delta_);
     }
   }
 
@@ -119,7 +122,8 @@ DecodeFloatNumericRun(const proto::CodedNumericRun& run);
 // Given a CodedNumericRun proto representing a sequence of integers, returns an
 // iterator range over the decoded sequence.  The proto object must outlive the
 // returned range.  Returns an error if the proto is invalid (e.g. if it has
-// non-integral offset/scale values).
+// non-integral offset/scale values, or if any decoded value falls outside the
+// range of `int32_t`).
 absl::StatusOr<iterator_range<CodedNumericRunIterator<int32_t>>>
 DecodeIntNumericRun(const proto::CodedNumericRun& run);
 
