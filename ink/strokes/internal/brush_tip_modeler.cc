@@ -611,13 +611,15 @@ void BrushTipModeler::ProcessSingleInput(
     // Calculate an interpolation value from the current input toward the
     // previous input for the new particle tip state.
     float t = 1.f;
-    if (particle_gap_metrics_.traveled_distance != 0) {
+    if (particle_gap_metrics_.traveled_distance != 0 &&
+        input_delta.traveled_distance > 0) {
       t = std::min(t, (current_input.traveled_distance -
                        last_modeled_tip_state_metrics->traveled_distance -
                        particle_gap_metrics_.traveled_distance) /
                           input_delta.traveled_distance);
     }
-    if (particle_gap_metrics_.elapsed_time != Duration32::Zero()) {
+    if (particle_gap_metrics_.elapsed_time != Duration32::Zero() &&
+        input_delta.elapsed_time > Duration32::Zero()) {
       t = std::min(t, (current_input.elapsed_time -
                        last_modeled_tip_state_metrics->elapsed_time -
                        particle_gap_metrics_.elapsed_time) /

@@ -1067,6 +1067,64 @@ TEST(BrushTipModelerTest, TipWithNonZeroParticleGapDistanceAndDuration) {
   EXPECT_THAT(modeler.VolatileTipStates(), IsEmpty());
 }
 
+TEST(BrushTipModelerTest, TipWithNonZeroParticleGapAndZeroInputDeltas) {
+  BrushTipModeler modeler;
+
+  // Particles should be emitted whenever inputs have traveled both a distance
+  // of 1 unit and a duration of 50 ms since the last emitted particle.
+  BrushTip brush_tip = {.particle_gap_distance_scale = 0.5,
+                        .particle_gap_duration = Duration32::Millis(50)};
+  modeler.StartStroke(&brush_tip, /* brush_size = */ 2);
+
+  InputModelerState input_modeler_state;
+  std::vector<ModeledStrokeInput> inputs = {
+      {.position = Point{0, 0},
+       .traveled_distance = 0,
+       .elapsed_time = Duration32::Zero()},
+  };
+  input_modeler_state.stable_input_count = inputs.size();
+  modeler.UpdateStroke(input_modeler_state, inputs);
+  ASSERT_THAT(modeler.NewFixedTipStates(), SizeIs(2));
+
+  // Cross the distance threshold exactly without advancing time, then advance
+  // time with zero distance delta (would previously divide 0 / 0).
+  inputs.push_back({.position = Point{1, 0},
+                    .traveled_distance = 1,
+                    .elapsed_time = Duration32::Zero()});
+  inputs.push_back({.position = Point{1, 0},
+                    .traveled_distance = 1,
+                    .elapsed_time = Duration32::Millis(100)});
+  input_modeler_state.stable_input_count = inputs.size();
+  modeler.UpdateStroke(input_modeler_state, inputs);
+  EXPECT_THAT(
+      modeler.NewFixedTipStates(),
+      ElementsAre(AllOf(IsValidBrushTipState(),
+                        Field("position", &BrushTipState::position,
+                              PointNear({1, 0}, 1e-4)),
+                        Field("width", &BrushTipState::width, Ne(0))),
+                  AllOf(Field("width", &BrushTipState::width, Eq(0)),
+                        Field("height", &BrushTipState::height, Eq(0)))));
+
+  // Cross the time threshold without crossing distance, then cross distance
+  // with zero elapsed_time delta (would previously divide by 0).
+  inputs.push_back({.position = Point{1.5, 0},
+                    .traveled_distance = 1.5,
+                    .elapsed_time = Duration32::Millis(200)});
+  inputs.push_back({.position = Point{2.5, 0},
+                    .traveled_distance = 2.5,
+                    .elapsed_time = Duration32::Millis(200)});
+  input_modeler_state.stable_input_count = inputs.size();
+  modeler.UpdateStroke(input_modeler_state, inputs);
+  EXPECT_THAT(
+      modeler.NewFixedTipStates(),
+      ElementsAre(AllOf(IsValidBrushTipState(),
+                        Field("position", &BrushTipState::position,
+                              PointNear({2, 0}, 1e-4)),
+                        Field("width", &BrushTipState::width, Ne(0))),
+                  AllOf(Field("width", &BrushTipState::width, Eq(0)),
+                        Field("height", &BrushTipState::height, Eq(0)))));
+}
+
 TEST(BrushTipModelerTest, SmallParticleGapDistanceWithLongInputDistance) {
   // Create a brush tip with a particle gap of 1 unit, and a set of modeled
   // inputs that travels a distance of 10^30 units.
