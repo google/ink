@@ -20,6 +20,7 @@
 #include <string>
 #include <variant>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/functional/overload.h"
 #include "absl/log/absl_check.h"
@@ -471,17 +472,32 @@ Version CalculateMinimumRequiredVersion(const BrushPaint& paint) {
   return max_version;
 }
 
+namespace {
+
+bool HasStampingTexture(const BrushPaint& paint) {
+  return absl::c_any_of(
+      paint.texture_layers, [](const BrushPaint::TextureLayer& layer) {
+        return std::holds_alternative<BrushPaint::StampingTexture>(layer);
+      });
+}
+
+}  // namespace
+
 void AddAttributeIdsRequiredByPaint(
     const BrushPaint& paint,
     absl::flat_hash_set<MeshFormat::AttributeId>& attribute_ids) {
-  for (const BrushPaint::TextureLayer& layer : paint.texture_layers) {
-    if (std::holds_alternative<BrushPaint::StampingTexture>(layer)) {
-      attribute_ids.insert(MeshFormat::AttributeId::kSurfaceUv);
-      // This is the only attribute that the paint may end up using, so if we
-      // find it then there's no need to check the other layers.
-      break;
-    }
+  if (HasStampingTexture(paint)) {
+    attribute_ids.insert(MeshFormat::AttributeId::kSurfaceUv);
   }
+}
+
+bool IsCompatibleWithMeshFormat(const BrushPaint& paint,
+                                const MeshFormat& mesh_format) {
+  if (!HasStampingTexture(paint)) return true;
+  return absl::c_any_of(mesh_format.Attributes(),
+                        [](const MeshFormat::Attribute& attr) {
+                          return attr.id == MeshFormat::AttributeId::kSurfaceUv;
+                        });
 }
 
 bool AllowsSelfOverlapMode(const BrushPaint& paint,

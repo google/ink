@@ -25,7 +25,6 @@
 #include <vector>
 
 #include "absl/base/nullability.h"
-#include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/functional/overload.h"
 #include "absl/log/absl_check.h"
@@ -90,37 +89,20 @@ SkRect ToSkiaRect(const Rect& rect) {
   return SkRect::MakeLTRB(rect.XMin(), rect.YMin(), rect.XMax(), rect.YMax());
 }
 
-// Returns whether the given `paint` is compatible with the given `mesh_format`.
-// This doesn't take a `BrushCoat` because at render time, we need to consider
-// attributes required by just a specific `BrushPaint` preference, not all of
-// the `BrushPaint` preferences in the `BrushCoat`.
-bool MeshFormatSupports(const MeshFormat& mesh_format,
-                        const BrushPaint& paint) {
-  // Gather all the attributes that are required by the paint.
-  absl::flat_hash_set<MeshFormat::AttributeId> required_attribute_ids;
-  brush_internal::AddAttributeIdsRequiredByPaint(paint, required_attribute_ids);
+// Returns whether mesh rendering is supported for the given `paint` and
+// `mesh_format`.
+bool IsMeshRenderingSupported(GrDirectContext* const absl_nullable context,
+                              const BrushPaint& paint,
+                              const MeshFormat& mesh_format) {
   // TODO: b/346530293 - Check for attributes that are always required (e.g.
   //   position) and those that may be required by the tip (e.g. HCL shift).
   //   That can happen either at a higher level (e.g. not inside a loop over the
   //   paint preferences), or earlier such as when a `Stroke` is constructed
   //   with a preexisting `PartitionedMesh`.
-
-  // Check if all required attributes are present in the mesh format.
-  for (const auto& attr : mesh_format.Attributes()) {
-    required_attribute_ids.erase(attr.id);
-  }
-  return required_attribute_ids.empty();
-}
-
-// Returns whether mesh rendering is supported for the given `paint`, `tip` and
-// `mesh_format`.
-bool IsMeshRenderingSupported(GrDirectContext* const absl_nullable context,
-                              const BrushPaint& paint,
-                              const MeshFormat& mesh_format) {
   return context != nullptr &&
          brush_internal::AllowsSelfOverlapMode(
              paint, BrushPaint::SelfOverlap::kAccumulate) &&
-         MeshFormatSupports(mesh_format, paint);
+         brush_internal::IsCompatibleWithMeshFormat(paint, mesh_format);
 }
 
 // Returns whether path rendering is supported for the given `paint`.

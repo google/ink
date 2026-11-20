@@ -19,10 +19,8 @@
 #include <variant>
 #include <vector>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/time/time.h"
-#include "absl/types/span.h"
 #include "ink/brush/brush_paint.h"
 #include "ink/brush/color_function.h"
 #include "ink/brush/internal/jni/brush_native_helper.h"
@@ -31,7 +29,6 @@
 #include "ink/color/internal/jni/color_native_helper.h"
 #include "ink/geometry/angle.h"
 #include "ink/geometry/internal/jni/mesh_format_native_helper.h"
-#include "ink/geometry/mesh_format.h"
 #include "ink/geometry/vec.h"
 
 namespace {
@@ -41,11 +38,10 @@ using ::ink::BrushPaint;
 using ::ink::Color;
 using ::ink::ColorFunction;
 using ::ink::ColorSpace;
-using ::ink::MeshFormat;
 using ::ink::Vec;
-using ::ink::brush_internal::AddAttributeIdsRequiredByPaint;
 using ::ink::brush_internal::CalculateMinimumRequiredVersion;
 using ::ink::brush_internal::CalculatePaintAnimationLoopDuration;
+using ::ink::brush_internal::IsCompatibleWithMeshFormat;
 using ::ink::brush_internal::ValidateBrushPaint;
 using ::ink::brush_internal::ValidateBrushPaintTextureLayer;
 using ::ink::native::CastToBrushPaint;
@@ -151,16 +147,8 @@ int64_t BrushPaintNative_getPaintAnimationLoopDurationMillis(
 
 bool BrushPaintNative_isCompatibleWithMeshFormat(
     int64_t native_ptr, int64_t mesh_format_native_ptr) {
-  absl::flat_hash_set<MeshFormat::AttributeId> required_attribute_ids;
-  AddAttributeIdsRequiredByPaint(CastToBrushPaint(native_ptr),
-                                 required_attribute_ids);
-
-  absl::Span<const MeshFormat::Attribute> mesh_attributes =
-      CastToMeshFormat(mesh_format_native_ptr).Attributes();
-  for (const MeshFormat::Attribute& attr : mesh_attributes) {
-    required_attribute_ids.erase(attr.id);
-  }
-  return required_attribute_ids.empty();
+  return IsCompatibleWithMeshFormat(CastToBrushPaint(native_ptr),
+                                    CastToMeshFormat(mesh_format_native_ptr));
 }
 
 // ************ Native C-API of BrushPaint TextureLayer ************
