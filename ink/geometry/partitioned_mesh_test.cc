@@ -1890,6 +1890,62 @@ TEST(PartitionedMeshTest, QueryAgainstCopyEmptyShape) {
   EXPECT_FALSE(copy.CoverageIsGreaterThan(shape, 0));
 }
 
+TEST(PartitionedMeshTest, QueriesOnWithEmptyGroupsDoNotCrash) {
+  PartitionedMesh shape = PartitionedMesh::WithEmptyGroups(2);
+  PartitionedMesh non_empty = MakeStraightLinePartitionedMesh(2);
+
+  shape.InitializeSpatialIndex();
+  EXPECT_FALSE(shape.IsSpatialIndexInitialized());
+
+  const Point point{0, 0};
+  const Segment segment{{0, 0}, {1, 1}};
+  const Triangle triangle{{0, 0}, {1, 0}, {0, 1}};
+  const Rect rect = Rect::FromTwoPoints({-1, -1}, {1, 1});
+  const Quad quad = Quad::FromCenterAndDimensions({0, 0}, 2, 2);
+
+  EXPECT_THAT(GetAllIntersectedTriangles(shape, point), IsEmpty());
+  EXPECT_THAT(GetAllIntersectedTriangles(shape, segment), IsEmpty());
+  EXPECT_THAT(GetAllIntersectedTriangles(shape, triangle), IsEmpty());
+  EXPECT_THAT(GetAllIntersectedTriangles(shape, rect), IsEmpty());
+  EXPECT_THAT(GetAllIntersectedTriangles(shape, quad), IsEmpty());
+  EXPECT_THAT(GetAllIntersectedTriangles(shape, non_empty), IsEmpty());
+  EXPECT_FALSE(shape.IsSpatialIndexInitialized());
+
+  EXPECT_FLOAT_EQ(shape.Coverage(triangle), 0);
+  EXPECT_FLOAT_EQ(shape.Coverage(rect), 0);
+  EXPECT_FLOAT_EQ(shape.Coverage(quad), 0);
+  EXPECT_FLOAT_EQ(shape.Coverage(non_empty), 0);
+
+  EXPECT_FALSE(shape.CoverageIsGreaterThan(triangle, 0));
+  EXPECT_FALSE(shape.CoverageIsGreaterThan(rect, 0));
+  EXPECT_FALSE(shape.CoverageIsGreaterThan(quad, 0));
+  EXPECT_FALSE(shape.CoverageIsGreaterThan(non_empty, 0));
+}
+
+TEST(PartitionedMeshTest, CoverageOnZeroAreaMeshReturnsZero) {
+  absl::StatusOr<Mesh> degenerate_mesh =
+      Mesh::Create(MeshFormat(), {{0, 1, 2}, {0, 0, 0}}, {0, 1, 2});
+  ASSERT_THAT(degenerate_mesh, IsOk());
+  absl::StatusOr<PartitionedMesh> shape =
+      PartitionedMesh::FromMeshes({*degenerate_mesh});
+  ASSERT_THAT(shape, IsOk());
+
+  const Triangle triangle{{-1, -1}, {3, -1}, {1, 2}};
+  const Rect rect = Rect::FromTwoPoints({-1, -1}, {3, 1});
+  const Quad quad = Quad::FromCenterAndDimensions({1, 0}, 4, 2);
+
+  EXPECT_EQ(shape->Coverage(triangle), 0.0f);
+  EXPECT_EQ(shape->Coverage(rect), 0.0f);
+  EXPECT_EQ(shape->Coverage(quad), 0.0f);
+  EXPECT_EQ(shape->Coverage(*shape), 0.0f);
+
+  EXPECT_FALSE(shape->CoverageIsGreaterThan(triangle, 0));
+  EXPECT_FALSE(shape->CoverageIsGreaterThan(triangle, -1));
+  EXPECT_FALSE(shape->CoverageIsGreaterThan(rect, 0));
+  EXPECT_FALSE(shape->CoverageIsGreaterThan(quad, 0));
+  EXPECT_FALSE(shape->CoverageIsGreaterThan(*shape, 0));
+}
+
 TEST(PartitionedMeshDeathTest, OutlineGroupIndexOutOfBounds) {
   absl::StatusOr<PartitionedMesh> shape = PartitionedMesh::FromMutableMesh(
       MakeStraightLineMutableMesh(10), {{1, 5, 4, 0}, {5, 9, 4}});

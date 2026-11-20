@@ -327,7 +327,7 @@ void VisitIntersectedTrianglesHelper(
 void PartitionedMesh::VisitIntersectedTriangles(
     Point query, absl::FunctionRef<FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this) const {
-  if (!data_) return;
+  if (Meshes().empty()) return;
 
   VisitIntersectedTrianglesHelper(query, visitor, query_to_this,
                                   data_->Meshes(), data_->SpatialIndex());
@@ -337,7 +337,7 @@ void PartitionedMesh::VisitIntersectedTriangles(
     const Segment& query,
     absl::FunctionRef<FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this) const {
-  if (!data_) return;
+  if (Meshes().empty()) return;
 
   VisitIntersectedTrianglesHelper(query, visitor, query_to_this,
                                   data_->Meshes(), data_->SpatialIndex());
@@ -347,7 +347,7 @@ void PartitionedMesh::VisitIntersectedTriangles(
     const Triangle& query,
     absl::FunctionRef<FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this) const {
-  if (!data_) return;
+  if (Meshes().empty()) return;
 
   VisitIntersectedTrianglesHelper(query, visitor, query_to_this,
                                   data_->Meshes(), data_->SpatialIndex());
@@ -357,7 +357,7 @@ void PartitionedMesh::VisitIntersectedTriangles(
     const Rect& query,
     absl::FunctionRef<FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this) const {
-  if (!data_) return;
+  if (Meshes().empty()) return;
 
   VisitIntersectedTrianglesHelper(query, visitor, query_to_this,
                                   data_->Meshes(), data_->SpatialIndex());
@@ -367,7 +367,7 @@ void PartitionedMesh::VisitIntersectedTriangles(
     const Quad& query,
     absl::FunctionRef<FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this) const {
-  if (!data_) return;
+  if (Meshes().empty()) return;
 
   VisitIntersectedTrianglesHelper(query, visitor, query_to_this,
                                   data_->Meshes(), data_->SpatialIndex());
@@ -422,7 +422,7 @@ void PartitionedMesh::VisitIntersectedTriangles(
     const PartitionedMesh& query,
     absl::FunctionRef<FlowControl(TriangleIndexPair)> visitor,
     const AffineTransform& query_to_this) const {
-  if (!data_) return;
+  if (Meshes().empty()) return;
 
   // If `query` is empty, it can't intersect this shape.
   if (query.Meshes().empty()) return;
@@ -456,6 +456,7 @@ float ComputeCoverage(const QueryType& query,
                       const AffineTransform& query_to_target,
                       const PartitionedMesh& target,
                       float total_absolute_area) {
+  if (total_absolute_area == 0) return 0;
   float covered_area = 0;
   target.VisitIntersectedTriangles(
       query,
@@ -473,28 +474,28 @@ float ComputeCoverage(const QueryType& query,
 
 float PartitionedMesh::Coverage(const Triangle& query,
                                 const AffineTransform& query_to_this) const {
-  if (data_ == nullptr) return 0;
+  if (Meshes().empty()) return 0;
   return ComputeCoverage(query, query_to_this, *this,
                          data_->TotalAbsoluteArea());
 }
 
 float PartitionedMesh::Coverage(const Rect& query,
                                 const AffineTransform& query_to_this) const {
-  if (data_ == nullptr) return 0;
+  if (Meshes().empty()) return 0;
   return ComputeCoverage(query, query_to_this, *this,
                          data_->TotalAbsoluteArea());
 }
 
 float PartitionedMesh::Coverage(const Quad& query,
                                 const AffineTransform& query_to_this) const {
-  if (data_ == nullptr) return 0;
+  if (Meshes().empty()) return 0;
   return ComputeCoverage(query, query_to_this, *this,
                          data_->TotalAbsoluteArea());
 }
 
 float PartitionedMesh::Coverage(const PartitionedMesh& query,
                                 const AffineTransform& query_to_this) const {
-  if (data_ == nullptr) return 0;
+  if (Meshes().empty()) return 0;
   return ComputeCoverage(query, query_to_this, *this,
                          data_->TotalAbsoluteArea());
 }
@@ -530,7 +531,7 @@ float CoverageIsGreaterThanHelper(const QueryType& query,
 bool PartitionedMesh::CoverageIsGreaterThan(
     const Triangle& query, float coverage_threshold,
     const AffineTransform& query_to_this) const {
-  if (data_ == nullptr) return false;
+  if (Meshes().empty()) return false;
   return CoverageIsGreaterThanHelper(query, query_to_this, *this,
                                      coverage_threshold,
                                      data_->TotalAbsoluteArea());
@@ -539,7 +540,7 @@ bool PartitionedMesh::CoverageIsGreaterThan(
 bool PartitionedMesh::CoverageIsGreaterThan(
     const Rect& query, float coverage_threshold,
     const AffineTransform& query_to_this) const {
-  if (data_ == nullptr) return false;
+  if (Meshes().empty()) return false;
   return CoverageIsGreaterThanHelper(query, query_to_this, *this,
                                      coverage_threshold,
                                      data_->TotalAbsoluteArea());
@@ -548,7 +549,7 @@ bool PartitionedMesh::CoverageIsGreaterThan(
 bool PartitionedMesh::CoverageIsGreaterThan(
     const Quad& query, float coverage_threshold,
     const AffineTransform& query_to_this) const {
-  if (data_ == nullptr) return false;
+  if (Meshes().empty()) return false;
   return CoverageIsGreaterThanHelper(query, query_to_this, *this,
                                      coverage_threshold,
                                      data_->TotalAbsoluteArea());
@@ -557,7 +558,7 @@ bool PartitionedMesh::CoverageIsGreaterThan(
 bool PartitionedMesh::CoverageIsGreaterThan(
     const PartitionedMesh& query, float coverage_threshold,
     const AffineTransform& query_to_this) const {
-  if (data_ == nullptr) return false;
+  if (Meshes().empty()) return false;
   return CoverageIsGreaterThanHelper(query, query_to_this, *this,
                                      coverage_threshold,
                                      data_->TotalAbsoluteArea());

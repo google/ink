@@ -286,7 +286,8 @@ class PartitionedMesh {
   // triangles have negative area (due to winding, see `Triangle::SignedArea`),
   // the absolute value of their area will be used instead.
   //
-  // On an empty `PartitionedMesh`, this will always return 0.
+  // On an empty `PartitionedMesh`, or one whose triangles have zero total area,
+  // this will always return 0.
   //
   // Optional argument `query_to_this` contains the transform that maps from
   // `query`'s coordinate space to this `PartitionedMesh`'s coordinate space,
@@ -310,7 +311,8 @@ class PartitionedMesh {
   // `partitioned_mesh.Coverage(query, query_to_this) > coverage_threshold`
   // but may be faster.
   //
-  // On an empty `PartitionedMesh`, this will always return false.
+  // On an empty `PartitionedMesh`, or one whose triangles have zero total area,
+  // this will always return false.
   //
   // Optional argument `query_to_this` contains the transform that maps from
   // `query`'s coordinate space to this `PartitionedMesh`'s coordinate space,
@@ -473,7 +475,7 @@ inline uint32_t PartitionedMesh::OutlineVertexCount(
 }
 
 inline void PartitionedMesh::InitializeSpatialIndex() const {
-  if (!data_) return;
+  if (Meshes().empty()) return;
 
   (void)data_->SpatialIndex();
 }
