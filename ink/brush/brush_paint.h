@@ -384,6 +384,13 @@ void AddAttributeIdsRequiredByPaint(
     const BrushPaint& paint,
     absl::flat_hash_set<MeshFormat::AttributeId>& attribute_ids);
 
+// Returns whether `mesh_format` contains all mesh attribute IDs required to
+// properly render a mesh with `paint`. Note that other attributes may also be
+// required - either for core functionality (see `AddRequiredAttributeIds`) or
+// by the tip (see `AddAttributeIdsRequiredByTip`).
+bool IsCompatibleWithMeshFormat(const BrushPaint& paint,
+                                const MeshFormat& mesh_format);
+
 // Returns whether the given `paint` can be rendered with the given
 // `self_overlap` mode. If `paint` has `SelfOverlap::kAny`, then it allows all
 // self overlap modes.
