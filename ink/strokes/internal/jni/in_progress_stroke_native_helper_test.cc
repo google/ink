@@ -160,5 +160,67 @@ TEST(UpdatePartitionedCoatIndicesTest,
                                 })));
 }
 
+TEST(UpdatePartitionedCoatIndicesTest,
+     NonMonotonicVertexIndexBelowPartitionOffsetStartsNewPartition) {
+  std::vector<uint32_t> indices = {
+      // First partition (offset 0).
+      0, 1, 2,
+      // Second partition (offset 70000, max 135535 -> exact 16-bit span).
+      70000, 70001, 70002, 135533, 135534, 135535,
+      // Third partition: drops below second partition's offset of 70000.
+      60000, 60001, 60002};
+  PartitionedCoatIndices cache;
+  UpdatePartitionedCoatIndices(indices, cache);
+  EXPECT_THAT(cache.converted_index_buffer,
+              ElementsAre(0, 1, 2, 0, 1, 2, 65533, 65534, 65535, 0, 1, 2));
+  EXPECT_THAT(cache.partitions, ElementsAre(PartitionIs({
+                                                .index_buffer_offset = 0,
+                                                .vertex_buffer_offset = 0,
+                                                .vertex_buffer_size = 3,
+                                            }),
+                                            PartitionIs({
+                                                .index_buffer_offset = 3,
+                                                .vertex_buffer_offset = 70000,
+                                                .vertex_buffer_size = 65536,
+                                            }),
+                                            PartitionIs({
+                                                .index_buffer_offset = 9,
+                                                .vertex_buffer_offset = 60000,
+                                                .vertex_buffer_size = 3,
+                                            })));
+}
+
+TEST(UpdatePartitionedCoatIndicesTest,
+     LookaheadLowerMinExceedingSpanDoesNotInfiniteLoop) {
+  std::vector<uint32_t> indices = {
+      // First partition (offset 0).
+      0, 1, 2,
+      // Second partition (offset 70000, max 135535 -> exact 16-bit span).
+      70000, 70001, 135535,
+      // Third partition: 69999 lowers min so {69999..135535} exceeds 16-bit
+      // span; lookahead must not adopt 69999 as the offset for the second
+      // partition.
+      69999, 70000, 70001};
+  PartitionedCoatIndices cache;
+  UpdatePartitionedCoatIndices(indices, cache);
+  EXPECT_THAT(cache.converted_index_buffer,
+              ElementsAre(0, 1, 2, 0, 1, 65535, 0, 1, 2));
+  EXPECT_THAT(cache.partitions, ElementsAre(PartitionIs({
+                                                .index_buffer_offset = 0,
+                                                .vertex_buffer_offset = 0,
+                                                .vertex_buffer_size = 3,
+                                            }),
+                                            PartitionIs({
+                                                .index_buffer_offset = 3,
+                                                .vertex_buffer_offset = 70000,
+                                                .vertex_buffer_size = 65536,
+                                            }),
+                                            PartitionIs({
+                                                .index_buffer_offset = 6,
+                                                .vertex_buffer_offset = 69999,
+                                                .vertex_buffer_size = 3,
+                                            })));
+}
+
 }  // namespace
 }  // namespace ink::native

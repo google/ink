@@ -59,7 +59,7 @@ namespace internal {
 
 void UpdatePartitionedCoatIndices(absl::Span<const uint32_t> index_data,
                                   PartitionedCoatIndices& cache) {
-  constexpr int kMaxVertexIndexInPartition =
+  constexpr uint32_t kMaxVertexIndexInPartition =
       std::numeric_limits<uint16_t>::max();
   // Clear the contents, but don't give up any of the capacity because it will
   // be filled again right away.
@@ -74,12 +74,14 @@ void UpdatePartitionedCoatIndices(absl::Span<const uint32_t> index_data,
     uint32_t overall_vertex_index = index_data[i];
     uint32_t current_vertex_offset =
         cache.partitions.back().vertex_buffer_offset;
-    int vertex_index_in_partition =
-        overall_vertex_index - current_vertex_offset;
 
     // If this fits into the current partition, add it to the buffer and
     // update where the partition's portion of the vertex buffer ends.
-    if (vertex_index_in_partition <= kMaxVertexIndexInPartition) {
+    if (overall_vertex_index >= current_vertex_offset &&
+        overall_vertex_index - current_vertex_offset <=
+            kMaxVertexIndexInPartition) {
+      int vertex_index_in_partition =
+          static_cast<int>(overall_vertex_index - current_vertex_offset);
       cache.converted_index_buffer.push_back(vertex_index_in_partition);
       PartitionedCoatIndices::Partition& current_partition =
           cache.partitions.back();
@@ -96,24 +98,25 @@ void UpdatePartitionedCoatIndices(absl::Span<const uint32_t> index_data,
         << "partition into " << cache.partitions.size() + 1 << " partitions.";
     // Rewind to just before the new partition.
     i = cache.converted_index_buffer.size() - 1;
-    // Find the next span of the index buffer that can be represented as
-    // 16-bit indices into a subspan of the vertex buffer.
+    // Find the next span of complete triangles in the index buffer that can be
+    // represented as 16-bit indices into a subspan of the vertex buffer.
     uint32_t max_later_overall_vertex_index = 0;
     uint32_t min_later_overall_vertex_index =
         std::numeric_limits<uint32_t>::max();
-    for (int later_i = i + 1; later_i < index_count; ++later_i) {
-      uint32_t later_overall_vertex_index = index_data[later_i];
-      min_later_overall_vertex_index =
-          std::min(min_later_overall_vertex_index, later_overall_vertex_index);
-      max_later_overall_vertex_index =
-          std::max(max_later_overall_vertex_index, later_overall_vertex_index);
-      if (max_later_overall_vertex_index - min_later_overall_vertex_index >
-          kMaxVertexIndexInPartition) {
+    for (int tri_start = i + 1; tri_start < index_count; tri_start += 3) {
+      uint32_t candidate_min = min_later_overall_vertex_index;
+      uint32_t candidate_max = max_later_overall_vertex_index;
+      int tri_end = std::min(tri_start + 3, index_count);
+      for (int later_i = tri_start; later_i < tri_end; ++later_i) {
+        candidate_min = std::min(candidate_min, index_data[later_i]);
+        candidate_max = std::max(candidate_max, index_data[later_i]);
+      }
+      if (candidate_max - candidate_min > kMaxVertexIndexInPartition) {
         // Speaking of hopefully unlikely edge-cases, we do need to be able to
         // fit at least one triangle into a partition to make progress and
         // avoid an infinite loop. Bail out if the next triangle's vertex
         // indices can't fit within a 16-bit-max span.
-        if (later_i - i <= 3) {
+        if (tri_start == i + 1) {
           ABSL_LOG_EVERY_N_SEC(ERROR, 1)
               << "Partitioning failed because the span of the next "
               << "triangle's vertices is more than the 16-bit limit, giving "
@@ -122,6 +125,8 @@ void UpdatePartitionedCoatIndices(absl::Span<const uint32_t> index_data,
         }
         break;
       }
+      min_later_overall_vertex_index = candidate_min;
+      max_later_overall_vertex_index = candidate_max;
     }
     // The _first_ index is very unlikely to exceed the 16-bit limit. But for
     // full generality, avoid creating an extra empty partition in that case.
