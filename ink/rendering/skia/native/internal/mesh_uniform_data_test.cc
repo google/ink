@@ -25,7 +25,6 @@
 #include "absl/log/absl_check.h"
 #include "absl/status/statusor.h"
 #include "ink/color/color.h"
-#include "ink/color/color_space.h"
 #include "ink/color/type_matchers.h"
 #include "ink/geometry/affine_transform.h"
 #include "ink/geometry/angle.h"
@@ -179,7 +178,7 @@ TEST(MeshUniformDataTest, WithBrushColor) {
   EXPECT_EQ(first_get_data->size(), result.specification->uniformSize());
   EXPECT_THAT(GetStoredColor(first_get_data->bytes() +
                              result.specification->uniforms()[0].offset),
-              ColorNearlyEquals(Color::Cyan()));
+              ColorNear(Color::Cyan()));
 
   // Setting a new value for the color should not affect the values pointed to
   // by the result of the first call:
@@ -187,7 +186,7 @@ TEST(MeshUniformDataTest, WithBrushColor) {
 
   EXPECT_THAT(GetStoredColor(first_get_data->bytes() +
                              result.specification->uniforms()[0].offset),
-              ColorNearlyEquals(Color::Cyan()));
+              ColorNear(Color::Cyan()));
 
   sk_sp<const SkData> second_get_data = data.Get();
   EXPECT_NE(first_get_data, second_get_data);
@@ -196,7 +195,7 @@ TEST(MeshUniformDataTest, WithBrushColor) {
   EXPECT_EQ(second_get_data->size(), result.specification->uniformSize());
   EXPECT_THAT(GetStoredColor(second_get_data->bytes() +
                              result.specification->uniforms()[0].offset),
-              ColorNearlyEquals(Color::Blue()));
+              ColorNear(Color::Blue()));
 }
 
 MeshAttributeCodingParams GetStoredCodingParams(const uint8_t* data) {
@@ -319,7 +318,7 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
   data.SetBrushColor(Color::Blue());
   sk_sp<const SkData> first_get_data = data.Get();
   EXPECT_THAT(GetStoredColor(first_get_data->bytes() + color_uniform->offset),
-              ColorNearlyEquals(Color::Blue()));
+              ColorNear(Color::Blue()));
 
   // Setting the object-to-canvas transform should update the stored value and
   // also not modify the value of the stored color:
@@ -330,7 +329,7 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
                   object_to_canvas_linear_component_uniform->offset),
               AffineTransformEq(AffineTransform::SkewX(5.0)));
   EXPECT_THAT(GetStoredColor(second_get_data->bytes() + color_uniform->offset),
-              ColorNearlyEquals(Color::Blue()));
+              ColorNear(Color::Blue()));
 
   // Setting a new value of the color should also not modify the value of the
   // stored object-to-canvas transform:
@@ -341,7 +340,7 @@ TEST(MeshUniformDataTest, WithAllMutableUniforms) {
                   object_to_canvas_linear_component_uniform->offset),
               AffineTransformEq(AffineTransform::SkewX(5.0)));
   EXPECT_THAT(GetStoredColor(third_get_data->bytes() + color_uniform->offset),
-              ColorNearlyEquals(Color::Cyan()));
+              ColorNear(Color::Cyan()));
 }
 
 TEST(MeshUniformDataTest, UnsetUniformBytesAreZeroInitialized) {

@@ -16,7 +16,6 @@
 #define INK_COLOR_TYPE_MATCHERS_H_
 
 #include <array>
-#include <cstdint>
 
 #include "gtest/gtest.h"
 #include "ink/color/color.h"
@@ -36,7 +35,7 @@ constexpr float kColorTestEps = 3.8e-6;
 
 ::testing::Matcher<float> FloatNearlyBetweenZeroAndOne(float eps);
 
-::testing::Matcher<Color> ColorNearlyEquals(const Color& expected);
+::testing::Matcher<Color> ColorNear(const Color& expected);
 
 ::testing::Matcher<Color::RgbaFloat> RgbaFloatNear(Color::RgbaFloat expected,
                                                    float tolerance);
