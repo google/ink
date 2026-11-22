@@ -183,6 +183,151 @@ TEST(TriangulateTest, ConcaveLowerChain) {
   EXPECT_FALSE(ContainsPoint(points, triangles, Point{7, -3}));
 }
 
+TEST(TriangulateTest, ConcaveRight) {
+  //   E----------D
+  //   |         /
+  //   |        /
+  //   |       C
+  //   |        \
+  //   |         \
+  //   A----------B
+  Point A{0, 0}, B{6, 0}, C{2, 2}, D{6, 4}, E{0, 4};
+  ShapeOutline outline(
+      {{{A, B}, 1}, {{C, B}, -1}, {{C, D}, 1}, {{A, E, D}, -1}});
+
+  auto [points, triangles] = Triangulate(outline);
+  EXPECT_THAT(points, UnorderedElementsAre(A, B, D, E, C));
+  EXPECT_THAT(triangles, SizeIs(3));
+  EXPECT_TRUE(HasValidIndices(points, triangles));
+  EXPECT_TRUE(AreCounterClockwise(points, triangles));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{1, 2}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{5, 2}));
+}
+
+TEST(TriangulateTest, ConcaveLeft) {
+  //  D------------C
+  //   \           |
+  //    \          |
+  //     E         |
+  //    /          |
+  //   /           |
+  //  A------------B
+  Point A{0, 0}, B{6, 0}, C{6, 4}, D{0, 4}, E{4, 2};
+  ShapeOutline outline(
+      {{{A, B, C}, 1}, {{A, E}, -1}, {{D, E}, 1}, {{D, C}, -1}});
+
+  auto [points, triangles] = Triangulate(outline);
+  EXPECT_THAT(points, UnorderedElementsAre(A, B, C, D, E));
+  EXPECT_THAT(triangles, SizeIs(3));
+  EXPECT_TRUE(HasValidIndices(points, triangles));
+  EXPECT_TRUE(AreCounterClockwise(points, triangles));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{5, 2}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{1, 2}));
+}
+
+TEST(TriangulateTest, SquareWithHole) {
+  //  D-----------C
+  //  |     Q     |
+  //  |    / \    |
+  //  |   P   R   |
+  //  |    \ /    |
+  //  |     S     |
+  //  A-----------B
+
+  Point A{0, 0}, B{4, 0}, C{4, 4}, D{0, 4};
+  Point P{1, 2}, Q{2, 3}, R{3, 2}, S{2, 1};
+  ShapeOutline outline(
+      {{{A, B, C}, 1}, {{A, D, C}, -1}, {{P, Q, R}, 1}, {{P, S, R}, -1}});
+
+  auto [points, triangles] = Triangulate(outline);
+  EXPECT_THAT(points, UnorderedElementsAre(A, B, C, D, P, Q, R, S));
+  EXPECT_THAT(triangles, SizeIs(8));
+  EXPECT_TRUE(HasValidIndices(points, triangles));
+  EXPECT_TRUE(AreCounterClockwise(points, triangles));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{0.5f, 2}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{3.5f, 2}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{2, 0.5f}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{2, 3.5f}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{2, 2}));
+}
+
+TEST(TriangulateTest, HolesSideBySide) {
+  //  D-------------------C
+  //  |     F       J     |
+  //  |    / \     / \    |
+  //  |   E   G   I   K   |
+  //  |    \ /     \ /    |
+  //  |     H       L     |
+  //  A-------------------B
+  Point A{0, 0}, B{8, 0}, C{8, 4}, D{0, 4};
+  Point E{1.5f, 2}, F{2.5f, 3}, G{3.5f, 2}, H{2.5f, 1};
+  Point I{4.5f, 2}, J{5.5f, 3}, K{6.5f, 2}, L{5.5f, 1};
+  ShapeOutline outline({{{A, B, C}, 1},
+                        {{A, D, C}, -1},
+                        {{E, F, G}, 1},
+                        {{E, H, G}, -1},
+                        {{I, J, K}, 1},
+                        {{I, L, K}, -1}});
+
+  auto [points, triangles] = Triangulate(outline);
+  EXPECT_THAT(points, SizeIs(12));
+  EXPECT_THAT(triangles, SizeIs(14));
+  EXPECT_TRUE(HasValidIndices(points, triangles));
+  EXPECT_TRUE(AreCounterClockwise(points, triangles));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{4, 2}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{2.5f, 2}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{5.5f, 2}));
+}
+
+TEST(TriangulateTest, HolesStacked) {
+  //  D-----------C
+  //  |     J     |
+  //  |    / \    |
+  //  |   I   K   |
+  //  |    \ /    |
+  //  |     L     |
+  //  |           |
+  //  |     F     |
+  //  |    / \    |
+  //  |   E   G   |
+  //  |    \ /    |
+  //  |     H     |
+  //  A-----------B
+  Point A{0, 0}, B{4, 0}, C{4, 8}, D{0, 8};
+  Point E{1, 2}, F{2, 3}, G{3, 2}, H{2, 1};
+  Point I{1, 6}, J{2, 7}, K{3, 6}, L{2, 5};
+  ShapeOutline outline({{{A, B, C}, 1},
+                        {{A, D, C}, -1},
+                        {{E, F, G}, 1},
+                        {{E, H, G}, -1},
+                        {{I, J, K}, 1},
+                        {{I, L, K}, -1}});
+
+  auto [points, triangles] = Triangulate(outline);
+  EXPECT_THAT(points, SizeIs(12));
+  EXPECT_THAT(triangles, SizeIs(14));
+  EXPECT_TRUE(HasValidIndices(points, triangles));
+  EXPECT_TRUE(AreCounterClockwise(points, triangles));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{2, 4}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{2, 2}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{2, 6}));
+}
+
+TEST(TriangulateTest, DisjointComponents) {
+  //      C           F
+  //     / \         / \
+  //    A---B       D---E
+  Point A{0, 0}, B{2, 0}, C{1, 1}, D{3, 0}, E{5, 0}, F{4, 1};
+  ShapeOutline outline(
+      {{{A, B}, 1}, {{A, C, B}, -1}, {{D, E}, 1}, {{D, F, E}, -1}});
+
+  auto [points, triangles] = Triangulate(outline);
+  EXPECT_THAT(points, UnorderedElementsAre(A, B, C, D, E, F));
+  EXPECT_THAT(triangles, SizeIs(2));
+  EXPECT_TRUE(HasValidIndices(points, triangles));
+  EXPECT_TRUE(AreCounterClockwise(points, triangles));
+}
+
 TEST(TriangulateTest, PinchPoint) {
   //         C     F
   //        / \   / \
@@ -204,6 +349,30 @@ TEST(TriangulateTest, PinchPoint) {
   EXPECT_TRUE(ContainsPoint(points, triangles, Point{3, 0}));
   EXPECT_FALSE(ContainsPoint(points, triangles, Point{2, 0.5f}));
   EXPECT_FALSE(ContainsPoint(points, triangles, Point{2, -0.5f}));
+}
+
+TEST(TriangulateTest, HoleTouchingBoundaryAtVertex) {
+  //  D-----------------C
+  //  |                 |
+  //  |       H         |
+  //  |      /  \       |
+  //  |     /     \     |
+  //  |    /       J    |
+  //  |   /  _ - ‾      |
+  //  A--M--------------B
+
+  Point A{0, 0}, M{2, 0}, B{6, 0}, C{6, 4}, D{0, 4}, H{3, 2}, J{4, 1};
+  ShapeOutline outline(
+      {{{A, M, B, C}, 1}, {{A, D, C}, -1}, {{M, H, J}, 1}, {{M, J}, -1}});
+
+  auto [points, triangles] = Triangulate(outline);
+  EXPECT_THAT(points, UnorderedElementsAre(A, M, B, C, D, H, J));
+  EXPECT_TRUE(HasValidIndices(points, triangles));
+  EXPECT_TRUE(AreCounterClockwise(points, triangles));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{1, 1}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{5, 0.5f}));
+  EXPECT_TRUE(ContainsPoint(points, triangles, Point{3, 3}));
+  EXPECT_FALSE(ContainsPoint(points, triangles, Point{3, 1}));
 }
 
 }  // namespace

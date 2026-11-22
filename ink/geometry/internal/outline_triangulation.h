@@ -31,7 +31,10 @@ struct Triangulation {
   std::vector<std::array<uint32_t, 3>> triangles;
 };
 
-// Returns a triangulation of the given shape.
+// Returns a triangulation of `shape`, with counter-clockwise triangles. The
+// shape must be non-degenerate (with no overlapping edges, zero-area spikes, or
+// cracks; formally, the closure of its interior) and given by a valid monotone
+// chain decomposition.
 Triangulation Triangulate(const ShapeOutline& shape);
 
 }  // namespace ink::geometry_internal
