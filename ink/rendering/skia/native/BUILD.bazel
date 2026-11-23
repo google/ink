@@ -52,7 +52,6 @@ cc_library(
         "//ink/strokes:stroke_paint_animation_clock",
         "//ink/strokes/input:stroke_input_batch",
         "@abseil-cpp//absl/base:nullability",
-        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/functional:overload",
         "@abseil-cpp//absl/log:absl_check",

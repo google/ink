@@ -23,6 +23,7 @@
 #include "absl/hash/hash_testing.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
@@ -30,6 +31,7 @@
 #include "ink/brush/fuzz_domains.h"
 #include "ink/color/color.h"
 #include "ink/geometry/angle.h"
+#include "ink/geometry/mesh_format.h"
 #include "ink/geometry/vec.h"
 
 namespace ink {
@@ -668,6 +670,55 @@ TEST(BrushPaintTest, InvalidSelfOverlap) {
               StatusIs(absl::StatusCode::kInvalidArgument,
                        HasSubstr("`BrushPaint::self_overlap` "
                                  "holds non-enumerator value")));
+}
+
+TEST(BrushPaintTest, IsCompatibleWithMeshFormat) {
+  absl::StatusOr<MeshFormat> position_only =
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
+                           MeshFormat::AttributeId::kPosition}},
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(position_only, IsOk());
+
+  absl::StatusOr<MeshFormat> with_surface_uv =
+      MeshFormat::Create({{MeshFormat::AttributeType::kFloat2PackedInOneFloat,
+                           MeshFormat::AttributeId::kPosition},
+                          {MeshFormat::AttributeType::kFloat2PackedInOneFloat,
+                           MeshFormat::AttributeId::kSurfaceUv}},
+                         MeshFormat::IndexFormat::k16BitUnpacked16BitPacked);
+  ASSERT_THAT(with_surface_uv, IsOk());
+
+  const BrushPaint empty_paint;
+  EXPECT_TRUE(
+      brush_internal::IsCompatibleWithMeshFormat(empty_paint, *position_only));
+  EXPECT_TRUE(brush_internal::IsCompatibleWithMeshFormat(empty_paint,
+                                                         *with_surface_uv));
+
+  const BrushPaint tiling_only = {
+      .texture_layers = {BrushPaint::TilingTexture{
+          .client_texture_id = std::string(kTestTextureId)}}};
+  EXPECT_TRUE(
+      brush_internal::IsCompatibleWithMeshFormat(tiling_only, *position_only));
+  EXPECT_TRUE(brush_internal::IsCompatibleWithMeshFormat(tiling_only,
+                                                         *with_surface_uv));
+
+  const BrushPaint stamping_only = {
+      .texture_layers = {BrushPaint::StampingTexture{
+          .client_texture_id = std::string(kTestTextureId)}}};
+  EXPECT_FALSE(brush_internal::IsCompatibleWithMeshFormat(stamping_only,
+                                                          *position_only));
+  EXPECT_TRUE(brush_internal::IsCompatibleWithMeshFormat(stamping_only,
+                                                         *with_surface_uv));
+
+  const BrushPaint tiling_and_stamping = {
+      .texture_layers = {
+          BrushPaint::TilingTexture{.client_texture_id =
+                                        std::string(kTestTextureId)},
+          BrushPaint::StampingTexture{.client_texture_id =
+                                          std::string(kTestTextureId)}}};
+  EXPECT_FALSE(brush_internal::IsCompatibleWithMeshFormat(tiling_and_stamping,
+                                                          *position_only));
+  EXPECT_TRUE(brush_internal::IsCompatibleWithMeshFormat(tiling_and_stamping,
+                                                         *with_surface_uv));
 }
 
 void CanValidateAnyValidBrushPaint(const BrushPaint& paint) {

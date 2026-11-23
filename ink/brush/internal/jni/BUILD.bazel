@@ -202,13 +202,10 @@ cc_library(
         "//ink/color:color_space",
         "//ink/color/internal/jni:color_native_helper",
         "//ink/geometry:angle",
-        "//ink/geometry:mesh_format",
         "//ink/geometry:vec",
         "//ink/geometry/internal/jni:mesh_format_native_helper",
-        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/time",
-        "@abseil-cpp//absl/types:span",
     ],
 )
 
