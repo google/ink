@@ -1739,6 +1739,20 @@ TEST(StrokeInputBatchDeathTest, EraseWithStartOutOfBounds) {
   EXPECT_DEATH_IF_SUPPORTED(batch->Erase(batch->Size() + 1, 1), "");
 }
 
+TEST(StrokeInputBatchDeathTest, EraseWithNegativeStart) {
+  absl::StatusOr<StrokeInputBatch> batch =
+      StrokeInputBatch::Create(MakeValidTestInputSequence());
+  ASSERT_THAT(batch, IsOk());
+  EXPECT_DEATH_IF_SUPPORTED(batch->Erase(-1, 1), "");
+}
+
+TEST(StrokeInputBatchDeathTest, EraseWithNegativeCount) {
+  absl::StatusOr<StrokeInputBatch> batch =
+      StrokeInputBatch::Create(MakeValidTestInputSequence());
+  ASSERT_THAT(batch, IsOk());
+  EXPECT_DEATH_IF_SUPPORTED(batch->Erase(1, -1), "");
+}
+
 TEST(StrokeInputBatchTest, AppendRangeToEmptyBatch) {
   std::vector<StrokeInput> input_vector = MakeValidTestInputSequence();
   absl::StatusOr<StrokeInputBatch> source_batch =

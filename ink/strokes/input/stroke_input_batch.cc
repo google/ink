@@ -401,8 +401,9 @@ absl::Status StrokeInputBatch::Append(const StrokeInputBatch& inputs,
 }
 
 void StrokeInputBatch::Erase(int start, int count) {
-  ABSL_DCHECK_GE(start, 0);
+  ABSL_CHECK_GE(start, 0);
   ABSL_CHECK_LE(start, Size());
+  ABSL_CHECK_GE(count, 0);
 
   count = std::min(count, Size() - start);
   if (count == 0) return;
