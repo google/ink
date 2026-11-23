@@ -790,6 +790,27 @@ TEST(RectDeathTest, InteriorRectWithAspectRatio) {
                             "Aspect ratio cannot be < 0");
 }
 
+TEST(RectTest, AspectRatioRectsOfZeroHeightRect) {
+  // This Rect's center is {5, 3}, its width is 10 and its height is 0.
+  Rect flat_rect = Rect::FromTwoPoints({0, 3}, {10, 3});
+  EXPECT_THAT(flat_rect.ContainingRectWithAspectRatio(2),
+              RectEq(0, 0.5, 10, 5.5));
+  EXPECT_THAT(flat_rect.ContainingRectWithAspectRatio(.5f),
+              RectEq(0, -7, 10, 13));
+  EXPECT_THAT(flat_rect.InteriorRectWithAspectRatio(0), RectEq(5, 3, 5, 3));
+  EXPECT_THAT(flat_rect.InteriorRectWithAspectRatio(2), RectEq(5, 3, 5, 3));
+
+  // A point-like Rect stays point-like.
+  Rect point_rect = Rect::FromCenterAndDimensions({1, 2}, 0, 0);
+  EXPECT_THAT(point_rect.ContainingRectWithAspectRatio(2), RectEq(1, 2, 1, 2));
+  EXPECT_THAT(point_rect.InteriorRectWithAspectRatio(2), RectEq(1, 2, 1, 2));
+
+  // A zero-width Rect with non-zero height already worked before.
+  Rect thin_rect = Rect::FromTwoPoints({1, 0}, {1, 4});
+  EXPECT_THAT(thin_rect.ContainingRectWithAspectRatio(.5f), RectEq(0, 0, 2, 4));
+  EXPECT_THAT(thin_rect.InteriorRectWithAspectRatio(.5f), RectEq(1, 2, 1, 2));
+}
+
 TEST(RectTest, ResizeSettingValueThatCreatesNonFlatRect) {
   Rect test_rect_1 = Rect::FromTwoPoints({0, 0}, {10, 8});
   test_rect_1.ResizeSettingXMinTo(5);

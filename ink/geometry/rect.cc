@@ -53,7 +53,9 @@ Rect Rect::ContainingRectWithAspectRatio(float aspect_ratio) const {
   ABSL_CHECK(aspect_ratio > 0) << "Aspect ratio cannot be <= 0";
   float corrected_width;
   float corrected_height;
-  if (aspect_ratio > AspectRatio()) {
+  // `AspectRatio()` CHECK-fails on a zero-height Rect; in that case the width
+  // must be preserved, so take the `else` branch.
+  if (Height() != 0 && aspect_ratio > AspectRatio()) {
     corrected_height = Height();
     corrected_width = Height() * aspect_ratio;
   } else {
@@ -68,7 +70,9 @@ Rect Rect::InteriorRectWithAspectRatio(float aspect_ratio) const {
   ABSL_CHECK(aspect_ratio >= 0) << "Aspect ratio cannot be < 0";
   float corrected_width;
   float corrected_height;
-  if (aspect_ratio > AspectRatio()) {
+  // `AspectRatio()` CHECK-fails on a zero-height Rect; in that case the height
+  // must be preserved, so take the `else` branch.
+  if (Height() != 0 && aspect_ratio > AspectRatio()) {
     corrected_width = Width();
     corrected_height = Width() / aspect_ratio;
   } else {
