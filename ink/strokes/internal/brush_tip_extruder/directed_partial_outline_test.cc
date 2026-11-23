@@ -14,12 +14,14 @@
 
 #include "ink/strokes/internal/brush_tip_extruder/directed_partial_outline.h"
 
+#include <cmath>
 #include <cstdint>
 #include <optional>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ink/geometry/point.h"
 #include "ink/geometry/segment.h"
 #include "ink/geometry/triangle.h"
 #include "ink/strokes/internal/brush_tip_extruder/mutable_mesh_view.h"
@@ -347,6 +349,44 @@ TEST(FindOutlineIntersectionTest, WithContainingTriangle) {
     EXPECT_EQ(result.segment_intersection->ending_index, 2);
     EXPECT_GT(result.remaining_search_budget, 0);
   }
+}
+
+TEST(FindOutlineIntersectionTest, EndpointOneFloatStepFromSegment) {
+  // The outline ends one float step above the horizontal segment, so they do
+  // not intersect, even though the outline end is within floating-point
+  // rounding of the segment.
+  MeshData data = {.vertices = {{.position = {1, 2}},
+                                {.position = {1, std::nextafter(1.f, 2.f)}}}};
+  MutableMeshView mesh = MakeView(data);
+  std::vector<MutableMeshView::IndexType> indices = {0, 1};
+  DirectedPartialOutline outline(nullptr, 0, 0, &indices, 0, indices.size());
+  float search_budget = 10;
+  OutlineIntersectionResult result = FindOutlineIntersection(
+      outline, Segment{.start = {0, 1}, .end = {2, 1}}, mesh, search_budget);
+  EXPECT_FALSE(result.segment_intersection.has_value());
+}
+
+TEST(FindOutlineIntersectionTest, SharedEndpointWithFloatError) {
+  // The outline segment and `segment` end at the same point. These coordinates
+  // are chosen so that the general intersection formula rounds the ratios for
+  // that point to just past 1, but the intersection must still be found
+  // exactly at the shared endpoint.
+  Point shared = {-2.9f, -3.8f};
+  MeshData data = {
+      .vertices = {{.position = {-4.5f, -8.2f}}, {.position = shared}}};
+  MutableMeshView mesh = MakeView(data);
+  std::vector<MutableMeshView::IndexType> indices = {0, 1};
+  DirectedPartialOutline outline(nullptr, 0, 0, &indices, 0, indices.size());
+  float search_budget = 10;
+  OutlineIntersectionResult result = FindOutlineIntersection(
+      outline, Segment{.start = {-0.8f, 1.0f}, .end = shared}, mesh,
+      search_budget);
+  ASSERT_TRUE(result.segment_intersection.has_value());
+  EXPECT_EQ(result.segment_intersection->starting_index, 0);
+  EXPECT_EQ(result.segment_intersection->ending_index, 1);
+  EXPECT_EQ(result.segment_intersection->outline_interpolation_value, 1);
+  EXPECT_EQ(result.segment_intersection->segment_interpolation_value, 1);
+  EXPECT_EQ(result.segment_intersection->position, shared);
 }
 
 }  // namespace
