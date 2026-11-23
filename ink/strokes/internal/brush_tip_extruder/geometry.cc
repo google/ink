@@ -2424,15 +2424,32 @@ void Geometry::TriangleBuilder::TryAppend(Side& new_vertex_side) {
     geometry_->DisconnectPartitionSides(new_vertex_side);
   }
 
+  // Returns the position of the side's intersection pivot, if it has one.
+  auto pivot_position = [this](const Side& side) -> std::optional<Point> {
+    if (!side.intersection.has_value() ||
+        !side.intersection->retriangulation_started) {
+      return std::nullopt;
+    }
+    return geometry_->LastPosition(side);
+  };
+  std::optional<Point> pivot_position_before = pivot_position(new_vertex_side);
+
   SlowPathTriangleInfo info =
       MakeSlowPathInfo(proposed_winding, new_vertex_side, next_vertex);
   TryAppendSlowPath(proposed_winding, info);
 
   if (new_vertex_side.intersection.has_value() &&
       info.proposed_vertex_triangle.has_value()) {
-    new_vertex_side.intersection->last_proposed_vertex = info.proposed_vertex;
-    new_vertex_side.intersection->last_proposed_vertex_triangle =
-        *info.proposed_vertex_triangle;
+    Side::SelfIntersection& intersection = *new_vertex_side.intersection;
+    intersection.last_proposed_vertex = info.proposed_vertex;
+    intersection.last_proposed_vertex_triangle = *info.proposed_vertex_triangle;
+    intersection.last_proposed_opposite_position = info.opposite_position;
+    std::optional<Point> pivot_position_after = pivot_position(new_vertex_side);
+    intersection.last_proposed_pivot_position =
+        pivot_position_before.has_value() &&
+                pivot_position_after != pivot_position_before
+            ? pivot_position_after
+            : std::nullopt;
   }
 }
 
@@ -3196,15 +3213,32 @@ uint32_t NumberOfEndingQuads(uint32_t n_left, uint32_t n_right) {
   return (std::min(n_left, n_right) - 1) / 2;
 }
 
-// Returns true if `side` is undergoing intersection and appending the
-// `Side::SelfIntersection::last_proposed_vertex` was rejected.
-bool LastProposedVertexWasRejected(const Side& side,
-                                   const MutableMeshView& mesh,
-                                   float retriangulation_travel_threshold) {
+// Returns true if `side` is undergoing intersection and its
+// `Side::SelfIntersection::last_proposed_vertex` should be proposed again,
+// because it may have been rejected only due to the order in which left and
+// right vertices were proposed. `opposite_last_position` is the current
+// position of the opposite side's last vertex.
+bool ShouldProposeLastVertexAgain(const Side& side, const MutableMeshView& mesh,
+                                  float retriangulation_travel_threshold,
+                                  Point opposite_last_position) {
   if (!side.intersection.has_value()) return false;
   if (side.intersection->retriangulation_started) {
-    return side.intersection->last_proposed_vertex.position !=
-           mesh.GetPosition(side.indices.back());
+    Point pivot_position = mesh.GetPosition(side.indices.back());
+    if (side.intersection->last_proposed_vertex.position == pivot_position) {
+      // The vertex was accepted as proposed.
+      return false;
+    }
+    if (side.intersection->last_proposed_pivot_position == pivot_position &&
+        side.intersection->last_proposed_opposite_position ==
+            opposite_last_position) {
+      // The vertex was accepted with the pivot at a winding-corrected position,
+      // and neither the pivot nor the opposite side has changed since.
+      // Proposing it again would test the same left-right edge against an
+      // outline whose start the first proposal moved onto that edge, so the
+      // result would depend only on floating-point rounding.
+      return false;
+    }
+    return true;
   }
   return DistanceBetween(side.intersection->last_proposed_vertex.position,
                          side.intersection->starting_position) >=
@@ -3287,15 +3321,17 @@ void Geometry::TriangulateBufferedVertices(
   // append it one more time. Whether a vertex is rejected can depend on the
   // order in which left and right vertices are interleaved during extrusion.
   if (n_right_positions > 1 &&
-      LastProposedVertexWasRejected(left_side_, mesh_,
-                                    retriangulation_travel_threshold)) {
+      ShouldProposeLastVertexAgain(left_side_, mesh_,
+                                   retriangulation_travel_threshold,
+                                   LastPosition(right_side_))) {
     left_side_.vertex_buffer.push_back(
         left_side_.intersection->last_proposed_vertex);
     builder.TryAppend(left_side_);
   }
   if (n_left_positions > 1 &&
-      LastProposedVertexWasRejected(right_side_, mesh_,
-                                    retriangulation_travel_threshold)) {
+      ShouldProposeLastVertexAgain(right_side_, mesh_,
+                                   retriangulation_travel_threshold,
+                                   LastPosition(left_side_))) {
     right_side_.vertex_buffer.push_back(
         right_side_.intersection->last_proposed_vertex);
     builder.TryAppend(right_side_);

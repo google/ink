@@ -44,6 +44,12 @@ struct Side {
     ExtrudedVertex last_proposed_vertex;
     // Index of the mesh triangle that contained `last_proposed_vertex`.
     uint32_t last_proposed_vertex_triangle;
+    // Position of the opposite side's last vertex when `last_proposed_vertex`
+    // was proposed.
+    Point last_proposed_opposite_position;
+    // The position to which handling `last_proposed_vertex` moved an existing
+    // intersection pivot, or `std::nullopt` if it did not move one.
+    std::optional<Point> last_proposed_pivot_position;
     // Offset into `Side::indices` at which to find the index corresponding to
     // the start of this intersection.
     uint32_t starting_offset;

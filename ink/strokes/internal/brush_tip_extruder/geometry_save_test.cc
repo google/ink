@@ -80,6 +80,9 @@ bool SelfIntersectionsEqual(const Side::SelfIntersection& a,
   return a.starting_position == b.starting_position &&
          a.last_proposed_vertex == b.last_proposed_vertex &&
          a.last_proposed_vertex_triangle == b.last_proposed_vertex_triangle &&
+         a.last_proposed_opposite_position ==
+             b.last_proposed_opposite_position &&
+         a.last_proposed_pivot_position == b.last_proposed_pivot_position &&
          a.starting_offset == b.starting_offset &&
          a.retriangulation_started == b.retriangulation_started &&
          a.undo_stack_starting_triangle == b.undo_stack_starting_triangle &&
