@@ -931,11 +931,24 @@ void Geometry::SimplifyBufferedVertices(Side& side,
     should_replace_last_vertex = false;
   }
 
+  // Check that replacing the last vertex does not result in a clockwise
+  // triangle.
+  // TODO(b/585669459): The last vertex can also be part of a second triangle if
+  // the opposite side appended a vertex after it. Check every triangle that
+  // contains the last vertex.
+  Side& opposite_side = OpposingSide(side);
+  if (should_replace_last_vertex) {
+    Triangle triangle = {.p0 = LastPosition(opposite_side),
+                         .p1 = mesh_.GetPosition(*(side.indices.rbegin() + 1)),
+                         .p2 = simplification_vertex_buffer_[1].position};
+    if (side.self_id == SideId::kLeft) std::swap(triangle.p0, triangle.p1);
+    if (triangle.SignedArea() < 0) should_replace_last_vertex = false;
+  }
+
   // If the opposite side is undergoing an intersection, then replacing a vertex
   // on the opposite side is conceptually similar to appending a CCW opposite
   // triangle. We must perform a similar action to line_mesh_generation.md#5 or
   // `TriangleBuilder::HandleCcwOppositeIntersectingTriangle` below.
-  Side& opposite_side = OpposingSide(side);
   if (should_replace_last_vertex && opposite_side.intersection.has_value() &&
       opposite_side.intersection->retriangulation_started) {
     Point current_last_position = LastVertex(side).position;
