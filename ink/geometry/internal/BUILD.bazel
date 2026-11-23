@@ -57,7 +57,6 @@ cc_test(
         "//ink/geometry:type_matchers",
         "//ink/geometry:vec",
         "@abseil-cpp//absl/container:inlined_vector",
-        "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:status_matchers",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/types:span",

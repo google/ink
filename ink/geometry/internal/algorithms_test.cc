@@ -261,6 +261,23 @@ TEST(SegmentIntersectionRatioTest, EndpointIntersection) {
               Optional(Pair(FloatEq(1), FloatEq(1))));
 }
 
+TEST(SegmentIntersectionRatioTest, SharedEndpointWithFloatError) {
+  Point p = {-2.9f, -3.8f};
+  Point q = {-4.5f, -8.2f};
+  Point r = {-0.8f, 1.0f};
+
+  EXPECT_THAT(SegmentIntersectionRatio(Segment{q, p}, Segment{r, p}),
+              Optional(Pair(Eq(1), Eq(1))));
+  EXPECT_THAT(SegmentIntersectionRatio(Segment{r, p}, Segment{q, p}),
+              Optional(Pair(Eq(1), Eq(1))));
+  EXPECT_THAT(SegmentIntersectionRatio(Segment{p, q}, Segment{p, r}),
+              Optional(Pair(Eq(0), Eq(0))));
+  EXPECT_THAT(SegmentIntersectionRatio(Segment{p, q}, Segment{r, p}),
+              Optional(Pair(Eq(0), Eq(1))));
+  EXPECT_THAT(SegmentIntersectionRatio(Segment{q, p}, Segment{p, r}),
+              Optional(Pair(Eq(1), Eq(0))));
+}
+
 TEST(SegmentIntersectionRatioTest, Overlap) {
   // These segments all overlap along the same line, and cover the five overlap
   // cases:

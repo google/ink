@@ -139,6 +139,14 @@ std::optional<std::pair<float, float>> SegmentIntersectionRatio(
         std::max(std::min(*b_project_a_start, *b_project_a_end), 0.0f)};
   }
 
+  // The segments are not parallel, so they intersect in at most one point. If
+  // they share an endpoint, that is the intersection; return its ratios
+  // exactly, since the formula below can round them to just outside [0, 1].
+  if (a.start == b.start) return std::pair{0.f, 0.f};
+  if (a.start == b.end) return std::pair{0.f, 1.f};
+  if (a.end == b.start) return std::pair{1.f, 0.f};
+  if (a.end == b.end) return std::pair{1.f, 1.f};
+
   // We can find the ratio of the intersection by solving:
   //   t * u = w + s * v
   // where `t` and `s` are scalars representing the ratio along the segments.
