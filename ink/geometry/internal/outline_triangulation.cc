@@ -376,6 +376,36 @@ absl::InlinedVector<Event, 8> GetEvents(const ShapeOutline& shape) {
   return events;
 }
 
+// Triangulates the monotone polygon bounded by the positive and negative chains
+// `chain_a` and `chain_b` (in either order), appending to `triangulation`.
+void TriangulateMonotonePolygon(const MonotoneChain& chain_a,
+                                const MonotoneChain& chain_b,
+                                Triangulation& triangulation) {
+  bool a_is_lower = chain_a.Orientation() == 1;
+  absl::Span<const Point> lower = (a_is_lower ? chain_a : chain_b).Vertices();
+  absl::Span<const Point> upper = (a_is_lower ? chain_b : chain_a).Vertices();
+
+  std::vector<Point>& points = triangulation.vertices;
+  uint32_t start = points.size();
+  points.push_back(lower.front());
+  Piece piece = {{start}, {start}};
+
+  // Add the interior vertices in sweep order, sharing the vertex at a pinch
+  // point where the chains meet.
+  absl::Span<const Point> lo = lower.subspan(1, lower.size() - 2);
+  absl::Span<const Point> hi = upper.subspan(1, upper.size() - 2);
+  for (size_t i = 0, j = 0; i < lo.size() || j < hi.size();) {
+    bool from_lower =
+        j == hi.size() || (i < lo.size() && IsLeftOrBelow(lo[i], hi[j]));
+    Point p = from_lower ? lo[i++] : hi[j++];
+    if (p != points.back()) points.push_back(p);
+    (from_lower ? piece.lower : piece.upper).push_back(points.size() - 1);
+  }
+
+  points.push_back(lower.back());
+  TriangulateMonotonePolygon(piece, points.size() - 1, triangulation);
+}
+
 }  // namespace
 
 Triangulation Triangulate(const ShapeOutline& shape) {
@@ -384,6 +414,21 @@ Triangulation Triangulate(const ShapeOutline& shape) {
   absl::Span<const MonotoneChain> chains = shape.Chains();
   Triangulation triangulation;
   std::vector<Point>& points = triangulation.vertices;
+
+  size_t num_vertices = 0;
+  for (const MonotoneChain& chain : chains) {
+    num_vertices += chain.Vertices().size() - 1;
+  }
+
+  points.reserve(num_vertices);
+  triangulation.triangles.reserve(num_vertices);
+
+  // Fast path: a shape bounded by just two chains is already a monotone
+  if (chains.size() == 2) {
+    TriangulateMonotonePolygon(chains[0], chains[1], triangulation);
+    return triangulation;
+  }
+
   absl::InlinedVector<Region, 4> regions;
 
   uint32_t event_vertex = 0;

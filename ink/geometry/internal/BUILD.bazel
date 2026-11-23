@@ -473,3 +473,20 @@ cc_test(
         "@googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "outline_triangulation_benchmark",
+    srcs = ["outline_triangulation_benchmark.cc"],
+    deps = [
+        ":generic_tessellator",
+        ":outline_processing",
+        ":outline_triangulation",
+        ":point_tessellation_helper",
+        "//ink/geometry:point",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
+        "@googletest//:gtest_main",
+        "@libtess2",
+    ],
+)
