@@ -1,0 +1,165 @@
+diff --git a/BUILD.bazel b/BUILD.bazel
+index cf557ad230..f7d722cadb 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -26,6 +26,8 @@
+ # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
+ load("@rules_cc//cc:defs.bzl", "cc_library")
++load("@rules_python//python:defs.bzl", "py_binary")
++load("@dawn_pip//:requirements.bzl", "requirement")
+ 
+ cc_library(
+   name = "includes",
+@@ -34,3 +36,45 @@ cc_library(
+   ]),
+   visibility = ["//visibility:public"],
+ )
++
++py_binary(
++    name = "dawn_json_generator",
++    srcs = glob(["generator/**/*.py"]),
++    main = "generator/dawn_json_generator.py",
++    imports = ["generator"],
++    deps = [
++        requirement("jinja2"),
++        requirement("markupsafe"),
++    ],
++)
++
++genrule(
++    name = "generate_webgpu_headers",
++    srcs = [
++        "src/dawn/dawn.json",
++        "src/dawn/dawn_wire.json",
++    ] + glob(["generator/templates/**"]),
++    outs = [
++        "include/dawn/webgpu.h",
++        "include/dawn/webgpu_cpp.h",
++        "include/webgpu/webgpu_cpp_chained_struct.h",
++        "include/dawn/webgpu_cpp_print.h",
++        "include/dawn/dawn_proc_table.h",
++    ],
++    cmd = """
++        $(location :dawn_json_generator) \
++            --dawn-json $(location src/dawn/dawn.json) \
++            --wire-json $(location src/dawn/dawn_wire.json) \
++            --template-dir $$(dirname $(location src/dawn/dawn.json))/../../generator/templates \
++            --targets headers,cpp_headers,cpp_print \
++            --output-dir $(RULEDIR)
++    """,
++    tools = [":dawn_json_generator"],
++)
++
++cc_library(
++    name = "webgpu_headers",
++    hdrs = glob(["include/**/*.h"]) + [":generate_webgpu_headers"],
++    includes = ["include"],
++    visibility = ["//visibility:public"],
++)
+diff --git a/MODULE.bazel b/MODULE.bazel
+index 3552d03a2a..1b7b8b90e5 100644
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -3,42 +3,39 @@ module(
+     version = "0.0.1",
+ )
+ 
+-bazel_dep(name = "bazel_skylib", version = "1.4.2")
++bazel_dep(name = "bazel_skylib", version = "1.9.0")
+ bazel_dep(name = "rules_cc", version = "0.2.18")
+ bazel_dep(name = "rules_go", version = "0.59.0")
+-bazel_dep(name = "rules_python", version = "1.5.1")
+-bazel_dep(name = "platforms", version = "0.0.10")
+-
+-bazel_dep(name = "abseil-cpp", repo_name = "abseil_cpp")
+-local_path_override(
+-    module_name = "abseil-cpp",
+-    path = "third_party/abseil-cpp",
++bazel_dep(name = "rules_python", version = "1.9.0")
++bazel_dep(name = "platforms", version = "1.1.0")
++bazel_dep(name = "abseil-cpp", repo_name = "abseil_cpp", version="20260526.0")
++bazel_dep(
++    name = "google_benchmark",
++    repo_name = "benchmark",
++    version = "1.8.5",
++    dev_dependency = True,
+ )
+-
+-bazel_dep(name = "google_benchmark", repo_name = "benchmark")
+-local_path_override(
+-    module_name = "google_benchmark",
+-    path = "third_party/google_benchmark/src",
++bazel_dep(
++    name = "googletest",
++    repo_name = "gtest",
++    version = "1.17.0.bcr.2",
++    dev_dependency = True,
+ )
+-
+-bazel_dep(name = "googletest", repo_name = "gtest")
+-local_path_override(
+-    module_name = "googletest",
+-    path = "third_party/googletest",
++bazel_dep(
++    name = "spirv_headers",
++    version = "1.4.341.0",
+ )
+-
+-bazel_dep(name = "spirv_headers")
+-local_path_override(
+-    module_name = "spirv_headers",
+-    path = "third_party/spirv-headers/src",
++bazel_dep(
++    name = "spirv_tools",
++    version = "2026.1",
+ )
+-
+-spirv_tools_repo = use_extension("//:third_party/spirv-tools/spirv_tools_repo.bzl", "spirv_tools_repo")
+-use_repo(spirv_tools_repo, "spirv_tools")
+-
+-bazel_dep(name = "rules_proto", version = "6.0.2")
++bazel_dep(name = "rules_proto", version = "7.1.0")
+ bazel_dep(name = "protobuf", version = "33.0", repo_name = "com_google_protobuf")
+-local_path_override(
+-    module_name = "protobuf",
+-    path = "third_party/protobuf",
++
++pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
++pip.parse(
++    hub_name = "dawn_pip",
++    python_version = "3.11",
++    requirements_lock = ":pip_requirements.txt",
+ )
++use_repo(pip, "dawn_pip")
+diff --git a/pip_requirements.txt b/pip_requirements.txt
+new file mode 100644
+index 0000000000..f5617e6dd1
+--- /dev/null
++++ b/pip_requirements.txt
+@@ -0,0 +1,2 @@
++Jinja2==3.1.4
++MarkupSafe==2.1.5
+diff --git a/third_party/directx-shader-compiler/BUILD.bazel b/third_party/directx-shader-compiler/BUILD.bazel
+index 4ca4334d16..0e88722bd4 100644
+--- a/third_party/directx-shader-compiler/BUILD.bazel
++++ b/third_party/directx-shader-compiler/BUILD.bazel
+@@ -29,9 +29,12 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
+ 
+ cc_library(
+   name = "dxc_headers",
+-  hdrs = glob([
+-    "src/include/dxc/**/*.h",
+-  ]),
++  hdrs = glob(
++    [
++      "src/include/dxc/**/*.h",
++    ],
++    allow_empty=True,
++  ),
+   includes = ["src/include"],
+   visibility = ["//visibility:public"],
+ )
+-- 
+2.56.1.809.ga0b61035b5-goog
+

@@ -12,11 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@emsdk//emscripten_toolchain:wasm_rules.bzl", "wasm_cc_binary")
 load("@rules_cc//cc:cc_static_library.bzl", "cc_static_library")
 load(":ink_combine_headers.bzl", "ink_combine_headers")
 
 package(
     default_visibility = ["//ink:__subpackages__"],
+)
+
+cc_binary(
+    name = "ink_kmp_wasm_bin",
+    linkopts = [
+        "-lembind",
+        "-sMODULARIZE=1",
+        "-sEXPORT_NAME=createInkKmpModule",
+        "-sALLOW_MEMORY_GROWTH=1",
+        "-sSINGLE_FILE=1",
+        "-sWASM_ASYNC_COMPILATION=0",
+    ],
+    tags = [
+        "manual",
+        "notap",
+        "requires_wasm_config",
+    ],
+    deps = [
+        "//ink/geometry/internal/jni:embind",
+    ],
+)
+
+wasm_cc_binary(
+    name = "ink_kmp_wasm",
+    cc_target = ":ink_kmp_wasm_bin",
+    tags = ["no-lexan"],
 )
 
 cc_static_library(
