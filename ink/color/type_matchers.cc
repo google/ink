@@ -27,7 +27,6 @@ namespace {
 
 using ::testing::AllOf;
 using ::testing::ElementsAre;
-using ::testing::ElementsAreArray;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::FloatEq;
@@ -61,9 +60,7 @@ MATCHER_P(FloatNearlyBetweenZeroAndOneMatcher, eps,
   return Matches(AllOf(Ge(-eps), Le(1.0f + eps)))(arg);
 }
 
-MATCHER_P(ColorNearlyEqualsMatcher, expected, "") {
-  return arg.NearlyEquals(expected);
-}
+MATCHER_P(ColorNearMatcher, expected, "") { return arg.NearlyEquals(expected); }
 
 MATCHER_P2(RgbaFloatNearMatcher, expected, tolerance,
            absl::StrCat(negation ? "isn't" : "is", " within ", tolerance,
@@ -125,8 +122,8 @@ Matcher<float> FloatNearlyBetweenZeroAndOne(float eps) {
   return FloatNearlyBetweenZeroAndOneMatcher(eps);
 }
 
-Matcher<Color> ColorNearlyEquals(const Color& expected) {
-  return ColorNearlyEqualsMatcher(expected);
+Matcher<Color> ColorNear(const Color& expected) {
+  return ColorNearMatcher(expected);
 }
 
 Matcher<Color::RgbaFloat> RgbaFloatNear(Color::RgbaFloat expected,

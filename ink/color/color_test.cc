@@ -494,7 +494,7 @@ FUZZ_TEST(ColorTest, EqualityRequiresAnExactMatch)
 TEST(ColorTest, NearlyEqualsRejectsDifferentColors) {
   const Color lhs = Color::FromFloat(0.7, 0.6, 0.5, 0.4, Format::kLinear);
   const Color rhs = Color::FromFloat(0.7, 0.61, 0.5, 0.4, Format::kLinear);
-  EXPECT_THAT(lhs, Not(ColorNearlyEquals(rhs)));
+  EXPECT_THAT(lhs, Not(ColorNear(rhs)));
 }
 
 void NearlyEqualsAcceptsSlightlyDifferentColors(
@@ -503,8 +503,8 @@ void NearlyEqualsAcceptsSlightlyDifferentColors(
       Color::FromFloat(rgba[0], rgba[1], rgba[2], rgba[3], Format::kLinear);
   const Color rhs = Color::FromFloat(rgba[0] + kColorNearlyEps * 0.9f, rgba[1],
                                      rgba[2], rgba[3], Format::kLinear);
-  EXPECT_THAT(lhs, ColorNearlyEquals(rhs));
-  EXPECT_THAT(rhs, ColorNearlyEquals(lhs));
+  EXPECT_THAT(lhs, ColorNear(rhs));
+  EXPECT_THAT(rhs, ColorNear(lhs));
 }
 FUZZ_TEST(ColorTest, NearlyEqualsAcceptsSlightlyDifferentColors)
     .WithDomains(FourFloatsInZeroOne());
@@ -516,14 +516,14 @@ void NearlyEqualsAcceptsDifferentColorSpaces(const std::array<float, 4>& rgba) {
                              rgba[3], Format::kLinear, ColorSpace::kSrgb);
   Color c_p3 = c.InColorSpace(ColorSpace::kDisplayP3);
   Color d_p3 = d.InColorSpace(ColorSpace::kDisplayP3);
-  EXPECT_THAT(c, ColorNearlyEquals(c_p3));
-  EXPECT_THAT(c, ColorNearlyEquals(d_p3));
-  EXPECT_THAT(d, ColorNearlyEquals(c_p3));
-  EXPECT_THAT(d, ColorNearlyEquals(d_p3));
-  EXPECT_THAT(c_p3, ColorNearlyEquals(c));
-  EXPECT_THAT(c_p3, ColorNearlyEquals(d));
-  EXPECT_THAT(d_p3, ColorNearlyEquals(c));
-  EXPECT_THAT(d_p3, ColorNearlyEquals(d));
+  EXPECT_THAT(c, ColorNear(c_p3));
+  EXPECT_THAT(c, ColorNear(d_p3));
+  EXPECT_THAT(d, ColorNear(c_p3));
+  EXPECT_THAT(d, ColorNear(d_p3));
+  EXPECT_THAT(c_p3, ColorNear(c));
+  EXPECT_THAT(c_p3, ColorNear(d));
+  EXPECT_THAT(d_p3, ColorNear(c));
+  EXPECT_THAT(d_p3, ColorNear(d));
 }
 FUZZ_TEST(ColorTest, NearlyEqualsAcceptsDifferentColorSpaces)
     .WithDomains(FourFloatsInZeroOne());
@@ -574,7 +574,7 @@ TEST(ColorTest, ScaleToGamut) {
           .ScaledToGamut();
   const Color expected_2 =
       Color::FromFloat(0.2f, 1.0f, 0.3f, 0.3f, Format::kLinear);
-  EXPECT_THAT(actual_2, ColorNearlyEquals(expected_2));
+  EXPECT_THAT(actual_2, ColorNear(expected_2));
 }
 
 void ScaledToGamutIsInGamut(const Color& color) {
@@ -590,13 +590,13 @@ void RoundTripColorSpaceConversionIsNearlyEqual(
                                       Format::kLinear, ColorSpace::kSrgb);
   const Color srgb_round_tripped =
       srgb.InColorSpace(ColorSpace::kDisplayP3).InColorSpace(ColorSpace::kSrgb);
-  EXPECT_THAT(srgb_round_tripped, ColorNearlyEquals(srgb));
+  EXPECT_THAT(srgb_round_tripped, ColorNear(srgb));
 
   const Color p3 = Color::FromFloat(rgba[0], rgba[1], rgba[2], rgba[3],
                                     Format::kLinear, ColorSpace::kDisplayP3);
   const Color p3_round_tripped =
       p3.InColorSpace(ColorSpace::kSrgb).InColorSpace(ColorSpace::kDisplayP3);
-  EXPECT_THAT(p3_round_tripped, ColorNearlyEquals(p3));
+  EXPECT_THAT(p3_round_tripped, ColorNear(p3));
 }
 FUZZ_TEST(ColorTest, RoundTripColorSpaceConversionIsNearlyEqual)
     .WithDomains(FourFloatsInZeroOne());
@@ -621,21 +621,21 @@ TEST(ColorTest, AsOklab) {
 
 TEST(ColorTest, FromOklab) {
   EXPECT_THAT(Color::FromOklab({0.0f, 0.0f, 0.0f, 1.0f}, ColorSpace::kSrgb),
-              ColorNearlyEquals(Color::Black()));
+              ColorNear(Color::Black()));
   EXPECT_THAT(Color::FromOklab({1.0f, 0.0f, 0.0f, 1.0f}, ColorSpace::kSrgb),
-              ColorNearlyEquals(Color::White()));
+              ColorNear(Color::White()));
   EXPECT_THAT(Color::FromOklab({0.627955f, 0.224863f, 0.125846f, 1.0f},
                                ColorSpace::kSrgb),
-              ColorNearlyEquals(Color::Red()));
+              ColorNear(Color::Red()));
   EXPECT_THAT(Color::FromOklab({0.630386f, -0.031398f, -0.177268f, 1.0f},
                                ColorSpace::kSrgb),
-              ColorNearlyEquals(Color::GoogleBlue()));
+              ColorNear(Color::GoogleBlue()));
 }
 
 void ColorAsOklabAndBackIsIdentity(const Color& original) {
   Color::OklabFloat oklab = original.AsOklab();
   Color round_trip = Color::FromOklab(oklab, original.GetColorSpace());
-  EXPECT_THAT(round_trip, ColorNearlyEquals(original));
+  EXPECT_THAT(round_trip, ColorNear(original));
 }
 FUZZ_TEST(ColorTest, ColorAsOklabAndBackIsIdentity)
     .WithDomains(InGamutSrgbColor());
