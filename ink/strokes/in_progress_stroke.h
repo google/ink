@@ -133,10 +133,11 @@ class InProgressStroke {
   void FinishInputs();
 
   // Updates the stroke geometry up to the given duration since the start of the
-  // stroke. This will will consume any inputs queued up by calls to
-  // `EnqueueInputs()`, and cause brush animations (if any) to progress up to
-  // the specified time. Any stroke geometry resulting from previously-predicted
-  // input from before the previous call to this method will be cleared.
+  // stroke (relative to the same zero point as `StrokeInput::elapsed_time`).
+  // This will consume any inputs queued up by calls to `EnqueueInputs()`, and
+  // cause brush animations (if any) to progress up to the specified time. Any
+  // stroke geometry resulting from previously-predicted input from before the
+  // previous call to this method will be cleared.
   //
   // This method requires that:
   //   * `Start()` has been previously called to set the current `Brush`.

@@ -55,7 +55,8 @@ struct StrokeInput {
   ToolType tool_type = ToolType::kUnknown;
   // The input position, in stroke space.
   Point position;
-  // Time elapsed since the start of a stroke.
+  // Time elapsed since the start of a stroke (usually zero for the first
+  // input).
   Duration32 elapsed_time;
   // The physical distance that the pointer must travel in order to produce an
   // input motion of one stroke unit. For stylus/touch, this is the real-world
