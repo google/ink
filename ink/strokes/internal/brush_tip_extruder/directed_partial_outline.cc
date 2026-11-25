@@ -17,10 +17,11 @@
 #include <algorithm>
 #include <cstdint>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include "absl/log/absl_check.h"
-#include "ink/geometry/internal/legacy_segment_intersection.h"
+#include "ink/geometry/internal/algorithms.h"
 #include "ink/geometry/point.h"
 #include "ink/geometry/segment.h"
 #include "ink/geometry/triangle.h"
@@ -32,8 +33,7 @@ namespace ink {
 namespace brush_tip_extruder_internal {
 namespace {
 
-using ::ink::geometry_internal::LegacyIntersection;
-using ::ink::geometry_internal::LegacySegmentIntersection;
+using ::ink::geometry_internal::SegmentIntersectionRatio;
 
 float DistanceBetween(Point a, Point b) { return (a - b).Magnitude(); }
 
@@ -104,18 +104,17 @@ OutlineIntersectionResult FindOutlineIntersection(
                                .end = mesh.GetPosition(outline[i])};
     if (outline_segment.start == outline_segment.end) continue;
 
-    std::optional<LegacySegmentIntersection> result =
-        LegacyIntersection(outline_segment, segment);
+    std::optional<std::pair<float, float>> result =
+        SegmentIntersectionRatio(outline_segment, segment);
     if (result.has_value()) {
       OutlineIntersectionResult::SegmentIntersection intersection = {
-          .position = outline_segment.Lerp(result->segment1_interval[0]),
+          .position = outline_segment.Lerp(result->first),
           .starting_index = i - 1,
           .ending_index = i,
-          .outline_interpolation_value = result->segment1_interval[0],
-          .segment_interpolation_value = result->segment2_interval[0]};
-      search_budget -=
-          DistanceBetween(outline_segment.start,
-                          outline_segment.Lerp(result->segment1_interval[0]));
+          .outline_interpolation_value = result->first,
+          .segment_interpolation_value = result->second};
+      search_budget -= DistanceBetween(outline_segment.start,
+                                       outline_segment.Lerp(result->first));
       return {.segment_intersection = intersection,
               .remaining_search_budget = std::max(0.f, search_budget)};
     }
@@ -133,14 +132,14 @@ OutlineIntersectionResult FindOutlineIntersection(
     uint32_t last = outline[outline.Size() - 1];
     Point last_position = mesh.GetPosition(last);
     Segment outline_segment = {.start = last_position, .end = last_position};
-    std::optional<LegacySegmentIntersection> result =
-        LegacyIntersection(outline_segment, segment);
+    std::optional<std::pair<float, float>> result =
+        SegmentIntersectionRatio(outline_segment, segment);
     if (result.has_value()) {
       OutlineIntersectionResult::SegmentIntersection intersection = {
           .starting_index = outline.Size() - 1,
           .ending_index = outline.Size() - 1,
-          .outline_interpolation_value = result->segment1_interval[0],
-          .segment_interpolation_value = result->segment2_interval[0]};
+          .outline_interpolation_value = result->first,
+          .segment_interpolation_value = result->second};
       return {.segment_intersection = intersection,
               .remaining_search_budget = std::max(0.f, search_budget)};
     }

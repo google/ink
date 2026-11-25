@@ -128,7 +128,7 @@ cc_library(
         "//ink/geometry:segment",
         "//ink/geometry:triangle",
         "//ink/geometry:vec",
-        "//ink/geometry/internal:legacy_segment_intersection",
+        "//ink/geometry/internal:algorithms",
         "@abseil-cpp//absl/log:absl_check",
     ],
 )
@@ -140,6 +140,7 @@ cc_test(
         ":directed_partial_outline",
         ":mutable_mesh_view",
         ":side",
+        "//ink/geometry:point",
         "//ink/geometry:segment",
         "//ink/geometry:triangle",
         "//ink/strokes/internal:legacy_vertex",
