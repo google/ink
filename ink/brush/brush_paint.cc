@@ -445,6 +445,7 @@ Version CalculateMinimumRequiredVersion(
     return Version::kDevelopment();
   }
   // LINT.ThenChange(
+  //  ../storage/brush.cc:animation_defaults,
   //  ../storage/proto/brush_family.proto:animation_defaults,
   //  ../storage/proto/brush_family.proto:animation_defaults_legacy
   // )

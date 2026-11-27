@@ -59,9 +59,7 @@
 namespace ink {
 namespace {
 
-// TODO(b/534290635): Set a specific version for this, once we release the new
-// proto encoding for texture layers.
-constexpr Version kNewTextureLayerEncodingMinVersion = Version::kDevelopment();
+constexpr Version kNewTextureLayerEncodingMinVersion = Version::k2();
 
 proto::BrushBehavior::BinaryOp EncodeBrushBehaviorBinaryOp(
     BrushBehavior::BinaryOp binary_op) {

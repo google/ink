@@ -146,17 +146,17 @@ Version CalculateMinimumRequiredVersion(
 }
 
 Version CalculateMinimumRequiredVersion(const ColorFunction::HueOffset& hue) {
-  return Version::kDevelopment();
+  return Version::k2();
 }
 
 Version CalculateMinimumRequiredVersion(
     const ColorFunction::ChromaMultiplier& chroma) {
-  return Version::kDevelopment();
+  return Version::k2();
 }
 
 Version CalculateMinimumRequiredVersion(
     const ColorFunction::LightnessOffset& lightness) {
-  return Version::kDevelopment();
+  return Version::k2();
 }
 
 Version CalculateMinimumRequiredVersion(
